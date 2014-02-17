@@ -175,6 +175,7 @@ setup(
     packages=[ 
         'atlas',
         'atlas.settings',
+        'atlas.common',
     ],
     data_files=[
                 # config files 
@@ -183,11 +184,10 @@ setup(
                  ),
                 # HTML templates and static files
                 ]
-                 + gen_data_files(
-                                 "atlas/templates",
-                                 "atlas/static",
-                                 "atlas/media",
-                                 "atlas/config-templates",
+                 + gen_data_files("atlas/templates",
+                                  "atlas/static",
+                                  "atlas/media",
+                                  "atlas/config-templates",
                 )
     ,         
     cmdclass={'install': install_panda,
