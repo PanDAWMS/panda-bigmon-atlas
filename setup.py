@@ -173,6 +173,7 @@ setup(
     author_email='hn-atlas-panda-pathena@cern.ch',
     url='https://twiki.cern.ch/twiki/bin/view/PanDA/BigPanDAmonitoring',
     packages=[ 
+        'atlas',
         'atlas.settings',
     ],
     data_files=[
