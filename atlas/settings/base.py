@@ -1,9 +1,17 @@
 
 from os.path import dirname, join
 
+import core
 from core import common
 from core.common.settings.base import COMMON_INSTALLED_APPS
 import atlas
+
+
+VERSIONS = {
+    'core': core.__versionstr__,
+    'atlas': atlas.__versionstr__,
+}
+
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
