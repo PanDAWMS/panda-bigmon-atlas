@@ -13,7 +13,7 @@ common_patterns = patterns('',
 
 
     ### Applications
-###    url(r'^htcondorjobs', include('core.htcondor.urls')),
+    url(r'^htcondorjobs', include('core.htcondor.urls')),
     url(r'^job', include('core.pandajob.urls')),
     url(r'^resource', include('core.resource.urls')),
 ###     url(r'^api-auth', include('core.api.urls')),
