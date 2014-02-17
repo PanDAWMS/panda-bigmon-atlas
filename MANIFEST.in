@@ -1,0 +1,3 @@
+include *.txt *.py *.cfg 
+recursive-include lsst *-template
+global-include *.html *.js *.css *.png *.gif *.ico *-example*
