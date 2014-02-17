@@ -1,0 +1,20 @@
+{% extends "_base_bigpandamon.html" %}{% load url from future %}
+{% block urlprefix %}{{ prefix }}{% endblock %}
+{% block subtitle %}Index{% endblock %}
+{% block header-nav-chain-1 %}<a href="{{ prefix }}/">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
+{% block header-nav-chain-2 %}<a href="{{ prefix }}/#">Index</a>{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}  
+{% block header-nav-chain-3 %}{% endblock %}{% block header-nav-chain-3-separator %}{% endblock %}  
+{% block header-nav-chain-4 %}{% endblock %}{% block header-nav-chain-4-separator %}{% endblock %}  
+{% block header-nav-chain-5 %}{% endblock %}{% block header-nav-chain-5-separator %}{% endblock %}  
+{% block header-nav-chain-6 %}{% endblock %}  
+{% block body %}
+<p>hi there!
+    <ul class="column left">
+        <li><a href="{% url 'index' %}">Home</a></li>
+        <li><a href="{% url 'jobList' %}">List PanDA jobs</a></li>
+        <li><a href="{% url 'listSchedconfigQueues' %}">List queues</a></li>
+        <li>update_schedconfig table from AGIS</a></li>
+    </ul>
+</p>
+{% endblock %}
+
