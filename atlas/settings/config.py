@@ -12,12 +12,14 @@ VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
 ### WSGI
 WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
 
+DATABASE_ROUTERS = ['dbrouter.ProdMonDBRouter']
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     join(dirname(core.common.__file__), 'static'),
+#    join(join(dirname(core.__file__),'datatables'), 'static'),
 #    join(dirname(atlas.__file__), 'static'),
 )
 
@@ -63,7 +65,7 @@ MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
 
-LOG_ROOT = '/data/bigpandamon_virtualhosts/atlas/logs'
+LOG_ROOT = 'logs'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

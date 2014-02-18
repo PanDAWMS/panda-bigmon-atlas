@@ -4,14 +4,15 @@
 {% block extra_js %}{% endblock %}
 {% block gacode %}UA-44940804-1{% endblock %}
 {% block gaweb %}pandawms.org{% endblock %}
-{% block title %}{{ APP_NAME }} Monitoring{% endblock %}
-{% block subtitle %}{% endblock %}
+
+{% block title %}ProdTask Monitoring{% endblock %}
+
+{% block subtitle %}ProdTask{% endblock %}
 {% block top_menu_1 %}
           <a href="#">PanDA</a>
           <ul class="dropdown">
             <li><a href="{% url 'index' %}">Home</a></li>
             <li><a href="{% url 'jobList' %}">List jobs</a></li>
-            <li><a href="{% url 'listSchedconfigQueues' %}">List queues</a></li>
             <li class="divider"></li>
             <li><a href="#">See all &rarr;</a></li>
           </ul>
@@ -24,12 +25,12 @@
             <li><a href="http://pandawms.org/monreq">Monitoring requirements</a></li>
           </ul>
 {% endblock %}
-{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
-{% block header-nav-chain-2 %}<a href="{% url 'index' %}">ItemSub1</a>{% endblock %}{% block header-nav-chain-2-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
-{% block header-nav-chain-3 %}<a href="{% url 'index' %}">ItemSub2</a>{% endblock %}{% block header-nav-chain-3-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
-{% block header-nav-chain-4 %}<a href="{% url 'index' %}">ItemSub3</a>{% endblock %}{% block header-nav-chain-4-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
-{% block header-nav-chain-5 %}<a href="{% url 'index' %}">ItemSub4</a>{% endblock %}{% block header-nav-chain-5-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
-{% block header-nav-chain-6 %}<a href="{% url 'index' %}">CurrentView</a>{% endblock %}  
+{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-2 %}<a href="{% url 'index' %}">ItemSub1</a>{% endblock %}{% block header-nav-chain-2-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-3 %}<a href="{% url 'index' %}">ItemSub2</a>{% endblock %}{% block header-nav-chain-3-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-4 %}<a href="{% url 'index' %}">ItemSub3</a>{% endblock %}{% block header-nav-chain-4-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-5 %}<a href="{% url 'index' %}">ItemSub4</a>{% endblock %}{% block header-nav-chain-5-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-6 %}<a href="{% url 'index' %}">CurrentView</a>{% endblock %}
 {% block left_menu %}{% endblock %}
 {% block body %}{% endblock %}
 {% block body_mobile %}{% endblock %}
