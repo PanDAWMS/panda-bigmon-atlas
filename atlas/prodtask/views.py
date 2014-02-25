@@ -147,11 +147,11 @@ def stepex_details(request, rid=None):
     else:
         return HttpResponseRedirect('/')
 
-    return render(request, 'task/_form.html', {
-       'active_app' : 'task',
+    return render(request, 'prodtask/_form.html', {
+       'active_app' : 'prodtask',
        'pre_form_text' : 'StepExecution details with ID = %s' % rid,
        'form': form,
-       'parent_template' : 'task/_index.html',
+       'parent_template' : 'prodtask/_index.html',
    })
 
 class StepExecutionTable(datatables.DataTable):
