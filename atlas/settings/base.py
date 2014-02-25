@@ -30,8 +30,8 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'core.pandajob',
     'core.resource',
 #    'core.htcondor', #NOT-NEEDED-IN-ATLAS
-    'core.task',
-    'core.datatables', #NOT-IMPLEMENTED
+    'core.datatables',
+    'atlas.prodtask',
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS
 

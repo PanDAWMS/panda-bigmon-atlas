@@ -1,0 +1,109 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block bl_subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<!-- TODO: Replace next tables by independet from field objects   -->
+<script>
+$(document).ready(function(){
+  $("#select_pattern").change(function(){
+    {% for pattern in pattern_list %}
+    {% for step in step_list %}
+      var name1 = "#{{ step.idname }}" + "{{pattern}}"
+      $(name1).css("display","none");
+    {% endfor %}
+    {% endfor %}
+  {% for step in step_list %}
+    var name2 = "#{{ step.idname }}" + $("#select_pattern").val()
+    $(name2).fadeIn("slow");
+   {% endfor %}
+  });
+});
+
+</script>
+<table>
+<tr>
+  <th>Request ID:</th>
+  <th>Description:</th>
+  <th>Reference:</th>
+  <th>Physic group:</th>
+</tr>
+<tr>
+  <td>{{ trequest.reqid}}</td>
+  <td>{{ trequest.description}}</td>
+  <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
+  <td>{{ trequest.phys_group}}</td>
+</tr>
+</table>
+<button id="bind" title="Create step execution">Bind</button>
+<select id="select_pattern" >
+<option value="" disabled selected>Select pattern</option>
+{% for pattern in pattern_list %}
+<option value="{{ pattern }}">{{ pattern }}</option>
+{% endfor %}
+</select>
+
+<br>
+
+<form>
+<p>Choose start step</p>
+<table>
+
+{% for step in step_list %}
+<tr>
+<td><input type="radio" name="start_step" >{{step.name}}</td>
+<td>
+{% for sp in step.pattern %}
+<div id="{{sp.idname}}" style="display:none" >{{sp.value}}</div>
+{% endfor %}
+</td>
+</tr>
+{% endfor %}
+</form>
+<table>
+<tr>
+  <th>ID:</th>
+  <th>slice:</th>
+  <th>brief:</th>
+  <th>input data:</th>
+</tr>
+<tr>
+    {% for inputList in inputLists %}
+	<tr>
+
+		<td>{{ inputList.id }}</td>
+		<td>{{ inputList.slice }}</td>
+		<td>{{ inputList.brief }}</td>
+		<td>{{ inputList.input_data }}</td>
+	</tr>
+	{% endfor %}
+
+</tr>
+</table>
+{% endblock %}
