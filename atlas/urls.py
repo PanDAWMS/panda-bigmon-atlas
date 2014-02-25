@@ -22,7 +22,7 @@ common_patterns = patterns('',
     ### UI elements
     url(r'^api/datatables', include('core.table.urls')),
 #    url(r'^graphics/', include('core.graphics.urls')),
-    url(r'^task/', include('atlas.prodtask.urls', namespace='prodtask')),
+    url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
 
 
 #    ### TEST/Playground
