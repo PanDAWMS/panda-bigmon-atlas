@@ -12,7 +12,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttr
 import urllib2
 
 
-from core.xls_parser import XlrParser
+from core.xls_parser import XlrParser,open_tempfile_from_url
 
 TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
                          'Evgen',
@@ -34,6 +34,8 @@ def get_key_by_url(url):
         google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
         if not google_key:
             google_key = r[r.find("key=") + len("key="):r.find('#')]
+        if not google_key:
+            google_key = r[r.find("key=") + len("key="):r.find('&',r.find("key="))]  
         return google_key 
     
 def fill_template(stepname, tag, priority):
@@ -48,13 +50,25 @@ def fill_template(stepname, tag, priority):
             else:
                 trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
                 tr = trtf[0]
-  
-                st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
-                                               ctag=tag, priority=priority,
-                                               cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
-                                               output_formats=tr.formats, trf_name=tr.trf,
-                                               lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
-                st.save()
+                #Ugly hack for https://code.djangoproject.com/ticket/20201
+                try:
+                    st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
+                                                   ctag=tag, priority=priority,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
+                                                   output_formats=tr.formats, trf_name=tr.trf,
+                                                   lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
+                    st.save()
+                except:
+                    st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
+                                                   ctag=tag, priority=priority,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
+                                                   output_formats=tr.formats, trf_name=tr.trf,
+                                                   lparams=tr.lparams[100:], vparams=tr.vparams[100:], swrelease=tr.trfv)                    
+                    st.save()
+                    st.lparams = tr.lparams
+                    st.vparams = tr.vparams
+                    st.save()
+                    
                 return st
 
 def translate_excl_to_dict(excel_dict):      
@@ -69,7 +83,7 @@ def translate_excl_to_dict(excel_dict):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
             st = ''
             sexec = {}
-            if translated_row.get('priority',None):
+            if translated_row.get('joboptions',None):
                 irl = dict(slice=index, brief=translated_row.get('brief', ''), comment=translated_row.get('comment', ''),
                                                                      input_data=translated_row.get('joboptions', ''))
                 index += 1
