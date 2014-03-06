@@ -18,9 +18,16 @@ class TRequestCreateCloneConfirmation(ModelForm):
         model = TRequest
         exclude = ['reqid']
 
-class TRequestCreateCloneForm(TRequestCreateCloneConfirmation):
-    excellink = CharField(required=False)
-    excelfile = FileField(required=False)  
+class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
+    excellink = CharField(required=False, label = "Exel Link")
+    excelfile = FileField(required=False, label = "Exel File")
+    
+
+class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
+    excellink = CharField(required=False, label = "DPD link")
+    excelfile = FileField(required=False, label = "DPD file")
+    
+
 
 class RequestUpdateForm(ModelForm):
     class Meta:

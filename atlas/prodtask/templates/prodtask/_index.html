@@ -31,7 +31,9 @@
           <ul class="dropdown">
             <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
             <li class="divider"></li>
-            <li><a href="{% url 'prodtask:request_create' %}">Create Request</a></li>
+            <li><a href="{% url 'prodtask:request_create' %}">Create MC Request</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:dpd_request_create' %}">Create DPD Request</a></li>
           </ul>
 </li>
 {% endblock %}

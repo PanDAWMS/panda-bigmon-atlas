@@ -21,17 +21,18 @@ def prefetch_id(db, seq_name):
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotrics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
                                 'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
+    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='REQID', primary_key=True)
-    manager = models.CharField(max_length=32, db_column='MANAGER', null=False)
-    description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True)
-    ref_link = models.CharField(max_length=256, db_column='REFERENCE_LINK', null=True)
-    cstatus = models.CharField(max_length=32, db_column='STATUS', null=False)
-    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False)
-    request_type = models.CharField(max_length=32, db_column='REQUEST_TYPE', null=False)
-    campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False)
-    subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False)
-    phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS)
-    energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False)
+    manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
+    ref_link = models.CharField(max_length=256, db_column='REFERENCE_LINK', null=True, blank=True)
+    cstatus = models.CharField(max_length=32, db_column='STATUS', null=False, blank=True)
+    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False, blank=True)
+    request_type = models.CharField(max_length=32, db_column='REQUEST_TYPE',choices=REQUEST_TYPE, null=False, blank=True)
+    campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
+    subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)
+    phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
+    energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.reqid:
@@ -83,7 +84,7 @@ class StepTemplate(models.Model):
     memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY', null=True)
     trf_name = models.CharField(max_length=128, db_column='TRF_NAME', null=True)
     lparams = models.CharField(max_length=2000, db_column='LPARAMS', null=True)
-    vparams = models.CharField(max_length=2000, db_column='VPARAMS', null=True)
+    vparams = models.CharField(max_length=4000, db_column='VPARAMS', null=True)
     swrelease = models.CharField(max_length=80, db_column='SWRELEASE', null=True)
 
     def save(self, *args, **kwargs):

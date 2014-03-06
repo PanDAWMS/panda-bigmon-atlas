@@ -12,7 +12,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttr
 import urllib2
 
 
-from core.xls_parser import XlrParser,open_tempfile_from_url
+from core.xls_parser import XlrParser, open_tempfile_from_url
 
 TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
                          'Evgen',
@@ -35,27 +35,43 @@ def get_key_by_url(url):
         if not google_key:
             google_key = r[r.find("key=") + len("key="):r.find('#')]
         if not google_key:
-            google_key = r[r.find("key=") + len("key="):r.find('&',r.find("key="))]  
+            google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]  
         return google_key 
     
-def fill_template(stepname, tag, priority):
+def fill_template(stepname, tag, priority, formats=None, ram=None):
         st = None
         try:
-            st = StepTemplate.objects.all().filter(ctag=tag)[0]
+            if(not formats)and(not ram):
+                st = StepTemplate.objects.all().filter(ctag=tag)[0]
+            if (not formats) and (ram):
+                st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
+            if (formats) and (not ram):
+                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
+            if (formats) and (ram): 
+                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]   
+                
         except:
             pass
         finally:
-            if st:
+            if st  :
                 return st
             else:
                 trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
                 tr = trtf[0]
+                if(formats):
+                    output_formats = formats
+                else:
+                    output_formats = tr.formats
+                if(ram):
+                    memory = ram
+                else:
+                    memory = int(tr.memory)
                 #Ugly hack for https://code.djangoproject.com/ticket/20201
                 try:
                     st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
                                                    ctag=tag, priority=priority,
-                                                   cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
-                                                   output_formats=tr.formats, trf_name=tr.trf,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
+                                                   output_formats=output_formats, trf_name=tr.trf,
                                                    lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
                     st.save()
                 except:
@@ -83,7 +99,7 @@ def translate_excl_to_dict(excel_dict):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
             st = ''
             sexec = {}
-            if translated_row.get('joboptions',None):
+            if 'joboptions' in translated_row:
                 irl = dict(slice=index, brief=translated_row.get('brief', ''), comment=translated_row.get('comment', ''),
                                                                      input_data=translated_row.get('joboptions', ''))
                 index += 1
