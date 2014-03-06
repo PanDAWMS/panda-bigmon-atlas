@@ -9,7 +9,7 @@ from django.utils import timezone
 import core.datatables as datatables
 
 
-from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, TRequestCreateCloneConfirmation, TRequestDPDCreateCloneForm
+from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, TRequestDPDCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset
 from .settings    import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
@@ -45,6 +45,7 @@ def request_clone(request, rid=None):
                     return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
             except Exception,e  :
+                print e
                 return HttpResponseRedirect('/')
         else:
             return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid, 'prodtask:request_clone', TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill)
@@ -96,13 +97,14 @@ def dpd_form_prefill(form_data, request):
         conf_parser = ConfigParser()
         with open(file_name) as file_obj:
             output_dict = conf_parser.parse_config(file_obj)
-        print output_dict
+        #print output_dict
         if('group' in output_dict):
             form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_','')
         if('comment' in output_dict):   
             form_data['description'] = output_dict['comment'][0]
+        
         if('owner' in output_dict):   
-            form_data['manager'] = output_dict['owner'][0]
+            form_data['manager'] = output_dict['owner'][0].split("@")[0]
         if('project' in output_dict):   
             form_data['campaign'] = output_dict['project'][0]
         
@@ -143,11 +145,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     if request.method == 'POST':
         form = TRequestCreateCloneForm(request.POST, request.FILES)
         if form.is_valid():
+            
             # Process the data in form.cleaned_data
             ################### Extra fields in form. Get and remove for creating
             if form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile'):
-                file_dict = form_prefill(form.cleaned_data, request)
                 
+                file_dict = form_prefill(form.cleaned_data, request)
                 del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
                 #print request.FILES['excelfile']
                 try:
@@ -165,11 +168,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                                'inputLists': inputlists
                                                })
                 except Exception, e:
-                            #print e
+                            print e
                             #TODO: Error message
                             pass
                 
             elif 'file_dict' in request.session:
+                
                 try:
                     #TODO: Waiting message
                     file_dict = request.session['file_dict']
@@ -177,12 +181,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     longdesc = form.cleaned_data.get('long_description', '')
                     cc = form.cleaned_data.get('cc', '')
                     del  form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], form.cleaned_data['excelfile']
+                    del form.cleaned_data['reqid']
                     req = TRequest(**form.cleaned_data)
                     print form.cleaned_data
                     req.save()
-                    #send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'] ,
-                    #           APP_SETTINGS['mcprod.default.email.list']+cc.replace(';',',').split(','), fail_silently=True)
-                    print file_dict
+                    send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'] ,
+                               APP_SETTINGS['mcprod.default.email.list']+cc.replace(';',',').split(','), fail_silently=True)
+                    #print file_dict
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
@@ -195,7 +200,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
-                            print step['step_exec']
+                            #print step['step_exec']
                             st_exec = StepExecution(**step['step_exec'])
                             st_exec.save_with_current_time()
                         
@@ -222,7 +227,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 values = TRequest.objects.values().get(reqid=rid)
                 #print values
                 form = TRequestCreateCloneForm(values)
-                del values['reqid']
+                #del values['reqid']
             except:
                 return HttpResponseRedirect('/')
         else:

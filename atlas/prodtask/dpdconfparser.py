@@ -20,7 +20,6 @@ class ConfigParser(object):
         
         for line in open_file:
             # First, remove comments:
-            print line
             if self.COMMENT_CHAR in line:
                 # split on comment char, keep only the part before
                 line, comment = line.split(self.COMMENT_CHAR, 1)
