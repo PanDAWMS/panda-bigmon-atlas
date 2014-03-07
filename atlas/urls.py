@@ -5,11 +5,13 @@ from core.common.urls import *
 
 import atlas.settings
 
+import core.pandajob.views as pandajob_views
 import atlas.common.views as atlas_common_views
 
 common_patterns = patterns('',
     ### the front page
-    url(r'^$', atlas_common_views.index, name='index'),
+###    url(r'^$', atlas_common_views.index, name='index'),
+    url(r'^$', pandajob_views.listJobs, name='index'),
 
 
     ### Applications
