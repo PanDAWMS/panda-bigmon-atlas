@@ -4,7 +4,7 @@ from os.path import dirname, join
 import core
 import atlas
 
-from local import dbaccess, MY_SECRET_KEY
+from local import dbaccess, MY_SECRET_KEY, defaultDatetimeFormat
 
 ### VIRTUALENV
 VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'

@@ -42,3 +42,10 @@ dbaccess = {
 # Make this unique, and don't share it with anybody.
 MY_SECRET_KEY = 'FIXME'
 
+
+# set default datetime format for datetime.datetime.strftime()
+defaultDatetimeFormatMySQL = "%Y-%m-%d %H:%M:%SZ"
+defaultDatetimeFormatOracle = "%Y-%m-%d %H:%M:%S"
+defaultDatetimeFormat = defaultDatetimeFormatOracle
+
+
