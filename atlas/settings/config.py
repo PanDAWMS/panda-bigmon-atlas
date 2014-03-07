@@ -12,7 +12,7 @@ VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
 ### WSGI
 WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
 
-DATABASE_ROUTERS = ['dbrouter.ProdMonDBRouter']
+DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
