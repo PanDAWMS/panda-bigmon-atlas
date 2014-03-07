@@ -95,6 +95,14 @@ LOGGING = {
             'backupCount': 2,
             'formatter': 'verbose',
         },
+        'logfile-postproduction': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': LOG_ROOT + "/logfile.postproduction",
+            'maxBytes': 1000000000,
+            'backupCount': 2,
+            'formatter': 'verbose',
+        },
         'logfile-rest': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
@@ -134,6 +142,10 @@ LOGGING = {
         },
         'bigpandamon': {
             'handlers': ['logfile-bigpandamon'],
+            'level': 'DEBUG',
+        },
+        'postproduction': {
+            'handlers': ['logfile-postproduction'],
             'level': 'DEBUG',
         },
     },

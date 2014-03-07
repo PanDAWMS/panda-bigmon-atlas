@@ -1,21 +1,32 @@
+"""
+DButils ... 
+
+"""
+
 import exceptions
 import time
 import datetime
 import traceback
+import logging
 
 
-#
+_logger = logging.getLogger('postproduction')
+
+
 try :
- import cx_Oracle
-except :
-  print "****ERROR : DButils. Cannot import cx_Oracle"
-  pass
-#
-def connectDEFT(dbname,dbuser,pwd) :
-  connect=cx_Oracle.connect(dbuser,pwd,dbname)
-  cursor=connect.cursor()
+    import cx_Oracle
+except:
+#    print "****ERROR : DButils. Cannot import cx_Oracle"
+    _logger.error("DButils. Cannot import cx_Oracle")
+    pass
 
-  return connect,cursor
+
+
+def connectDEFT(dbname,dbuser,pwd) :
+    connect = cx_Oracle.connect(dbuser, pwd, dbname)
+    cursor = connect.cursor()
+
+    return connect, cursor
 
 
 def QueryAll(connection,query) :
@@ -35,17 +46,17 @@ def QueryUpdate(connection,query) :
     cursor = connection.cursor()
     
     try :
-     cursor.execute(query)
+        cursor.execute(query)
     except DQOracleException, oe :
-      error =1
-      raise oe
+        error = 1
+        raise oe
     cursor.close()
 
     return error
 
+
 def QueryCommit(connection) :
     connection.commit()
-
 
 
 def closeDB(pdb,cursor) :
@@ -53,3 +64,4 @@ def closeDB(pdb,cursor) :
     pdb.close()
     
     
+

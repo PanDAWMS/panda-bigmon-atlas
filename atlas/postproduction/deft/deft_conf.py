@@ -1,3 +1,8 @@
+"""
+deft_conf ... DB config
+
+"""
+
 daemon = {
     'deftDB_host'   : 'ATLAS_DEFT',
     'deftDB'        : 'INTR',
@@ -13,3 +18,5 @@ daemon = {
     't_task'               : 't_task',
     't_input_dataset'      : 't_input_dataset'
 }
+
+
