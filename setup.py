@@ -3,7 +3,7 @@
 # Setup prog for Panda Server
 #
 #
-release_version = '0.0.2'
+release_version = '0.0.3'
 prefix = '/data/atlpan/bigpandamon'
 lib_prefix = 'lib/python2.6/site-packages/'
 expected_extensions = ['.html', '.js', '.css', '.png', '.gif', '.ico', '-example']
@@ -176,6 +176,9 @@ setup(
         'atlas',
         'atlas.settings',
         'atlas.common',
+        'atlas.postproduction',
+        'atlas.postproduction.deft',
+        'atlas.prodtask',
     ],
     data_files=[
                 # config files 
@@ -188,6 +191,7 @@ setup(
                                   "atlas/static",
                                   "atlas/media",
                                   "atlas/config-templates",
+                                  "atlas/prodtask/templates",
                 )
     ,         
     cmdclass={'install': install_panda,
