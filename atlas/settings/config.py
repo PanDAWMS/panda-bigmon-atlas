@@ -55,7 +55,8 @@ MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
 
-LOG_ROOT = 'logs'
+### LOG_ROOT = 'logs'
+LOG_ROOT = "/data/bigpandamon_virtualhosts/atlas/logs"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
