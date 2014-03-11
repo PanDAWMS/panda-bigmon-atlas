@@ -21,7 +21,7 @@ def prefetch_id(db, seq_name):
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotrics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
                                 'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
-    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING']]
+    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING','ANALYSIS']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='REQID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
@@ -39,9 +39,6 @@ class TRequest(models.Model):
             self.reqid = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ')
 
         super(TRequest, self).save(*args, **kwargs)
-
-
-
 
     class Meta:
         #db_table = u'T_PRODMANAGER_REQUEST'
@@ -246,3 +243,37 @@ class ProductionTask(models.Model):
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_TASK"'
+
+
+class MCPattern(models.Model):
+    STEPS = ['Evgen',
+             'Simul',
+             'Merge',
+             'Digi',
+             'Reco',
+             'Rec Merge',
+             'Rec TAG',
+             'Atlfast',
+             'Atlf Merge',
+             'Atlf TAG']
+    STATUS = [(x,x) for x in ['IN USE','Obsolete']]
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='MCP_ID', primary_key=True)
+    pattern_name =  models.CharField(max_length=150, db_column='PATTERN_NAME')
+    pattern_dict = models.CharField(max_length=2000, db_column='PATTERN_DICT')
+    pattern_status = models.CharField(max_length=20, db_column='PATTERN_STATUS', choices=STATUS)
+
+    def save_with_current_time(self, *args, **kwargs):
+        if not self.step_def_time:
+            self.step_def_time = timezone.now()
+        self.save(*args, **kwargs)
+
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ')
+        super(MCPattern, self).save(*args, **kwargs)
+
+    class Meta:
+        #db_table = u'T_PRODUCTION_STEP'
+        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PATTERN"'

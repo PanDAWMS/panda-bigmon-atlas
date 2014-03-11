@@ -25,6 +25,11 @@ urlpatterns = patterns('',
     
     url(r'^dpd_request_create/$',               'atlas.prodtask.request_views.dpd_request_create',  name='dpd_request_create'),
 
+    url(r'^mcpattern_table/$',                     'atlas.prodtask.request_views.mcpattern_table',  name='mcpattern_table'),
+    url(r'^mcpattern_create/$',                    'atlas.prodtask.request_views.mcpattern_create',  name='mcpattern_create'),
+    url(r'^mcpattern_clone/(?P<pattern_id>\d+)/$', 'atlas.prodtask.request_views.mcpattern_create',  name='mcpattern_create'),
+    url(r'^mcpattern_update/(?P<pattern_id>\d+)/$','atlas.prodtask.request_views.mcpattern_update',  name='mcpattern_update'),
+
     url(r'^task_table/$',               'atlas.prodtask.task_views.task_table',         name='task_table'),
     url(r'^task/(?P<rid>\d+)/$',        'atlas.prodtask.task_views.task_details',       name='task'),
     url(r'^task_clone/(?P<rid>\d+)/$',  'atlas.prodtask.task_views.task_clone',         name='task_clone'),
