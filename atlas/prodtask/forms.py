@@ -36,7 +36,6 @@ class MCPatternForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         steps = kwargs.pop('steps')
-
         super(MCPatternForm, self).__init__(*args, **kwargs)
         for step, value in steps:
             self.fields['custom_%s' % step] = CharField(label=step, required=False)
@@ -55,6 +54,12 @@ class MCPatternForm(ModelForm):
     class Meta:
         model = MCPattern
         exclude = ['id','pattern_dict']
+
+class MCPatternUpdateForm(MCPatternForm):
+
+    class Meta:
+        model = MCPattern
+        exclude = ['id','pattern_dict','pattern_name']
 
 
 class RequestUpdateForm(Form):

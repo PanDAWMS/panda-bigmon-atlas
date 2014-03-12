@@ -258,7 +258,7 @@ class MCPattern(models.Model):
              'Atlf TAG']
     STATUS = [(x,x) for x in ['IN USE','Obsolete']]
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='MCP_ID', primary_key=True)
-    pattern_name =  models.CharField(max_length=150, db_column='PATTERN_NAME')
+    pattern_name =  models.CharField(max_length=150, db_column='PATTERN_NAME', unique=True)
     pattern_dict = models.CharField(max_length=2000, db_column='PATTERN_DICT')
     pattern_status = models.CharField(max_length=20, db_column='PATTERN_STATUS', choices=STATUS)
 
