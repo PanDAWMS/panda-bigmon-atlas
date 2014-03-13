@@ -188,22 +188,23 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     cc = form.cleaned_data.get('cc', '')
                     del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
                         form.cleaned_data['excelfile']
-                    del form.cleaned_data['reqid']
+                    if 'reqid' in form.cleaned_data:
+                        del form.cleaned_data['reqid']
                     req = TRequest(**form.cleaned_data)
                     print form.cleaned_data
                     req.save()
-                    send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'],
-                              APP_SETTINGS['mcprod.default.email.list'] + cc.replace(';', ',').split(','),
-                              fail_silently=True)
+                    #send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'],
+                    #          APP_SETTINGS['mcprod.default.email.list'] + cc.replace(';', ',').split(','),
+                    #          fail_silently=True)
                     #print file_dict
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
-                        if input_data['dataset']:
-                            input_data['dataset'] = fill_dataset(input_data['dataset'])
+                        if input_data.get('dataset'):
+                                input_data['dataset'] = fill_dataset(input_data['dataset'])
                         irl = InputRequestList(**input_data)
                         irl.save()
-                        for step in current_slice['step_exec_dict']:
+                        for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], step['step_exec']['priority'],
                                                step.get('formats', None), step.get('memory', None))
                             step['step_exec']['request'] = req
@@ -263,11 +264,10 @@ def dpd_request_create(request):
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
 
 
-def mcpattern_create_or_update(request, pattern_id, update):
+def mcpattern_create(request, pattern_id=None):
     if pattern_id:
         try:
             values = MCPattern.objects.values().get(id=pattern_id)
-            #print values
             pattern_dict = json.loads(values['pattern_dict'])
             pattern_step_list = [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
         except:
@@ -276,50 +276,51 @@ def mcpattern_create_or_update(request, pattern_id, update):
         values = {}
         pattern_step_list = [(step, '') for step in MCPattern.STEPS]
     if request.method == 'POST':
-        if update:
-            form = MCPatternUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
-        else:
-            form = MCPatternForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        form = MCPatternForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
         if form.is_valid():
-            steps_dict = form.steps_dict()
-            if update:
-                mcp = MCPattern.objects.get(id=pattern_id)
-                mcp.pattern_status=form.cleaned_data['pattern_status']
-                mcp.pattern_dict=json.dumps(steps_dict)
-            else:
-                mcp = MCPattern.objects.create(pattern_name=form.cleaned_data['pattern_name'],
-                                               pattern_status=form.cleaned_data['pattern_status'],
-                                               pattern_dict=json.dumps(steps_dict))
+            mcp = MCPattern.objects.create(pattern_name=form.cleaned_data['pattern_name'],
+                                           pattern_status=form.cleaned_data['pattern_status'],
+                                           pattern_dict=json.dumps(form.steps_dict()))
 
             mcp.save()
             return HttpResponseRedirect('/prodtask/mcpattern_table')
     else:
-        if update:
-            form = MCPatternUpdateForm(values, steps=pattern_step_list)
-        else:
-            form = MCPatternForm(values, steps=pattern_step_list)
-    if update:
-        pre_form_text = 'Updating of mcpattern: %s' % values['pattern_name']
-        submit_url = 'prodtask:mcpattern_update'
-    else:
-        pre_form_text = 'Creating of mcpattern'
-        submit_url = 'prodtask:mcpattern_create'
+         form = MCPatternForm(values, steps=pattern_step_list)
     return render(request, 'prodtask/_form.html', {
         'active_app': 'prodtask',
-        'pre_form_text': pre_form_text,
+        'pre_form_text': 'Creating of mcpattern',
         'form': form,
-        'submit_url': submit_url,
+        'submit_url': 'prodtask:mcpattern_create',
         'url_args': pattern_id,
         'parent_template': 'prodtask/_index.html',
     })
 
 
-def mcpattern_create(request, pattern_id=None):
-    return mcpattern_create_or_update(request, pattern_id, False)
-
-
 def mcpattern_update(request, pattern_id):
-    return mcpattern_create_or_update(request, pattern_id, True)
+    try:
+        values = MCPattern.objects.values().get(id=pattern_id)
+        pattern_dict = json.loads(values['pattern_dict'])
+        pattern_step_list = [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
+    except:
+        return HttpResponseRedirect('/prodtask/mcpattern_table')
+    if request.method == 'POST':
+        form = MCPatternUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        if form.is_valid():
+            mcp = MCPattern.objects.get(id=pattern_id)
+            mcp.pattern_status=form.cleaned_data['pattern_status']
+            mcp.pattern_dict=json.dumps(form.steps_dict())
+            mcp.save()
+            return HttpResponseRedirect('/prodtask/mcpattern_table')
+    else:
+        form = MCPatternUpdateForm(values, steps=pattern_step_list)
+    return render(request, 'prodtask/_form.html', {
+        'active_app': 'prodtask',
+        'pre_form_text': 'Updating of mcpattern: %s' % values['pattern_name'],
+        'form': form,
+        'submit_url': 'prodtask:mcpattern_update',
+        'url_args': pattern_id,
+        'parent_template': 'prodtask/_index.html',
+    })
 
 def mcpattern_list_from_json(json_pattern):
     pattern_dict = json.loads(json_pattern)
