@@ -22,7 +22,7 @@ class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotrics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
                                 'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING','ANALYSIS']]
-    reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='REQID', primary_key=True)
+    reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
     ref_link = models.CharField(max_length=256, db_column='REFERENCE_LINK', null=True, blank=True)
@@ -53,7 +53,7 @@ class RequestStatus(models.Model):
                     ('Approved', 'Approved'),
                     )
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='REQ_S_ID', primary_key=True)
-    request = models.ForeignKey(TRequest, db_column='REQID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID')
     comment = models.CharField(max_length=256, db_column='COMMENT', null=True)
     owner = models.CharField(max_length=32, db_column='OWNER', null=False)
     status = models.CharField(max_length=32, db_column='STATUS', choices=STATUS_TYPES, null=False)
@@ -70,8 +70,8 @@ class RequestStatus(models.Model):
         db_table = u'"ATLAS_DEFT"."T_PRODMANAGER_REQUEST_STATUS"'
 
 class StepTemplate(models.Model):
-    id =  models.DecimalField(decimal_places=0, max_digits=12,  db_column='STEP_ID', primary_key=True)
-    step = models.CharField(max_length=12, db_column='STEP', null=False)
+    id =  models.DecimalField(decimal_places=0, max_digits=12,  db_column='STEP_T_ID', primary_key=True)
+    step = models.CharField(max_length=12, db_column='STEP_NAME', null=False)
     def_time = models.DateTimeField(db_column='DEF_TIME', null=False)
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
     ctag = models.CharField(max_length=12, db_column='CTAG', null=False)
@@ -121,10 +121,10 @@ class Ttrfconfig(models.Model):
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
     #task = models.ForeignKey(ProducitonTask,db_column='TASK_ID')
-    task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_ID', null=True)
+    task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', null=True)
     #parent_task = models.ForeignKey(ProducitonTask,db_column='TASK_ID')
-    parent_task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_PID', null=True)
-    rid = models.DecimalField(decimal_places=0, max_digits=12, db_column='RID', null=True)
+    parent_task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=True)
+    rid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
     events = models.DecimalField(decimal_places=0, max_digits=7, db_column='EVENTS', null=True)
     files = models.DecimalField(decimal_places=0, max_digits=7, db_column='FILES', null=False)
@@ -140,7 +140,7 @@ class ProductionDataset(models.Model):
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
     dataset = models.ForeignKey(ProductionDataset, db_column='INPUTDATASET',null=True)
-    request = models.ForeignKey(TRequest, db_column='REQID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID')
     slice = models.DecimalField(decimal_places=0, max_digits=12, db_column='SLICE', null=False)
     brief = models.CharField(max_length=150, db_column='BRIEF')
     phys_comment = models.CharField(max_length=256, db_column='PHYSCOMMENT')
@@ -167,9 +167,9 @@ class StepExecution(models.Model):
              'Atlfast',
              'Atlf Merge',
              'Atlf TAG']
-    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_EX_ID', primary_key=True)
-    request = models.ForeignKey(TRequest, db_column='REQID')
-    step_template = models.ForeignKey(StepTemplate, db_column='STEP_ID')
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
+    request = models.ForeignKey(TRequest, db_column='PR_ID')
+    step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
     slice = models.ForeignKey(InputRequestList, db_column='IND_ID', null=False)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=False)
@@ -198,7 +198,7 @@ class StepExecution(models.Model):
 class ProductionTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     step = models.ForeignKey(StepExecution, db_column='STEP_ID')
-    request = models.ForeignKey(TRequest, db_column='REQID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID')
     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=False)
     name = models.CharField(max_length=130, db_column='TASKNAME', null=True)
     project = models.CharField(max_length=60, db_column='PROJECT', null=True)

@@ -9,6 +9,8 @@ from django.forms.widgets import TextInput
 
 
 class RequestForm(ModelForm):
+    cstatus =  CharField(label='Status', required=False)
+
     class Meta:
         model = TRequest
 
@@ -16,10 +18,12 @@ class RequestForm(ModelForm):
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
     cc = EmailField(required=False)
-
+    cstatus =  CharField(label='Status', required=False)
+    description = CharField(label='Description', widget=Textarea, required=False)
     class Meta:
         model = TRequest
         exclude = ['reqid']
+
 
 
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):

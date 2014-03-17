@@ -94,36 +94,55 @@ def mcfile_form_prefill(form_data, request):
     return spreadsheet_dict
 
 
+def step_from_tag(tag_name):
+    if tag_name[0] == 'r':
+        return 'Reco'
+    if tag_name[0] == 's':
+        return 'Simul'
+    if tag_name[0] == 't':
+        return 'Rec TAG'
+    if tag_name[0] == 'a':
+        return 'Atlfast'
+    return 'Reco'
+
+
 def dpd_form_prefill(form_data, request):
     file_name = None
     spreadsheet_dict = []
-    if (form_data.get('excellink')):
+    if form_data.get('excellink'):
         file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
-    if (form_data.get('excelfile')):
+    if form_data.get('excelfile'):
         file_name = request.FILES['excelfile']
     conf_parser = ConfigParser()
     with open(file_name) as file_obj:
         output_dict = conf_parser.parse_config(file_obj)
     #print output_dict
-    if ('group' in output_dict):
+    form_data['request_type'] = 'GROUP'
+    if 'group' in output_dict:
         form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
     if ('comment' in output_dict):
         form_data['description'] = output_dict['comment'][0]
 
-    if ('owner' in output_dict):
+    if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
-    if ('project' in output_dict):
+    if 'project' in output_dict:
         form_data['campaign'] = output_dict['project'][0]
-
+    if not form_data.get('cstatus'):
+        form_data['cstatus'] = 'Approved'
+    if not form_data.get('energy_gev'):
+        form_data['energy_gev'] = 8000
+    if not form_data.get('provenance'):
+        form_data['provenance'] = 'ATLAS'
     for slice_index, ds in enumerate(output_dict['ds']):
         st_sexec_list = []
         sexec = {}
         irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
                    input_data=output_dict.get('joboptions', [''])[0])
         if 'tag' in output_dict:
+            step_name = step_from_tag(output_dict['tag'][0])
             sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
                          input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-            st_sexec_list.append({'step_name': 'Reco', 'tag': output_dict['tag'][0], 'step_exec': sexec,
+            st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
                                   'memory': output_dict.get('ram', [None])[0],
                                   'formats': output_dict.get('formats', [None])[0]})
         spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})

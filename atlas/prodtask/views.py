@@ -1,5 +1,4 @@
-
-
+import json
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -7,7 +6,7 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 import core.datatables as datatables
 
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern
 from forms import StepExecutionForm
 
 
@@ -45,15 +44,6 @@ def about(request):
 
 
 
-def syncButton(request, rid=None):
-    if request.method == 'GET':
-        if rid:
-            print rid
-#            urFromSpds.fillAllFromSC2(int(rid)+2, '0AiEl32nvxJogdFhsbmRnNk80bm9qS29tTWhhSXdlVVE', APP_SETTINGS['task.auth']['user'], APP_SETTINGS['task.auth']['password'])
-        #urFromSpds.fillAllFromSC('0AiEl32nvxJogdFhsbmRnNk80bm9qS29tTWhhSXdlVVE', APP_SETTINGS['task.auth']['user'], APP_SETTINGS['task.auth']['password'])
-    return HttpResponseRedirect('/prodtask/request_table/')
-
-
 def input_list_approve(request, rid=None):
     if request.method == 'GET':
         try:
@@ -61,14 +51,15 @@ def input_list_approve(request, rid=None):
                 input_lists = InputRequestList.objects.filter(request=cur_request)
                 if not input_lists:
                     input_lists = []
-                #TODO: Change mock data on DB
-                pattern_list = ['af2_mc11c','af2_mc12a']
-                pd = {StepExecution.STEPS[0]:[{'idname':(StepExecution.STEPS[0]+'af2_mc11c'),'value':'e2683'},
-                                              {'idname':(StepExecution.STEPS[0]+'af2_mc12a'),'value':'e2684'}],
-                      StepExecution.STEPS[1]:[{'idname':(StepExecution.STEPS[1]+'af2_mc11c'),'value':'a220'},
-                                              {'idname':(StepExecution.STEPS[1]+'af2_mc12a'),'value':'a221'}]}
-                for i in range(2,len(StepExecution.STEPS)):
-                    pd.update({StepExecution.STEPS[i]:[]})
+                pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
+                pd = {}
+                pattern_list_name = [x.pattern_name for x in pattern_list]
+                for step in StepExecution.STEPS:
+                    id_value = []
+                    for pattern in pattern_list:
+                            id_value += [{'idname':step+pattern.pattern_name,'value':json.loads(pattern.pattern_dict).get(step,'')}]
+                    pd.update({step:id_value})
+
                 step_list = [{'name':x,'idname':x.replace(" ",''),'pattern':pd[x]} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',
@@ -76,7 +67,7 @@ def input_list_approve(request, rid=None):
                    'trequest': cur_request,
                    'inputLists': input_lists,
                    'step_list': step_list,
-                   'pattern_list': pattern_list
+                   'pattern_list': pattern_list_name
                    })
         except Exception, e:
             print e

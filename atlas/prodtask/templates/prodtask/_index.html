@@ -84,8 +84,5 @@ MC Production Monitoring
     {{ block.super }}
     $(".meter").tipTip({maxWidth: "auto", edgeOffset: 10});
 
-    $( "#syncsh" ).button().click(function( event ){
-            $.get("/mcprod/syncButton/"+$( "#lineinsps" ).val()+'/');
-            $( "#dialog" ).dialog({ width: 500 });
-        });
+
 {% endblock %}
