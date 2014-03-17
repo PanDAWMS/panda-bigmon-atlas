@@ -29,6 +29,19 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     return HttpResponseRedirect('/prodtask/step_execution_table/')
 
 
+def request_steps_approve(request, reqid=None):
+    if request.method == 'GET':
+        try:
+            cur_request = TRequest.objects.get(reqid=reqid)
+            steps_for_approve = StepExecution.objects.all().filter(request=cur_request)
+            for st in steps_for_approve:
+                st.status = 'Approved'
+                st.save()
+        except Exception, e:
+            #print e
+            return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+
 
 
 def home(request):
@@ -48,18 +61,31 @@ def input_list_approve(request, rid=None):
     if request.method == 'GET':
         try:
                 cur_request = TRequest.objects.get(reqid=rid)
-                input_lists = InputRequestList.objects.filter(request=cur_request)
-                if not input_lists:
-                    input_lists = []
+                input_lists_pre = InputRequestList.objects.filter(request=cur_request)
+                #input_lists = [x.update({'dataset_name':x.dataset.name}) for x in input_lists_pre]
+                if not input_lists_pre:
+                    input_lists_pre = []
+
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pd = {}
                 pattern_list_name = [x.pattern_name for x in pattern_list]
                 for step in StepExecution.STEPS:
                     id_value = []
                     for pattern in pattern_list:
-                            id_value += [{'idname':step+pattern.pattern_name,'value':json.loads(pattern.pattern_dict).get(step,'')}]
+                            id_value += [{'idname':step.replace(" ",'')+pattern.pattern_name,
+                                          'value':json.loads(pattern.pattern_dict).get(step,'')}]
                     pd.update({step:id_value})
-
+                step_exec_dict = {}
+                input_lists = []
+                for slice in input_lists_pre:
+                    step_execs = StepExecution.objects.filter(slice=slice)
+                    slice_steps = {}
+                    approved = 'Approved'
+                    for step in step_execs:
+                        slice_steps.update({step.step_template.step:step.step_template.ctag})
+                        if step.status!='Approved':
+                            approved = 'Not approved'
+                    input_lists.append((slice,[slice_steps.get(x,'') for x in StepExecution.STEPS],approved))
                 step_list = [{'name':x,'idname':x.replace(" ",''),'pattern':pd[x]} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',
@@ -67,12 +93,13 @@ def input_list_approve(request, rid=None):
                    'trequest': cur_request,
                    'inputLists': input_lists,
                    'step_list': step_list,
-                   'pattern_list': pattern_list_name
+                   'pattern_list': pattern_list_name,
+                   'pr_id': rid
                    })
         except Exception, e:
             print e
             #TODO: Error message
-            pass
+            return HttpResponseRedirect('/prodtask/request_table/')
     return HttpResponseRedirect('/prodtask/request_table/')
 
 class StepTemlateTable(datatables.DataTable):

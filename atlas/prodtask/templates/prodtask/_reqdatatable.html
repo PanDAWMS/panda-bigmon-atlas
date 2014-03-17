@@ -1,4 +1,5 @@
 {% extends parent_template %}
+{% load i18n %}
 {% load url from future %}
 {% load static from staticfiles %}
 
@@ -36,7 +37,7 @@ $(document).ready(function(){
     {% for pattern in pattern_list %}
     {% for step in step_list %}
       var name1 = "#{{ step.idname }}" + "{{pattern}}"
-      $(name1).css("display","none");
+      $(name1).css({"display":"none"});
     {% endfor %}
     {% endfor %}
   {% for step in step_list %}
@@ -44,6 +45,28 @@ $(document).ready(function(){
     $(name2).fadeIn("slow");
    {% endfor %}
   });
+$(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black"});
+
+
+
+var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
+ {% for step in step_list %}
+    $("#start_step{{ step.name }}").css({"background-color":step_bc[0]});
+    step_bc[0] = $("#start_step{{ step.name }}").css("background-color")
+
+ {% endfor %}
+
+    $(".stepchoose").click(function(){
+        var current_color = $(this).css("background-color");
+        var current_index = (step_bc.indexOf(current_color)+1)%step_bc.length;
+        $(this).css({"background-color":step_bc[current_index]});
+        step_bc[current_index] =  $(this).css("background-color")
+
+    })  ;
+
+    $("#approveButton").click(function(){
+      $.get("{% url 'prodtask:request_steps_approve' pr_id %}");
+    });
 });
 
 
@@ -62,49 +85,83 @@ $(document).ready(function(){
   <td>{{ trequest.phys_group}}</td>
 </tr>
 </table>
-<button id="bind" title="Create step execution">Bind</button>
+<table>
+    <tr>
+
+        <td><button id="bind" title="Create step execution">Bind</button></td>
+        <td><button id="approveButton" title="Approve">Approve</button></td>
+    </tr>
+</table>
 <select id="select_pattern" >
-<option value="" disabled selected>Select pattern</option>
-{% for pattern in pattern_list %}
-<option value="{{ pattern }}">{{ pattern }}</option>
-{% endfor %}
+    <option value="" disabled selected>Select pattern</option>
+    {% for pattern in pattern_list %}
+        <option value="{{ pattern }}">{{ pattern }}</option>
+    {% endfor %}
 </select>
 
 <br>
-
-<form>
 <p>Choose start step</p>
-<table>
+<form >
 
+<table style="margin-left: 50px;border: 1px solid black">
+<tr>
 {% for step in step_list %}
-<tr>
-<td><input type="radio" name="start_step" >{{step.name}}</td>
-<td>
-{% for sp in step.pattern %}
-<div id="{{sp.idname}}" style="display:none" >{{sp.value}}</div>
+        <th class="stepchoose" id="start_step{{step.name}}"  > <div > {{step.name}}</div></th>
 {% endfor %}
-</td>
 </tr>
-{% endfor %}
+    <tr>
+    {% for step in step_list %}
+        <td  style="padding: 0px;width: 50px" >
+        {% for sp in step.pattern %}
+            <div id="{{sp.idname}}" style="display:none">
+                <form><input type="text"  id="form{{sp.idname}}" value="{{sp.value}}"></form>
+            </div>
+        {% endfor %}
+        </td>
+    {% endfor %}
+    </tr>
+</table>
 </form>
-<table>
-<tr>
-  <th>ID:</th>
-  <th>slice:</th>
-  <th>brief:</th>
-  <th>input data:</th>
-</tr>
-<tr>
-    {% for inputList in inputLists %}
-	<tr>
 
-		<td>{{ inputList.id }}</td>
-		<td>{{ inputList.slice }}</td>
-		<td>{{ inputList.brief }}</td>
-		<td>{{ inputList.input_data }}</td>
-	</tr>
+
+{#<tr>#}
+{#  <th>ID:</th>#}
+{#  <th>slice:</th>#}
+{#  <th>brief:</th>#}
+{#  <th>input data:</th>#}
+{#</tr>#}
+
+    {% for inputList, step_exec_dict, approved in inputLists %}
+        <div class="input_list_divs" >
+            <table class="input_list_tables" style="padding:0px;border: 1px solid black">
+            <tr>
+
+                <td style="width: 50px"><form>{{ inputList.slice }}
+                    <input type="checkbox" id="{{ inputList.id }}"></form></td>
+                <td colspan="10" style="width: 500px" >
+                    <span title="{{ inputList.dataset.name }}">
+                        {{ inputList.dataset.name|truncatechars:"58" }}
+                    </span>
+                </td>
+                <td>{{ inputList.input_data }}</td>
+                <td>{{ inputList.brief }}</td>
+            </tr>
+            <tr>
+                <td style="width: 50px"> </td>
+                {% for step in step_exec_dict %}
+                    <td class="stepchoose" >{{ step }}</td>
+
+                {% endfor %}
+                {% ifequal approved "Approved" %}
+                    <td colspan="2" style="color: greenyellow"> Approved </td>
+                {% endifequal %}
+                {% ifequal approved "Not approved" %}
+                    <td colspan="2" style="color: red"> Not approved </td>
+                {% endifequal %}
+            </tr>
+            </table>
+        </div>
 	{% endfor %}
 
-</tr>
-</table>
+
 {% endblock %}
