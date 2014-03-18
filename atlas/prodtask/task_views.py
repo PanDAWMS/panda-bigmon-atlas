@@ -13,17 +13,18 @@ from .models import ProductionTask
 def task_details(request, rid=None):
    if rid:
        try:
-           req = ProductionTask.objects.get(id=rid)
-           form = ProductionTaskForm(instance=req)
+           task = ProductionTask.objects.get(id=rid)
+          # form = ProductionTaskForm(instance=req)
        except:
            return HttpResponseRedirect('/')
    else:
        return HttpResponseRedirect('/')
 
-   return render(request, 'prodtask/_form.html', {
+   return render(request, 'prodtask/_task_detail.html', {
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
-       'form': form,
+       'task': task,
+       'fields': task._meta.get_all_field_names(),
        'parent_template' : 'prodtask/_index.html',
    })
 
@@ -131,7 +132,61 @@ class ProductionTaskTable(datatables.DataTable):
     status = datatables.Column(
         label='Status',
         )
+        
+    phys_group = datatables.Column(
+        label='Phys group',
+        )
+        
+    provenance = datatables.Column(
+        label='Provenance',
+        )
+        
+ 
 
+
+    total_events = datatables.Column(
+        label='Total events',
+        )
+
+    total_req_jobs = datatables.Column(
+        label='Total req jobs',
+        )
+
+    total_done_jobs = datatables.Column(
+        label='Total done jobs',
+        )
+
+    submit_time = datatables.Column(
+        label='Submit time',
+        )
+        
+    start_time = datatables.Column(
+        label='Start time',
+        )
+        
+    timestamp = datatables.Column(
+        label='Timestamp',
+        )
+
+    bug_report = datatables.Column(
+        label='Bug report',
+        )
+
+    priority = datatables.Column(
+        label='Priority',
+        )
+        
+    comments = datatables.Column(
+        label='Comments',
+        )
+        
+    inputdataset = datatables.Column(
+        label='Inputdataset',
+        )
+        
+    physics_tag = datatables.Column(
+        label='Physics tag',
+        )
 
     class Meta:
         model = ProductionTask
@@ -149,9 +204,9 @@ class ProductionTaskTable(datatables.DataTable):
         fnRowCallback =  """
                         function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
                         {
-                            $('td:eq(0)', nRow).html('<a href="/prodtask/task/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'+
+                            $('td:eq(0)', nRow).html('<a href="/prodtask/task/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'/*+
                                                      '<span style="float: right;" ><a href="/prodtask/task_update/'+aData[0]+'/">Update</a>&nbsp;'+
-                                                     '<a href="/prodtask/task_clone/'+aData[0]+'/">Clone</a></span>'
+                                                     '<a href="/prodtask/task_clone/'+aData[0]+'/">Clone</a></span>'*/
                             );
                             $('td:eq(1)', nRow).html('<a href="/prodtask/stepex/'+aData[1]+'/">'+aData[1]+'</a>');
                             $('td:eq(2)', nRow).html('<a href="/prodtask/request/'+aData[2]+'/">'+aData[2]+'</a>');

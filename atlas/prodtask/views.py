@@ -102,6 +102,23 @@ def input_list_approve(request, rid=None):
             return HttpResponseRedirect('/prodtask/request_table/')
     return HttpResponseRedirect('/prodtask/request_table/')
 
+    
+def step_template_details(request, rid=None):
+    if rid:
+        try:
+            step_template = StepTemplate.objects.get(id=rid)
+        except:
+            return HttpResponseRedirect('/')
+    else:
+        return HttpResponseRedirect('/')
+
+    return render(request, 'prodtask/_step_template_detail.html', {
+       'active_app' : 'prodtask',
+       'pre_form_text' : 'StepExecution details with ID = %s' % rid,
+       'step': step_template,
+       'parent_template' : 'prodtask/_index.html',
+   })
+    
 class StepTemlateTable(datatables.DataTable):
 
     id = datatables.Column(
@@ -134,7 +151,12 @@ class StepTemlateTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-
+        fnRowCallback =  """
+                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
+                        {
+                            $('td:eq(0)', nRow).html('<a href="/prodtask/step_template/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'
+                            );
+                        }"""
         sScrollX = '100em'
         sScrollY = '20em'
         bScrollCollapse = True
@@ -158,17 +180,16 @@ def step_template_table(request):
 def stepex_details(request, rid=None):
     if rid:
         try:
-            req = StepExecution.objects.get(id=rid)
-            form = StepExecutionForm(instance=req)
+            step_ex = StepExecution.objects.get(id=rid)
         except:
             return HttpResponseRedirect('/')
     else:
         return HttpResponseRedirect('/')
 
-    return render(request, 'prodtask/_form.html', {
+    return render(request, 'prodtask/_step_ex_detail.html', {
        'active_app' : 'prodtask',
        'pre_form_text' : 'StepExecution details with ID = %s' % rid,
-       'form': form,
+       'step_ex': step_ex,
        'parent_template' : 'prodtask/_index.html',
    })
 

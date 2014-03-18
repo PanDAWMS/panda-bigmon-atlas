@@ -10,9 +10,11 @@ urlpatterns = patterns('',
     #url(r'^syncButton/(?P<rid>\d+)/$', 'atlas.prodtask.views.syncButton', name='syncButton'),
 
     url(r'^step_template_table/$', 'atlas.prodtask.views.step_template_table', name='step_template_table'),
-
+    url(r'^step_template/(?P<rid>\d+)/$', 'atlas.prodtask.views.step_template_details', name='step_template'),
+    
     url(r'^step_execution_table/$', 'atlas.prodtask.views.step_execution_table', name='step_execution_table'),
     url(r'^stepex/(?P<rid>\d+)/$', 'atlas.prodtask.views.stepex_details', name='step_execution'),
+    
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
     #url(r'^taskpriority_table/$', 'task.views.taskpriority_table', name='taskpriority_table'),
 
