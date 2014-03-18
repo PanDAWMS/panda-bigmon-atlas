@@ -212,9 +212,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     req = TRequest(**form.cleaned_data)
                     print form.cleaned_data
                     req.save()
-                    #send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'],
-                    #          APP_SETTINGS['mcprod.default.email.list'] + cc.replace(';', ',').split(','),
-                    #          fail_silently=True)
+                    send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['mcprod.email.from'],
+                              APP_SETTINGS['mcprod.default.email.list'] + cc.replace(';', ',').split(','),
+                              fail_silently=True)
                     #print file_dict
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
