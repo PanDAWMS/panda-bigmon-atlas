@@ -14,9 +14,9 @@
 
 {% block body %}
 <table>
-    
+
 <tr><th><label for="id">Id:</label></th><td><a href="{% url 'prodtask:step_template' step.id %}">{{step.id}}</a></td></tr>
-<tr><th><label for="step">Step:</label></th><td>{{ step.step }}</td></tr>
+<tr><th><label for="step">Step name:</label></th><td>{{ step.step }}</td></tr>
 <tr><th><label for="def_time">Def time:</label></th><td>{{ step.def_time }}</td></tr>
 <tr><th><label for="status">Status:</label></th><td>{{ step.status }}</td></tr>
 <tr><th><label for="ctag">CTag:</label></th><td>{{ step.ctag }}</td></tr>

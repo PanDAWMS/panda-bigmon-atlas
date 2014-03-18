@@ -102,7 +102,7 @@ def input_list_approve(request, rid=None):
             return HttpResponseRedirect('/prodtask/request_table/')
     return HttpResponseRedirect('/prodtask/request_table/')
 
-    
+
 def step_template_details(request, rid=None):
     if rid:
         try:
@@ -114,11 +114,11 @@ def step_template_details(request, rid=None):
 
     return render(request, 'prodtask/_step_template_detail.html', {
        'active_app' : 'prodtask',
-       'pre_form_text' : 'StepExecution details with ID = %s' % rid,
+       'pre_form_text' : 'StepTemplate details with ID = %s' % rid,
        'step': step_template,
        'parent_template' : 'prodtask/_index.html',
    })
-    
+
 class StepTemlateTable(datatables.DataTable):
 
     id = datatables.Column(
