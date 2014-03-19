@@ -45,8 +45,12 @@ $(document).ready(function(){
     $(name2).fadeIn("slow");
    {% endfor %}
   });
-$(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black"});
 
+$(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
+                         "cursor":"pointer","user-select": "none"});
+$(".inputListRow").children("td").css({"padding":"1px"})
+$(".input_list_tables").css({"border": "1px solid black","margin": "1px"})
+$(".outside_input_list_tables").css({"border": "hidden","margin": "1px"})
 
 
 var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
@@ -64,12 +68,13 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
 
     })  ;
 
-    $("#approveButton").click(function(){
-      $.get("{% url 'prodtask:request_steps_approve' pr_id %}");
-    });
+
 });
 
-
+    function approve_click(event){
+        event.preventDefault();
+        window.location.replace("{% url 'prodtask:request_steps_approve' pr_id %}");
+    };
 </script>
 <table>
 <tr>
@@ -85,25 +90,28 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
   <td>{{ trequest.phys_group}}</td>
 </tr>
 </table>
-<table>
-    <tr>
 
-        <td><button id="bind" title="Create step execution">Bind</button></td>
-        <td><button id="approveButton" title="Approve">Approve</button></td>
-    </tr>
-</table>
-<select id="select_pattern" >
-    <option value="" disabled selected>Select pattern</option>
-    {% for pattern in pattern_list %}
-        <option value="{{ pattern }}">{{ pattern }}</option>
-    {% endfor %}
-</select>
-
-<br>
-<p>Choose start step</p>
+<h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+<h6> With pattern: {{ pattern }}</h6>
+<form>Filter:<input type="text" id="filter" style="width: 500px"></form>
 <form >
 
-<table style="margin-left: 50px;border: 1px solid black">
+<table style="margin-left: 50px;border: hidden">
+<tr>
+    <th colspan="10">
+        <select id="select_pattern" >
+            <option value="" disabled selected>Select pattern</option>
+            {% for pattern in pattern_list %}
+                <option value="{{ pattern }}">{{ pattern }}</option>
+            {% endfor %}
+        </select>
+    </th>
+    <th rowspan="2">
+        <td><button id="bind" title="Create step execution">Bind</button></td>
+        <td><button id="approveButton" title="Approve" onclick="approve_click(event);">Approve</button></td>
+    </th>
+
+</tr>
 <tr>
 {% for step in step_list %}
         <th class="stepchoose" id="start_step{{step.name}}"  > <div > {{step.name}}</div></th>
@@ -124,33 +132,36 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
 </form>
 
 
-{#<tr>#}
-{#  <th>ID:</th>#}
-{#  <th>slice:</th>#}
-{#  <th>brief:</th>#}
-{#  <th>input data:</th>#}
-{#</tr>#}
-
+    <div >
     {% for inputList, step_exec_dict, approved in inputLists %}
         <div class="input_list_divs" >
-            <table class="input_list_tables" style="padding:0px;border: 1px solid black">
-            <tr>
-
-                <td style="width: 50px"><form>{{ inputList.slice }}
-                    <input type="checkbox" id="{{ inputList.id }}"></form></td>
-                <td colspan="10" style="width: 500px" >
-                    <span title="{{ inputList.dataset.name }}">
-                        {{ inputList.dataset.name|truncatechars:"58" }}
-                    </span>
-                </td>
-                <td>{{ inputList.input_data }}</td>
+        <table class="outside_input_list_tables"><tr>
+            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" id="{{ inputList.id }}" checked></form></td>
+            <td style="padding:0px;margin:0px">
+            <table class="input_list_tables" >
+            <tr class="inputListRow">
+                <td style="width: 20px" >{{ inputList.slice }}</td>
+                {% if  inputList.input_data|length < 10  %}
+                    <td colspan="10" style="width: 500px" >
+                        <span style="padding:0px" title="{{ inputList.dataset.name }}">
+                            {{ inputList.dataset.name|truncatechars:"58" }}
+                        </span>
+                    </td>
+                    <td>{{ inputList.input_data }}</td>
+                {% else %}
+                    <td colspan="10" style="width: 500px" >
+                        <span style="padding:0px" title="{{ inputList.input_data }}">
+                            {{ inputList.input_data|truncatechars:"58" }}
+                        </span>
+                    </td>
+                    <td>{{  inputList.dataset.name }}</td>
+                {% endif %}
                 <td>{{ inputList.brief }}</td>
             </tr>
-            <tr>
-                <td style="width: 50px"> </td>
+            <tr class="inputListRow">
+                <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
                     <td class="stepchoose" >{{ step }}</td>
-
                 {% endfor %}
                 {% ifequal approved "Approved" %}
                     <td colspan="2" style="color: greenyellow"> Approved </td>
@@ -160,8 +171,10 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                 {% endifequal %}
             </tr>
             </table>
+        </td>
+        </tr></table>
         </div>
 	{% endfor %}
-
+    </div>
 
 {% endblock %}

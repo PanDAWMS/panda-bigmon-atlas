@@ -1,4 +1,5 @@
 import json
+import os
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -32,13 +33,14 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
 def request_steps_approve(request, reqid=None):
     if request.method == 'GET':
         try:
+            print reqid
             cur_request = TRequest.objects.get(reqid=reqid)
             steps_for_approve = StepExecution.objects.all().filter(request=cur_request)
             for st in steps_for_approve:
                 st.status = 'Approved'
                 st.save()
         except Exception, e:
-            #print e
+            print e
             return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
     return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
 
@@ -60,12 +62,6 @@ def about(request):
 def input_list_approve(request, rid=None):
     if request.method == 'GET':
         try:
-                cur_request = TRequest.objects.get(reqid=rid)
-                input_lists_pre = InputRequestList.objects.filter(request=cur_request)
-                #input_lists = [x.update({'dataset_name':x.dataset.name}) for x in input_lists_pre]
-                if not input_lists_pre:
-                    input_lists_pre = []
-
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pd = {}
                 pattern_list_name = [x.pattern_name for x in pattern_list]
@@ -75,17 +71,48 @@ def input_list_approve(request, rid=None):
                             id_value += [{'idname':step.replace(" ",'')+pattern.pattern_name,
                                           'value':json.loads(pattern.pattern_dict).get(step,'')}]
                     pd.update({step:id_value})
+                cur_request = TRequest.objects.get(reqid=rid)
+                input_lists_pre = InputRequestList.objects.filter(request=cur_request)
+                #input_lists = [x.update({'dataset_name':x.dataset.name}) for x in input_lists_pre]
                 step_exec_dict = {}
                 input_lists = []
-                for slice in input_lists_pre:
-                    step_execs = StepExecution.objects.filter(slice=slice)
-                    slice_steps = {}
-                    approved = 'Approved'
-                    for step in step_execs:
-                        slice_steps.update({step.step_template.step:step.step_template.ctag})
-                        if step.status!='Approved':
-                            approved = 'Not approved'
-                    input_lists.append((slice,[slice_steps.get(x,'') for x in StepExecution.STEPS],approved))
+                approved_count = 0
+                total_slice = 0
+                slice_pattern = []
+                if not input_lists_pre:
+                    input_lists_pre = []
+                else:
+                    use_input_date_for_pattern = True
+                    if not input_lists_pre[0].input_data:
+                        use_input_date_for_pattern = False
+                    if use_input_date_for_pattern:
+                        slice_pattern = input_lists_pre[0].input_data.split('.')
+                    else:
+                        slice_pattern = input_lists_pre[0].dataset.name.split('.')
+                    for slice in input_lists_pre:
+                        step_execs = StepExecution.objects.filter(slice=slice)
+                        slice_steps = {}
+                        total_slice += 1
+                        approved = 'Approved'
+                        if use_input_date_for_pattern:
+                            current_slice_pattern = slice.input_data.split('.')
+                        else:
+                            current_slice_pattern = slice.dataset.name.split('.')
+                        for index,token in enumerate(current_slice_pattern):
+                            if index >= len(slice_pattern):
+                                slice_pattern.append(token)
+                            else:
+                                if token!=slice_pattern[index]:
+                                    slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
+                                    slice_pattern[index] += '*'
+                        for step in step_execs:
+                            slice_steps.update({step.step_template.step:step.step_template.ctag})
+                            if step.status!='Approved':
+                                approved = 'Not approved'
+                        if approved == 'Approved':
+                            approved_count += 1
+                        input_lists.append((slice,[slice_steps.get(x,'') for x in StepExecution.STEPS],approved))
+
                 step_list = [{'name':x,'idname':x.replace(" ",''),'pattern':pd[x]} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',
@@ -94,7 +121,10 @@ def input_list_approve(request, rid=None):
                    'inputLists': input_lists,
                    'step_list': step_list,
                    'pattern_list': pattern_list_name,
-                   'pr_id': rid
+                   'pr_id': rid,
+                   'approvedCount': approved_count,
+                   'pattern': '.'.join(slice_pattern),
+                   'totalSlice':total_slice
                    })
         except Exception, e:
             print e
