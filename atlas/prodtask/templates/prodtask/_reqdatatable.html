@@ -68,6 +68,24 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
 
     })  ;
 
+    $(".show_full_span").click(function(){
+       $(this).parent().parent().parent().hide(0);
+       $(this).parentsUntil(".input_list_divs").children(".input_list_tables_long").show(0);
+
+        return false;
+
+    });
+    $(".show_small_span").click(function(){
+
+
+       $(this).parent().parent().parent().siblings(".input_list_tables").show(0);
+       $(this).parent().parent().parent().siblings(".input_list_tables").children().show(0);
+        $(this).parent().parent().parent().hide(0);
+         return false;
+
+    });
+    $(".show_full_span").css({"cursor":"pointer"});
+    $(".show_small_span").css({"cursor":"pointer"});
 
 });
 
@@ -143,14 +161,14 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                 <td style="width: 20px" >{{ inputList.slice }}</td>
                 {% if  inputList.input_data|length < 10  %}
                     <td colspan="10" style="width: 500px" >
-                        <span style="padding:0px" title="{{ inputList.dataset.name }}">
+                        <span class='show_full_span' style="padding:0px" title="{{ inputList.dataset.name }}">
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
                     <td>{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span style="padding:0px" title="{{ inputList.input_data }}">
+                        <span class='show_full_span' style="padding:0px" title="{{ inputList.input_data }}">
                             {{ inputList.input_data|truncatechars:"58" }}
                         </span>
                     </td>
@@ -170,6 +188,43 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                     <td colspan="2" style="color: red"> Not approved </td>
                 {% endifequal %}
             </tr>
+            </table>
+            <table class="input_list_tables_long" style="display: none">
+                <tr><td style="width: 20px" class='show_small_span' >{{ inputList.slice }}</td>
+                 <td colspan="11">Dataset: {{ inputList.dataset.name }}</td></tr>
+                <tr><td></td><td colspan="11">JobOption: {{ inputList.input_data }}</td></tr>
+                <tr><td></td><td colspan="11">Brief: {{ inputList.brief }}</td></tr>
+                <tr><td></td><td colspan="9">
+                    <select id="select_pattern" >
+                        <option value="" disabled selected>Select pattern</option>
+                        {% for pattern in pattern_list %}
+                            <option value="{{ pattern }}">{{ pattern }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td><button id="bind" title="Create step execution">Bind</button></td>
+                <td><button id="approveButton" title="Approve" >Approve</button></td>
+                <tr>
+                <th rowspan="2"></th>
+                {% for step in step_list %}
+                        <th class="stepchoose" id="start_step{{step.name}}{{ inputList.slice  }}"  > <div > {{step.name}}</div></th>
+                {% endfor %}
+                {% ifequal approved "Approved" %}
+                    <th rowspan="2" style="color: greenyellow"> Approved </th>
+                {% endifequal %}
+                {% ifequal approved "Not approved" %}
+                    <th rowspan="2" style="color: red"> Not approved </th>
+                {% endifequal %}
+                </tr>
+                    <tr>
+                    {% for step in step_exec_dict %}
+                        <td  style="padding: 0px;width: 50px" >
+                            <div  >
+                                <form><input type="text"  value="{{ step }}"></form>
+                            </div>
+                        </td>
+                    {% endfor %}
+                    </tr>
             </table>
         </td>
         </tr></table>
