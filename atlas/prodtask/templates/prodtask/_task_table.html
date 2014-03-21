@@ -1,0 +1,129 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+	
+  <style type="text/css">
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : darkblue;	}
+	span.submitting	{ color : orange;	}
+	span.archived 	{ color : magenta;	}
+ 	span.submitted	{ color : green;	}
+	span.running 	{ color : green;	}
+	span.done 		{ color : tomato;	}
+	span.finished	{ color : tomato;	}
+	span.failed 	{ color : magenta;	}
+	span.aborted	{ color : orange;	}
+    span.registered { color : aquamarine;}
+  </style>
+  
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<table>
+<tr>
+<td>
+<table><thead><tr>
+    <th><span class="total">total</span></th>
+{% for stat in status_stat %}
+	<th><span class="{{ stat.status }}">{{ stat.status }}</span></th>
+{% endfor %}
+</tr></thead>
+    <td><span class="total">{{ total_task }}</span></td>
+{% for stat in status_stat %}
+	<td>{{ stat.count }}</td>
+{% endfor %}
+</tr></tbody>
+</table>
+</td>
+<td>
+<table>
+    <tr>
+        <td>Project:</td>
+        <td>
+        <select id="project">
+            <option value="">--- ({{ total_task }} tasks)</option>
+        {% for project in projects %}
+            <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Request:</td>
+        <td>
+        <select id="request">
+            <option value="">--- ({{ total_task }} tasks)</option>
+        {% for request in requests %}
+            <option value="{{ request.request__reqid }}">{{ request.request__reqid }} ({{ request.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Parent:</td>
+        <td>
+        <select id="parent">
+            <option value="">--- ({{ total_task }} tasks)</option>
+        {% for parent in parents %}
+            <option value="{{ parent.parent_id }}">{{ parent.parent_id }} ({{ parent.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+</table>
+</td>
+</tr>
+</table>
+{{ table.as_html }}
+ 
+<script type="text/javascript">
+$(document).ready(function() {
+
+                        $("#request").change(function () {
+                                taskTable.fnFilter( $(this).val(), 2 );
+                            });
+                        $("#parent").change(function () {
+                                taskTable.fnFilter( $(this).val(), 3 );
+                            });
+                        $("#project").change(function () {
+                                taskTable.fnFilter( $(this).val(), 5 );
+                            });
+
+                            
+                        $("#project").val('user');
+                        
+                        taskTable.fnFilter( 'user', 5 );
+                        
+                        $("#request").val('');
+                        $("#parent").val('');
+});
+ </script>
+{% endblock %}
+

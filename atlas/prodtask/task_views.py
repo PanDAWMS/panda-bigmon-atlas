@@ -8,7 +8,9 @@ from django.template.response import TemplateResponse
 import core.datatables as datatables
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask
+from .models import ProductionTask, TRequest
+
+from django.db.models import Count
 
 def task_details(request, rid=None):
    if rid:
@@ -108,17 +110,19 @@ class ProductionTaskTable(datatables.DataTable):
 
     step = datatables.Column(
         label='StepEx',
-        model_field='step__id'
+        model_field='step__id',
+        bVisible='false',        
         )
-
 
     request = datatables.Column(
         label='Request',
-        model_field='request__reqid'
+        model_field='request__reqid',
+        bVisible='false',
         )
 
     parent_id = datatables.Column(
         label='Parent id',
+        bVisible='false',
         )
 
     name = datatables.Column(
@@ -127,6 +131,8 @@ class ProductionTaskTable(datatables.DataTable):
 
     project = datatables.Column(
         label='Project',
+        bVisible='false',
+#        sSearch='user',
         )
 
     status = datatables.Column(
@@ -140,9 +146,6 @@ class ProductionTaskTable(datatables.DataTable):
     provenance = datatables.Column(
         label='Provenance',
         )
-        
- 
-
 
     total_events = datatables.Column(
         label='Total events',
@@ -176,13 +179,13 @@ class ProductionTaskTable(datatables.DataTable):
         label='Priority',
         )
         
-    comments = datatables.Column(
-        label='Comments',
-        )
+#    comments = datatables.Column(
+#        label='Comments',
+#        )
         
-    inputdataset = datatables.Column(
-        label='Inputdataset',
-        )
+#    inputdataset = datatables.Column(
+#        label='Inputdataset',
+#        )
         
     physics_tag = datatables.Column(
         label='Physics tag',
@@ -190,6 +193,9 @@ class ProductionTaskTable(datatables.DataTable):
 
     class Meta:
         model = ProductionTask
+        
+        id = 'task_table'
+        var = 'taskTable'
         bSort = True
         bPaginate = True
         bJQueryUI = True
@@ -199,8 +205,8 @@ class ProductionTaskTable(datatables.DataTable):
         bScrollCollapse = True
 
         aaSorting = [[0, "desc"]]
-        aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
-        iDisplayLength = 10
+        aLengthMenu = [[20, 100, -1], [20, 100, "All"]]
+        iDisplayLength = 20
         fnRowCallback =  """
                         function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
                         {
@@ -208,12 +214,18 @@ class ProductionTaskTable(datatables.DataTable):
                                                      '<span style="float: right;" ><a href="/prodtask/task_update/'+aData[0]+'/">Update</a>&nbsp;'+
                                                      '<a href="/prodtask/task_clone/'+aData[0]+'/">Clone</a></span>'*/
                             );
-                            $('td:eq(1)', nRow).html('<a href="/prodtask/stepex/'+aData[1]+'/">'+aData[1]+'</a>');
-                            $('td:eq(2)', nRow).html('<a href="/prodtask/request/'+aData[2]+'/">'+aData[2]+'</a>');
+                          /*  $('td:eq(1)', nRow).html('<a href="/prodtask/stepex/'+aData[1]+'/">'+aData[1]+'</a>');
+                            $('td:eq(2)', nRow).html('<a href="/prodtask/request/'+aData[2]+'/">'+aData[2]+'</a>');*/
+							$('td:eq(2)', nRow).html('<span class="'+aData[6]+'">'+aData[6]+'</span>');
+							
+							$('td:eq(8)', nRow).html( aData[12]=='None'? 'None' : aData[12].slice(0,-6) );
+							$('td:eq(9)', nRow).html( aData[13]=='None'? 'None' : aData[13].slice(0,-6) );
+							$('td:eq(10)', nRow).html( aData[14]=='None'? 'None' : aData[14].slice(0,-13)  );
                         }"""
 
         bServerSide = True
         sAjaxSource = '/prodtask/task_table/'
+        
 
 
 
@@ -221,6 +233,20 @@ class ProductionTaskTable(datatables.DataTable):
 def task_table(request):
     qs = request.fct.get_queryset()
     request.fct.update_queryset(qs)
-    return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'Production Tasks Table', 'active_app' : 'prodtask', 'table': request.fct,
-                                                                'parent_template': 'prodtask/_index.html'})
+    
+    status_stat = ProductionTask.objects.values('status').annotate(count=Count('id'))
+    total_task = ProductionTask.objects.count()
+    projects = ProductionTask.objects.values('project').annotate(count=Count('id'))
+    parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
+    requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id'))
+    return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
+                                                                    'active_app' : 'prodtask',
+                                                                    'table': request.fct,
+                                                                    'parent_template': 'prodtask/_index.html',
+                                                                    'status_stat' : status_stat,
+                                                                    'total_task' : total_task,
+                                                                    'projects'  : projects,
+                                                                    'requests'  : requests,
+                                                                    'parents'   : parents,
+                                                                    })
 
