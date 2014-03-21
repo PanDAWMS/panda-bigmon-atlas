@@ -49,7 +49,7 @@
 <table>
 <tr>
 <td>
-<table><thead><tr>
+<table><thead><tr><th>Task statistics</th></tr><tr>
     <th><span class="total">total</span></th>
 {% for stat in status_stat %}
 	<th><span class="{{ stat.status }}">{{ stat.status }}</span></th>
@@ -65,10 +65,14 @@
 <td>
 <table>
     <tr>
+        <td>Filter:</td>
+        <td>Value</td>
+    </tr>
+    <tr>
         <td>Project:</td>
         <td>
         <select id="project">
-            <option value="">--- ({{ total_task }} tasks)</option>
+            <option value="">All ({{ total_task }} tasks)</option>
         {% for project in projects %}
             <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
         {% endfor %}
@@ -79,7 +83,7 @@
         <td>Request:</td>
         <td>
         <select id="request">
-            <option value="">--- ({{ total_task }} tasks)</option>
+            <option value="">All ({{ total_task }} tasks)</option>
         {% for request in requests %}
             <option value="{{ request.request__reqid }}">{{ request.request__reqid }} ({{ request.count }} tasks)</option>
         {% endfor %}
@@ -90,7 +94,7 @@
         <td>Parent:</td>
         <td>
         <select id="parent">
-            <option value="">--- ({{ total_task }} tasks)</option>
+            <option value="">All ({{ total_task }} tasks)</option>
         {% for parent in parents %}
             <option value="{{ parent.parent_id }}">{{ parent.parent_id }} ({{ parent.count }} tasks)</option>
         {% endfor %}
