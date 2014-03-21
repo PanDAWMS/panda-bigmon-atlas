@@ -200,6 +200,7 @@ class ProductionTask(models.Model):
     step = models.ForeignKey(StepExecution, db_column='STEP_ID')
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=False)
+    chain_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=False)
     name = models.CharField(max_length=130, db_column='TASKNAME', null=True)
     project = models.CharField(max_length=60, db_column='PROJECT', null=True)
     dsn = models.CharField(max_length=12, db_column='DSN', null=True)

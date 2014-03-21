@@ -111,13 +111,13 @@ class ProductionTaskTable(datatables.DataTable):
     step = datatables.Column(
         label='StepEx',
         model_field='step__id',
-        bVisible='false',        
+  #      bVisible='false',        
         )
 
     request = datatables.Column(
         label='Request',
         model_field='request__reqid',
-        bVisible='false',
+ #       bVisible='false',
         )
 
     parent_id = datatables.Column(
@@ -131,10 +131,16 @@ class ProductionTaskTable(datatables.DataTable):
 
     project = datatables.Column(
         label='Project',
-        bVisible='false',
+#        bVisible='false',
 #        sSearch='user',
         )
-
+        
+    chain_tid = datatables.Column(
+        label='Chain',
+#        bVisible='false',
+#        sSearch='user',
+        )
+        
     status = datatables.Column(
         label='Status',
         )
@@ -179,9 +185,9 @@ class ProductionTaskTable(datatables.DataTable):
         label='Priority',
         )
         
-#    comments = datatables.Column(
-#        label='Comments',
-#        )
+    comments = datatables.Column(
+        label='Comments',
+        )
         
 #    inputdataset = datatables.Column(
 #        label='Inputdataset',
@@ -207,21 +213,49 @@ class ProductionTaskTable(datatables.DataTable):
         aaSorting = [[0, "desc"]]
         aLengthMenu = [[20, 100, -1], [20, 100, "All"]]
         iDisplayLength = 20
-        fnRowCallback =  """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<a href="/prodtask/task/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'/*+
-                                                     '<span style="float: right;" ><a href="/prodtask/task_update/'+aData[0]+'/">Update</a>&nbsp;'+
-                                                     '<a href="/prodtask/task_clone/'+aData[0]+'/">Clone</a></span>'*/
-                            );
-                          /*  $('td:eq(1)', nRow).html('<a href="/prodtask/stepex/'+aData[1]+'/">'+aData[1]+'</a>');
-                            $('td:eq(2)', nRow).html('<a href="/prodtask/request/'+aData[2]+'/">'+aData[2]+'</a>');*/
-							$('td:eq(2)', nRow).html('<span class="'+aData[6]+'">'+aData[6]+'</span>');
-							
-							$('td:eq(8)', nRow).html( aData[12]=='None'? 'None' : aData[12].slice(0,-6) );
-							$('td:eq(9)', nRow).html( aData[13]=='None'? 'None' : aData[13].slice(0,-6) );
-							$('td:eq(10)', nRow).html( aData[14]=='None'? 'None' : aData[14].slice(0,-13)  );
-                        }"""
+
+        fnServerParams = """
+                            function ( aoData ) {
+                                    aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
+                                }
+                        """
+        
+        fnServerData =  """
+                        function ( sSource, aoData, fnCallback, oSettings ) {
+                            
+                          function prepareData( data, textStatus, jqXHR )
+                          {
+                            for(var i in data['aaData'])
+                            {
+                                var row = data['aaData'][i];
+                                
+                                row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>&nbsp;&nbsp;'; /*+
+                                                     '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
+                                                     '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
+
+                                row[1] = '<a href="/prodtask/stepex/'+row[1]+'/">'+row[1]+'</a>';
+	                            row[2] = '<a href="/prodtask/request/'+row[2]+'/">'+row[2]+'</a>';
+                                                     
+                                row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
+                                
+							    row[13] = row[13]=='None'? 'None' : row[13].slice(0,-6) ;
+                                row[14] = row[14]=='None'? 'None' : row[14].slice(0,-6) ;
+                                row[15] = row[15]=='None'? 'None' : row[15].slice(0,-6) ;
+							}
+                            fnCallback( data, textStatus, jqXHR );
+                          }
+                        
+                          oSettings.jqXHR = $.ajax( {
+                            "dataType": 'json',
+                            "type": "GET",
+                            "url": sSource,
+                            "data": aoData,
+                            "success": prepareData
+                          } )
+                          }
+                          
+                          """
+                          
 
         bServerSide = True
         sAjaxSource = '/prodtask/task_table/'
@@ -231,14 +265,25 @@ class ProductionTaskTable(datatables.DataTable):
 
 @datatables.datatable(ProductionTaskTable, name='fct')
 def task_table(request):
+   
     qs = request.fct.get_queryset()
+    
+    if request.GET.get('task_type', 'production') == 'production':
+        qs = qs.exclude(project='user')
+    else:
+        qs = qs.filter(project='user')
+    
     request.fct.update_queryset(qs)
+    
+    
     
     status_stat = ProductionTask.objects.values('status').annotate(count=Count('id'))
     total_task = ProductionTask.objects.count()
-    projects = ProductionTask.objects.values('project').annotate(count=Count('id'))
+    projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
     parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
-    requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id'))
+    requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
+    chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
+    
     return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
                                                                     'active_app' : 'prodtask',
                                                                     'table': request.fct,
@@ -248,5 +293,6 @@ def task_table(request):
                                                                     'projects'  : projects,
                                                                     'requests'  : requests,
                                                                     'parents'   : parents,
+                                                                    'chains'    : chains,
                                                                     })
 

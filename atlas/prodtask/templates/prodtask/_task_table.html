@@ -49,7 +49,7 @@
 <table>
 <tr>
 <td>
-<table><thead><tr><th>Task statistics</th></tr><tr>
+<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>
     <th><span class="total">total</span></th>
 {% for stat in status_stat %}
 	<th><span class="{{ stat.status }}">{{ stat.status }}</span></th>
@@ -68,6 +68,17 @@
         <td>Filter:</td>
         <td>Value</td>
     </tr>
+    
+    <tr>
+        <td>Task type:</td>
+        <td>
+        <select id="task_type">
+            <option value="production" selected="selected">Production</option>  
+            <option value="analysis">Analysis</option>
+        </select>
+        </td>
+    </tr>
+    
     <tr>
         <td>Project:</td>
         <td>
@@ -79,6 +90,7 @@
         </select>
         </td>
     </tr>
+    
     <tr>
         <td>Request:</td>
         <td>
@@ -86,6 +98,17 @@
             <option value="">All ({{ total_task }} tasks)</option>
         {% for request in requests %}
             <option value="{{ request.request__reqid }}">{{ request.request__reqid }} ({{ request.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Chain:</td>
+        <td>
+        <select id="chain">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for chain in chains %}
+            <option value="{{ chain.chain_tid }}">{{ chain.chain_tid }} ({{ chain.count }} tasks)</option>
         {% endfor %}
         </select>
         </td>
@@ -116,17 +139,51 @@ $(document).ready(function() {
                         $("#parent").change(function () {
                                 taskTable.fnFilter( $(this).val(), 3 );
                             });
-                        $("#project").change(function () {
-                                taskTable.fnFilter( $(this).val(), 5 );
+                        $("#task_type").change(function () {
+                        
+                                taskTable.fnDraw();
+                                
+                                if( $("#task_type").val() == 'analysis' )
+                                {
+                                    taskTable.fnSetColumnVis( 1, false, false);
+                                    taskTable.fnSetColumnVis( 2, false, false );
+                                    taskTable.fnSetColumnVis( 18, false, false );
+                                }
+                                else
+                                {
+                                    taskTable.fnSetColumnVis( 1, true, false );
+                                    taskTable.fnSetColumnVis( 2, true, false );
+                                    taskTable.fnSetColumnVis( 18, true, false ); 
+                                }
+                                
+                                
                             });
+                        
+                       
+                        
+                        function projectChangedCallback(){
 
+                                var project = $("#project").val();
+
+                                
+                                taskTable.fnFilter( project, 5 );  
+                            }
+
+                        $("#project").change(projectChangedCallback);
                             
-                        $("#project").val('user');
+                        $("#chain").change(function () {
+                              //  taskTable.fnSetColumnVis( 6, true );
+                                taskTable.fnFilter( $(this).val(), 6 );
+                            });
+                            
+                     //   $("#project").val('user');
+                        $("#project").val('');
+                       // projectChangedCallback();
                         
-                        taskTable.fnFilter( 'user', 5 );
-                        
+                        $("#task_type").val('production');
                         $("#request").val('');
                         $("#parent").val('');
+                        $("#chain").val('');
 });
  </script>
 {% endblock %}
