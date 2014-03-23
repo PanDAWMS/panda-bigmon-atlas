@@ -203,6 +203,7 @@ class ProductionTask(models.Model):
     chain_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=False)
     name = models.CharField(max_length=130, db_column='TASKNAME', null=True)
     project = models.CharField(max_length=60, db_column='PROJECT', null=True)
+    username = models.CharField(max_length=128, db_column='USERNAME', null=True)
     dsn = models.CharField(max_length=12, db_column='DSN', null=True)
     phys_short = models.CharField(max_length=80, db_column='PHYS_SHORT', null=True)
     simulation_type = models.CharField(max_length=20, db_column='SIMULATION_TYPE', null=True)

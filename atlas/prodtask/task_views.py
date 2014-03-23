@@ -12,6 +12,13 @@ from .models import ProductionTask, TRequest
 
 from django.db.models import Count
 
+from django.utils.timezone import utc
+from datetime import datetime
+
+import time
+
+
+
 def task_details(request, rid=None):
    if rid:
        try:
@@ -137,7 +144,7 @@ class ProductionTaskTable(datatables.DataTable):
         
     chain_tid = datatables.Column(
         label='Chain',
-#        bVisible='false',
+        bVisible='false',
 #        sSearch='user',
         )
         
@@ -154,15 +161,15 @@ class ProductionTaskTable(datatables.DataTable):
         )
 
     total_events = datatables.Column(
-        label='Total events',
+        label='TEvent',
         )
 
     total_req_jobs = datatables.Column(
-        label='Total req jobs',
+        label='TReq job',
         )
 
     total_done_jobs = datatables.Column(
-        label='Total done jobs',
+        label='TDone job',
         )
 
     submit_time = datatables.Column(
@@ -196,7 +203,12 @@ class ProductionTaskTable(datatables.DataTable):
     physics_tag = datatables.Column(
         label='Physics tag',
         )
-
+        
+    username = datatables.Column(
+        label='Owner',
+        bVisible='false',
+        )
+        
     class Meta:
         model = ProductionTask
         
@@ -216,9 +228,17 @@ class ProductionTaskTable(datatables.DataTable):
 
         fnServerParams = """
                             function ( aoData ) {
+                                    var time_from = $( "#time_from" ).datepicker( "getDate" );
+                                    var time_to = $( "#time_to" ).datepicker( "getDate" );
+                                    
+                                    time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
+                                    time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
+                                    
                                     aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
+                                    aoData.push( { "name": "time_from", "value": time_from.getTime() } );
+                                    aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
                                 }
-                        """
+                        """ 
         
         fnServerData =  """
                         function ( sSource, aoData, fnCallback, oSettings ) {
@@ -238,9 +258,9 @@ class ProductionTaskTable(datatables.DataTable):
                                                      
                                 row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
                                 
-							    row[13] = row[13]=='None'? 'None' : row[13].slice(0,-6) ;
-                                row[14] = row[14]=='None'? 'None' : row[14].slice(0,-6) ;
-                                row[15] = row[15]=='None'? 'None' : row[15].slice(0,-6) ;
+							    row[13] = row[13]=='None'? 'None' : row[13].slice(0,19) ;
+                                row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
+                                row[15] = row[15]=='None'? 'None' : row[15].slice(0,19) ;
 							}
                             fnCallback( data, textStatus, jqXHR );
                           }
@@ -268,18 +288,40 @@ def task_table(request):
    
     qs = request.fct.get_queryset()
     
-    if request.GET.get('task_type', 'production') == 'production':
+    task_type = request.GET.get('task_type', '')
+    if task_type == 'production':
         qs = qs.exclude(project='user')
-    else:
+    elif task_type == 'analysis':
         qs = qs.filter(project='user')
+        
+    task_count_by_type = {  'production': qs.exclude(project='user').count(),
+                            'analysis': qs.filter(project='user').count(),
+                            }
+        
+    time_from = request.GET.get('time_from', 0)
+    time_to = request.GET.get('time_to', 0)
+    
+    if time_from:
+        time_from = float(time_from)/1000.
+    else:
+        time_from = time.time() - 3600 * 24 * 60
+        
+    if time_to:
+        time_to = float(time_to)/1000.
+    else:
+        time_to = time.time()
+
+    time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
+    time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
+    
+    qs = qs.filter(submit_time__gt=time_from).filter(submit_time__lt=time_to)
     
     request.fct.update_queryset(qs)
-    
-    
     
     status_stat = ProductionTask.objects.values('status').annotate(count=Count('id'))
     total_task = ProductionTask.objects.count()
     projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
+    usernames = ProductionTask.objects.values('username').annotate(count=Count('id')).order_by('username')
     parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
     requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
     chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
@@ -290,7 +332,9 @@ def task_table(request):
                                                                     'parent_template': 'prodtask/_index.html',
                                                                     'status_stat' : status_stat,
                                                                     'total_task' : total_task,
+                                                                    'task_count_by_type': task_count_by_type,
                                                                     'projects'  : projects,
+                                                                    'usernames'  : usernames,
                                                                     'requests'  : requests,
                                                                     'parents'   : parents,
                                                                     'chains'    : chains,

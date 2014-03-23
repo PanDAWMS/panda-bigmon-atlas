@@ -63,34 +63,64 @@
 </table>
 </td>
 <td>
-<table>
-    <tr>
+<table style="text-align: right;">
+    <thead><tr><th colspan="0" style="text-align:center">Task select parameters</th></tr></thead>
+    <tbody>
+ <!--   <tr>
         <td>Filter:</td>
         <td>Value</td>
     </tr>
+   --> 
+    <tr>
+    <td>
     
+    <table>
     <tr>
         <td>Task type:</td>
         <td>
         <select id="task_type">
-            <option value="production" selected="selected">Production</option>  
-            <option value="analysis">Analysis</option>
+            <option value="">All ({{ total_task }} tasks)</option>
+            <option value="production" selected="selected">Production ({{ task_count_by_type.production }} tasks)</option>  
+            <option value="analysis">Analysis ({{ task_count_by_type.analysis }} tasks)</option>
         </select>
         </td>
     </tr>
     
     <tr>
+    
         <td>Project:</td>
         <td>
-        <select id="project">
+    <!--    <select id="project">
             <option value="">All ({{ total_task }} tasks)</option>
         {% for project in projects %}
             <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
         {% endfor %}
-        </select>
+        </select> -->
+            <input id="project-label">
+            <input type="hidden" id="project">
         </td>
     </tr>
     
+    <tr>
+    
+        <td>Owner:</td>
+        <td>
+    <!--    <select id="project">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for project in projects %}
+            <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
+        {% endfor %}
+        </select> -->
+            <input id="username-label">
+            <input type="hidden" id="username">
+        </td>
+    </tr>
+    </table>
+    
+    </td>
+    <td>
+    
+    <table>
     <tr>
         <td>Request:</td>
         <td>
@@ -124,23 +154,158 @@
         </select>
         </td>
     </tr>
+    </table>
+    
+    </td>
+    
+    <td>
+    
+    <table>
+    <tr>
+        <td>Time period:</td>
+        <td>
+        <select id="time_period">
+            <option value="" disabled="disabled">Custom</option>
+            <option value="day">Last day</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
+            <option value="year">Last year</option>
+            <option value="all">All time</option>
+        </select>
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+            Submit date from:
+        </td>
+        <td>
+            <input type="text" id="time_from" name="time_from">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Submit date to:
+        </td>
+        <td>
+            <input type="text" id="time_to" name="time_to">
+        </td>
+    </tr>
+    </tbody>
+    </table>
+    
+    </td>
+    
+    
+    </tr>
+    
+  <!--  <tr><td></td><td><button id="update_task_table">Update</button> -->
 </table>
 </td>
 </tr>
 </table>
+
+<script type="text/javascript">
+    $( "#time_from" ).datepicker({
+            defaultDate: "-2m",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_to" ).datepicker( "option", "minDate", selectedDate );
+                $( "#time_period" ).val('');
+                taskTable.fnDraw();
+            }
+        });
+    $( "#time_to" ).datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_from" ).datepicker( "option", "maxDate", selectedDate );
+                $( "#time_period" ).val('');
+                taskTable.fnDraw();
+            }
+    });
+    
+    var time_from = new Date();
+    var time_to = new Date();
+    
+    time_from.setMonth( time_from.getMonth() - 1 )
+    
+    $( "#time_from" ).datepicker( "setDate", time_from );
+    $( "#time_to" ).datepicker( "setDate", time_to );
+    
+    $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+    $( "#time_to" ).datepicker( "option", "minDate", time_from );
+    
+    $( "#time_period" ).val('');
+    
+    $("#task_type").val('production');
+    $("#request").val('');
+    $("#parent").val('');
+    $("#chain").val('');
+    
+    
+    
+    var projects = [    { value : "" , label : "All ({{ total_task }} tasks)" },
+                        {% for project in projects %}
+                            { value : "{{ project.project }}", label : "{{ project.project }} ({{ project.count }} tasks)" },
+                        {% endfor %}
+                    ];
+                    
+    var usernames = [    { value : "" , label : "All ({{ total_task }} tasks)" },
+                        {% for username in usernames %}
+                            { value : "{{ username.username }}", label : "{{ username.username }} ({{ username.count }} tasks)" },
+                        {% endfor %}
+                    ];
+                    
+    $("#project").val(projects[0].value); 
+    $("#project-label").val(projects[0].label);
+    $("#project-label").focus( function(){
+                  //  $("#project-label").val('');
+                    $("#project-label").autocomplete( "search", "" );
+                } );
+    
+    $("#username").val(usernames[0].value); 
+    $("#username-label").val(usernames[0].label);
+    $("#username-label").focus( function(){
+                  //  $("#username-label").val('');
+                    $("#username-label").autocomplete( "search", "" );
+                } );
+    
+  //  $("#update_task_table").button({ disabled: true });
+    
+</script>
+ 
 {{ table.as_html }}
  
 <script type="text/javascript">
 $(document).ready(function() {
 
+                        function tableNeedToUpdate()
+                        {
+                            $("#update_task_table").button({ disabled: false });
+                        }
+                        
+                        function updateTable()
+                        {
+                            $("#update_task_table").button({ disabled: true });
+                            taskTable.fnDraw();
+                        }
+                        
+                     //   $("#update_task_table").click(updateTable);
+
                         $("#request").change(function () {
+                       //         tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 2 );
                             });
                         $("#parent").change(function () {
+                        //        tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 3 );
                             });
                         $("#task_type").change(function () {
                         
+                        //        tableNeedToUpdate();
                                 taskTable.fnDraw();
                                 
                                 if( $("#task_type").val() == 'analysis' )
@@ -155,35 +320,76 @@ $(document).ready(function() {
                                     taskTable.fnSetColumnVis( 2, true, false );
                                     taskTable.fnSetColumnVis( 18, true, false ); 
                                 }
-                                
-                                
                             });
-                        
-                       
-                        
-                        function projectChangedCallback(){
-
-                                var project = $("#project").val();
-
-                                
-                                taskTable.fnFilter( project, 5 );  
+                            
+                         $( "#project-label" ).autocomplete({
+                            minLength: 0,
+                            source: projects,
+                          /*  focus: function( event, ui ) {
+                                $( "#project-label" ).val( ui.item.label );
+                                return false;
+                                },*/
+                            select: function( event, ui ) {
+                                $( "#project-label" ).val( ui.item.label );
+                                $( "#project-label" ).blur();
+                                $( "#project" ).val( ui.item.value );
+                                taskTable.fnFilter( $("#project").val(), 5 );
+                                return false;
                             }
-
-                        $("#project").change(projectChangedCallback);
+                        })
+                        
+                        $( "#username-label" ).autocomplete({
+                            minLength: 0,
+                            source: usernames,
+                        /*    focus: function( event, ui ) {
+                                $( "#username-label" ).val( ui.item.label );
+                                return false;
+                                },*/
+                            select: function( event, ui ) {
+                                $( "#username-label" ).val( ui.item.label );
+                                $( "#username-label" ).blur();
+                                $( "#username" ).val( ui.item.value );
+                                taskTable.fnFilter( $("#username").val(), 20 );
+                                return false;
+                            }
+                        })
+                            
+                            /*
+                            
+                        $("#project").change(function (){  
+                       //         tableNeedToUpdate();
+                                taskTable.fnFilter( $("#project").val(), 5 );  
+                            });*/
                             
                         $("#chain").change(function () {
-                              //  taskTable.fnSetColumnVis( 6, true );
+                       //         tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 6 );
                             });
                             
-                     //   $("#project").val('user');
-                        $("#project").val('');
-                       // projectChangedCallback();
+                        $( "#time_period" ).change(function () {
                         
-                        $("#task_type").val('production');
-                        $("#request").val('');
-                        $("#parent").val('');
-                        $("#chain").val('');
+                                var time_from = new Date();
+                                var time_to = new Date();
+                                
+                                switch($(this).val())
+                                {
+                                    case 'day': time_from.setDate( time_from.getDate() - 1 ); break;
+                                    case 'week': time_from.setDate( time_from.getDate() - 7 ); break;
+                                    case 'month': time_from.setMonth( time_from.getMonth() - 1 ); break;
+                                    case 'year': time_from.setFullYear( time_from.getFullYear() - 1 ); break;
+                                    case 'all': time_from.setFullYear( time_from.getFullYear() - 3 ); break;
+                                }
+                                
+                                $( "#time_from" ).datepicker( "setDate", time_from );
+                                $( "#time_to" ).datepicker( "setDate", time_to );
+                                
+                                $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+                                $( "#time_to" ).datepicker( "option", "minDate", time_from );
+                                
+                                taskTable.fnDraw();
+                            });
+                            
+
 });
  </script>
 {% endblock %}
