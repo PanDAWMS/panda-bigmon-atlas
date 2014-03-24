@@ -33,39 +33,59 @@
 <!-- TODO: Replace next tables by independet from field objects   -->
 <script>
 $(document).ready(function(){
-  $("#select_pattern").change(function(){
-    {% for pattern in pattern_list %}
-    {% for step in step_list %}
-      var name1 = "#{{ step.idname }}" + "{{pattern}}"
-      $(name1).css({"display":"none"});
-    {% endfor %}
-    {% endfor %}
-  {% for step in step_list %}
-    var name2 = "#{{ step.idname }}" + $("#select_pattern").val()
-    $(name2).fadeIn("slow");
-   {% endfor %}
-  });
+{#  $("#select_pattern").change(function(){#}
+{#    {% for pattern in pattern_list %}#}
+{#    {% for step in step_list %}#}
+{#      var name1 = "#{{ step.idname }}" + "{{pattern}}"#}
+{#      $(name1).css({"display":"none"});#}
+{#    {% endfor %}#}
+{#    {% endfor %}#}
+{#  {% for step in step_list %}#}
+{#    var name2 = "#{{ step.idname }}" + $("#select_pattern").val()#}
+{#    $(name2).fadeIn("slow");#}
+{#   {% endfor %}#}
+{#  });#}
+
+
+
+
+
 
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
                          "cursor":"pointer","user-select": "none"});
 $(".inputListRow").children("td").css({"padding":"1px"})
 $(".input_list_tables").css({"border": "1px solid black","margin": "1px"})
 $(".outside_input_list_tables").css({"border": "hidden","margin": "1px"})
+$(".show_full_span").css({"cursor":"pointer","user-select":"none"});
+$(".show_small_span").css({"cursor":"pointer"});
 
-
-var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
+var step_bc=["#FFB734","#FFFFFF"]
  {% for step in step_list %}
-    $("#start_step{{ step.name }}").css({"background-color":step_bc[0]});
-    step_bc[0] = $("#start_step{{ step.name }}").css("background-color")
+    $("#start_step{{ forloop.counter0 }}").css({"background-color":step_bc[0]});
+    step_bc[0] = $("#start_step{{ forloop.counter0 }}").css("background-color")
 
  {% endfor %}
-
+$("#select_pattern").change(function(){
+    {% for pattern, steps  in pattern_list %}
+        if ($("#select_pattern").val() == "{{ pattern }}"){
+            {% for step in steps %}
+                $("#patternform{{forloop.counter0}}").val("{{ step }}");
+                if("{{ step }}" != ""){
+                    $("#start_step{{ forloop.counter0 }}").css({"background-color":step_bc[0]});
+                }
+            {% endfor %}
+        };
+    {% endfor %}
+});
     $(".stepchoose").click(function(){
         var current_color = $(this).css("background-color");
         var current_index = (step_bc.indexOf(current_color)+1)%step_bc.length;
         $(this).css({"background-color":step_bc[current_index]});
-        step_bc[current_index] =  $(this).css("background-color")
-
+        step_bc[current_index] =  $(this).css("background-color");
+        if($(this).attr("id").substr(0,4) == 'step'){
+            var step_td_short = "td#short".concat($(this).attr("id").substr(4)).concat(".show_full_span");
+            $(step_td_short).css({"background-color":step_bc[current_index]});
+        };
     })  ;
 
     $(".show_full_span").click(function(){
@@ -84,14 +104,48 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
          return false;
 
     });
-    $(".show_full_span").css({"cursor":"pointer"});
-    $(".show_small_span").css({"cursor":"pointer"});
+
 
 });
 
     function approve_click(event){
         event.preventDefault();
         window.location.replace("{% url 'prodtask:request_steps_approve' pr_id %}");
+    };
+    function bind_click(event){
+        event.preventDefault();
+        {% for step in step_list %}
+            $(".checkbox_slice").each(function(){
+                if ($(this).is(':checked')){
+{#                   8 = "checkbox".length#}
+                   var slice_id = $(this).attr("id").slice(8);
+                   var step_value = $("#patternform{{ forloop.counter0 }}").val();
+                   var step_td_short = "td#short".concat(slice_id).concat("{{ forloop.counter0 }}.show_full_span");
+                   $(step_td_short).html(step_value);
+                   var step_color = $("#start_step{{ forloop.counter0 }}").css("background-color");
+                   $(step_td_short).css({"background-color":step_color});
+                   var step_form_long = "#".concat(slice_id).concat("{{ forloop.counter0 }}.slice_form");
+                   $(step_form_long).val(step_value);
+                   var step_th_long = "th#step".concat(slice_id).concat("{{ forloop.counter0 }}.stepchoose");
+                   $(step_th_long).css({"background-color":step_color});
+                };
+            });
+
+        {% endfor %}
+
+    };
+    function long_form_change(event){
+      var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
+      $(step_td_short).html($(event.target).val());
+    };
+    function select_click(event){
+      event.preventDefault();
+      if($("#checkbox0").is(':checked')){
+        $(".checkbox_slice").prop('checked', false);
+      } else{
+         $(".checkbox_slice").prop('checked', true);
+      };
+
     };
 </script>
 <table>
@@ -111,7 +165,10 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
 
 <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 <h6> With pattern: {{ pattern }}</h6>
-<form>Filter:<input type="text" id="filter" style="width: 500px"></form>
+<table style="padding: 0px;margin-bottom:0px;border: hidden">
+<tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="select_click(event);">Select All</button></td>
+    <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
+</table>
 <form >
 
 <table style="margin-left: 50px;border: hidden">
@@ -119,32 +176,29 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
     <th colspan="10">
         <select id="select_pattern" >
             <option value="" disabled selected>Select pattern</option>
-            {% for pattern in pattern_list %}
+            {% for pattern, steps in pattern_list %}
                 <option value="{{ pattern }}">{{ pattern }}</option>
             {% endfor %}
         </select>
     </th>
     <th rowspan="2">
-        <td><button id="bind" title="Create step execution">Bind</button></td>
-        <td><button id="approveButton" title="Approve" onclick="approve_click(event);">Approve</button></td>
+        <td><button id="bind" title="Create step execution" onclick="bind_click(event);">Bind</button></td>
+        <td></td>
     </th>
 
 </tr>
 <tr>
 {% for step in step_list %}
-        <th class="stepchoose" id="start_step{{step.name}}"  > <div > {{step.name}}</div></th>
+        <th class="stepchoose" id="start_step{{ forloop.counter0 }}"  > <div > {{step.name}}</div></th>
 {% endfor %}
 </tr>
     <tr>
-    {% for step in step_list %}
-        <td  style="padding: 0px;width: 50px" >
-        {% for sp in step.pattern %}
-            <div id="{{sp.idname}}" style="display:none">
-                <form><input type="text"  id="form{{sp.idname}}" value="{{sp.value}}"></form>
-            </div>
+        {% for step in step_list %}
+            <td style="padding: 0px;width: 50px">
+            <form><input type="text"  id="patternform{{forloop.counter0}}" value=""></form>
+            </td>
         {% endfor %}
-        </td>
-    {% endfor %}
+
     </tr>
 </table>
 </form>
@@ -154,7 +208,7 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
     {% for inputList, step_exec_dict, approved in inputLists %}
         <div class="input_list_divs" >
         <table class="outside_input_list_tables"><tr>
-            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" id="{{ inputList.id }}" checked></form></td>
+            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkbox_slice" id="checkbox{{ inputList.slice }}" checked></form></td>
             <td style="padding:0px;margin:0px">
             <table class="input_list_tables" >
             <tr class="inputListRow">
@@ -179,7 +233,8 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
-                    <td class="stepchoose" >{{ step }}</td>
+                    <td class="show_full_span" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                        style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step }}</td>
                 {% endfor %}
                 {% ifequal approved "Approved" %}
                     <td colspan="2" style="color: greenyellow"> Approved </td>
@@ -194,7 +249,7 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                  <td colspan="11" class='show_small_span'>Dataset: {{ inputList.dataset.name }}</td></tr>
                 <tr><td></td><td colspan="11">JobOption: {{ inputList.input_data }}</td></tr>
                 <tr><td></td><td colspan="11">Brief: {{ inputList.brief }}</td></tr>
-                <tr><td></td><td colspan="9">
+                <tr style="display: none"><td></td><td colspan="9">
                     <select id="select_pattern" >
                         <option value="" disabled selected>Select pattern</option>
                         {% for pattern in pattern_list %}
@@ -202,12 +257,12 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                         {% endfor %}
                     </select>
                 </td>
-                <td><button id="bind" title="Create step execution">Bind</button></td>
-                <td><button id="approveButton" title="Approve" >Approve</button></td>
+                <td><button id="bind{{ inputList.slice }}" class="slice_bind" title="Create step execution">Bind</button></td>
+                <td><button id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
                 <tr>
                 <th rowspan="2"></th>
                 {% for step in step_list %}
-                        <th class="stepchoose" id="start_step{{step.name}}{{ inputList.slice  }}"  > <div > {{step.name}}</div></th>
+                        <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
                 {% endfor %}
                 {% ifequal approved "Approved" %}
                     <th rowspan="2" style="color: greenyellow"> Approved </th>
@@ -220,7 +275,7 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
                     {% for step in step_exec_dict %}
                         <td  style="padding: 0px;width: 50px" >
                             <div  >
-                                <form><input type="text"  value="{{ step }}"></form>
+                                <form><input type="text" onchange="long_form_change(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step }}"></form>
                             </div>
                         </td>
                     {% endfor %}
@@ -231,5 +286,5 @@ var step_bc=["#34ff5a","#66aeff", "#ff9a3c"]
         </div>
 	{% endfor %}
     </div>
-
+<button id="approveButton" title="Approve" onclick="approve_click(event);">Approve</button>
 {% endblock %}

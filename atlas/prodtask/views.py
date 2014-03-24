@@ -64,13 +64,13 @@ def input_list_approve(request, rid=None):
         try:
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pd = {}
-                pattern_list_name = [x.pattern_name for x in pattern_list]
-                for step in StepExecution.STEPS:
-                    id_value = []
-                    for pattern in pattern_list:
-                            id_value += [{'idname':step.replace(" ",'')+pattern.pattern_name,
-                                          'value':json.loads(pattern.pattern_dict).get(step,'')}]
-                    pd.update({step:id_value})
+                pattern_list_name = [(x.pattern_name,[json.loads(x.pattern_dict).get(step,'') for step in StepExecution.STEPS]) for x in pattern_list]
+                # for step in StepExecution.STEPS:
+                #     id_value = []
+                #     for pattern in pattern_list:
+                #             id_value += [{'idname':step.replace(" ",'')+pattern.pattern_name,
+                #                           'value':json.loads(pattern.pattern_dict).get(step,'')}]
+                #     pd.update({step:id_value})
                 cur_request = TRequest.objects.get(reqid=rid)
                 input_lists_pre = InputRequestList.objects.filter(request=cur_request)
                 #input_lists = [x.update({'dataset_name':x.dataset.name}) for x in input_lists_pre]
@@ -112,8 +112,7 @@ def input_list_approve(request, rid=None):
                         if approved == 'Approved':
                             approved_count += 1
                         input_lists.append((slice,[slice_steps.get(x,'') for x in StepExecution.STEPS],approved))
-
-                step_list = [{'name':x,'idname':x.replace(" ",''),'pattern':pd[x]} for x in  StepExecution.STEPS]
+                step_list = [{'name':x,'idname':x.replace(" ",'')} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',
                    'parent_template' : 'prodtask/_index.html',

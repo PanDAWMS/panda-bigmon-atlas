@@ -91,6 +91,12 @@ def mcfile_form_prefill(form_data, request):
     if (form_data.get('excelfile')):
         input_excel = request.FILES['excelfile']
         spreadsheet_dict += fill_steptemplate_from_file(input_excel)
+    if not form_data.get('cstatus'):
+        form_data['cstatus'] = 'Approved'
+    if not form_data.get('energy_gev'):
+        form_data['energy_gev'] = 8000
+    if not form_data.get('provenance'):
+        form_data['provenance'] = 'ATLAS'
     return spreadsheet_dict
 
 
