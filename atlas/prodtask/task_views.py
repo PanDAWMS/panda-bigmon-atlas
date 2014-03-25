@@ -138,7 +138,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     project = datatables.Column(
         label='Project',
-#        bVisible='false',
+        bVisible='false',
 #        sSearch='user',
         )
         
@@ -151,13 +151,17 @@ class ProductionTaskTable(datatables.DataTable):
     status = datatables.Column(
         label='Status',
         )
+		
+    provenance = datatables.Column(
+        label='Provenance',
+        )
+		
+    priority = datatables.Column(
+        label='Priority',
+        )
         
     phys_group = datatables.Column(
         label='Phys group',
-        )
-        
-    provenance = datatables.Column(
-        label='Provenance',
         )
 
     total_events = datatables.Column(
@@ -186,10 +190,6 @@ class ProductionTaskTable(datatables.DataTable):
 
     bug_report = datatables.Column(
         label='Bug report',
-        )
-
-    priority = datatables.Column(
-        label='Priority',
         )
         
     comments = datatables.Column(
@@ -257,10 +257,17 @@ class ProductionTaskTable(datatables.DataTable):
 	                            row[2] = '<a href="/prodtask/request/'+row[2]+'/">'+row[2]+'</a>';
                                                      
                                 row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
+								
+								switch(row[8])
+								{
+									case 'AP': row[8]='ATLAS'; break;
+									case 'GP': row[8]='Group'; break;
+									case 'XP': row[8]='eXtended'; break;
+								}
                                 
-							    row[13] = row[13]=='None'? 'None' : row[13].slice(0,19) ;
-                                row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
+							    row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
                                 row[15] = row[15]=='None'? 'None' : row[15].slice(0,19) ;
+                                row[16] = row[16]=='None'? 'None' : row[16].slice(0,19) ;
 							}
                             fnCallback( data, textStatus, jqXHR );
                           }
