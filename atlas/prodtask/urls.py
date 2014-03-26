@@ -41,6 +41,7 @@ urlpatterns = patterns('',
     url(r'^step_approve/(?P<stepexid>\d+)/(?P<reqid>\d+)/(?P<sliceid>\d+)/$', 'atlas.prodtask.views.step_approve', name='step_approve'),
 
     url(r'^request_steps_approve/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_approve', name='request_steps_approve'),
+     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 

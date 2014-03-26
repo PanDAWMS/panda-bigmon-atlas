@@ -5,10 +5,13 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+from django.views.decorators.csrf import csrf_protect
+from django.core.exceptions import ObjectDoesNotExist
+
 import core.datatables as datatables
 
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern
-from forms import StepExecutionForm
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig
+from prodtask.spdstodb import fill_template
 
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
@@ -30,6 +33,108 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     return HttpResponseRedirect('/prodtask/step_execution_table/')
 
 
+def find_missing_tags(tags):
+    return_list = []
+    for tag in tags:
+        try:
+                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+                if not trtf:
+                    return_list.append(tag)
+        except ObjectDoesNotExist,e:
+            return_list.append(tag)
+        except Exception,e:
+            raise e
+
+    return return_list
+
+
+
+
+def step_status_definition(is_skipped, is_approve=True):
+    if is_skipped and is_approve:
+        return 'Skipped'
+    if not(is_skipped) and is_approve:
+        return 'Approved'
+    if is_skipped and not(is_approve):
+        return 'NotCheckedSkipped'
+    if not(is_skipped) and not(is_approve):
+        return 'NotChecked'
+
+#TODO: FIX it. Make one commit
+def create_steps(slice_steps,reqid,is_approve=True):
+    try:
+        cur_request = TRequest.objects.get(reqid=reqid)
+        temp_priority = 1
+        proceedded_steps = []
+        temp_input_events = 50000
+        for slice, steps_status in slice_steps.items():
+            input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
+            existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
+            for existed_step in existed_steps:
+                step_index = StepExecution.STEPS.index(existed_step.step_template.step)
+                if (existed_step.status == 'NotChecked') or (existed_step.status == 'NotCheckedSkipped'):
+                    if existed_step.step_template.ctag == steps_status[step_index]['value']:
+                            existed_step.status = step_status_definition(steps_status[step_index]['is_skipped'],is_approve)
+                            existed_step.save()
+                            proceedded_steps.append(step_index)
+                    else:
+                        if steps_status[step_index]['value'] == '':
+                            existed_step.delete()
+                        else:
+                            temp_priority = existed_step.priority
+                            temp_input_events = existed_step.input_events
+                            st = fill_template(StepExecution.STEPS[step_index],steps_status[step_index]['value'],
+                                               temp_priority)
+
+                            st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
+                                                    priority=temp_priority, input_events=temp_input_events  )
+                            st_exec.status = step_status_definition(steps_status[step_index]['is_skipped'],is_approve)
+                            st_exec.save_with_current_time()
+                            proceedded_steps.append(step_index)
+                            existed_step.delete()
+            for step_index,step_status in enumerate(steps_status):
+                if step_index not in proceedded_steps:
+                            if step_status['value'] != '':
+                                st = fill_template(StepExecution.STEPS[step_index],steps_status[step_index]['value'],
+                                                   temp_priority)
+                                st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
+                                                        priority=temp_priority, input_events=temp_input_events  )
+                                st_exec.status = step_status_definition(steps_status[step_index]['is_skipped'],is_approve)
+                                st_exec.save_with_current_time()
+                                proceedded_steps.append(step_index)
+
+    except Exception, e:
+        raise e
+
+
+def request_steps_approve_or_save(request, reqid, is_approve):
+        results = {'success':False}
+        try:
+            data = request.body
+            slice_steps = json.loads(data)
+            tags = []
+            slices = slice_steps.keys()
+            for steps_status in slice_steps.values():
+                for steps in steps_status:
+                    if steps['value'] and (steps['value'] not in tags):
+                        tags.append(steps['value'])
+            missing_tags = find_missing_tags(tags)
+            print slices
+            results = {'data': missing_tags,'slices': slices, 'success': True}
+            if not missing_tags:
+                create_steps(slice_steps,reqid,is_approve)
+        except Exception, e:
+            print e
+
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def request_steps_save(request, reqid):
+    if request.method == 'POST':
+        return request_steps_approve_or_save(request,reqid,False)
+    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+
+@csrf_protect
 def request_steps_approve(request, reqid=None):
     if request.method == 'GET':
         try:
@@ -42,6 +147,8 @@ def request_steps_approve(request, reqid=None):
         except Exception, e:
             print e
             return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    if request.method == 'POST':
+        return request_steps_approve_or_save(request,reqid,True)
     return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
 
 
@@ -65,6 +172,7 @@ def input_list_approve(request, rid=None):
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pd = {}
                 pattern_list_name = [(x.pattern_name,[json.loads(x.pattern_dict).get(step,'') for step in StepExecution.STEPS]) for x in pattern_list]
+                pattern_list_name += [('Empty', ['' for step in StepExecution.STEPS])]
                 # for step in StepExecution.STEPS:
                 #     id_value = []
                 #     for pattern in pattern_list:
@@ -94,6 +202,7 @@ def input_list_approve(request, rid=None):
                         slice_steps = {}
                         total_slice += 1
                         approved = 'Approved'
+
                         if use_input_date_for_pattern:
                             current_slice_pattern = slice.input_data.split('.')
                         else:
@@ -105,13 +214,15 @@ def input_list_approve(request, rid=None):
                                 if token!=slice_pattern[index]:
                                     slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
                                     slice_pattern[index] += '*'
+
                         for step in step_execs:
-                            slice_steps.update({step.step_template.step:step.step_template.ctag})
-                            if step.status!='Approved':
+                            skipped = (step.status=='Skipped')or(step.status=='NotCheckedSkipped')
+                            slice_steps.update({step.step_template.step:{'tag':step.step_template.ctag,'skipped':skipped}})
+                            if (step.status!='Approved')and(step.status!='Skipped'):
                                 approved = 'Not approved'
                         if approved == 'Approved':
                             approved_count += 1
-                        input_lists.append((slice,[slice_steps.get(x,'') for x in StepExecution.STEPS],approved))
+                        input_lists.append((slice,[slice_steps.get(x,{'tag':'','skipped':True}) for x in StepExecution.STEPS],approved))
                 step_list = [{'name':x,'idname':x.replace(" ",'')} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',

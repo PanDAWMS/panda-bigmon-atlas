@@ -167,6 +167,7 @@ class StepExecution(models.Model):
              'Atlfast',
              'Atlf Merge',
              'Atlf TAG']
+    STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')

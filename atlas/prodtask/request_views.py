@@ -92,11 +92,15 @@ def mcfile_form_prefill(form_data, request):
         input_excel = request.FILES['excelfile']
         spreadsheet_dict += fill_steptemplate_from_file(input_excel)
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'Approved'
+        form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'ATLAS'
+    if not form_data.get('manager'):
+        form_data['manager'] = 'None'
+    if not form_data.get('request_type'):
+        form_data['request_type'] = 'MC'
     return spreadsheet_dict
 
 
@@ -134,11 +138,13 @@ def dpd_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['campaign'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'Approved'
+        form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'ATLAS'
+    if not form_data.get('request_type'):
+        form_data['request_type'] = 'MC'
     for slice_index, ds in enumerate(output_dict['ds']):
         st_sexec_list = []
         sexec = {}
