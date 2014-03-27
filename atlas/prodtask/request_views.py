@@ -188,6 +188,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             if form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile'):
 
                 file_dict = form_prefill(form.cleaned_data, request)
+                print form.cleaned_data
                 del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
                 #print request.FILES['excelfile']
                 try:
@@ -221,6 +222,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         form.cleaned_data['excelfile']
                     if 'reqid' in form.cleaned_data:
                         del form.cleaned_data['reqid']
+                    form.cleaned_data['cstatus'] = 'Created'
                     req = TRequest(**form.cleaned_data)
                     print form.cleaned_data
                     req.save()

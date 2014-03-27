@@ -1,3 +1,4 @@
+from django import forms
 from django.forms import ModelForm
 from django.forms import CharField
 from django.forms import EmailField
@@ -18,8 +19,8 @@ class RequestForm(ModelForm):
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
     cc = EmailField(required=False)
-    cstatus = CharField(label='Status', required=False)
-    description = CharField(label='Description', widget=Textarea, required=False)
+    description = CharField(label='Short description', widget=Textarea, required=False)
+    cstatus = CharField(widget=forms.HiddenInput)
 
     class Meta:
         model = TRequest
@@ -30,10 +31,14 @@ class TRequestCreateCloneConfirmation(ModelForm):
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="Exel Link")
     excelfile = FileField(required=False, label="Exel File")
+    manager = CharField(widget=forms.HiddenInput)
+    provenance = CharField(widget=forms.HiddenInput)
+    cstatus = CharField(widget=forms.HiddenInput)
+    request_type = CharField(widget=forms.HiddenInput)
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','manager','provenance','cstatus','request_type']
+        exclude = ['reqid']
 
 
 class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):

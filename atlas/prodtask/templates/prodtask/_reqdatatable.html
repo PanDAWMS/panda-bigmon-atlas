@@ -193,13 +193,15 @@ $("#select_pattern").change(function(){
                     send_data[slice_id] = sliceSteps;
                 }
             });
-            if (! $.isEmptyObject(send_data)){
+
+            if (!$.isEmptyObject(send_data)){
                 var ajaxURL = '';
                 if (isApprove){
                     ajaxURL = "{% url 'prodtask:request_steps_approve' pr_id %}";
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
+                console.log($.toJSON(send_data));
                 $.ajax({
                     url: ajaxURL,
                     type: 'POST',
