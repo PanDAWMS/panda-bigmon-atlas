@@ -108,7 +108,6 @@ def task_create(request):
    })
 
 
-
 class ProductionTaskTable(datatables.DataTable):
 
     id = datatables.Column(
@@ -269,6 +268,9 @@ class ProductionTaskTable(datatables.DataTable):
                                 row[15] = row[15]=='None'? 'None' : row[15].slice(0,19) ;
                                 row[16] = row[16]=='None'? 'None' : row[16].slice(0,19) ;
 							}
+                            
+                            updateInterface(data['task_stat']);
+                            
                             fnCallback( data, textStatus, jqXHR );
                           }
                         
@@ -286,45 +288,81 @@ class ProductionTaskTable(datatables.DataTable):
 
         bServerSide = True
         sAjaxSource = '/prodtask/task_table/'
+    
+    
+    def apply_filters(self, request):
+        qs = self.get_queryset()
+        
+        task_type = request.GET.get('task_type', 'production')
+        if task_type == 'production':
+            qs = qs.exclude(project='user')
+        elif task_type == 'analysis':
+            qs = qs.filter(project='user')
+            
+        time_from = request.GET.get('time_from', 0)
+        time_to = request.GET.get('time_to', 0)
+        
+        if time_from:
+            time_from = float(time_from)/1000.
+        else:
+            time_from = time.time() - 3600 * 24 * 60
+            
+        if time_to:
+            time_to = float(time_to)/1000.
+        else:
+            time_to = time.time()
+
+        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
+        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
+        
+        qs = qs.filter(submit_time__gt=time_from).filter(submit_time__lt=time_to)
+         
+        self.update_queryset(qs)
+    
+    def prepare_ajax_data(self, request):
+    
+        self.apply_filters(request)
+
+        params = request.fct.parse_params(request)  
+        
+        qs = request.fct.get_queryset()
+        
+        qs = request.fct._handle_ajax_global_search(qs, params)
+        qs = request.fct._handle_ajax_column_specific_search(qs, params)
+        
+   #     qs = request.fct.apply_sort_search(qs, params)
+        
+        
+        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ] 
+        
+        
+    #    status_stat = qs.values('status').annotate(count=Count('id'))
+        
+   #     total_task = qs.count()
+   #     projects = [ { 'project':str(x['project']), 'count':str(x['count']) } for x in qs.values('project').annotate(count=Count('id')).order_by('project').values('project','count') ]
+   #     usernames = [ { 'username':str(x['username']), 'count':str(x['count']) } for x in qs.values('username').annotate(count=Count('id')).order_by('username').values('username','count') ]
+   #     parents = [ { 'parent_id':str(x['parent_id']), 'count':str(x['count']) } for x in qs.values('parent_id').annotate(count=Count('id')).order_by('-parent_id').values('parent_id','count') ]
+   #     requests = [ { 'request__reqid':str(x['request__reqid']), 'count':str(x['count']) } for x in qs.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid').values('request__reqid','count') ]
+   #     chains = [ { 'chain_tid':str(x['chain_tid']), 'count':str(x['count']) } for x in qs.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid').values('chain_tid','count') ]
+            
+        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
+        
+        data['task_stat'] = status_stat
+        
+        return data
         
 
 
 
 @datatables.datatable(ProductionTaskTable, name='fct')
 def task_table(request):
-   
+
     qs = request.fct.get_queryset()
     
-    task_type = request.GET.get('task_type', '')
-    if task_type == 'production':
-        qs = qs.exclude(project='user')
-    elif task_type == 'analysis':
-        qs = qs.filter(project='user')
-        
     task_count_by_type = {  'production': qs.exclude(project='user').count(),
-                            'analysis': qs.filter(project='user').count(),
-                            }
-        
-    time_from = request.GET.get('time_from', 0)
-    time_to = request.GET.get('time_to', 0)
-    
-    if time_from:
-        time_from = float(time_from)/1000.
-    else:
-        time_from = time.time() - 3600 * 24 * 60
-        
-    if time_to:
-        time_to = float(time_to)/1000.
-    else:
-        time_to = time.time()
-
-    time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
-    time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
-    
-    qs = qs.filter(submit_time__gt=time_from).filter(submit_time__lt=time_to)
-    
-    request.fct.update_queryset(qs)
-    
+                        'analysis': qs.filter(project='user').count(),
+                    }
+                        
     status_stat = ProductionTask.objects.values('status').annotate(count=Count('id'))
     total_task = ProductionTask.objects.count()
     projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')

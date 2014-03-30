@@ -57,20 +57,6 @@
 <table>
 <tr>
 <td>
-<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>
-    <th><span class="total">total</span></th>
-{% for stat in status_stat %}
-	<th><span class="{{ stat.status }}">{{ stat.status }}</span></th>
-{% endfor %}
-</tr></thead>
-    <td><span class="total">{{ total_task }}</span></td>
-{% for stat in status_stat %}
-	<td>{{ stat.count }}</td>
-{% endfor %}
-</tr></tbody>
-</table>
-</td>
-<td>
 <table style="text-align: right;">
     <thead><tr><th colspan="0" style="text-align:center">Task select parameters</th></tr></thead>
     <tbody>
@@ -210,6 +196,20 @@
   <!--  <tr><td></td><td><button id="update_task_table">Update</button> -->
 </table>
 </td>
+<td>
+<div id="task_stat_table">
+
+<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>
+
+</tr></thead>
+<tbody><tr>
+
+</tr></tbody>
+</table>
+
+</div>
+
+</td>
 </tr>
 </table>
 
@@ -254,6 +254,7 @@
     $("#chain").val('');
     
     
+    var total_task = {{ total_task }};
     
     var projects = [    { value : "" , label : "All ({{ total_task }} tasks)" },
                         {% for project in projects %}
@@ -280,6 +281,26 @@
                   //  $("#username-label").val('');
                     $("#username-label").autocomplete( "search", "" );
                 } );
+                
+    function updateInterface(data)
+    {
+        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>';
+        for( var i in data )
+        {   
+            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+        }
+        table += '</tr></thead><tbody><tr>';
+        
+       // table += '<td><span class="total">'+ total_task +'</span></td>';
+        for( var i in data )
+        {   
+            table += '<td>'+ data[i].count +'</td>';
+        }
+
+        table += '</tr></tbody></table>';
+        
+        $('#task_stat_table').html(table);
+    }
     
   //  $("#update_task_table").button({ disabled: true });
     
