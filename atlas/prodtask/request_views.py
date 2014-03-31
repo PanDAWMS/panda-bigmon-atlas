@@ -1,4 +1,5 @@
 from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -142,14 +143,17 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'ATLAS'
+        form_data['provenance'] = 'test'
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
     for slice_index, ds in enumerate(output_dict['ds']):
         st_sexec_list = []
         sexec = {}
         irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
-                   input_data=output_dict.get('joboptions', [''])[0])
+                   input_data=output_dict.get('joboptions', [''])[0],
+                   project_mode=output_dict.get('project_mode', [''])[0],
+                   priority=int(output_dict.get('priority', [0])[0]),
+                   input_events=int(output_dict.get('total_num_genev', [-1])[0]))
         if 'tag' in output_dict:
             step_name = step_from_tag(output_dict['tag'][0])
             sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
@@ -176,6 +180,17 @@ def fill_dataset(ds):
             dataset.save()
             return dataset
 
+def request_email_body(long_description,ref_link,energy,campaign, link):
+    return """
+ %s
+
+ The request thread is : %s
+
+Technical details:
+- Campaign %s %s
+- Link to Request: %s
+
+    """%(long_description,ref_link,energy,campaign, link)
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill):
@@ -226,7 +241,11 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     req = TRequest(**form.cleaned_data)
                     print form.cleaned_data
                     req.save()
-                    send_mail('Request N %i was created' % req.reqid, longdesc, APP_SETTINGS['prodtask.email.from'],
+
+                    send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
+                              request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
+                               'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/'%(req.reqid)),
+                              APP_SETTINGS['prodtask.email.from'],
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
                     #print file_dict

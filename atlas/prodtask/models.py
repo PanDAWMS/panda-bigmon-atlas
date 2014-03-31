@@ -146,6 +146,9 @@ class InputRequestList(models.Model):
     phys_comment = models.CharField(max_length=256, db_column='PHYSCOMMENT')
     comment = models.CharField(max_length=256, db_column='SLICECOMMENT')
     input_data = models.CharField(max_length=150, db_column='INPUTDATA')
+    project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
+    priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
+    input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
 
     def save(self, *args, **kwargs):
         if not self.id:

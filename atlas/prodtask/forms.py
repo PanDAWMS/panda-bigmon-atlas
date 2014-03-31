@@ -31,10 +31,8 @@ class TRequestCreateCloneConfirmation(ModelForm):
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="Exel Link")
     excelfile = FileField(required=False, label="Exel File")
-    manager = CharField(widget=forms.HiddenInput)
-    provenance = CharField(widget=forms.HiddenInput)
-    cstatus = CharField(widget=forms.HiddenInput)
-    request_type = CharField(widget=forms.HiddenInput)
+    manager = CharField(widget=forms.HiddenInput, required=False)
+
 
     class Meta:
         model = TRequest
@@ -44,10 +42,13 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
 class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="DPD link")
     excelfile = FileField(required=False, label="DPD file")
+    provenance = CharField(widget=forms.HiddenInput, required=False)
+    cstatus = CharField(widget=forms.HiddenInput, required=False)
+    request_type = CharField(widget=forms.HiddenInput, required=False)
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','provenance','cstatus','request_type']
+        exclude = ['reqid']
 
 
 class MCPatternForm(ModelForm):
