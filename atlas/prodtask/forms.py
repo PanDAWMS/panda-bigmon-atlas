@@ -4,8 +4,9 @@ from django.forms import CharField
 from django.forms import EmailField
 from django.forms import Textarea
 from django.forms import FileField
+from django.forms import DecimalField
 from django.forms import Form
-from models import TRequest, ProductionTask, StepExecution, MCPattern
+from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority
 from django.forms.widgets import TextInput
 
 
@@ -80,6 +81,36 @@ class MCPatternUpdateForm(MCPatternForm):
         model = MCPattern
         exclude = ['id','pattern_dict','pattern_name']
 
+
+class MCPriorityForm(ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        steps = kwargs.pop('steps')
+        super(MCPriorityForm, self).__init__(*args, **kwargs)
+        for step, value in steps:
+            self.fields['custom_%s' % step] = DecimalField(label=step, required=True)
+            if value:
+                self.data['custom_%s' % step] = value
+
+
+
+    def steps_dict(self):
+        return_dict = {}
+        for name, value in self.cleaned_data.items():
+            if name.startswith('custom_'):
+                return_dict.update({self.fields[name].label: int(value)})
+        return return_dict
+
+    class Meta:
+        model = MCPriority
+        exclude = ['id','priority_dict']
+
+
+class MCPriorityUpdateForm(MCPriorityForm):
+
+    class Meta:
+        model = MCPriority
+        exclude = ['id','priority_dict','priority_key']
 
 class RequestUpdateForm(Form):
     pattern_name = CharField(required=False, label="DPD link")

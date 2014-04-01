@@ -10,8 +10,9 @@ import core.datatables as datatables
 import json
 
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
-    TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm
+    TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate
+from prodtask.models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
 from .dpdconfparser import ConfigParser
@@ -403,6 +404,77 @@ def mcpattern_table(request):
         'patterns_in_use': patterns_in_use,
         'header_list': header_list
 
+    })
+
+
+def mcpriority_table(request):
+    mcpriorities = MCPriority.objects.order_by('priority_key')
+    header_list = ['Priority'] + MCPriority.STEPS
+    priorities = []
+    for mc_priority in mcpriorities:
+        current_priority = {}
+        current_priority.update({'id':mc_priority.id})
+        current_priority.update({'priority_key':mc_priority.priority_key})
+        current_priority.update({'priority_steps':[x[1] for x in mcpattern_list_from_json(mc_priority.priority_dict)]})
+        priorities.append(current_priority)
+
+    return render(request, 'prodtask/_mcpriority.html', {
+        'active_app': 'mcprod',
+        'pre_form_text': "MC priority list",
+        'submit_url': 'prodtask:mcpriority_table',
+        'url_args': '',
+        'parent_template': 'prodtask/_index.html',
+        'priorities': priorities,
+        'header_list': header_list
+
+    })
+
+def mcpriority_create(request):
+
+    values = {}
+    pattern_step_list = [(step, '') for step in MCPattern.STEPS]
+    if request.method == 'POST':
+        form = MCPriorityForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        if form.is_valid():
+            mcp = MCPriority.objects.create(priority_key=form.cleaned_data['priority_key'],
+                                            priority_dict=json.dumps(form.steps_dict()))
+
+            mcp.save()
+            return HttpResponseRedirect('/prodtask/mcpriority_table')
+    else:
+         form = MCPriorityForm(values, steps=pattern_step_list)
+    return render(request, 'prodtask/_form.html', {
+        'active_app': 'prodtask',
+        'pre_form_text': 'Creating of mc priority',
+        'form': form,
+        'submit_url': 'prodtask:mcpriority_create',
+        'parent_template': 'prodtask/_index.html',
+    })
+
+
+def mcpriority_update(request, pattern_id):
+    try:
+        values = MCPriority.objects.values().get(id=pattern_id)
+        priority_dict = json.loads(values['priority_dict'])
+        priority_step_list = [(step, priority_dict.get(step, '')) for step in MCPriority.STEPS]
+    except:
+        return HttpResponseRedirect('/prodtask/mcpriority_table')
+    if request.method == 'POST':
+        form = MCPriorityUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        if form.is_valid():
+            mcp = MCPriority.objects.get(id=pattern_id)
+            mcp.priority_dict=json.dumps(form.steps_dict())
+            mcp.save()
+            return HttpResponseRedirect('/prodtask/mcpriority_table')
+    else:
+        form = MCPriorityUpdateForm(values, steps=priority_step_list)
+    return render(request, 'prodtask/_form.html', {
+        'active_app': 'prodtask',
+        'pre_form_text': 'Updating of mc priority: %s' % values['priority_key'],
+        'form': form,
+        'submit_url': 'prodtask:mcpriority_update',
+        'url_args': pattern_id,
+        'parent_template': 'prodtask/_index.html',
     })
 
 class RequestTable(datatables.DataTable):

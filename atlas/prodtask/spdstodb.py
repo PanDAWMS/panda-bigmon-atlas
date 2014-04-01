@@ -100,8 +100,14 @@ def translate_excl_to_dict(excel_dict):
             st = ''
             sexec = {}
             if 'joboptions' in translated_row:
-                irl = dict(slice=index, brief=translated_row.get('brief', ''), comment=translated_row.get('comment', ''),
-                                                                     input_data=translated_row.get('joboptions', ''))
+                input_events = translated_row.get('evfs', 0)
+                if input_events == 0:
+                    input_events = translated_row.get('eva2', 0)
+                irl = dict(slice=index, brief=translated_row.get('brief', ''),
+                           comment=translated_row.get('comment', ''),
+                           input_data=translated_row.get('joboptions', ''),
+                           priority=int(translated_row.get('priority', 0)),
+                           input_events=int(input_events))
                 index += 1
                 for currentstep in StepExecution.STEPS:    
                     if translated_row.get(currentstep):            
