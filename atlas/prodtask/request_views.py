@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -88,11 +89,25 @@ def request_update(request, rid=None):
 
 def mcfile_form_prefill(form_data, request):
     spreadsheet_dict = []
-    if (form_data.get('excellink')):
-        spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
-    if (form_data.get('excelfile')):
-        input_excel = request.FILES['excelfile']
-        spreadsheet_dict += fill_steptemplate_from_file(input_excel)
+    eroor_message = ''
+    try:
+        if (form_data.get('excellink')):
+            spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
+        elif (form_data.get('excelfile')):
+            input_excel = request.FILES['excelfile']
+            spreadsheet_dict += fill_steptemplate_from_file(input_excel)
+    except Exception, e:
+        return {}, str(e)
+    if (spreadsheet_dict == []) and (eroor_message == ''):
+        eroor_message = 'No good data find in file. Please check that all reqired row are filled.'
+    priorities = [x['input_dict']['priority'] for x in spreadsheet_dict]
+    for priority in priorities:
+        try:
+            MCPriority.objects.get(priority_key=int(priority))
+        except ObjectDoesNotExist, e:
+            return {}, "Priority %i doesn't exist in the system" % int(priority)
+        except Exception, e:
+            return {}, str(e)
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
@@ -103,7 +118,7 @@ def mcfile_form_prefill(form_data, request):
         form_data['manager'] = 'None'
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
-    return spreadsheet_dict
+    return spreadsheet_dict, eroor_message
 
 
 def step_from_tag(tag_name):
@@ -114,27 +129,29 @@ def step_from_tag(tag_name):
     if tag_name[0] == 't':
         return 'Rec TAG'
     if tag_name[0] == 'a':
-        return 'Atlfast'
+        return 'Simul'
     return 'Reco'
 
 
 def dpd_form_prefill(form_data, request):
     file_name = None
     spreadsheet_dict = []
-    if form_data.get('excellink'):
-        file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
-    if form_data.get('excelfile'):
-        file_name = request.FILES['excelfile']
-    conf_parser = ConfigParser()
-    with open(file_name) as file_obj:
-        output_dict = conf_parser.parse_config(file_obj)
+    try:
+        if form_data.get('excellink'):
+            file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
+        if form_data.get('excelfile'):
+            file_name = request.FILES['excelfile']
+        conf_parser = ConfigParser()
+        output_dict = conf_parser.parse_config(file_name.read().split('\n'))
+    except Exception, e:
+        eroor_message = str(e)
+        return {},eroor_message
     #print output_dict
     form_data['request_type'] = 'GROUP'
     if 'group' in output_dict:
         form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
     if ('comment' in output_dict):
         form_data['description'] = output_dict['comment'][0]
-
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
     if 'project' in output_dict:
@@ -147,23 +164,27 @@ def dpd_form_prefill(form_data, request):
         form_data['provenance'] = 'test'
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
-    for slice_index, ds in enumerate(output_dict['ds']):
-        st_sexec_list = []
-        sexec = {}
-        irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
-                   input_data=output_dict.get('joboptions', [''])[0],
-                   project_mode=output_dict.get('project_mode', [''])[0],
-                   priority=int(output_dict.get('priority', [0])[0]),
-                   input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-        if 'tag' in output_dict:
-            step_name = step_from_tag(output_dict['tag'][0])
-            sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
-                         input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-            st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
-                                  'memory': output_dict.get('ram', [None])[0],
-                                  'formats': output_dict.get('formats', [None])[0]})
-        spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-    return spreadsheet_dict
+    if 'ds' in output_dict:
+        for slice_index, ds in enumerate(output_dict['ds']):
+            st_sexec_list = []
+            sexec = {}
+            irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
+                       input_data=output_dict.get('joboptions', [''])[0],
+                       project_mode=output_dict.get('project_mode', [''])[0],
+                       priority=int(output_dict.get('priority', [0])[0]),
+                       input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+            if 'tag' in output_dict:
+                step_name = step_from_tag(output_dict['tag'][0])
+                sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                             input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
+                                      'memory': output_dict.get('ram', [None])[0],
+                                      'formats': output_dict.get('formats', [None])[0]})
+            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    eroor_message = ''
+    if spreadsheet_dict == []:
+        eroor_message = 'No "ds" data founnd in file.'
+    return spreadsheet_dict, eroor_message
 
 
 #TODO: Change it to real dataset workflow 
@@ -193,6 +214,16 @@ Technical details:
 
     """%(long_description,ref_link,energy,campaign, link)
 
+
+def get_priority(step_name, ctag, mc_priority_dict):
+    if step_name=='Simul':
+        if ctag[0] == 'a':
+            step_name = 'Simul(Fast)'
+    return mc_priority_dict[step_name]
+
+
+
+
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill):
     if request.method == 'POST':
@@ -200,31 +231,40 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         if form.is_valid():
 
             # Process the data in form.cleaned_data
-            ################### Extra fields in form. Get and remove for creating
             if form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile'):
 
-                file_dict = form_prefill(form.cleaned_data, request)
-                print form.cleaned_data
-                del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
-                #print request.FILES['excelfile']
-                try:
-
-                    form = TRequestCreateCloneConfirmation(form.cleaned_data)
-                    inputlists = [x['input_dict'] for x in file_dict]
-                    request.session['file_dict'] = file_dict
-                    return render(request, 'prodtask/_previewreq.html', {
+                file_dict, error_message = form_prefill(form.cleaned_data, request)
+                if(error_message != ''):
+                    return render(request, 'prodtask/_requestform.html', {
                         'active_app': 'mcprod',
                         'pre_form_text': title,
                         'form': form,
                         'submit_url': submit_url,
                         'url_args': rid,
+                        'error_message': error_message,
                         'parent_template': 'prodtask/_index.html',
-                        'inputLists': inputlists
-                    })
-                except Exception, e:
-                    print e
-                    #TODO: Error message
-                    pass
+                     })
+                else:
+                    del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
+
+                    try:
+
+                        form = TRequestCreateCloneConfirmation(form.cleaned_data)
+                        inputlists = [x['input_dict'] for x in file_dict]
+                        request.session['file_dict'] = file_dict
+                        return render(request, 'prodtask/_previewreq.html', {
+                            'active_app': 'mcprod',
+                            'pre_form_text': title,
+                            'form': form,
+                            'submit_url': submit_url,
+                            'url_args': rid,
+                            'parent_template': 'prodtask/_index.html',
+                            'inputLists': inputlists
+                        })
+                    except Exception, e:
+                        print e
+                        #TODO: Error message
+                        pass
 
             elif 'file_dict' in request.session:
 
@@ -253,16 +293,19 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
+                        mc_priority_dict = json.loads(MCPriority.objects.get(priority_key=input_data['priority']).priority_dict)
+
                         if input_data.get('dataset'):
                                 input_data['dataset'] = fill_dataset(input_data['dataset'])
                         irl = InputRequestList(**input_data)
                         irl.save()
                         for step in current_slice.get('step_exec_dict'):
-                            st = fill_template(step['step_name'], step['tag'], step['step_exec']['priority'],
+                            st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
+                            step['step_exec']['priority'] = get_priority(st.step,st.ctag,mc_priority_dict)
                             #print step['step_exec']
                             st_exec = StepExecution(**step['step_exec'])
                             st_exec.save_with_current_time()
@@ -349,11 +392,14 @@ def mcpattern_create(request, pattern_id=None):
     })
 
 
+def step_list_from_json(json_pattern, STEPS=MCPattern.STEPS):
+    pattern_dict = json.loads(json_pattern)
+    return [(step, pattern_dict.get(step, '')) for step in STEPS]
+
 def mcpattern_update(request, pattern_id):
     try:
         values = MCPattern.objects.values().get(id=pattern_id)
-        pattern_dict = json.loads(values['pattern_dict'])
-        pattern_step_list = [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
+        pattern_step_list = step_list_from_json(values['pattern_dict'],MCPattern.STEPS)
     except:
         return HttpResponseRedirect('/prodtask/mcpattern_table')
     if request.method == 'POST':
@@ -375,9 +421,7 @@ def mcpattern_update(request, pattern_id):
         'parent_template': 'prodtask/_index.html',
     })
 
-def mcpattern_list_from_json(json_pattern):
-    pattern_dict = json.loads(json_pattern)
-    return [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
+
 
 
 def mcpattern_table(request):
@@ -389,7 +433,7 @@ def mcpattern_table(request):
         current_pattern = {}
         current_pattern.update({'id':mcpattern.id})
         current_pattern.update({'name':mcpattern.pattern_name})
-        current_pattern.update({'pattern_steps':[x[1] for x in mcpattern_list_from_json(mcpattern.pattern_dict)]})
+        current_pattern.update({'pattern_steps':[x[1] for x in step_list_from_json(mcpattern.pattern_dict,MCPattern.STEPS)]})
         if mcpattern.pattern_status == 'IN USE':
             patterns_in_use.append(current_pattern)
         else:
@@ -415,7 +459,7 @@ def mcpriority_table(request):
         current_priority = {}
         current_priority.update({'id':mc_priority.id})
         current_priority.update({'priority_key':mc_priority.priority_key})
-        current_priority.update({'priority_steps':[x[1] for x in mcpattern_list_from_json(mc_priority.priority_dict)]})
+        current_priority.update({'priority_steps':[x[1] for x in step_list_from_json(mc_priority.priority_dict,MCPriority.STEPS)]})
         priorities.append(current_priority)
 
     return render(request, 'prodtask/_mcpriority.html', {
@@ -432,9 +476,9 @@ def mcpriority_table(request):
 def mcpriority_create(request):
 
     values = {}
-    pattern_step_list = [(step, '') for step in MCPattern.STEPS]
+    pattern_step_list = [(step, '') for step in MCPriority.STEPS]
     if request.method == 'POST':
-        form = MCPriorityForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        form = MCPriorityForm(request.POST, steps=[(step, '') for step in MCPriority.STEPS])
         if form.is_valid():
             mcp = MCPriority.objects.create(priority_key=form.cleaned_data['priority_key'],
                                             priority_dict=json.dumps(form.steps_dict()))
@@ -455,12 +499,11 @@ def mcpriority_create(request):
 def mcpriority_update(request, pattern_id):
     try:
         values = MCPriority.objects.values().get(id=pattern_id)
-        priority_dict = json.loads(values['priority_dict'])
-        priority_step_list = [(step, priority_dict.get(step, '')) for step in MCPriority.STEPS]
+        priority_step_list = step_list_from_json(values['priority_dict'],MCPriority.STEPS)
     except:
         return HttpResponseRedirect('/prodtask/mcpriority_table')
     if request.method == 'POST':
-        form = MCPriorityUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        form = MCPriorityUpdateForm(request.POST, steps=[(step, '') for step in MCPriority.STEPS])
         if form.is_valid():
             mcp = MCPriority.objects.get(id=pattern_id)
             mcp.priority_dict=json.dumps(form.steps_dict())

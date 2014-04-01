@@ -90,6 +90,7 @@ def fill_template(stepname, tag, priority, formats=None, ram=None):
 def translate_excl_to_dict(excel_dict):      
         return_list = []
         index = 0
+        checked_rows = []
         for row in excel_dict:
             irl = {}
             st_sexec_list = []
@@ -99,28 +100,36 @@ def translate_excl_to_dict(excel_dict):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
             st = ''
             sexec = {}
-            if 'joboptions' in translated_row:
-                input_events = translated_row.get('evfs', 0)
-                if input_events == 0:
-                    input_events = translated_row.get('eva2', 0)
-                irl = dict(slice=index, brief=translated_row.get('brief', ''),
-                           comment=translated_row.get('comment', ''),
-                           input_data=translated_row.get('joboptions', ''),
-                           priority=int(translated_row.get('priority', 0)),
-                           input_events=int(input_events))
-                index += 1
-                for currentstep in StepExecution.STEPS:    
-                    if translated_row.get(currentstep):            
-                        st = currentstep
-                        tag = translated_row[currentstep]
-    
-                        if StepExecution.STEPS.index(currentstep) < StepExecution.STEPS.index('Atlfast'):
-                            input_events = translated_row.get('evfs', 0)
-                        else:
-                            input_events = translated_row.get('eva2', 0)          
-                        sexec = dict(status='NotChecked', priority=int(translated_row.get('priority', 0)), input_events=int(input_events))
-                        st_sexec_list.append({'step_name' :st, 'tag': tag, 'step_exec': sexec})
-                return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
+            if ('joboptions' in translated_row) and ('brief' in translated_row) and ('ds' in translated_row):
+                if translated_row in checked_rows:
+                    continue
+                else:
+                    checked_rows.append(translated_row)
+                    input_events = translated_row.get('evfs', 0)
+                    if input_events == 0:
+                        input_events = translated_row.get('eva2', 0)
+                    if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
+                        if translated_row['joboptions'].split('.')[1] !=  str(int(translated_row['ds'])):
+                            raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
+                    irl = dict(slice=index, brief=translated_row.get('brief', ''),
+                               comment=translated_row.get('comment', ''),
+                               input_data=translated_row.get('joboptions', ''),
+                               priority=int(translated_row.get('priority', 0)),
+                               input_events=int(input_events))
+
+                    index += 1
+                    for currentstep in StepExecution.STEPS:
+                        if translated_row.get(currentstep):
+                            st = currentstep
+                            tag = translated_row[currentstep]
+
+                            if StepExecution.STEPS.index(currentstep) < StepExecution.STEPS.index('Atlfast'):
+                                input_events = translated_row.get('evfs', 0)
+                            else:
+                                input_events = translated_row.get('eva2', 0)
+                            sexec = dict(status='NotChecked', input_events=int(input_events))
+                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'step_exec': sexec})
+                    return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 
 def fill_steptemplate_from_gsprd(gsprd_link):
@@ -143,9 +152,8 @@ def fill_steptemplate_from_file(file_obj):
         try:
             excel_parser = XlrParser()
             excel_dict = excel_parser.open_by_open_file(file_obj)[0]
-            print excel_dict
         except Exception, e:
-            raise RuntimeError("Problem with link openning, \n %s" % e)
+            raise RuntimeError("Problem with file openning, \n %s" % e)
         return translate_excl_to_dict(excel_dict)  
 
 

@@ -285,7 +285,17 @@ class MCPattern(models.Model):
 
 
 class MCPriority(models.Model):
-    STEPS = MCPattern.STEPS;
+    STEPS = ['Evgen',
+             'Simul',
+             'Simul(Fast)',
+             'Merge',
+             'Digi',
+             'Reco',
+             'Rec Merge',
+             'Rec TAG',
+             'Atlfast',
+             'Atlf Merge',
+             'Atlf TAG']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCPRIOR_ID', primary_key=True)
     priority_key = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY_KEY', unique=True)
     priority_dict = models.CharField(max_length=2000, db_column='PRIORITY_DICT')
