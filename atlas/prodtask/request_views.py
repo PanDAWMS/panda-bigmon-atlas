@@ -546,7 +546,12 @@ class RequestTable(datatables.DataTable):
         label='Manager',
     )
 
-    status = datatables.Column(
+    request_type = datatables.Column(
+        label='Type',
+    )
+
+
+    cstatus = datatables.Column(
         label='Approval status',
     )
 

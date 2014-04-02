@@ -10,7 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import core.datatables as datatables
 
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask
 from prodtask.spdstodb import fill_template
 
 
@@ -187,8 +187,10 @@ def input_list_approve(request, rid=None):
                 approved_count = 0
                 total_slice = 0
                 slice_pattern = []
+                edit_mode = False
                 if not input_lists_pre:
                     input_lists_pre = []
+                    edit_mode = True
                 else:
                     use_input_date_for_pattern = True
                     if not input_lists_pre[0].input_data:
@@ -202,6 +204,7 @@ def input_list_approve(request, rid=None):
                         slice_steps = {}
                         total_slice += 1
                         approved = 'Approved'
+                        show_task = False
 
                         if use_input_date_for_pattern:
                             current_slice_pattern = slice.input_data.split('.')
@@ -217,12 +220,22 @@ def input_list_approve(request, rid=None):
 
                         for step in step_execs:
                             skipped = (step.status=='Skipped')or(step.status=='NotCheckedSkipped')
-                            slice_steps.update({step.step_template.step:{'tag':step.step_template.ctag,'skipped':skipped}})
+                            try:
+                                step_task = ProductionTask.objects.filter(step = step).order_by('-submit_time')[0]
+                            except Exception,e:
+                                step_task = {}
+                            if step_task:
+                                show_task = True
+                                slice_steps.update({step.step_template.step:{'tag':step.step_template.ctag,'skipped':skipped,'task':step_task, 'task_short':step_task.status[0:8]}})
+                            else:
+                                slice_steps.update({step.step_template.step:{'tag':step.step_template.ctag,'skipped':skipped,'task':{}, 'task_short':''}})
                             if (step.status!='Approved')and(step.status!='Skipped'):
                                 approved = 'Not approved'
                         if approved == 'Approved':
                             approved_count += 1
-                        input_lists.append((slice,[slice_steps.get(x,{'tag':'','skipped':True}) for x in StepExecution.STEPS],approved))
+                        input_lists.append((slice,[slice_steps.get(x,{'tag':'','skipped':True,'task':{},'taskshort':''}) for x in StepExecution.STEPS],approved,show_task))
+                        if not show_task:
+                            edit_mode = True
                 step_list = [{'name':x,'idname':x.replace(" ",'')} for x in  StepExecution.STEPS]
                 return   render(request, 'prodtask/_reqdatatable.html', {
                    'active_app' : 'prodtask',
@@ -234,7 +247,8 @@ def input_list_approve(request, rid=None):
                    'pr_id': rid,
                    'approvedCount': approved_count,
                    'pattern': '.'.join(slice_pattern),
-                   'totalSlice':total_slice
+                   'totalSlice':total_slice,
+                   'edit_mode':edit_mode
                    })
         except Exception, e:
             print e

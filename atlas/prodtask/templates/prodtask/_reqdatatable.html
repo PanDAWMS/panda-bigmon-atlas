@@ -15,6 +15,53 @@
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
 	</style>
+   <style type="text/css">
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : blue;	}
+	span.submitting	{ color : blue;	}
+	span.archived 	{ color : magenta;	}
+ 	span.submitted	{ color : green;	}
+
+	span.running 	{ color : LightGreen;	}
+
+	span.done 		{ color : darkgreen;	}
+	span.finished	{ color : darkgreen;	}
+
+	span.failures	{ color : orange;	}
+
+	span.failed 	{ color : red;	}
+	span.aborted 	{ color : red;	}
+	span.broken		{ color : red;	}
+
+	span.navy		{ color : blue; }
+    span.registered { color : blue;}
+  </style>
+   <style type="text/css">
+ 	td.obsolete	{ background-color : lightblue;}
+	td.holding 	{ background-color : black;	}
+	td.pending	{ background-color : blue;		}
+	td.waiting	{ background-color : blue;	}
+	td.submitting	{ background-color : blue;	}
+	td.archived 	{ background-color : magenta;	}
+ 	td.submitted	{ background-color : green;	}
+
+	td.running 	{ background-color : LightGreen;	}
+
+	td.done 		{ background-color : darkgreen;	}
+	td.finished	{ background-color : darkgreen;	}
+
+	td.failures	{ background-color : orange;	}
+
+	td.failed 	{ background-color : red;	}
+	td.aborted 	{ background-color : red;	}
+	td.broken		{ background-color : red;	}
+
+	td.navy		{ background-color : blue; }
+    td.registered { background-color : blue;}
+  </style>
+    
 {% endblock %}
 
 {% block base_js %}
@@ -57,6 +104,11 @@ $(document).ready(function(){
 
 
 
+{% if not edit_mode %}
+    $("#pattern_table").hide();
+    $("#approveButton").hide();
+    $("#saveButton").hide();
+{% endif %}
 
 
 
@@ -333,7 +385,7 @@ $("#select_pattern").change(function(){
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
 <form >
 
-<table style="margin-left: 50px;border: hidden">
+<table style="margin-left: 50px;border: hidden" id="pattern_table">
 <tr>
     <th colspan="10">
         <select id="select_pattern" >
@@ -367,7 +419,7 @@ $("#select_pattern").change(function(){
 
 
     <div >
-    {% for inputList, step_exec_dict, approved in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task in inputLists %}
         <div class="input_list_divs" id="input_list_div{{ inputList.slice }}">
         <table class="outside_input_list_tables" id="outside_input_list_tables{{ inputList.slice }}"><tr>
             <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkbox_slice" id="checkbox{{ inputList.slice }}" checked></form></td>
@@ -404,6 +456,24 @@ $("#select_pattern").change(function(){
                 {% ifequal approved "Not approved" %}
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}"style="color: red"> Not approved </td>
                 {% endifequal %}
+            {% if show_task %}
+                        <tr>
+                        <td>T:</td>
+
+                        {% for step in step_exec_dict %}
+                        {% if step.task %}
+
+                        {% endif %}
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" >
+                            <div>
+                               <a href="{{ step.task.id }}"><span class="{{ step.task.status }}">{{ step.task_short }}</span></a>
+                            </div>
+                        </td>
+
+                        {% endfor %}
+                        <td colspan="2"></td>
+                        </tr>
+            {% endif%}
             </tr>
             </table>
             <table class="input_list_tables_long" style="display: none">
@@ -422,26 +492,40 @@ $("#select_pattern").change(function(){
                 <td><button id="bind{{ inputList.slice }}" class="slice_bind" title="Create step execution">Bind</button></td>
                 <td><button id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
                 <tr>
-                <th rowspan="2"></th>
-                {% for step in step_list %}
-                        <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
-                {% endfor %}
-                {% ifequal approved "Approved" %}
-                    <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: greenyellow"> Approved </th>
-                {% endifequal %}
-                {% ifequal approved "Not approved" %}
-                    <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: red"> Not approved </th>
-                {% endifequal %}
-                </tr>
-                    <tr>
-                    {% for step in step_exec_dict %}
-                        <td  style="padding: 0px;width: 50px" >
-                            <div  >
-                                <form><input type="text" onchange="long_form_change(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}"></form>
-                            </div>
-                        </td>
+                {% if show_task %}
+                        <tr><td></td><td colspan="11">Tasks:</td></tr>
+                        {% for step in step_exec_dict %}
+                        {% if step.task %}
+                            <tr><td></td><td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
+                            <td colspan="2"><span class="{{ step.task.status }}">{{ step.task.status }}</span></td>
+                            <td colspan="7">{{ step.task.name }}</td>
+                            <td colspan="2"></td>
+                            </tr>
+                        {% endif %}
+                        {% endfor %}
+
+                {% else %}
+                    <th rowspan="2"></th>
+                    {% for step in step_list %}
+                            <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
                     {% endfor %}
+                    {% ifequal approved "Approved" %}
+                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: greenyellow"> Approved </th>
+                    {% endifequal %}
+                    {% ifequal approved "Not approved" %}
+                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: red"> Not approved </th>
+                    {% endifequal %}
                     </tr>
+                        <tr style="padding: 0px">
+                        {% for step in step_exec_dict %}
+                            <td  style="padding: 0px;width: 50px" >
+                                <div  >
+                                    <form><input type="text" onchange="long_form_change(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
+                                </div>
+                            </td>
+                        {% endfor %}
+                        </tr>
+                {% endif %}
             </table>
         </td>
         </tr></table>
@@ -449,5 +533,5 @@ $("#select_pattern").change(function(){
 	{% endfor %}
     </div>
 <button id="approveButton" title="Approve selected slices" onclick="approve_click(event,true);">Approve slices</button>
-<button id="approveButton" title="Save selected slices without approval" onclick="approve_click(event,false);">Save slices</button>
+<button id="saveButton" title="Save selected slices without approval" onclick="approve_click(event,false);">Save slices</button>
 {% endblock %}
