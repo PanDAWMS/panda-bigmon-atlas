@@ -463,13 +463,15 @@ $("#select_pattern").change(function(){
                         {% for step in step_exec_dict %}
                         {% if step.task %}
 
-                        {% endif %}
+
                         <td  style="padding: 0px;width: 50px;border:1px solid black" >
                             <div>
-                               <a href="{{ step.task.id }}"><span class="{{ step.task.status }}">{{ step.task_short }}</span></a>
+                               <a href="{% url 'prodtask:task' step.task.id %}"><span class="{{ step.task.status }}">{{ step.task_short }}</span></a>
                             </div>
                         </td>
-
+                        {% else %}
+                            <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        {% endif %}
                         {% endfor %}
                         <td colspan="2"></td>
                         </tr>
