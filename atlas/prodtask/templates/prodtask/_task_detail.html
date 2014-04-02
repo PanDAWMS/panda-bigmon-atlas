@@ -19,9 +19,10 @@
 <tr><th><label for="step">Step execution:</label></th><td>{% if task.step.id %}<a href="{% url 'prodtask:step_execution' task.step.id %}">{{task.step.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:request' task.request.reqid %}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="parent_id">Parent ID:</label></th><td>{% if task.parent_id %}<a href="{% url 'prodtask:task' task.parent_id  %}">{{task.parent_id}}</a>{% else %}None{% endif %}</td></tr>
-<tr><th><label for="name">Name:</label></th><td>{{ task.name }}</td></tr>
+<tr><th><label for="chain_tid">Chain ID:</label></th><td>{% if task.chain_tid %}<a href="{% url 'prodtask:task' task.chain_tid  %}">{{task.chain_tid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="name">Name:</label></th><td>{% if task.id %}<a href="{% url 'prodtask:task' task.id %}">{{task.name}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="project">Project:</label></th><td>{{ task.project }}</td></tr>
-<tr><th><label for="project">Chain ID:</label></th><td>{% if task.chain_tid %}<a href="{% url 'prodtask:task' task.chain_tid  %}">{{task.chain_tid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="username">Owner:</label></th><td>{{ task.username }}</td></tr>
 <tr><th><label for="dsn">Dsn:</label></th><td>{{ task.dsn }}</td></tr>
 <tr><th><label for="phys_short">Phys short:</label></th><td>{{ task.phys_short }}</td></tr>
 <tr><th><label for="simulation_type">Simulation type:</label></th><td>{{ task.simulation_type }}</td></tr>

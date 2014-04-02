@@ -248,10 +248,12 @@ class ProductionTaskTable(datatables.DataTable):
                             {
                                 var row = data['aaData'][i];
                                 
-                                row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>&nbsp;&nbsp;'; /*+
+                                row[4] = '<a href="/prodtask/task/'+row[0]+'/">'+row[4]+'</a>';
+                                
+                                row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>'; /*+
                                                      '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
                                                      '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
-
+                                                     
                                 row[1] = '<a href="/prodtask/stepex/'+row[1]+'/">'+row[1]+'</a>';
 	                            row[2] = '<a href="/prodtask/request/'+row[2]+'/">'+row[2]+'</a>';
                                                      
