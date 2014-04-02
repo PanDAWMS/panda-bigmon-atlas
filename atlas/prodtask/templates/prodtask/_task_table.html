@@ -58,7 +58,7 @@
 <tr>
 <td>
 <table style="text-align: right;">
-    <thead><tr><th colspan="0" style="text-align:center">Task select parameters</th></tr></thead>
+    <thead><tr><th colspan="0" style="text-align:center">Tasks select parameters</th></tr></thead>
     <tbody>
  <!--   <tr>
         <td>Filter:</td>
@@ -70,7 +70,7 @@
     
     <table>
     <tr>
-        <td>Task type:</td>
+        <td>Tasks type:</td>
         <td>
         <select id="task_type">
             <option value="">All ({{ total_task }} tasks)</option>
@@ -156,7 +156,7 @@
     
     <table>
     <tr>
-        <td>Time period:</td>
+        <td>Submit time period:</td>
         <td>
         <select id="time_period">
             <option value="" disabled="disabled">Custom</option>
@@ -199,7 +199,7 @@
 <td>
 <div id="task_stat_table">
 
-<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>
+<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>
 
 </tr></thead>
 <tbody><tr>
@@ -284,7 +284,7 @@
                 
     function updateInterface(data)
     {
-        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Task statistics</th></tr><tr>';
+        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
         for( var i in data )
         {   
             table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
