@@ -61,7 +61,17 @@
 	td.navy		{ background-color : blue; }
     td.registered { background-color : blue;}
   </style>
-    
+
+   <style>
+    tr.bottom_row_task td {border-bottom: 1px solid black;}
+   </style>
+
+    <style>
+    td.approved { color : green;	}
+    td.not_approved { color : red;}
+    td.evgen_approved { color : orange;	}
+   </style>
+
 {% endblock %}
 
 {% block base_js %}
@@ -108,6 +118,8 @@ $(document).ready(function(){
     $("#pattern_table").hide();
     $("#approveButton").hide();
     $("#saveButton").hide();
+    $("#approveEvgenButton").hide();
+    $(".hiddenNonEdit").hide();
 {% endif %}
 
 
@@ -226,7 +238,7 @@ $("#select_pattern").change(function(){
             }
         }
     });
-    function approve_click(event,isApprove){
+    function approve_click(event,isApprove, isEvgen){
         event.preventDefault();
         var send_data = Object();
             $(".checkbox_slice:checked").each(function(){
@@ -253,7 +265,9 @@ $("#select_pattern").change(function(){
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
-                console.log($.toJSON(send_data));
+                if (isEvgen){
+                    ajaxURL = "{% url 'prodtask:request_steps_evgen_approve' pr_id %}";
+                }
                 $.ajax({
                     url: ajaxURL,
                     type: 'POST',
@@ -274,7 +288,6 @@ $("#select_pattern").change(function(){
                                         $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
                                        for (i=0;i<slices.length;i++){
-                                           console.log(slices[i]);
                                            $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");
                                            $("#aprroveLabelLong".concat(slices[i])).css({'color':'greenyellow'}).html("Approved")
                                        }
@@ -442,7 +455,8 @@ $("#select_pattern").change(function(){
                     </td>
                     <td>{{  inputList.dataset.name }}</td>
                 {% endif %}
-                <td>{{ inputList.brief }}</td>
+{#                <td>{{ inputList.brief }}</td>#}
+            <td></td>
             </tr>
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
@@ -450,12 +464,9 @@ $("#select_pattern").change(function(){
                         <td class="show_full_span" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                 {% endfor %}
-                {% ifequal approved "Approved" %}
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="color: greenyellow"> Approved </td>
-                {% endifequal %}
-                {% ifequal approved "Not approved" %}
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}"style="color: red"> Not approved </td>
-                {% endifequal %}
+
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}">{{ approved }}</td>
+
             {% if show_task %}
                         <tr>
                         <td>T:</td>
@@ -464,9 +475,9 @@ $("#select_pattern").change(function(){
                         {% if step.task %}
 
 
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" >
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ step.task.status }}" >
                             <div>
-                               <a href="{% url 'prodtask:task' step.task.id %}"><span class="{{ step.task.status }}">{{ step.task_short }}</span></a>
+                               <a href="{% url 'prodtask:task' step.task.id %}"><span style="color: #000000">{{ step.task_short }}</span></a>
                             </div>
                         </td>
                         {% else %}
@@ -481,8 +492,9 @@ $("#select_pattern").change(function(){
             <table class="input_list_tables_long" style="display: none">
                 <tr><td style="width: 20px" class='show_small_span' >{{ inputList.slice }}</td>
                  <td colspan="11" class='show_small_span'>Dataset: <span class="filterField">{{ inputList.dataset.name }}</span></td></tr>
-                <tr><td></td><td colspan="11">JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
+                <tr><td></td><td colspan="11" class='show_small_span'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
+                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: {{ inputList.input_events }}</td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
                     <select id="select_pattern" >
                         <option value="" disabled selected>Select pattern</option>
@@ -498,10 +510,14 @@ $("#select_pattern").change(function(){
                         <tr><td></td><td colspan="11">Tasks:</td></tr>
                         {% for step in step_exec_dict %}
                         {% if step.task %}
-                            <tr><td></td><td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
-                            <td colspan="2"><span class="{{ step.task.status }}">{{ step.task.status }}</span></td>
+                            <tr><td></td>
+                            <td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
+                            <td colspan="2" ><span class="{{ step.task.status }}" >{{ step.task.status }}</span></td>
                             <td colspan="7">{{ step.task.name }}</td>
-                            <td colspan="2"></td>
+                            </tr>
+                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }} </td>
+                            <td colspan="5" >Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</td>
+                            <td colspan="4">bug: {{ step.task.bug_report }}</td>
                             </tr>
                         {% endif %}
                         {% endfor %}
@@ -511,12 +527,9 @@ $("#select_pattern").change(function(){
                     {% for step in step_list %}
                             <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
                     {% endfor %}
-                    {% ifequal approved "Approved" %}
-                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: greenyellow"> Approved </th>
-                    {% endifequal %}
-                    {% ifequal approved "Not approved" %}
-                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" style="color: red"> Not approved </th>
-                    {% endifequal %}
+
+                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" class="{{ approved }}"> {{ approved }} </th>
+
                     </tr>
                         <tr style="padding: 0px">
                         {% for step in step_exec_dict %}
@@ -534,6 +547,8 @@ $("#select_pattern").change(function(){
         </div>
 	{% endfor %}
     </div>
-<button id="approveButton" title="Approve selected slices" onclick="approve_click(event,true);">Approve slices</button>
-<button id="saveButton" title="Save selected slices without approval" onclick="approve_click(event,false);">Save slices</button>
+ <strong class="hiddenNonEdit">Work with selected slices:</strong>
+<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approve_click(event,true,true);">Approve Evgen</button>
+<button id="approveButton" title="Approve selected slices" onclick="approve_click(event,true,false);">Approve</button>
+<button id="saveButton" title="Save selected slices without approval" onclick="approve_click(event,false,false);">Save</button>
 {% endblock %}
