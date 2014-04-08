@@ -4,7 +4,7 @@ from os.path import dirname, join
 import core
 import atlas
 
-from atlas.settings.local import defaultDatabase, MY_SECRET_KEY, dbaccess, local_log_root
+from .local import defaultDatabase, MY_SECRET_KEY, dbaccess, local_log_root
 
 ### VIRTUALENV
 VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
@@ -12,7 +12,7 @@ VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
 ### WSGI
 WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
 
-DATABASE_ROUTERS = ['dbrouter.ProdMonDBRouter']
+DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
