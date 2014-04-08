@@ -9,7 +9,7 @@ from django.template.response import TemplateResponse
 from django.utils import timezone
 import core.datatables as datatables
 import json
-
+import logging
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate
@@ -19,6 +19,8 @@ from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemp
 from .dpdconfparser import ConfigParser
 from core.xls_parser import open_tempfile_from_url
 
+
+_logger = logging.getLogger('prodtaskwebui')
 
 def request_details(request, rid=None):
     if rid:
@@ -51,7 +53,7 @@ def request_clone(request, rid=None):
                                                TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation,
                                                dpd_form_prefill)
         except Exception, e:
-            print e
+            _logger.error("Problem with request clonning #%i: %s"%(rid,e))
             return HttpResponseRedirect('/')
     else:
         return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
@@ -68,9 +70,13 @@ def request_update(request, rid=None):
             return HttpResponseRedirect('/')
         if form.is_valid():
             # Process the data in form.cleaned_data
-            req = TRequest(**form.cleaned_data)
-            req.save()
-            return HttpResponseRedirect('/prodtask/request/%s' % req.reqid)  # Redirect after POST
+            _logger.debug("Update request #%i: %s"%(rid, form.cleaned_data))
+            try:
+                req = TRequest(**form.cleaned_data)
+                req.save()
+                return HttpResponseRedirect('/prodtask/request/%s' % req.reqid)  # Redirect after POST
+            except Exception,e :
+                 _logger.error("Problem with request update #%i: %s"%(rid, e))
     else:
         try:
             req = TRequest.objects.get(reqid=rid)
@@ -91,12 +97,15 @@ def mcfile_form_prefill(form_data, request):
     spreadsheet_dict = []
     eroor_message = ''
     try:
-        if (form_data.get('excellink')):
+        if form_data.get('excellink'):
+            _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
-        elif (form_data.get('excelfile')):
+        elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
+            _logger.debug('Try to read data from %s' % input_excel)
             spreadsheet_dict += fill_steptemplate_from_file(input_excel)
     except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
         return {}, str(e)
     if (spreadsheet_dict == []) and (eroor_message == ''):
         eroor_message = 'No good data find in file. Please check that all reqired row are filled.'
@@ -105,8 +114,10 @@ def mcfile_form_prefill(form_data, request):
         try:
             MCPriority.objects.get(priority_key=int(priority))
         except ObjectDoesNotExist, e:
+            _logger.error("Priority %i doesn't exist in the system" % int(priority))
             return {}, "Priority %i doesn't exist in the system" % int(priority)
         except Exception, e:
+            _logger.error("Problem with %i doesn't exist in the system" % int(priority))
             return {}, str(e)
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'Created'
@@ -118,6 +129,7 @@ def mcfile_form_prefill(form_data, request):
         form_data['manager'] = 'None'
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
+    _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
 
@@ -138,19 +150,24 @@ def dpd_form_prefill(form_data, request):
     spreadsheet_dict = []
     try:
         if form_data.get('excellink'):
+            _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
+            with open(file_name) as open_file:
+                file_obj = open_file.read().split('\n')
         if form_data.get('excelfile'):
-            file_name = request.FILES['excelfile']
+            file_obj = request.FILES['excelfile'].read().split('\n')
+            _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+
         conf_parser = ConfigParser()
-        output_dict = conf_parser.parse_config(file_name.read().split('\n'))
+        output_dict = conf_parser.parse_config(file_obj)
     except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)
         return {},eroor_message
-    #print output_dict
     form_data['request_type'] = 'GROUP'
     if 'group' in output_dict:
         form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
-    if ('comment' in output_dict):
+    if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
@@ -182,8 +199,9 @@ def dpd_form_prefill(form_data, request):
                                       'formats': output_dict.get('formats', [None])[0]})
             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
     eroor_message = ''
-    if spreadsheet_dict == []:
+    if not spreadsheet_dict:
         eroor_message = 'No "ds" data founnd in file.'
+    _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
 
@@ -248,7 +266,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
 
                     try:
-
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
                         inputlists = [x['input_dict'] for x in file_dict]
                         request.session['file_dict'] = file_dict
@@ -262,27 +279,27 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             'inputLists': inputlists
                         })
                     except Exception, e:
-                        print e
-                        #TODO: Error message
-                        pass
+                        _logger.error("Problem during request form creating: %s" % e)
+                        return HttpResponseRedirect('/prodtask/request_table/')
 
             elif 'file_dict' in request.session:
 
-                try:
-                    #TODO: Waiting message
-                    file_dict = request.session['file_dict']
-                    del request.session['file_dict']
-                    longdesc = form.cleaned_data.get('long_description', '')
-                    cc = form.cleaned_data.get('cc', '')
-                    del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
-                        form.cleaned_data['excelfile']
-                    if 'reqid' in form.cleaned_data:
-                        del form.cleaned_data['reqid']
-                    form.cleaned_data['cstatus'] = 'Created'
-                    req = TRequest(**form.cleaned_data)
-                    print form.cleaned_data
-                    req.save()
 
+                #TODO: Waiting message
+                #TODO: One commission
+                file_dict = request.session['file_dict']
+                del request.session['file_dict']
+                longdesc = form.cleaned_data.get('long_description', '')
+                cc = form.cleaned_data.get('cc', '')
+                del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
+                    form.cleaned_data['excelfile']
+                if 'reqid' in form.cleaned_data:
+                    del form.cleaned_data['reqid']
+                form.cleaned_data['cstatus'] = 'Created'
+                try:
+                    _logger.debug("Creating request : %s" % form.cleaned_data)
+                    req = TRequest(**form.cleaned_data)
+                    req.save()
                     send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
                               request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
                                'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/'%(req.reqid)),
@@ -290,13 +307,15 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
                     #print file_dict
+
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
-                        mc_priority_dict = json.loads(MCPriority.objects.get(priority_key=input_data['priority']).priority_dict)
-
+                        if (input_data['priority']<10):
+                            mc_priority_dict = json.loads(MCPriority.objects.get(priority_key=input_data['priority']).priority_dict)
                         if input_data.get('dataset'):
                                 input_data['dataset'] = fill_dataset(input_data['dataset'])
+                        _logger.debug("Filling input data: %s" % input_data)
                         irl = InputRequestList(**input_data)
                         irl.save()
                         for step in current_slice.get('step_exec_dict'):
@@ -305,14 +324,18 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
-                            step['step_exec']['priority'] = get_priority(st.step,st.ctag,mc_priority_dict)
+
+                            if (input_data['priority']<10):
+                                step['step_exec']['priority'] = get_priority(st.step,st.ctag,mc_priority_dict)
+                            else:
+                                step['step_exec']['priority'] = input_data['priority']
                             #print step['step_exec']
+                            _logger.debug("Filling step execution data: %s" % step['step_exec'])
                             st_exec = StepExecution(**step['step_exec'])
                             st_exec.save_with_current_time()
-
                 except Exception, e:
-                    print e
-                    #TODO: Error message
+                    _logger.error("Problem during request creat: %s" % e)
+                    #TODO: Error messsage
                     return HttpResponseRedirect('/prodtask/request_table/')
                 return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)
 
@@ -330,13 +353,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
         if (rid):
             try:
+                _logger.debug("Clonning request #%s " % rid)
                 values = TRequest.objects.values().get(reqid=rid)
-                #print values
                 form = TRequestCreateCloneForm(values)
-                #del values['reqid']
-            except:
+            except Exception, e:
                 return HttpResponseRedirect('/')
         else:
+            _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
 
     return render(request, 'prodtask/_form.html', {

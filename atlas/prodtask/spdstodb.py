@@ -3,6 +3,7 @@ Created on Nov 6, 2013
 
 @author: mborodin
 '''
+import logging
 from django.utils import timezone
 
 import core.gspread as gspread
@@ -13,6 +14,8 @@ import urllib2
 
 
 from core.xls_parser import XlrParser, open_tempfile_from_url
+
+_logger = logging.getLogger('prodtaskwebui')
 
 TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
                          'Evgen',
@@ -29,14 +32,14 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
 
 def get_key_by_url(url):       
         response = urllib2.urlopen(url)
-        #print response.url
         r = response.url
         google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
         if not google_key:
             google_key = r[r.find("key=") + len("key="):r.find('#')]
         if not google_key:
             google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]  
-        return google_key 
+        _logger.debug("Google key %s retrieved from %s"%(google_key,url))
+        return google_key
     
 def fill_template(stepname, tag, priority, formats=None, ram=None):
         st = None
@@ -84,13 +87,14 @@ def fill_template(stepname, tag, priority, formats=None, ram=None):
                     st.lparams = tr.lparams
                     st.vparams = tr.vparams
                     st.save()
-                    
+                _logger.debug('Created step template: %i' % st.id)
                 return st
 
 def translate_excl_to_dict(excel_dict):      
         return_list = []
         index = 0
         checked_rows = []
+        _logger.debug('Converting to input-step dict: %s' % excel_dict)
         for row in excel_dict:
             irl = {}
             st_sexec_list = []
