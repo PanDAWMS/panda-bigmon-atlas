@@ -4,7 +4,7 @@ from os.path import dirname, join
 import core
 import atlas
 
-from local import dbaccess, MY_SECRET_KEY, defaultDatetimeFormat
+from atlas.settings.local import defaultDatabase, MY_SECRET_KEY, dbaccess
 
 ### VIRTUALENV
 VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
@@ -12,7 +12,7 @@ VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
 ### WSGI
 WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
 
-DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
+DATABASE_ROUTERS = ['dbrouter.ProdMonDBRouter']
 
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
@@ -44,7 +44,6 @@ SECRET_KEY = MY_SECRET_KEY
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 DATABASES = dbaccess
 
-
 ### URL_PATH_PREFIX for multi-developer apache/wsgi instance
 ### on EC2: URL_PATH_PREFIX = '/bigpandamon' or URL_PATH_PREFIX = '/developersprefix'
 #URL_PATH_PREFIX = '/atlas'
@@ -55,8 +54,7 @@ MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
 
-### LOG_ROOT = 'logs'
-LOG_ROOT = "/data/bigpandamon_virtualhosts/atlas/logs"
+LOG_ROOT = '/tmp/pandalog'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -79,6 +77,14 @@ LOGGING = {
             'backupCount': 2,
             'formatter': 'verbose',
         },
+        'logfile-prodtaskwebui': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': LOG_ROOT + "/logfile.prodtaskwebui",
+            'maxBytes': 1000000000,
+            'backupCount': 2,
+            'formatter': 'verbose',
+        },
         'logfile-django': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
@@ -91,14 +97,6 @@ LOGGING = {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
             'filename': LOG_ROOT + "/logfile.viewdatatables",
-            'maxBytes': 1000000000,
-            'backupCount': 2,
-            'formatter': 'verbose',
-        },
-        'logfile-postproduction': {
-            'level':'DEBUG',
-            'class':'logging.handlers.RotatingFileHandler',
-            'filename': LOG_ROOT + "/logfile.postproduction",
             'maxBytes': 1000000000,
             'backupCount': 2,
             'formatter': 'verbose',
@@ -144,8 +142,8 @@ LOGGING = {
             'handlers': ['logfile-bigpandamon'],
             'level': 'DEBUG',
         },
-        'postproduction': {
-            'handlers': ['logfile-postproduction'],
+        'prodtaskwebui': {
+            'handlers': ['logfile-prodtaskwebui'],
             'level': 'DEBUG',
         },
     },
@@ -167,4 +165,3 @@ LOGGING = {
         'formatter': 'verbose',
     },
 }
-
