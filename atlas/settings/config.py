@@ -4,7 +4,7 @@ from os.path import dirname, join
 import core
 import atlas
 
-from atlas.settings.local import defaultDatabase, MY_SECRET_KEY, dbaccess
+from atlas.settings.local import defaultDatabase, MY_SECRET_KEY, dbaccess, local_log_root
 
 ### VIRTUALENV
 VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
@@ -54,7 +54,7 @@ MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
 
-LOG_ROOT = '/tmp/pandalog'
+LOG_ROOT = local_log_root
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
