@@ -21,7 +21,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
     cc = EmailField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
-    cstatus = CharField(widget=forms.HiddenInput)
+    cstatus = CharField(widget=forms.HiddenInput, required=False)
 
     class Meta:
         model = TRequest
