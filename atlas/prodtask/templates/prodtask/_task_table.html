@@ -37,6 +37,9 @@
 	
 	span.navy		{ color : blue; }
     span.registered { color : blue;}
+    
+    .breaked_word  { word-wrap: break-word; width: 300px; max-width: 300px; }
+    
   </style>
   
 {% endblock %}
@@ -138,12 +141,23 @@
         </td>
     </tr>
     <tr>
+    <!--
         <td>Parent:</td>
         <td>
         <select id="parent">
             <option value="">All ({{ total_task }} tasks)</option>
         {% for parent in parents %}
             <option value="{{ parent.parent_id }}">{{ parent.parent_id }} ({{ parent.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    -->
+        <td>Status:</td>
+        <td>
+        <select id="status">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for status in status_stat %}
+            <option value="{{ status.status }}">{{ status.status }} ({{ status.count }} tasks)</option>
         {% endfor %}
         </select>
         </td>
@@ -156,7 +170,7 @@
     
     <table>
     <tr>
-        <td>Submit time period:</td>
+        <td>Last update time period:</td>
         <td>
         <select id="time_period">
             <option value="" disabled="disabled">Custom</option>
@@ -171,7 +185,7 @@
     
     <tr>
         <td>
-            Submit date from:
+            Last update time from:
         </td>
         <td>
             <input type="text" id="time_from" name="time_from">
@@ -179,7 +193,7 @@
     </tr>
     <tr>
         <td>
-            Submit date to:
+            Last update time to:
         </td>
         <td>
             <input type="text" id="time_to" name="time_to">
@@ -250,7 +264,8 @@
     
     $("#task_type").val('production');
     $("#request").val('');
-    $("#parent").val('');
+//    $("#parent").val('');
+    $("#status").val('');
     $("#chain").val('');
     
     
@@ -328,10 +343,18 @@ $(document).ready(function() {
                        //         tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 2 );
                             });
+                            
+                            /*
                         $("#parent").change(function () {
                         //        tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 3 );
                             });
+                            */
+                        $("#status").change(function () {
+                        //        tableNeedToUpdate();
+                                taskTable.fnFilter( $(this).val(), 7 );
+                            });
+                            
                         $("#task_type").change(function () {
                         
                         //        tableNeedToUpdate();

@@ -133,6 +133,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     name = datatables.Column(
         label='Name',
+        sClass='breaked_word',
         )
 
     project = datatables.Column(
@@ -177,10 +178,12 @@ class ProductionTaskTable(datatables.DataTable):
 
     submit_time = datatables.Column(
         label='Submit time',
+        bVisible='false',
         )
         
     start_time = datatables.Column(
         label='Start time',
+        bVisible='false',
         )
         
     timestamp = datatables.Column(
@@ -222,8 +225,8 @@ class ProductionTaskTable(datatables.DataTable):
         bScrollCollapse = True
 
         aaSorting = [[0, "desc"]]
-        aLengthMenu = [[20, 100, -1], [20, 100, "All"]]
-        iDisplayLength = 20
+        aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
+        iDisplayLength = 100
 
         fnServerParams = """
                             function ( aoData ) {
@@ -248,7 +251,7 @@ class ProductionTaskTable(datatables.DataTable):
                             {
                                 var row = data['aaData'][i];
                                 
-                                row[4] = '<a href="/prodtask/task/'+row[0]+'/">'+row[4]+'</a>';
+                                row[4] = '<a class="breaked_word" href="/prodtask/task/'+row[0]+'/">'+row[4]+'</a>';
                                 
                                 row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>'; /*+
                                                      '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
@@ -317,7 +320,7 @@ class ProductionTaskTable(datatables.DataTable):
         time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
         time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
         
-        qs = qs.filter(submit_time__gt=time_from).filter(submit_time__lt=time_to)
+        qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
          
         self.update_queryset(qs)
     
