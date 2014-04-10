@@ -1,3 +1,5 @@
+import json
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import connection
 from django.db import connections
@@ -268,13 +270,6 @@ class MCPattern(models.Model):
     pattern_dict = models.CharField(max_length=2000, db_column='PATTERN_DICT')
     pattern_status = models.CharField(max_length=20, db_column='PATTERN_STATUS', choices=STATUS)
 
-    def save_with_current_time(self, *args, **kwargs):
-        if not self.step_def_time:
-            self.step_def_time = timezone.now()
-        self.save(*args, **kwargs)
-
-
-
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ')
@@ -282,6 +277,9 @@ class MCPattern(models.Model):
 
     class Meta:
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PATTERN"'
+
+
+
 
 
 class MCPriority(models.Model):
@@ -300,17 +298,35 @@ class MCPriority(models.Model):
     priority_key = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY_KEY', unique=True)
     priority_dict = models.CharField(max_length=2000, db_column='PRIORITY_DICT')
 
-    def save_with_current_time(self, *args, **kwargs):
-        if not self.step_def_time:
-            self.step_def_time = timezone.now()
-        self.save(*args, **kwargs)
-
-
-
     def save(self, *args, **kwargs):
+        if self.priority_key == -1:
+            return
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ')
         super(MCPriority, self).save(*args, **kwargs)
 
+    def priority(self, step, tag):
+        priority_py_dict = json.loads(self.priority_dict)
+        if step == 'Simul' and tag[0] == 'a':
+            step == 'Simul(Fast)'
+        if step in priority_py_dict:
+            return priority_py_dict[step]
+        else:
+            raise LookupError('No step %s in priority dict' % step)
+
+
     class Meta:
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PRIORITY"'
+
+
+def get_priority_object(priority_key):
+    try:
+        mcp = MCPriority.objects.get(priority_key=priority_key)
+    except ObjectDoesNotExist:
+        priority_py_dict = {}
+        for step in MCPriority.STEPS:
+            priority_py_dict.update({step:priority_key})
+        mcp=MCPriority.objects.create(priority_key=-1,priority_dict=json.dumps(priority_py_dict))
+    except Exception,e:
+        raise e
+    return mcp

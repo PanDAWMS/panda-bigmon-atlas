@@ -12,7 +12,8 @@ import json
 import logging
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
-from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate
+from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
+    get_priority_object
 from prodtask.models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
@@ -41,7 +42,7 @@ def request_details(request, rid=None):
 
 
 def request_clone(request, rid=None):
-    if (rid):
+    if rid:
         try:
             values = TRequest.objects.values().get(reqid=rid)
             if values['request_type'] == 'MC':
@@ -119,6 +120,7 @@ def mcfile_form_prefill(form_data, request):
         except Exception, e:
             _logger.error("Problem with %i doesn't exist in the system" % int(priority))
             return {}, str(e)
+    # Fill default values
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
@@ -146,7 +148,6 @@ def step_from_tag(tag_name):
 
 
 def dpd_form_prefill(form_data, request):
-    file_name = None
     spreadsheet_dict = []
     try:
         if form_data.get('excellink'):
@@ -164,6 +165,7 @@ def dpd_form_prefill(form_data, request):
         _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)
         return {},eroor_message
+    # Fill default values
     form_data['request_type'] = 'GROUP'
     if 'group' in output_dict:
         form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
@@ -184,7 +186,6 @@ def dpd_form_prefill(form_data, request):
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
-            sexec = {}
             irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
                        input_data=output_dict.get('joboptions', [''])[0],
                        project_mode=output_dict.get('project_mode', [''])[0],
@@ -220,6 +221,7 @@ def fill_dataset(ds):
             dataset.save()
             return dataset
 
+
 def request_email_body(long_description,ref_link,energy,campaign, link):
     return """
  %s
@@ -233,26 +235,31 @@ Technical details:
     """%(long_description,ref_link,energy,campaign, link)
 
 
-def get_priority(step_name, ctag, mc_priority_dict):
-    if step_name=='Simul':
-        if ctag[0] == 'a':
-            step_name = 'Simul(Fast)'
-    return mc_priority_dict[step_name]
-
-
-
-
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill):
+    """
+    Fill form for creating request. Create request->slice->steps for POST
+    View create two forms: first for request prefill, second for request creation
+
+    :param request: request
+    :param rid: production request id
+    :param title: Title for page
+    :param submit_url: Submit url
+    :param TRequestCreateCloneForm: Form for request prefill
+    :param TRequestCreateCloneConfirmation: Form for request submition
+    :param form_prefill: function for prefilling data from inpu files and setting default fields
+
+    """
     if request.method == 'POST':
+        # Check prefill form
         form = TRequestCreateCloneForm(request.POST, request.FILES)
         if form.is_valid():
 
-            # Process the data in form.cleaned_data
+            # Process the data from request prefill form
             if form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile'):
-
                 file_dict, error_message = form_prefill(form.cleaned_data, request)
-                if(error_message != ''):
+                if error_message != '':
+                    # recreate prefill form with error message
                     return render(request, 'prodtask/_requestform.html', {
                         'active_app': 'mcprod',
                         'pre_form_text': title,
@@ -264,11 +271,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                      })
                 else:
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
-
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
                         inputlists = [x['input_dict'] for x in file_dict]
+                        # store data from prefill form to http request
                         request.session['file_dict'] = file_dict
+                        # create request creation form
                         return render(request, 'prodtask/_previewreq.html', {
                             'active_app': 'mcprod',
                             'pre_form_text': title,
@@ -281,10 +289,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     except Exception, e:
                         _logger.error("Problem during request form creating: %s" % e)
                         return HttpResponseRedirect('/prodtask/request_table/')
-
+            # Process the data from create form form
             elif 'file_dict' in request.session:
-
-
                 #TODO: Waiting message
                 #TODO: One commission
                 file_dict = request.session['file_dict']
@@ -302,17 +308,15 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     req.save()
                     send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
                               request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
-                               'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/'%(req.reqid)),
+                                                 'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/' % req.reqid),
                               APP_SETTINGS['prodtask.email.from'],
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
-                    #print file_dict
-
+                    # Saving slices->steps
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
-                        if (input_data['priority']<10):
-                            mc_priority_dict = json.loads(MCPriority.objects.get(priority_key=input_data['priority']).priority_dict)
+                        priority_obj = get_priority_object(input_data['priority'])
                         if input_data.get('dataset'):
                                 input_data['dataset'] = fill_dataset(input_data['dataset'])
                         _logger.debug("Filling input data: %s" % input_data)
@@ -324,12 +328,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
-
-                            if (input_data['priority']<10):
-                                step['step_exec']['priority'] = get_priority(st.step,st.ctag,mc_priority_dict)
-                            else:
-                                step['step_exec']['priority'] = input_data['priority']
-                            #print step['step_exec']
+                            step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
                             _logger.debug("Filling step execution data: %s" % step['step_exec'])
                             st_exec = StepExecution(**step['step_exec'])
                             st_exec.save_with_current_time()
@@ -338,8 +337,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     #TODO: Error messsage
                     return HttpResponseRedirect('/prodtask/request_table/')
                 return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)
-
-
             else:
                 return render(request, 'prodtask/_form.html', {
                     'active_app': 'mcprod',
@@ -349,19 +346,23 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     'url_args': rid,
                     'parent_template': 'prodtask/_index.html',
                 })
+    # GET request
     else:
 
+        # Create clone request form
         if (rid):
             try:
                 _logger.debug("Clonning request #%s " % rid)
                 values = TRequest.objects.values().get(reqid=rid)
                 form = TRequestCreateCloneForm(values)
             except Exception, e:
-                return HttpResponseRedirect('/')
+                _logger.debug("Problem with clonning request #%s - %s " % (rid,e))
+                return HttpResponseRedirect('/prodtask/request_table/')
+        # Create request form
         else:
             _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
-
+    # Create prefill form
     return render(request, 'prodtask/_form.html', {
         'active_app': 'mcprod',
         'pre_form_text': title,
@@ -374,7 +375,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
 def request_create(request):
     return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:request_create',
-
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill)
 
 
@@ -418,6 +418,7 @@ def mcpattern_create(request, pattern_id=None):
 def step_list_from_json(json_pattern, STEPS=MCPattern.STEPS):
     pattern_dict = json.loads(json_pattern)
     return [(step, pattern_dict.get(step, '')) for step in STEPS]
+
 
 def mcpattern_update(request, pattern_id):
     try:
@@ -505,7 +506,6 @@ def mcpriority_create(request):
         if form.is_valid():
             mcp = MCPriority.objects.create(priority_key=form.cleaned_data['priority_key'],
                                             priority_dict=json.dumps(form.steps_dict()))
-
             mcp.save()
             return HttpResponseRedirect('/prodtask/mcpriority_table')
     else:
