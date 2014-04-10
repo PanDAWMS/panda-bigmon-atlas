@@ -2,10 +2,15 @@
 {% load url from future %}
 {% load static from staticfiles %}
 
-{% block title %}ProdTask Monitoring{% endblock %}
+{% block title %}ProdSys2 Monitoring{% endblock %}
 {% block bl_page_title %}Monte Carlo Production Monitoring{% endblock %}
 
-{% block body %}Welcome to Monte Carlo Production Monitoring prototype portal{% endblock %}
+{% block body %}
+    <ul>
+        <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
+        <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
+    </ul>
+{% endblock %}
 
 {% block header-nav-chain-1 %}{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
 {% block header-nav-chain-2 %}{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}

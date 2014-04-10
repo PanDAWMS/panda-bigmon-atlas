@@ -357,7 +357,7 @@ class ProductionTaskTable(datatables.DataTable):
         return data
         
 
-
+ 
 
 @datatables.datatable(ProductionTaskTable, name='fct')
 def task_table(request):
@@ -367,9 +367,9 @@ def task_table(request):
     task_count_by_type = {  'production': qs.exclude(project='user').count(),
                         'analysis': qs.filter(project='user').count(),
                     }
-                        
-    status_stat = ProductionTask.objects.values('status').annotate(count=Count('id'))
+
     total_task = ProductionTask.objects.count()
+    status_stat = ProductionTask.objects.values('status').annotate(count=Count('id')).order_by('status')
     projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
     usernames = ProductionTask.objects.values('username').annotate(count=Count('id')).order_by('username')
     parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
