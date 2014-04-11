@@ -91,31 +91,17 @@
 <!-- TODO: Replace next tables by independet from field objects   -->
 
 <div style="display:none">
-    <input type="hidden" id="do_color" />
-    <input type="hidden" id="skipped_color" />
+    <input type="hidden" id="doColor" />
+    <input type="hidden" id="skippedColor" />
 </div>
 <script>
 var step_bc=["#FFB734","#FFFFFF"]
-$("#do_color").css({'background-color':step_bc[0]});
-$("#skipped_color").css({'background-color':step_bc[1]});
+$("#doColor").css({'background-color':step_bc[0]});
+$("#skippedColor").css({'background-color':step_bc[1]});
 $(document).ready(function(){
-{#  $("#select_pattern").change(function(){#}
-{#    {% for pattern in pattern_list %}#}
-{#    {% for step in step_list %}#}
-{#      var name1 = "#{{ step.idname }}" + "{{pattern}}"#}
-{#      $(name1).css({"display":"none"});#}
-{#    {% endfor %}#}
-{#    {% endfor %}#}
-{#  {% for step in step_list %}#}
-{#    var name2 = "#{{ step.idname }}" + $("#select_pattern").val()#}
-{#    $(name2).fadeIn("slow");#}
-{#   {% endfor %}#}
-{#  });#}
-
-
 
 {% if not edit_mode %}
-    $("#pattern_table").hide();
+    $("#patternTable").hide();
     $("#approveButton").hide();
     $("#saveButton").hide();
     $("#approveEvgenButton").hide();
@@ -127,86 +113,85 @@ $(document).ready(function(){
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
                          "cursor":"pointer","user-select": "none"});
 $(".inputListRow").children("td").css({"padding":"1px"})
-$(".input_list_tables").css({"border": "1px solid black","margin": "1px"})
-$(".outside_input_list_tables").css({"border": "hidden","margin": "1px"})
-$(".show_full_span").css({"cursor":"pointer","user-select":"none"});
-$(".show_small_span").css({"cursor":"pointer"});
+$(".inputListTables").css({"border": "1px solid black","margin": "1px"})
+$(".outsideInputListTables").css({"border": "hidden","margin": "1px"})
+$(".showFullSpan").css({"cursor":"pointer","user-select":"none"});
+$(".showSmallSpan").css({"cursor":"pointer"});
 
-
+{#Color pattern steps#}
  {% for step in step_list %}
-    $("#start_step{{ forloop.counter0 }}").css({"background-color":step_bc[0]});
-    step_bc[0] = $("#start_step{{ forloop.counter0 }}").css("background-color")
-
+    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
  {% endfor %}
-$("#select_pattern").change(function(){
+
+ $("#selectPattern").change(function(){
     {% for pattern, steps  in pattern_list %}
-        if ($("#select_pattern").val() == "{{ pattern }}"){
+        if ($("#selectPattern").val() == "{{ pattern }}"){
             {% for step in steps %}
                 $("#patternform{{forloop.counter0}}").val("{{ step }}");
                 if("{{ step }}" != ""){
-                    $("#start_step{{ forloop.counter0 }}").css({"background-color":$("#do_color").css("background-color")});
+                    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
                 } else{
-                    $("#start_step{{ forloop.counter0 }}").css({"background-color":$("#skipped_color").css("background-color")});
+                    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#skippedColor").css("background-color")});
             }
             {% endfor %}
         }
     {% endfor %}
 });
+
     $(".stepchoose").click(function(){
-        var current_color = $(this).css("background-color");
-        var current_index = (step_bc.indexOf(current_color)+1)%step_bc.length;
-        $(this).css({"background-color":step_bc[current_index]});
-        step_bc[current_index] =  $(this).css("background-color");
+        var currentColor = $(this).css("background-color");
+        var currentIndex = (step_bc.indexOf(currentColor)+1)%step_bc.length;
+        $(this).css({"background-color":step_bc[currentIndex]});
+        step_bc[currentIndex] =  $(this).css("background-color");
         if($(this).attr("id").substr(0,4) == 'step'){
-            var step_td_short = "td#short".concat($(this).attr("id").substr(4)).concat(".show_full_span");
-            $(step_td_short).css({"background-color":step_bc[current_index]});
+            var step_td_short = "td#short".concat($(this).attr("id").substr(4)).concat(".showFullSpan");
+            $(step_td_short).css({"background-color":step_bc[currentIndex]});
         };
     })  ;
-
-    $(".show_full_span").click(function(){
+    {#    replace hide/show on dynamic creation#}
+    $(".showFullSpan").click(function(){
        $(this).parent().parent().parent().hide(0);
-       $(this).parentsUntil(".input_list_divs").children(".input_list_tables_long").show(0);
-
+       $(this).parentsUntil(".inputListDivs").children(".inputListTablesLong").show(0);
         return false;
-
     });
-    $(".show_small_span").click(function(){
-
-
-       $(this).parent().parent().parent().siblings(".input_list_tables").show(0);
-       $(this).parent().parent().parent().siblings(".input_list_tables").children().show(0);
+    $(".showSmallSpan").click(function(){
+       $(this).parent().parent().parent().siblings(".inputListTables").show(0);
+       $(this).parent().parent().parent().siblings(".inputListTables").children().show(0);
         $(this).parent().parent().parent().hide(0);
          return false;
-
     });
-       $("#filter").keyup(function(){
-           var valThis = $(this).val().toLowerCase();
-           if(valThis == ""){
-               $(".input_list_divs").show();
-           } else{
-               $(".input_list_divs").hide();
-               $(".filterField").each(function(){
-                  if($(this).text().toLowerCase().indexOf(valThis)>=0){
-                      $(this).parentsUntil(".input_list_divs").filter(".outside_input_list_tables").parent().show();
-                  }
-               });
-           }
-       });
+
+    $("#filter").keyup(function(){
+       var valThis = $(this).val().toLowerCase();
+       if(valThis == ""){
+           $(".inputListDivs").show();
+       } else{
+           $(".inputListDivs").hide();
+           $(".filterField").each(function(){
+              if($(this).text().toLowerCase().indexOf(valThis)>=0){
+                  $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
+              }
+           });
+       }
+    });
+
+    {#Fill pattern table#}
     (function(){
        {% for inputList, step_exec_dict, approved in inputLists %}
            {% for step in step_exec_dict %}
                         {% if step.skipped %}
-                            var stepColor = $("#skipped_color").css("background-color");
+                            var stepColor = $("#skippedColor").css("background-color");
                         {% else %}
-                            var stepColor = $("#do_color").css("background-color");
+                            var stepColor = $("#doColor").css("background-color");
                         {% endif %}
-                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.show_full_span").css({"background-color":stepColor});
+                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor});
                         $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor});
 
            {% endfor %}
 
        {% endfor %}
     })();
+
     $("#approveDialog").dialog({
         autoOpen: false,
         buttons : {
@@ -238,27 +223,30 @@ $("#select_pattern").change(function(){
             }
         }
     });
-    function approve_click(event,isApprove, isEvgen){
+
+    function approveClick(event,isApprove, isEvgen){
         event.preventDefault();
-        var send_data = Object();
-            $(".checkbox_slice:checked").each(function(){
+        var sendData = Object();
+            $(".checkboxSlice:checked").each(function(){
                 {#                   8 = "checkbox".length#}
-                var slice_id = $(this).attr("id").slice(8);
-                if ($("#input_list_div".concat(slice_id)).is(":visible")){
-                    if (! send_data[slice_id]){
-                        send_data[slice_id] = Object();
-                    } ;
-                    var sliceSteps=new Array();
+                var sliceID = $(this).attr("id").slice(8);
+                if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                    if (! sendData[sliceID]){
+                        sendData[sliceID] = Object();
+                    }
+                    var sliceSteps=[];
                     {% for step in step_list %}
-                        var step_td_short = "td#short".concat(slice_id).concat("{{ forloop.counter0 }}.show_full_span");
-                        var is_skipped = ($(step_td_short).css("background-color") ==  $("#skipped_color").css("background-color"));
-                        sliceSteps[{{ forloop.counter0 }}] = {"value":$(step_td_short).html(),"is_skipped":is_skipped};
+                        var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
+                        var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
+                        sliceSteps[{{ forloop.counter0 }}] = {"value":$(step_td_short).html(),"is_skipped":isSkipped};
                     {% endfor %}
-                    send_data[slice_id] = sliceSteps;
+                    sendData[sliceID] = sliceSteps;
                 }
             });
 
-            if (!$.isEmptyObject(send_data)){
+            if (!$.isEmptyObject(sendData)){
+                $( "#waitingDialog" ).dialog();
+
                 var ajaxURL = '';
                 if (isApprove){
                     ajaxURL = "{% url 'prodtask:request_steps_approve' pr_id %}";
@@ -272,20 +260,21 @@ $("#select_pattern").change(function(){
                     url: ajaxURL,
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(send_data),
+                    data: $.toJSON(sendData),
                     dataType: 'text',
                     success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
                         if(status){
-                            var missed_list = $.evalJSON(data).data;
+                            var missedList = $.evalJSON(data).data;
                             var slices = $.evalJSON(data).slices;
-                            if (missed_list.length != 0) {
-                                $("#missing_tags_string").html(missed_list.toString());
+                            if (missedList.length != 0) {
+                                $("#missing_tags_string").html(missedList.toString());
                                 $("#missing_tags").show();
                             } else {
                                 if(slices.length >0){
                                    $("#missing_tags").hide();
                                    if(isApprove){
-                                        $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
+                                       $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
                                        for (i=0;i<slices.length;i++){
                                            $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");
@@ -308,6 +297,7 @@ $("#select_pattern").change(function(){
             }
 
     };
+
     function emptyPattern(){
       var patternIsEmpty = true;
       {% for step in step_list %}
@@ -316,45 +306,44 @@ $("#select_pattern").change(function(){
       return patternIsEmpty;
     };
 
-    function bind_click(event){
+    function bindClick(event){
         event.preventDefault();
         {% for step in step_list %}
-            $(".checkbox_slice").each(function(){
+            $(".checkboxSlice").each(function(){
                 if ($(this).is(':checked')){
 {#                   8 = "checkbox".length#}
-                   var slice_id = $(this).attr("id").slice(8);
-                   if ($("#input_list_div".concat(slice_id)).is(":visible")){
-                       var step_value = $("#patternform{{ forloop.counter0 }}").val();
-                       var step_td_short = "td#short".concat(slice_id).concat("{{ forloop.counter0 }}.show_full_span");
+                   var sliceID = $(this).attr("id").slice(8);
+                   if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                       var stepValue = $("#patternform{{ forloop.counter0 }}").val();
+                       var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
 
-                       var step_color = $("#start_step{{ forloop.counter0 }}").css("background-color");
-                       $(step_td_short).css({"background-color":step_color});
-                       var step_form_long = "#".concat(slice_id).concat("{{ forloop.counter0 }}.slice_form");
-                       var step_th_long = "th#step".concat(slice_id).concat("{{ forloop.counter0 }}.stepchoose");
-                       $(step_th_long).css({"background-color":step_color});
+                       var stepColor = $("#startStep{{ forloop.counter0 }}").css("background-color");
+                       $(step_td_short).css({"background-color":stepColor});
+                       var stepFormLong = "#".concat(sliceID).concat("{{ forloop.counter0 }}.slice_form");
+                       var step_th_long = "th#step".concat(sliceID).concat("{{ forloop.counter0 }}.stepchoose");
+                       $(step_th_long).css({"background-color":stepColor});
                        if(! emptyPattern()){
-                           $(step_form_long).val(step_value);
-                           $(step_td_short).html(step_value);
+                           $(stepFormLong).val(stepValue);
+                           $(step_td_short).html(stepValue);
                        }
                    }
                 };
             });
-
         {% endfor %}
-
     };
-    function long_form_change(event){
+
+    function longFormChange(event){
       var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
       $(step_td_short).html($(event.target).val());
     };
-    function select_click(event){
+
+    function selectClick(event){
       event.preventDefault();
       var firstCheckBox = true;
       var markAsChecked = false;
-      $(".checkbox_slice").each(function(){
-          var slice_id = $(this).attr("id").slice(8);
-
-          if ($("#input_list_div".concat(slice_id)).is(":visible")){
+      $(".checkboxSlice").each(function(){
+          var sliceID = $(this).attr("id").slice(8);
+          if ($("#inputList_div".concat(sliceID)).is(":visible")){
               if (firstCheckBox){
                   markAsChecked = !($(this).prop('checked'));
                   firstCheckBox = false;
@@ -362,16 +351,19 @@ $("#select_pattern").change(function(){
               $(this).prop('checked', markAsChecked);
           }
       });
-
     };
 
 </script>
-    <div id="approveDialog" style="display: none">
-        <span></span>
-    </div>
-     <div id="problemDialog" title='Error' style="display: none">
-        <span>Something has gone wrong!</span>
-    </div>
+
+<div id="approveDialog" style="display: none">
+    <span></span>
+</div>
+ <div id="problemDialog" title='Error' style="display: none">
+    <span>Something has gone wrong!</span>
+</div>
+<div id="waitingDialog" title="Run">
+  <p>Perfome action. Please wait...</p>
+</div>
 <table>
 <tr>
   <th>Request ID:</th>
@@ -390,7 +382,7 @@ $("#select_pattern").change(function(){
 <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 <h6> With pattern: {{ pattern }}</h6>
 <table style="padding: 0px;margin-bottom:0px;border: hidden">
-<tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="select_click(event);">Select All</button></td>
+<tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
 <div id="missing_tags" style="display: none"><strong style="color: firebrick">Error: </strong>
@@ -398,10 +390,10 @@ $("#select_pattern").change(function(){
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
 <form >
 
-<table style="margin-left: 50px;border: hidden" id="pattern_table">
+<table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
     <th colspan="10">
-        <select id="select_pattern" >
+        <select id="selectPattern" >
             <option value="" disabled selected>Select pattern</option>
             {% for pattern, steps in pattern_list %}
                 <option value="{{ pattern }}">{{ pattern }}</option>
@@ -409,14 +401,14 @@ $("#select_pattern").change(function(){
         </select>
     </th>
     <th rowspan="2">
-        <td><button id="bind" title="Create step execution" onclick="bind_click(event);">Bind</button></td>
+        <td><button id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
         <td></td>
     </th>
 
 </tr>
 <tr>
 {% for step in step_list %}
-        <th class="stepchoose" id="start_step{{ forloop.counter0 }}"  > <div > {{step.name}}</div></th>
+        <th class="stepchoose" id="startStep{{ forloop.counter0 }}"  > <div > {{step.name}}</div></th>
 {% endfor %}
 </tr>
     <tr>
@@ -433,23 +425,23 @@ $("#select_pattern").change(function(){
 
     <div >
     {% for inputList, step_exec_dict, approved, show_task in inputLists %}
-        <div class="input_list_divs" id="input_list_div{{ inputList.slice }}">
-        <table class="outside_input_list_tables" id="outside_input_list_tables{{ inputList.slice }}"><tr>
-            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkbox_slice" id="checkbox{{ inputList.slice }}" checked></form></td>
+        <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
+        <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
+            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" checked></form></td>
             <td style="padding:0px;margin:0px">
-            <table class="input_list_tables" >
+            <table class="inputListTables" >
             <tr class="inputListRow">
                 <td style="width: 20px" >{{ inputList.slice }}</td>
                 {% if  inputList.input_data|length < 10  %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='show_full_span' style="padding:0px" title="{{ inputList.dataset.name }}">
+                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.dataset.name }}">
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
                     <td>{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='show_full_span' style="padding:0px" title="{{ inputList.input_data }}">
+                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.input_data }}">
                             {{ inputList.input_data|truncatechars:"58" }}
                         </span>
                     </td>
@@ -461,11 +453,11 @@ $("#select_pattern").change(function(){
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
-                        <td class="show_full_span" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                        <td class="showFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                 {% endfor %}
 
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}">{{ approved }}</td>
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td>
 
             {% if show_task %}
                         <tr>
@@ -489,14 +481,14 @@ $("#select_pattern").change(function(){
             {% endif%}
             </tr>
             </table>
-            <table class="input_list_tables_long" style="display: none">
-                <tr><td style="width: 20px" class='show_small_span' >{{ inputList.slice }}</td>
-                 <td colspan="11" class='show_small_span'>Dataset: <span class="filterField">{{ inputList.dataset.name }}</span></td></tr>
-                <tr><td></td><td colspan="11" class='show_small_span'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
+            <table class="inputListTablesLong" style="display: none">
+                <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
+                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="filterField">{{ inputList.dataset.name }}</span></td></tr>
+                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
                 <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: {{ inputList.input_events }}</td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
-                    <select id="select_pattern" >
+                    <select id="selectPattern" >
                         <option value="" disabled selected>Select pattern</option>
                         {% for pattern in pattern_list %}
                             <option value="{{ pattern }}">{{ pattern }}</option>
@@ -515,8 +507,13 @@ $("#select_pattern").change(function(){
                             <td colspan="2" ><span class="{{ step.task.status }}" >{{ step.task.status }}</span></td>
                             <td colspan="7">{{ step.task.name }}</td>
                             </tr>
-                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }} </td>
-                            <td colspan="5" >Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</td>
+                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
+                                                                </td>
+                            <td colspan="5" >
+                                <a href="http://bigpanda.cern.ch/jedimon/jediJobsInTask/?JediTaskID={{ step.task.id }}">
+                                    <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
+                                </a>
+                            </td>
                             <td colspan="4">bug: {{ step.task.bug_report }}</td>
                             </tr>
                         {% endif %}
@@ -535,7 +532,7 @@ $("#select_pattern").change(function(){
                         {% for step in step_exec_dict %}
                             <td  style="padding: 0px;width: 50px" >
                                 <div  >
-                                    <form><input type="text" onchange="long_form_change(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
+                                    <form><input type="text" onchange="longFormChange(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
                                 </div>
                             </td>
                         {% endfor %}
@@ -547,8 +544,9 @@ $("#select_pattern").change(function(){
         </div>
 	{% endfor %}
     </div>
+
  <strong class="hiddenNonEdit">Work with selected slices:</strong>
-<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approve_click(event,true,true);">Approve Evgen</button>
-<button id="approveButton" title="Approve selected slices" onclick="approve_click(event,true,false);">Approve</button>
-<button id="saveButton" title="Save selected slices without approval" onclick="approve_click(event,false,false);">Save</button>
+<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>
+<button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,false);">Approve</button>
+<button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,false);">Save</button>
 {% endblock %}
