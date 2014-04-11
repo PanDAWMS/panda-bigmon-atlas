@@ -19,9 +19,12 @@ from os.path import join, pardir, abspath, dirname, split
 baseSettingsPath = '/data/bigpandamon_settings'
 sys.path.append(baseSettingsPath)
 
+#virtualenvPath = '/data/virtualenv/django1.6.1__python2.6.6__jedimon'
 virtualenvPath = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
 path = virtualenvPath + '/pythonpath'
 try:
+#    from settings_bigpandamon_jedimon import VIRTUALENV_PATH
+#    from settings_bigpandamon_jedimon import WSGI_PATH
     from settings_bigpandamon_atlas import VIRTUALENV_PATH
     from settings_bigpandamon_atlas import WSGI_PATH
     virtualenvPath = VIRTUALENV_PATH

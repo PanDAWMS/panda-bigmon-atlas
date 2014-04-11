@@ -49,3 +49,7 @@ defaultDatetimeFormatOracle = "%Y-%m-%d %H:%M:%S"
 defaultDatetimeFormat = defaultDatetimeFormatOracle
 
 
+# log directory
+LOG_ROOT = "/data/bigpandamon_virtualhosts/atlas/logs"
+
+
