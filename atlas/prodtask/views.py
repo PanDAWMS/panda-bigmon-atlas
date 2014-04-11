@@ -91,9 +91,11 @@ def create_steps(slice_steps,reqid,is_approve=True):
                         # Change only status if tag isn't beeing changed
                         if existed_step.step_template.ctag == steps_status[step_index]['value']:
                             _logger.debug("Change step: %i to %s  "%(existed_step.id,steps_status[step_index]))
-                            existed_step.status = step_status_definition(steps_status[step_index]['is_skipped'],
-                                                                         is_approve)
-                            existed_step.save()
+                            if (existed_step.status != step_status_definition(steps_status[step_index]['is_skipped'],
+                                                                              is_approve)):
+                                existed_step.status = step_status_definition(steps_status[step_index]['is_skipped'],
+                                                                             is_approve)
+                                existed_step.save()
                             proceedded_steps.append(step_index)
                         # Create new step and delete existed step
                         else:
@@ -224,7 +226,7 @@ def about(request):
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production about', })
     return HttpResponse(tmpl.render(c))
 
-
+#TODO: Optimize by having only one query for steps and tasks
 def input_list_approve(request, rid=None):
     # Prepare data for step manipulation page
     if request.method == 'GET':
