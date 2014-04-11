@@ -29,8 +29,21 @@
 {% block extra_js %}
     <script type="text/javascript" src="{% static "js/jquery.tipTip.minified.js" %}"></script>
 {% endblock %}
-
 {% block top_menu_all_1 %}
+
+<li class="has-dropdown">
+          <a href="#">Panda</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li><a href="{% url 'jobList' %}">List jobs</a></li>
+            <li><a href="{% url 'listSchedconfigQueues' %}">List queues</a></li>
+            <li><a href="{% url 'listHTCondorJobs' %}">HTCondor jobs</a></li>
+            <li class="divider"></li>
+            <li><a href="#">See all &rarr;</a></li>
+          </ul>
+ </li>
+{% endblock %}
+{% block top_menu_all_2 %}
 <li class="has-dropdown">
           <a href="#">Requests</a>
           <ul class="dropdown">
@@ -46,7 +59,7 @@
 </li>
 {% endblock %}
 
-{% block top_menu_all_2 %}
+{% block top_menu_all_3 %}
 <li class="has-dropdown">
           <a href="#">Tasks</a>
           <ul class="dropdown">
@@ -57,16 +70,7 @@
 </li>
 {% endblock %}
 
-{% block top_menu_all_3 %}
-<li class="has-dropdown">
-          <a href="#">Steps</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'prodtask:step_template_table' %}">Templates</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:step_execution_table' %}">Executions</a></li>
-          </ul>
-</li>
-{% endblock %}
+
 
 
 {% block bl_header_title %}
