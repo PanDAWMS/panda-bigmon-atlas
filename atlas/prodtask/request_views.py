@@ -14,7 +14,7 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
     get_priority_object
-from prodtask.models import MCPriority
+from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
 from .dpdconfparser import ConfigParser

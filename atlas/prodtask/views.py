@@ -13,7 +13,7 @@ import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
     get_priority_object
-from prodtask.spdstodb import fill_template
+from .spdstodb import fill_template
 
 _logger = logging.getLogger('prodtaskwebui')
 
