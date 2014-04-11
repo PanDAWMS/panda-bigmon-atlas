@@ -7,7 +7,7 @@ from core.common.urls import *
 import atlas.settings
 
 import core.pandajob.views as pandajob_views
-#import atlas.common.views as atlas_common_views
+import atlas.common.views as atlas_common_views
 #import atlas.todoview.views as atlas_todo_views
 
 common_patterns = patterns('',
@@ -15,8 +15,8 @@ common_patterns = patterns('',
     url('^robots\.txt$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 
     ### the front page
-###    url(r'^$', atlas_common_views.index, name='index'),
-    url(r'^$', pandajob_views.listJobs, name='index'),
+    url(r'^$', atlas_common_views.index, name='index'),
+    #url(r'^$', pandajob_views.listJobs, name='index'),
 
 
     ### Applications
