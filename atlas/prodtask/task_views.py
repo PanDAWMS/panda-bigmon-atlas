@@ -10,7 +10,8 @@ import core.datatables as datatables
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest
 
-from django.db.models import Count
+from django.db.models import Count, Q
+
 
 from django.utils.timezone import utc
 from datetime import datetime
@@ -228,73 +229,30 @@ class ProductionTaskTable(datatables.DataTable):
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
-        fnServerParams = """
-                            function ( aoData ) {
-                                    var time_from = $( "#time_from" ).datepicker( "getDate" );
-                                    var time_to = $( "#time_to" ).datepicker( "getDate" );
-                                    
-                                    time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
-                                    time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
-                                    
-                                    aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
-                                    aoData.push( { "name": "time_from", "value": time_from.getTime() } );
-                                    aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
-                                }
-                        """ 
+        fnServerParams = "taskServerParams" 
         
-        fnServerData =  """
-                        function ( sSource, aoData, fnCallback, oSettings ) {
-                            
-                          function prepareData( data, textStatus, jqXHR )
-                          {
-                            for(var i in data['aaData'])
-                            {
-                                var row = data['aaData'][i];
-                                
-                                row[4] = '<a class="breaked_word" href="/prodtask/task/'+row[0]+'/">'+row[4]+'</a>';
-                                
-                                row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>'; /*+
-                                                     '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
-                                                     '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
-                                                     
-                                row[1] = '<a href="/prodtask/stepex/'+row[1]+'/">'+row[1]+'</a>';
-	                            row[2] = '<a href="/prodtask/request/'+row[2]+'/">'+row[2]+'</a>';
-                                                     
-                                row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
-								
-								switch(row[8])
-								{
-									case 'AP': row[8]='ATLAS'; break;
-									case 'GP': row[8]='Group'; break;
-									case 'XP': row[8]='eXtended'; break;
-								}
-                                
-							    row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
-                                row[15] = row[15]=='None'? 'None' : row[15].slice(0,19) ;
-                                row[16] = row[16]=='None'? 'None' : row[16].slice(0,19) ;
-							}
-                            
-                            updateInterface(data['task_stat']);
-                            
-                            fnCallback( data, textStatus, jqXHR );
-                          }
-                        
-                          oSettings.jqXHR = $.ajax( {
-                            "dataType": 'json',
-                            "type": "GET",
-                            "url": sSource,
-                            "data": aoData,
-                            "success": prepareData
-                          } )
-                          }
-                          
-                          """
+        fnDrawCallback = "taskDrawCallback"
+        
+        fnServerData =  "taskServerData"
                           
 
         bServerSide = True
         sAjaxSource = '/prodtask/task_table/'
     
+    def apply_first_page_filters(self, request):
     
+        self.apply_filters(request)
+        
+        qs = self.get_queryset()
+        
+        parameters = [ ('project','project'), ('username','username'), ('request','request__reqid'), ('chain','chain_tid'), ('status','status')]
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value:
+                qs = qs.filter(Q( **{param[1]:value} ))
+
+        self.update_queryset(qs)
+        
     def apply_filters(self, request):
         qs = self.get_queryset()
         
@@ -375,6 +333,8 @@ def task_table(request):
     parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
     requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
     chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
+
+  #  request.fct.apply_first_page_filters(request)
     
     return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
                                                                     'active_app' : 'prodtask',

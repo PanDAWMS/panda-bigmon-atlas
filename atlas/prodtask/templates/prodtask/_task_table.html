@@ -46,13 +46,15 @@
 
 {% block base_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.0.0.js"></script>
+    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
 {% endblock %}
 
 
@@ -87,29 +89,29 @@
     
         <td>Project:</td>
         <td>
-    <!--    <select id="project">
+        <select id="project">
             <option value="">All ({{ total_task }} tasks)</option>
         {% for project in projects %}
             <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
         {% endfor %}
-        </select> -->
+    <!--    </select> 
             <input id="project-label">
             <input type="hidden" id="project">
-        </td>
+        </td> -->
     </tr>
     
     <tr>
     
         <td>Owner:</td>
         <td>
-    <!--    <select id="project">
-            <option value="">All ({{ total_task }} tasks)</option>
-        {% for project in projects %}
-            <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
+        <select id="username">
+            <option value="-1">All ({{ total_task }} tasks)</option>
+        {% for username in usernames %}
+            <option value="{{ username.username }}">{{ username.username }} ({{ username.count }} tasks)</option>
         {% endfor %}
-        </select> -->
-            <input id="username-label">
-            <input type="hidden" id="username">
+        </select> 
+      <!--      <input id="username-label">
+            <input type="hidden" id="username"> -->
         </td>
     </tr>
     </table>
@@ -207,7 +209,6 @@
     
     </tr>
     
-  <!--  <tr><td></td><td><button id="update_task_table">Update</button> -->
 </table>
 </td>
 <td>
@@ -228,6 +229,148 @@
 </table>
 
 <script type="text/javascript">
+
+    function taskServerParams ( aoData )
+    {
+        var time_from = $( "#time_from" ).datepicker( "getDate" );
+        var time_to = $( "#time_to" ).datepicker( "getDate" );
+        
+        time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
+        time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
+        
+        aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
+        aoData.push( { "name": "time_from", "value": time_from.getTime() } );
+        aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
+    }
+
+    function taskDrawCallback()
+    {
+       // SetParametersToURL();
+    }
+    
+    function taskServerData( sSource, aoData, fnCallback, oSettings ) {
+        
+      function prepareData( data, textStatus, jqXHR )
+      {
+        for(var i in data['aaData'])
+        {
+            var row = data['aaData'][i];
+            
+            row[4] = '<a class="breaked_word" href="/prodtask/task/'+row[0]+'/">'+row[4]+'</a>';
+            
+            row[0] = '<a href="/prodtask/task/'+row[0]+'/">'+row[0]+'</a>'; /*+
+                                 '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
+                                 '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
+                                 
+            row[1] = '<a href="/prodtask/stepex/'+row[1]+'/">'+row[1]+'</a>';
+            row[2] = '<a href="/prodtask/request/'+row[2]+'/">'+row[2]+'</a>';
+                                 
+            row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
+            
+            switch(row[8])
+            {
+                case 'AP': row[8]='ATLAS'; break;
+                case 'GP': row[8]='Group'; break;
+                case 'XP': row[8]='eXtended'; break;
+            }
+            
+            row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
+            row[15] = row[15]=='None'? 'None' : row[15].slice(0,19) ;
+            row[16] = row[16]=='None'? 'None' : row[16].slice(0,19) ;
+        }
+        
+        updateInterface(data['task_stat']);
+        
+        fnCallback( data, textStatus, jqXHR );
+      }
+    
+      oSettings.jqXHR = $.ajax( {
+        "dataType": 'json',
+        "type": "GET",
+        "url": sSource,
+        "data": aoData,
+        "success": prepareData
+      } )
+    }
+
+
+    var parameters_list = [ 
+        { name: 'task_type',    id: 'task_type'},
+        { name: 'project',      id: 'project'},
+        { name: 'username',     id: 'username'},
+        
+        { name: 'request',      id: 'request'},
+        { name: 'chain',        id: 'chain'},
+        { name: 'status',       id: 'status'},
+        
+        { name: 'time_from',    id: 'time_from'},
+        { name: 'time_to',      id: 'time_to'},
+    ];
+
+    function SetParametersToURL()
+    {
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            $.address.path( parameters_list[i].name +'='+  val );
+        }
+    }
+    
+    var changed_params = {};
+    
+    function ParseParametersFromURL()
+    {
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value )
+            {
+                $( "#"+parameters_list[i].id ).val( value );
+                changed_params[ parameters_list[i].name ] = parameters_list[i];
+            }
+            else
+            {
+                switch( parameters_list[i].name )
+                {
+                    case 'task_type': 
+                        $("#task_type").val('production');
+                        break;
+                    case 'username': 
+                        $("#username").val('-1');
+                        break;
+                    default:
+                        $( "#"+parameters_list[i].id ).val( '' );
+                        break;
+                }
+            }
+        } 
+    
+        var time_from = new Date();
+        var time_to = new Date();
+        
+        time_from.setMonth( time_from.getMonth() - 1 )
+        
+        $( "#time_from" ).datepicker( "setDate", time_from );
+        $( "#time_to" ).datepicker( "setDate", time_to );
+        
+        $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+        $( "#time_to" ).datepicker( "option", "minDate", time_from );
+        
+        $( "#time_period" ).val('');
+        
+
+    //    $("#task_type").val('production');
+            
+    //    $("#request").val('');
+    //    $("#parent").val('');
+    //    $("#status").val('');
+     //   $("#chain").val('');
+    //    $("#project").val(projects[0].value); 
+    //    $("#username").val(usernames[0].value);
+
+    }
+
+
     $( "#time_from" ).datepicker({
             defaultDate: "-2m",
             changeMonth: true,
@@ -249,28 +392,9 @@
             }
     });
     
-    var time_from = new Date();
-    var time_to = new Date();
-    
-    time_from.setMonth( time_from.getMonth() - 1 )
-    
-    $( "#time_from" ).datepicker( "setDate", time_from );
-    $( "#time_to" ).datepicker( "setDate", time_to );
-    
-    $( "#time_from" ).datepicker( "option", "maxDate", time_to );
-    $( "#time_to" ).datepicker( "option", "minDate", time_from );
-    
-    $( "#time_period" ).val('');
-    
-    $("#task_type").val('production');
-    $("#request").val('');
-//    $("#parent").val('');
-    $("#status").val('');
-    $("#chain").val('');
-    
     
     var total_task = {{ total_task }};
-    
+    /*
     var projects = [    { value : "" , label : "All ({{ total_task }} tasks)" },
                         {% for project in projects %}
                             { value : "{{ project.project }}", label : "{{ project.project }} ({{ project.count }} tasks)" },
@@ -283,20 +407,20 @@
                         {% endfor %}
                     ];
                     
-    $("#project").val(projects[0].value); 
+
     $("#project-label").val(projects[0].label);
     $("#project-label").focus( function(){
                   //  $("#project-label").val('');
                     $("#project-label").autocomplete( "search", "" );
                 } );
     
-    $("#username").val(usernames[0].value); 
+
     $("#username-label").val(usernames[0].label);
     $("#username-label").focus( function(){
                   //  $("#username-label").val('');
                     $("#username-label").autocomplete( "search", "" );
                 } );
-                
+                */
     function updateInterface(data)
     {
         var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
@@ -317,7 +441,7 @@
         $('#task_stat_table').html(table);
     }
     
-  //  $("#update_task_table").button({ disabled: true });
+    ParseParametersFromURL();
     
 </script>
  
@@ -326,43 +450,31 @@
 <script type="text/javascript">
 $(document).ready(function() {
 
-                        function tableNeedToUpdate()
-                        {
-                            $("#update_task_table").button({ disabled: false });
-                        }
-                        
-                        function updateTable()
-                        {
-                            $("#update_task_table").button({ disabled: true });
-                            taskTable.fnDraw();
-                        }
-                        
-                     //   $("#update_task_table").click(updateTable);
-
                         $("#request").change(function () {
-                       //         tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 2 );
                             });
+                    //    if( 'request' in changed_params)
+                    //        $("#request").change();
                             
                             /*
                         $("#parent").change(function () {
-                        //        tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 3 );
                             });
                             */
+                            
                         $("#status").change(function () {
-                        //        tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 7 );
-                            });
+                            }); 
+                   //     if( 'status' in changed_params)
+                   //         $("#status").change();
+                            
                             
                         $("#task_type").change(function () {
-                        
-                        //        tableNeedToUpdate();
                                 taskTable.fnDraw();
                                 
                                 if( $("#task_type").val() == 'analysis' )
                                 {
-                                    taskTable.fnSetColumnVis( 1, false, false);
+                                    taskTable.fnSetColumnVis( 1, false, false );
                                     taskTable.fnSetColumnVis( 2, false, false );
                                     taskTable.fnSetColumnVis( 18, false, false );
                                 }
@@ -373,14 +485,18 @@ $(document).ready(function() {
                                     taskTable.fnSetColumnVis( 18, true, false ); 
                                 }
                             });
+                  //      if( 'task_type' in changed_params)
+                  //          $("#task_type").change();
                             
+                            
+                        /*    
                          $( "#project-label" ).autocomplete({
                             minLength: 0,
                             source: projects,
-                          /*  focus: function( event, ui ) {
+                            focus: function( event, ui ) {
                                 $( "#project-label" ).val( ui.item.label );
                                 return false;
-                                },*/
+                                },
                             select: function( event, ui ) {
                                 $( "#project-label" ).val( ui.item.label );
                                 $( "#project-label" ).blur();
@@ -393,10 +509,10 @@ $(document).ready(function() {
                         $( "#username-label" ).autocomplete({
                             minLength: 0,
                             source: usernames,
-                        /*    focus: function( event, ui ) {
+                            focus: function( event, ui ) {
                                 $( "#username-label" ).val( ui.item.label );
                                 return false;
-                                },*/
+                                },
                             select: function( event, ui ) {
                                 $( "#username-label" ).val( ui.item.label );
                                 $( "#username-label" ).blur();
@@ -405,18 +521,28 @@ $(document).ready(function() {
                                 return false;
                             }
                         })
-                            
-                            /*
+                            */
                             
                         $("#project").change(function (){  
-                       //         tableNeedToUpdate();
                                 taskTable.fnFilter( $("#project").val(), 5 );  
-                            });*/
+                            });
+                    //    if( 'project' in changed_params)
+                   //         $("#project").change();
+                           
+                           
+                        $("#username").change(function (){  
+                                taskTable.fnFilter( $("#project").val(), 5 );  
+                            });
+                     //   if( 'username' in changed_params)
+                     //       $("#username").change();
+                            
                             
                         $("#chain").change(function () {
-                       //         tableNeedToUpdate();
                                 taskTable.fnFilter( $(this).val(), 6 );
                             });
+                      //  if( 'chain' in changed_params)
+                     //       $("#chain").change();
+                            
                             
                         $( "#time_period" ).change(function () {
                         
