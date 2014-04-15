@@ -18,7 +18,7 @@ for p in PYTHONPATH:
     if p not in sys.path:
         sys.path.insert(0, p)
 
-sys.path.append('/Users/mborodin/Development/pycharm/panda-bigmon/trunk/bigpandamon-atlas/')
+
 os.environ['DJANGO_SETTINGS_MODULE'] = DJANGO_SETTINGS_MODULE
 
 
