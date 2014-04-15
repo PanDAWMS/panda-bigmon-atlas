@@ -334,6 +334,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             if 'task_config' in step:
                                 if 'nEventsPerJob' in step['task_config']:
                                     task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'],-1)})
+                                    task_config.update({'nEventsPerFile':step['task_config']['nEventsPerJob'].get(step['step_name'],-1)})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
