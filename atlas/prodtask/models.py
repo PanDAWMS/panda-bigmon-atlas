@@ -64,8 +64,12 @@ class RequestStatus(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ')
+        super(RequestStatus, self).save(*args, **kwargs)
 
-        super(TRequest, self).save(*args, **kwargs)
+    def save_with_current_time(self, *args, **kwargs):
+        if not self.timestamp:
+            self.timestamp = timezone.now()
+        self.save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_PRODMANAGER_REQUEST_STATUS'

@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
-    get_priority_object, ProductionDataset
+    get_priority_object, ProductionDataset, RequestStatus
 from .spdstodb import fill_template
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -187,6 +187,14 @@ def request_steps_approve_or_save(request, reqid, is_approve, is_evgen=False):
                     create_steps(approve_slices,reqid,True)
                     # save all over steps
                     create_steps(slice_steps,reqid,False)
+                #TODO:Take owner from sso cookies
+                req = TRequest.objects.get(reqid=reqid)
+                if req.cstatus == 'Created':
+                    req.cstatus = 'Approved'
+                    req.save()
+                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
+                                                   status='Approved')
+                    request_status.save_with_current_time()
             else:
                 _logger.debug("Some tags are missing: %s" % missing_tags)
         except Exception, e:

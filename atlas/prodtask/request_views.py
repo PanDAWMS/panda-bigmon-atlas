@@ -13,7 +13,7 @@ import logging
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
-    get_priority_object
+    get_priority_object, RequestStatus
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
@@ -311,6 +311,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     _logger.debug("Creating request : %s" % form.cleaned_data)
                     req = TRequest(**form.cleaned_data)
                     req.save()
+                    #TODO:Take owner from sso cookies
+                    request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
+                                                   status='Created')
+                    request_status.save_with_current_time()
                     send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
                               request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
                                                  'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/' % req.reqid),
