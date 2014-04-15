@@ -18,6 +18,8 @@ urlpatterns = patterns('',
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
     #url(r'^taskpriority_table/$', 'task.views.taskpriority_table', name='taskpriority_table'),
 
+    url(r'^production_dataset_table/$', 'atlas.prodtask.views.production_dataset_table', name='production_dataset_table'),
+    
     url(r'^request_table/$',                'atlas.prodtask.request_views.request_table',   name='request_table'),
     url(r'^request/(?P<rid>\d+)/$',         'atlas.prodtask.request_views.request_details', name='request'),
     url(r'^request_clone/(?P<rid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),

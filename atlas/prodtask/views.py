@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
-    get_priority_object
+    get_priority_object, ProductionDataset
 from .spdstodb import fill_template
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -487,4 +487,80 @@ def step_execution_table(request):
     qs = request.fct.get_queryset()
     request.fct.update_queryset(qs)
     return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'StepExecutions Table', 'active_app' : 'prodtask', 'table': request.fct,
+                                                                'parent_template': 'prodtask/_index.html'})
+
+                                                                
+class ProductionDatasetTable(datatables.DataTable):
+
+    name = datatables.Column(
+        label='Name',
+        )
+        
+    task_id = datatables.Column(
+        label='TaskID',
+        )
+
+    parent_task_id = datatables.Column(
+        label='ParentTaskID',
+        )
+
+    rid = datatables.Column(
+        label='ReqID',
+        )
+
+    phys_group = datatables.Column(
+        label='Phys Group',
+        )
+
+    events = datatables.Column(
+        label='Events',
+        )
+        
+    files = datatables.Column(
+        label='Files',
+        )
+
+    status = datatables.Column(
+        label='Status',
+        )
+        
+    timestamp = datatables.Column(
+        label='Timestamp',
+        )
+
+
+    class Meta:
+        model = ProductionDataset
+        bSort = True
+        bPaginate = True
+        bJQueryUI = True
+
+        sScrollY = '20em'
+        bScrollCollapse = True
+
+        fnRowCallback = """
+                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
+                        {
+                            if(aData[1]!='None')
+                                $('td:eq(1)', nRow).html('<a href="/prodtask/task/'+aData[1]+'/">'+aData[1]+'</a>');
+                                
+                            if(aData[2]!='None')
+                                $('td:eq(2)', nRow).html('<a href="/prodtask/task/'+aData[2]+'/">'+aData[2]+'</a>');
+                                
+                            if(aData[3]!='None')
+                                $('td:eq(3)', nRow).html('<a href="/prodtask/request/'+aData[3]+'/">'+aData[3]+'</a>');
+                        }"""
+                        
+        aaSorting = [[0, "desc"]]
+        aLengthMenu = [[10, 50, 1000], [10, 50, 1000]]
+        iDisplayLength = 10
+
+        bServerSide = True
+        sAjaxSource = '/prodtask/production_dataset_table/'
+
+@datatables.datatable(ProductionDatasetTable, name='fct')
+def production_dataset_table(request):
+    qs = request.fct.get_queryset()
+    request.fct.update_queryset(qs)
+    return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'Production Dataset Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
