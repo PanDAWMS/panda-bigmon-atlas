@@ -73,6 +73,7 @@ def create_steps(slice_steps,reqid,is_approve=True):
      :param is_approve: approve if true, save if false
 
     """
+
     try:
         cur_request = TRequest.objects.get(reqid=reqid)
         proceedded_steps = []
@@ -109,11 +110,15 @@ def create_steps(slice_steps,reqid,is_approve=True):
                                               (steps_status[step_index],int(reqid),input_list.slice))
                                 temp_priority = priority_obj.priority(StepExecution.STEPS[step_index],
                                                                       steps_status[step_index]['value'])
+                                # store input_vents only for evgen step, othervise
+                                temp_input_events = -1
+                                if (step_index == 0) or (steps_status[0]['value']==''):
+                                    temp_input_events = input_list.input_events
                                 st = fill_template(StepExecution.STEPS[step_index],steps_status[step_index]['value'],
                                                    temp_priority)
 
                                 st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
-                                                        priority=temp_priority, input_events=input_list.input_events)
+                                                        priority=temp_priority, input_events=temp_input_events)
                                 st_exec.status = step_status_definition(steps_status[step_index]['is_skipped'],
                                                                         is_approve)
                                 st_exec.save_with_current_time()
@@ -134,8 +139,12 @@ def create_steps(slice_steps,reqid,is_approve=True):
                                                                                               int(reqid),int(input_list.slice)))
                         st = fill_template(StepExecution.STEPS[step_index],steps_status[step_index]['value'],
                                            temp_priority)
+                        # store input_vents only for evgen step, othervise
+                        temp_input_events = -1
+                        if (step_index == 0) or (steps_status[0]['value']==''):
+                            temp_input_events = input_list.input_events
                         st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
-                                                priority=temp_priority, input_events=input_list.input_events )
+                                                priority=temp_priority, input_events=temp_input_events )
                         st_exec.status = step_status_definition(steps_status[step_index]['is_skipped'],
                                                                 is_approve)
                         st_exec.save_with_current_time()

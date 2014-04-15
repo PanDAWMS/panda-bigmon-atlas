@@ -184,6 +184,16 @@ class StepExecution(models.Model):
     step_exe_time = models.DateTimeField(db_column='STEP_EXE_TIME', null=True)
     step_done_time = models.DateTimeField(db_column='STEP_DONE_TIME', null=True)
     input_events = models.DecimalField(decimal_places=0, max_digits=8, db_column='INPUT_EVENTS', null=True)
+    task_config = models.CharField(max_length=2000, db_column='TASK_CONFIG')
+
+    def set_task_config(self, update_dict):
+        if not self.task_config:
+            self.task_config = ''
+            currrent_dict = {}
+        else:
+            currrent_dict = json.loads(self.task_config)
+        currrent_dict.update(update_dict)
+        self.task_config = json.dumps(currrent_dict)
 
     def save_with_current_time(self, *args, **kwargs):
         if not self.step_def_time:
@@ -325,8 +335,24 @@ def get_priority_object(priority_key):
     except ObjectDoesNotExist:
         priority_py_dict = {}
         for step in MCPriority.STEPS:
-            priority_py_dict.update({step:priority_key})
+            priority_py_dict.update({step:int(priority_key)})
         mcp=MCPriority.objects.create(priority_key=-1,priority_dict=json.dumps(priority_py_dict))
     except Exception,e:
         raise e
     return mcp
+
+
+def get_default_nEventsPerJob_dict():
+    defult_dict = {
+        'Evgen':5000,
+        'Simul':100,
+        'Merge':1000,
+        'Digi':500,
+        'Reco':500,
+        'Rec Merge':5000,
+        'Rec TAG':25000,
+        'Atlfast':500,
+        'Atlf Merge':5000,
+        'Atlf TAG':25000
+    }
+    return defult_dict

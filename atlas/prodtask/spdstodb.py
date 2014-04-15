@@ -14,6 +14,7 @@ import urllib2
 
 
 from core.xls_parser import XlrParser, open_tempfile_from_url
+from prodtask.models import get_default_nEventsPerJob_dict
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -127,12 +128,14 @@ def translate_excl_to_dict(excel_dict):
                             st = currentstep
                             tag = translated_row[currentstep]
 
-                            if StepExecution.STEPS.index(currentstep) < StepExecution.STEPS.index('Atlfast'):
-                                input_events = translated_row.get('evfs', 0)
+
+                            # Store input events only for evgen
+                            if StepExecution.STEPS.index(currentstep)==0:
+                                sexec = dict(status='NotChecked', input_events=int(input_events))
                             else:
-                                input_events = translated_row.get('eva2', 0)
-                            sexec = dict(status='NotChecked', input_events=int(input_events))
-                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'step_exec': sexec})
+                                sexec = dict(status='NotChecked', input_events=-1)
+                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'step_exec': sexec,
+                                                  'task_config':{'nEventsPerJob':get_default_nEventsPerJob_dict()}})
                     return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 

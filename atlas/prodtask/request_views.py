@@ -183,6 +183,10 @@ def dpd_form_prefill(form_data, request):
         form_data['provenance'] = 'test'
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
+    task_config = {}
+    if 'events_per_job' in output_dict:
+        nEventsPerJob = output_dict['events_per_job'][0]
+        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
@@ -197,7 +201,8 @@ def dpd_form_prefill(form_data, request):
                              input_events=int(output_dict.get('total_num_genev', [-1])[0]))
                 st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
                                       'memory': output_dict.get('ram', [None])[0],
-                                      'formats': output_dict.get('formats', [None])[0]})
+                                      'formats': output_dict.get('formats', [None])[0],
+                                      'task_config':task_config})
             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
     eroor_message = ''
     if not spreadsheet_dict:
@@ -325,12 +330,18 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
+                            task_config= {}
+                            if 'task_config' in step:
+                                if 'nEventsPerJob' in step['task_config']:
+                                    task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'],-1)})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
                             step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
                             _logger.debug("Filling step execution data: %s" % step['step_exec'])
                             st_exec = StepExecution(**step['step_exec'])
+                            if task_config:
+                                st_exec.set_task_config(task_config)
                             st_exec.save_with_current_time()
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % e)
