@@ -111,14 +111,9 @@ def task_create(request):
 
 class ProductionTaskTable(datatables.DataTable):
 
-    id = datatables.Column(
-        label='ID',
-        )
-
-    step = datatables.Column(
-        label='StepEx',
-        model_field='step__id',
-  #      bVisible='false',        
+    name = datatables.Column(
+        label='Task Name',
+        sClass='breaked_word',
         )
 
     request = datatables.Column(
@@ -126,15 +121,24 @@ class ProductionTaskTable(datatables.DataTable):
         model_field='request__reqid',
  #       bVisible='false',
         )
+        
+    step = datatables.Column(
+        label='Step',
+        model_field='step__id',
+  #      bVisible='false',        
+        )
 
     parent_id = datatables.Column(
         label='Parent id',
         bVisible='false',
         )
 
-    name = datatables.Column(
-        label='Name',
-        sClass='breaked_word',
+    id = datatables.Column(
+        label='Task ID',
+        )
+        
+    priority = datatables.Column(
+        label='Priority',
         )
 
     project = datatables.Column(
@@ -149,37 +153,29 @@ class ProductionTaskTable(datatables.DataTable):
 #        sSearch='user',
         )
         
+    total_req_jobs = datatables.Column(
+        label='Req Jobs',
+        )
+        
+    total_done_jobs = datatables.Column(
+        label='Done Jobs',
+        )
+        
+    total_events = datatables.Column(
+        label='Events',
+        )
+        
     status = datatables.Column(
         label='Status',
         )
-		
-    provenance = datatables.Column(
-        label='Provenance',
-        )
-		
-    priority = datatables.Column(
-        label='Priority',
-        )
         
-    phys_group = datatables.Column(
-        label='Phys group',
-        )
-
-    total_events = datatables.Column(
-        label='TEvent',
-        )
-
-    total_req_jobs = datatables.Column(
-        label='TReq job',
-        )
-
-    total_done_jobs = datatables.Column(
-        label='TDone job',
+    timestamp = datatables.Column(
+        label='Timestamp',
         )
 
     submit_time = datatables.Column(
         label='Submit time',
-        bVisible='false',
+    #    bVisible='false',
         )
         
     start_time = datatables.Column(
@@ -187,12 +183,18 @@ class ProductionTaskTable(datatables.DataTable):
         bVisible='false',
         )
         
-    timestamp = datatables.Column(
-        label='Timestamp',
+    provenance = datatables.Column(
+        label='Provenance',
+        bVisible='false',
+        )
+        
+    phys_group = datatables.Column(
+        label='Phys group',
+        bVisible='false',
         )
 
     bug_report = datatables.Column(
-        label='Bug report',
+        label='Report',
         )
         
     comments = datatables.Column(
@@ -205,12 +207,19 @@ class ProductionTaskTable(datatables.DataTable):
         
     physics_tag = datatables.Column(
         label='Physics tag',
+        bVisible='false',
         )
         
     username = datatables.Column(
         label='Owner',
         bVisible='false',
         )
+        
+    update_time = datatables.Column(
+        label='Update time',
+    #    bVisible='false',
+        )
+        
         
     class Meta:
         model = ProductionTask
@@ -329,10 +338,12 @@ def task_table(request):
     total_task = ProductionTask.objects.count()
     status_stat = ProductionTask.objects.values('status').annotate(count=Count('id')).order_by('status')
     projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
-    usernames = ProductionTask.objects.values('username').annotate(count=Count('id')).order_by('username')
-    parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
+    usernames = ProductionTask.objects.extra(select={'ln':'lower(username)'}).values('username','ln').annotate(count=Count('id')).order_by('ln')
+  #  parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
     requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
     chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
+    provenances = ProductionTask.objects.values('provenance').annotate(count=Count('id')).order_by('provenance')
+    phys_groups = ProductionTask.objects.values('phys_group').annotate(count=Count('id')).order_by('phys_group')
 
   #  request.fct.apply_first_page_filters(request)
     
@@ -346,7 +357,9 @@ def task_table(request):
                                                                     'projects'  : projects,
                                                                     'usernames'  : usernames,
                                                                     'requests'  : requests,
-                                                                    'parents'   : parents,
+                                                                    #'parents'   : parents,
                                                                     'chains'    : chains,
+                                                                    'provenances'    : provenances,
+                                                                    'phys_groups'    : phys_groups,
                                                                     })
 
