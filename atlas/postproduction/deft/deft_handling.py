@@ -8,8 +8,9 @@
 #               Ignore tasks and datasets with ID < 4 000 000
 # Mar 24, 2014. Requests state update vs Task state
 # Mar 31, 2014. Add taskinfo into task partition table
+# Apr 03, 2014. t_production_task partitioned
 #
-# Last Edit : Apr 1, 2014 ak
+# Last Edit : Apr 20, 2014 ak
 #
 
 import re
@@ -309,7 +310,7 @@ def insertJediTasksJSON(user_task_list):
     (pdb,dbcur,deftDB) = connectJEDI('R')
 
     t_table_DEFT    = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
-    t_table_DEFT_P  = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task_p'])
+ #   t_table_DEFT_P  = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task_p'])
     t_table_JEDI    = "%s.%s"%(deftDB,deft_conf.daemon['t_task'])
     t_table_projects= "%s.%s"%(deftDB,deft_conf.daemon['t_projects'])
     i                = 0
@@ -350,6 +351,9 @@ def insertJediTasksJSON(user_task_list):
      deft_names_0 = "TASKID,STEP_ID,PR_ID,PARENT_TID,TASKNAME,PROJECT,STATUS,TOTAL_EVENTS,TOTAL_REQ_JOBS,TOTAL_DONE_JOBS,"
      deft_namea_1 = "SUBMIT_TIME, START_TIME,TIMESTAMP" 
        
+     if deft_task_params[i]['TOTAL_REQ_JOBS'] == 0 : 
+         if deft_task_params[i]['TOTAL_DONE_JOBS'] > 0 :
+            deft_task_params[i]['TOTAL_REQ_JOBS'] = deft_task_params[i]['TOTAL_DONE_JOBS']
      sql = "INSERT INTO %s "%(t_table_DEFT)
      sqlN= "(%s "%(deft_names_0)
      sqlV = "VALUES(%s,%s,%s,%s,'%s',"%\
@@ -375,10 +379,11 @@ def insertJediTasksJSON(user_task_list):
                                  deft_task_params[i]['CHAIN_TID'],-1)
      sql  += sqlN
      sql  += sqlV
-     # and insert the same string into t_production_task_listpart
-     sqlP = sql.replace(t_table_DEFT,t_table_DEFT_P)
-     print sqlP
-
+#-  
+#   # and insert the same string into t_production_task_listpart
+#     sqlP = sql.replace(t_table_DEFT,t_table_DEFT_P)
+#     print sqlP
+#-
      # check project
      project_found = False
      for p in projects_list :
@@ -433,7 +438,7 @@ def synchronizeJediDeftDatasets () :
     t_table_DEFT          = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
     t_table_datasets_DEFT = "%s.%s"%(deftDB,deft_conf.daemon['t_production_dataset'])
 
-    sql = "SELECT taskid, status, phys_group, timestamp FROM %s "%(t_table_DEFT)
+    sql = "SELECT taskid, status, phys_group, timestamp, project, username FROM %s "%(t_table_DEFT)
     sql+= "WHERE TIMESTAMP > current_timestamp - %s AND taskid >= %s "%(timeInterval,MIN_DEFT_TASK_ID)
     sql+= "ORDER BY taskid"
     print sql
@@ -450,34 +455,54 @@ def synchronizeJediDeftDatasets () :
          minTaskID = t[0]
          maxTaskID = t[1]
      print "INFO. Check datasets produced by %s - %s tasks"%(minTaskID,maxTaskID)
-     sql = "SELECT taskid, name, status, phys_group, timestamp FROM %s WHERE taskid >= %s and taskid <= %s "%\
-         (t_table_datasets_DEFT,minTaskID,maxTaskID)
+     sql = "SELECT taskid, name, status, phys_group, timestamp "
+     sql+= "FROM %s WHERE taskid >= %s and taskid <= %s "%(t_table_datasets_DEFT,minTaskID,maxTaskID)
      sql += "ORDER BY taskid"
      datasetsDEFT = DButils.QueryAll(pdb,sql)
     DButils.closeDB(pdb,dbcur)
 
+    sql_update = []
     if len(tasksDEFT) > 0 and len(datasetsDEFT) > 0 :
         # step #1 : synchronize DEFT t_production_task and t_production_dataset content
         for t in tasksDEFT :
           t_tid        = t[0]
           t_status     = t[1]
           t_phys_group = t[2]
+          t_project    = t[4]
+          t_owner      = t[5]
           if verbose : print "INFO. check status %s"%(t_status)
           if task_aborted_states.find(t_status) >= 0 :
            for d in datasetsDEFT :
                d_tid = d[0]
                if d_tid == t_tid :
                    d_status = d[2]
+                   if d_status == None or d_status=='None' : d_status='unknown'
                    if datasets_deletion_states.find(d_status) < 0 :
-                       sql = "UPDATE %s SET status='toBeDeleted' WHERE taskid=%s"%(t_table_datasets_DEFT,t_tid)
+                       sql = "UPDATE %s SET status='toBeDeleted',timestamp=current_timestamp WHERE taskid=%s"%\
+                           (t_table_datasets_DEFT,t_tid)
                        print sql
-                       sys.exit()
+                       sql_update.append(sql)
                        break
+                   elif d_status == 'unknown' :
+                       sql= "UPDATE %s SET status='%s',TIMESTAMP=current_timestamp WHERE taskid=%s"\
+                           (t_table_datasets_DEFT,t_status,t_tid)
+                       print sql
+                       sql_update.append(sql)
                elif d_tid > t_tid :
-                   print "WARNING. Cannot find dataset in %s for task %s"%(t_table_datasets_DEFT,t_tid)
+                   print "WARNING. Cannot find dataset in %s for task %s (project: %s)"%\
+                       (t_table_datasets_DEFT,t_tid,t_project)
                    break
+        if len(sql_update) :
+            print "INFO. synchronizeJediDeftDatasets. Step1 : Start database update"
+            (pdb,dbcur,deftDB) = connectDEFT('W')
+            for sql in sql_update :
+                if verbose : print sql
+                DButils.QueryUpdate(pdb,sql)
+            DButils.QueryCommit(pdb)
+            DButils.closeDB(pdb,dbcur)
         #step #2. synchronize DEFT t_production_dataset and JEDI atlas_panda.jedi_datasets content
         #connect to JEDI and get list of production datasets
+        sql_update = []
         (pdb,dbcur,jediDB) = connectPandaJEDI('R')
         t_table_datasets_JEDI = "%s.%s"%(jediDB,deft_conf.daemon['t_jedi_datasets'])
         sql = "SELECT jeditaskid, datasetname, status, nfilesfinished, nevents, creationtime, frozentime "
@@ -520,7 +545,7 @@ def synchronizeJediDeftDatasets () :
                   sql+= "TIMESTAMP = current_timestamp "
                   sql+= "WHERE taskid = %s AND name = '%s' "%(d_tid,d_name)
                   print sql
-                  sys.exit(1)
+                  sql_update.append(sql)
                else :
                 if verbose :
                   print "Task : ",j_tid,d_tid
@@ -529,6 +554,15 @@ def synchronizeJediDeftDatasets () :
               elif j_tid > t_tid :
                   print "INFO. Dataset for %s task and states in '(%s)'"%(t_tid,JEDI_datasets_final_states)
                   break
+        # update database
+        if len(sql_update) :
+            (pdb,dbcur,deftDB) = connectDEFT('W')
+            print "INFO. synchronizeJediDeftDatasets. Step2 : Start database update"
+            for sql in sql_update :
+                if verbose : print sql
+                DButils.QueryUpdate(pdb,sql)
+            DButils.QueryCommit(pdb)
+            DButils.closeDB(pdb,dbcur)
     else :
         print "INFO. No tasks or/and datasets match to time interval"
 
@@ -541,7 +575,7 @@ def synchronizeJediDeftTasks() :
     user_task_label     = 'user'   # JEDI prodsourcelabel parameter
     user_task_list      = []
     user_task_params    = {'taskid' : -1,'total_done_jobs':-1,'status' :'','submit_time' : -1, 'start_time' : 'None',\
-                           'priority' : '-1'}
+                           'priority' : '-1','total_req_jobs':-1}
 
     updateIntervalHours = TASK_SYNCH_INTERVAL
     timeIntervalOracleHours = "%s/%s"%(updateIntervalHours,24)
@@ -567,7 +601,8 @@ def synchronizeJediDeftTasks() :
     print "%s DEFT tasks match to the criteria"%(len(tasksDEFT))
 
     (pdb,dbcur,deftDB) = connectJEDI('R')
-    sql_select = "SELECT taskid, status,total_done_jobs,submit_time, start_time, prodsourcelabel,priority,current_priority, taskname "
+    sql_select = "SELECT taskid, status,total_done_jobs,submit_time, start_time, prodsourcelabel,"
+    sql_select+= "priority,current_priority, taskname, total_req_jobs "
     sql = sql_select
     sql       += "FROM %s WHERE  timestamp > current_timestamp - %s "%(t_table_JEDI,timeIntervalOracleHours)
     sql       += "AND  taskid > %s "%(MIN_DEFT_TASK_ID)
@@ -589,6 +624,7 @@ def synchronizeJediDeftTasks() :
       tj_prio    = tj[6]
       tj_curprio = tj[7]
       tj_taskname= tj[8]
+      tj_reqjobs = tj[9]
       found = False
       for td in tasksDEFT :
         td_tid = td[0]
@@ -613,6 +649,7 @@ def synchronizeJediDeftTasks() :
            user_task_params['priority']        = tj_prio
            user_task_params['current_priority']= tj_curprio
            user_task_params['prodsourcelabel'] = tj_prodsourcelabel
+           user_task_params['total_req_jobs']  = tj_req_jobs
            user_task_list.append(user_task_params.copy())
        else :
            print "synchroniseJediDeft WARNING. Task %s NOT FOUND in %s"%(tj_tid,t_table_DEFT)
@@ -623,9 +660,11 @@ def synchronizeJediDeftTasks() :
          if td_status in post_production_status :
            print "Ignore. DEFT status (in post_production)..."%(td_status)
          else :
-           td_status = tj_status
-           td_done   = tj_done
-           sql_update  = "UPDATE %s SET status='%s',total_done_jobs=%s"%(t_table_DEFT,td_status,td_done)
+           td_status   = tj_status
+           td_done     = tj_done
+           td_req_jobs = tj_req_jobs
+           sql_update  = "UPDATE %s SET status='%s',total_done_jobs=%s,total_req_jobs=%s"%\
+               (t_table_DEFT,td_status,td_done,td_req_jobs)
            if tj_start == None :
                print "Warning. Task ID = %s : invalid start time in t_task : %s (%s)"%(td_tid,tj_start,td_start)
            else :
@@ -740,15 +779,16 @@ def synchronizeDeftRequests():
                         (step,'automatic update','ProdManager',status,request)
                     print sql
                     sys.exit(1)
-        dbupdate = True
-        if dbupdate :
+    DButils.closeDB(pdb,dbcur)
+    dbupdate = True
+    if dbupdate :
             (pdb,dbcur,deftDB) = connectDEFT('W')
             for sql in sql_update :
                 if verbose : print sql
                 DButils.QueryUpdate(pdb,sql)
             DButils.QueryCommit(pdb)
             DButils.closeDB(pdb,dbcur)
-        elif db_update == False :
+    elif db_update == False :
             print "INFO. No database update : db_update = %s"%(db_update)
 
 
