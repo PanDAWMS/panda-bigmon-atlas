@@ -175,7 +175,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     submit_time = datatables.Column(
         label='Submit time',
-    #    bVisible='false',
+        bVisible='false',
         )
         
     start_time = datatables.Column(
