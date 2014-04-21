@@ -175,7 +175,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     submit_time = datatables.Column(
         label='Submit time',
-        bVisible='false',
+   #     bVisible='false',
         )
         
     start_time = datatables.Column(
@@ -217,7 +217,7 @@ class ProductionTaskTable(datatables.DataTable):
         
     update_time = datatables.Column(
         label='Update time',
-    #    bVisible='false',
+        bVisible='false',
         )
         
         
@@ -335,6 +335,7 @@ def task_table(request):
                         'analysis': qs.filter(project='user').count(),
                     }
 
+    last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
     total_task = ProductionTask.objects.count()
     status_stat = ProductionTask.objects.values('status').annotate(count=Count('id')).order_by('status')
     projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
@@ -353,6 +354,7 @@ def task_table(request):
                                                                     'parent_template': 'prodtask/_index.html',
                                                                     'status_stat' : status_stat,
                                                                     'total_task' : total_task,
+                                                                    'last_task_submit_time' : last_task_submit_time,
                                                                     'task_count_by_type': task_count_by_type,
                                                                     'projects'  : projects,
                                                                     'usernames'  : usernames,
