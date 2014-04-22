@@ -21,7 +21,7 @@ def prefetch_id(db, seq_name):
 
 
 class TRequest(models.Model):
-    PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotrics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
+    PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
                                 'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING','ANALYSIS']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
@@ -189,6 +189,7 @@ class StepExecution(models.Model):
     step_done_time = models.DateTimeField(db_column='STEP_DONE_TIME', null=True)
     input_events = models.DecimalField(decimal_places=0, max_digits=8, db_column='INPUT_EVENTS', null=True)
     task_config = models.CharField(max_length=2000, db_column='TASK_CONFIG')
+    step_parent = models.ForeignKey('self', db_column='STEP_PARENT_ID')
 
     def set_task_config(self, update_dict):
         if not self.task_config:
@@ -209,6 +210,8 @@ class StepExecution(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ')
+        if not self.step_parent:
+            self.step_parent = self.id
         super(StepExecution, self).save(*args, **kwargs)
 
     class Meta:
