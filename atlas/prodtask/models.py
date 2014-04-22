@@ -23,7 +23,7 @@ def prefetch_id(db, seq_name):
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
                                 'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
-    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESING','ANALYSIS']]
+    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
@@ -205,13 +205,9 @@ class StepExecution(models.Model):
             self.step_def_time = timezone.now()
         self.save(*args, **kwargs)
 
-
-
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ')
-        if not self.step_parent:
-            self.step_parent = self.id
         super(StepExecution, self).save(*args, **kwargs)
 
     class Meta:

@@ -211,6 +211,111 @@ def dpd_form_prefill(form_data, request):
     return spreadsheet_dict, eroor_message
 
 
+def reprocessing_form_prefill(form_data, request):
+    spreadsheet_dict = []
+    try:
+        if form_data.get('excellink'):
+            _logger.debug('Try to read data from %s' % form_data.get('excellink'))
+            file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
+            with open(file_name) as open_file:
+                file_obj = open_file.read().split('\n')
+        if form_data.get('excelfile'):
+            file_obj = request.FILES['excelfile'].read().split('\n')
+            _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+        conf_parser = ConfigParser()
+        output_dict = conf_parser.parse_config(file_obj)
+    except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
+        eroor_message = str(e)
+        return {},eroor_message
+    # Fill default values
+    form_data['request_type'] = 'REPROCESSING'
+    if 'group' in output_dict:
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
+    if 'comment' in output_dict:
+        form_data['description'] = output_dict['comment'][0]
+    if 'owner' in output_dict:
+        form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    if 'project' in output_dict:
+        form_data['campaign'] = output_dict['project'][0]
+    if not form_data.get('cstatus'):
+        form_data['cstatus'] = 'Created'
+    if not form_data.get('energy_gev'):
+        form_data['energy_gev'] = 8000
+    if not form_data.get('provenance'):
+        form_data['provenance'] = 'test'
+    task_config = {}
+    if 'events_per_job' in output_dict:
+        nEventsPerJob = output_dict['events_per_job'][0]
+        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    if 'ds' in output_dict:
+        for slice_index, ds in enumerate(output_dict['ds']):
+            st_sexec_list = []
+            irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
+                       input_data=output_dict.get('joboptions', [''])[0],
+                       project_mode=output_dict.get('project_mode', [''])[0],
+                       priority=int(output_dict.get('priority', [0])[0]),
+                       input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+            if 'tag' in output_dict:
+                step_name = step_from_tag(output_dict['tag'][0])
+                sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                             input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
+                                      'memory': output_dict.get('ram', [None])[0],
+                                      'formats': output_dict.get('formats', [None])[0],
+                                      'task_config':task_config})
+            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    eroor_message = ''
+    if not spreadsheet_dict:
+        eroor_message = 'No "ds" data founnd in file.'
+    _logger.debug('Gathered data: %s' % spreadsheet_dict)
+    return spreadsheet_dict, eroor_message
+
+
+def string_to_tag_tree(input_string):
+        tag_tree_dict = {}
+        input_list = eval(input_string)
+        if type(input_list) is not list:
+            raise SyntaxError('Input should be python list: %s' % str(input_list))
+        if type(input_list[0]) is not str:
+            raise SyntaxError('Only one root is possible: %s' % str(input_list[0]))
+        tag_tree_dict, _, _ = recursive_string_tag_tree_parsing(input_list,
+                                                                0, 0, tag_tree_dict)
+        return tag_tree_dict
+
+
+def recursive_string_tag_tree_parsing(rest_list, current_parent, current_position, tag_tree_dict, is_last = False):
+    if type(rest_list) is str:
+        tag_tree_dict.update({current_position: (rest_list, current_parent)})
+        current_parent = current_position
+        current_position += 1
+    elif type(rest_list) is tuple:
+        if not is_last:
+            raise SyntaxError('Only one parent is possible: %s' % str(rest_list))
+        for sub_token in rest_list[:-1]:
+            tag_tree_dict, _, current_position = recursive_string_tag_tree_parsing(sub_token, current_parent,
+                                                                                   current_position,
+                                                                                   tag_tree_dict)
+        tag_tree_dict, current_parent, current_position = recursive_string_tag_tree_parsing(rest_list[-1],
+                                                                                            current_parent,
+                                                                                            current_position,
+                                                                                            tag_tree_dict, True)
+    elif type(rest_list) is list:
+        for token in rest_list[:-1]:
+            tag_tree_dict, current_parent, current_position = recursive_string_tag_tree_parsing(token,
+                                                                                                current_parent,
+                                                                                                current_position,
+                                                                                                tag_tree_dict)
+        tag_tree_dict, current_parent, current_position = recursive_string_tag_tree_parsing(rest_list[-1],
+                                                                                            current_parent,
+                                                                                            current_position,
+                                                                                            tag_tree_dict, True)
+    else:
+        raise SyntaxError('Wrong syntax: %s' % str(rest_list))
+    return tag_tree_dict, current_parent, current_position
+
+
+
 #TODO: Change it to real dataset workflow 
 def fill_dataset(ds):
     dataset = None
@@ -331,6 +436,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         _logger.debug("Filling input data: %s" % input_data)
                         irl = InputRequestList(**input_data)
                         irl.save()
+                        step_parent = None
                         for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
@@ -343,13 +449,19 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
                             step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                            if step_parent:
+                                step['step_exec']['step_parent'] = step_parent
                             _logger.debug("Filling step execution data: %s" % step['step_exec'])
                             st_exec = StepExecution(**step['step_exec'])
                             if task_config:
                                 st_exec.set_task_config(task_config)
                             st_exec.save_with_current_time()
+                            if not step_parent:
+                                step_parent = st_exec
+                                st_exec.step_parent = step_parent
+                                st_exec.save()
                 except Exception, e:
-                    _logger.error("Problem during request creat: %s" % e)
+                    _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
                     return HttpResponseRedirect('/prodtask/request_table/')
                 return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)
