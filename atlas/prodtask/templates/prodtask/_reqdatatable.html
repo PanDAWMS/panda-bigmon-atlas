@@ -305,7 +305,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
       {% endfor %}
       return patternIsEmpty;
     };
+    var currentTags = [];
+    function tagInfoUpdate(){
+        var newTags = [];
+        $(".patternForm").each(function(){
+            if (this.val() != ''){
+                newTags.push(this.val());
+            }
+        for (i=0;i<newTags.length;i++){
+            if ($.inArray(newTags,currentTags) == -1){
 
+            }
+        }
+        });
+    }
     function bindClick(event){
         event.preventDefault();
         {% for step in step_list %}
@@ -370,12 +383,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
   <th>Description:</th>
   <th>Reference:</th>
   <th>Physic group:</th>
+  <th>Status:</th>
 </tr>
 <tr>
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
   <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
   <td>{{ trequest.phys_group}}</td>
+  <td>{{ trequest.cstatus}}</td>
 </tr>
 </table>
 
@@ -390,6 +405,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
 <form >
 
+<div id="tagIngo" ></div>
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
     <th colspan="10">
@@ -414,7 +430,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     <tr>
         {% for step in step_list %}
             <td style="padding: 0px;width: 50px">
-            <form><input type="text"  id="patternform{{forloop.counter0}}" value=""></form>
+            <form><input type="text" class="patternForm"  id="patternform{{forloop.counter0}}" value=""></form>
             </td>
         {% endfor %}
 

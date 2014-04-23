@@ -231,7 +231,18 @@ def request_steps_approve(request, reqid=None):
         return request_steps_approve_or_save(request,reqid,True)
     return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
 
-
+@csrf_protect
+def tag_info(request, tag_name):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            trtf = Ttrfconfig.objects.all().filter(tag=tag_name[0], cid=int(tag_name[1:]))
+            if trtf:
+                results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
+                                'input':trtf[0].input})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 def home(request):
     tmpl = get_template('prodtask/_index.html')
