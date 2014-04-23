@@ -3,7 +3,7 @@
 # Setup prog for Panda Server
 #
 #
-release_version = '0.0.3'
+release_version = '0.0.3' #FIXME
 prefix = '/data/atlpan/bigpandamon'
 lib_prefix = 'lib/python2.6/site-packages/'
 expected_extensions = ['.html', '.js', '.css', '.png', '.gif', '.ico', '-example']
@@ -172,15 +172,16 @@ setup(
     author='Panda Team',
     author_email='hn-atlas-panda-pathena@cern.ch',
     url='https://twiki.cern.ch/twiki/bin/view/PanDA/BigPanDAmonitoring',
-    packages=[ 
+    packages=[ #FIXME 
         'atlas',
         'atlas.settings',
         'atlas.common',
         'atlas.postproduction',
         'atlas.postproduction.deft',
         'atlas.prodtask',
+        'atlas.todoview',
     ],
-    data_files=[
+    data_files=[ #FIXME
                 # config files 
                 ('%satlas/settings' % (lib_prefix), [
                             'atlas/settings/local.py-example-template', ]
@@ -192,6 +193,7 @@ setup(
                                   "atlas/media",
                                   "atlas/config-templates",
                                   "atlas/prodtask/templates",
+                                  "atlas/todoview/templates",
                 )
     ,         
     cmdclass={'install': install_panda,
