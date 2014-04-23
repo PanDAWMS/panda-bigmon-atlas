@@ -1,0 +1,98 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+<script>
+$(document).ready(function(){
+    $("#obsolete_header").click(function(){
+        $("#obsolete_patterns").fadeToggle();
+    });
+});
+
+
+</script>
+<a href="{% url 'prodtask:mcpattern_create' %}"> Create new pattern </a>
+<h4> Patterns in use </h4>
+<div id="inuse_patterns">
+
+    <table>
+        <tr>
+                <th></th>
+                {% for header in header_list %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+        </tr>
+        {% for pattern in patterns_in_use %}
+            {% url 'prodtask:mcpattern_update' pattern.id as update_url %}
+            {% url 'prodtask:mcpattern_create' pattern.id as clone_url %}
+            <tr>
+                <td>
+                    <a href="{{ update_url }}"> Update </a>
+                    <a href="{{ clone_url }}"> Clone </a>
+                </td>
+                <td>
+                    {{ pattern.name }}
+                </td>
+                {% for step in pattern.pattern_steps %}
+                    <td>
+                        {{ step }}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+<h4 id="obsolete_header"> {{ patterns_obsolete|length }} obsolete patterns. Click to show </h4>
+<div id="obsolete_patterns" style="display:none">
+
+    <table>
+        <tr>
+                <th></th>
+                {% for header in header_list %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+        </tr>
+        {% for pattern in patterns_obsolete %}
+            {% url 'prodtask:mcpattern_update' pattern.id as update_url %}
+            {% url 'prodtask:mcpattern_create' pattern.id as clone_url %}
+            <tr>
+                <td>
+                    <a href="{{ update_url }}"> Update </a>
+                    <a href="{{ clone_url }}"> Clone </a>
+                </td>
+                <td>
+                    {{ pattern.name }}
+                </td>
+                {% for step in pattern.pattern_steps %}
+                    <td>
+                        {{ step }}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}
