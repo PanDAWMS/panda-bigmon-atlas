@@ -52,6 +52,19 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
         exclude = ['reqid']
 
 
+class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
+    excellink = CharField(required=False, label="First step LIST link")
+    excelfile = FileField(required=False, label="First step LIST file")
+    provenance = CharField(widget=forms.HiddenInput, required=False)
+    cstatus = CharField(widget=forms.HiddenInput, required=False)
+    request_type = CharField(widget=forms.HiddenInput, required=False)
+    tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
+                              widget=Textarea, required=False)
+
+    class Meta:
+        model = TRequest
+        exclude = ['reqid']
+
 class MCPatternForm(ModelForm):
 
     def __init__(self, *args, **kwargs):

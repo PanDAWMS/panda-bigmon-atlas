@@ -28,6 +28,8 @@ urlpatterns = patterns('',
     
     
     url(r'^dpd_request_create/$',               'atlas.prodtask.request_views.dpd_request_create',  name='dpd_request_create'),
+    url(r'^reprocessing_request_create/$',               'atlas.prodtask.request_views.reprocessing_request_create',
+        name='reprocessing_request_create'),
 
     url(r'^mcpattern_table/$',                     'atlas.prodtask.request_views.mcpattern_table',  name='mcpattern_table'),
     url(r'^mcpattern_create/$',                    'atlas.prodtask.request_views.mcpattern_create',  name='mcpattern_create'),
@@ -50,7 +52,8 @@ urlpatterns = patterns('',
         name='request_steps_evgen_approve'),
     url(r'^request_steps_approve/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_approve',
         name='request_steps_approve'),
-     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
+    url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
+    url(r'^tag_info/(?P<tag_name>\w+)/$', 'atlas.prodtask.views.tag_info', name='tag_info'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 

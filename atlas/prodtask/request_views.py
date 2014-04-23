@@ -11,7 +11,8 @@ import core.datatables as datatables
 import json
 import logging
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
-    TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm
+    TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
+    TRequestReprocessingCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
     get_priority_object, RequestStatus
 from .models import MCPriority
@@ -53,6 +54,10 @@ def request_clone(request, rid=None):
                 return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
                                                TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation,
                                                dpd_form_prefill)
+            elif values['request_type'] == 'REPROCESSING':
+                 return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
+                                                TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
+                                                reprocessing_form_prefill)
         except Exception, e:
             _logger.error("Problem with request clonning #%i: %s"%(rid,e))
             return HttpResponseRedirect('/')
@@ -248,6 +253,12 @@ def reprocessing_form_prefill(form_data, request):
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    try:
+        tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
+    except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
+        eroor_message = str(e)
+        return {},eroor_message
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
@@ -256,14 +267,15 @@ def reprocessing_form_prefill(form_data, request):
                        project_mode=output_dict.get('project_mode', [''])[0],
                        priority=int(output_dict.get('priority', [0])[0]),
                        input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-            if 'tag' in output_dict:
-                step_name = step_from_tag(output_dict['tag'][0])
+            for tag_order, (tag_name, formats, tag_parent) in tag_tree:
+                #TODO: Give a real name
+                step_name = 'Reco'
                 sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
                              input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-                st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
+                st_sexec_list.append({'step_name': step_name, 'tag': tag_name, 'step_exec': sexec,
                                       'memory': output_dict.get('ram', [None])[0],
-                                      'formats': output_dict.get('formats', [None])[0],
-                                      'task_config':task_config})
+                                      'formats': formats,
+                                      'task_config':task_config,'step_order':tag_order,'step_parent':tag_parent})
             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
     eroor_message = ''
     if not spreadsheet_dict:
@@ -273,20 +285,24 @@ def reprocessing_form_prefill(form_data, request):
 
 
 def string_to_tag_tree(input_string):
-        tag_tree_dict = {}
-        input_list = eval(input_string)
+        tag_tree_list = []
+        input_string = input_string.replace('\n','')
+        input_list = eval(input_string.encode('ascii'))
         if type(input_list) is not list:
             raise SyntaxError('Input should be python list: %s' % str(input_list))
         if type(input_list[0]) is not str:
             raise SyntaxError('Only one root is possible: %s' % str(input_list[0]))
-        tag_tree_dict, _, _ = recursive_string_tag_tree_parsing(input_list,
-                                                                0, 0, tag_tree_dict)
-        return tag_tree_dict
+        tag_tree_list, _, _ = recursive_string_tag_tree_parsing(input_list,
+                                                                0, 0, tag_tree_list)
+        return tag_tree_list
 
 
 def recursive_string_tag_tree_parsing(rest_list, current_parent, current_position, tag_tree_dict, is_last = False):
     if type(rest_list) is str:
-        tag_tree_dict.update({current_position: (rest_list, current_parent)})
+        if ':' in rest_list:
+            tag_tree_dict.append((current_position, (rest_list.split(':')[0],rest_list.split(':')[1], current_parent)))
+        else:
+            tag_tree_dict.append((current_position, (rest_list,'', current_parent)))
         current_parent = current_position
         current_position += 1
     elif type(rest_list) is tuple:
@@ -313,6 +329,8 @@ def recursive_string_tag_tree_parsing(rest_list, current_parent, current_positio
     else:
         raise SyntaxError('Wrong syntax: %s' % str(rest_list))
     return tag_tree_dict, current_parent, current_position
+
+
 
 
 
@@ -381,6 +399,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                      })
                 else:
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
+                    if 'tag_hierarchy' in form.cleaned_data:
+                        del form.cleaned_data['tag_hierarchy']
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
                         inputlists = [x['input_dict'] for x in file_dict]
@@ -411,6 +431,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     form.cleaned_data['excelfile']
                 if 'reqid' in form.cleaned_data:
                     del form.cleaned_data['reqid']
+                if 'tag_hierarchy' in form.cleaned_data:
+                        del form.cleaned_data['tag_hierarchy']
                 form.cleaned_data['cstatus'] = 'Created'
                 try:
                     _logger.debug("Creating request : %s" % form.cleaned_data)
@@ -436,30 +458,43 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         _logger.debug("Filling input data: %s" % input_data)
                         irl = InputRequestList(**input_data)
                         irl.save()
-                        step_parent = None
+                        step_parent_dict = {}
                         for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
                             task_config= {}
+                            upadte_after = False
                             if 'task_config' in step:
                                 if 'nEventsPerJob' in step['task_config']:
                                     task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                    task_config.update({'nEventsPerFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                    task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
                             step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
-                            if step_parent:
-                                step['step_exec']['step_parent'] = step_parent
                             _logger.debug("Filling step execution data: %s" % step['step_exec'])
                             st_exec = StepExecution(**step['step_exec'])
+                            if step_parent_dict:
+                                if ('step_parent' in step) and ('step_order' in step):
+                                    st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                else:
+                                    st_exec.step_parent = step_parent_dict[0]
+                            else:
+                                upadte_after = True
                             if task_config:
                                 st_exec.set_task_config(task_config)
                             st_exec.save_with_current_time()
-                            if not step_parent:
-                                step_parent = st_exec
-                                st_exec.step_parent = step_parent
+                            if ('step_parent' in step) and ('step_order' in step):
+                                step_parent_dict.update({step['step_order']:st_exec})
+                            else:
+                                step_parent_dict.update({0:st_exec})
+                            if upadte_after:
+                                if ('step_parent' in step) and ('step_order' in step):
+                                    st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                else:
+                                    st_exec.step_parent = step_parent_dict[0]
                                 st_exec.save()
+
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
@@ -510,6 +545,11 @@ def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
 
+
+def reprocessing_request_create(request):
+    return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:reprocessing_request_create',
+                                   TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
+                                   reprocessing_form_prefill)
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
