@@ -38,8 +38,8 @@ common_patterns = patterns('',
 #    url(r'^test_playground/$', common_views.testing, name='testing'),
 #    url(r'^htc4/$', htcondor_views.list3HTCondorJobs, name='htc4'),
 #    url(r'^pan4/$', pandajob_views.list3PandaJobs, name='pan4'),
-    url(r'^api-jediJobsInTask', include('core.api.jedi.jobsintask.urls')),
-    url(r'^jediJobsInTask/', pandajob_views.jediJobsInTask, name='jediJobsInTask'),
+#    url(r'^api-jediJobsInTask', include('core.api.jedi.jobsintask.urls')),
+#    url(r'^jediJobsInTask/', pandajob_views.jediJobsInTask, name='jediJobsInTask'),
 
 #    ### DEV
 #    url(r'^DEV-api-jediJobsInTask', include('core.api.jedi.jobsintask.urls')),
