@@ -1,0 +1,448 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+	
+  <style type="text/css">
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : blue;	}
+	span.submitting	{ color : blue;	}
+	span.archived 	{ color : magenta;	}
+ 	span.submitted	{ color : green;	}
+	
+	span.running 	{ color : LightGreen;	}
+	
+	span.done 		{ color : darkgreen;	}
+	span.finished	{ color : darkgreen;	}
+	
+	span.failures	{ color : orange;	}
+	
+	span.failed 	{ color : red;	}
+	span.aborted 	{ color : red;	}
+	span.broken		{ color : red;	}
+	
+	span.navy		{ color : blue; }
+    span.registered { color : blue;}
+    
+    .breaked_word  { word-wrap: break-word; width: 300px; max-width: 300px; }
+    
+  </style>
+  
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<table>
+<tr>
+<td>
+<table style="text-align: right;">
+    <thead><tr><th colspan="0" style="text-align:center">Tasks select parameters</th></tr></thead>
+    <tbody>
+ <!--   <tr>
+        <td>Filter:</td>
+        <td>Value</td>
+    </tr>
+   --> 
+    <tr>
+    <td>
+    
+    <table>
+    <tr>
+        <td>Tasks type:</td>
+        <td>
+        <select id="task_type">
+            <option value="">All ({{ total_task }} tasks)</option>
+            <option value="production" selected="selected">Production ({{ task_count_by_type.production }} tasks)</option>  
+            <option value="analysis">Analysis ({{ task_count_by_type.analysis }} tasks)</option>
+        </select>
+        </td>
+    </tr>
+    
+    <tr>
+    
+        <td>Project:</td>
+        <td>
+    <!--    <select id="project">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for project in projects %}
+            <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
+        {% endfor %}
+        </select> -->
+            <input id="project-label">
+            <input type="hidden" id="project">
+        </td>
+    </tr>
+    
+    <tr>
+    
+        <td>Owner:</td>
+        <td>
+    <!--    <select id="project">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for project in projects %}
+            <option value="{{ project.project }}">{{ project.project }} ({{ project.count }} tasks)</option>
+        {% endfor %}
+        </select> -->
+            <input id="username-label">
+            <input type="hidden" id="username">
+        </td>
+    </tr>
+    </table>
+    
+    </td>
+    <td>
+    
+    <table>
+    <tr>
+        <td>Request:</td>
+        <td>
+        <select id="request">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for request in requests %}
+            <option value="{{ request.request__reqid }}">{{ request.request__reqid }} ({{ request.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Chain:</td>
+        <td>
+        <select id="chain">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for chain in chains %}
+            <option value="{{ chain.chain_tid }}">{{ chain.chain_tid }} ({{ chain.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    <tr>
+    <!--
+        <td>Parent:</td>
+        <td>
+        <select id="parent">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for parent in parents %}
+            <option value="{{ parent.parent_id }}">{{ parent.parent_id }} ({{ parent.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    -->
+        <td>Status:</td>
+        <td>
+        <select id="status">
+            <option value="">All ({{ total_task }} tasks)</option>
+        {% for status in status_stat %}
+            <option value="{{ status.status }}">{{ status.status }} ({{ status.count }} tasks)</option>
+        {% endfor %}
+        </select>
+        </td>
+    </tr>
+    </table>
+    
+    </td>
+    
+    <td>
+    
+    <table>
+    <tr>
+        <td>Last update time period:</td>
+        <td>
+        <select id="time_period">
+            <option value="" disabled="disabled">Custom</option>
+            <option value="day">Last day</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
+            <option value="year">Last year</option>
+            <option value="all">All time</option>
+        </select>
+        </td>
+    </tr>
+    
+    <tr>
+        <td>
+            Last update time from:
+        </td>
+        <td>
+            <input type="text" id="time_from" name="time_from">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Last update time to:
+        </td>
+        <td>
+            <input type="text" id="time_to" name="time_to">
+        </td>
+    </tr>
+    </tbody>
+    </table>
+    
+    </td>
+    
+    
+    </tr>
+    
+  <!--  <tr><td></td><td><button id="update_task_table">Update</button> -->
+</table>
+</td>
+<td>
+<div id="task_stat_table">
+
+<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>
+
+</tr></thead>
+<tbody><tr>
+
+</tr></tbody>
+</table>
+
+</div>
+
+</td>
+</tr>
+</table>
+
+<script type="text/javascript">
+    $( "#time_from" ).datepicker({
+            defaultDate: "-2m",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_to" ).datepicker( "option", "minDate", selectedDate );
+                $( "#time_period" ).val('');
+                taskTable.fnDraw();
+            }
+        });
+    $( "#time_to" ).datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_from" ).datepicker( "option", "maxDate", selectedDate );
+                $( "#time_period" ).val('');
+                taskTable.fnDraw();
+            }
+    });
+    
+    var time_from = new Date();
+    var time_to = new Date();
+    
+    time_from.setMonth( time_from.getMonth() - 1 )
+    
+    $( "#time_from" ).datepicker( "setDate", time_from );
+    $( "#time_to" ).datepicker( "setDate", time_to );
+    
+    $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+    $( "#time_to" ).datepicker( "option", "minDate", time_from );
+    
+    $( "#time_period" ).val('');
+    
+    $("#task_type").val('production');
+    $("#request").val('');
+//    $("#parent").val('');
+    $("#status").val('');
+    $("#chain").val('');
+    
+    
+    var total_task = {{ total_task }};
+    
+    var projects = [    { value : "" , label : "All ({{ total_task }} tasks)" },
+                        {% for project in projects %}
+                            { value : "{{ project.project }}", label : "{{ project.project }} ({{ project.count }} tasks)" },
+                        {% endfor %}
+                    ];
+                    
+    var usernames = [    { value : "" , label : "All ({{ total_task }} tasks)" },
+                        {% for username in usernames %}
+                            { value : "{{ username.username }}", label : "{{ username.username }} ({{ username.count }} tasks)" },
+                        {% endfor %}
+                    ];
+                    
+    $("#project").val(projects[0].value); 
+    $("#project-label").val(projects[0].label);
+    $("#project-label").focus( function(){
+                  //  $("#project-label").val('');
+                    $("#project-label").autocomplete( "search", "" );
+                } );
+    
+    $("#username").val(usernames[0].value); 
+    $("#username-label").val(usernames[0].label);
+    $("#username-label").focus( function(){
+                  //  $("#username-label").val('');
+                    $("#username-label").autocomplete( "search", "" );
+                } );
+                
+    function updateInterface(data)
+    {
+        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
+        for( var i in data )
+        {   
+            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+        }
+        table += '</tr></thead><tbody><tr>';
+        
+       // table += '<td><span class="total">'+ total_task +'</span></td>';
+        for( var i in data )
+        {   
+            table += '<td>'+ data[i].count +'</td>';
+        }
+
+        table += '</tr></tbody></table>';
+        
+        $('#task_stat_table').html(table);
+    }
+    
+  //  $("#update_task_table").button({ disabled: true });
+    
+</script>
+ 
+{{ table.as_html }}
+ 
+<script type="text/javascript">
+$(document).ready(function() {
+
+                        function tableNeedToUpdate()
+                        {
+                            $("#update_task_table").button({ disabled: false });
+                        }
+                        
+                        function updateTable()
+                        {
+                            $("#update_task_table").button({ disabled: true });
+                            taskTable.fnDraw();
+                        }
+                        
+                     //   $("#update_task_table").click(updateTable);
+
+                        $("#request").change(function () {
+                       //         tableNeedToUpdate();
+                                taskTable.fnFilter( $(this).val(), 2 );
+                            });
+                            
+                            /*
+                        $("#parent").change(function () {
+                        //        tableNeedToUpdate();
+                                taskTable.fnFilter( $(this).val(), 3 );
+                            });
+                            */
+                        $("#status").change(function () {
+                        //        tableNeedToUpdate();
+                                taskTable.fnFilter( $(this).val(), 7 );
+                            });
+                            
+                        $("#task_type").change(function () {
+                        
+                        //        tableNeedToUpdate();
+                                taskTable.fnDraw();
+                                
+                                if( $("#task_type").val() == 'analysis' )
+                                {
+                                    taskTable.fnSetColumnVis( 1, false, false);
+                                    taskTable.fnSetColumnVis( 2, false, false );
+                                    taskTable.fnSetColumnVis( 18, false, false );
+                                }
+                                else
+                                {
+                                    taskTable.fnSetColumnVis( 1, true, false );
+                                    taskTable.fnSetColumnVis( 2, true, false );
+                                    taskTable.fnSetColumnVis( 18, true, false ); 
+                                }
+                            });
+                            
+                         $( "#project-label" ).autocomplete({
+                            minLength: 0,
+                            source: projects,
+                          /*  focus: function( event, ui ) {
+                                $( "#project-label" ).val( ui.item.label );
+                                return false;
+                                },*/
+                            select: function( event, ui ) {
+                                $( "#project-label" ).val( ui.item.label );
+                                $( "#project-label" ).blur();
+                                $( "#project" ).val( ui.item.value );
+                                taskTable.fnFilter( $("#project").val(), 5 );
+                                return false;
+                            }
+                        })
+                        
+                        $( "#username-label" ).autocomplete({
+                            minLength: 0,
+                            source: usernames,
+                        /*    focus: function( event, ui ) {
+                                $( "#username-label" ).val( ui.item.label );
+                                return false;
+                                },*/
+                            select: function( event, ui ) {
+                                $( "#username-label" ).val( ui.item.label );
+                                $( "#username-label" ).blur();
+                                $( "#username" ).val( ui.item.value );
+                                taskTable.fnFilter( $("#username").val(), 20 );
+                                return false;
+                            }
+                        })
+                            
+                            /*
+                            
+                        $("#project").change(function (){  
+                       //         tableNeedToUpdate();
+                                taskTable.fnFilter( $("#project").val(), 5 );  
+                            });*/
+                            
+                        $("#chain").change(function () {
+                       //         tableNeedToUpdate();
+                                taskTable.fnFilter( $(this).val(), 6 );
+                            });
+                            
+                        $( "#time_period" ).change(function () {
+                        
+                                var time_from = new Date();
+                                var time_to = new Date();
+                                
+                                switch($(this).val())
+                                {
+                                    case 'day': time_from.setDate( time_from.getDate() - 1 ); break;
+                                    case 'week': time_from.setDate( time_from.getDate() - 7 ); break;
+                                    case 'month': time_from.setMonth( time_from.getMonth() - 1 ); break;
+                                    case 'year': time_from.setFullYear( time_from.getFullYear() - 1 ); break;
+                                    case 'all': time_from.setFullYear( time_from.getFullYear() - 3 ); break;
+                                }
+                                
+                                $( "#time_from" ).datepicker( "setDate", time_from );
+                                $( "#time_to" ).datepicker( "setDate", time_to );
+                                
+                                $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+                                $( "#time_to" ).datepicker( "option", "minDate", time_from );
+                                
+                                taskTable.fnDraw();
+                            });
+                            
+
+});
+ </script>
+{% endblock %}
+

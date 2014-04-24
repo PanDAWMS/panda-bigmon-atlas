@@ -1,0 +1,40 @@
+LoadModule wsgi_module modules/mod_wsgi.so
+
+### multiple mod_wsgi applications ### 
+
+#################################
+#################################
+#################################
+
+### /atlas
+    WSGISocketPrefix run/wsgi.bigpandamon.atlas
+    WSGIDaemonProcess bigpandamon-atlas processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__atlas//lib/python2.6/site-packages
+    WSGIScriptAlias / /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/wsgi.py process-group=bigpandamon-atlas application-group=%{GLOBAL}
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas>
+        <Files wsgi.py>
+            Order deny,allow
+            Allow from all
+        </Files>
+    </Directory>
+    <Location />
+        WSGIProcessGroup bigpandamon-atlas
+        WSGIApplicationGroup %{GLOBAL}
+    </Location>
+    AliasMatch ^/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/css/$1
+    AliasMatch ^/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/js/$1
+    Alias /static/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static>
+        Order deny,allow
+        Allow from all
+    </Directory>
+    Alias /media/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media/
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media>
+        Order deny,allow
+        Allow from all
+    </Directory>
+### end of /atlas
+
+#################################
+#################################
+#################################
+
