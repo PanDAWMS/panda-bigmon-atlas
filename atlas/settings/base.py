@@ -21,7 +21,6 @@ TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),
     join(dirname(atlas_todoview.__file__), 'templates'),
     join(dirname(common.__file__), 'templates'),
-
 )
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
