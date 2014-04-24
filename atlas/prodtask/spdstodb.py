@@ -14,7 +14,8 @@ import urllib2
 
 
 from core.xls_parser import XlrParser, open_tempfile_from_url
-from prodtask.models import get_default_nEventsPerJob_dict
+#from prodtask.models import get_default_nEventsPerJob_dict
+from .models import get_default_nEventsPerJob_dict
 
 _logger = logging.getLogger('prodtaskwebui')
 
