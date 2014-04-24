@@ -22,6 +22,7 @@ common_patterns = patterns('',
     ### Applications
     url(r'^htcondorjobs', include('core.htcondor.urls')),
     url(r'^job', include('core.pandajob.urls')),
+    url(r'^u', include('core.pandajob.urls_users', namespace='user')),
     url(r'^resource', include('core.resource.urls')),
 ###     url(r'^api-auth', include('core.api.urls')),
 
@@ -40,6 +41,15 @@ common_patterns = patterns('',
 #    url(r'^pan4/$', pandajob_views.list3PandaJobs, name='pan4'),
 #    url(r'^api-jediJobsInTask', include('core.api.jedi.jobsintask.urls')),
 #    url(r'^jediJobsInTask/', pandajob_views.jediJobsInTask, name='jediJobsInTask'),
+
+#    url(r'^api/jedi/', include('core.api.jedi.jobsintask.urls')),
+#    url(r'^api/user/', include('core.api.user.urls')),
+
+    url(r'^api-jedi', include('core.api.jedi.jobsintask.urls')),
+    url(r'^api-user', include('core.api.user.urls')),
+
+#    url(r'^userjobset/', pandajob_views.jediUserJobset, name='userjobset'),
+
 
 #    ### DEV
 #    url(r'^DEV-api-jediJobsInTask', include('core.api.jedi.jobsintask.urls')),
