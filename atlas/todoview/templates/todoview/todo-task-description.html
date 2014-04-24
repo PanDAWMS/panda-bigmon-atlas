@@ -1,0 +1,21 @@
+{% extends "_base_bigpandamon.html" %}{% load url from future %}
+{% block subtitle %}Description of Task ID={{ taskid }}{% endblock %}
+{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
+{% block header-nav-chain-2 %}<a href="{% url 'todoview:todoTaskDescription' taskid %}">Description of Task ID={{ taskid }}</a>{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}  
+{% block header-nav-chain-3 %}{% endblock %}{% block header-nav-chain-3-separator %}{% endblock %}  
+{% block header-nav-chain-4 %}{% endblock %}{% block header-nav-chain-4-separator %}{% endblock %}  
+{% block header-nav-chain-5 %}{% endblock %}{% block header-nav-chain-5-separator %}{% endblock %}  
+{% block header-nav-chain-6 %}{% endblock %}  
+{% block extra_css %}
+<style type="text/css" title="currentStyle">
+@import "{{ STATIC_URL }}/css/jquery.dataTables_themeroller.css";
+@import "{{ STATIC_URL }}/css/jquery-ui-1.10.3.custom.min.css";
+@import "{{ STATIC_URL }}/css/jquery-ui-timepicker-addon.css";
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="row"><span style="color: red"><b>Warning: This view has not been implemented yet.</b></span></div>
+<div class="row">&nbsp;</div>
+<div class="row">Once implemented, it will show <b>description of task ID={{taskid}}.</b></div>
+{% endblock %}

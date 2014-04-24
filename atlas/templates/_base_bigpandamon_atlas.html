@@ -1,0 +1,44 @@
+{% extends "_base_grid.html" %}{% load url from future %}
+{% block page_title %}{{ PAGE_TITLE }}{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block extra_js %}{% endblock %}
+{% block gacode %}UA-44940804-1{% endblock %}
+{% block gaweb %}pandawms.org{% endblock %}
+
+{% block title %}ProdTask Monitoring{% endblock %}
+
+{% block subtitle %}ProdTask{% endblock %}
+{% block top_menu_1 %}
+          <a href="#">PanDA</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li><a href="{% url 'jobList' %}">List jobs</a></li>
+            <li class="divider"></li>
+            <li><a href="#">See all &rarr;</a></li>
+          </ul>
+{% endblock %}
+{% block top_menu_all_2 %}{% endblock %}{% block top_menu_all_3 %}{% endblock %}
+{% block top_menu_all_4 %}{% endblock %}{% block top_menu_all_5 %}{% endblock %}
+{% block top_menu_6 %}
+          <a href="#">Help</a>
+          <ul class="dropdown">
+            <li><a href="http://pandawms.org/monreq">Monitoring requirements</a></li>
+          </ul>
+{% endblock %}
+{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-2 %}<a href="{% url 'index' %}">ItemSub1</a>{% endblock %}{% block header-nav-chain-2-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-3 %}<a href="{% url 'index' %}">ItemSub2</a>{% endblock %}{% block header-nav-chain-3-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-4 %}<a href="{% url 'index' %}">ItemSub3</a>{% endblock %}{% block header-nav-chain-4-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-5 %}<a href="{% url 'index' %}">ItemSub4</a>{% endblock %}{% block header-nav-chain-5-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-6 %}<a href="{% url 'index' %}">CurrentView</a>{% endblock %}
+{% block left_menu %}{% endblock %}
+{% block body %}{% endblock %}
+{% block body_mobile %}{% endblock %}
+{% block bottom_info %}{% endblock %}
+{% block bottom_copy %}{% endblock %}
+{% block bottom_link_all_1 %}{% endblock %}
+{% block bottom_link_all_2 %}{% endblock %}
+{% block bottom_link_all_3 %}{% endblock %}
+{% block bottom_link_4 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}
+
+

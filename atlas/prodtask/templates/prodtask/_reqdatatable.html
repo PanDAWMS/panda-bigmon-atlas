@@ -1,0 +1,568 @@
+{% extends parent_template %}
+{% load i18n %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block bl_subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+   <style type="text/css">
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : blue;	}
+	span.submitting	{ color : blue;	}
+	span.archived 	{ color : magenta;	}
+ 	span.submitted	{ color : green;	}
+
+	span.running 	{ color : LightGreen;	}
+
+	span.done 		{ color : darkgreen;	}
+	span.finished	{ color : darkgreen;	}
+
+	span.failures	{ color : orange;	}
+
+	span.failed 	{ color : red;	}
+	span.aborted 	{ color : red;	}
+	span.broken		{ color : red;	}
+
+	span.navy		{ color : blue; }
+    span.registered { color : blue;}
+  </style>
+   <style type="text/css">
+ 	td.obsolete	{ background-color : lightblue;}
+	td.holding 	{ background-color : black;	}
+	td.pending	{ background-color : blue;		}
+	td.waiting	{ background-color : blue;	}
+	td.submitting	{ background-color : blue;	}
+	td.archived 	{ background-color : magenta;	}
+ 	td.submitted	{ background-color : green;	}
+
+	td.running 	{ background-color : LightGreen;	}
+
+	td.done 		{ background-color : darkgreen;	}
+	td.finished	{ background-color : darkgreen;	}
+
+	td.failures	{ background-color : orange;	}
+
+	td.failed 	{ background-color : red;	}
+	td.aborted 	{ background-color : red;	}
+	td.broken		{ background-color : red;	}
+
+	td.navy		{ background-color : blue; }
+    td.registered { background-color : blue;}
+  </style>
+
+   <style>
+    tr.bottom_row_task td {border-bottom: 1px solid black;}
+   </style>
+
+    <style>
+    td.approved { color : green;	}
+    td.not_approved { color : red;}
+    td.evgen_approved { color : orange;	}
+   </style>
+
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<!-- TODO: Replace next tables by independet from field objects   -->
+
+<div style="display:none">
+    <input type="hidden" id="doColor" />
+    <input type="hidden" id="skippedColor" />
+</div>
+<script>
+var step_bc=["#FFB734","#FFFFFF"]
+$("#doColor").css({'background-color':step_bc[0]});
+$("#skippedColor").css({'background-color':step_bc[1]});
+$(document).ready(function(){
+
+{% if not edit_mode %}
+    $("#patternTable").hide();
+    $("#approveButton").hide();
+    $("#saveButton").hide();
+    $("#approveEvgenButton").hide();
+    $(".hiddenNonEdit").hide();
+{% endif %}
+
+
+
+$(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
+                         "cursor":"pointer","user-select": "none"});
+$(".inputListRow").children("td").css({"padding":"1px"})
+$(".inputListTables").css({"border": "1px solid black","margin": "1px"})
+$(".outsideInputListTables").css({"border": "hidden","margin": "1px"})
+$(".showFullSpan").css({"cursor":"pointer","user-select":"none"});
+$(".showSmallSpan").css({"cursor":"pointer"});
+
+{#Color pattern steps#}
+ {% for step in step_list %}
+    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+ {% endfor %}
+
+ $("#selectPattern").change(function(){
+    {% for pattern, steps  in pattern_list %}
+        if ($("#selectPattern").val() == "{{ pattern }}"){
+            {% for step in steps %}
+                $("#patternform{{forloop.counter0}}").val("{{ step }}");
+                if("{{ step }}" != ""){
+                    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+                } else{
+                    $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#skippedColor").css("background-color")});
+            }
+            {% endfor %}
+        }
+    {% endfor %}
+});
+
+    $(".stepchoose").click(function(){
+        var currentColor = $(this).css("background-color");
+        var currentIndex = (step_bc.indexOf(currentColor)+1)%step_bc.length;
+        $(this).css({"background-color":step_bc[currentIndex]});
+        step_bc[currentIndex] =  $(this).css("background-color");
+        if($(this).attr("id").substr(0,4) == 'step'){
+            var step_td_short = "td#short".concat($(this).attr("id").substr(4)).concat(".showFullSpan");
+            $(step_td_short).css({"background-color":step_bc[currentIndex]});
+        };
+    })  ;
+    {#    replace hide/show on dynamic creation#}
+    $(".showFullSpan").click(function(){
+       $(this).parent().parent().parent().hide(0);
+       $(this).parentsUntil(".inputListDivs").children(".inputListTablesLong").show(0);
+        return false;
+    });
+    $(".showSmallSpan").click(function(){
+       $(this).parent().parent().parent().siblings(".inputListTables").show(0);
+       $(this).parent().parent().parent().siblings(".inputListTables").children().show(0);
+        $(this).parent().parent().parent().hide(0);
+         return false;
+    });
+
+    $("#filter").keyup(function(){
+       var valThis = $(this).val().toLowerCase();
+       if(valThis == ""){
+           $(".inputListDivs").show();
+       } else{
+           $(".inputListDivs").hide();
+           $(".filterField").each(function(){
+              if($(this).text().toLowerCase().indexOf(valThis)>=0){
+                  $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
+              }
+           });
+       }
+    });
+
+    {#Fill pattern table#}
+    (function(){
+       {% for inputList, step_exec_dict, approved in inputLists %}
+           {% for step in step_exec_dict %}
+                        {% if step.skipped %}
+                            var stepColor = $("#skippedColor").css("background-color");
+                        {% else %}
+                            var stepColor = $("#doColor").css("background-color");
+                        {% endif %}
+                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor});
+                        $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor});
+
+           {% endfor %}
+
+       {% endfor %}
+    })();
+
+    $("#approveDialog").dialog({
+        autoOpen: false,
+        buttons : {
+                OK : function(){
+                    $( this ).dialog( "close" );
+                }
+            }
+        });
+    $("#problemDialog").dialog({
+        autoOpen: false,
+        buttons : {
+                Cancel : function(){
+                    $( this ).dialog( "close" );
+                }
+            }
+        });
+});
+
+    var csrftoken = $.cookie('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        crossDomain: false, // obviates need for sameOrigin test
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    function approveClick(event,isApprove, isEvgen){
+        event.preventDefault();
+        var sendData = Object();
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                    if (! sendData[sliceID]){
+                        sendData[sliceID] = Object();
+                    }
+                    var sliceSteps=[];
+                    {% for step in step_list %}
+                        var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
+                        var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
+                        sliceSteps[{{ forloop.counter0 }}] = {"value":$(step_td_short).html(),"is_skipped":isSkipped};
+                    {% endfor %}
+                    sendData[sliceID] = sliceSteps;
+                }
+            });
+
+            if (!$.isEmptyObject(sendData)){
+                $( "#waitingDialog" ).dialog();
+
+                var ajaxURL = '';
+                if (isApprove){
+                    ajaxURL = "{% url 'prodtask:request_steps_approve' pr_id %}";
+                } else {
+                    ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
+                }
+                if (isEvgen){
+                    ajaxURL = "{% url 'prodtask:request_steps_evgen_approve' pr_id %}";
+                }
+                $.ajax({
+                    url: ajaxURL,
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        if(status){
+                            var missedList = $.evalJSON(data).data;
+                            var slices = $.evalJSON(data).slices;
+                            if (missedList.length != 0) {
+                                $("#missing_tags_string").html(missedList.toString());
+                                $("#missing_tags").show();
+                            } else {
+                                if(slices.length >0){
+                                   $("#missing_tags").hide();
+                                   if(isApprove){
+                                       $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
+                                       $("#approveDialog").attr("title","Steps approved");
+                                       for (i=0;i<slices.length;i++){
+                                           $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");
+                                           $("#aprroveLabelLong".concat(slices[i])).css({'color':'greenyellow'}).html("Approved")
+                                       }
+
+                                   } else {
+                                       $("#approveDialog>span").text("Sucessfully saved slices: ".concat(slices.toString()));
+                                       $("#approveDialog").attr("title","Steps saved");
+                                   }
+                                   $("#approveDialog").dialog("open");
+                                }
+                            }
+                        } else {
+                            $( "#problemDialog" ).dialog("open");
+                        }
+
+                    }
+                });
+            }
+
+    };
+
+    function emptyPattern(){
+      var patternIsEmpty = true;
+      {% for step in step_list %}
+            patternIsEmpty = patternIsEmpty && ($("#patternform{{forloop.counter0}}").val() == '');
+      {% endfor %}
+      return patternIsEmpty;
+    };
+    var currentTags = [];
+    function tagInfoUpdate(){
+        var newTags = [];
+        $(".patternForm").each(function(){
+            if (this.val() != ''){
+                newTags.push(this.val());
+            }
+        for (i=0;i<newTags.length;i++){
+            if ($.inArray(newTags,currentTags) == -1){
+
+            }
+        }
+        });
+    }
+    function bindClick(event){
+        event.preventDefault();
+        {% for step in step_list %}
+            $(".checkboxSlice").each(function(){
+                if ($(this).is(':checked')){
+{#                   8 = "checkbox".length#}
+                   var sliceID = $(this).attr("id").slice(8);
+                   if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                       var stepValue = $("#patternform{{ forloop.counter0 }}").val();
+                       var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
+
+                       var stepColor = $("#startStep{{ forloop.counter0 }}").css("background-color");
+                       $(step_td_short).css({"background-color":stepColor});
+                       var stepFormLong = "#".concat(sliceID).concat("{{ forloop.counter0 }}.slice_form");
+                       var step_th_long = "th#step".concat(sliceID).concat("{{ forloop.counter0 }}.stepchoose");
+                       $(step_th_long).css({"background-color":stepColor});
+                       if(! emptyPattern()){
+                           $(stepFormLong).val(stepValue);
+                           $(step_td_short).html(stepValue);
+                       }
+                   }
+                };
+            });
+        {% endfor %}
+    };
+
+    function longFormChange(event){
+      var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
+      $(step_td_short).html($(event.target).val());
+    };
+
+    function selectClick(event){
+      event.preventDefault();
+      var firstCheckBox = true;
+      var markAsChecked = false;
+      $(".checkboxSlice").each(function(){
+          var sliceID = $(this).attr("id").slice(8);
+          if ($("#inputList_div".concat(sliceID)).is(":visible")){
+              if (firstCheckBox){
+                  markAsChecked = !($(this).prop('checked'));
+                  firstCheckBox = false;
+              }
+              $(this).prop('checked', markAsChecked);
+          }
+      });
+    };
+
+</script>
+
+<div id="approveDialog" style="display: none">
+    <span></span>
+</div>
+ <div id="problemDialog" title='Error' style="display: none">
+    <span>Something has gone wrong!</span>
+</div>
+<div id="waitingDialog" title="Run" style="display: none">
+  <p>Perfome action. Please wait...</p>
+</div>
+<table>
+<tr>
+  <th>Request ID:</th>
+  <th>Description:</th>
+  <th>Reference:</th>
+  <th>Physic group:</th>
+  <th>Status:</th>
+</tr>
+<tr>
+  <td>{{ trequest.reqid}}</td>
+  <td>{{ trequest.description}}</td>
+  <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
+  <td>{{ trequest.phys_group}}</td>
+  <td>{{ trequest.cstatus}}</td>
+</tr>
+</table>
+
+<h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+<h6> With pattern: {{ pattern }}</h6>
+<table style="padding: 0px;margin-bottom:0px;border: hidden">
+<tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
+    <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
+</table>
+<div id="missing_tags" style="display: none"><strong style="color: firebrick">Error: </strong>
+    <span> Please create these tags before approval: </span>
+    <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
+<form >
+
+<div id="tagIngo" ></div>
+<table style="margin-left: 50px;border: hidden" id="patternTable">
+<tr>
+    <th colspan="10">
+        <select id="selectPattern" >
+            <option value="" disabled selected>Select pattern</option>
+            {% for pattern, steps in pattern_list %}
+                <option value="{{ pattern }}">{{ pattern }}</option>
+            {% endfor %}
+        </select>
+    </th>
+    <th rowspan="2">
+        <td><button id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
+        <td></td>
+    </th>
+
+</tr>
+<tr>
+{% for step in step_list %}
+        <th class="stepchoose" id="startStep{{ forloop.counter0 }}"  > <div > {{step.name}}</div></th>
+{% endfor %}
+</tr>
+    <tr>
+        {% for step in step_list %}
+            <td style="padding: 0px;width: 50px">
+            <form><input type="text" class="patternForm"  id="patternform{{forloop.counter0}}" value=""></form>
+            </td>
+        {% endfor %}
+
+    </tr>
+</table>
+</form>
+
+
+    <div >
+    {% for inputList, step_exec_dict, approved, show_task in inputLists %}
+        <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
+        <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
+            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" checked></form></td>
+            <td style="padding:0px;margin:0px">
+            <table class="inputListTables" >
+            <tr class="inputListRow">
+                <td style="width: 20px" >{{ inputList.slice }}</td>
+                {% if  inputList.input_data|length < 10  %}
+                    <td colspan="10" style="width: 500px" >
+                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.dataset.name }}">
+                            {{ inputList.dataset.name|truncatechars:"58" }}
+                        </span>
+                    </td>
+                    <td>{{ inputList.input_data }}</td>
+                {% else %}
+                    <td colspan="10" style="width: 500px" >
+                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.input_data }}">
+                            {{ inputList.input_data|truncatechars:"58" }}
+                        </span>
+                    </td>
+                    <td>{{  inputList.dataset.name }}</td>
+                {% endif %}
+{#                <td>{{ inputList.brief }}</td>#}
+            <td></td>
+            </tr>
+            <tr class="inputListRow">
+                <td style="width: 20px"> </td>
+                {% for step in step_exec_dict %}
+                        <td class="showFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                            style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
+                {% endfor %}
+
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td>
+
+            {% if show_task %}
+                        <tr>
+                        <td>T:</td>
+
+                        {% for step in step_exec_dict %}
+                        {% if step.task %}
+
+
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ step.task.status }}" >
+                            <div>
+                               <a href="{% url 'prodtask:task' step.task.id %}"><span style="color: #000000">{{ step.task_short }}</span></a>
+                            </div>
+                        </td>
+                        {% else %}
+                            <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        {% endif %}
+                        {% endfor %}
+                        <td colspan="2"></td>
+                        </tr>
+            {% endif%}
+            </tr>
+            </table>
+            <table class="inputListTablesLong" style="display: none">
+                <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
+                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="filterField">{{ inputList.dataset.name }}</span></td></tr>
+                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
+                <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
+                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: {{ inputList.input_events }}</td></tr>
+                <tr style="display: none"><td></td><td colspan="9">
+                    <select id="selectPattern" >
+                        <option value="" disabled selected>Select pattern</option>
+                        {% for pattern in pattern_list %}
+                            <option value="{{ pattern }}">{{ pattern }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td><button id="bind{{ inputList.slice }}" class="slice_bind" title="Create step execution">Bind</button></td>
+                <td><button id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
+                <tr>
+                {% if show_task %}
+                        <tr><td></td><td colspan="11">Tasks:</td></tr>
+                        {% for step in step_exec_dict %}
+                        {% if step.task %}
+                            <tr><td></td>
+                            <td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
+                            <td colspan="2" ><span class="{{ step.task.status }}" >{{ step.task.status }}</span></td>
+                            <td colspan="7">{{ step.task.name }}</td>
+                            </tr>
+                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
+                                                                </td>
+                            <td colspan="5" >
+                                <a href="http://bigpanda.cern.ch/jedimon/job/task/?JediTaskID={{ step.task.id }}">
+                                    <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
+                                </a>
+                            </td>
+                            <td colspan="4">bug: {{ step.task.bug_report }}</td>
+                            </tr>
+                        {% endif %}
+                        {% endfor %}
+
+                {% else %}
+                    <th rowspan="2"></th>
+                    {% for step in step_list %}
+                            <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
+                    {% endfor %}
+
+                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" class="{{ approved }}"> {{ approved }} </th>
+
+                    </tr>
+                        <tr style="padding: 0px">
+                        {% for step in step_exec_dict %}
+                            <td  style="padding: 0px;width: 50px" >
+                                <div  >
+                                    <form><input type="text" onchange="longFormChange(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
+                                </div>
+                            </td>
+                        {% endfor %}
+                        </tr>
+                {% endif %}
+            </table>
+        </td>
+        </tr></table>
+        </div>
+	{% endfor %}
+    </div>
+
+ <strong class="hiddenNonEdit">Work with selected slices:</strong>
+<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>
+<button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,false);">Approve</button>
+<button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,false);">Save</button>
+{% endblock %}
