@@ -1,0 +1,56 @@
+{% extends "atlas/_index_grid.html" %}
+{% comment %}  
+{% extends "_base_bigpandamon.html" %}
+{% endcomment %}
+{% load url from future %}
+{% load js %}
+{% load core_extras %}
+{% load jedi_extras %}
+{% block title %}{{ APP_NAME }} Monitoring{% endblock %}
+{% block subtitle %}List of jobs{% endblock %}
+{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}  
+{% block header-nav-chain-2 %}<a href="{% url 'jobList' %}">List of jobs</a>{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}  
+{% block header-nav-chain-3 %}{% endblock %}{% block header-nav-chain-3-separator %}{% endblock %}  
+{% block header-nav-chain-4 %}{% endblock %}{% block header-nav-chain-4-separator %}{% endblock %}  
+{% block header-nav-chain-5 %}{% endblock %}{% block header-nav-chain-5-separator %}{% endblock %}  
+{% block header-nav-chain-6 %}{% endblock %}
+{% block extra_css %}
+<style type="text/css" title="currentStyle">
+@import "{{ STATIC_URL }}/css/jquery.dataTables_themeroller.css";
+@import "{{ STATIC_URL }}/css/jquery-ui-1.10.3.custom.min.css";
+@import "{{ STATIC_URL }}/css/jquery-ui-timepicker-addon.css";
+</style>
+{% endblock %}
+{% block extra_js %}
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/jquery-1.9.1.min.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/jquery.cookie.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/jquery.dataTables.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/jquery-ui-timepicker-addon.js"></script>
+	{% django_js jquery=false i18n=true csrf=false %}
+
+	<script type="text/javascript" charset="utf-8">
+		var pgst = 'ini';
+		var filter = [];
+		var shFilter = [];
+		var fields = {{ filterFields|safe }};
+		var tableid = "{{ tableid_joblist }}";
+		var tableidsmry = "{{ tableid_joblist_smry }}";
+		var datasrc = "{{ datasrc }}";
+		var datasrcsmry = "{{ datasrcsmry }}";
+		var colsOrig = {{ columns|safe }};
+		var fieldIndices = {{ fieldIndices|safe }};
+		var fltr;
+		var stFlag = 'ini';
+		var oTable;
+		var prefix = "{{ prefix|safe }}";
+	</script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/bigpandamon-csrf.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}/js/bigpandamon-filter.js"></script>
+{% endblock %}
+{% block body %}
+
+{% jedi_jobs_table_with_filter datasrc=datasrc datasrcsmry=datasrcsmry data=data columns=columns|safe tableid=tableid_joblist|safe tableidsmry=tableid_joblist_smry|safe caption=caption filterFields=filterFields|safe fieldIndices=fieldIndices|safe 	%}
+
+{% endblock %}
+
