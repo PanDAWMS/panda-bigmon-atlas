@@ -5,6 +5,9 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+
+from ..settings import defaultDatetimeFormat
+
 import core.datatables as datatables
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
@@ -135,6 +138,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     id = datatables.Column(
         label='Task ID',
+        asSorting=[ "desc" ],
         )
         
     priority = datatables.Column(
@@ -168,14 +172,14 @@ class ProductionTaskTable(datatables.DataTable):
     status = datatables.Column(
         label='Status',
         )
-        
-    timestamp = datatables.Column(
-        label='Timestamp',
-        )
-
+    
     submit_time = datatables.Column(
         label='Submit time',
    #     bVisible='false',
+        )
+    
+    timestamp = datatables.Column(
+        label='Timestamp',
         )
         
     start_time = datatables.Column(
@@ -231,10 +235,10 @@ class ProductionTaskTable(datatables.DataTable):
         bJQueryUI = True
 
         sScrollX = '100%'
-        sScrollY = '25em'
+      #  sScrollY = '25em'
         bScrollCollapse = True
 
-        aaSorting = [[0, "desc"]]
+      #  aaSorting = [[3, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
@@ -258,12 +262,27 @@ class ProductionTaskTable(datatables.DataTable):
         for param in parameters:
             value = request.GET.get(param[0], 0)
             if value:
-                qs = qs.filter(Q( **{param[1]:value} ))
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
 
         self.update_queryset(qs)
         
     def apply_filters(self, request):
         qs = self.get_queryset()
+        
+        parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
+                            ('request','request__reqid'), ('chain','chain_tid'), ('status','status'),
+                            ('provenance', 'provenance'), ('phys_group','phys_group') ]
+        
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value:
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
         
         task_type = request.GET.get('task_type', 'production')
         if task_type == 'production':
@@ -284,8 +303,8 @@ class ProductionTaskTable(datatables.DataTable):
         else:
             time_to = time.time()
 
-        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
-        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
+        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
+        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
         
         qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
          
@@ -303,20 +322,9 @@ class ProductionTaskTable(datatables.DataTable):
         qs = request.fct._handle_ajax_column_specific_search(qs, params)
         
    #     qs = request.fct.apply_sort_search(qs, params)
-        
-        
+             
         status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ] 
         
-        
-    #    status_stat = qs.values('status').annotate(count=Count('id'))
-        
-   #     total_task = qs.count()
-   #     projects = [ { 'project':str(x['project']), 'count':str(x['count']) } for x in qs.values('project').annotate(count=Count('id')).order_by('project').values('project','count') ]
-   #     usernames = [ { 'username':str(x['username']), 'count':str(x['count']) } for x in qs.values('username').annotate(count=Count('id')).order_by('username').values('username','count') ]
-   #     parents = [ { 'parent_id':str(x['parent_id']), 'count':str(x['count']) } for x in qs.values('parent_id').annotate(count=Count('id')).order_by('-parent_id').values('parent_id','count') ]
-   #     requests = [ { 'request__reqid':str(x['request__reqid']), 'count':str(x['count']) } for x in qs.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid').values('request__reqid','count') ]
-   #     chains = [ { 'chain_tid':str(x['chain_tid']), 'count':str(x['count']) } for x in qs.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid').values('chain_tid','count') ]
-            
         data = datatables.DataTable.prepare_ajax_data(request.fct, request)
         
         data['task_stat'] = status_stat
@@ -331,20 +339,7 @@ def task_table(request):
 
     qs = request.fct.get_queryset()
     
-    task_count_by_type = {  'production': qs.exclude(project='user').count(),
-                        'analysis': qs.filter(project='user').count(),
-                    }
-
     last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
-    total_task = ProductionTask.objects.count()
-    status_stat = ProductionTask.objects.values('status').annotate(count=Count('id')).order_by('status')
-    projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
-    usernames = ProductionTask.objects.extra(select={'ln':'lower(username)'}).values('username','ln').annotate(count=Count('id')).order_by('ln')
-  #  parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
-    requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
-    chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
-    provenances = ProductionTask.objects.values('provenance').annotate(count=Count('id')).order_by('provenance')
-    phys_groups = ProductionTask.objects.values('phys_group').annotate(count=Count('id')).order_by('phys_group')
 
   #  request.fct.apply_first_page_filters(request)
     
@@ -352,16 +347,6 @@ def task_table(request):
                                                                     'active_app' : 'prodtask',
                                                                     'table': request.fct,
                                                                     'parent_template': 'prodtask/_index.html',
-                                                                    'status_stat' : status_stat,
-                                                                    'total_task' : total_task,
                                                                     'last_task_submit_time' : last_task_submit_time,
-                                                                    'task_count_by_type': task_count_by_type,
-                                                                    'projects'  : projects,
-                                                                    'usernames'  : usernames,
-                                                                    'requests'  : requests,
-                                                                    #'parents'   : parents,
-                                                                    'chains'    : chains,
-                                                                    'provenances'    : provenances,
-                                                                    'phys_groups'    : phys_groups,
                                                                     })
 
