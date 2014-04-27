@@ -518,10 +518,27 @@ def step_execution_table(request):
                                                                 'parent_template': 'prodtask/_index.html'})
 
                                                                 
+def production_dataset_details(request, name=None):
+   if name:
+       try:
+           dataset = ProductionDataset.objects.get(name=name)
+       except:
+           return HttpResponseRedirect('/')
+   else:
+       return HttpResponseRedirect('/')
+
+   return render(request, 'prodtask/_dataset_detail.html', {
+       'active_app' : 'prodtask',
+       'pre_form_text' : 'ProductionDataset details with Name = %s' % name,
+       'dataset': dataset,
+       'parent_template' : 'prodtask/_index.html',
+   })
+
 class ProductionDatasetTable(datatables.DataTable):
 
     name = datatables.Column(
         label='Name',
+        sClass='breaked_word',
         )
         
     task_id = datatables.Column(
@@ -563,25 +580,15 @@ class ProductionDatasetTable(datatables.DataTable):
         bPaginate = True
         bJQueryUI = True
 
-        sScrollY = '20em'
+        sScrollX = '100%'
+      #  sScrollY = '25em'
         bScrollCollapse = True
-
-        fnRowCallback = """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            if(aData[1]!='None')
-                                $('td:eq(1)', nRow).html('<a href="/prodtask/task/'+aData[1]+'/">'+aData[1]+'</a>');
-                                
-                            if(aData[2]!='None')
-                                $('td:eq(2)', nRow).html('<a href="/prodtask/task/'+aData[2]+'/">'+aData[2]+'</a>');
-                                
-                            if(aData[3]!='None')
-                                $('td:eq(3)', nRow).html('<a href="/prodtask/request/'+aData[3]+'/">'+aData[3]+'</a>');
-                        }"""
+        
+        fnServerData =  "datasetServerData"
                         
         aaSorting = [[0, "desc"]]
-        aLengthMenu = [[10, 50, 1000], [10, 50, 1000]]
-        iDisplayLength = 10
+        aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
+        iDisplayLength = 100
 
         bServerSide = True
         sAjaxSource = '/prodtask/production_dataset_table/'
@@ -589,6 +596,10 @@ class ProductionDatasetTable(datatables.DataTable):
 @datatables.datatable(ProductionDatasetTable, name='fct')
 def production_dataset_table(request):
     qs = request.fct.get_queryset()
+    
+    qs = qs.filter( status__in=['aborted','broken','failed','deleted',
+                    'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned'] )
+    
     request.fct.update_queryset(qs)
-    return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'Production Dataset Table', 'active_app' : 'prodtask', 'table': request.fct,
+    return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})

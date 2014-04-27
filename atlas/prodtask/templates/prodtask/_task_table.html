@@ -311,7 +311,7 @@
                                  '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
                                  '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
 
-            row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[2]+'</a>';
+            row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
             row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
                                  
             /*
@@ -543,6 +543,8 @@
  
 <script type="text/javascript">
 $(document).ready(function() {
+
+    taskTable.fnSetColumnVis( 22, false, false );
 
     $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
     $("#task_type").change(function () {

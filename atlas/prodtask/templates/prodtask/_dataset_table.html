@@ -1,0 +1,100 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}. Page was generated {% now "DATETIME_FORMAT" %} UTC{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+    
+  <style type="text/css">
+
+	span.failed 	{ color : magenta;	}
+	span.aborted 	{ color : magenta;	}
+	span.broken		{ color : magenta;	}
+    span.deleted	{ color : magenta;	}
+	
+	span.toBeDeleted 	{ color : orange;	}
+	span.toBeErased 	{ color : orange;	}
+	span.waitErased		{ color : orange;	}
+    span.toBeCleaned	{ color : orange;	}
+    span.waitCleaned	{ color : orange;	}
+    
+    .breaked_word  { word-wrap: break-word; width: 600px; max-width: 600px; }
+    
+  </style>
+  
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+{% endblock %}
+"
+
+{% block body %}
+
+<script type="text/javascript">
+   
+    function parseDate(input) {
+        var dparts = input.slice(0,10).split('-');
+        var tparts = input.slice(10,19).split(':');
+          
+        return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
+    }
+    
+    function datasetServerData( sSource, aoData, fnCallback, oSettings ) {
+        
+      function prepareData( data, textStatus, jqXHR )
+      {
+        for(var i in data['aaData'])
+        {
+            var row = data['aaData'][i];
+            
+            row[0] = '<a class="breaked_word" href="/prodtask/production_dataset/'+row[0]+'/">'+row[0]+'</a>';
+            
+            row[1] = '<a href="/prodtask/task/'+row[1]+'/">'+row[1]+'</a>';
+            row[2] = '<a href="/prodtask/task/'+row[2]+'/">'+row[2]+'</a>';
+            row[3] = '<a href="/prodtask/inputlist_with_request/'+row[3]+'/">'+row[3]+'</a>';
+            
+            row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
+            
+            row[8] = row[8]=='None'? 'None' : parseDate(row[8].slice(0,19)).toString();
+            row[8] = row[8]=='None'? 'None' :  row[8].slice(4,10) + row[8].slice(15,21);
+             
+        }
+        
+        fnCallback( data, textStatus, jqXHR );
+      }
+    
+      oSettings.jqXHR = $.ajax( {
+        "dataType": 'json',
+        "type": "GET",
+        "url": sSource,
+        "data": aoData,
+        "success": prepareData
+      } )
+    }
+
+    
+</script>
+ 
+{{ table.as_html }}
+ 
+
+{% endblock %}
+

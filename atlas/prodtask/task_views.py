@@ -37,7 +37,6 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
-       'fields': task._meta.get_all_field_names(),
        'parent_template' : 'prodtask/_index.html',
    })
 
@@ -224,6 +223,11 @@ class ProductionTaskTable(datatables.DataTable):
         bVisible='false',
         )
         
+    step_name = datatables.Column(
+        label='Step',
+        model_field='step__step_template__step',
+  #      bVisible='false',        
+        )
         
     class Meta:
         model = ProductionTask

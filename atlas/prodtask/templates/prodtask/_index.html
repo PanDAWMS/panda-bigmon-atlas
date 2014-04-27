@@ -75,7 +75,14 @@
 {% endblock %}
 
 
-
+{% block top_menu_all_4 %}
+<li class="has-dropdown">
+          <a href="#">Datasets</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:production_dataset_table' %}">Aborted and Obsolete Datasets</a></li>
+          </ul>
+</li>
+{% endblock %}
 
 {% block bl_header_title %}
 MC Production Monitoring
