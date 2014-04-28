@@ -121,6 +121,7 @@ class ProductionTaskTable(datatables.DataTable):
     request = datatables.Column(
         label='Request',
         model_field='request__reqid',
+        sClass='numbers',
  #       bVisible='false',
         )
         
@@ -137,11 +138,13 @@ class ProductionTaskTable(datatables.DataTable):
 
     id = datatables.Column(
         label='Task ID',
+        sClass='numbers',
         asSorting=[ "desc" ],
         )
         
     priority = datatables.Column(
         label='Priority',
+        sClass='numbers',
         )
 
     project = datatables.Column(
@@ -158,14 +161,17 @@ class ProductionTaskTable(datatables.DataTable):
         
     total_req_jobs = datatables.Column(
         label='Req Jobs',
+        sClass='numbers',
         )
         
     total_done_jobs = datatables.Column(
         label='Done Jobs',
+        sClass='numbers',
         )
         
     total_events = datatables.Column(
         label='Events',
+        sClass='numbers',
         )
         
     status = datatables.Column(
@@ -202,6 +208,7 @@ class ProductionTaskTable(datatables.DataTable):
         
     comments = datatables.Column(
         label='Comments',
+        bVisible='false',
         )
         
 #    inputdataset = datatables.Column(
@@ -242,7 +249,7 @@ class ProductionTaskTable(datatables.DataTable):
       #  sScrollY = '25em'
         bScrollCollapse = True
 
-      #  aaSorting = [[3, "desc"]]
+        aaSorting = [[3, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
