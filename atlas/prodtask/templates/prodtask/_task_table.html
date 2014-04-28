@@ -14,7 +14,7 @@
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
 	</style>
-	
+
   <style type="text/css">
  	span.obsolete	{ color : lightblue;}
 	span.holding 	{ color : black;	}
@@ -23,25 +23,25 @@
 	span.submitting	{ color : blue;	}
 	span.archived 	{ color : magenta;	}
  	span.submitted	{ color : green;	}
-	
+
 	span.running 	{ color : LightGreen;	}
-	
+
 	span.done 		{ color : darkgreen;	}
 	span.finished	{ color : darkgreen;	}
-	
+
 	span.failures	{ color : orange;	}
-	
+
 	span.failed 	{ color : red;	}
 	span.aborted 	{ color : red;	}
 	span.broken		{ color : red;	}
-	
+
 	span.navy		{ color : blue; }
     span.registered { color : blue;}
-    
+
     .breaked_word  { word-wrap: break-word; width: 300px; max-width: 300px; }
     .numbers        { text-align: right; }
   </style>
-  
+
 {% endblock %}
 
 {% block base_js %}
@@ -67,29 +67,29 @@
     <tbody>
     <tr>
     <td>
-    
+
     <table>
     <tr>
         <td>Tasks type:</td>
         <td>
         <select id="task_type">
             <option value="all">All</option>
-            <option value="production" selected="selected">Production</option>  
+            <option value="production" selected="selected">Production</option>
             <option value="analysis">Analysis</option>
         </select>
         </td>
     </tr>
-    
+
     <tr>
-    
+
         <td>Project:</td>
         <td>
             <input id="project" />
-        </td> 
+        </td>
     </tr>
-    
+
     <tr>
-    
+
         <td>Owner:</td>
         <td>
             <input id="username" />
@@ -102,26 +102,26 @@
         <input id="taskname" />
         </td>
     </tr>
-    
+
     <tr>
         <td>Request:</td>
         <td>
         <input id="request" />
         </td>
     </tr>
-    
+
     <tr>
         <td>Chain:</td>
         <td>
         <input id="chain" />
         </td>
     </tr>
-    
+
     </table>
-    
+
     </td>
     <td>
-    
+
     <table>
 
     <tr>
@@ -143,7 +143,7 @@
         </select>
         </td>
     </tr>
-    
+
     <tr>
         <td>Provenance:</td>
         <td>
@@ -187,7 +187,7 @@
         </select>
         </td>
     </tr>
-    
+
     <tr>
         <td>
             Last update time from:
@@ -204,15 +204,15 @@
             <input type="text" id="time_to" name="time_to">
         </td>
     </tr>
-        
+
     </table>
-    
+
     </td>
-    
+
     </tr>
-    
+
     <tr><td colspan="0"><input id="update_task_table" type="button" value="Update table" /><td></tr>
-    
+
     </tbody>
 </table>
 
@@ -248,27 +248,27 @@
     {
         var time_from = $( "#time_from" ).datepicker( "getDate" );
         var time_to = $( "#time_to" ).datepicker( "getDate" );
-        
+
         time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
-        time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);        
-        
+        time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
+
         if( $("#project").val() != '' )
             aoData.push( { "name": "project",       "value": $("#project").val() } );
-        if( $("#username").val() != '' )    
+        if( $("#username").val() != '' )
             aoData.push( { "name": "username",      "value": $("#username").val() } );
         if( $("#taskname").val() != '' )
             aoData.push( { "name": "taskname",      "value": $("#taskname").val() } );
-        if( $("#request").val() != '' )    
+        if( $("#request").val() != '' )
             aoData.push( { "name": "request",       "value": $("#request").val() } );
-        if( $("#chain").val() != '' )    
+        if( $("#chain").val() != '' )
             aoData.push( { "name": "chain",         "value": $("#chain").val() } );
-        if( $("#status").val() != '' )    
+        if( $("#status").val() != '' )
             aoData.push( { "name": "status",        "value": $("#status").val() } );
-        if( $("#provenance").val() != '' )    
+        if( $("#provenance").val() != '' )
             aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
-        if( $("#phys_group").val() != '' )    
+        if( $("#phys_group").val() != '' )
             aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        
+
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
         aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
@@ -277,9 +277,9 @@
     function taskDrawCallback()
     {
         SetParametersToURL();
-       
+
         var text = '<ul>Filters:';
-        
+
         for(var i in parameters_list)
         {
             var val = $( "#"+parameters_list[i].id ).val();
@@ -289,31 +289,31 @@
        text += '</ul>';
        $("#table_request_summary").html( text ) ;
     }
-    
+
     function parseDate(input) {
         var dparts = input.slice(0,10).split('-');
         var tparts = input.slice(10,19).split(':');
-          
+
         return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
     }
-    
+
     function taskServerData( sSource, aoData, fnCallback, oSettings ) {
-        
+
       function prepareData( data, textStatus, jqXHR )
       {
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-            
+
             row[0] = '<a class="breaked_word" href="/prodtask/task/'+row[4]+'/">'+row[0]+'</a>';
-            
+
             row[4] = '<a href="/job/task/?JediTaskID='+row[4]+'">'+row[4]+'</a>'; /*+
                                  '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
                                  '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
 
             row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
             row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
-                                 
+
             /*
             switch(row[8])
             {
@@ -321,7 +321,7 @@
                 case 'GP': row[8]='Group'; break;
                 case 'XP': row[8]='eXtended'; break;
             }*/
-            
+
             var time_stamp_color = 'black';
             switch(row[11])
             {
@@ -332,10 +332,10 @@
                 case "aborted":
                 case "obsoleted":
                     break;
-                    
+
                 default:
                     if( row[13]!='None' )
-                    {   
+                    {
                         var last_update = parseDate(row[13].slice(0,19));
                         var now = new Date();
                         var diff = now - last_update;
@@ -349,27 +349,29 @@
                     else
                         time_stamp_color = 'red';
                     break;
-            }    
-            
+            }
+
             row[12] = row[12]=='None'? 'None' : parseDate(row[12].slice(0,19)).toString() ;
             row[13] = row[13]=='None'? 'None' : parseDate(row[13].slice(0,19)).toString() ;
          //   row[21] = row[21]=='None'? 'None' : parseDate(row[21].slice(0,19)).toString() ;
          //   row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
-         
+
             row[12] = row[12].slice(4,10) + row[12].slice(15,21);
             row[13] = '<span style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
-            
+
+            row[17] = '<a href="https://its.cern.ch/jira/browse/'+row[17]+'">'+row[17]+'</a>';
+
           //  row[13] = row[13]=='None'? 'None' :  row[13].slice(4,10) + row[13].slice(15,21);
           //  row[21] = row[21]=='None'? 'None' : row[21].slice(4,10) + row[21].slice(15,21);
-         
+
             row[11] = '<span class="'+row[11]+'">'+row[11]+'</span>';
         }
-        
+
         updateInterface(data['task_stat']);
-        
+
         fnCallback( data, textStatus, jqXHR );
       }
-    
+
       oSettings.jqXHR = $.ajax( {
         "dataType": 'json',
         "type": "GET",
@@ -380,23 +382,23 @@
     }
 
 
-    var parameters_list = [ 
+    var parameters_list = [
         { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
         { name: 'project',      id: 'project',      label: 'Project'},
         { name: 'username',     id: 'username',     label: 'Owner'},
-        
+
         { name: 'taskname',     id: 'taskname',     label: 'Task name'},
-        
+
         { name: 'request',      id: 'request',      label: 'Request'},
         { name: 'chain',        id: 'chain',        label: 'Chain'},
         { name: 'status',       id: 'status',       label: 'Status'},
-        
+
         { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
         { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
-        
+
         { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
         { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-        
+
         { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
     ];
 
@@ -408,19 +410,19 @@
             $.address.parameter( parameters_list[i].name , val );
         }
     }
-    
+
     var changed_params = {};
-    
+
     function ParseParametersFromURL()
     {
         var time_from = new Date();
         var time_to = new Date();
 
         time_from.setMonth( time_from.getMonth() - 1 )
-        
+
         $( "#time_from" ).datepicker( "setDate", time_from );
         $( "#time_to" ).datepicker( "setDate", time_to );
-        
+
         for(var i in parameters_list)
         {
             var value = $.address.parameter( parameters_list[i].name );
@@ -428,7 +430,7 @@
             {
                 switch( parameters_list[i].name )
                 {
-                    case 'time_from': 
+                    case 'time_from':
                     //    time_from = new Date().parse( value );
                         $( "#time_from" ).datepicker( "setDate", value );
                         break;
@@ -439,7 +441,7 @@
                     case 'time_period':
                         $("#time_period").val(value);
                         break;
-                        
+
                     default:
                         $( "#"+parameters_list[i].id ).val( value );
                         changed_params[ parameters_list[i].name ] = parameters_list[i];
@@ -450,10 +452,10 @@
             {
                 switch( parameters_list[i].name )
                 {
-                    case 'task_type': 
+                    case 'task_type':
                         $("#task_type").val('production');
                         break;
-                    case 'time_from': 
+                    case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
                         break;
                     case 'time_to':
@@ -470,7 +472,7 @@
         }
 
     }
-    
+
     $( "#time_from" ).datepicker({
             defaultDate: "-2m",
             changeMonth: true,
@@ -491,12 +493,12 @@
            //     taskTable.fnDraw();
             }
     });
-    
+
     $( "#time_period" ).change(function () {
 
         var time_from = new Date();
         var time_to = new Date();
-        
+
         switch($(this).val())
         {
             case 'day': time_from.setDate( time_from.getDate() - 1 ); break;
@@ -506,41 +508,41 @@
             case 'all': time_from.setFullYear( time_from.getFullYear() - 3 ); break;
             case 'custom': return; break;
         }
-        
+
         $( "#time_from" ).datepicker( "setDate", time_from );
         $( "#time_to" ).datepicker( "setDate", time_to );
-        
+
         $( "#time_from" ).datepicker( "option", "maxDate", time_to );
         $( "#time_to" ).datepicker( "option", "minDate", time_from );
     });
-    
+
     function updateInterface(data)
     {
         var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
         for( var i in data )
-        {   
+        {
             table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
         }
         table += '</tr></thead><tbody><tr>';
-        
+
        // table += '<td><span class="total">'+ total_task +'</span></td>';
         for( var i in data )
-        {   
+        {
             table += '<td>'+ data[i].count +'</td>';
         }
 
         table += '</tr></tbody></table>';
-        
+
         $('#task_stat_table').html(table);
     }
 
-    
+
     ParseParametersFromURL();
-    
+
 </script>
- 
+
 {{ table.as_html }}
- 
+
 <script type="text/javascript">
 $(document).ready(function() {
 
@@ -548,7 +550,7 @@ $(document).ready(function() {
 
     $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
     $("#task_type").change(function () {
-            
+
             if( $("#task_type").val() == 'analysis' )
             {
                 taskTable.fnSetColumnVis( 1, false, false );
@@ -561,9 +563,9 @@ $(document).ready(function() {
                 taskTable.fnSetColumnVis( 1, true, false );
                 taskTable.fnSetColumnVis( 2, true, false );
                 taskTable.fnSetColumnVis( 13, false, false );
-                taskTable.fnSetColumnVis( 18, true, false ); 
+                taskTable.fnSetColumnVis( 18, true, false );
             }
-        });  
+        });
 });
  </script>
 {% endblock %}
