@@ -526,7 +526,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
                                                                 </td>
                             <td colspan="5" >
-                                <a href="http://bigpanda.cern.ch/jedimon/job/task/?JediTaskID={{ step.task.id }}">
+                                <a href="{% url 'core.pandajob.views.jediJobsInTask'  %}?JediTaskID={{ step.task.id }}">
                                     <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
                                 </a>
                             </td>

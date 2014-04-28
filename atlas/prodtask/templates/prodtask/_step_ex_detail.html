@@ -18,6 +18,7 @@
 <tr><th><label for="id">Id:</label></th><td><a href="{% url 'prodtask:step_execution' step_ex.id %}">{{step_ex.id}}</a></td></tr>
 <tr><th><label for="request">Request:</label></th><td><a href="{% url 'prodtask:request' step_ex.request.reqid %}">{{step_ex.request.reqid}}</a></td></tr>
 <tr><th><label for="step">Step template:</label></th><td><a href="{% url 'prodtask:step_template' step_ex.step_template.id %}">{{step_ex.step_template.id}}</a></td></tr>
+<tr><th><label for="step">Step template name:</label></th><td><a href="{% url 'prodtask:step_template' step_ex.step_template.id %}">{{step_ex.step_template.step}}</a></td></tr>
 <tr><th><label for="status">Status:</label></th><td>{{step_ex.status}}</td></tr>
 <tr><th><label for="slice">Slice:</label></th><td>{{ step_ex.slice.id }}</td></tr>
 <tr><th><label for="priority">Priority:</label></th><td>{{ step_ex.priority }}</td></tr>

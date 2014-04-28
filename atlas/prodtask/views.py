@@ -15,6 +15,8 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
     get_priority_object, ProductionDataset, RequestStatus
 from .spdstodb import fill_template
 
+from django.db.models import Count, Q
+
 _logger = logging.getLogger('prodtaskwebui')
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
@@ -518,22 +520,42 @@ def step_execution_table(request):
                                                                 'parent_template': 'prodtask/_index.html'})
 
                                                                 
+def production_dataset_details(request, name=None):
+   if name:
+       try:
+           dataset = ProductionDataset.objects.get(name=name)
+       except:
+           return HttpResponseRedirect('/')
+   else:
+       return HttpResponseRedirect('/')
+
+   return render(request, 'prodtask/_dataset_detail.html', {
+       'active_app' : 'prodtask',
+       'pre_form_text' : 'ProductionDataset details with Name = %s' % name,
+       'dataset': dataset,
+       'parent_template' : 'prodtask/_index.html',
+   })
+
 class ProductionDatasetTable(datatables.DataTable):
 
     name = datatables.Column(
         label='Name',
+        sClass='breaked_word',
         )
         
     task_id = datatables.Column(
         label='TaskID',
+        sClass='numbers',
         )
 
     parent_task_id = datatables.Column(
         label='ParentTaskID',
+        bVisible='false',
         )
 
     rid = datatables.Column(
         label='ReqID',
+        bVisible='false',
         )
 
     phys_group = datatables.Column(
@@ -542,10 +564,12 @@ class ProductionDatasetTable(datatables.DataTable):
 
     events = datatables.Column(
         label='Events',
+        bVisible='false',
         )
         
     files = datatables.Column(
         label='Files',
+        bVisible='false',
         )
 
     status = datatables.Column(
@@ -559,36 +583,51 @@ class ProductionDatasetTable(datatables.DataTable):
 
     class Meta:
         model = ProductionDataset
+        id = 'dataset_table'
+        var = 'datasetTable'
         bSort = True
         bPaginate = True
         bJQueryUI = True
 
-        sScrollY = '20em'
+        sScrollX = '100%'
+      #  sScrollY = '25em'
         bScrollCollapse = True
-
-        fnRowCallback = """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            if(aData[1]!='None')
-                                $('td:eq(1)', nRow).html('<a href="/prodtask/task/'+aData[1]+'/">'+aData[1]+'</a>');
-                                
-                            if(aData[2]!='None')
-                                $('td:eq(2)', nRow).html('<a href="/prodtask/task/'+aData[2]+'/">'+aData[2]+'</a>');
-                                
-                            if(aData[3]!='None')
-                                $('td:eq(3)', nRow).html('<a href="/prodtask/request/'+aData[3]+'/">'+aData[3]+'</a>');
-                        }"""
+        
+        fnServerParams = "datasetServerParams" 
+        
+        fnServerData =  "datasetServerData"
                         
         aaSorting = [[0, "desc"]]
-        aLengthMenu = [[10, 50, 1000], [10, 50, 1000]]
-        iDisplayLength = 10
+        aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
+        iDisplayLength = 100
 
         bServerSide = True
         sAjaxSource = '/prodtask/production_dataset_table/'
 
+    def apply_filters(self, request):
+        qs = self.get_queryset()
+
+        qs = qs.filter( status__in=['aborted','broken','failed','deleted',
+                'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned'] )
+        
+        parameters = [ ('datasetname','name'), ('status','status'), ]
+        
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value and value != '':
+                if param[0] == 'datasetname':
+                    qs = qs.filter(Q( **{ param[1]+'__iregex' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : value } ))
+         
+        self.update_queryset(qs)
+        
+        
 @datatables.datatable(ProductionDatasetTable, name='fct')
 def production_dataset_table(request):
-    qs = request.fct.get_queryset()
-    request.fct.update_queryset(qs)
-    return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'Production Dataset Table', 'active_app' : 'prodtask', 'table': request.fct,
+#    qs = request.fct.get_queryset()
+    request.fct.apply_filters(request)
+#    request.fct.update_queryset(qs)
+    
+    return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})

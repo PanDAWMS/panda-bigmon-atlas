@@ -6,10 +6,14 @@
 {% block bl_page_title %}Monte Carlo Production Monitoring{% endblock %}
 
 {% block body %}
+
+{% comment %}
     <ul>
         <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
         <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
     </ul>
+{% endcomment %}
+
 {% endblock %}
 
 {% block header-nav-chain-1 %}{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
@@ -75,6 +79,22 @@
 {% endblock %}
 
 
+{% block top_menu_all_4 %}
+<li class="has-dropdown">
+          <a href="#">Datasets</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:production_dataset_table' %}">Aborted and Obsolete Datasets</a></li>
+          </ul>
+</li>
+
+<li>
+          <a href="http://dashb-atlas-data.cern.ch/ddm2/" target="_blank">DDMDash</a>
+</li>
+
+<li>
+          <a href="http://dashb-atlas-ssb.cern.ch/dashboard/request.py/siteview#currentView=Shifter+view&highlight=false" target="_blank">SSB</a>
+</li>
+{% endblock %}
 
 
 {% block bl_header_title %}

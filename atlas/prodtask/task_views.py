@@ -5,6 +5,9 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+
+from ..settings import defaultDatetimeFormat
+
 import core.datatables as datatables
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
@@ -34,7 +37,6 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
-       'fields': task._meta.get_all_field_names(),
        'parent_template' : 'prodtask/_index.html',
    })
 
@@ -119,13 +121,14 @@ class ProductionTaskTable(datatables.DataTable):
     request = datatables.Column(
         label='Request',
         model_field='request__reqid',
+        sClass='numbers',
  #       bVisible='false',
         )
-        
+
     step = datatables.Column(
         label='Step',
         model_field='step__id',
-  #      bVisible='false',        
+  #      bVisible='false',
         )
 
     parent_id = datatables.Column(
@@ -135,10 +138,13 @@ class ProductionTaskTable(datatables.DataTable):
 
     id = datatables.Column(
         label='Task ID',
+        sClass='numbers',
+        asSorting=[ "desc" ],
         )
-        
+
     priority = datatables.Column(
         label='Priority',
+        sClass='numbers',
         )
 
     project = datatables.Column(
@@ -146,84 +152,93 @@ class ProductionTaskTable(datatables.DataTable):
         bVisible='false',
 #        sSearch='user',
         )
-        
+
     chain_tid = datatables.Column(
         label='Chain',
         bVisible='false',
 #        sSearch='user',
         )
-        
+
     total_req_jobs = datatables.Column(
         label='Req Jobs',
+        sClass='numbers',
         )
-        
+
     total_done_jobs = datatables.Column(
         label='Done Jobs',
+        sClass='numbers',
         )
-        
+
     total_events = datatables.Column(
         label='Events',
+        sClass='numbers',
         )
-        
+
     status = datatables.Column(
         label='Status',
-        )
-        
-    timestamp = datatables.Column(
-        label='Timestamp',
         )
 
     submit_time = datatables.Column(
         label='Submit time',
    #     bVisible='false',
         )
-        
+
+    timestamp = datatables.Column(
+        label='Timestamp',
+        )
+
     start_time = datatables.Column(
         label='Start time',
         bVisible='false',
         )
-        
+
     provenance = datatables.Column(
         label='Provenance',
         bVisible='false',
         )
-        
+
     phys_group = datatables.Column(
         label='Phys group',
         bVisible='false',
         )
 
-    bug_report = datatables.Column(
-        label='Report',
+    reference = datatables.Column(
+        label='JIRA',
         )
-        
+
     comments = datatables.Column(
         label='Comments',
+        bVisible='false',
         )
-        
+
 #    inputdataset = datatables.Column(
 #        label='Inputdataset',
 #        )
-        
+
     physics_tag = datatables.Column(
         label='Physics tag',
         bVisible='false',
         )
-        
+
     username = datatables.Column(
         label='Owner',
         bVisible='false',
         )
-        
+
     update_time = datatables.Column(
         label='Update time',
         bVisible='false',
         )
-        
-        
+
+    step_name = datatables.Column(
+        label='Step',
+        model_field='step__step_template__step',
+  #      bVisible='false',
+        )
+
     class Meta:
         model = ProductionTask
-        
+
         id = 'task_table'
         var = 'taskTable'
         bSort = True
@@ -231,137 +246,118 @@ class ProductionTaskTable(datatables.DataTable):
         bJQueryUI = True
 
         sScrollX = '100%'
-        sScrollY = '25em'
+      #  sScrollY = '25em'
         bScrollCollapse = True
 
-        aaSorting = [[0, "desc"]]
+        aaSorting = [[3, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
-        fnServerParams = "taskServerParams" 
-        
+        fnServerParams = "taskServerParams"
+
         fnDrawCallback = "taskDrawCallback"
-        
+
         fnServerData =  "taskServerData"
-                          
+
 
         bServerSide = True
         sAjaxSource = '/prodtask/task_table/'
-    
+
     def apply_first_page_filters(self, request):
-    
+
         self.apply_filters(request)
-        
+
         qs = self.get_queryset()
-        
+
         parameters = [ ('project','project'), ('username','username'), ('request','request__reqid'), ('chain','chain_tid'), ('status','status')]
         for param in parameters:
             value = request.GET.get(param[0], 0)
             if value:
-                qs = qs.filter(Q( **{param[1]:value} ))
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
 
         self.update_queryset(qs)
-        
+
     def apply_filters(self, request):
         qs = self.get_queryset()
-        
+
+        parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
+                            ('request','request__reqid'), ('chain','chain_tid'), ('status','status'),
+                            ('provenance', 'provenance'), ('phys_group','phys_group') ]
+
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value:
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
+
         task_type = request.GET.get('task_type', 'production')
         if task_type == 'production':
             qs = qs.exclude(project='user')
         elif task_type == 'analysis':
             qs = qs.filter(project='user')
-            
+
         time_from = request.GET.get('time_from', 0)
         time_to = request.GET.get('time_to', 0)
-        
+
         if time_from:
             time_from = float(time_from)/1000.
         else:
             time_from = time.time() - 3600 * 24 * 60
-            
+
         if time_to:
             time_to = float(time_to)/1000.
         else:
             time_to = time.time()
 
-        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc)
-        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc)
-        
+        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
+        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
+
         qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
-         
+
         self.update_queryset(qs)
-    
+
     def prepare_ajax_data(self, request):
-    
+
         self.apply_filters(request)
 
-        params = request.fct.parse_params(request)  
-        
+        params = request.fct.parse_params(request)
+
         qs = request.fct.get_queryset()
-        
+
         qs = request.fct._handle_ajax_global_search(qs, params)
         qs = request.fct._handle_ajax_column_specific_search(qs, params)
-        
-   #     qs = request.fct.apply_sort_search(qs, params)
-        
-        
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ] 
-        
-        
-    #    status_stat = qs.values('status').annotate(count=Count('id'))
-        
-   #     total_task = qs.count()
-   #     projects = [ { 'project':str(x['project']), 'count':str(x['count']) } for x in qs.values('project').annotate(count=Count('id')).order_by('project').values('project','count') ]
-   #     usernames = [ { 'username':str(x['username']), 'count':str(x['count']) } for x in qs.values('username').annotate(count=Count('id')).order_by('username').values('username','count') ]
-   #     parents = [ { 'parent_id':str(x['parent_id']), 'count':str(x['count']) } for x in qs.values('parent_id').annotate(count=Count('id')).order_by('-parent_id').values('parent_id','count') ]
-   #     requests = [ { 'request__reqid':str(x['request__reqid']), 'count':str(x['count']) } for x in qs.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid').values('request__reqid','count') ]
-   #     chains = [ { 'chain_tid':str(x['chain_tid']), 'count':str(x['count']) } for x in qs.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid').values('chain_tid','count') ]
-            
-        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
-        
-        data['task_stat'] = status_stat
-        
-        return data
-        
 
- 
+   #     qs = request.fct.apply_sort_search(qs, params)
+
+        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]
+
+        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
+
+        data['task_stat'] = status_stat
+
+        return data
+
+
+
 
 @datatables.datatable(ProductionTaskTable, name='fct')
 def task_table(request):
 
     qs = request.fct.get_queryset()
-    
-    task_count_by_type = {  'production': qs.exclude(project='user').count(),
-                        'analysis': qs.filter(project='user').count(),
-                    }
 
     last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
-    total_task = ProductionTask.objects.count()
-    status_stat = ProductionTask.objects.values('status').annotate(count=Count('id')).order_by('status')
-    projects = ProductionTask.objects.values('project').annotate(count=Count('id')).order_by('project')
-    usernames = ProductionTask.objects.extra(select={'ln':'lower(username)'}).values('username','ln').annotate(count=Count('id')).order_by('ln')
-  #  parents = ProductionTask.objects.values('parent_id').annotate(count=Count('id')).order_by('-parent_id')
-    requests = ProductionTask.objects.values('request__reqid').annotate(count=Count('id')).order_by('-request__reqid')
-    chains = ProductionTask.objects.values('chain_tid').annotate(count=Count('id')).order_by('-chain_tid')
-    provenances = ProductionTask.objects.values('provenance').annotate(count=Count('id')).order_by('provenance')
-    phys_groups = ProductionTask.objects.values('phys_group').annotate(count=Count('id')).order_by('phys_group')
 
   #  request.fct.apply_first_page_filters(request)
-    
+
     return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
                                                                     'active_app' : 'prodtask',
                                                                     'table': request.fct,
                                                                     'parent_template': 'prodtask/_index.html',
-                                                                    'status_stat' : status_stat,
-                                                                    'total_task' : total_task,
                                                                     'last_task_submit_time' : last_task_submit_time,
-                                                                    'task_count_by_type': task_count_by_type,
-                                                                    'projects'  : projects,
-                                                                    'usernames'  : usernames,
-                                                                    'requests'  : requests,
-                                                                    #'parents'   : parents,
-                                                                    'chains'    : chains,
-                                                                    'provenances'    : provenances,
-                                                                    'phys_groups'    : phys_groups,
                                                                     })
 

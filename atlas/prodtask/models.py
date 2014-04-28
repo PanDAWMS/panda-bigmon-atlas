@@ -244,6 +244,8 @@ class ProductionTask(models.Model):
     comments = models.CharField(max_length=256, db_column='COMMENTS', null=True)
     inputdataset = models.CharField(max_length=150, db_column='INPUTDATASET', null=True)
     physics_tag = models.CharField(max_length=20, db_column='PHYSICS_TAG', null=True)
+    reference = models.CharField(max_length=150, db_column='REFERENCE', null=False)
+
 
     def save(self):
         if self.id == None:
