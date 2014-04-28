@@ -14,24 +14,24 @@
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
 	</style>
-    
+
   <style type="text/css">
 
 	span.failed 	{ color : magenta;	}
 	span.aborted 	{ color : magenta;	}
 	span.broken		{ color : magenta;	}
     span.deleted	{ color : magenta;	}
-	
+
 	span.toBeDeleted 	{ color : orange;	}
 	span.toBeErased 	{ color : orange;	}
 	span.waitErased		{ color : orange;	}
     span.toBeCleaned	{ color : orange;	}
     span.waitCleaned	{ color : orange;	}
-    
+
     .breaked_word   { word-wrap: break-word; width: 600px; max-width: 600px; }
     .numbers        { text-align: right; }
   </style>
-  
+
 {% endblock %}
 
 {% block base_js %}
@@ -52,103 +52,93 @@
     <thead><tr><th colspan="0" style="text-align:center">Dataset select parameters</th></tr></thead>
     <tbody>
     <tr>
+
+
+    <td>Dataset name pattern:</td>
     <td>
-    
-    <table>
-
-    <tr>
-        <td>Dataset name pattern:</td>
-        <td>
-        <input id="datasetname" />
-        </td>
-    </tr>
-   
-    <tr>
-        <td>Status:</td>
-        <td>
-        <select id="status">
-            <option value="">All Aborted and Obsolete</option>
-            <option value="aborted">Aborted</option>
-            <option value="broken">Broken</option>
-            <option value="deleted">Deleted</option>
-            <option value="failed">Failed</option>
-            
-            <option value="toBeCleaned">toBeCleaned</option>
-            <option value="toBeDeleted">toBeDeleted</option>
-            <option value="toBeErased">toBeErased</option>
-            <option value="waitCleaned">waitCleaned</option>
-            <option value="waitErased">waitErased</option>
-        </select>
-        </td>
-    </tr>
-
-        
-    </table>
-    
+    <input id="datasetname" />
     </td>
-    
+    <td>Status:</td>
+    <td>
+    <select id="status">
+        <option value="">All Aborted and Obsolete</option>
+        <option value="aborted">Aborted</option>
+        <option value="broken">Broken</option>
+        <option value="deleted">Deleted</option>
+        <option value="failed">Failed</option>
+
+        <option value="toBeCleaned">toBeCleaned</option>
+        <option value="toBeDeleted">toBeDeleted</option>
+        <option value="toBeErased">toBeErased</option>
+        <option value="waitCleaned">waitCleaned</option>
+        <option value="waitErased">waitErased</option>
+    </select>
+    </td>
+
+    <td colspan="0">
+    <input id="update_dataset_table" type="button" value="Update table" />
+    <td>
+
     </tr>
-    
-    <tr><td colspan="0"><input id="update_dataset_table" type="button" value="Update table" /><td></tr>
-    
+
     </tbody>
 </table>
 
 
 <script type="text/javascript">
-   
+
     function parseDate(input) {
         var dparts = input.slice(0,10).split('-');
         var tparts = input.slice(10,19).split(':');
-          
+
         return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
     }
-    
+
     function datasetServerParams ( aoData )
     {
   //      var time_from = $( "#time_from" ).datepicker( "getDate" );
   //      var time_to = $( "#time_to" ).datepicker( "getDate" );
-        
+
  //       time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
- //       time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);        
-        
+ //       time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
+
         if( $("#datasetname").val() != '' )
             aoData.push( { "name": "datasetname",      "value": $("#datasetname").val() } );
 
 
-        if( $("#status").val() != '' )    
+        if( $("#status").val() != '' )
             aoData.push( { "name": "status",        "value": $("#status").val() } );
 
-        
+
      //   aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
      //   aoData.push( { "name": "time_from", "value": time_from.getTime() } );
      //   aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
     }
-    
+
     function datasetServerData( sSource, aoData, fnCallback, oSettings ) {
-        
+
       function prepareData( data, textStatus, jqXHR )
       {
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-            
+
             row[0] = '<a class="breaked_word" href="/prodtask/production_dataset/'+row[0]+'/">'+row[0]+'</a>';
-            
+
             row[1] = '<a href="/prodtask/task/'+row[1]+'/">'+row[1]+'</a>';
             row[2] = '<a href="/prodtask/task/'+row[2]+'/">'+row[2]+'</a>';
             row[3] = '<a href="/prodtask/inputlist_with_request/'+row[3]+'/">'+row[3]+'</a>';
-            
+
             row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
-            
+
             row[8] = row[8]=='None'? 'None' : parseDate(row[8].slice(0,19)).toString();
             row[8] = row[8]=='None'? 'None' :  row[8].slice(4,21);
-             
+
         }
-        
+
         fnCallback( data, textStatus, jqXHR );
       }
-    
+
       oSettings.jqXHR = $.ajax( {
         "dataType": 'json',
         "type": "GET",
@@ -158,18 +148,18 @@
       } )
     }
 
-    
+
 </script>
- 
+
 {{ table.as_html }}
- 
+
 <script type="text/javascript">
 $(document).ready(function() {
 
     $("#update_dataset_table").button().click(function(){ datasetTable.fnDraw() });
-    
+
 });
  </script>
- 
+
 {% endblock %}
 
