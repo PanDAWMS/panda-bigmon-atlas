@@ -9,8 +9,9 @@
 # Mar 24, 2014. Requests state update vs Task state
 # Mar 31, 2014. Add taskinfo into task partition table
 # Apr 03, 2014. t_production_task partitioned
+# Apr 27, 2014. add SSO
 #
-# Last Edit : Apr 22, 2014 ak
+# Last Edit : Apr 27, 2014 ak
 #
 
 import re
@@ -29,8 +30,18 @@ import jedi.client
 
 import deft_conf
 import deft_pass
+import deft_user_list
 
 import DButils
+
+#-
+import base64
+import cookielib
+import requests
+from random import choice
+from pprint import pprint
+from cernsso import CERNSSOCookies
+#-
 
 verbose = False
 
@@ -55,6 +66,34 @@ DATASET_SYNCH_INTERVAL =    72
 
 #
 TASK_RECOVERY_STEP     = '.recov.'
+
+class DEFTClient(object):
+#
+# author D.Golubkov
+#
+    def __init__(self):
+        self.ssocookies = CERNSSOCookies(self._getAPIScope()).get()
+
+    def _getAPIScope(self):
+        return 'https://atlas-info-mon.cern.ch/api/deft'
+
+    def _sendRequest(self, request):
+        message = base64.b64encode(json.dumps(request))
+        payload = {'message': message}
+        return requests.post(self._getAPIScope(), data=payload, cookies=self.ssocookies, verify=False).json()
+
+    def getUserInfo(self):
+        request = {'method': 'getUserInfo'}
+        return self._sendRequest(request)
+    
+    def createDEFTTask(self, dataset, taskId):
+        request = {'method': 'createDEFTTask', 'dataset': dataset, 'taskId': taskId}
+        return self._sendRequest(request)
+    
+    def createProdsysListTask(self, dataset):
+        request = {'method': 'createProdsysListTask', 'dataset': dataset}
+        return self._sendRequest(request)
+
 
 def usage() :
 
@@ -938,13 +977,22 @@ def synchronizeJediDeft() :
 
 def main() :
 
+
     msg   = ''
     error = 0
+    # SSO
+    deft_client = DEFTClient()
+    sso_info = deft_client.getUserInfo()
+    #--print sso_info
+    userName =  sso_info['userName']
+    userId   =  sso_info['userId']
+    print "INFO deft_handling : user ID : ",userId
     # simple authentication, will be replaced by Dmitry's CERN SSO
-    whoami    = os.getlogin()
-    if 'alexei.atlswing.'.find(whoami) < 0 :
-     print "%s : you are not allowed to change Tier and Cloud state "%(whoami)
-     sys.exit(0)
+    # whoami    = os.getlogin()
+    #if 'alexei.atlswing.'.find(whoami) < 0 :
+    if deft_user_list.deft_users.find(userId) < 0 :
+      print "%s : you are not allowed to change Tier and Cloud state "%(whoami)
+      sys.exit(0)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "h:f:k:p:r:c:o:t:vu", \
@@ -1009,6 +1057,11 @@ def main() :
      elif o == "--synchronizeJediDeft" :
          synchronizeJediDeftF = True
 
+    if changeTaskStateF or obsoleteTaskStateF or changeTaskPriorityF :
+       # check that other actions are not in progress
+         findProcess('deft_handling','Task','Quit')      
+         findProcess('deft_handling','synchronizeJediDeft','Quit')
+
     if changeTaskStateF == True :
         if task_id < 0 or task_state == 'unknown' :
           msg = "ERROR. Check task ID or/and Task State"
@@ -1027,7 +1080,7 @@ def main() :
             msg = ("INFO. Obsolete task : %s ")%(task_id)
         print msg
         if error == 0 :
-         obsoleteTaskState(task_id,dbupdate)
+          obsoleteTaskState(task_id,dbupdate)
 
     if changeTaskPriorityF == True :
         if task_id < 0 or task_prio < 0 :
@@ -1036,9 +1089,11 @@ def main() :
         else :
             msg = ("INFO. Execute JEDI cmd to change priority for task : %s to %s")%(task_id,task_prio)
         print msg
-        if error == 0 : status = JediTaskCmd('changeTaskPriority',task_id,task_prio)
+        if error == 0 : 
+           status = JediTaskCmd('changeTaskPriority',task_id,task_prio)
 
     if checkAbortedTasksF == True :
+           findProcess('deft_handling','checkAbortedTasks','Quit')
            status = checkAbortedTasks()
 
     if finishTaskF == True :
@@ -1048,7 +1103,8 @@ def main() :
         else :
             msg = ("INFO. Execute JEDI command to finish task : %s ")%(task_id)
         print msg
-        if error == 0 : status = JediTaskCmd('finishTask',task_id,task_prio)
+        if error == 0 :
+           status = JediTaskCmd('finishTask',task_id,task_prio)
 
     if killTaskF == True :
         if task_id < 0  :
@@ -1057,12 +1113,14 @@ def main() :
         else :
             msg = ("INFO. Execute JEDI cmd to kill task : %s ")%(task_id)
         print msg
-        if error == 0 : status = JediTaskCmd('killTask',task_id,task_prio)
+        if error == 0 :
+           status = JediTaskCmd('killTask',task_id,task_prio)
     
  
 
     if synchronizeJediDeftF == True :
        error = 0
+       findProcess('deft_handling','synchronizeJediDeft','Quit')
        synchronizeJediDeft() 
 
 main()
