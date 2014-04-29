@@ -203,7 +203,7 @@ class ProductionTaskTable(datatables.DataTable):
         )
 
     reference = datatables.Column(
-        label='JIRA',
+        label='JIRA-ATLPSTASKS',
         )
 
     comments = datatables.Column(
