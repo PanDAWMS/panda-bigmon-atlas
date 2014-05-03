@@ -207,12 +207,14 @@ def request_steps_approve_or_save(request, reqid, is_approve, is_evgen=False):
 @csrf_protect
 def request_steps_evgen_approve(request, reqid):
     if request.method == 'POST':
+        _logger.debug(request.META)
         return request_steps_approve_or_save(request,reqid,True,True)
     return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
 
 @csrf_protect
 def request_steps_save(request, reqid):
     if request.method == 'POST':
+        _logger.debug(request.META)
         return request_steps_approve_or_save(request,reqid,False)
     return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
 
@@ -260,6 +262,7 @@ def about(request):
 def input_list_approve(request, rid=None):
     # Prepare data for step manipulation page
     if request.method == 'GET':
+        _logger.debug(request.META)
         try:
             # Load patterns which are currently in use
             pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
@@ -560,6 +563,7 @@ class ProductionDatasetTable(datatables.DataTable):
 
     phys_group = datatables.Column(
         label='Phys Group',
+        sClass='px100',
         )
 
     events = datatables.Column(
@@ -574,10 +578,12 @@ class ProductionDatasetTable(datatables.DataTable):
 
     status = datatables.Column(
         label='Status',
+        sClass='px100',
         )
         
     timestamp = datatables.Column(
         label='Timestamp',
+        sClass='px140',
         )
 
 
