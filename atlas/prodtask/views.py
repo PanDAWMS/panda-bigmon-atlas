@@ -522,7 +522,7 @@ def step_execution_table(request):
     return TemplateResponse(request, 'prodtask/_datatable.html', {  'title': 'StepExecutions Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
 
-                                                                
+
 def production_dataset_details(request, name=None):
    if name:
        try:
@@ -542,10 +542,10 @@ def production_dataset_details(request, name=None):
 class ProductionDatasetTable(datatables.DataTable):
 
     name = datatables.Column(
-        label='Name',
+        label='Dataset',
         sClass='breaked_word',
         )
-        
+
     task_id = datatables.Column(
         label='TaskID',
         sClass='numbers',
@@ -570,7 +570,7 @@ class ProductionDatasetTable(datatables.DataTable):
         label='Events',
         bVisible='false',
         )
-        
+
     files = datatables.Column(
         label='Files',
         bVisible='false',
@@ -580,7 +580,7 @@ class ProductionDatasetTable(datatables.DataTable):
         label='Status',
         sClass='px100',
         )
-        
+
     timestamp = datatables.Column(
         label='Timestamp',
         sClass='px140',
@@ -598,12 +598,12 @@ class ProductionDatasetTable(datatables.DataTable):
         sScrollX = '100%'
       #  sScrollY = '25em'
         bScrollCollapse = True
-        
-        fnServerParams = "datasetServerParams" 
-        
+
+        fnServerParams = "datasetServerParams"
+
         fnServerData =  "datasetServerData"
-                        
-        aaSorting = [[0, "desc"]]
+
+        aaSorting = [[1, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
@@ -615,9 +615,9 @@ class ProductionDatasetTable(datatables.DataTable):
 
         qs = qs.filter( status__in=['aborted','broken','failed','deleted',
                 'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned'] )
-        
+
         parameters = [ ('datasetname','name'), ('status','status'), ]
-        
+
         for param in parameters:
             value = request.GET.get(param[0], 0)
             if value and value != '':
@@ -625,15 +625,15 @@ class ProductionDatasetTable(datatables.DataTable):
                     qs = qs.filter(Q( **{ param[1]+'__iregex' : value } ))
                 else:
                     qs = qs.filter(Q( **{ param[1]+'__exact' : value } ))
-         
+
         self.update_queryset(qs)
-        
-        
+
+
 @datatables.datatable(ProductionDatasetTable, name='fct')
 def production_dataset_table(request):
 #    qs = request.fct.get_queryset()
     request.fct.apply_filters(request)
 #    request.fct.update_queryset(qs)
-    
+
     return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
