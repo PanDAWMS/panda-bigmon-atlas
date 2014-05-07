@@ -1,0 +1,32 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<table>
+    
+<tr><th><label for="id">Id:</label></th><td><a href="{% url 'prodtask:step_execution' step_ex.id %}">{{step_ex.id}}</a></td></tr>
+<tr><th><label for="request">Request:</label></th><td><a href="{% url 'prodtask:request' step_ex.request.reqid %}">{{step_ex.request.reqid}}</a></td></tr>
+<tr><th><label for="step">Step template:</label></th><td><a href="{% url 'prodtask:step_template' step_ex.step_template.id %}">{{step_ex.step_template.id}}</a></td></tr>
+<tr><th><label for="step">Step template name:</label></th><td><a href="{% url 'prodtask:step_template' step_ex.step_template.id %}">{{step_ex.step_template.step}}</a></td></tr>
+<tr><th><label for="status">Status:</label></th><td>{{step_ex.status}}</td></tr>
+<tr><th><label for="slice">Slice:</label></th><td>{{ step_ex.slice.id }}</td></tr>
+<tr><th><label for="priority">Priority:</label></th><td>{{ step_ex.priority }}</td></tr>
+<tr><th><label for="step_def_time">Step def time:</label></th><td>{{ step_ex.step_def_time }}</td></tr>
+<tr><th><label for="step_appr_time">Step appr time:</label></th><td>{{ step_ex.step_appr_time }}</td></tr>
+<tr><th><label for="step_exe_time">Step exe time:</label></th><td>{{ step_ex.step_exe_time }}</td></tr>
+<tr><th><label for="step_done_time">Step done time:</label></th><td>{{ step_ex.step_done_time }}</td></tr>
+<tr><th><label for="input_events">Input events:</label></th><td>{{ step_ex.input_events }}</td></tr>
+
+</table>
+{% endblock %}

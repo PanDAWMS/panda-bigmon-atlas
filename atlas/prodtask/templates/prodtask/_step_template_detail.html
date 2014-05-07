@@ -1,0 +1,35 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<table>
+
+<tr><th><label for="id">Id:</label></th><td><a href="{% url 'prodtask:step_template' step.id %}">{{step.id}}</a></td></tr>
+<tr><th><label for="step">Step name:</label></th><td>{{ step.step }}</td></tr>
+<tr><th><label for="def_time">Def time:</label></th><td>{{ step.def_time }}</td></tr>
+<tr><th><label for="status">Status:</label></th><td>{{ step.status }}</td></tr>
+<tr><th><label for="ctag">CTag:</label></th><td>{{ step.ctag }}</td></tr>
+<tr><th><label for="priority">Priority:</label></th><td>{{ step.priority }}</td></tr>
+<tr><th><label for="cpu_per_event">CPU per event:</label></th><td>{{ step.cpu_per_event }}</td></tr>
+<tr><th><label for="output_formats">Output formats:</label></th><td>{{ step.output_formats }}</td></tr>
+<tr><th><label for="memory">Memory:</label></th><td>{{ step.memory }}</td></tr>
+<tr><th><label for="trf_name">TRF name:</label></th><td>{{ step.trf_name }}</td></tr>
+<tr><th><label for="lparams">Lparams:</label></th><td>{{ step.lparams }}</td></tr>
+<tr><th><label for="vparams">Vparams:</label></th><td>{{ step.vparams }}</td></tr>
+<tr><th><label for="swrelease">SW release:</label></th><td>{{ step.swrelease }}</td></tr>
+
+
+
+</table>
+{% endblock %}

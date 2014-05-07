@@ -1,0 +1,577 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}. Last task submit time {{ last_task_submit_time|date:"DATETIME_FORMAT" }} UTC. Page was generated {% now "DATETIME_FORMAT" %} UTC{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+
+  <style type="text/css">
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : blue;	}
+	span.submitting	{ color : blue;	}
+	span.archived 	{ color : magenta;	}
+ 	span.submitted	{ color : green;	}
+
+	span.running 	{ color : LightGreen;	}
+
+	span.done 		{ color : darkgreen;	}
+	span.finished	{ color : darkgreen;	}
+
+	span.failures	{ color : orange;	}
+
+	span.failed 	{ color : red;	}
+	span.aborted 	{ color : red;	}
+	span.broken		{ color : red;	}
+
+	span.navy		{ color : blue; }
+    span.registered { color : blue;}
+
+    .breaked_word   { word-wrap: break-word; width: 1200px; max-width: 600px; }
+    
+    .px50           { max-width: 50px; }
+    .px80, .numbers  { max-width: 80px; }
+    .px100          { max-width: 100px; }
+    
+    .numbers        { text-align: right; }
+  </style>
+
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.0.0.js"></script>
+    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<table>
+<tr>
+<td>
+<table style="text-align: right;">
+    <thead><tr><th colspan="0" style="text-align:center">Tasks select parameters</th></tr></thead>
+    <tbody>
+    <tr>
+    <td>
+
+    <table>
+    <tr>
+        <td>Tasks type:</td>
+        <td>
+        <select id="task_type">
+            <option value="all">All</option>
+            <option value="production" selected="selected">Production</option>
+            <option value="analysis">Analysis</option>
+        </select>
+        </td>
+    </tr>
+
+    <tr>
+
+        <td>Project:</td>
+        <td>
+            <input id="project" />
+        </td>
+    </tr>
+
+    <tr>
+
+        <td>Owner:</td>
+        <td>
+            <input id="username" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Task name:</td>
+        <td>
+        <input id="taskname" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Request:</td>
+        <td>
+        <input id="request" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Chain:</td>
+        <td>
+        <input id="chain" />
+        </td>
+    </tr>
+
+    </table>
+
+    </td>
+    <td>
+
+    <table>
+
+    <tr>
+        <td>Status:</td>
+        <td>
+        <select id="status">
+            <option value="">All</option>
+            <option value="aborted">Aborted</option>
+            <option value="assigning">Assigning</option>
+            <option value="broken">Broken</option>
+            <option value="done">Done</option>
+            <option value="failed">Failed</option>
+            <option value="finished">Finished</option>
+            <option value="pending">Pending</option>
+            <option value="registered">Registered</option>
+            <option value="running">Running</option>
+            <option value="submitted">Submitted</option>
+            <option value="submitting">Submitting</option>
+        </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>Provenance:</td>
+        <td>
+        <select id="provenance">
+            <option value="">All</option>
+            <option value="AP">ATLAS</option>
+            <option value="GP">Group</option>
+            <option value="None">User</option>
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Physics group:</td>
+        <td>
+        <select id="phys_group">
+            <option value="">All</option>
+            <option value="Btagging">Btagging</option>
+            <option value="dataprep">Dataprep</option>
+            <option value="Exotics">Exotics</option>
+            <option value="Higgs">Higgs</option>
+            <option value="JetMet">JetMet</option>
+            <option value="Physics">Physics</option>
+            <option value="SM">SM</option>
+            <option value="Susy">Susy</option>
+            <option value="Top">Top</option>
+            <option value="Validation">Validation</option>
+            <option value="None">None</option>
+        </select>
+        </td>
+    </tr>
+    <tr>
+        <td>Last update time period:</td>
+        <td>
+        <select id="time_period">
+            <option value="custom">Custom</option>
+            <option value="day">Last day</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
+            <option value="year">Last year</option>
+            <option value="all">All time</option>
+        </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Last update time from:
+        </td>
+        <td>
+            <input type="text" id="time_from" name="time_from">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Last update time to:
+        </td>
+        <td>
+            <input type="text" id="time_to" name="time_to">
+        </td>
+    </tr>
+
+    </table>
+
+    </td>
+
+    </tr>
+
+    <tr><td colspan="0"><input id="update_task_table" type="button" value="Update table" /><td></tr>
+
+    </tbody>
+</table>
+
+
+</td>
+
+
+
+<td>
+<div id="task_stat_table">
+
+<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>
+
+</tr></thead>
+<tbody><tr>
+
+</tr></tbody>
+</table>
+
+</div>
+
+<div id="table_request_summary">
+
+</div>
+
+</td>
+</tr>
+</table>
+
+<script type="text/javascript">
+
+    function taskServerParams ( aoData )
+    {
+        var time_from = $( "#time_from" ).datepicker( "getDate" );
+        var time_to = $( "#time_to" ).datepicker( "getDate" );
+
+        time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
+        time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
+
+        if( $("#project").val() != '' )
+            aoData.push( { "name": "project",       "value": $("#project").val() } );
+        if( $("#username").val() != '' )
+            aoData.push( { "name": "username",      "value": $("#username").val() } );
+        if( $("#taskname").val() != '' )
+            aoData.push( { "name": "taskname",      "value": $("#taskname").val() } );
+        if( $("#request").val() != '' )
+            aoData.push( { "name": "request",       "value": $("#request").val() } );
+        if( $("#chain").val() != '' )
+            aoData.push( { "name": "chain",         "value": $("#chain").val() } );
+        if( $("#status").val() != '' )
+            aoData.push( { "name": "status",        "value": $("#status").val() } );
+        if( $("#provenance").val() != '' )
+            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
+        if( $("#phys_group").val() != '' )
+            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
+
+        aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
+        aoData.push( { "name": "time_from", "value": time_from.getTime() } );
+        aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
+    }
+
+    function taskDrawCallback()
+    {
+        SetParametersToURL();
+
+        var text = '<ul>Filters:';
+
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            if ( val != '')
+                text += '<li>' + parameters_list[i].label + ' : ' + val + '</li>';
+        }
+       text += '</ul>';
+       $("#table_request_summary").html( text ) ;
+    }
+
+    function parseDate(input) {
+        var dparts = input.slice(0,10).split('-');
+        var tparts = input.slice(10,19).split(':');
+
+        return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
+    }
+
+    function taskServerData( sSource, aoData, fnCallback, oSettings ) {
+
+      function prepareData( data, textStatus, jqXHR )
+      {
+        for(var i in data['aaData'])
+        {
+            var row = data['aaData'][i];
+
+            row[0] = '<a class="breaked_word" href="/prodtask/task/'+row[4]+'/">'+row[0]+'</a>';
+
+            row[4] = '<a href="/job/task/?JediTaskID='+row[4]+'">'+row[4]+'</a>'; /*+
+                                 '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
+                                 '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
+
+            row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
+            row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
+
+            /*
+            switch(row[8])
+            {
+                case 'AP': row[8]='ATLAS'; break;
+                case 'GP': row[8]='Group'; break;
+                case 'XP': row[8]='eXtended'; break;
+            }*/
+
+            var time_stamp_color = 'black';
+            switch(row[11])
+            {
+                case "done":
+                case "finished":
+                case "broken":
+                case "failed":
+                case "aborted":
+                case "obsoleted":
+                    break;
+
+                default:
+                    if( row[13]!='None' )
+                    {
+                        var last_update = parseDate(row[13].slice(0,19));
+                        var now = new Date();
+                        var diff = now - last_update;
+                        if(diff > (24 * 3600 * 1000))
+                            time_stamp_color = 'yellow';
+                        if(diff > (48 * 3600 * 1000))
+                            time_stamp_color = 'orange';
+                        if(diff > (72 * 3600 * 1000))
+                            time_stamp_color = 'red';
+                    }
+                    else
+                        time_stamp_color = 'red';
+                    break;
+            }
+
+            row[12] = row[12]=='None'? 'None' : parseDate(row[12].slice(0,19)).toString() ;
+            row[13] = row[13]=='None'? 'None' : parseDate(row[13].slice(0,19)).toString() ;
+         //   row[21] = row[21]=='None'? 'None' : parseDate(row[21].slice(0,19)).toString() ;
+         //   row[14] = row[14]=='None'? 'None' : row[14].slice(0,19) ;
+
+            row[12] = row[12].slice(4,10) + row[12].slice(15,21);
+            row[13] = '<span style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
+
+            row[17] = '<a href="https://its.cern.ch/jira/browse/'+row[17]+'">'+row[17].slice(11)+'</a>';
+
+          //  row[13] = row[13]=='None'? 'None' :  row[13].slice(4,10) + row[13].slice(15,21);
+          //  row[21] = row[21]=='None'? 'None' : row[21].slice(4,10) + row[21].slice(15,21);
+
+            row[11] = '<span class="'+row[11]+'">'+row[11]+'</span>';
+        }
+
+        updateInterface(data['task_stat']);
+
+        fnCallback( data, textStatus, jqXHR );
+      }
+
+      oSettings.jqXHR = $.ajax( {
+        "dataType": 'json',
+        "type": "GET",
+        "url": sSource,
+        "data": aoData,
+        "success": prepareData
+      } )
+    }
+
+
+    var parameters_list = [
+        { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
+        { name: 'project',      id: 'project',      label: 'Project'},
+        { name: 'username',     id: 'username',     label: 'Owner'},
+
+        { name: 'taskname',     id: 'taskname',     label: 'Task name'},
+
+        { name: 'request',      id: 'request',      label: 'Request'},
+        { name: 'chain',        id: 'chain',        label: 'Chain'},
+        { name: 'status',       id: 'status',       label: 'Status'},
+
+        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
+        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
+
+        { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
+        { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
+
+        { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
+    ];
+
+    function SetParametersToURL()
+    {
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            $.address.parameter( parameters_list[i].name , val );
+        }
+    }
+
+    var changed_params = {};
+
+    function ParseParametersFromURL()
+    {
+        var time_from = new Date();
+        var time_to = new Date();
+
+        time_from.setMonth( time_from.getMonth() - 1 )
+
+        $( "#time_from" ).datepicker( "setDate", time_from );
+        $( "#time_to" ).datepicker( "setDate", time_to );
+
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value )
+            {
+                switch( parameters_list[i].name )
+                {
+                    case 'time_from':
+                    //    time_from = new Date().parse( value );
+                        $( "#time_from" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_to':
+                   //     time_from = new Date().parse( value );
+                        $( "#time_to" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val(value);
+                        break;
+
+                    default:
+                        $( "#"+parameters_list[i].id ).val( value );
+                        changed_params[ parameters_list[i].name ] = parameters_list[i];
+                        break;
+                }
+            }
+            else
+            {
+                switch( parameters_list[i].name )
+                {
+                    case 'task_type':
+                        $("#task_type").val('production');
+                        break;
+                    case 'time_from':
+                        $( "#time_from" ).datepicker( "setDate", time_from );
+                        break;
+                    case 'time_to':
+                        $( "#time_to" ).datepicker( "setDate", time_to );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val('month');
+                        break;
+                    default:
+                        $("#" + parameters_list[i].name).val('');
+                        break;
+                }
+            }
+        }
+
+    }
+
+    $( "#time_from" ).datepicker({
+            defaultDate: "-2m",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_to" ).datepicker( "option", "minDate", selectedDate );
+                $( "#time_period" ).val('custom');
+            //    taskTable.fnDraw();
+            }
+        });
+    $( "#time_to" ).datepicker({
+            defaultDate: "+1w",
+            changeMonth: true,
+            numberOfMonths: 1,
+            onSelect: function( selectedDate ) {
+                $( "#time_from" ).datepicker( "option", "maxDate", selectedDate );
+                $( "#time_period" ).val('custom');
+           //     taskTable.fnDraw();
+            }
+    });
+
+    $( "#time_period" ).change(function () {
+
+        var time_from = new Date();
+        var time_to = new Date();
+
+        switch($(this).val())
+        {
+            case 'day': time_from.setDate( time_from.getDate() - 1 ); break;
+            case 'week': time_from.setDate( time_from.getDate() - 7 ); break;
+            case 'month': time_from.setMonth( time_from.getMonth() - 1 ); break;
+            case 'year': time_from.setFullYear( time_from.getFullYear() - 1 ); break;
+            case 'all': time_from.setFullYear( time_from.getFullYear() - 3 ); break;
+            case 'custom': return; break;
+        }
+
+        $( "#time_from" ).datepicker( "setDate", time_from );
+        $( "#time_to" ).datepicker( "setDate", time_to );
+
+        $( "#time_from" ).datepicker( "option", "maxDate", time_to );
+        $( "#time_to" ).datepicker( "option", "minDate", time_from );
+    });
+
+    function updateInterface(data)
+    {
+        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
+        for( var i in data )
+        {
+            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+        }
+        table += '</tr></thead><tbody><tr>';
+
+       // table += '<td><span class="total">'+ total_task +'</span></td>';
+        for( var i in data )
+        {
+            table += '<td>'+ data[i].count +'</td>';
+        }
+
+        table += '</tr></tbody></table>';
+
+        $('#task_stat_table').html(table);
+    }
+
+
+    ParseParametersFromURL();
+
+</script>
+
+{{ table.as_html }}
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+    taskTable.fnSetColumnVis( 22, false, false );
+
+    $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
+    $("#task_type").change(function () {
+
+            if( $("#task_type").val() == 'analysis' )
+            {
+                taskTable.fnSetColumnVis( 1, false, false );
+                taskTable.fnSetColumnVis( 2, false, false );
+                taskTable.fnSetColumnVis( 13, false, false );
+                taskTable.fnSetColumnVis( 18, false, false );
+            }
+            else
+            {
+                taskTable.fnSetColumnVis( 1, true, false );
+                taskTable.fnSetColumnVis( 2, true, false );
+                taskTable.fnSetColumnVis( 13, false, false );
+                taskTable.fnSetColumnVis( 18, true, false );
+            }
+        });
+});
+ </script>
+{% endblock %}
+

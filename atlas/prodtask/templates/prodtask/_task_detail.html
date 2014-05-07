@@ -1,0 +1,50 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<table>
+
+<tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="{% url 'jediJobsInTask' %}?JediTaskID={{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="step">Step execution:</label></th><td>{% if task.step.id %}<a href="{% url 'prodtask:step_execution' task.step.id %}">{{task.step.id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:request' task.request.reqid %}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="parent_id">Parent ID:</label></th><td>{% if task.parent_id %}<a href="{% url 'prodtask:task' task.parent_id  %}">{{task.parent_id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="chain_tid">Chain ID:</label></th><td>{% if task.chain_tid %}<a href="{% url 'prodtask:task' task.chain_tid  %}">{{task.chain_tid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="name">Name:</label></th><td>{% if task.id %}<a href="{% url 'prodtask:task' task.id %}">{{task.name}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="project">Project:</label></th><td>{{ task.project }}</td></tr>
+<tr><th><label for="username">Owner:</label></th><td>{{ task.username }}</td></tr>
+<tr><th><label for="provenance">Provenance:</label></th><td>{{ task.provenance }}</td></tr>
+<tr><th><label for="status">Status:</label></th><td>{{ task.status }}</td></tr>
+<tr><th><label for="priority">Priority:</label></th><td>{{ task.priority }}</td></tr>
+<tr><th><label for="dsn">Dsn:</label></th><td>{{ task.dsn }}</td></tr>
+<tr><th><label for="phys_short">Phys short:</label></th><td>{{ task.phys_short }}</td></tr>
+<tr><th><label for="simulation_type">Simulation type:</label></th><td>{{ task.simulation_type }}</td></tr>
+<tr><th><label for="phys_group">Phys group:</label></th><td>{{ task.phys_group }}</td></tr>
+<tr><th><label for="total_events">Total events:</label></th><td>{{ task.total_events }}</td></tr>
+<tr><th><label for="total_req_jobs">Total req jobs:</label></th><td>{{ task.total_req_jobs }}</td></tr>
+<tr><th><label for="total_done_jobs">Total done jobs:</label></th><td>{{ task.total_done_jobs }}</td></tr>
+<tr><th><label for="submit_time">Submit time:</label></th><td>{{ task.submit_time }}</td></tr>
+<tr><th><label for="start_time">Start time:</label></th><td>{{ task.start_time }}</td></tr>
+<tr><th><label for="timestamp">Timestamp:</label></th><td>{{ task.timestamp }}</td></tr>
+<tr><th><label for="bug_report">Bug report:</label></th><td>{{ task.bug_report }}</td></tr>
+<tr><th><label for="reference">Reference:</label></th><td><a href="https://its.cern.ch/jira/browse/{{ task.reference }}">{{ task.reference }}</a></td></tr>
+<tr><th><label for="pptimestamp">Pptimestamp:</label></th><td>{{ task.pptimestamp }}</td></tr>
+<tr><th><label for="postproduction">Postproduction:</label></th><td>{{ task.postproduction }}</td></tr>
+<tr><th><label for="update_time">Update time:</label></th><td>{{ task.update_time }}</td></tr>
+<tr><th><label for="update_owner">Update owner:</label></th><td>{{ task.update_owner }}</td></tr>
+<tr><th><label for="comments">Comments:</label></th><td>{{ task.comments }}</td></tr>
+<tr><th><label for="inputdataset">Inputdataset:</label></th><td>{{ task.inputdataset }}</td></tr>
+<tr><th><label for="physics_tag">Physics tag:</label></th><td>{{ task.physics_tag }}</td></tr>
+
+</table>
+{% endblock %}

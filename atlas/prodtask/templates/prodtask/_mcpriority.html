@@ -1,0 +1,65 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+<script>
+$(document).ready(function(){
+
+});
+
+
+</script>
+<a href="{% url 'prodtask:mcpriority_create' %}"> Create new priority row </a>
+
+<div id="inuse_patterns">
+
+    <table>
+        <tr>
+                <th></th>
+                {% for header in header_list %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+        </tr>
+        {% for mcpriority in priorities %}
+            {% url 'prodtask:mcpriority_update' mcpriority.id as update_url %}
+            <tr>
+                <td>
+                    <a href="{{ update_url }}"> Update </a>
+                </td>
+                <td>
+                    {{ mcpriority.priority_key }}
+                </td>
+                {% for step in mcpriority.priority_steps %}
+                    <td>
+                        {{ step }}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+
+{% endblock %}

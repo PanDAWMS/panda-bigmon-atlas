@@ -1,0 +1,56 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+
+
+
+{% block body %}
+{{ pre_form_text }}
+<h1> Check </h1>
+ <span>{{ inputLists|length }} slices have been read from the file.</span>
+  <p/>
+{% if submit_url %}
+<form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
+<table>
+{{ form.as_table }}
+</table>
+<input type="submit" value="Submit" />
+</form>
+<h2> Input List </h2>
+<table>
+    <tr>
+       <th>#</th>
+       <th>Dataset:</th>
+       <th>Job Option:</th>
+       <th>Brief:</th>
+    </tr>
+    {% for inputList in inputLists %} 
+	<tr>
+        <td>{{ inputList.slice }}</td>
+		<td>{{ inputList.dataset }}</td>
+        <td>{{ inputList.input_data }}</td>
+        <td>{{ inputList.brief }}</td>
+	</tr>
+	{% endfor %}
+</table>
+{% else %}
+<table>
+{{ form.as_table }}
+</table>
+
+{% endif %}
+
+
+{% endblock %}
+
+{% block bl_entry_point %}
+    {{ block.super }}
+    $( "#form_submit" ).button();
+{% endblock %}

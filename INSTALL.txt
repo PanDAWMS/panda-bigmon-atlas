@@ -1,0 +1,3 @@
+Install instructions for BigPanDAmon package
+
+to be continued ...

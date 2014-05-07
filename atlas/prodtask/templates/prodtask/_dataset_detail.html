@@ -1,0 +1,29 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<table>
+
+<tr><th><label for="id">Name:</label></th><td>{% if dataset.name %}<a href="{% url 'prodtask:production_dataset' dataset.name %}">{{dataset.name}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="task_id">Task ID:</label></th><td>{% if dataset.task_id %}<a href="{% url 'prodtask:task' dataset.task_id  %}">{{dataset.task_id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="parent_id">Parent ID:</label></th><td>{% if dataset.parent_task_id %}<a href="{% url 'prodtask:task' dataset.parent_task_id  %}">{{dataset.parent_task_id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="request">Request:</label></th><td>{% if dataset.rid %}<a href="{% url 'prodtask:request' dataset.rid %}">{{dataset.rid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="phys_group">Phys group:</label></th><td>{{ dataset.phys_group }}</td></tr>
+<tr><th><label for="total_events">Events:</label></th><td>{{ dataset.events }}</td></tr>
+<tr><th><label for="total_events">Files:</label></th><td>{{ dataset.files }}</td></tr>
+<tr><th><label for="status">Status:</label></th><td>{{ dataset.status }}</td></tr>
+<tr><th><label for="timestamp">Timestamp:</label></th><td>{{ dataset.timestamp }}</td></tr>
+
+</table>
+{% endblock %}
