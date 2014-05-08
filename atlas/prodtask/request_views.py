@@ -254,7 +254,10 @@ def reprocessing_form_prefill(form_data, request):
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
     try:
-        tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
+        if form_data['tag_hierarchy']:
+            tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
+        else:
+            tag_tree = []
     except Exception, e:
         _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)

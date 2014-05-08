@@ -69,7 +69,7 @@
     <style>
     td.approved { color : green;	}
     td.not_approved { color : red;}
-    td.evgen_approved { color : orange;	}
+    td.partially_approved { color : orange;	}
    </style>
 
 {% endblock %}
@@ -93,11 +93,13 @@
 <div style="display:none">
     <input type="hidden" id="doColor" />
     <input type="hidden" id="skippedColor" />
+    <input type="hidden" id="foreignColor" />
 </div>
 <script>
-var step_bc=["#FFB734","#FFFFFF"]
+var step_bc=["#FFB734","#FFFFFF","#ffff00"]
 $("#doColor").css({'background-color':step_bc[0]});
 $("#skippedColor").css({'background-color':step_bc[1]});
+$("#foreignColor").css({'background-color':step_bc[2]});
 $(document).ready(function(){
 
 {% if not edit_mode %}
@@ -179,12 +181,18 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     (function(){
        {% for inputList, step_exec_dict, approved in inputLists %}
            {% for step in step_exec_dict %}
-                        {% if step.skipped %}
+                        {% ifequal step.skipped 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");
-                        {% else %}
+                        {% endifequal %}
+                        {% ifequal step.skipped 'run' %}
                             var stepColor = $("#doColor").css("background-color");
-                        {% endif %}
+                        {% endifequal %}
+                        {% ifequal step.skipped 'foreign' %}
+                            var stepColor = $("#foreignColor").css("background-color");
+                        {% endifequal %}
+
                         $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor});
+                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.notShowFullSpan").css({"background-color":stepColor});
                         $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor});
 
            {% endfor %}
@@ -235,12 +243,30 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         sendData[sliceID] = Object();
                     }
                     var sliceSteps=[];
+                    var foreignID = "0";
+                    console.log("aaaa");
                     {% for step in step_list %}
+                        var val = " ";
                         var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
                         var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
-                        sliceSteps[{{ forloop.counter0 }}] = {"value":$(step_td_short).html(),"is_skipped":isSkipped};
+
+                        if ($(step_td_short).css("background-color") !=  $("#foreignColor").css("background-color")){
+                            val = $(step_td_short).html();
+                        } else {
+                            val = " ";
+                        }
+
+                        var step_td_short_foreign = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.notShowFullSpan");
+                        if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
+                            foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
+                            val = " ";
+                        }
+                        sliceSteps[{{ forloop.counter0 }}] = {"value":val,"is_skipped":isSkipped, "formats":""};
                     {% endfor %}
+                     sliceSteps[{{  step_list|length }}] = {"foreign_id":foreignID};
+                    console.log(sliceSteps);
                     sendData[sliceID] = sliceSteps;
+
                 }
             });
 
@@ -295,6 +321,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     }
                 });
             }
+
 
     };
 
@@ -364,8 +391,52 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               $(this).prop('checked', markAsChecked);
           }
       });
-    };
 
+    };
+          function approveReprocessingClick(event){
+            var sendData = Object();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                    sliceList[i] = sliceID;
+                    i++;
+                }
+            });
+            sendData = {'tagsFormats':$("#tagsFormatsTA").val(),'slices':sliceList}
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:request_reprocessing_steps_create' pr_id%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                    }
+                });
+              return false;
+       };
+          function chnageStatusToTest(event){
+            sendData = {}
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:make_test_request' pr_id%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                    }
+                });
+              return false;
+       };
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -393,19 +464,36 @@ $(".showSmallSpan").css({"cursor":"pointer"});
   <td>{{ trequest.cstatus}}</td>
 </tr>
 </table>
-
+<a href="#" class="tiny secondary" onclick="chnageStatusToTest(event);">Make as test</a>
 <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 <h6> With pattern: {{ pattern }}</h6>
 <table style="padding: 0px;margin-bottom:0px;border: hidden">
 <tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
-<div id="missing_tags" style="display: none"><strong style="color: firebrick">Error: </strong>
+<div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
 <form >
 
 <div id="tagIngo" ></div>
+{% if show_reprocessing %}
+<div class="small-8">
+    <form>
+        <fieldset>
+            <legend>Tags:formats for reprocessing</legend>
+            <div class="row">
+              <div class="large-12 columns">
+                <label>Tags:formats</label>
+                <textarea placeholder="tag:formats,e.g. r2222:ESD.AOD r3333:HIST" id="tagsFormatsTA"></textarea>
+                 <a href="#" class="small button" onclick="approveReprocessingClick(event);">Bind</a>
+              </div>
+            </div>
+        </fieldset>
+    </form>
+    <div class="">
+    </div>
+{% endif %}
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
     <th colspan="10">
@@ -440,17 +528,18 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
 
     <div >
-    {% for inputList, step_exec_dict, approved, show_task in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
+
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
             <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" checked></form></td>
             <td style="padding:0px;margin:0px">
             <table class="inputListTables" >
             <tr class="inputListRow">
-                <td style="width: 20px" >{{ inputList.slice }}</td>
+                <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  inputList.input_data|length < 10  %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.dataset.name }}">
+                        <span class="showFullSpan" style="padding:0px" title="{{ inputList.dataset.name }}">
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
@@ -469,8 +558,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
+                        {% ifequal step.skipped 'foreign' %}
+                        <td class="notShowFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                            style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a href="#inputList{{ step.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
+                        {% else %}
                         <td class="showFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
+                        {% endifequal %}
                 {% endfor %}
 
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td>
