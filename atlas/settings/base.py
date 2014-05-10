@@ -37,15 +37,10 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',
-    #Ruslan
-    'atlas.getdatasets', 
-    'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS
 
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.core.context_processors.request', #django-tables2	
-)
+
 ROOT_URLCONF = 'atlas.urls'
 
 SITE_ID = 2
