@@ -31,6 +31,7 @@ common_patterns = patterns('',
     url(r'^api/datatables', include('core.table.urls')),
 #    url(r'^graphics/', include('core.graphics.urls')),
     url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
+    url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
 
     url(r'^todo', include('atlas.todoview.urls', namespace='todoview')),
 

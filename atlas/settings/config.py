@@ -43,6 +43,7 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
     join(dirname(core.common.__file__), 'templates'),
     join(dirname(atlas.__file__), 'templates'),
+    join(dirname(atlas.__file__), 'getdatasets/templates'),
 )
 
 STATIC_ROOT = join(dirname(atlas.__file__), 'static')
