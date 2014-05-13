@@ -1,4 +1,4 @@
-{% extends parent_template %}
+{% extends "prodtask/_index.html" %}
 {% load url from future %}
 {% load static from staticfiles %}
 
@@ -246,6 +246,11 @@
 </td>
 </tr>
 </table>
+
+
+<br>
+<a href="{% url 'prodtask:task_manage' %}"> Manage tasks </a>
+<br><br>
 
 <script type="text/javascript">
 

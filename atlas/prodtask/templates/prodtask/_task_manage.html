@@ -1,0 +1,202 @@
+{% extends "prodtask/_task_table.html" %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+  <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+
+  <script type="text/javascript">
+    $(document).foundation({
+         'dropdown': {
+          // specify the class used for active dropdowns
+          'active_class': 'open',
+         }
+      });
+
+  </script>
+
+{% endblock %}
+
+
+{% block body %}
+
+{{ block.super }}
+
+<div id="management_panel">
+
+  <div class="button-group dataTables_length">
+    <div>
+      <label class="column">
+        <br>
+        <input type="checkbox" id="select_all_tasks" />
+        Select all &nbsp;
+      </label>
+    </div>
+    <div>
+      <div class="button-bar">
+        <ul class="button-group radius">
+          <li> <a href="#" data-dropdown="task_abort_menu" data-options="is_hover:true" class="radio button alert" id="btn_abort" >Abort</a> </li>
+        </ul>
+        <ul class="button-group radius">
+          <li> <a data-dropdown="task_change_prio_menu" class="radio button" id="btn_change_prio">Change priority</a> </li>
+        </ul>
+      </div>
+    </div>
+
+   <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
+    <div style="color:#222222;" class="small-12 columns">
+     <div class="row">
+      <div class="small-9 columns">
+        <label for="btn_do_abort" class="right inline">
+            Tasks selected:&nbsp;
+            <span id="selected_count_1">0</span>
+         </label>
+      </div>
+      <div class="small-3 columns">
+         <a class="button postfix secondary" id="btn_do_abort">Go</a>
+      </div>
+     </div>
+    </div>
+   </div>
+
+   <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
+    <div style="color:#222222;" class="small-12 columns">
+     <div class="row">
+      <div class="small-9 columns">
+       <input type="text" id="new_priority" placeholder="New priority" >
+      </div>
+      <div class="small-3 columns">
+         <a class="button postfix" id="btn_set_priority">Go</a>
+      </div>
+     </div>
+     <div class="row">
+       <div class="small-12 columns text-center">
+         <br>
+         Tasks selected:&nbsp;
+         <span id="selected_count_2">0</span>
+       </div>
+     </div>
+    </div>
+   </div>
+
+
+
+  </div>
+
+
+</div>
+
+
+
+<script type="text/javascript">
+
+function doAbortTasks() {
+  var tasks = [];
+  $(".cbx_task_select:checked").each( function () {
+      tasks.push( $(this).val() );
+  });
+
+  if (tasks.length == 0) { return; }
+
+   $.ajax({
+     url: "prodtask/task_manage/abort",
+     global: false,
+     type: "POST",
+     data: { 'tasks': tasks }
+    });
+
+}
+
+function doSetPriority() {
+  var tasks = [];
+  $(".cbx_task_select:checked").each( function () {
+      tasks.push( $(this).val() );
+  });
+  priority = $("#new_priority").val();
+
+  if (tasks.length == 0) { return; }
+  
+
+
+   $.ajax({
+     url: "prodtask/task_manage/change_priority",
+     global: false,
+     type: "POST",
+     data: { 'tasks': tasks, 'priority': priority }
+    });
+
+}
+
+
+function makeCheckbox(id, val, cls) {
+    html = $('<div />', { 'style': 'float: left;' })
+       .append(
+         $('<input />',
+               { 'type': 'checkbox',
+                 'id': id,
+                 'value': val,
+                 'class': cls,
+              })
+        );
+    return html;
+}
+
+function updateSelectedCount() {
+    var count = $(".cbx_task_select:checked").size();
+    $("[id^=selected_count]").html(count);
+    if (count) {
+        $("#btn_do_abort").removeClass("secondary");
+    } else {
+        $("#btn_do_abort").addClass("secondary");
+    }
+
+}
+
+$(document).ready(function() {
+    // Adding management panel
+    $("#management_panel").insertBefore("#task_table_length");
+
+    // Setting buttons handlers
+    $("#btn_do_abort").click( function () {
+        doAbortTasks();
+        $("#task_abort_menu").hide();
+    });
+    
+    $("#btn_set_priority").click(function () {
+        doSetPriority();
+        $("#task_change_prio_menu").hide()
+
+    });
+
+
+    $("#task_table_wrapper").on("draw", "#task_table", function() {
+       $("#task_table tr>td:first-child>a").each( function () {
+           href = $(this).attr("href");
+           var found = href.match( /\/task\/(\d+)\/?/ );
+           if (!found) { return true; }
+           var id = found[1];
+           makeCheckbox("select_task_" + id, id, "cbx_task_select").insertBefore( $(this) );
+       });
+
+       $("#select_all_tasks").prop('checked', false);
+
+    });
+
+    $("#select_all_tasks").click( function () {
+        $('.cbx_task_select').prop('checked', this.checked);
+        updateSelectedCount();
+    });
+
+    $("#task_table").on("change", "input.cbx_task_select", function() {
+        updateSelectedCount();
+    });
+
+});
+
+</script>
+
+{% endblock %}
+
