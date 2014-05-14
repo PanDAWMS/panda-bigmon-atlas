@@ -98,7 +98,7 @@ def request_data_form(request):
 				'table': table,
                         	'submit_text': 'Select',
                         	'submit_url': 'getdatasets:request_data_form',
-                        	'parent_template': '_index.html',
+                        	'parent_template': 'prodtask/_index.html',
                         	})
 
         else:
@@ -108,7 +108,7 @@ def request_data_form(request):
                 'pre_form_text': 'Request datasets',
                 'form': form,
                 'submit_url': 'getdatasets:request_data_form',
-                'parent_template': '_index.html',
+                'parent_template': 'prodtask/_index.html',
                 })
 
 
