@@ -131,7 +131,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
             priority_obj = get_priority_object(input_list.priority)
             # Check steps which already exist in slice, and change them if needed
-            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            try:
+                ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            except ValueError,e:
+                ordered_existed_steps, existed_foreign_step = [],None
             replace_steps = False
             delete_chain_from = -1
             parent_step = None
@@ -173,6 +176,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
                             st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
                                                     priority=temp_priority, input_events=temp_input_events)
+                            if delete_chain_from > 0 :
+                                parent_step = ordered_existed_steps[delete_chain_from-1]
                             no_parent = True
                             if parent_step:
                                 st_exec.step_parent = parent_step
