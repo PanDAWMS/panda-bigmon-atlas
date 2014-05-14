@@ -30,8 +30,8 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
 
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
-    excellink = CharField(required=False, label="Exel Link")
-    excelfile = FileField(required=False, label="Exel File")
+    excellink = CharField(required=False, label="Spreadsheet Link")
+    excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
 
 
