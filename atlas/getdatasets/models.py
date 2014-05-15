@@ -7,14 +7,8 @@ class ProductionDatasetsExec(models.Model):
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
 
     class Meta:
-        app_label = "panda"
+        app_label = "grisli"
         db_table = u"T_PRODUCTIONDATASETS_EXEC"
 
 class TRequest(models.Model):
     request = models.CharField(max_length=200, db_column='REQUEST', null=True)
-    #class Meta:
-        #db_table = u'T_PRODMANAGER_REQUEST'
-        #db_table = u'"ATLAS_DEFT"."T_PRODMANAGER_REQUEST"'
-
-#class TEditTable(models.Model):
-#    name = models.CharField(max_length=200, db_column='NAME', primary_key=True)
