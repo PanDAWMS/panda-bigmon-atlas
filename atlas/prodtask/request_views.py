@@ -76,17 +76,17 @@ def request_update(request, rid=None):
             return HttpResponseRedirect('/')
         if form.is_valid():
             # Process the data in form.cleaned_data
-            _logger.debug("Update request #%i: %s"%(rid, form.cleaned_data))
+            _logger.debug("Update request #%i: %s"%(int(rid), form.cleaned_data))
             try:
                 req = TRequest(**form.cleaned_data)
                 req.save()
-                return HttpResponseRedirect('/prodtask/request/%s' % req.reqid)  # Redirect after POST
+                return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)  # Redirect after POST
             except Exception,e :
-                 _logger.error("Problem with request update #%i: %s"%(rid, e))
+                 _logger.error("Problem with request update #%i: %s"%(int(rid), e))
     else:
         try:
-            req = TRequest.objects.get(reqid=rid)
-            form = RequestUpdateForm(instance=req)
+            req = TRequest.objects.values().get(reqid=rid)
+            form = RequestUpdateForm(req)
         except:
             return HttpResponseRedirect('/')
     return render(request, 'prodtask/_form.html', {

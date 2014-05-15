@@ -125,8 +125,12 @@ class MCPriorityUpdateForm(MCPriorityForm):
         model = MCPriority
         exclude = ['id','priority_dict','priority_key']
 
-class RequestUpdateForm(Form):
-    pattern_name = CharField(required=False, label="DPD link")
+class RequestUpdateForm(ModelForm):
+    class Meta:
+        model = TRequest
+        widgets = {
+            'reqid': TextInput(attrs={'readonly': 'readonly'}),
+        }
 
 
 class StepExecutionForm(ModelForm):
