@@ -214,6 +214,52 @@ class StepExecution(models.Model):
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_STEP"'
 
+
+
+class TTask(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
+    _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
+
+    @property
+    def jedi_task_parameters(self):
+        try:
+            params = json.loads(self._jedi_task_parameters)
+        except:
+            return
+        return params
+
+    @property
+    def input_dataset(self):
+        return self._get_dataset('input') or ""
+
+    @property
+    def output_dataset(self):
+        return self._get_dataset('output') or ""
+
+    def _get_dataset(self, ds_type):
+        if ds_type not in ['input', 'output']:
+            return
+        params = self.jedi_task_parameters
+        job_params = params.get('jobParameters')
+        if not job_params:
+            return
+        for param in job_params:
+            param_type, dataset = [ param.get(x) for x in ('param_type', 'dataset') ]
+            if (param_type == ds_type) and (dataset is not None):
+                return dataset.rstrip('/')
+        return None
+
+    def save(self, **kwargs):
+        """ Read-only access to the table """
+        raise NotImplementedError
+
+    class Meta:
+        managed = False
+        db_table = u'"ATLAS_DEFT"."T_TASK"'
+        app_label = 'taskmon'
+
+
+
 class ProductionTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     step = models.ForeignKey(StepExecution, db_column='STEP_ID')
@@ -263,9 +309,26 @@ class ProductionTask(models.Model):
             if cursor:
                 cursor.close()
 
+    @property
+    def input_dataset(self):
+        try:
+            dataset = TTask.objects.get(id=self.id).input_dataset
+        except:
+            return ""
+        return dataset
+
+    @property
+    def output_dataset(self):
+        try:
+            dataset = TTask.objects.get(id=self.id).output_dataset
+        except:
+            return ""
+        return dataset
+
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_TASK"'
+
 
 
 class MCPattern(models.Model):
