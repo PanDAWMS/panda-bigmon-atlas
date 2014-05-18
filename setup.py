@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 #
-# Setup prog for Panda Server
+# Setup prog for bigpandamon-atlas
 #
 #
-release_version = '0.0.7' #FIXME
+from version import __version__, __provides__
 prefix = '/data/atlpan/bigpandamon'
 lib_prefix = 'lib/python2.6/site-packages/'
 expected_extensions = ['.html', '.js', '.css', '.png', '.gif', '.ico', '-example'] #FIXME
+src_ext = [ '.py' ]
+ignore_dir = [ '/.svn', '/.settings' ]
 
 import os
 import re
@@ -91,7 +93,14 @@ class install_data_panda (install_data_org):
             if not res and filename.endswith(ext):
                 res = True
         return res
-    
+    def is_src_extension(self, filename):
+        res = False
+        for ext in src_ext:
+            if not res and filename.endswith(ext):
+                res = True
+        return res
+
+
     def run (self):
         # remove /usr for bdist/bdist_rpm
         match = re.search('(build/[^/]+/dumb)/usr',self.install_dir)
@@ -164,8 +173,8 @@ def gen_data_files(*dirs):
 
 # setup for distutils
 setup(
-    name="bigpandamon-atlas",
-    version=release_version,
+    name=__provides__,
+    version=__version__,
     description='BigPanDA Monitoring Package - ATLAS',
     long_description='''This package contains BigPanDA Monitoring Components - ATLAS''',
     license='GPL',
