@@ -30,8 +30,8 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
 
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
-    excellink = CharField(required=False, label="Exel Link")
-    excelfile = FileField(required=False, label="Exel File")
+    excellink = CharField(required=False, label="Spreadsheet Link")
+    excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
 
 
@@ -125,8 +125,12 @@ class MCPriorityUpdateForm(MCPriorityForm):
         model = MCPriority
         exclude = ['id','priority_dict','priority_key']
 
-class RequestUpdateForm(Form):
-    pattern_name = CharField(required=False, label="DPD link")
+class RequestUpdateForm(ModelForm):
+    class Meta:
+        model = TRequest
+        widgets = {
+            'reqid': TextInput(attrs={'readonly': 'readonly'}),
+        }
 
 
 class StepExecutionForm(ModelForm):

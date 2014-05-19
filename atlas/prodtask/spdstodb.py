@@ -43,7 +43,7 @@ def get_key_by_url(url):
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
         return google_key
     
-def fill_template(stepname, tag, priority, formats=None, ram=None):
+def fill_template(step_name, tag, priority, formats=None, ram=None):
         st = None
         try:
             if(not formats)and(not ram):
@@ -71,16 +71,18 @@ def fill_template(stepname, tag, priority, formats=None, ram=None):
                     memory = ram
                 else:
                     memory = int(tr.memory)
+                if not step_name:
+                    step_name = trtf.step
                 #Ugly hack for https://code.djangoproject.com/ticket/20201
                 try:
-                    st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
                                                    ctag=tag, priority=priority,
                                                    cpu_per_event=int(tr.cpu_per_event), memory=memory,
                                                    output_formats=output_formats, trf_name=tr.trf,
                                                    lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
                     st.save()
                 except:
-                    st = StepTemplate.objects.create(step=stepname, def_time=timezone.now(), status='Approved',
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
                                                    ctag=tag, priority=priority,
                                                    cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
                                                    output_formats=tr.formats, trf_name=tr.trf,

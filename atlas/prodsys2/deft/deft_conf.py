@@ -19,7 +19,6 @@ daemon = {
     't_production_task'            : 't_production_task',
     't_production_task_p'          : 't_production_task_listpart',
     't_production_dataset'         : 't_production_dataset',
-    't_production_container'       : 't_production_container',
     't_projects'                   : 't_projects',
     # DEFT-JEDI
     't_task'               : 't_task',

@@ -128,6 +128,7 @@ class ProductionTaskTable(datatables.DataTable):
     step = datatables.Column(
         label='Step',
         model_field='step__id',
+  #      sClass='px100',
   #      bVisible='false',
         )
 
@@ -139,7 +140,7 @@ class ProductionTaskTable(datatables.DataTable):
     id = datatables.Column(
         label='Task ID',
         sClass='numbers',
-        asSorting=[ "desc" ],
+    #    asSorting=[ "desc" ],
         )
 
     priority = datatables.Column(
@@ -180,11 +181,13 @@ class ProductionTaskTable(datatables.DataTable):
 
     submit_time = datatables.Column(
         label='Submit time',
+        sClass='px100',
    #     bVisible='false',
         )
 
     timestamp = datatables.Column(
         label='Timestamp',
+        sClass='px100',
         )
 
     start_time = datatables.Column(
@@ -204,6 +207,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     reference = datatables.Column(
         label='JIRA',
+        sClass='numbers',
         )
 
     comments = datatables.Column(

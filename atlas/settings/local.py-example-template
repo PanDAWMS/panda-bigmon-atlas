@@ -18,6 +18,12 @@ dbaccess = {
          'USER': 'atlas_deft_w',
          'PASSWORD': 'FIXME',
     },
+    'deft_adcr': {
+         'ENGINE':'django.db.backends.oracle',
+         'NAME': 'ADCR',
+         'USER': 'atlas_deft_r',
+         'PASSWORD': 'FIXME',
+    },
     'grisli': {
          'ENGINE':'django.db.backends.oracle',
          'NAME': 'ADCR_PANDAMON',

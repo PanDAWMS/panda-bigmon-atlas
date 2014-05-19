@@ -10,10 +10,8 @@
 # Mar 31, 2014. Add taskinfo into task partition table
 # Apr 03, 2014. t_production_task partitioned
 # Apr 27, 2014. add SSO
-# May 14, 2014. move production containers handling
-#               add Rucio clients to a separate file
 #
-# Last Edit : May 14, 2014 ak
+# Last Edit : May 1, 2014 ak
 #
 
 import re
@@ -45,14 +43,11 @@ from pprint import pprint
 import cernsso
 #-
 
-
 verbose = False
 
 task_finish_states         = 'done,finish,failed,obsolete,aborted'
 task_aborted_states        =  'aborted,failed,obsolete'
 datasets_deletion_states   =  'toBeDeleted,Deleted'
-
-user_task_label            = 'user'   # JEDI prodsourcelabel parameter
 
 JEDI_datasets_final_statesL         =  ['aborted','broken','done','failed','partial','ready']
 DEFT_datasets_done_statesL          =  ['done']
@@ -599,7 +594,7 @@ def synchronizeJediDeftDatasets () :
     t_table_DEFT          = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
     t_table_datasets_DEFT = "%s.%s"%(deftDB,deft_conf.daemon['t_production_dataset'])
 
-    sql = "SELECT taskid, status, phys_group, timestamp, project, username, pr_id FROM %s "%(t_table_DEFT)
+    sql = "SELECT taskid, status, phys_group, timestamp, project, username FROM %s "%(t_table_DEFT)
     sql+= "WHERE TIMESTAMP > current_timestamp - %s AND taskid >= %s "%(timeInterval,MIN_DEFT_TASK_ID)
     sql+= "ORDER BY taskid"
     print sql
@@ -631,7 +626,6 @@ def synchronizeJediDeftDatasets () :
           t_phys_group = t[2]
           t_project    = t[4]
           t_owner      = t[5]
-          t_reqid      = t[6]
           if verbose : print "INFO. check status %s"%(t_status)
           if task_aborted_states.find(t_status) >= 0 :
            for d in datasetsDEFT :
@@ -640,13 +634,13 @@ def synchronizeJediDeftDatasets () :
                    d_status = d[2]
                    if d_status == None or d_status=='None' : d_status='unknown'
                    if datasets_deletion_states.find(d_status) < 0 :
-                       sql = "UPDATE %s SET status='toBeDeleted',timestamp=current_timestamp,pr_id=%s WHERE taskid=%s"%\
-                           (t_table_datasets_DEFT,t_tid,t_reqid)
+                       sql = "UPDATE %s SET status='toBeDeleted',timestamp=current_timestamp WHERE taskid=%s"%\
+                           (t_table_datasets_DEFT,t_tid)
                        sql_update.append(sql)
                        break
                    elif d_status == 'unknown' :
-                      sql= "UPDATE %s SET status='%s',TIMESTAMP=current_timestamp, pr_id=%s WHERE taskid=%s"\
-                           (t_table_datasets_DEFT,t_status,t_tid,t_reqid)
+                      sql= "UPDATE %s SET status='%s',TIMESTAMP=current_timestamp WHERE taskid=%s"\
+                           (t_table_datasets_DEFT,t_status,t_tid)
                       sql_update.append(sql)
                elif d_tid > t_tid :
                    print "WARNING. Cannot find dataset in %s for task %s (project: %s)"%\
@@ -746,7 +740,7 @@ def synchronizeJediDeftTasks() :
 #
 # read task information from t_task and update t_production_tasks accordingly
 #
-
+    user_task_label     = 'user'   # JEDI prodsourcelabel parameter
     user_task_list      = []
     user_task_params    = {'taskid' : -1,'total_done_jobs':-1,'status' :'','submit_time' : -1, 'start_time' : 'None',\
                            'priority' : '-1','total_req_jobs':-1}
