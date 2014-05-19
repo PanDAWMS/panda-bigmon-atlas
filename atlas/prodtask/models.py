@@ -424,3 +424,18 @@ def get_default_nEventsPerJob_dict():
         'Atlf TAG':25000
     }
     return defult_dict
+
+def get_default_project_mode_dict():
+    default_dict = {
+         'Evgen':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Simul':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Merge':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASMCTAPE',
+         'Digi':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Reco':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Rec Merge':'spacetoken=ATLASDATADISK',
+         'Rec TAG':'spacetoken=ATLASDATADISK',
+         'Atlfast':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Atlf Merge':'spacetoken=ATLASDATADISK',
+         'Atlf TAG':'spacetoken=ATLASDATADISK'
+    }
+    return default_dict

@@ -85,8 +85,8 @@ def request_update(request, rid=None):
                  _logger.error("Problem with request update #%i: %s"%(int(rid), e))
     else:
         try:
-            req = TRequest.objects.values().get(reqid=rid)
-            form = RequestUpdateForm(req)
+            req = TRequest.objects.get(reqid=rid)
+            form = RequestUpdateForm(instance=req)
         except:
             return HttpResponseRedirect('/')
     return render(request, 'prodtask/_form.html', {
@@ -192,6 +192,8 @@ def dpd_form_prefill(form_data, request):
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    if 'project_mode' in output_dict:
+        task_config.update({'project_mode':output_dict['project_mode']})
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
@@ -253,6 +255,8 @@ def reprocessing_form_prefill(form_data, request):
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    if 'project_mode' in output_dict:
+        task_config.update({'project_mode':output_dict['project_mode']})
     try:
         if form_data['tag_hierarchy']:
             tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
@@ -471,6 +475,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                 if 'nEventsPerJob' in step['task_config']:
                                     task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                if 'project_mode' in step['task_config']:
+                                    task_config.update({'project_mode':step['task_config']['project_mode']})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
