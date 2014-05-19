@@ -189,6 +189,7 @@ setup(
         'atlas.postproduction.deft',
         'atlas.prodtask',
         'atlas.todoview',
+	'atlas.getdatasets',
     ],
     data_files=[ #FIXME
                 # config files 
@@ -197,12 +198,14 @@ setup(
                  ),
                 # HTML templates and static files
                 ]
-                 + gen_data_files("atlas/templates",
-                                  "atlas/static",
-                                  "atlas/media",
-                                  "atlas/config-templates",
-                                  "atlas/prodtask/templates",
-                                  "atlas/todoview/templates",
+                 + gen_data_files(
+		     "atlas/templates",
+                     "atlas/static",
+                     "atlas/media",
+                     "atlas/config-templates",
+                     "atlas/prodtask/templates",
+                     "atlas/todoview/templates",
+                     "atlas/getdatasets/templates",
                 )
     ,         
     cmdclass={'install': install_panda,
