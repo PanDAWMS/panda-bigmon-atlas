@@ -21,7 +21,9 @@ ALLOWED_HOSTS = [
 
 ### VIRTUALENV
 #VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__jedimon'
-VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
+# VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
+VIRTUALENV_PATH = '/data/wenaus/virtualenv/twrpm'
+
 
 ### WSGI
 WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
@@ -49,8 +51,10 @@ STATIC_ROOT = join(dirname(atlas.__file__), 'static')
 #STATIC_ROOT = None
 MEDIA_ROOT = join(dirname(atlas.__file__), 'media')
 STATIC_URL_BASE = '/static/'
+#STATIC_URL_BASE = '/twrpmatlasstatic/'
 #STATIC_URL_BASE = '/jedimonstatic/'
 MEDIA_URL_BASE = '/media/'
+#MEDIA_URL_BASE = '/twrpmatlasmedia/'
 #MEDIA_URL_BASE = '/jedimonmedia/'
 
 # Make this unique, and don't share it with anybody.

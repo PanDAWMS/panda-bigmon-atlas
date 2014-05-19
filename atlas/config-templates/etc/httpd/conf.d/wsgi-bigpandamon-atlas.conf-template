@@ -38,3 +38,44 @@ LoadModule wsgi_module modules/mod_wsgi.so
 #################################
 #################################
 
+
+
+#################################
+#################################
+#################################
+
+### /twrpmatlas
+    WSGISocketPrefix run/wsgi.bigpandamon.twrpmatlas
+    WSGIDaemonProcess bigpandamon-twrpmatlas processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
+    WSGIScriptAlias /twrpmatlas /data/wenaus/virtualenv/twrpm/pythonpath/atlas/wsgi.py process-group=bigpandamon-twrpmatlas application-group=%{GLOBAL}
+    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas>
+        <Files wsgi.py>
+            Order deny,allow
+            Allow from all
+        </Files>
+    </Directory>
+    <Location /twrpmatlas>
+        WSGIProcessGroup bigpandamon-twrpmatlas
+        WSGIApplicationGroup %{GLOBAL}
+    </Location>
+    AliasMatch ^/twrpmatlas/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/css/$1
+    AliasMatch ^/twrpmatlas/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/js/$1
+    Alias /twrpmatlas/static/ /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/
+    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static>
+        Order deny,allow
+        Allow from all
+    </Directory>
+    Alias /twrpmatlas/media/ /data/wenaus/virtualenv/twrpm/pythonpath/atlas/media/
+    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas/media>
+        Order deny,allow
+        Allow from all
+    </Directory>
+### end of /twrpmatlas
+
+#################################
+#################################
+#################################
+
+
+
+
