@@ -190,7 +190,7 @@ setup(
         'atlas.postproduction.deft',
         'atlas.prodtask',
         'atlas.todoview',
-	'atlas.getdatasets',
+#	'atlas.getdatasets',
     ],
     data_files=[ #FIXME
                 # config files 
@@ -206,7 +206,7 @@ setup(
                      "atlas/config-templates",
                      "atlas/prodtask/templates",
                      "atlas/todoview/templates",
-                     "atlas/getdatasets/templates",
+ #                    "atlas/getdatasets/templates",
                 )
     ,         
     cmdclass={'install': install_panda,
