@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
-    get_priority_object, ProductionDataset, RequestStatus
+    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -42,9 +42,9 @@ def find_missing_tags(tags):
     return_list = []
     for tag in tags:
         try:
-                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
-                if not trtf:
-                    return_list.append(tag)
+            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if not trtf:
+                return_list.append(tag)
         except ObjectDoesNotExist,e:
             return_list.append(tag)
         except Exception,e:
@@ -178,6 +178,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                                     priority=temp_priority, input_events=temp_input_events)
                             if delete_chain_from > 0 :
                                 parent_step = ordered_existed_steps[delete_chain_from-1]
+                            if not input_list.project_mode:
+                                st_exec.set_task_config({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
+                            else:
+                                st_exec.set_task_config({'project_mode':input_list.project_mode})
                             no_parent = True
                             if parent_step:
                                 st_exec.step_parent = parent_step
@@ -367,7 +371,7 @@ def tag_info(request, tag_name):
             trtf = Ttrfconfig.objects.all().filter(tag=tag_name[0], cid=int(tag_name[1:]))
             if trtf:
                 results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
-                                'input':trtf[0].input})
+                                'input':trtf[0].input,'step':trtf[0].step})
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -440,7 +444,7 @@ def input_list_approve(request, rid=None):
                 pattern_list_name += [('Empty', ['' for step in StepExecution.STEPS])]
 
             show_reprocessing = cur_request.request_type == 'REPROCESSING'
-            input_lists_pre = InputRequestList.objects.filter(request=cur_request)
+            input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
             # input_lists - list of tuples for end to form.
             # tuple format:
             # first element - InputRequestList object
