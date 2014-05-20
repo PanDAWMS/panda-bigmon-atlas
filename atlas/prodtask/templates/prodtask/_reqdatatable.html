@@ -450,16 +450,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 </div>
 <table>
 <tr>
+  <th></th>
   <th>Request ID:</th>
   <th>Description:</th>
   <th>Reference:</th>
+  <th>Manager:</th>
   <th>Physic group:</th>
   <th>Status:</th>
 </tr>
 <tr>
+  <td><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></td>
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
   <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
+  <td>{{ trequest.manager}}</td>
   <td>{{ trequest.phys_group}}</td>
   <td>{{ trequest.cstatus}}</td>
 </tr>

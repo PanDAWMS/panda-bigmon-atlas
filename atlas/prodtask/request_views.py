@@ -193,7 +193,8 @@ def dpd_form_prefill(form_data, request):
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
     if 'project_mode' in output_dict:
-        task_config.update({'project_mode':output_dict['project_mode']})
+        project_mode = output_dict['project_mode'][0]
+        task_config.update({'project_mode':project_mode})
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
@@ -256,7 +257,8 @@ def reprocessing_form_prefill(form_data, request):
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
     if 'project_mode' in output_dict:
-        task_config.update({'project_mode':output_dict['project_mode']})
+        project_mode = output_dict['project_mode'][0]
+        task_config.update({'project_mode':project_mode})
     try:
         if form_data['tag_hierarchy']:
             tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
