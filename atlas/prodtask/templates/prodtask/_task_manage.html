@@ -35,22 +35,24 @@
         Select all &nbsp;
       </label>
     </div>
-    <div>
-      <div class="button-bar">
-        <ul class="button-group radius">
-          <li> <a href="#" data-dropdown="task_abort_menu" data-options="is_hover:true" class="radio button alert" id="btn_abort" >Abort</a> </li>
-        </ul>
-        <ul class="button-group radius">
+
+    <div id="manage_buttons_group" class="button-bar">
+      <ul class="button-group radius">
+          <li> <a data-dropdown="task_abort_menu" data-options="is_hover:true" class="radio button alert" id="btn_abort" >Abort</a> </li>
+      </ul>
+      <ul class="button-group radius">
           <li> <a data-dropdown="task_change_prio_menu" class="radio button" id="btn_change_prio">Change priority</a> </li>
-        </ul>
-      </div>
+      </ul>
+      <ul class="button-group radius">
+          <li> <a class="radio button secondary" id="btn_switch_to_view">View-only mode</a> </li>
+      </ul>
     </div>
 
    <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
-    <div style="color:#222222;" class="small-12 columns">
+    <div class="small-12 columns"  style="color:#222222;">
      <div class="row">
       <div class="small-9 columns">
-        <label for="btn_do_abort" class="right inline">
+        <label for="btn_do_abort" class="right inline" style="...">
             Tasks selected:&nbsp;
             <span id="selected_count_1">0</span>
          </label>
@@ -63,7 +65,7 @@
    </div>
 
    <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
-    <div style="color:#222222;" class="small-12 columns">
+    <div class="small-12 columns"  style="color:#222222;">
      <div class="row">
       <div class="small-9 columns">
        <input type="text" id="new_priority" placeholder="New priority" >
@@ -73,19 +75,16 @@
       </div>
      </div>
      <div class="row">
-       <div class="small-12 columns text-center">
+       <div class="small-12 columns text-center" style="...">
          <br>
+         JEDI task priority (100-900)
+         <br><br>
          Tasks selected:&nbsp;
          <span id="selected_count_2">0</span>
        </div>
      </div>
     </div>
    </div>
-
-
-
-  </div>
-
 
 </div>
 
@@ -159,6 +158,17 @@ $(document).ready(function() {
     // Adding management panel
     $("#management_panel").insertBefore("#task_table_length");
 
+    // Make management buttons the same width
+    {
+        var max_width = 0;
+        $("#manage_buttons_group").find('.button').each(function() {
+            max_width = Math.max( $(this).width(), max_width);
+        });
+        $("#manage_buttons_group").find('.button').each(function() {
+            $(this).width(max_width);
+        });
+    }
+
     // Setting buttons handlers
     $("#btn_do_abort").click( function () {
         doAbortTasks();
@@ -171,6 +181,14 @@ $(document).ready(function() {
 
     });
 
+    $("#btn_switch_to_view").click(function() {
+        var view_url_base = $(location).attr('origin') + "{% url 'prodtask:task_table' %}"
+        var self_url_base = $(location).attr('origin') + $(location).attr('pathname');
+        var view_url_full = $(location).attr('href').replace(self_url_base, view_url_base);
+
+        $(location).attr('href', view_url_full);
+        return False;
+    });
 
     $("#task_table_wrapper").on("draw", "#task_table", function() {
        $("#task_table tr>td:first-child>a").each( function () {
