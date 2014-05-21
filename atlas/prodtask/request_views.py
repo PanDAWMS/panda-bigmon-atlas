@@ -179,7 +179,10 @@ def dpd_form_prefill(form_data, request):
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
     if 'project' in output_dict:
-        form_data['campaign'] = output_dict['project'][0]
+        if not form_data['campaign']:
+            form_data['campaign'] = output_dict['project'][0]
+    if 'project' in output_dict:
+        form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
@@ -245,7 +248,10 @@ def reprocessing_form_prefill(form_data, request):
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
     if 'project' in output_dict:
-        form_data['campaign'] = output_dict['project'][0]
+        if not form_data['campaign']:
+            form_data['campaign'] = output_dict['project'][0]
+    if 'project' in output_dict:
+        form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'Created'
     if not form_data.get('energy_gev'):
@@ -259,15 +265,14 @@ def reprocessing_form_prefill(form_data, request):
     if 'project_mode' in output_dict:
         project_mode = output_dict['project_mode'][0]
         task_config.update({'project_mode':project_mode})
-    try:
-        if form_data['tag_hierarchy']:
-            tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
-        else:
-            tag_tree = []
-    except Exception, e:
-        _logger.error('Problem with data gathering %s' % e)
-        eroor_message = str(e)
-        return {},eroor_message
+    tag_tree = []
+    # try:
+    #     if form_data['tag_hierarchy']:
+    #         tag_tree = string_to_tag_tree(form_data['tag_hierarchy'])
+    # except Exception, e:
+    #     _logger.error('Problem with data gathering %s' % e)
+    #     eroor_message = str(e)
+    #     return {},eroor_message
     if 'ds' in output_dict:
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
@@ -408,8 +413,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                      })
                 else:
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
-                    if 'tag_hierarchy' in form.cleaned_data:
-                        del form.cleaned_data['tag_hierarchy']
+                    # if 'tag_hierarchy' in form.cleaned_data:
+                    #     del form.cleaned_data['tag_hierarchy']
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
                         inputlists = [x['input_dict'] for x in file_dict]
@@ -440,8 +445,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     form.cleaned_data['excelfile']
                 if 'reqid' in form.cleaned_data:
                     del form.cleaned_data['reqid']
-                if 'tag_hierarchy' in form.cleaned_data:
-                        del form.cleaned_data['tag_hierarchy']
+                # if 'tag_hierarchy' in form.cleaned_data:
+                #         del form.cleaned_data['tag_hierarchy']
                 form.cleaned_data['cstatus'] = 'Created'
                 try:
                     _logger.debug("Creating request : %s" % form.cleaned_data)

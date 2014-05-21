@@ -60,8 +60,8 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
-                              widget=Textarea, required=False)
+    # tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
+    #                           widget=Textarea, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
 
     class Meta:
