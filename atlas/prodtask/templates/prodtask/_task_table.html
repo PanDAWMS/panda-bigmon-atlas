@@ -39,11 +39,11 @@
     span.registered { color : blue;}
 
     .breaked_word   { word-wrap: break-word; width: 1200px; max-width: 600px; }
-    
+
     .px50           { max-width: 50px; }
     .px80, .numbers  { max-width: 80px; }
     .px100          { max-width: 100px; }
-    
+
     .numbers        { text-align: right; }
   </style>
 
@@ -551,6 +551,9 @@
 
 <script type="text/javascript">
 $(document).ready(function() {
+
+    $("th.numbers div").css("padding-right", "0px").css("padding-left", "20px");
+    $("th.numbers div span").css("left", "0px");
 
     taskTable.fnSetColumnVis( 22, false, false );
 
