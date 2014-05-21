@@ -63,6 +63,10 @@ urlpatterns = patterns('',
         name='make_test_request'),
     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
     url(r'^tag_info/(?P<tag_name>\w+)/$', 'atlas.prodtask.views.tag_info', name='tag_info'),
+    url(r'^get_tag_formats/(?P<reqid>\d+)/$', 'atlas.prodtask.views.get_tag_formats', name='get_tag_formats'),
+    url(r'^project_mode_from_tag/(?P<reqid>\d+)/$', 'atlas.prodtask.views.project_mode_from_tag', name='project_mode_from_tag'),
+    url(r'^update_project_mode/(?P<reqid>\d+)/$', 'atlas.prodtask.views.update_project_mode', name='update_project_mode'),
+
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 

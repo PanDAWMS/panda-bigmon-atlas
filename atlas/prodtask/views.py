@@ -225,18 +225,22 @@ def request_steps_approve_or_save(request, reqid, approve_level):
             if not missing_tags:
                 _logger.debug("Start steps save/approval")
                 req = TRequest.objects.get(reqid=reqid)
-                if req.request_type == 'MC':
-                    create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                if not (req.manager) or (req.manager == 'None'):
+                    missing_tags.append('No manager name!')
+                    results = {'data': missing_tags,'slices': slices, 'success': True}
                 else:
-                    create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                #TODO:Take owner from sso cookies
+                    if req.request_type == 'MC':
+                        create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                    else:
+                        create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                    #TODO:Take owner from sso cookies
 
-                if req.cstatus == 'Created':
-                    req.cstatus = 'Approved'
-                    req.save()
-                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
-                                                   status='Approved')
-                    request_status.save_with_current_time()
+                    if req.cstatus == 'Created':
+                        req.cstatus = 'Approved'
+                        req.save()
+                        request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
+                                                       status='Approved')
+                        request_status.save_with_current_time()
             else:
                 _logger.debug("Some tags are missing: %s" % missing_tags)
         except Exception, e:
@@ -351,7 +355,6 @@ def request_reprocessing_steps_create(request, reqid=None):
 
 @csrf_protect
 def make_test_request(request, reqid):
-    _logger.debug(request.META)
     results = {}
     if request.method == 'POST':
         try:
@@ -364,7 +367,6 @@ def make_test_request(request, reqid):
 
 @csrf_protect
 def tag_info(request, tag_name):
-    _logger.debug(request.META)
     if request.method == 'GET':
         results = {'success':False}
         try:
@@ -375,6 +377,97 @@ def tag_info(request, tag_name):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@csrf_protect
+def project_mode_from_tag(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            checkecd_tag_format = json.loads(data)
+            tag = checkecd_tag_format['tag_format'].split(':')[0]
+            output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
+            output_format = output_format[len(tag)+1:]
+            project_mode = ''
+            req = TRequest.objects.get(reqid=reqid)
+            slices = InputRequestList.objects.filter(request=req).order_by("slice")
+            for slice in slices:
+                if slice.slice>=int(slice_from):
+                    step_execs = StepExecution.objects.filter(slice=slice)
+                    for step_exec in step_execs:
+                        if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
+                            task_config = json.loads(step_exec.task_config)
+                            if 'project_mode' in task_config:
+                                project_mode = task_config['project_mode']
+
+            results.update({'success':True,'data':project_mode})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def update_project_mode(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        updated_slices = []
+        try:
+            data = request.body
+            checkecd_tag_format = json.loads(data)
+            tag = checkecd_tag_format['tag_format'].split(':')[0]
+            output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
+            output_format = output_format[len(tag)+1:]
+            slice_from = 0
+            new_project_mode = checkecd_tag_format['project_mode']
+            req = TRequest.objects.get(reqid=reqid)
+            slices = InputRequestList.objects.filter(request=req).order_by("slice")
+            for slice in slices:
+                if slice.slice>=int(slice_from):
+                    step_execs = StepExecution.objects.filter(slice=slice)
+                    for step_exec in step_execs:
+                        if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
+                            if step_exec.status != 'Approved':
+                                task_config = json.loads(step_exec.task_config)
+                                task_config['project_mode'] = new_project_mode
+                                step_exec.task_config = ''
+                                step_exec.set_task_config(task_config)
+                                step_exec.save()
+                                if slice.slice not in updated_slices:
+                                   updated_slices.append(str(slice.slice))
+            results.update({'success':True,'slices':updated_slices})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def get_tag_formats(request, reqid):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            tag_formats = []
+            #slice_from = []
+            #project_modes = []
+            req = TRequest.objects.get(reqid=reqid)
+            slices = InputRequestList.objects.filter(request=req).order_by("slice")
+            for slice in slices:
+                step_execs = StepExecution.objects.filter(slice=slice)
+                for step_exec in step_execs:
+                    tag_format = step_exec.step_template.ctag + ":" + step_exec.step_template.output_formats
+                    task_config = json.loads(step_exec.task_config)
+                    project_mode = ''
+                    if 'project_mode' in task_config:
+                        project_mode = task_config['project_mode']
+                    do_update = True
+                    for existed_tag_format in tag_formats:
+                        if (existed_tag_format[0] == tag_format) and (existed_tag_format[1] == project_mode):
+                            do_update = False
+                    if do_update:
+                        tag_formats.append((tag_format,project_mode,slice.slice))
+            results.update({'success':True,'data':[x[0]+'-'+str(x[2]) for x in tag_formats]})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 def home(request):
     tmpl = get_template('prodtask/_index.html')

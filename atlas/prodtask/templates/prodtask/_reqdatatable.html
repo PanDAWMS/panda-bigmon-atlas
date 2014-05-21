@@ -216,6 +216,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 }
             }
         });
+
+    $("#tagFormatSelect").change(function(){return tagFormatChange()});
+    refreshTagFormats(null);
 });
 
     var csrftoken = $.cookie('csrftoken');
@@ -244,7 +247,6 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     }
                     var sliceSteps=[];
                     var foreignID = "0";
-                    console.log("aaaa");
                     {% for step in step_list %}
                         var val = " ";
                         var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
@@ -264,7 +266,6 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         sliceSteps[{{ forloop.counter0 }}] = {"value":val,"is_skipped":isSkipped, "formats":""};
                     {% endfor %}
                      sliceSteps[{{  step_list|length }}] = {"foreign_id":foreignID};
-                    console.log(sliceSteps);
                     sendData[sliceID] = sliceSteps;
 
                 }
@@ -433,10 +434,76 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     dataType: 'text',
                     success: function(data,status) {
                         $( "#waitingDialog" ).dialog('close');
+
                     }
                 });
               return false;
        };
+        function tagFormatChange(){
+                  sendData = {'tag_format':$("#tagFormatSelect").val()};
+                  $( "#waitingDialog" ).dialog();
+                  $.ajax({
+                        url: "{% url 'prodtask:project_mode_from_tag' pr_id %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $( "#waitingDialog" ).dialog('close');
+                            var project_mode = $.evalJSON(data).data;
+
+                            $("#project_mode_input").val(project_mode);
+                        }
+                    });
+                  return false;
+        };
+         function refreshTagFormats(event){
+              sendData = {};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:get_tag_formats' pr_id%}",
+                    type: 'GET',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        var tagFormats = $.evalJSON(data).data;
+                        $("#tagFormatSelect").html("");
+                        for (var i=0;i<tagFormats.length;i++){
+                            $("#tagFormatSelect").append($('<option>', {
+                                value: tagFormats[i],
+                                text: tagFormats[i]
+                            }));
+                        }
+                        tagFormatChange();
+                    }
+                });
+
+              return false;
+         };
+
+        function updateProjectMode(event){
+              sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val()};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:update_project_mode' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        var slices = $.evalJSON(data).slices;
+                        if(slices.length >0){
+                            $("#approveDialog>span").text("Sucessfully update slices: ".concat(slices.toString()));
+                            $("#approveDialog").attr("title","Steps updated");
+                            $("#approveDialog").dialog("open");
+                        }
+                    }
+                });
+              return false;
+        };
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -478,9 +545,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
-<form >
 
+<form >
 <div id="tagIngo" ></div>
+
 {% if show_reprocessing %}
 <div class="small-8">
     <form>
@@ -663,4 +731,34 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 <button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>
 <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,false);">Approve</button>
 <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,false);">Save</button>
+<form>
+    <div class="row">
+        <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>AMITag:formats
+                        <select id="tagFormatSelect">
+
+                        </select>
+                    </label>
+                </div>
+                <div class="large-2 columns">
+                  <a href="#" class="button postfix" onclick="refreshTagFormats(event)">Refresh</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <input type="text" placeholder="project_mode" id="project_mode_input">
+                </div>
+                <div class="large-2 columns">
+                  <a href="#" class="button postfix" onclick="updateProjectMode(event)">Update</a>
+                </div>
+            </div>
+       </div>
+    </div>
+</form>
 {% endblock %}
