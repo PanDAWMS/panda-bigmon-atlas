@@ -39,7 +39,7 @@ class TProject(models.Model):
 
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
-                                'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
+                                'Egamma','BPhys','TrackingPerf','HeavyIons','Muon','reprocessing']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
