@@ -41,7 +41,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS
-
+JS_I18N_APPS_EXCLUDE = common.settings.base.JS_I18N_APPS_EXCLUDE + ('django_tables2',)
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request', #django-tables2	
 )

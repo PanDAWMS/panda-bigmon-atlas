@@ -20,10 +20,34 @@
 {% else %}
     <form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
 {% endif %}
-<table>
-{{ form.as_table }}
+
+
+
+<table border="1" cellspacing="0" cellpadding="3">
+
+<tr>
+    <td>
+        <table id="tab">
+        <tr id="row" style="white-space: nowrap;">
+            <td valign="middle">
+                <!--b>Data pattern<font style="color: red;">*</font></b-->
+		Data pattern:
+            </td>
+            <td>
+                <input id="patternId" type="text" maxlength="255" name="dpat1" value="" style="width: 600px;" cellpadding="10"/>
+            </td>
+            <td valign="top">
+                <input type="button" value="Add" style="width: 80px; text-align: center;" onclick="javascript:addSearchRow(tab);" />
+                <!--input type="submit" value="Search" style="width: 80px; text-align: center;" /-->
+            </td>
+        </tr>
+        </table>
+    </td>
+</tr>
 </table>
-<input id="form_submit" type="submit" value="{% if submit_text %}{{submit_text}}{% else %}Find{% endif %}" />
+
+                <input type="submit" value="Search" style="width: 80px; text-align: center;" />
+
 
 {{ table.as_html}}
 
@@ -32,6 +56,26 @@
 //    checkboxes = document.getElementsByName('selection');
 //    for(var i in checkboxes)
 //        checkboxes[i].value = i;
+function addSearchRow(obj) {
+     
+    var row = document.getElementById("row");
+    var table = document.getElementById("tab");
+    var rowCount = table.rows.length+1; 
+
+    if (rowCount<4)
+    	var clone = row.cloneNode(true); 
+    	clone.cells[0].innerHTML = 'Data pattern '+ rowCount.toString()+':';
+
+    	table.appendChild(clone);
+    
+    	//document.getElementById('patternId').name = "dpat"+rowCount.toString();
+    	intext = document.getElementsByName('dpat1');
+	intext[1].name = "dpat"+rowCount.toString();
+	//	alert(intext);
+}
+
+ 
+
 
 function toggle(source) {
     checkboxes = document.getElementsByName('selection');

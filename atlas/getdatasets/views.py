@@ -79,7 +79,7 @@ class ProductionDatasetsTable(tables.Table):
 	def render_num(self):
 		return '%d' % next(self.counter)
 
-def request_data_form(request):
+def request_data_form2(request):
         if request.method == 'POST':
                 form = RequestForm(request.POST)
                 pks = request.POST.getlist("selection")
@@ -111,4 +111,42 @@ def request_data_form(request):
                 'parent_template': 'prodtask/_index.html',
                 })
 
+def request_data_form(request):
+        if request.method == 'POST':
+                pks = request.POST.getlist("selection")
+                if pks:
+                        return HttpResponse(json.dumps(list(pks)), content_type="application/json")
+                else:
+			dslist=[]
+			if 'dpat1' in request.POST:
+				req = request.POST['dpat1']		
+				if req:	
+                                	dslist = request_data(req)
+			if 'dpat2' in request.POST:
+				req = request.POST['dpat2']		
+				if req:	
+                                	dslist = dslist+request_data(req)
+			if 'dpat3' in request.POST:
+				req = request.POST['dpat3']		
+				if req:	
+                                	dslist = dslist+request_data(req)
+                        table=ProductionDatasetsTable(dslist)
+                        return render(request, '_request_table.html', {
+                                'active_app': 'getdatasets',
+                                'pre_form_text': 'Request datasets',
+                                'table': table,
+                                'submit_text': 'Select',
+                                'submit_url': 'getdatasets:request_data_form',
+                                'parent_template': 'prodtask/_index.html',
+                                })
+#	if 'dpat' in request.POST:
+#		req = request.POST['dpat']		
 
+	else:
+		return render(request, '_request_table.html', {
+                'active_app': 'getdatasets',
+                'pre_form_text': 'Request datasets',
+                'submit_url': 'getdatasets:request_data_form',
+                'parent_template': 'prodtask/_index.html',
+                })
+	
