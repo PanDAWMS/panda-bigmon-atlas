@@ -8,7 +8,8 @@ class ProductionDatasetsExec(models.Model):
 
     class Meta:
         app_label = "grisli"
-        db_table = u"T_PRODUCTIONDATASETS_EXEC"
+        managed = False
+        db_table = u'"ATLAS_GRISLI_R"."T_PRODUCTIONDATASETS_EXEC"'
 
 class TRequest(models.Model):
     request = models.CharField(max_length=200, db_column='REQUEST', null=True)
