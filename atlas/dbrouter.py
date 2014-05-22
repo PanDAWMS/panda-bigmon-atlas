@@ -4,6 +4,8 @@ class ProdMonDBRouter(object):
             return 'deft'
         if model._meta.app_label == 'panda':
             return 'panda'
+        if model._meta.app_label == 'grisli':
+            return 'grisli'
         if model._meta.app_label == "taskmon":
             return "deft_adcr"
         return None
