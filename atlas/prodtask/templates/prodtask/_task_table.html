@@ -38,7 +38,7 @@
 	span.navy		{ color : blue; }
     span.registered { color : blue;}
 
-    .breaked_word   { word-wrap: break-word; max-width: 10%; }
+    .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
 
     .px50           { max-width: 50px; }
     .px80, .numbers { max-width: 80px; }
@@ -46,12 +46,17 @@
 
 
     .numbers        { text-align: right; }
+    
+    .taskid         { min-width: 6em; }
+    .datetime       { min-width: 7em; }
 
     table.dataTable td { padding: 0px 5px 0px 0px; }
     table.dataTable thead th { padding: 0px 3px 0px 0px; }
 
     table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
     table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
+    
+    .dataTables_wrapper { display: inline-block; }
   </style>
 
 {% endblock %}

@@ -181,13 +181,13 @@ class ProductionTaskTable(datatables.DataTable):
 
     submit_time = datatables.Column(
         label='Submit time',
-        sClass='px100',
+        sClass='px100 datetime',
    #     bVisible='false',
         )
 
     timestamp = datatables.Column(
         label='Timestamp',
-        sClass='px100',
+        sClass='px100 datetime',
         )
 
     start_time = datatables.Column(
@@ -248,10 +248,13 @@ class ProductionTaskTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-
-        sScrollX = '100%'
+        
+        bAutoWidth = False
+      #  width = "1200px"
+        
+      #  sScrollX = '100%'
       #  sScrollY = '25em'
-        bScrollCollapse = True
+        bScrollCollapse = False
 
         aaSorting = [[3, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
