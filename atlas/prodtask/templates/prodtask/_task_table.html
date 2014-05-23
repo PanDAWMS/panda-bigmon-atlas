@@ -38,13 +38,25 @@
 	span.navy		{ color : blue; }
     span.registered { color : blue;}
 
-    .breaked_word   { word-wrap: break-word; width: 1200px; max-width: 600px; }
-    
+    .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
+
     .px50           { max-width: 50px; }
-    .px80, .numbers  { max-width: 80px; }
+    .px80, .numbers { max-width: 80px; }
     .px100          { max-width: 100px; }
-    
+
+
     .numbers        { text-align: right; }
+    
+    .taskid         { min-width: 6em; }
+    .datetime       { min-width: 7em; }
+
+    table.dataTable td { padding: 0px 5px 0px 0px; }
+    table.dataTable thead th { padding: 0px 3px 0px 0px; }
+
+    table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
+    table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
+    
+    .dataTables_wrapper { display: inline-block; }
   </style>
 
 {% endblock %}
@@ -122,6 +134,20 @@
         </td>
     </tr>
 
+    <tr>
+        <td>Step name:</td>
+        <td>
+        <input id="step_name" />
+        </td>
+    </tr>
+    
+    <tr>
+        <td>Step output format:</td>
+        <td>
+        <input id="step_output_format" />
+        </td>
+    </tr>
+    
     </table>
 
     </td>
@@ -248,10 +274,6 @@
 </table>
 
 
-<br>
-<a href="{% url 'prodtask:task_manage' %}"> Manage tasks </a>
-<br><br>
-
 <script type="text/javascript">
 
     function taskServerParams ( aoData )
@@ -278,7 +300,11 @@
             aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
         if( $("#phys_group").val() != '' )
             aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-
+        if( $("#step_name").val() != '' )
+            aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
+        if( $("#step_output_format").val() != '' )
+            aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
+            
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
         aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
@@ -410,6 +436,8 @@
         { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
 
         { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
+        { name: 'step_name',    id: 'step_name',    label: 'Step name'},
+        { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
     ];
 
     function SetParametersToURL()
@@ -556,6 +584,12 @@
 <script type="text/javascript">
 $(document).ready(function() {
 
+/*    $("#task_table th.numbers div").css("padding-right", "0px").css("padding-left", "20px");
+    $("#task_table th.numbers div span").css("left", "0px");
+
+    $("#task_table th").css("padding", "0px 3px 0px 0px");
+    $("#task_table td").css("padding", "0px 5px 0px 0px");*/
+
     taskTable.fnSetColumnVis( 22, false, false );
 
     $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
@@ -578,5 +612,43 @@ $(document).ready(function() {
         });
 });
  </script>
+
+<div id="switch_to_manage" class="button-bar dataTables_length hide">
+    <div class="button-bar">
+        <ul class="button-group radius">
+            <li>
+                <div id="table_lenght_holder"> </div>
+            </li>
+        </ul>
+        <ul class="button-group radius">
+            <li>
+                <a id="btn_switch_to_manage" href="#" class="button">Manage tasks</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        var manage_url_base = $(location).attr('origin') + "{% url 'prodtask:task_manage' %}";
+        var manage_url_regexp = RegExp( '^' + manage_url_base );
+        var is_manage_mode = manage_url_regexp.test( $(location).attr('href') );
+
+        if ( !is_manage_mode ) {
+            $("#switch_to_manage").insertAfter("#task_table_length");
+            $("#task_table_length").appendTo("#table_lenght_holder");
+            $("#switch_to_manage").show();
+
+            $("#btn_switch_to_manage").click(function() {
+                var view_url_base = $(location).attr('origin') + $(location).attr('pathname');
+                var manage_url_full = $(location).attr('href').replace(view_url_base, manage_url_base);
+
+                $(location).attr('href', manage_url_full);
+                return False;
+            });
+        }
+    });
+</script>
+
 {% endblock %}
 

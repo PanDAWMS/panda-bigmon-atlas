@@ -19,10 +19,27 @@ def prefetch_id(db, seq_name):
             cursor.close()
     return new_id
 
+class TProject(models.Model):
+    project = models.CharField(max_length=60, db_column='PROJECT', primary_key=True)
+    begin_time = models.DecimalField(decimal_places=0, max_digits=10, db_column='BEGIN_TIME')
+    end_time = models.DecimalField(decimal_places=0, max_digits=10, db_column='END_TIME')
+    status = models.CharField(max_length=8, db_column='STATUS')
+    status = models.CharField(max_length=500, db_column='DESCRIPTION')
+    time_stamp = models.DecimalField(decimal_places=0, max_digits=10, db_column='TIMESTAMP')
+
+    def save(self):
+        raise Exception
+
+    def __str__(self):
+        return "%s" % self.project
+
+    class Meta:
+        #db_table = u'T_PRODUCTION_DATASET'
+        db_table = u'"ATLAS_DEFT"."T_PROJECTS"'
 
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
-                                'Egamma','BPhys','TrackingPerf','HeavyIons','Muon']]
+                                'Egamma','BPhys','TrackingPerf','HeavyIons','Muon','reprocessing']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
@@ -35,6 +52,7 @@ class TRequest(models.Model):
     subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
     energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
+    project = models.ForeignKey(TProject,db_column='PROJECT', null=True, blank=False)
 
     def save(self, *args, **kwargs):
         if not self.reqid:
@@ -424,3 +442,18 @@ def get_default_nEventsPerJob_dict():
         'Atlf TAG':25000
     }
     return defult_dict
+
+def get_default_project_mode_dict():
+    default_dict = {
+         'Evgen':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Simul':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Merge':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASMCTAPE',
+         'Digi':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Reco':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Rec Merge':'spacetoken=ATLASDATADISK',
+         'Rec TAG':'spacetoken=ATLASDATADISK',
+         'Atlfast':'Npileup=5;spacetoken=ATLASDATADISK',
+         'Atlf Merge':'spacetoken=ATLASDATADISK',
+         'Atlf TAG':'spacetoken=ATLASDATADISK'
+    }
+    return default_dict

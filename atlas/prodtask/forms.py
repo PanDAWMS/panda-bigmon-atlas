@@ -1,12 +1,12 @@
 from django import forms
-from django.forms import ModelForm
+from django.forms import ModelForm, ModelChoiceField
 from django.forms import CharField
 from django.forms import EmailField
 from django.forms import Textarea
 from django.forms import FileField
 from django.forms import DecimalField
 from django.forms import Form
-from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority
+from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject
 from django.forms.widgets import TextInput
 
 
@@ -22,6 +22,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
     cc = EmailField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
+    project = ModelChoiceField(queryset=TProject.objects.all(),required=True)
 
     class Meta:
         model = TRequest
@@ -33,7 +34,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="Spreadsheet Link")
     excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
-
+    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
 
     class Meta:
         model = TRequest
@@ -46,6 +47,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
+    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
 
     class Meta:
         model = TRequest
@@ -58,8 +60,9 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
-                              widget=Textarea, required=False)
+    # tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
+    #                           widget=Textarea, required=False)
+    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
 
     class Meta:
         model = TRequest
