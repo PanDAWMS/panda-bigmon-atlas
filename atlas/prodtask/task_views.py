@@ -139,7 +139,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     id = datatables.Column(
         label='Task ID',
-        sClass='numbers',
+        sClass='numbers taskid',
     #    asSorting=[ "desc" ],
         )
 

@@ -38,13 +38,20 @@
 	span.navy		{ color : blue; }
     span.registered { color : blue;}
 
-    .breaked_word   { word-wrap: break-word; width: 1200px; max-width: 600px; }
+    .breaked_word   { word-wrap: break-word; max-width: 10%; }
 
     .px50           { max-width: 50px; }
-    .px80, .numbers  { max-width: 80px; }
+    .px80, .numbers { max-width: 80px; }
     .px100          { max-width: 100px; }
+   
 
     .numbers        { text-align: right; }
+    
+    table.dataTable td { padding: 0px 5px 0px 0px; }
+    table.dataTable thead th { padding: 0px 3px 0px 0px; }
+    
+    table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
+    table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
   </style>
 
 {% endblock %}
@@ -552,8 +559,11 @@
 <script type="text/javascript">
 $(document).ready(function() {
 
-    $("th.numbers div").css("padding-right", "0px").css("padding-left", "20px");
-    $("th.numbers div span").css("left", "0px");
+/*    $("#task_table th.numbers div").css("padding-right", "0px").css("padding-left", "20px");
+    $("#task_table th.numbers div span").css("left", "0px");
+
+    $("#task_table th").css("padding", "0px 3px 0px 0px");
+    $("#task_table td").css("padding", "0px 5px 0px 0px");*/
 
     taskTable.fnSetColumnVis( 22, false, false );
 
