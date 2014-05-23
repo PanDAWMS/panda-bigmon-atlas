@@ -289,7 +289,8 @@ class ProductionTaskTable(datatables.DataTable):
 
         parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
                             ('request','request__reqid'), ('chain','chain_tid'), ('status','status'),
-                            ('provenance', 'provenance'), ('phys_group','phys_group'), ('step', 'step__step_template__step') ]
+                            ('provenance', 'provenance'), ('phys_group','phys_group'),
+                            ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
 
         for param in parameters:
             value = request.GET.get(param[0], 0)

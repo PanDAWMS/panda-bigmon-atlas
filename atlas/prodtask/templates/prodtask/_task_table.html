@@ -130,12 +130,19 @@
     </tr>
 
     <tr>
-        <td>Step:</td>
+        <td>Step name:</td>
         <td>
-        <input id="step" />
+        <input id="step_name" />
         </td>
     </tr>
-
+    
+    <tr>
+        <td>Step output format:</td>
+        <td>
+        <input id="step_output_format" />
+        </td>
+    </tr>
+    
     </table>
 
     </td>
@@ -288,9 +295,11 @@
             aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
         if( $("#phys_group").val() != '' )
             aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#step").val() != '' )
-            aoData.push( { "name": "step",          "value": $("#step").val() } );
-
+        if( $("#step_name").val() != '' )
+            aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
+        if( $("#step_output_format").val() != '' )
+            aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
+            
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
         aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
@@ -422,7 +431,8 @@
         { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
 
         { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
-        { name: 'step',         id: 'step',         label: 'Step'},
+        { name: 'step_name',    id: 'step_name',    label: 'Step name'},
+        { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
     ];
 
     function SetParametersToURL()
