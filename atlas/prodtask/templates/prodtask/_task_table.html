@@ -43,13 +43,13 @@
     .px50           { max-width: 50px; }
     .px80, .numbers { max-width: 80px; }
     .px100          { max-width: 100px; }
-   
+
 
     .numbers        { text-align: right; }
-    
+
     table.dataTable td { padding: 0px 5px 0px 0px; }
     table.dataTable thead th { padding: 0px 3px 0px 0px; }
-    
+
     table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
     table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
   </style>
@@ -126,6 +126,13 @@
         <td>Chain:</td>
         <td>
         <input id="chain" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Step:</td>
+        <td>
+        <input id="step" />
         </td>
     </tr>
 
@@ -281,6 +288,8 @@
             aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
         if( $("#phys_group").val() != '' )
             aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
+        if( $("#step").val() != '' )
+            aoData.push( { "name": "step",          "value": $("#step").val() } );
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -413,6 +422,7 @@
         { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
 
         { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
+        { name: 'step',         id: 'step',         label: 'Step'},
     ];
 
     function SetParametersToURL()
