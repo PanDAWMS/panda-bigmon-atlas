@@ -34,7 +34,7 @@ def request_data_table(req):
                 data_dict['name'] = ds['name']
                 #data_dict['size'] = 
                 data_dict['selection'] = ds['name']
-                data_dict['number'] = u'%d' % next(counter)
+                #data_dict['number'] = u'%d' % next(counter)
                 outlist.append(data_dict)
 
         return outlist
@@ -61,7 +61,7 @@ def request_data_dq2(req):
 		data_dict['size'] = dq2.getDatasetSize(ds)
 		if  data_dict['size'] != 0:
 			data_dict['selection'] = ds
-			data_dict['number'] = u'%d' % next(counter)
+			#data_dict['number'] = u'%d' % next(counter)
                 	outlist.append(data_dict) 
         return outlist
 
@@ -130,7 +130,11 @@ def request_data_form(request):
 				req = request.POST['dpat3']		
 				if req:	
                                 	dslist = dslist+request_data(req)
-                        table=ProductionDatasetsTable(dslist)
+			reslist=[]
+			for i in dslist:
+				if i not in reslist:
+					reslist.append(i)
+                        table=ProductionDatasetsTable(reslist)
                         return render(request, '_request_table.html', {
                                 'active_app': 'getdatasets',
                                 'pre_form_text': 'Request datasets',
