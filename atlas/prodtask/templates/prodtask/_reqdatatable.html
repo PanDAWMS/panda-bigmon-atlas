@@ -142,7 +142,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
     $(".stepchoose").click(function(){
         var currentColor = $(this).css("background-color");
-        var currentIndex = (step_bc.indexOf(currentColor)+1)%step_bc.length;
+        var currentIndex = (step_bc.indexOf(currentColor)+1)%2;
         $(this).css({"background-color":step_bc[currentIndex]});
         step_bc[currentIndex] =  $(this).css("background-color");
         if($(this).attr("id").substr(0,4) == 'step'){
