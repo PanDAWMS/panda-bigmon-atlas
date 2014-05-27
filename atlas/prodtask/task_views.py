@@ -128,7 +128,7 @@ class ProductionTaskTable(datatables.DataTable):
     step = datatables.Column(
         label='Step',
         model_field='step__id',
-  #      sClass='px100',
+        sClass='centered',
   #      bVisible='false',
         )
 
@@ -177,17 +177,18 @@ class ProductionTaskTable(datatables.DataTable):
 
     status = datatables.Column(
         label='Status',
+        sClass='centered',
         )
 
     submit_time = datatables.Column(
         label='Submit time',
-        sClass='px100 datetime',
+        sClass='px100 datetime centered',
    #     bVisible='false',
         )
 
     timestamp = datatables.Column(
         label='Timestamp',
-        sClass='px100 datetime',
+        sClass='px100 datetime centered',
         )
 
     start_time = datatables.Column(
