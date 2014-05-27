@@ -248,15 +248,15 @@ class ProductionTaskTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        
+
         bAutoWidth = False
       #  width = "1200px"
-        
+
       #  sScrollX = '100%'
       #  sScrollY = '25em'
         bScrollCollapse = False
 
-        aaSorting = [[3, "desc"]]
+        aaSorting = [[4, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
