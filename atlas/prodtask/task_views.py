@@ -292,7 +292,7 @@ class ProductionTaskTable(datatables.DataTable):
         qs = self.get_queryset()
 
         parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
-                            ('request','request__reqid'), ('chain','chain_tid'), ('status','status'),
+                            ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
 
@@ -303,6 +303,18 @@ class ProductionTaskTable(datatables.DataTable):
                     qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
                 else:
                     qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
+
+        task_type = request.GET.get('status', 0)
+        if task_type == 'active':
+            qs = qs.exclude( status__in=['done','finished','failed','broken','aborted'] )
+        elif task_type == 'ended':
+            qs = qs.filter( status__in=['done','finished'] )
+        elif task_type == 'regular':
+            qs = qs.exclude( status__in=['failed','broken','aborted'] )
+        elif task_type == 'irregular':
+            qs = qs.filter( status__in=['failed','broken','aborted'] )
+        elif task_type:
+            qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
 
         task_type = request.GET.get('task_type', 'production')
         if task_type == 'production':
