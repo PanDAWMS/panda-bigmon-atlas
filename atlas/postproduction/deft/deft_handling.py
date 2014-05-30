@@ -13,7 +13,7 @@
 # May 14, 2014. move production containers handling
 #               add Rucio clients to a separate file
 #
-# Last Edit : May 14, 2014 ak
+# Last Edit : May 15, 2014 ak
 #
 
 import re
@@ -72,16 +72,17 @@ DATASET_SYNCH_INTERVAL =    72
 #
 TASK_RECOVERY_STEP     = '.recov.'
 
+#def XXX() :
 class DEFTClient(object):
 #
 # author D.Golubkov
 #
-    auth_url = 'https://atlas-info-mon.cern.ch/api/deft'
-    # kerberos
-    try :
-        sso_cookies = cernsso.Cookies(auth_url).get()
-    except Exception, e :
-        raise Exception("SSO authentication error: %s" % str(e))
+#    auth_url = 'https://atlas-info-mon.cern.ch/api/deft'
+#    # kerberos
+#    try :
+#        sso_cookies = cernsso.Cookies(auth_url).get()
+#    except Exception, e :
+#        raise Exception("SSO authentication error: %s" % str(e))
 
     def __init__(self):
         self.ssocookies = cernsso.Cookies(self._getAPIScope()).get()
@@ -993,12 +994,13 @@ def main() :
 
     msg   = ''
     error = 0
-    # SSO
+    # SSO; May 15 : some issues with SSO 
     deft_client = DEFTClient()
     sso_info = deft_client.getUserInfo()
-    #--print sso_info
-    userName =  sso_info['userName']
+    #- print sso_info
+    #- userName =  sso_info['userName']
     userId   =  sso_info['userId']
+    #userId='alexei'
     print "INFO deft_handling : user ID : ",userId
     # simple authentication, will be replaced by Dmitry's CERN SSO
     # whoami    = os.getlogin()
