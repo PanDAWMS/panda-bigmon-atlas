@@ -303,6 +303,7 @@ class ProductionTask(models.Model):
     pptimestamp = models.DateTimeField(db_column='PPTIMESTAMP', null=True)
     postproduction = models.CharField(max_length=128, db_column='POSTPRODUCTION', null=True)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=True)
+    current_priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='CURRENT_PRIORITY', null=True)
     update_time = models.DateTimeField(db_column='UPDATE_TIME', null=True)
     update_owner = models.CharField(max_length=24, db_column='UPDATE_OWNER', null=True)
     comments = models.CharField(max_length=256, db_column='COMMENTS', null=True)

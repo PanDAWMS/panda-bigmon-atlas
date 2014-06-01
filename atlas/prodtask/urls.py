@@ -48,8 +48,8 @@ urlpatterns = patterns('',
     url(r'^task_create/$',              'atlas.prodtask.task_views.task_create',        name='task_create'),
 
     url(r'^task_manage/$',              'atlas.prodtask.task_manage_views.task_manage', name='task_manage'),
-    url(r'^task_manage/abort$',         'atlas.prodtask.task_manage_views.tasks_abort', name='tasks_abort'),
-    url(r'^task_manage/change_priority$', 'atlas.prodtask.task_manage_views.tasks_change_priority', name='tasks_change_priority'),
+    url(r'^task_manage/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.tasks_action', name='tasks_action'),
+
 
     url(r'^step_approve/(?P<stepexid>\d+)/(?P<reqid>\d+)/(?P<sliceid>\d+)/$', 'atlas.prodtask.views.step_approve', name='step_approve'),
 

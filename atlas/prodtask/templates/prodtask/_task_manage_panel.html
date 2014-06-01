@@ -1,0 +1,253 @@
+<div id="management_panel">
+
+    <div class="button-group">
+
+
+        <div id="manage_buttons_group" class="button-bar">
+
+            <ul class="button-group radius">
+        {% if task.id %}
+                <li><a class="small radio button disabled" id="btn_edit" href="#">Edit</a></li>
+                <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
+        {% endif %}
+
+                <li><a data-dropdown="task_abort_menu" data-options="is_hover:true" class="small radio button alert"
+                       id="btn_abort">Abort</a></li>
+                <li><a data-dropdown="task_change_prio_menu" class="small radio button" id="btn_change_prio">Change&nbsp;priority</a></li>
+                <li><a data-dropdown="task_reassign_menu" class="small radio button" id="btn_reassign">Reassing</a></li>
+        {% if edit_mode %}
+                <li><a class="small radio button secondary" id="btn_switch_to_view">View&nbsp;mode</a></li>
+        {% endif %}
+            </ul>
+        </div>
+
+        <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 columns">
+                <div class="row">
+                    <div class="small-9 columns">
+                        <label for="btn_do_abort" class="right inline"  style="color:#222222;">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_abrt">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_abort">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-8 large-8 columns">
+                        <input type="text" id="new_priority" placeholder="New priority">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_priority">Go</a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-12 columns text-center" style="color:#222222;">
+                        <br>
+                        JEDI task priority (100-900)
+                        <br><br>
+                        Tasks selected:&nbsp;
+                        <span id="selected_count_prio">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_reassign_menu" class="medium content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-10 large-10 columns">
+                        <select name="cloud_select" id="cloud_select">
+                            <option value="" selected>Select cloud</option>
+                        {% for entry in clouds %}
+                            <option value="{{ entry }}">{{ entry }}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-2 large-2 columns">
+                        <a class="button postfix" id="btn_do_reassign_cloud">Go</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-10 large-10 columns text-center" style="color:#222222;">
+                        or
+                        <br><br>
+                    </div>
+                    <div class="small-10 large-10 columns">
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-10 large-10 columns" style="color:#222222;">
+                        <select name="site_select" id="site_select" class="medium">
+                            <option value="" selected>Select site</option>
+                        {% for entry in sites %}
+                            <option value="{{ entry }}">{{ entry }}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-2 large-2 columns">
+                        <a class="button postfix" id="btn_do_reassign_site">Go</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-12 large-12 columns text-center" style="color:#222222;">
+                        <br>
+                         Tasks selected:&nbsp;
+                        <span id="selected_count_reassign">0</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bottom" id="request_status_container">
+
+    </div>
+
+</div>
+
+
+<input type="hidden" id="selected_tasks" value="{{task.id}}">
+
+{%  csrf_token %}
+
+
+<script type="text/javascript">
+
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+
+$.ajaxSetup({
+    crossDomain: false, // obviates need for sameOrigin test
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type)) {
+            xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+        }
+    }
+})
+
+function makeAlertBox(content, box_id, text_id) {
+    var $box = $( "<div/>", { id: box_id, class: "alert-box info radius", "data-alert": ""} )
+    .append( $( "<span/>", { id: text_id, html: content} ) )
+    .append( $ ( "<a/>", {href: "#", class: "close", text: '×'} ) );
+    return $box;
+}
+
+function getSelectedTasksList() {
+    var tasks = $("#selected_tasks").val().split(',');
+    if (tasks.length == 1 && !tasks[0]) {
+        tasks.length = 0;
+    }
+    return tasks;
+}
+
+function doTasksAction(action) {
+    var tasks = getSelectedTasksList();
+
+    if (tasks.length == 0) {
+        return;
+    }
+
+    var postData = Object();
+    postData['tasks'] = tasks;
+
+    if (action == "change_priority") {
+        postData['parameters'] = [$("#new_priority").val()];
+    } else if (action == "reassign_to_site") {
+        postData['parameters'] = [$("#site_select").val()];
+    } else if (action == "reassign_to_cloud") {
+        postData['parameters'] = [$("#cloud_select").val()];
+    }
+
+    var ajaxUrl =  "{% url 'prodtask:task_manage' %}" + action + "/";
+
+    $("#req_status_box").remove();
+    $("#request_status_container").append( makeAlertBox("Request status: sending", "req_status_box", "req_status_text"));
+
+    $.ajax({
+        url: ajaxUrl,
+        type: "POST",
+        data: $.toJSON(postData),
+        dataType: "json",
+        success: function (result, status) {
+            if (status) {
+                $("#req_status_text").html("Request status: done");
+            } else {
+                $("#req_status_text").html("Request status: error - " + status);
+            }
+        },
+        failure: function (errorMsg) {
+            $("#request_status_text").html("Error: " + errorMsg);
+        }
+    });
+}
+
+
+$(document).ready(function () {
+    // Make management buttons the same size
+    {
+        var max_width = "0";
+        $("#manage_buttons_group").find('.button').each(function () {
+            max_width = Math.max($(this).width(), max_width);
+        });
+        $("#manage_buttons_group").find('.button').each(function () {
+            $(this).width(max_width);
+        });
+
+    }
+
+    // Setting buttons handlers
+    $("#btn_do_abort").click(function () {
+        doTasksAction('kill');
+        $("#task_abort_menu").hide();
+    });
+
+    $("#btn_do_set_priority").click(function () {
+        doTasksAction('change_priority');
+        $("#task_change_prio_menu").hide();
+
+    });
+
+    $("#btn_do_reassign_cloud").click(function() {
+         doTasksAction('reassign_to_cloud');
+        $("#task_reassign_menu").hide();
+    });
+
+    $("#btn_do_reassign_site").click(function() {
+         doTasksAction('reassign_to_site');
+        $("#task_reassign_menu").hide();
+    });
+
+
+    $("#selected_tasks").change(function () {
+        var tasks = getSelectedTasksList();
+
+        $("[id^=selected_count_]").html( tasks.length );
+
+        if (tasks.length) {
+            $("[id^=btn_do_]").removeClass("secondary");
+        } else {
+            $("[id^=btn_do_]").addClass("secondary");
+        }
+    });
+
+    $("#selected_tasks").change();
+});
+
+
+</script>
+

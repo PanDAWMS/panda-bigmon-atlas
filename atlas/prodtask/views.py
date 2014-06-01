@@ -346,6 +346,8 @@ def request_reprocessing_steps_create(request, reqid=None):
                                 new_step_exec.step_parent = new_step_exec
                             else:
                                 new_step_exec.step_parent = real_steps_hierarchy[current_tag['level']][current_tag['step_number']]
+                            if current_slice.project_mode:
+                                new_step_exec.set_task_config({'project_mode' : current_slice.project_mode})
                             new_step_exec.save()
                             real_steps_hierarchy[-1].append(new_step_exec)
         except Exception,e:

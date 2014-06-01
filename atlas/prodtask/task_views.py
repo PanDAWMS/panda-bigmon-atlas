@@ -9,6 +9,7 @@ from django.template.response import TemplateResponse
 from ..settings import defaultDatetimeFormat
 
 import core.datatables as datatables
+from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest
@@ -19,6 +20,7 @@ from django.db.models import Count, Q
 from django.utils.timezone import utc
 from datetime import datetime
 
+import locale
 import time
 
 
@@ -37,6 +39,8 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
+       'clouds': get_clouds(),
+       'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
    })
 
@@ -128,7 +132,7 @@ class ProductionTaskTable(datatables.DataTable):
     step = datatables.Column(
         label='Step',
         model_field='step__id',
-  #      sClass='px100',
+        sClass='centered',
   #      bVisible='false',
         )
 
@@ -143,7 +147,7 @@ class ProductionTaskTable(datatables.DataTable):
     #    asSorting=[ "desc" ],
         )
 
-    priority = datatables.Column(
+    current_priority = datatables.Column(
         label='Priority',
         sClass='numbers',
         )
@@ -177,17 +181,18 @@ class ProductionTaskTable(datatables.DataTable):
 
     status = datatables.Column(
         label='Status',
+        sClass='centered',
         )
 
     submit_time = datatables.Column(
         label='Submit time',
-        sClass='px100 datetime',
+        sClass='px100 datetime centered',
    #     bVisible='false',
         )
 
     timestamp = datatables.Column(
         label='Timestamp',
-        sClass='px100 datetime',
+        sClass='px100 datetime centered',
         )
 
     start_time = datatables.Column(
@@ -240,6 +245,11 @@ class ProductionTaskTable(datatables.DataTable):
   #      bVisible='false',
         )
 
+    priority = datatables.Column(
+        label='SPriority',
+        sClass='numbers',
+        )
+        
     class Meta:
         model = ProductionTask
 
@@ -248,15 +258,15 @@ class ProductionTaskTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        
+
         bAutoWidth = False
       #  width = "1200px"
-        
+
       #  sScrollX = '100%'
       #  sScrollY = '25em'
         bScrollCollapse = False
 
-        aaSorting = [[3, "desc"]]
+        aaSorting = [[4, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]
         iDisplayLength = 100
 
@@ -291,7 +301,7 @@ class ProductionTaskTable(datatables.DataTable):
         qs = self.get_queryset()
 
         parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
-                            ('request','request__reqid'), ('chain','chain_tid'), ('status','status'),
+                            ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
 
@@ -302,6 +312,18 @@ class ProductionTaskTable(datatables.DataTable):
                     qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
                 else:
                     qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
+
+        task_type = request.GET.get('status', 0)
+        if task_type == 'active':
+            qs = qs.exclude( status__in=['done','finished','failed','broken','aborted'] )
+        elif task_type == 'ended':
+            qs = qs.filter( status__in=['done','finished'] )
+        elif task_type == 'regular':
+            qs = qs.exclude( status__in=['failed','broken','aborted'] )
+        elif task_type == 'irregular':
+            qs = qs.filter( status__in=['failed','broken','aborted'] )
+        elif task_type:
+            qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
 
         task_type = request.GET.get('task_type', 'production')
         if task_type == 'production':
@@ -369,3 +391,16 @@ def task_table(request):
                                                                     'last_task_submit_time' : last_task_submit_time,
                                                                     })
 
+
+def get_clouds():
+   clouds = [ x.get('cloud') for x in Schedconfig.objects.using('default').values('cloud').distinct() ]
+   locale.setlocale(locale.LC_ALL, '')
+   clouds = sorted(clouds, key=locale.strxfrm)
+   return clouds
+
+
+def get_sites():
+    sites = [ x.get('siteid') for x in Schedconfig.objects.using('default').values('siteid').distinct() ]
+    locale.setlocale(locale.LC_ALL, '')
+    sites = sorted(sites, key=locale.strxfrm)
+    return sites

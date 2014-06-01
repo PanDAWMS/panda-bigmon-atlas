@@ -46,7 +46,8 @@
 
 
     .numbers        { text-align: right; }
-    
+    .centered       { text-align: center; }
+
     .taskid         { min-width: 6em; }
     .datetime       { min-width: 7em; }
 
@@ -55,7 +56,7 @@
 
     table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
     table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
-    
+
     .dataTables_wrapper { display: inline-block; }
   </style>
 
@@ -140,14 +141,14 @@
         <input id="step_name" />
         </td>
     </tr>
-    
+
     <tr>
         <td>Step output format:</td>
         <td>
         <input id="step_output_format" />
         </td>
     </tr>
-    
+
     </table>
 
     </td>
@@ -160,6 +161,10 @@
         <td>
         <select id="status">
             <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="ended">Ended</option>
+            <option value="regular">Regular</option>
+            <option value="irregular">Irregular</option>
             <option value="aborted">Aborted</option>
             <option value="assigning">Assigning</option>
             <option value="broken">Broken</option>
@@ -304,7 +309,7 @@
             aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
         if( $("#step_output_format").val() != '' )
             aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
-            
+
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
         aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
@@ -349,6 +354,8 @@
 
             row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
             row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
+
+            row[5] = row[5]=='None'? row[23] : row[5];
 
             /*
             switch(row[8])
@@ -591,6 +598,7 @@ $(document).ready(function() {
     $("#task_table td").css("padding", "0px 5px 0px 0px");*/
 
     taskTable.fnSetColumnVis( 22, false, false );
+    taskTable.fnSetColumnVis( 23, false, false );
 
     $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
     $("#task_type").change(function () {
@@ -599,21 +607,22 @@ $(document).ready(function() {
             {
                 taskTable.fnSetColumnVis( 1, false, false );
                 taskTable.fnSetColumnVis( 2, false, false );
-                taskTable.fnSetColumnVis( 13, false, false );
+           //     taskTable.fnSetColumnVis( 13, false, false );
                 taskTable.fnSetColumnVis( 18, false, false );
             }
             else
             {
                 taskTable.fnSetColumnVis( 1, true, false );
                 taskTable.fnSetColumnVis( 2, true, false );
-                taskTable.fnSetColumnVis( 13, false, false );
+          //      taskTable.fnSetColumnVis( 13, true, false );
                 taskTable.fnSetColumnVis( 18, true, false );
             }
         });
 });
  </script>
 
-<div id="switch_to_manage" class="button-bar dataTables_length hide">
+
+<div id="switch_to_manage" class="button-bar left hide">
     <div class="button-bar">
         <ul class="button-group radius">
             <li>
@@ -622,7 +631,7 @@ $(document).ready(function() {
         </ul>
         <ul class="button-group radius">
             <li>
-                <a id="btn_switch_to_manage" href="#" class="button">Manage tasks</a>
+                <a id="btn_switch_to_manage" href="#" class="small button">Manage tasks</a>
             </li>
         </ul>
     </div>

@@ -34,7 +34,7 @@ def request_data_table(req):
                 data_dict['name'] = ds['name']
                 #data_dict['size'] = 
                 data_dict['selection'] = ds['name']
-                data_dict['number'] = u'%d' % next(counter)
+                #data_dict['number'] = u'%d' % next(counter)
                 outlist.append(data_dict)
 
         return outlist
@@ -61,7 +61,7 @@ def request_data_dq2(req):
 		data_dict['size'] = dq2.getDatasetSize(ds)
 		if  data_dict['size'] != 0:
 			data_dict['selection'] = ds
-			data_dict['number'] = u'%d' % next(counter)
+			#data_dict['number'] = u'%d' % next(counter)
                 	outlist.append(data_dict) 
         return outlist
 
@@ -79,7 +79,7 @@ class ProductionDatasetsTable(tables.Table):
 	def render_num(self):
 		return '%d' % next(self.counter)
 
-def request_data_form(request):
+def request_data_form2(request):
         if request.method == 'POST':
                 form = RequestForm(request.POST)
                 pks = request.POST.getlist("selection")
@@ -111,4 +111,46 @@ def request_data_form(request):
                 'parent_template': 'prodtask/_index.html',
                 })
 
+def request_data_form(request):
+        if request.method == 'POST':
+                pks = request.POST.getlist("selection")
+                if pks:
+                        return HttpResponse(json.dumps(list(pks)), content_type="application/json")
+                else:
+			dslist=[]
+			if 'dpat1' in request.POST:
+				req = request.POST['dpat1']		
+				if req:	
+                                	dslist = request_data(req)
+			if 'dpat2' in request.POST:
+				req = request.POST['dpat2']		
+				if req:	
+                                	dslist = dslist+request_data(req)
+			if 'dpat3' in request.POST:
+				req = request.POST['dpat3']		
+				if req:	
+                                	dslist = dslist+request_data(req)
+			reslist=[]
+			for i in dslist:
+				if i not in reslist:
+					reslist.append(i)
+                        table=ProductionDatasetsTable(reslist)
+                        return render(request, '_request_table.html', {
+                                'active_app': 'getdatasets',
+                                'pre_form_text': 'Request datasets',
+                                'table': table,
+                                'submit_text': 'Select',
+                                'submit_url': 'getdatasets:request_data_form',
+                                'parent_template': 'prodtask/_index.html',
+                                })
+#	if 'dpat' in request.POST:
+#		req = request.POST['dpat']		
 
+	else:
+		return render(request, '_request_table.html', {
+                'active_app': 'getdatasets',
+                'pre_form_text': 'Request datasets',
+                'submit_url': 'getdatasets:request_data_form',
+                'parent_template': 'prodtask/_index.html',
+                })
+	
