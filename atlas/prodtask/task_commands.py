@@ -34,10 +34,11 @@ def _execJediCommand(task_id, command, *params):
     bash_lines = re.compile("^bash:")
     # remove shell warnings if any
     out = [x.rstrip() for x in out if not bash_lines.match(x)]
-
+    out = filter(None, out) # remove empty lines
 
     result = {}
     if not out: return result
+
     jedi_response = tuple(ast.literal_eval(out[0]))
     if not jedi_response: return result
 
