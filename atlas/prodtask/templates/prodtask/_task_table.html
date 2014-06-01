@@ -354,7 +354,7 @@
 
             row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
             row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
-            
+
             row[5] = row[5]=='None'? row[23] : row[5];
 
             /*
@@ -607,14 +607,14 @@ $(document).ready(function() {
             {
                 taskTable.fnSetColumnVis( 1, false, false );
                 taskTable.fnSetColumnVis( 2, false, false );
-                taskTable.fnSetColumnVis( 13, false, false );
+           //     taskTable.fnSetColumnVis( 13, false, false );
                 taskTable.fnSetColumnVis( 18, false, false );
             }
             else
             {
                 taskTable.fnSetColumnVis( 1, true, false );
                 taskTable.fnSetColumnVis( 2, true, false );
-                taskTable.fnSetColumnVis( 13, false, false );
+          //      taskTable.fnSetColumnVis( 13, true, false );
                 taskTable.fnSetColumnVis( 18, true, false );
             }
         });
