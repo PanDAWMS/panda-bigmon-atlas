@@ -9,6 +9,7 @@ from django.template.response import TemplateResponse
 from ..settings import defaultDatetimeFormat
 
 import core.datatables as datatables
+from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest
@@ -19,6 +20,7 @@ from django.db.models import Count, Q
 from django.utils.timezone import utc
 from datetime import datetime
 
+import locale
 import time
 
 
@@ -37,6 +39,8 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
+       'clouds': get_clouds(),
+       'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
    })
 
@@ -387,3 +391,16 @@ def task_table(request):
                                                                     'last_task_submit_time' : last_task_submit_time,
                                                                     })
 
+
+def get_clouds():
+   clouds = [ x.get('cloud') for x in Schedconfig.objects.using('default').values('cloud').distinct() ]
+   locale.setlocale(locale.LC_ALL, '')
+   clouds = sorted(clouds, key=locale.strxfrm)
+   return clouds
+
+
+def get_sites():
+    sites = [ x.get('siteid') for x in Schedconfig.objects.using('default').values('siteid').distinct() ]
+    locale.setlocale(locale.LC_ALL, '')
+    sites = sorted(sites, key=locale.strxfrm)
+    return sites

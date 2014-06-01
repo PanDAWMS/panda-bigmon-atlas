@@ -8,19 +8,16 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 
 import core.datatables as datatables
-from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest
 
-from .task_views import ProductionTaskTable
+from .task_views import ProductionTaskTable, get_clouds, get_sites
 
 from .task_commands import killTask, changeTaskPriority, reassignTaskToSite, reassignTaskToCloud
 
-import ast
-import time
+
 import json
-import locale
 
 _task_actions = {
     'kill': killTask,
@@ -29,13 +26,15 @@ _task_actions = {
     'reassign_to_cloud': reassignTaskToCloud,
 }
 
-def do_tasks_action(tasks, action, *params):
+def do_tasks_action(tasks, action, *args):
     if (not tasks) or not (action in _task_actions):
         return
 
+    print action, args
+
     result = []
     for task in tasks:
-        response = _task_actions[action](task, *params)
+        response = _task_actions[action](task, *args)
         req_info = dict(task_id=task, action=action, response=response)
         result.append(req_info)
 
@@ -70,12 +69,7 @@ def task_manage(request):
     qs = request.fct.get_queryset()
     last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
 
-    clouds = [ x.get('cloud') for x in Schedconfig.objects.using('default').values('cloud').distinct() ]
-    sites = [ x.get('siteid') for x in Schedconfig.objects.using('default').values('siteid').distinct() ]
 
-    locale.setlocale(locale.LC_ALL, '')
-    clouds = sorted(clouds, key=locale.strxfrm)
-    sites = sorted(sites, key=locale.strxfrm)
 
     return TemplateResponse(request, 'prodtask/_task_manage.html',
                             {'title': 'Manage Production Tasks',
@@ -83,8 +77,8 @@ def task_manage(request):
                              'table': request.fct,
                              'parent_template': 'prodtask/_index.html',
                              'last_task_submit_time': last_task_submit_time,
-                             'clouds': clouds,
-                             'sites': sites,
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
                              'edit_mode': True,
                             })
 
