@@ -8,6 +8,24 @@
 	</style>
 {% endblock %}
 
+{% block base_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
+{% endblock %}
+
+
 {% block subtitle %}
 {{pre_form_text|safe}}
 {% endblock %}
@@ -49,4 +67,7 @@
 <tr><th><label for="physics_tag">Physics tag:</label></th><td>{{ task.physics_tag }}</td></tr>
 
 </table>
+
+{% include "prodtask/_task_manage_panel.html" %}
+
 {% endblock %}

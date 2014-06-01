@@ -6,17 +6,12 @@
 {% block extra_js %}
 {{ block.super }}
 
-  <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
 
-  <script type="text/javascript">
-    $(document).foundation({
-         'dropdown': {
-          // specify the class used for active dropdowns
-          'active_class': 'open',
-         }
-      });
-
-  </script>
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
 
 {% endblock %}
 
@@ -25,113 +20,27 @@
 
 {{ block.super }}
 
-<div id="management_panel">
-
-  <div class="button-group dataTables_length">
-    <div>
-      <label class="column">
-        <br>
-        <input type="checkbox" id="select_all_tasks" />
-        Select all &nbsp;
-      </label>
+<div class="left" id="management_panel_container">
+    <div class="left">
+        <label class="column">
+            <br>
+            <input type="checkbox" id="select_all_tasks"/>
+            Select all
+            &nbsp;
+        </label>
     </div>
+    <div class="right">
 
-    <div id="manage_buttons_group" class="button-bar">
-      <ul class="button-group radius">
-          <li> <a data-dropdown="task_abort_menu" data-options="is_hover:true" class="radio button alert" id="btn_abort" >Abort</a> </li>
-      </ul>
-      <ul class="button-group radius">
-          <li> <a data-dropdown="task_change_prio_menu" class="radio button" id="btn_change_prio">Change priority</a> </li>
-      </ul>
-      <ul class="button-group radius">
-          <li> <a class="radio button secondary" id="btn_switch_to_view">View-only mode</a> </li>
-      </ul>
+        {% include "prodtask/_task_manage_panel.html" %}
+
     </div>
-
-   <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
-    <div class="small-12 columns"  style="color:#222222;">
-     <div class="row">
-      <div class="small-9 columns">
-        <label for="btn_do_abort" class="right inline" style="...">
-            Tasks selected:&nbsp;
-            <span id="selected_count_1">0</span>
-         </label>
-      </div>
-      <div class="small-3 columns">
-         <a class="button postfix secondary" id="btn_do_abort">Go</a>
-      </div>
-     </div>
-    </div>
-   </div>
-
-   <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
-    <div class="small-12 columns"  style="color:#222222;">
-     <div class="row">
-      <div class="small-9 columns">
-       <input type="text" id="new_priority" placeholder="New priority" >
-      </div>
-      <div class="small-3 columns">
-         <a class="button postfix" id="btn_set_priority">Go</a>
-      </div>
-     </div>
-     <div class="row">
-       <div class="small-12 columns text-center" style="...">
-         <br>
-         JEDI task priority (100-900)
-         <br><br>
-         Tasks selected:&nbsp;
-         <span id="selected_count_2">0</span>
-       </div>
-     </div>
-    </div>
-   </div>
-
 </div>
-
-
 
 <script type="text/javascript">
 
-function doAbortTasks() {
-  var tasks = [];
-  $(".cbx_task_select:checked").each( function () {
-      tasks.push( $(this).val() );
-  });
-
-  if (tasks.length == 0) { return; }
-
-   $.ajax({
-     url: "prodtask/task_manage/abort",
-     global: false,
-     type: "POST",
-     data: { 'tasks': tasks }
-    });
-
-}
-
-function doSetPriority() {
-  var tasks = [];
-  $(".cbx_task_select:checked").each( function () {
-      tasks.push( $(this).val() );
-  });
-  priority = $("#new_priority").val();
-
-  if (tasks.length == 0) { return; }
-  
-
-
-   $.ajax({
-     url: "prodtask/task_manage/change_priority",
-     global: false,
-     type: "POST",
-     data: { 'tasks': tasks, 'priority': priority }
-    });
-
-}
-
 
 function makeCheckbox(id, val, cls) {
-    html = $('<div />', { 'style': 'float: left;' })
+    html = $('<div />', { 'class': 'left' })
        .append(
          $('<input />',
                { 'type': 'checkbox',
@@ -143,43 +52,19 @@ function makeCheckbox(id, val, cls) {
     return html;
 }
 
-function updateSelectedCount() {
-    var count = $(".cbx_task_select:checked").size();
-    $("[id^=selected_count]").html(count);
-    if (count) {
-        $("#btn_do_abort").removeClass("secondary");
-    } else {
-        $("#btn_do_abort").addClass("secondary");
-    }
+function onUpdateSelectedTasks() {
+    var tasks = [];
+    $(".cbx_task_select:checked").each( function () {
+        tasks.push( $(this).val() );
+    });
 
+    $("#selected_tasks").val(tasks.join(',')).change();
 }
+
 
 $(document).ready(function() {
     // Adding management panel
-    $("#management_panel").insertBefore("#task_table_length");
-
-    // Make management buttons the same width
-    {
-        var max_width = 0;
-        $("#manage_buttons_group").find('.button').each(function() {
-            max_width = Math.max( $(this).width(), max_width);
-        });
-        $("#manage_buttons_group").find('.button').each(function() {
-            $(this).width(max_width);
-        });
-    }
-
-    // Setting buttons handlers
-    $("#btn_do_abort").click( function () {
-        doAbortTasks();
-        $("#task_abort_menu").hide();
-    });
-    
-    $("#btn_set_priority").click(function () {
-        doSetPriority();
-        $("#task_change_prio_menu").hide()
-
-    });
+    $("#management_panel_container").insertBefore("#task_table_length");
 
     $("#btn_switch_to_view").click(function() {
         var view_url_base = $(location).attr('origin') + "{% url 'prodtask:task_table' %}"
@@ -205,11 +90,11 @@ $(document).ready(function() {
 
     $("#select_all_tasks").click( function () {
         $('.cbx_task_select').prop('checked', this.checked);
-        updateSelectedCount();
+        onUpdateSelectedTasks();
     });
 
     $("#task_table").on("change", "input.cbx_task_select", function() {
-        updateSelectedCount();
+        onUpdateSelectedTasks();
     });
 
 });
