@@ -143,7 +143,7 @@ class ProductionTaskTable(datatables.DataTable):
     #    asSorting=[ "desc" ],
         )
 
-    priority = datatables.Column(
+    current_priority = datatables.Column(
         label='Priority',
         sClass='numbers',
         )
@@ -241,6 +241,11 @@ class ProductionTaskTable(datatables.DataTable):
   #      bVisible='false',
         )
 
+    priority = datatables.Column(
+        label='SPriority',
+        sClass='numbers',
+        )
+        
     class Meta:
         model = ProductionTask
 

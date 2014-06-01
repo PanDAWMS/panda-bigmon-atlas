@@ -354,6 +354,8 @@
 
             row[2] = '<a href="/prodtask/stepex/'+row[2]+'/">'+row[22]+'</a>';
             row[1] = '<a href="/prodtask/inputlist_with_request/'+row[1]+'/">'+row[1]+'</a>';
+            
+            row[5] = row[5]=='None'? row[23] : row[5];
 
             /*
             switch(row[8])
@@ -596,6 +598,7 @@ $(document).ready(function() {
     $("#task_table td").css("padding", "0px 5px 0px 0px");*/
 
     taskTable.fnSetColumnVis( 22, false, false );
+    taskTable.fnSetColumnVis( 23, false, false );
 
     $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
     $("#task_type").change(function () {
