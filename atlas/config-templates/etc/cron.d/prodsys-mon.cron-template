@@ -1,0 +1,9 @@
+MYPROXY_SERVER=myproxy.cern.ch
+MYPROXY_USER=prodsys-mon
+MYPROXY_KEY=prodsys-mon_hostname
+PROXY_OWNER=apache:apache
+PROXY_CERT_FILE=/tmp/x509_prodsys_mon
+
+# Receive myproxy cert authenticated by host certificate; error messages are not suppressed
+10 */6 * * * root (myproxy-logon -s $MYPROXY_SERVER -l $MYPROXY_USER -k $MYPROXY_KEY -n -o ${PROXY_CERT_FILE}-fresh) >/dev/null
+20 */6 * * * root (chmod 600 ${PROXY_CERT_FILE}-fresh && cp -f ${PROXY_CERT_FILE}-fresh ${PROXY_CERT_FILE} && chown $PROXY_OWNER $PROXY_CERT_FILE && rm ${PROXY_CERT_FILE}-fresh ) >/dev/null
