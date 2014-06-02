@@ -397,14 +397,14 @@ def task_table(request):
 
 
 def get_clouds():
-   clouds = [ x.get('cloud') for x in Schedconfig.objects.using('default').values('cloud').distinct() ]
+   clouds = [ x.get('cloud') for x in Schedconfig.objects.values('cloud').distinct() ]
    locale.setlocale(locale.LC_ALL, '')
    clouds = sorted(clouds, key=locale.strxfrm)
    return clouds
 
 
 def get_sites():
-    sites = [ x.get('siteid') for x in Schedconfig.objects.using('default').values('siteid').distinct() ]
+    sites = [ x.get('siteid') for x in Schedconfig.objects.values('siteid').distinct() ]
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
