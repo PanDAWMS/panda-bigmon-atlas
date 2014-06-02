@@ -99,7 +99,7 @@ def request_data_form2(request):
 				table=ProductionDatasetsTable(dslist)
                         	return render(request, '_request_table.html', {
                         	'active_app': 'getdatasets',
-                        	'pre_form_text': 'Request datasets',
+                        	'pre_form_text': 'Datasets search',
                         	'form': form,
 				'table': table,
                         	'submit_text': 'Select',
@@ -111,7 +111,7 @@ def request_data_form2(request):
                 form = RequestForm()
                 return render(request, '_request_table.html', {
                 'active_app': 'getdatasets',
-                'pre_form_text': 'Request datasets',
+                'pre_form_text': 'Datasets search',
                 'form': form,
                 'submit_url': 'getdatasets:request_data_form',
                 'parent_template': 'prodtask/_index.html',
@@ -143,7 +143,7 @@ def request_data_form(request):
                         table=ProductionDatasetsTable(reslist)
                         return render(request, '_request_table.html', {
                                 'active_app': 'getdatasets',
-                                'pre_form_text': 'Request datasets',
+                                'pre_form_text': 'Datasets search',
                                 'table': table,
                                 'submit_text': 'Select',
                                 'submit_url': 'getdatasets:request_data_form',
@@ -155,7 +155,7 @@ def request_data_form(request):
 	else:
 		return render(request, '_request_table.html', {
                 'active_app': 'getdatasets',
-                'pre_form_text': 'Request datasets',
+                'pre_form_text': 'Datasets search',
                 'submit_url': 'getdatasets:request_data_form',
                 'parent_template': 'prodtask/_index.html',
                 })
