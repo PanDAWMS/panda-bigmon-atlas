@@ -8,6 +8,7 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 
 import core.datatables as datatables
 
@@ -34,8 +35,8 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
                 st.save()
         except Exception, e:
             #print e
-            return HttpResponseRedirect('/prodtask/step_execution_table/')
-    return HttpResponseRedirect('/prodtask/step_execution_table/')
+            return HttpResponseRedirect(reverse('step_execution_table'))
+    return HttpResponseRedirect(reverse('step_execution_table'))
 
 
 def find_missing_tags(tags):
@@ -254,13 +255,13 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 @csrf_protect
 def request_steps_approve(request, reqid, approve_level):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, int(approve_level)-1)
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 
 def form_step_hierarchy(tags_formats_text):
@@ -336,7 +337,7 @@ def request_reprocessing_steps_create(request, reqid=None):
         except Exception,e:
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 @csrf_protect
 def make_test_request(request, reqid):
@@ -684,8 +685,8 @@ def input_list_approve(request, rid=None):
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
-            return HttpResponseRedirect('/prodtask/request_table/')
-    return HttpResponseRedirect('/prodtask/request_table/')
+            return HttpResponseRedirect(reverse('request_table'))
+    return HttpResponseRedirect(reverse('request_table'))
 
 
 def step_template_details(request, rid=None):
@@ -751,7 +752,9 @@ class StepTemlateTable(datatables.DataTable):
         iDisplayLength = 10
 
         bServerSide = True
-        sAjaxSource = '/prodtask/step_template_table/'
+        
+        def __init__(self):
+            self.sAjaxSource = reverse('step_template_table')
 
 @datatables.datatable(StepTemlateTable, name='fct')
 def step_template_table(request):
@@ -831,7 +834,10 @@ class StepExecutionTable(datatables.DataTable):
         iDisplayLength = 10
 
         bServerSide = True
-        sAjaxSource = '/prodtask/step_execution_table/'
+
+        def __init__(self):
+            self.sAjaxSource = reverse('step_execution_table')
+
 
 @datatables.datatable(StepExecutionTable, name='fct')
 def step_execution_table(request):
@@ -926,7 +932,9 @@ class ProductionDatasetTable(datatables.DataTable):
         iDisplayLength = 100
 
         bServerSide = True
-        sAjaxSource = '/prodtask/production_dataset_table/'
+
+        def __init__(self):
+            sAjaxSource = reverse('production_dataset_table')
 
     def apply_filters(self, request):
         qs = self.get_queryset()
