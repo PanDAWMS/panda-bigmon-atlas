@@ -1,0 +1,112 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+
+{% block page_title %}{{ viewParams.MON_VO }} PanDA jobs{% endblock %}
+{% block subtitle %}PanDA job list{{ viewParams.selection }}
+{% if user %} &nbsp; user={{ user }} {% endif %}
+{% if site %} &nbsp; site={{ site }} {% endif %}
+{% if vo %} &nbsp; VO={{ vo }} {% endif %}
+{% endblock %}
+{% block body %}
+
+{{ viewParams.header }}
+
+<b>{{ njobs }} jobs selected</b>
+{% if requestParams.jobtype %}<br><b>Job type: {{ requestParams.jobtype }}</b> {% endif %}
+{% if requestParams.cloud %}<br><b>Cloud: {{ requestParams.cloud }}</b> {% endif %}
+{% if requestParams.computingsite %}<br><b>Site: <a href="{% url 'siteInfo' requestParams.computingsite %}">{{ requestParams.computingsite }}</a></b> {% endif %}
+{% if requestParams.produsername %}<br><b>User: <a href="{% url 'userInfo' requestParams.produsername %}">{{ requestParams.produsername }}</a></b> {% endif %}
+{% if requestParams.jeditaskid %}<br><b>JEDI Task ID: <a href="{% url 'taskInfo' requestParams.jeditaskid  %}">{{ requestParams.jeditaskid }}</a></b> {% endif %}
+{% if requestParams.taskid %}<br><b>Task ID: {{ requestParams.taskid }}</b> {% endif %}
+{% if requestParams.jobsetid %}<br><b>Jobset ID: {{ requestParams.jobsetid }}</b> {% endif %}
+<p>
+
+<p>Job modification times in this listing range from {{ tfirst }} to {{ tlast }}
+<br>Job current priorities in this listing range from {{ plow }} to {{ phigh }}
+
+{% if ndrops > 0 %}
+<table width=900><tr><td>
+<b>{{ ndrops }} jobs were dropped from this listing because they were retried. Where there were retries, the latest retry job (only) is listed. </b>
+<font size=-1>
+<br>Dropped (retry):<br>
+{% for drop in droplist %}
+<a href="{% url 'jobInfo' drop.pandaid %}">{{ drop.pandaid }}</a>&nbsp;(<a href="{% url 'jobInfo' drop.newpandaid %}">{{ drop.newpandaid }}</a>) &nbsp;
+{% endfor %}
+</font>
+</tr></td></table>
+<p>
+{% endif %}
+
+{% if jobList %}
+
+<table>
+{% for fdict in sumd %}
+<tr><th> {{ fdict.field }} </th><td>
+{% for item in fdict.list %}
+{% if fdict.field == 'jobstatus' %} <span class='{{item.kname}}'> {% else %} <span> {% endif %}  {{ item.kname }} </span>
+<a href="{{xurl}}{{fdict.field}}={{item.kname}}">({{ item.kvalue }})</a> &nbsp; 
+{% endfor %}
+</td></tr>
+{% endfor %}
+</table>
+
+<table>
+<tr>
+	<th>Owner {% if viewParams.MON_VO != 'ATLAS' %} / VO{% endif %}  </th>
+	<th>Task ID</th>
+	<th>PanDA ID</th>
+	<th>Transformation</th>
+	<th>Status</th>
+	<th>Created</th>
+	<th>Start</th>
+	<th>End</th>
+	<th>{% if viewParams.MON_VO == 'ATLAS' %}Cloud {% endif%}Site</th>
+	<th>Priority</th>
+	<th>Job info</th>
+</tr>
+    {% for job in jobList %}
+	<tr>
+		<td><a href="{% url 'userInfo' job.produsername|safe %}">{{ job.produsername }}</a>{% if job.workinggroup %}<br><a href="{{xurl}}workinggroup={{ job.workinggroup }}">{{ job.workinggroup }}</a>{% endif %}{% if viewParams.MON_VO != 'ATLAS' %}{% if job.vo %} / {{ job.vo }}{% endif %} {% endif %}
+		</td>
+		<td>{% if job.jeditaskid %}<a href="{{xurl}}jeditaskid={{job.jeditaskid}}">{{ job.jeditaskid }}</a> {% else %} <a href="{% url 'jobList' %}?taskid={{job.taskid}}{% if job.taskid < 1000000 %}&produsername={{job.produsername}}{% endif %}">{{ job.taskid }}</a> {% endif %}</td>
+		<td><a href="{% url 'jobInfo' %}?pandaid={{ job.pandaid }}">{{ job.pandaid }}</a></td>
+		<td><font size=-1><a href="{{xurl}}transformation={{job.transformation}}">{{ job.transformation }}</a></font></td>
+
+		<td class='{{job.jobstatus}}'>{{ job.jobstatus }}</td>
+		<td>{{ job.creationtime|date:"Y-m-d H:i" }}</td>
+		<td>{{ job.starttime|date:"m-d H:i" }}</td>
+		<td>{{ job.endtime|date:"m-d H:i" }}</td>
+		<td><font size=-1>{% if viewParams.MON_VO == 'ATLAS' %}<a href="{{xurl}}cloud={{job.cloud}}">{{job.cloud}}</a> {% endif %}<a href="{% url 'siteInfo' job.computingsite %}">{{ job.computingsite }}</a></font></td>
+		<td>{{ job.currentpriority }}</td>
+		<td width=250>{% if job.jobinfo != '' %}<font size=-1>{{job.jobinfo|safe}}</font><br>{% endif %}
+		{% if job.errorinfo != '' %}<font size=-1 class='alarm'>{{job.errorinfo|safe}}</font>{% endif %}
+		</td>
+	</tr>
+    {% endfor %}
+</table>
+{% comment %}
+    <ul>
+    {% for job in jobList %}
+        <li>PanDA job <a href="{% url 'jobInfo' job.pandaid %}">{{ job.pandaid }}</a></li>
+    {% endfor %}
+    </ul>
+{% endcomment %}
+{% else %}
+    <p>No matches to query.</p>
+{% endif %}
+{% endblock %}
+
+{% block bottom_info %}
+{% endblock %}
+
+{% block left_menu %}
+{% comment %}
+<div class="left-menu">
+  {% block left_menu_content %}
+    <span class="left-menu-title">Menu</span>
+     <br> <a class="left-menu-item" href="{{ prefix }}/#">Home</a>
+  {% endblock %}
+</div>
+{% endcomment %}
+{% endblock %}
+

@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from django.core import serializers
 from django.http import HttpResponse
@@ -8,10 +9,12 @@ from django.shortcuts import render
 from .forms import RequestForm
 
 from .models import ProductionDatasetsExec
+from ..settings import dq2client as settings
 
 #Django-tables2
 import django_tables2 as tables
 import itertools
+
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -45,7 +48,10 @@ def request_data_dq2(req):
 	try:
 		#To work with DQ2
 		from dq2.clientapi.DQ2 import DQ2
-        	dq2 = DQ2()
+		
+		os.environ['RUCIO_ACCOUNT'] = settings.RUCIO_ACCOUNT
+        	dq2 = DQ2(certificate=settings.PROXY_CERT)
+        	
         	outputdq2 = dq2.listDatasets(dsn=req,onlyNames=True)
 	except ImportError, e:
 		_logger.error("No DQ2")
@@ -93,7 +99,7 @@ def request_data_form2(request):
 				table=ProductionDatasetsTable(dslist)
                         	return render(request, '_request_table.html', {
                         	'active_app': 'getdatasets',
-                        	'pre_form_text': 'Request datasets',
+                        	'pre_form_text': 'Datasets search',
                         	'form': form,
 				'table': table,
                         	'submit_text': 'Select',
@@ -105,7 +111,7 @@ def request_data_form2(request):
                 form = RequestForm()
                 return render(request, '_request_table.html', {
                 'active_app': 'getdatasets',
-                'pre_form_text': 'Request datasets',
+                'pre_form_text': 'Datasets search',
                 'form': form,
                 'submit_url': 'getdatasets:request_data_form',
                 'parent_template': 'prodtask/_index.html',
@@ -137,7 +143,7 @@ def request_data_form(request):
                         table=ProductionDatasetsTable(reslist)
                         return render(request, '_request_table.html', {
                                 'active_app': 'getdatasets',
-                                'pre_form_text': 'Request datasets',
+                                'pre_form_text': 'Datasets search',
                                 'table': table,
                                 'submit_text': 'Select',
                                 'submit_url': 'getdatasets:request_data_form',
@@ -149,7 +155,7 @@ def request_data_form(request):
 	else:
 		return render(request, '_request_table.html', {
                 'active_app': 'getdatasets',
-                'pre_form_text': 'Request datasets',
+                'pre_form_text': 'Datasets search',
                 'submit_url': 'getdatasets:request_data_form',
                 'parent_template': 'prodtask/_index.html',
                 })

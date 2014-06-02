@@ -348,7 +348,7 @@
 
             row[0] = '<a class="breaked_word" href="/prodtask/task/'+row[4]+'/">'+row[0]+'</a>';
 
-            row[4] = '<a href="/job/task/?JediTaskID='+row[4]+'">'+row[4]+'</a>'; /*+
+            row[4] = '<a href="{% url 'jobList' %}?jeditaskid='+row[4]+'">'+row[4]+'</a>'; /*+
                                  '<span style="float: right;" ><a href="/prodtask/task_update/'+row[0]+'/">Update</a>&nbsp;'+
                                  '<a href="/prodtask/task_clone/'+row[0]+'/">Clone</a></span>'*/
 

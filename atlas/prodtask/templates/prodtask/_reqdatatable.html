@@ -108,6 +108,7 @@ $(document).ready(function(){
     $("#saveButton").hide();
     $("#approveEvgenButton").hide();
     $(".hiddenNonEdit").hide();
+    $("#updateStepParams").hide();
 {% endif %}
 
 
@@ -179,7 +180,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
     {#Fill pattern table#}
     (function(){
-       {% for inputList, step_exec_dict, approved in inputLists %}
+       {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
            {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");
@@ -190,10 +191,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         {% ifequal step.skipped 'foreign' %}
                             var stepColor = $("#foreignColor").css("background-color");
                         {% endifequal %}
-
-                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor});
-                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.notShowFullSpan").css({"background-color":stepColor});
-                        $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor});
+                        {% if  forloop.counter0 < approve_level %}
+                            var borderColor = 'green'
+                        {%  else  %}
+                            var borderColor = 'grey'
+                        {% endif  %}
+                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
+                            "border":'solid',
+                        "border-color":borderColor});
+                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.notShowFullSpan").css({"background-color":stepColor,
+                            "border":'solid',
+                        "border-color":borderColor});
+                        $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor,
+                            "border":'solid',
+                        "border-color":borderColor});
 
            {% endfor %}
 
@@ -235,7 +246,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         }
     });
 
-    function approveClick(event,isApprove, isEvgen){
+    function approveClick(event,isApprove, approveLevel){
         event.preventDefault();
         var sendData = Object();
             $(".checkboxSlice:checked").each(function(){
@@ -276,13 +287,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
                 var ajaxURL = '';
                 if (isApprove){
-                    ajaxURL = "{% url 'prodtask:request_steps_approve' pr_id %}";
+                    ajaxURL = "/prodtask/request_steps_approve/{{ pr_id }}/".concat(approveLevel).concat('/');
                 } else {
-                    ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
+                    ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}/".concat(approveLevel);
                 }
-                if (isEvgen){
-                    ajaxURL = "{% url 'prodtask:request_steps_evgen_approve' pr_id %}";
-                }
+
                 $.ajax({
                     url: ajaxURL,
                     type: 'POST',
@@ -450,13 +459,17 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         dataType: 'text',
                         success: function(data,status) {
                             $( "#waitingDialog" ).dialog('close');
-                            var project_mode = $.evalJSON(data).data;
-
+                            var project_mode = $.evalJSON(data).project_mode;
+                            var input_events = $.evalJSON(data).input_events;
+                            var priority = $.evalJSON(data).priority;
                             $("#project_mode_input").val(project_mode);
+                            $('#input_events_input').val(input_events);
+                            $('#priority_input').val(priority);
                         }
                     });
                   return false;
         };
+
          function refreshTagFormats(event){
               sendData = {};
               $( "#waitingDialog" ).dialog();
@@ -483,8 +496,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
          };
 
-        function updateProjectMode(event){
-              sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val()};
+        function updateStepParametrs(event){
+              sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val(),
+              'input_events':$('#input_events_input').val(),'priority':$('#priority_input').val()};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:update_project_mode' pr_id %}",
@@ -627,6 +641,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 {#                <td>{{ inputList.brief }}</td>#}
             <td></td>
             </tr>
+            <tr></tr>
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
@@ -692,7 +707,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
                                                                 </td>
                             <td colspan="5" >
-                                <a href="{% url 'core.pandajob.views.jediJobsInTask'  %}?JediTaskID={{ step.task.id }}">
+                                <a href="{% url 'jobList'  %}?jeditaskid={{ step.task.id }}">
                                     <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
                                 </a>
                             </td>
@@ -728,9 +743,25 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     </div>
 
  <strong class="hiddenNonEdit">Work with selected slices:</strong>
-<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>
-<button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,false);">Approve</button>
-<button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,false);">Save</button>
+ <form>
+    <div class="row collapse hiddenNonEdit">
+                <div class="small-2 columns">
+                    <a href="#" class="button prefix"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve to:</a>
+                </div>
+                <div class="small-1 columns">
+                    <input type="number" id="approveToInput" value="1">
+                </div>
+
+            <div class="small-1 columns">&nbsp;</div>
+            <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,"99");">Approve</button>
+            <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,"-1");">Save</button>
+
+
+    </div>
+ </form>
+{#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
+
+
 <form>
     <div class="row">
         <div class="large-8 columns">
@@ -748,16 +779,42 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             </div>
         </div>
     </div>
+     <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>Input events number
+                        <input type="number" placeholder="input_events" id="input_events_input">
+                    </label>
+                </div>
+            </div>
+       </div>
+    </div>
+     <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>Priority
+                        <input type="number" placeholder="priority" id="priority_input">
+                    </label>
+                </div>
+            </div>
+       </div>
+    </div>
     <div class="row">
        <div class="large-8 columns">
             <div class="row collapse">
                 <div class="large-10 columns">
-                    <input type="text" placeholder="project_mode" id="project_mode_input">
-                </div>
-                <div class="large-2 columns">
-                  <a href="#" class="button postfix" onclick="updateProjectMode(event)">Update</a>
+                    <label>Project mode
+                        <input type="text" placeholder="project_mode" id="project_mode_input">
+                    </label>
                 </div>
             </div>
+       </div>
+    </div>
+     <div class="row">
+       <div class="large-2 columns">
+            <a href="#" class="button postfix" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
        </div>
     </div>
 </form>

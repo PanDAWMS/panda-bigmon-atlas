@@ -1,0 +1,39 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+{% comment %}
+{% extends "atlas/_index_grid.html" %}
+{% endcomment %}
+{% block subtitle %}{{ viewParams.MON_VO }} PanDA monitor home page{% endblock %}
+{% block header-nav-chain %}{% endblock %}
+{% block body %}
+{% endblock %}
+
+{% block bottom_info %}
+<span class='section'> Welcome to the {{ viewParams.MON_VO }} PanDA monitor </span>
+
+<p><p>
+Select what you'd like to have a look at in the top menu bar: dashboard overview, jobs, users, etc.
+
+<p>
+<div class='section'>Quick search</div>
+
+<table>
+
+<tr><td><form action="{% url 'jobInfo' %}" method='get'>
+Panda ID </td><td><font size=-1> <input id="pandaid" name="pandaid" size="15" maxlength="15" class="inputW" />&nbsp;<input type='submit' value='Submit' /></form></font></td></tr>
+
+<tr><td><form action="{% url 'jobInfo' %}" method='get'>
+Batch ID</td><td><font size=-1> <input id="batchid" name="batchid" size="15" maxlength="200" class="inputW" />&nbsp;<input type='submit' value='Submit' /></form></font></td></tr>
+
+{% if viewParams.MON_VO == 'ATLAS' %}
+<tr><td><form action="{% url 'taskInfo' %}" method='get'>
+JEDI Task ID </td><td><font size=-1><input id="jeditaskid" name="jeditaskid" size="15" maxlength="15" class="inputW" />&nbsp;<input type='submit' value='Submit' /></form></font></td></tr>
+{% endif %}
+
+<tr><td><form action="{% url 'jobList' %}" method='get'>
+Task ID </td><td><font size=-1><input id="taskid" name="taskid" size="15" maxlength="15" class="inputW" />&nbsp;<input type='submit' value='Submit' /></form></font></td></tr>
+
+</table>
+
+{% endblock %}
+

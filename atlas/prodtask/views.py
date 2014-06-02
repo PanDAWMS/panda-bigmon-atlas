@@ -8,6 +8,7 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 
 import core.datatables as datatables
 
@@ -34,8 +35,8 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
                 st.save()
         except Exception, e:
             #print e
-            return HttpResponseRedirect('/prodtask/step_execution_table/')
-    return HttpResponseRedirect('/prodtask/step_execution_table/')
+            return HttpResponseRedirect(reverse('step_execution_table'))
+    return HttpResponseRedirect(reverse('step_execution_table'))
 
 
 def find_missing_tags(tags):
@@ -55,7 +56,7 @@ def find_missing_tags(tags):
 
 def step_status_definition(is_skipped, is_approve=True):
     if is_skipped and is_approve:
-        return
+        return 'Skipped'
     if not(is_skipped) and is_approve:
         return 'Approved'
     if is_skipped and not(is_approve):
@@ -248,36 +249,19 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-@csrf_protect
-def request_steps_evgen_approve(request, reqid):
-    if request.method == 'POST':
-        _logger.debug(request.META)
-        print request.META
-        return request_steps_approve_or_save(request,reqid,0)
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+
 
 @csrf_protect
 def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 @csrf_protect
-def request_steps_approve(request, reqid=None):
-    if request.method == 'GET':
-        try:
-            print reqid
-            cur_request = TRequest.objects.get(reqid=reqid)
-            steps_for_approve = StepExecution.objects.all().filter(request=cur_request)
-            for st in steps_for_approve:
-                st.status = 'Approved'
-                st.save()
-        except Exception, e:
-            print e
-            return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+def request_steps_approve(request, reqid, approve_level):
     if request.method == 'POST':
-        return request_steps_approve_or_save(request, reqid, 99)
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+        return request_steps_approve_or_save(request, reqid, int(approve_level)-1)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 
 def form_step_hierarchy(tags_formats_text):
@@ -353,7 +337,7 @@ def request_reprocessing_steps_create(request, reqid=None):
         except Exception,e:
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
-    return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % reqid)
+    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
 
 @csrf_protect
 def make_test_request(request, reqid):
@@ -382,7 +366,7 @@ def tag_info(request, tag_name):
 
 
 @csrf_protect
-def project_mode_from_tag(request, reqid):
+def step_params_from_tag(request, reqid):
     if request.method == 'POST':
         results = {'success':False}
         try:
@@ -392,6 +376,8 @@ def project_mode_from_tag(request, reqid):
             output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
             output_format = output_format[len(tag)+1:]
             project_mode = ''
+            input_events = ''
+            priority = ''
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -402,8 +388,10 @@ def project_mode_from_tag(request, reqid):
                             task_config = json.loads(step_exec.task_config)
                             if 'project_mode' in task_config:
                                 project_mode = task_config['project_mode']
-
-            results.update({'success':True,'data':project_mode})
+                            input_events = step_exec.input_events
+                            priority = step_exec.priority
+            results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
+                            'priority':str(priority)})
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -421,6 +409,8 @@ def update_project_mode(request, reqid):
             output_format = output_format[len(tag)+1:]
             slice_from = 0
             new_project_mode = checkecd_tag_format['project_mode']
+            new_input_events = int(checkecd_tag_format['input_events'])
+            new_priority = int(checkecd_tag_format['priority'])
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -433,6 +423,8 @@ def update_project_mode(request, reqid):
                                 task_config['project_mode'] = new_project_mode
                                 step_exec.task_config = ''
                                 step_exec.set_task_config(task_config)
+                                step_exec.input_events = new_input_events
+                                step_exec.priority = new_priority
                                 step_exec.save()
                                 if slice.slice not in updated_slices:
                                    updated_slices.append(str(slice.slice))
@@ -505,6 +497,15 @@ def input_list_approve(request, rid=None):
             return_status = 'approved'
         return return_status
 
+    def approve_level(step_task_list):
+        max_level = -1
+        for index,step_task in enumerate(step_task_list):
+            if step_task['step']:
+                if (step_task['step'].status == 'Approved')or(step_task['step'].status == 'Skipped'):
+                    max_level=index
+        return max_level+1
+
+
     def form_step_obj(step,task,foreign=False):
         skipped = 'skipped'
         tag = ''
@@ -551,7 +552,7 @@ def input_list_approve(request, rid=None):
             total_slice = 0
             slice_pattern = []
             edit_mode = False
-
+            fully_approved = 0
             if not input_lists_pre:
                 edit_mode = True
             else:
@@ -618,11 +619,14 @@ def input_list_approve(request, rid=None):
                     if cur_request.request_type == 'MC':
                         slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{})) for x in StepExecution.STEPS]
                         approved = get_approve_status(slice_steps_ordered)
-                        if (approved == 'approved')or(approved == 'evgen_approved'):
+                        if (approved == 'approved')or(approved == 'partially_approved'):
                                 approved_count += 1
+                        if (approved == 'approved'):
+                            fully_approved +=1
                         input_lists.append((slice, slice_steps_ordered, get_approve_status(slice_steps_ordered),
-                                            show_task))
-                        if not show_task:
+                                            show_task,'',approve_level(slice_steps_ordered)))
+
+                        if (not show_task)or(fully_approved<total_slice):
                             edit_mode = True
                     else:
                         i = 0
@@ -657,9 +661,11 @@ def input_list_approve(request, rid=None):
                         edit_mode = True
                         slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{})]*(len(STEPS_LIST)-len(slice_steps_list))
                         if another_chain_step:
-                            input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task, another_chain_step.id))
+                            input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task,
+                                                another_chain_step.id, approve_level(slice_steps)))
                         else:
-                            input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task, ''))
+                            input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task, '',
+                                                approve_level(slice_steps)))
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
@@ -679,8 +685,8 @@ def input_list_approve(request, rid=None):
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
-            return HttpResponseRedirect('/prodtask/request_table/')
-    return HttpResponseRedirect('/prodtask/request_table/')
+            return HttpResponseRedirect(reverse('request_table'))
+    return HttpResponseRedirect(reverse('request_table'))
 
 
 def step_template_details(request, rid=None):
@@ -746,7 +752,9 @@ class StepTemlateTable(datatables.DataTable):
         iDisplayLength = 10
 
         bServerSide = True
-        sAjaxSource = '/prodtask/step_template_table/'
+        
+        def __init__(self):
+            self.sAjaxSource = reverse('step_template_table')
 
 @datatables.datatable(StepTemlateTable, name='fct')
 def step_template_table(request):
@@ -826,7 +834,10 @@ class StepExecutionTable(datatables.DataTable):
         iDisplayLength = 10
 
         bServerSide = True
-        sAjaxSource = '/prodtask/step_execution_table/'
+
+        def __init__(self):
+            self.sAjaxSource = reverse('step_execution_table')
+
 
 @datatables.datatable(StepExecutionTable, name='fct')
 def step_execution_table(request):
@@ -921,7 +932,9 @@ class ProductionDatasetTable(datatables.DataTable):
         iDisplayLength = 100
 
         bServerSide = True
-        sAjaxSource = '/prodtask/production_dataset_table/'
+
+        def __init__(self):
+            sAjaxSource = reverse('production_dataset_table')
 
     def apply_filters(self, request):
         qs = self.get_queryset()

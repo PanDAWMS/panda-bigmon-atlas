@@ -5,6 +5,7 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+from django.core.urlresolvers import reverse
 
 from ..settings import defaultDatetimeFormat
 
@@ -51,7 +52,7 @@ def task_clone(request, rid=None):
           # Process the data in form.cleaned_data
            req = ProductionTask(**form.cleaned_data)
            req.save()
-           return HttpResponseRedirect('/prodtask/task/%s' % req.id) # Redirect after POST
+           return HttpResponseRedirect(reverse('task', args=(req.id,))) # Redirect after POST
    else:
        try:
            values = ProductionTask.objects.values().get(id=rid)
@@ -80,7 +81,7 @@ def task_update(request, rid=None):
           # Process the data in form.cleaned_data
            req = ProductionTask(**form.cleaned_data)
            req.save()
-           return HttpResponseRedirect('/prodtask/task/%s' % req.id) # Redirect after POST
+           return HttpResponseRedirect(reverse('task', args=(req.id,))) # Redirect after POST
    else:
        try:
            req = ProductionTask.objects.get(id=rid)
@@ -278,7 +279,10 @@ class ProductionTaskTable(datatables.DataTable):
 
 
         bServerSide = True
-        sAjaxSource = '/prodtask/task_table/'
+
+        def __init__(self):
+            self.sAjaxSource = reverse('task_table')
+
 
     def apply_first_page_filters(self, request):
 
@@ -393,14 +397,14 @@ def task_table(request):
 
 
 def get_clouds():
-   clouds = [ x.get('cloud') for x in Schedconfig.objects.using('default').values('cloud').distinct() ]
+   clouds = [ x.get('cloud') for x in Schedconfig.objects.values('cloud').distinct() ]
    locale.setlocale(locale.LC_ALL, '')
    clouds = sorted(clouds, key=locale.strxfrm)
    return clouds
 
 
 def get_sites():
-    sites = [ x.get('siteid') for x in Schedconfig.objects.using('default').values('siteid').distinct() ]
+    sites = [ x.get('siteid') for x in Schedconfig.objects.values('siteid').distinct() ]
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
