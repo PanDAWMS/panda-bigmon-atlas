@@ -13,7 +13,7 @@ LoadModule wsgi_module modules/mod_wsgi.so
 
  ### /devprodsys2
      WSGISocketPrefix run/wsgi.bigpandamon.devprodsys2
-     WSGIDaemonProcess bigpandamon-devprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/lib/python2.6/site-packages
+     WSGIDaemonProcess bigpandamon-devprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/lib/python2.6/site-packages:/opt/dq2/lib
      WSGIScriptAlias /devprodsys2 /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/wsgi.py process-group=bigpandamon-devprodsys2 application-group=%{GLOBAL}
      <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas>
          <Files wsgi.py>
