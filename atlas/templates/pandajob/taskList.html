@@ -1,0 +1,87 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+
+{% block page_title %} {{ viewParams.MON_VO }} PanDA JEDI tasks{% endblock %}
+{% block title %} <a href="{% url 'index' %}">{{ viewParams.MON_VO }} PanDA monitor</a>{% endblock %}
+{% block subtitle %}PanDA JEDI task list{{viewParams.selection }}
+{% if vo %} &nbsp; for VO {{ vo }}
+{% endif %}
+{% endblock %}
+{% block body %}
+
+{% if requestParams.workinggroup %}<br><b>Working group: {{ requestParams.workinggroup }}</b> {% endif %}
+{% if requestParams.username %}<br><b>User: {{ requestParams.username }}</b> {% endif %}
+{% if requestParams.tasktype %}<br><b>Task type: {{ requestParams.tasktype }}</b> {% endif %}
+{% if requestParams.transpath %}<br><b>Transformation: {{ requestParams.transpath }}</b> {% endif %}
+{% if requestParams.transuses %}<br><b>Release: {{ requestParams.transuses }}</b> {% endif %}
+{% if requestParams.processingtype %}<br><b>Processing type: {{ requestParams.processingtype }}</b> {% endif %}
+{% if requestParams.cloud %}<br><b>Cloud: {{ requestParams.cloud }}</b> {% endif %}
+{% if requestParams.parent_tid %}<br><b>Parent task: {{ requestParams.parent_tid }}</b> {% endif %}
+{% if requestParams.status %}<br><b>Task status: <span class='{{requestParams.status}}'>{{ requestParams.status }}</span></b> {% endif %}
+
+<p>
+{% if tasks %}
+
+{% if sumd %}
+
+<div class='section'>Task attribute summary</div>
+
+<table>
+{% for fdict in sumd %}
+<tr><th> {{ fdict.field }} </th><td>
+{% for item in fdict.list %}
+{% if fdict.field == 'status' %} <span class='{{item.kname}}'> {% else %} <span> {% endif %}  {{ item.kname }} </span>
+<a href="{{xurl}}{{fdict.field}}={{item.kname}}">({{ item.kvalue }})</a> &nbsp; 
+{% endfor %}
+</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+<div class='section'>Task list</div>
+
+<table>
+<tr>
+	<th>ID<br>Type</th>
+	<th>Name<br>User</th>
+	<th>Status</th>
+	<th>Created</th>
+	<th>Modified</th>
+	<th>Cores</th>
+	<th>Priority</th>
+	<th>Parent</th>
+</tr>
+    {% for task in tasks %}
+	<tr>
+		<td><a href="{% url 'taskInfo' task.jeditaskid %}">{{ task.jeditaskid }}</a><br>{{ task.tasktype }}</td>
+		<td><font size=-1>{{ task.taskname }}<br>{{ task.username }}</font></td>
+		<td class='{{task.status}}'>{{ task.status }}</td>
+		<td>{{ task.creationdate|date:"Y-m-d H:i" }}</td>
+		<td>{{ task.modificationtime|date:"m-d H:i" }}</td>
+		<td>{{ task.corecount }}</td>
+		<td>{{ task.taskpriority }}</td>
+		<td>{% if task.parent_tid != task.jeditaskid %}<a href="{% url 'taskInfo' task.parent_tid %}">{{ task.parent_tid }}</a>{% endif %}</td>
+
+	</tr>
+    {% endfor %}
+</table>
+
+{% else %}
+    <p>No matches to query.</p>
+{% endif %}
+{% endblock %}
+
+{% block bottom_info %}
+{% endblock %}
+
+{% block left_menu %}
+{% comment %}
+<div class="left-menu">
+  {% block left_menu_content %}
+    <span class="left-menu-title">Menu</span>
+     <br> <a class="left-menu-item" href="{{ prefix }}/#">Home</a>
+  {% endblock %}
+</div>
+{% endcomment %}
+{% endblock %}
+

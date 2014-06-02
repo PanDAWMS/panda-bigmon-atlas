@@ -1,0 +1,50 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+
+{% block page_title %} {{ viewParams.MON_VO }} PanDA site {{ site.siteid }} {% endblock %}
+{% block subtitle %}PanDA site {{ name }}{% endblock %}
+
+{% block body %}
+
+<div class='section'> Site information </div>
+
+<table>
+{% for att in attrs %}
+<tr><th>
+{{ att.name }}
+</th><td>
+{% if att.name == 'Status' %} <span class='{{att.value}}'> {% else %} <span> {% endif %} {% if att.value != 'None' %} {{ att.value }} {% endif %}</span>
+</td></tr>
+{% endfor %}
+</table>
+
+<p><a href="{% url 'jobList' %}?computingsite={{name}}">Recent jobs at this site</a><p>
+
+{% if site.nickname %}
+<p><a href="http://apfmon.lancs.ac.uk/q/{{site.nickname}}">Pilot factory monitor</a><p>
+{% endif %}
+
+{% if viewParams.MON_VO == 'ATLAS' %}
+<p><a href="http://panda.cern.ch/server/pandamon/query?mode=site&site={{site.siteid}}">Classic (aka old) PanDA monitor page for this site</a><p>
+{% endif %}
+
+<div class='section'> All site parameters </div>
+
+<table>
+{% for col in colnames %}
+<tr><th>{{ col.name }} </th><td> {% if col.value != 'None' %} {{ col.value }} {% endif %}</td></tr>
+{% endfor %}
+</table>
+
+{% endblock %}
+
+{% block left_menu %}
+{% comment %}
+<div class="left-menu">
+  {% block left_menu_content %}
+    <span class="left-menu-title">Menu</span>
+     <br> <a class="left-menu-item" href="{{ prefix }}/#">Home</a>
+  {% endblock %}
+</div>
+{% endcomment %}
+{% endblock %}

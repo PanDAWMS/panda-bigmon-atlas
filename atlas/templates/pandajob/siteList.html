@@ -1,0 +1,81 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+
+{% block page_title %} {{ viewParams.MON_VO }} PanDA sites{% endblock %}
+{% block subtitle %}PanDA site list{{viewParams.selection }}
+{% if vo %} &nbsp; for VO {{ vo }}
+{% endif %}
+{% endblock %}
+{% block body %}
+
+{% if sites %}
+
+<div class='section'>Site attribute summary</div>
+
+<table>
+{% for fdict in sumd %}
+<tr><th> {{ fdict.field }} </th><td>
+{% for item in fdict.list %}
+{% if fdict.field == 'status' %} <span class='{{item.kname}}'> {% else %} <span> {% endif %}  {{ item.kname }} </span>
+<a href="{{xurl}}{{fdict.field}}={{item.kname}}">({{ item.kvalue }})</a> &nbsp; 
+{% endfor %}
+</td></tr>
+{% endfor %}
+</table>
+
+<div class='section'>Site list</div>
+
+<table>
+<tr>
+	<th>Site name</th>
+	<th>GOC site name</th>
+{% if viewParams.MON_VO == 'ATLAS' %}
+	<th>Cloud</th>
+{% else %}
+	<th>Region</th>
+{% endif %}
+	<th>Status</th>
+	<th>Tier</th>
+	<th>Max mem<br>(MB)</th>
+	<th>Max time<br>(hr)</th>
+	<th>Multicloud</th>
+	<th>Comment</th>
+</tr>
+    {% for site in sites %}
+	<tr>
+		<td><a href="{% url 'siteInfo' site.siteid %}">{{ site.siteid }}</a></td>
+		<td> <a href="{{xurl}}gocname={{site.gocname}}">{{ site.gocname }}</a></td>
+{% if viewParams.MON_VO == 'ATLAS' %}
+		<td> {{ site.cloud }}</td>
+{% else %}
+		<td> {{ site.region }}</td>
+{% endif %}
+		<td class='{{site.status}}'>{{ site.status }}</td>
+		<td> {{ site.tier }}</td>
+		<td> {% if site.maxmemory > 0 %} {{ site.maxmemory }} {% endif %}</td>
+		<td> {% if site.maxtime > 0 %} {{ site.maxtime }} {% endif %}</td>
+		<td> {% if site.multicloud != 'None' %} <font size=-1> {{ site.multicloud }} </font> {% else %} &nbsp; {% endif %} </td>
+		<td> {{ site.comment_field }} </td>
+	</tr>
+    {% endfor %}
+</table>
+
+{% else %}
+    <p>No matches to query.</p>
+{% endif %}
+{% endblock %}
+
+{% block bottom_info %}
+{% endblock %}
+
+{% block left_menu %}
+{% comment %}
+<div class="left-menu">
+  {% block left_menu_content %}
+    <span class="left-menu-title">Menu</span>
+     <br> <a class="left-menu-item" href="{{ prefix }}/#">Home</a>
+  {% endblock %}
+</div>
+{% endcomment %}
+{% endblock %}
+

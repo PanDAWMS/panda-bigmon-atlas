@@ -1,0 +1,147 @@
+{% extends "atlas/_index_grid.html" %}
+{% load url from future %}
+
+{% block page_title %} {{ viewParams.MON_VO }} PanDA users{% endblock %}
+{% block title %} <a href="{% url 'index' %}">{{ viewParams.MON_VO }} PanDA monitor</a>{% endblock %}
+{% block subtitle %}Recent PanDA users{{viewParams.selection }}
+{% if vo %} &nbsp; for VO {{ vo }}{% endif %}
+{% endblock %}
+{% block body %}
+
+{% if sumd %}
+
+<p>This page shows dynamic usage info from the latest jobs.
+{% if viewParams.MON_VO == 'ATLAS' %}
+Alternate view: <a href="{% url 'userList' %}?view=database&sortby=date">Summary usage information updated every few hours</a><p>
+{% endif %}
+
+<div class="section">Recent job attribute summary</div>
+
+<table>
+{% for fdict in jobsumd %}
+<tr><th> {{ fdict.field }} </th><td>
+{% for item in fdict.list %}
+{% if fdict.field == 'jobstatus' %} <span class='{{item.kname}}'> {% else %} <span> {% endif %}  {{ item.kname }} </span>
+<a href="{{xurl}}{{fdict.field}}={{item.kname}}">({{ item.kvalue }})</a> &nbsp; 
+{% endfor %}
+</td></tr>
+{% endfor %}
+</table>
+
+<div class="section">Recent users, ordered by most recent jobs</div>
+
+<table>
+<tr>
+<th> User </th>
+<th> Latest<br>PandaID </th>
+<th> Latest<br>mod time </th>
+<th> nJobs </th>
+<th> nFinished </th>
+<th> nFailed </th>
+<th> nHolding </th>
+<th> nCancelled </th>
+<th> nQueued </th>
+<th> nSites </th>
+<th> nClouds </th>
+<th> CPU</th>
+</tr>
+
+{% for userd in sumd %}
+<tr>
+<th> <a href="{% url 'userInfo' userd.dict.name %}">{{userd.dict.name}}</a> </th>
+<td> <a href="{% url 'jobInfo' userd.dict.pandaid %}">{{ userd.dict.pandaid }}</a> </td>
+<td> {{ userd.dict.latest|date:"Y-m-d H:i" }} </td>
+<td> {{ userd.dict.njobs }} </td>
+<td class='finished'> <a href="{% url 'jobList' %}?produsername={{userd.dict.name}}&jobstatus=finished"><span class='finished'>{{ userd.dict.nfinished }}</span></a> </td>
+<td class='failed'> <a href="{% url 'jobList' %}?produsername={{userd.dict.name}}&jobstatus=failed"><span class='failed'>{{ userd.dict.nfailed }}</span></a> </td>
+<td class='holding'> <a href="{% url 'jobList' %}?produsername={{userd.dict.name}}&jobstatus=holding"><span class='holding'>{{ userd.dict.nholding }}</span></a> </td>
+<td class='cancelled'> <a href="{% url 'jobList' %}?produsername={{userd.dict.name}}&jobstatus=cancelled"><span class='cancelled'>{{ userd.dict.ncancelled }}</span></a> </td>
+<td class='defined'> {{ userd.dict.nqueued }} </td>
+<td> {{ userd.dict.nsites }} </td>
+<td> {{ userd.dict.nclouds }} </td>
+<td> {{ userd.dict.cputime }} </td>
+</tr>
+{% endfor %}
+</table>
+
+{% else %}
+
+{% if requestParams.view == 'dynamic' %}
+No dynamic usage information found.
+{% endif %}
+
+{% endif %}
+
+{% if userdb %}
+
+<p>This page shows summary usage information updated every few hours. Alternate view: <a href="{% url 'userList' %}?view=dynamic&sortby=date">Dynamic usage info from the latest jobs</a><p>
+
+<div class='section'>Usage stats</div>
+
+{% if userstats %}
+Job count for the last 7 days: {{ userstats.anajobs }}
+&nbsp;  &nbsp;  &nbsp;  Users in last 3 days: {{ userstats.nrecent3 }}
+&nbsp; 7: {{ userstats.nrecent7 }}
+&nbsp; 30: {{ userstats.nrecent30 }}
+&nbsp; 90: {{ userstats.nrecent90 }}
+&nbsp;  &nbsp;  &nbsp;  Users with &gt;1000 jobs: {{ userstats.n1000 }}
+&nbsp; &gt;10k: {{ userstats.n10k }}
+{% endif %}
+
+<p><div class='section'>Recent users</div>
+
+<table>
+<tr>
+<th> <a href="{{url}}?sortby=name">User</a> </th>
+<th> <a href="{{url}}?sortby=njobs">nJobs</a> </th>
+<th> <a href="{{url}}?sortby=date">Latest</a> </th>
+<th> <a href="{{url}}?sortby=cpua1">Personal CPU-hrs<br>1 day</a> </th>
+<th> <a href="{{url}}?sortby=cpua7">Personal CPU-hrs<br>7 days</a> </th>
+<th> <a href="{{url}}?sortby=cpup1">Group CPU-hrs<br>1 day</a> </th>
+<th> <a href="{{url}}?sortby=cpup7">Group CPU-hrs<br>7 days</a> </th>
+</tr>
+
+{% for user in userdb %}
+<tr>
+<th> <a href="{% url 'userInfo' user.name %}">{{user.name}}</a> </th>
+<td> {% if user.njobsa %}{{ user.njobsa }} {% endif %}</td>
+<td>{{ user.latestjob|date:"Y-m-d H:i" }}</td>
+
+{% comment %}
+<td class='finished'> {{ user.nfinished }} </td>
+<td class='failed'> {{ user.nfailed }} </td>
+<td class='holding'> {{ user.nholding }} </td>
+<td class='cancelled'> {{ user.ncancelled }} </td>
+<td class='defined'> {{ user.nqueued }} </td>
+{% endcomment %}
+<td> {% if user.cpua1 %}{{ user.cpua1}} {% endif %}</td>
+<td> {% if user.cpua7 %}{{ user.cpua7 }} {% endif %}</td>
+<td> {% if user.cpup1 %}{{ user.cpup1 }} {% endif %}</td>
+<td> {% if user.cpup7 %}{{ user.cpup7 }} {% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+
+{% else %}
+
+{% if requestParams.view == 'database' %}
+Summary usage statistics not yet available.
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+{% block bottom_info %}
+{% endblock %}
+
+{% block left_menu %}
+{% comment %}
+<div class="left-menu">
+  {% block left_menu_content %}
+    <span class="left-menu-title">Menu</span>
+     <br> <a class="left-menu-item" href="{{ prefix }}/#">Home</a>
+  {% endblock %}
+</div>
+{% endcomment %}
+{% endblock %}
