@@ -775,7 +775,7 @@ class RequestTable(datatables.DataTable):
 
         aaSorting = [[0, "desc"]]
         aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
-        iDisplayLength = 10
+        iDisplayLength = 50
         fnRowCallback = """
                         function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
                         {
