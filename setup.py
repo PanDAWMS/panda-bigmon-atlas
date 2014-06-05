@@ -144,7 +144,8 @@ class install_data_panda (install_data_org):
                         # replace
                         filedata = filedata.replace('@@%s@@' % item, patt)
                 # write to dest
-                os.makedirs(os.path.dirname(destFile))
+                if not os.path.exists(os.path.dirname(destFile)):
+                    os.makedirs(os.path.dirname(destFile))
                 oFile = open(destFile,'w')
                 oFile.write(filedata)
                 oFile.close()
