@@ -114,6 +114,12 @@ class install_data_panda (install_data_org):
         tmpDir = 'build/tmp'
         self.mkpath(tmpDir)
         new_data_files = []
+
+        print "Datafiles: <<<<<<<<<<<<<<"
+        print str(sorted(self.data_files))
+        print "<<<<<<<<<<<<<<"
+
+
         for destDir,dataFiles in self.data_files:
             newFilesList = []
             for srcFile in dataFiles:
@@ -144,7 +150,8 @@ class install_data_panda (install_data_org):
                         # replace
                         filedata = filedata.replace('@@%s@@' % item, patt)
                 # write to dest
-                os.makedirs(os.path.dirname(destFile))
+                if not os.path.exists(os.path.dirname(destFile)):
+                    os.makedirs(os.path.dirname(destFile))
                 oFile = open(destFile,'w')
                 oFile.write(filedata)
                 oFile.close()
@@ -207,6 +214,8 @@ setup(
                      "atlas/prodtask/templates",
                      "atlas/todoview/templates",
                      "atlas/getdatasets/templates",
+                                  "atlas/getdatasets/templates",
+				  
                 )
     ,         
     cmdclass={'install': install_panda,
