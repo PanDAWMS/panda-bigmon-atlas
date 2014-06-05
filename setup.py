@@ -123,7 +123,7 @@ class install_data_panda (install_data_org):
                 # dest filename
                 destFile = re.sub('(\.exe)*\-template$','',srcFile)
                 destFile = destFile.split('/')[-1]
-                destFile = '%s/%s' % (tmpDir,destFile)
+                destFile = '%s/%s/%s' % (tmpDir,srcFile,destFile)
                 # open src
                 inFile = open(srcFile)
                 # read
@@ -144,6 +144,7 @@ class install_data_panda (install_data_org):
                         # replace
                         filedata = filedata.replace('@@%s@@' % item, patt)
                 # write to dest
+                os.makedirs(os.path.dirname(destFile))
                 oFile = open(destFile,'w')
                 oFile.write(filedata)
                 oFile.close()
