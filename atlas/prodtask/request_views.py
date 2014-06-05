@@ -12,7 +12,7 @@ import json
 import logging
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
-    TRequestReprocessingCreateCloneForm
+    TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
     get_priority_object, RequestStatus
 from .models import MCPriority
@@ -151,6 +151,74 @@ def step_from_tag(tag_name):
         return 'Simul'
     return 'Reco'
 
+def hlt_form_prefill(form_data, request):
+    spreadsheet_dict = []
+    try:
+        if form_data.get('excellink'):
+            _logger.debug('Try to read data from %s' % form_data.get('excellink'))
+            file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
+            with open(file_name) as open_file:
+                file_obj = open_file.read().split('\n')
+        if form_data.get('excelfile'):
+            file_obj = request.FILES['excelfile'].read().split('\n')
+            _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+
+        conf_parser = ConfigParser()
+        output_dict = conf_parser.parse_config(file_obj)
+    except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
+        eroor_message = str(e)
+        return {},eroor_message
+    # Fill default values
+    form_data['request_type'] = 'HLT'
+    if 'group' in output_dict:
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '').replace('GP_','')
+    if 'comment' in output_dict:
+        form_data['description'] = output_dict['comment'][0]
+    if 'owner' in output_dict:
+        form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    if 'project' in output_dict:
+        if not form_data['campaign']:
+            form_data['campaign'] = output_dict['project'][0]
+    if 'project' in output_dict:
+        form_data['project'] = output_dict['project'][0]
+    if not form_data.get('cstatus'):
+        form_data['cstatus'] = 'Created'
+    if not form_data.get('energy_gev'):
+        form_data['energy_gev'] = 8000
+    if not form_data.get('provenance'):
+        form_data['provenance'] = 'test'
+
+    task_config = {}
+    if 'events_per_job' in output_dict:
+        nEventsPerJob = output_dict['events_per_job'][0]
+        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    if 'project_mode' in output_dict:
+        project_mode = output_dict['project_mode'][0]
+        task_config.update({'project_mode':project_mode})
+    if 'ds' in output_dict:
+        for slice_index, ds in enumerate(output_dict['ds']):
+            st_sexec_list = []
+            irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
+                       input_data=output_dict.get('joboptions', [''])[0],
+                       project_mode=output_dict.get('project_mode', [''])[0],
+                       priority=int(output_dict.get('priority', [0])[0]),
+                       input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+            if 'tag' in output_dict:
+                step_name = step_from_tag(output_dict['tag'][0])
+                sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                             input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
+                                      'memory': output_dict.get('ram', [None])[0],
+                                      'formats': output_dict.get('formats', [None])[0],
+                                      'task_config':task_config})
+            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    eroor_message = ''
+    if not spreadsheet_dict:
+        eroor_message = 'No "ds" data founnd in file.'
+    _logger.debug('Gathered data: %s' % spreadsheet_dict)
+    return spreadsheet_dict, eroor_message
+
 
 def dpd_form_prefill(form_data, request):
     spreadsheet_dict = []
@@ -189,8 +257,7 @@ def dpd_form_prefill(form_data, request):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'test'
-    if not form_data.get('request_type'):
-        form_data['request_type'] = 'MC'
+
     task_config = {}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
@@ -553,17 +620,20 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
 
 def request_create(request):
-    return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:request_create',
+    return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill)
 
 
 def dpd_request_create(request):
-    return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:dpd_request_create',
+    return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
 
+def hlt_request_create(request):
+    return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
+                                   TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill)
 
 def reprocessing_request_create(request):
-    return request_clone_or_create(request, None, 'Create TRequest', 'prodtask:reprocessing_request_create',
+    return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
                                    reprocessing_form_prefill)
 

@@ -320,8 +320,7 @@ def request_reprocessing_steps_create(request, reqid=None):
                         if current_tag['ctag'] == '':
                             real_steps_hierarchy[-1].append(real_steps_hierarchy[current_tag['level']][current_tag['step_number']])
                         else:
-                            step_template = StepTemplate.objects.get(ctag=current_tag['ctag'],
-                                                                     output_formats=current_tag['formats'])
+                            step_template = fill_template('',current_tag['ctag'],current_slice.priority,current_tag['formats'])
                             new_step_exec = StepExecution(request=cur_request, step_template=step_template,status='NotChecked',
                                                           slice=current_slice,priority=current_slice.priority,
                                                           input_events=-1)
@@ -335,6 +334,7 @@ def request_reprocessing_steps_create(request, reqid=None):
                             new_step_exec.save()
                             real_steps_hierarchy[-1].append(new_step_exec)
         except Exception,e:
+            print e
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
     return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
@@ -539,7 +539,7 @@ def input_list_approve(request, rid=None):
                 # Create an empty pattern for color only pattern
                 pattern_list_name += [('Empty', ['' for step in StepExecution.STEPS])]
 
-            show_reprocessing = cur_request.request_type == 'REPROCESSING'
+            show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
             # input_lists - list of tuples for end to form.
             # tuple format:
@@ -685,8 +685,8 @@ def input_list_approve(request, rid=None):
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
-            return HttpResponseRedirect(reverse('request_table'))
-    return HttpResponseRedirect(reverse('request_table'))
+            return HttpResponseRedirect('/')
+    return HttpResponseRedirect('/')
 
 
 def step_template_details(request, rid=None):
