@@ -115,11 +115,6 @@ class install_data_panda (install_data_org):
         self.mkpath(tmpDir)
         new_data_files = []
 
-        print "Datafiles: <<<<<<<<<<<<<<"
-        print str(sorted(self.data_files))
-        print "<<<<<<<<<<<<<<"
-
-
         for destDir,dataFiles in self.data_files:
             newFilesList = []
             for srcFile in dataFiles:
