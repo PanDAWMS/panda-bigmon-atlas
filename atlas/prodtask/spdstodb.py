@@ -73,7 +73,7 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 else:
                     memory = int(tr.memory)
                 if not step_name:
-                    step_name = trtf.step
+                    step_name = tr.step
                 #Ugly hack for https://code.djangoproject.com/ticket/20201
                 try:
                     st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
