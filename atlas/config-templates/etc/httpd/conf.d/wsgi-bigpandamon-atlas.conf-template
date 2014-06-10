@@ -51,28 +51,29 @@ LoadModule wsgi_module modules/mod_wsgi.so
  #################################
 
  ### /devprodsys2
-     WSGISocketPrefix run/wsgi.bigpandamon.devprodsys2
-     WSGIDaemonProcess bigpandamon-devprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/lib/python2.6/site-packages:/opt/dq2/lib
-     WSGIScriptAlias /devprodsys2 /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/wsgi.py process-group=bigpandamon-devprodsys2 application-group=%{GLOBAL}
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas>
+     WSGISocketPrefix run/wsgi.bigpandamon.twrpmdevprodsys2
+     WSGIDaemonProcess bigpandamon-twrpmdevprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
+     WSGIScriptAlias /devprodsys2 /data/wenaus/virtualenv/twrpm/pythonpath/lsst/wsgi.py process-group=bigpandamon-twrpmdevprodsys2 application-group=%{GLOBAL}
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst>
          <Files wsgi.py>
              Order deny,allow
              Allow from all
          </Files>
      </Directory>
      <Location /devprodsys2>
-         WSGIProcessGroup bigpandamon-devprodsys2
+         WSGIProcessGroup bigpandamon-twrpmdevprodsys2
          WSGIApplicationGroup %{GLOBAL}
      </Location>
-     AliasMatch ^/devprodsys2/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/css/$1
-     AliasMatch ^/devprodsys2/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/js/$1
-     Alias /devprodsys2static/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static>
+     AliasMatch ^/devprodsys2/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/css/$1
+     AliasMatch ^/devprodsys2/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/js/$1
+     AliasMatch ^/devprodsys2/([^/]*\.png)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/images/$1
+     Alias /devprodsys2/static/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static>
          Order deny,allow
          Allow from all
      </Directory>
-     Alias /devprodsys2media/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media/
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media>
+     Alias /devprodsys2/media/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media>
          Order deny,allow
          Allow from all
      </Directory>
