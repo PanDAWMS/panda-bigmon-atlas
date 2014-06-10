@@ -22,10 +22,10 @@
         </div>
 
         <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
-            <div class="small-12 columns">
+            <div class="small-12 large-12 columns">
                 <div class="row">
-                    <div class="small-9 columns">
-                        <label for="btn_do_abort" class="right inline"  style="color:#222222;">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_abort" class="right inline bodyfont-color">
                             Tasks selected:&nbsp;
                             <span id="selected_count_abrt">0</span>
                         </label>
@@ -48,19 +48,17 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="small-12 columns text-center" style="color:#222222;">
+                    <div class="small-12 columns text-center bodyfont-color">
                         <br>
-                        JEDI task priority (100-900)
-                        <br><br>
-                        Tasks selected:&nbsp;
-                        <span id="selected_count_prio">0</span>
+                        <label> JEDI task priority (100-900) </label>
+                        <label> Tasks selected:&nbsp; <span id="selected_count_prio">0</span> </label>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="task_reassign_menu" class="medium content f-dropdown" data-dropdown-content>
-            <div class="small-12 large-12 columns">
+            <div class="small-12 large-12 columns bodyfont-color">
                 <div class="row">
                     <div class="small-10 large-10 columns">
                         <select name="cloud_select" id="cloud_select">
@@ -76,9 +74,8 @@
                 </div>
 
                 <div class="row">
-                    <div class="small-10 large-10 columns text-center" style="color:#222222;">
-                        or
-                        <br><br>
+                    <div class="small-10 large-10 columns text-center">
+                        <label> or </label>
                     </div>
                     <div class="small-10 large-10 columns">
 
@@ -86,7 +83,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="small-10 large-10 columns" style="color:#222222;">
+                    <div class="small-10 large-10 columns">
                         <select name="site_select" id="site_select" class="medium">
                             <option value="" selected>Select site</option>
                         {% for entry in sites %}
@@ -100,10 +97,11 @@
                 </div>
 
                 <div class="row">
-                    <div class="small-12 large-12 columns text-center" style="color:#222222;">
-                        <br>
-                         Tasks selected:&nbsp;
-                        <span id="selected_count_reassign">0</span>
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                         <label>
+                           Tasks selected:&nbsp;
+                           <span id="selected_count_reassign">0</span>
+                         </label>
                     </div>
                 </div>
             </div>
