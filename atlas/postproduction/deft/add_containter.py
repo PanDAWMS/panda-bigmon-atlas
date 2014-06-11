@@ -2,7 +2,7 @@
 #
 # register productiuon containers and add datasets
 #
-# Last Edit : May 14, 2014 ak
+# Last Edit : Jun 11, 2014 ak
 #
 
 import re
@@ -36,6 +36,9 @@ from dq2.common import get_dict_item
 from dq2.location.DQLocationConstants import LocationState
 from dq2.clientapi.cli.SetMetaDataAttribute import SetMetaDataAttribute
 
+#
+os.environ['RUCIO_ACCOUNT'] = 'alexei'
+#
 dq2api = DQ2()
 
 
@@ -107,6 +110,7 @@ def addTidDatasetToContainer():
        DEFT_datasets_final_states += "'%s',"%(s)
     DEFT_datasets_final_states = DEFT_datasets_final_states[0:(len(DEFT_datasets_final_states)-1)]
 
+    T0 = int(time.time())
     # connect to Oracle
     (pdb,dbcur,deftDB) = connectDEFT('R')
 
@@ -165,7 +169,8 @@ def addTidDatasetToContainer():
                   c_time= cn[3]
                   if c_tid == d_tid :
                       if cname == cnt_name :
-                       print "Container %s found in database (task id = %s, registration time : %s)"%(cname,c_tid,c_time)
+                       print "Container %s found in database (task id = %s, registration time : %s)"%\
+                           (cname,c_tid,c_time)
                        cnt_list_flag = 1
                   if c_tid > d_tid :
                       break
@@ -186,7 +191,7 @@ def addTidDatasetToContainer():
                   if cnt_list_flag == 1 : msg += "and in database. Do nothing. Proceed to datasets registration in the container"
                   print msg
               if ddm_list_flag == 0 :
-                  print "Register container : %s"%(cnt_name)
+                  print "Register container : %s (Container already registered : %s)"%(cnt_name,nContainers)
                   try :
                       dq2api.registerContainer(cnt_name)
                       nContainers += 1
@@ -241,8 +246,11 @@ def addTidDatasetToContainer():
         DButils.closeDB(pdb,dbcur)
     else :
         print "No database update"
+    Tf = int(time.time())
+    dT = Tf - T0
+    print time.ctime()
     print "addTiddatasets. Container registered : %s, Datasets registered : %s"%(nContainers, nDatasets)
-
+    print "addTidDatasets. Total time : %s sec"%(dT)
 
 def main() :
 
