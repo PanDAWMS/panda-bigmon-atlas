@@ -525,7 +525,6 @@ def input_list_approve(request, rid=None):
         return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
     if request.method == 'GET':
         try:
-
             cur_request = TRequest.objects.get(reqid=rid)
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
@@ -737,12 +736,6 @@ class StepTemlateTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        fnRowCallback =  """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<a href="/prodtask/step_template/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'
-                            );
-                        }"""
         sScrollX = '100em'
         sScrollY = '20em'
         bScrollCollapse = True
@@ -819,12 +812,6 @@ class StepExecutionTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        fnRowCallback = """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<span style="float:right;"><a title="Approve this step" href="/prodtask/step_approve/'+aData[0]+'/'+aData[2]+'/'+aData[1]+'">approve</a>'+
-                                '&nbsp;</span>&nbsp;');
-                        }"""
         sScrollX = '100em'
         sScrollY = '20em'
         bScrollCollapse = True
