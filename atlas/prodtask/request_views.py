@@ -517,17 +517,17 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 form.cleaned_data['cstatus'] = 'Created'
                 try:
                     _logger.debug("Creating request : %s" % form.cleaned_data)
+
                     req = TRequest(**form.cleaned_data)
                     req.save()
                     #TODO:Take owner from sso cookies
                     request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
                                                    status='Created')
                     request_status.save_with_current_time()
-                    _logger.debug("e-mail with link %s" % HttpRequest.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,))))
+                    current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
+                    _logger.debug("e-mail with link %s" % current_uri)
                     send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
-                              request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
-                                                 HttpRequest.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))),
-                              APP_SETTINGS['prodtask.email.from'],
+                              current_uri, APP_SETTINGS['prodtask.email.from'],
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
                     # Saving slices->steps
