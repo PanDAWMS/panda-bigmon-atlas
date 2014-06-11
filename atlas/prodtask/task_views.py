@@ -36,14 +36,33 @@ def task_details(request, rid=None):
    else:
        return HttpResponseRedirect('/')
 
-   return render(request, 'prodtask/_task_detail.html', {
+   # TODO: check user permissions on the task (SB)
+   # TODO: handle actions for 'waiting' tasks (they're in DEFT, not yet in JEDI) (SB)
+   task_not_ended = (task.status in ['registered', 'assigning', 'submitting', 'running'])
+
+   permissions = {}
+   # TODO: these actions are needed from DEFT and JEDI (SB)
+   for action in ['edit', 'clone', 'obsolete']:
+       permissions[action] = False
+
+   for action in ['abort', 'finish', 'change_prio', 'reassign']:
+       permissions[action] = task_not_ended
+
+
+   request_parameters =  {
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
        'clouds': get_clouds(),
        'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
-   })
+   }
+
+   for action, perm in permissions.items():
+       request_parameters['can_' + action + '_task' ] = perm
+
+   return render(request, 'prodtask/_task_detail.html', request_parameters)
+
 
 def task_clone(request, rid=None):
    if request.method == 'POST':

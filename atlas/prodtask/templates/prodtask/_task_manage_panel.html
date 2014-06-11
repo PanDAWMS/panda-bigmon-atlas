@@ -11,10 +11,51 @@
                 <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
         {% endif %}
 
-                <li><a data-dropdown="task_abort_menu" data-options="is_hover:true" class="small radio button alert"
-                       id="btn_abort">Abort</a></li>
-                <li><a data-dropdown="task_change_prio_menu" class="small radio button" id="btn_change_prio">Change&nbsp;priority</a></li>
-                <li><a data-dropdown="task_reassign_menu" class="small radio button" id="btn_reassign">Reassign</a></li>
+                <li><a data-options="is_hover:true" id="btn_abort"
+                    {% if can_abort_task or not task.id %}
+                        data-dropdown="task_abort_menu"
+                        class="small radio button alert"
+                    {% else %}
+                        class="small radio button alert disabled"
+                    {% endif %}
+                    >Abort</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_finish"
+                    {% if can_finish_task or not task.id %}
+                        data-dropdown="task_finish_menu"
+                        class="small radio button "
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Finish</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_change_prio"
+                    {% if can_change_prio_task or not task.id %}
+                        class="small radio button"
+                        data-dropdown="task_change_prio_menu"
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Change&nbsp;priority</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_reassign"
+                    {% if can_reassign_task or not task.id %}
+                        data-dropdown="task_reassign_menu"
+                        class="small radio button"
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Reassign</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_obsolete"
+                    {% if can_obsolete_task %} {% comment %} or not task.id %} {% endcomment %}
+                        data-dropdown="task_obsolete_menu"
+                        class="small radio button"
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Obsolete</a>
+                </li>
         {% if edit_mode %}
                 <li><a class="small radio button secondary" id="btn_switch_to_view">View&nbsp;mode</a></li>
         {% endif %}
@@ -36,6 +77,23 @@
                 </div>
             </div>
         </div>
+
+        <div id="task_finish_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_finish" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_finish">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_finish">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
@@ -174,7 +232,9 @@ function doTasksAction(action) {
     var ajaxUrl =  "{% url 'prodtask:task_manage' %}" + action + "/";
 
     $("#req_status_box").remove();
-    $("#request_status_container").append( makeAlertBox("Request status: sending", "req_status_box", "req_status_text"));
+    $("#request_status_container").append(
+        makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
+    );
 
     $.ajax({
         url: ajaxUrl,
@@ -212,6 +272,11 @@ $(document).ready(function () {
     $("#btn_do_abort").click(function () {
         doTasksAction('kill');
         $("#task_abort_menu").hide();
+    });
+
+    $("#btn_do_finish").click(function () {
+        doTasksAction('finish');
+        $("#task_finish_menu").hide();
     });
 
     $("#btn_do_set_priority").click(function () {
