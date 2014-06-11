@@ -1,6 +1,8 @@
 {% extends "prodtask/_index.html" %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
+
 
 {% block bl_title %}Core App of Monitoring{% endblock %}
 
@@ -64,7 +66,9 @@
 
 {% block base_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+
+{% django_js %}
+
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
 
@@ -279,6 +283,7 @@
 </table>
 
 
+
 <script type="text/javascript">
 
     function taskServerParams ( aoData )
@@ -338,10 +343,7 @@
         return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
     }
 
-    production_task_url_prefix = "{% url 'prodtask:task' 0 %}".slice(0, -2);
-    production_stepex_url_prefix = "{% url 'prodtask:step_execution' 0 %}".slice(0, -2);
-    production_inputlist_with_request_url_prefix = "{% url 'prodtask:input_list_approve' 0 %}".slice(0, -2);
-    jedi_job_url_prefix = "{% url 'jobList' %}?jeditaskid=";
+    jedi_job_url_prefix = Django.url('jobList')+"?jeditaskid=";
     jira_url_prefix = "https://its.cern.ch/jira/browse/";
     
     function taskServerData( sSource, aoData, fnCallback, oSettings ) {
@@ -351,12 +353,14 @@
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-
-            row[0] = '<a class="breaked_word" href="'+production_task_url_prefix+row[4]+'/">'+row[0]+'</a>';
+       
+            row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:task', row[4])+'">'+row[0]+'</a>';
             row[4] = '<a href="'+jedi_job_url_prefix+row[4]+'">'+row[4]+'</a>';
-            row[2] = '<a href="'+production_stepex_url_prefix+row[2]+'/">'+row[22]+'</a>';
-            row[1] = '<a href="'+production_inputlist_with_request_url_prefix+row[1]+'/">'+row[1]+'</a>';
-            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>';
+            row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[22]+'</a>';
+            row[1] = '<a href="'+Django.url('prodtask:input_list_approve', row[1])+'">'+row[1]+'</a>';
+            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>'; 
+            
+           
             
             row[5] = row[5]=='None'? row[23] : row[5];
             row[5] = row[5]=='-1'? 'None' : row[5];
