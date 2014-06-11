@@ -35,8 +35,8 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
                 st.save()
         except Exception, e:
             #print e
-            return HttpResponseRedirect(reverse('step_execution_table'))
-    return HttpResponseRedirect(reverse('step_execution_table'))
+            return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
+    return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
 
 
 def find_missing_tags(tags):
@@ -255,13 +255,13 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 @csrf_protect
 def request_steps_approve(request, reqid, approve_level):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, int(approve_level)-1)
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 
 def form_step_hierarchy(tags_formats_text):
@@ -337,7 +337,7 @@ def request_reprocessing_steps_create(request, reqid=None):
             print e
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 @csrf_protect
 def make_test_request(request, reqid):
@@ -685,8 +685,8 @@ def input_list_approve(request, rid=None):
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
-            return HttpResponseRedirect('/')
-    return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
+    return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
 def step_template_details(request, rid=None):
@@ -694,9 +694,9 @@ def step_template_details(request, rid=None):
         try:
             step_template = StepTemplate.objects.get(id=rid)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('prodtask:request_table'))
 
     return render(request, 'prodtask/_step_template_detail.html', {
        'active_app' : 'prodtask',
@@ -754,7 +754,7 @@ class StepTemlateTable(datatables.DataTable):
         bServerSide = True
         
         def __init__(self):
-            self.sAjaxSource = reverse('step_template_table')
+            self.sAjaxSource = reverse('prodtask:step_template_table')
 
 @datatables.datatable(StepTemlateTable, name='fct')
 def step_template_table(request):
@@ -770,9 +770,9 @@ def stepex_details(request, rid=None):
         try:
             step_ex = StepExecution.objects.get(id=rid)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('prodtask:request_table'))
 
     return render(request, 'prodtask/_step_ex_detail.html', {
        'active_app' : 'prodtask',
@@ -836,7 +836,7 @@ class StepExecutionTable(datatables.DataTable):
         bServerSide = True
 
         def __init__(self):
-            self.sAjaxSource = reverse('step_execution_table')
+            self.sAjaxSource = reverse('prodtask:step_execution_table')
 
 
 @datatables.datatable(StepExecutionTable, name='fct')
@@ -852,9 +852,9 @@ def production_dataset_details(request, name=None):
        try:
            dataset = ProductionDataset.objects.get(name=name)
        except:
-           return HttpResponseRedirect('/')
+           return HttpResponseRedirect(reverse('prodtask:request_table'))
    else:
-       return HttpResponseRedirect('/')
+       return HttpResponseRedirect(reverse('prodtask:request_table'))
 
    return render(request, 'prodtask/_dataset_detail.html', {
        'active_app' : 'prodtask',

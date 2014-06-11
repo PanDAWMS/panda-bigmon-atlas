@@ -1,7 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
@@ -30,9 +30,9 @@ def request_details(request, rid=None):
             req = TRequest.objects.get(reqid=rid)
             form = RequestForm(instance=req)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('prodtask:request_table'))
 
     return render(request, 'prodtask/_form.html', {
         'active_app': 'prodtask',
@@ -60,7 +60,7 @@ def request_clone(request, rid=None):
                                                 reprocessing_form_prefill)
         except Exception, e:
             _logger.error("Problem with request clonning #%i: %s"%(rid,e))
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
         return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
                                        'prodtask:request_clone', TRequestMCCreateCloneForm,
@@ -73,14 +73,14 @@ def request_update(request, rid=None):
             req = TRequest.objects.get(reqid=rid)
             form = RequestUpdateForm(request.POST, instance=req)  # A form bound to the POST data
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
         if form.is_valid():
             # Process the data in form.cleaned_data
             _logger.debug("Update request #%i: %s"%(int(rid), form.cleaned_data))
             try:
                 req = TRequest(**form.cleaned_data)
                 req.save()
-                return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)  # Redirect after POST
+                return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(req.reqid,)))  # Redirect after POST
             except Exception,e :
                  _logger.error("Problem with request update #%i: %s"%(int(rid), e))
     else:
@@ -88,7 +88,7 @@ def request_update(request, rid=None):
             req = TRequest.objects.get(reqid=rid)
             form = RequestUpdateForm(instance=req)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     return render(request, 'prodtask/_form.html', {
         'active_app': 'prodtask',
         'pre_form_text': 'Updating of TRequest with ID = %s' % rid,
@@ -499,7 +499,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         })
                     except Exception, e:
                         _logger.error("Problem during request form creating: %s" % e)
-                        return HttpResponseRedirect('/prodtask/request_table/')
+                        return HttpResponseRedirect(reverse('prodtask:request_table'))
             # Process the data from create form form
             elif 'file_dict' in request.session:
                 #TODO: Waiting message
@@ -523,9 +523,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
                                                    status='Created')
                     request_status.save_with_current_time()
+                    _logger.debug("e-mail with link %s" % HttpRequest.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,))))
                     send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
                               request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,
-                                                 'http://prodtask-dev.cern.ch:8000/prodtask/inputlist_with_request/%i/' % req.reqid),
+                                                 HttpRequest.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))),
                               APP_SETTINGS['prodtask.email.from'],
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
@@ -581,8 +582,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
-                    return HttpResponseRedirect('/prodtask/request_table/')
-                return HttpResponseRedirect('/prodtask/inputlist_with_request/%s' % req.reqid)
+                    return HttpResponseRedirect(reverse('prodtask:request_table'))
+                return HttpResponseRedirect(reverse('prodtask:input_list_approve',args=(req.reqid,)))
             else:
                 return render(request, 'prodtask/_form.html', {
                     'active_app': 'mcprod',
@@ -603,7 +604,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 form = TRequestCreateCloneForm(values)
             except Exception, e:
                 _logger.debug("Problem with clonning request #%s - %s " % (rid,e))
-                return HttpResponseRedirect('/prodtask/request_table/')
+                return HttpResponseRedirect(reverse('prodtask:request_table'))
         # Create request form
         else:
             _logger.debug("Start request creation ")
@@ -644,7 +645,7 @@ def mcpattern_create(request, pattern_id=None):
             pattern_dict = json.loads(values['pattern_dict'])
             pattern_step_list = [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
         except:
-            return HttpResponseRedirect('/prodtask/mcpattern_table')
+            return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
         values = {}
         pattern_step_list = [(step, '') for step in MCPattern.STEPS]
@@ -656,7 +657,7 @@ def mcpattern_create(request, pattern_id=None):
                                            pattern_dict=json.dumps(form.steps_dict()))
 
             mcp.save()
-            return HttpResponseRedirect('/prodtask/mcpattern_table')
+            return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
          form = MCPatternForm(values, steps=pattern_step_list)
     return render(request, 'prodtask/_form.html', {
@@ -679,7 +680,7 @@ def mcpattern_update(request, pattern_id):
         values = MCPattern.objects.values().get(id=pattern_id)
         pattern_step_list = step_list_from_json(values['pattern_dict'],MCPattern.STEPS)
     except:
-        return HttpResponseRedirect('/prodtask/mcpattern_table')
+        return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     if request.method == 'POST':
         form = MCPatternUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
         if form.is_valid():
@@ -687,7 +688,7 @@ def mcpattern_update(request, pattern_id):
             mcp.pattern_status=form.cleaned_data['pattern_status']
             mcp.pattern_dict=json.dumps(form.steps_dict())
             mcp.save()
-            return HttpResponseRedirect('/prodtask/mcpattern_table')
+            return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
         form = MCPatternUpdateForm(values, steps=pattern_step_list)
     return render(request, 'prodtask/_form.html', {
@@ -761,7 +762,7 @@ def mcpriority_create(request):
             mcp = MCPriority.objects.create(priority_key=form.cleaned_data['priority_key'],
                                             priority_dict=json.dumps(form.steps_dict()))
             mcp.save()
-            return HttpResponseRedirect('/prodtask/mcpriority_table')
+            return HttpResponseRedirect(reverse('prodtask:mcpriority_table'))
     else:
          form = MCPriorityForm(values, steps=pattern_step_list)
     return render(request, 'prodtask/_form.html', {
@@ -778,14 +779,14 @@ def mcpriority_update(request, pattern_id):
         values = MCPriority.objects.values().get(id=pattern_id)
         priority_step_list = step_list_from_json(values['priority_dict'],MCPriority.STEPS)
     except:
-        return HttpResponseRedirect('/prodtask/mcpriority_table')
+        return HttpResponseRedirect(reverse('prodtask:mcpriority_table'))
     if request.method == 'POST':
         form = MCPriorityUpdateForm(request.POST, steps=[(step, '') for step in MCPriority.STEPS])
         if form.is_valid():
             mcp = MCPriority.objects.get(id=pattern_id)
             mcp.priority_dict=json.dumps(form.steps_dict())
             mcp.save()
-            return HttpResponseRedirect('/prodtask/mcpriority_table')
+            return HttpResponseRedirect(reverse('prodtask:mcpriority_table'))
     else:
         form = MCPriorityUpdateForm(values, steps=priority_step_list)
     return render(request, 'prodtask/_form.html', {
@@ -846,26 +847,30 @@ class RequestTable(datatables.DataTable):
         aaSorting = [[0, "desc"]]
         aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
         iDisplayLength = 50
-        fnRowCallback = """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<a href="/prodtask/request/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'+
-                                                     '<span style="float: right;" ><a href="/prodtask/request_update/'+aData[0]+'/">Update</a>&nbsp;'+
-                                                     '<a href="/prodtask/request_clone/'+aData[0]+'/">Clone</a>&nbsp;'+
-                                                     '<a href="/prodtask/inputlist_with_request/'+aData[0]+'/">List</a></span>'
-                            );
-                            $('td:eq(1)', nRow).html('<a href="'+aData[1]+'">'+aData[1]+'</a>');
-                        }"""
+
 
         bServerSide = True
-        sAjaxSource = '/prodtask/request_table/'
+        # fnRowCallback = """
+        #                 function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
+        #                 {
+        #                     $('td:eq(0)', nRow).html('<a href="/prodtask/request/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'+
+        #                                              '<span style="float: right;" ><a href="/prodtask/request_update/'+aData[0]+'/">Update</a>&nbsp;'+
+        #                                              '<a href="/prodtask/inputlist_with_request/'+aData[0]+'/">List</a></span>'
+        #                     );
+        #                     $('td:eq(1)', nRow).html('<a href="'+aData[1]+'">'+aData[1]+'</a>');
+        #                 }"""
+
+        fnServerData =  'requestServerData'
+
+        def __init__(self):
+            self.sAjaxSource = reverse('prodtask:request_table')
 
 
 @datatables.datatable(RequestTable, name='fct')
 def request_table(request):
     qs = request.fct.get_queryset()
     request.fct.update_queryset(qs)
-    return TemplateResponse(request, 'prodtask/_datatable.html',
+    return TemplateResponse(request, 'prodtask/_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'table': request.fct,
                              'parent_template': 'prodtask/_index.html'})
 
