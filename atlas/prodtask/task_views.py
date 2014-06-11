@@ -104,7 +104,7 @@ def task_create(request):
            # Process the data in form.cleaned_data
            req = ProductionTask(**form.cleaned_data)
            req.save()
-           return HttpResponseRedirect('/prodtask/trequest/%s' % req.id) # Redirect after POST
+           return HttpResponseRedirect( reverse('prodtask:task', req.id) ) # Redirect after POST
    else:
        form = ProductionTaskCreateCloneForm() # An unbound form
    return render(request, 'prodtask/_form.html', {
