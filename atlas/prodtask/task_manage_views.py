@@ -14,19 +14,20 @@ from .models import ProductionTask, TRequest
 
 from .task_views import ProductionTaskTable, get_clouds, get_sites
 
-from .task_commands import killTask, changeTaskPriority, reassignTaskToSite, reassignTaskToCloud
-
+from .task_actions import kill_task, finish_task, change_task_priority, reassign_task_to_site, reassign_task_to_cloud
 
 import json
 
-_task_actions = {
-    'kill': killTask,
-    'change_priority': changeTaskPriority,
-    'reassign_to_site': reassignTaskToSite,
-    'reassign_to_cloud': reassignTaskToCloud,
-}
 
 def do_tasks_action(tasks, action, *args):
+    _task_actions = {
+        'kill': kill_task,
+        'finish': finish_task,
+        'change_priority': change_task_priority,
+        'reassign_to_site': reassign_task_to_site,
+        'reassign_to_cloud': reassign_task_to_cloud,
+    }
+
     if (not tasks) or not (action in _task_actions):
         return
 
