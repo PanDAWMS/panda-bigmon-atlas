@@ -343,7 +343,6 @@
         return new Date(dparts[0], dparts[1]-1, dparts[2], tparts[0], tparts[1], tparts[2] ); // Note: months are 0-based
     }
 
-    jedi_job_url_prefix = Django.url('jobList')+"?jeditaskid=";
     jira_url_prefix = "https://its.cern.ch/jira/browse/";
     
     function taskServerData( sSource, aoData, fnCallback, oSettings ) {
@@ -355,7 +354,7 @@
             var row = data['aaData'][i];
        
             row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:task', row[4])+'">'+row[0]+'</a>';
-            row[4] = '<a href="'+jedi_job_url_prefix+row[4]+'">'+row[4]+'</a>';
+            row[4] = '<a href="'+Django.url('taskInfo', row[4])+'">'+row[4]+'</a>';
             row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[22]+'</a>';
             row[1] = '<a href="'+Django.url('prodtask:input_list_approve', row[1])+'">'+row[1]+'</a>';
             row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>'; 
