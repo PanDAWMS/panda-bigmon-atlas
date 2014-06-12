@@ -35,8 +35,8 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
                 st.save()
         except Exception, e:
             #print e
-            return HttpResponseRedirect(reverse('step_execution_table'))
-    return HttpResponseRedirect(reverse('step_execution_table'))
+            return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
+    return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
 
 
 def find_missing_tags(tags):
@@ -255,13 +255,13 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 @csrf_protect
 def request_steps_approve(request, reqid, approve_level):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, int(approve_level)-1)
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 
 def form_step_hierarchy(tags_formats_text):
@@ -320,8 +320,7 @@ def request_reprocessing_steps_create(request, reqid=None):
                         if current_tag['ctag'] == '':
                             real_steps_hierarchy[-1].append(real_steps_hierarchy[current_tag['level']][current_tag['step_number']])
                         else:
-                            step_template = StepTemplate.objects.get(ctag=current_tag['ctag'],
-                                                                     output_formats=current_tag['formats'])
+                            step_template = fill_template('',current_tag['ctag'],current_slice.priority,current_tag['formats'])
                             new_step_exec = StepExecution(request=cur_request, step_template=step_template,status='NotChecked',
                                                           slice=current_slice,priority=current_slice.priority,
                                                           input_events=-1)
@@ -335,9 +334,10 @@ def request_reprocessing_steps_create(request, reqid=None):
                             new_step_exec.save()
                             real_steps_hierarchy[-1].append(new_step_exec)
         except Exception,e:
+            print e
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
-    return HttpResponseRedirect(reverse('inputlist_with_request', args=(reqid,)))
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 @csrf_protect
 def make_test_request(request, reqid):
@@ -525,7 +525,6 @@ def input_list_approve(request, rid=None):
         return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
     if request.method == 'GET':
         try:
-
             cur_request = TRequest.objects.get(reqid=rid)
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
@@ -539,7 +538,7 @@ def input_list_approve(request, rid=None):
                 # Create an empty pattern for color only pattern
                 pattern_list_name += [('Empty', ['' for step in StepExecution.STEPS])]
 
-            show_reprocessing = cur_request.request_type == 'REPROCESSING'
+            show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
             # input_lists - list of tuples for end to form.
             # tuple format:
@@ -685,8 +684,8 @@ def input_list_approve(request, rid=None):
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
-            return HttpResponseRedirect(reverse('request_table'))
-    return HttpResponseRedirect(reverse('request_table'))
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
+    return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
 def step_template_details(request, rid=None):
@@ -694,9 +693,9 @@ def step_template_details(request, rid=None):
         try:
             step_template = StepTemplate.objects.get(id=rid)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('prodtask:request_table'))
 
     return render(request, 'prodtask/_step_template_detail.html', {
        'active_app' : 'prodtask',
@@ -737,12 +736,6 @@ class StepTemlateTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        fnRowCallback =  """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<a href="/prodtask/step_template/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'
-                            );
-                        }"""
         sScrollX = '100em'
         sScrollY = '20em'
         bScrollCollapse = True
@@ -754,7 +747,7 @@ class StepTemlateTable(datatables.DataTable):
         bServerSide = True
         
         def __init__(self):
-            self.sAjaxSource = reverse('step_template_table')
+            self.sAjaxSource = reverse('prodtask:step_template_table')
 
 @datatables.datatable(StepTemlateTable, name='fct')
 def step_template_table(request):
@@ -770,9 +763,9 @@ def stepex_details(request, rid=None):
         try:
             step_ex = StepExecution.objects.get(id=rid)
         except:
-            return HttpResponseRedirect('/')
+            return HttpResponseRedirect(reverse('prodtask:request_table'))
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('prodtask:request_table'))
 
     return render(request, 'prodtask/_step_ex_detail.html', {
        'active_app' : 'prodtask',
@@ -819,12 +812,6 @@ class StepExecutionTable(datatables.DataTable):
         bSort = True
         bPaginate = True
         bJQueryUI = True
-        fnRowCallback = """
-                        function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-                        {
-                            $('td:eq(0)', nRow).html('<span style="float:right;"><a title="Approve this step" href="/prodtask/step_approve/'+aData[0]+'/'+aData[2]+'/'+aData[1]+'">approve</a>'+
-                                '&nbsp;</span>&nbsp;');
-                        }"""
         sScrollX = '100em'
         sScrollY = '20em'
         bScrollCollapse = True
@@ -836,7 +823,7 @@ class StepExecutionTable(datatables.DataTable):
         bServerSide = True
 
         def __init__(self):
-            self.sAjaxSource = reverse('step_execution_table')
+            self.sAjaxSource = reverse('prodtask:step_execution_table')
 
 
 @datatables.datatable(StepExecutionTable, name='fct')
@@ -852,9 +839,9 @@ def production_dataset_details(request, name=None):
        try:
            dataset = ProductionDataset.objects.get(name=name)
        except:
-           return HttpResponseRedirect('/')
+           return HttpResponseRedirect(reverse('prodtask:request_table'))
    else:
-       return HttpResponseRedirect('/')
+       return HttpResponseRedirect(reverse('prodtask:request_table'))
 
    return render(request, 'prodtask/_dataset_detail.html', {
        'active_app' : 'prodtask',

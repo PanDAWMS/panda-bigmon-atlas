@@ -1,0 +1,84 @@
+{% extends "prodtask/_index.html" %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	</style>
+
+  <style type="text/css">
+
+    .dataTables_wrapper { display: inline-block; }
+  </style>
+
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+
+
+{% django_js %}
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+
+
+<script type="text/javascript">
+
+    function requestServerData( sSource, aoData, fnCallback, oSettings ) {
+
+      function prepareData( data, textStatus, jqXHR )
+      {
+        console.log(data)
+        for(var i in data['aaData'])
+        {
+            var row = data['aaData'][i];
+
+            row[0] = '<a href="'+Django.url('prodtask:request', row[0])+'">'+row[0]+'</a>&nbsp;&nbsp;'+'<span style="float: right;" ><a href="'+
+            Django.url('prodtask:request_update', row[0])+'">Update</a>&nbsp;'+'<a href="'+Django.url('prodtask:input_list_approve', row[0])+'">List</a>';
+
+            row[1] = '<a href="'+row[1]+'">'+row[1]+'</a>';
+
+        }
+        fnCallback( data, textStatus, jqXHR );
+      }
+
+      oSettings.jqXHR = $.ajax( {
+        "dataType": 'json',
+        "type": "GET",
+        "url": sSource,
+        "data": aoData,
+        "success": prepareData
+      } )
+    }
+
+
+
+
+</script>
+
+{{ table.as_html }}
+
+
+{% endblock %}

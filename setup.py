@@ -114,6 +114,7 @@ class install_data_panda (install_data_org):
         tmpDir = 'build/tmp'
         self.mkpath(tmpDir)
         new_data_files = []
+
         for destDir,dataFiles in self.data_files:
             newFilesList = []
             for srcFile in dataFiles:

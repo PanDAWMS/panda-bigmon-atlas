@@ -54,6 +54,19 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
         exclude = ['reqid']
 
 
+class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
+    excellink = CharField(required=False, label="HLT LIST link")
+    excelfile = FileField(required=False, label="HLT LIST file")
+    provenance = CharField(widget=forms.HiddenInput, required=False)
+    cstatus = CharField(widget=forms.HiddenInput, required=False)
+    request_type = CharField(widget=forms.HiddenInput, required=False)
+    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+
+    class Meta:
+        model = TRequest
+        exclude = ['reqid']
+
+
 class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="First step LIST link")
     excelfile = FileField(required=False, label="First step LIST file")

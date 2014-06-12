@@ -1,6 +1,7 @@
 {% extends parent_template %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
 
 {% block bl_title %}Core App of Monitoring{% endblock %}
 
@@ -47,7 +48,9 @@
 
 {% block base_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+
+{% django_js %}
+
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
 
@@ -126,6 +129,7 @@
      //   aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
     }
 
+
     function datasetServerData( sSource, aoData, fnCallback, oSettings ) {
 
       function prepareData( data, textStatus, jqXHR )
@@ -134,11 +138,10 @@
         {
             var row = data['aaData'][i];
 
-            row[0] = '<a class="breaked_word" href="/prodtask/production_dataset/'+row[0]+'/">'+row[0]+'</a>';
-
-            row[1] = '<a href="/prodtask/task/'+row[1]+'/">'+row[1]+'</a>';
-            row[2] = '<a href="/prodtask/task/'+row[2]+'/">'+row[2]+'</a>';
-            row[3] = '<a href="/prodtask/inputlist_with_request/'+row[3]+'/">'+row[3]+'</a>';
+            row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:production_dataset', row[0])+'/">'+row[0]+'</a>';
+            row[1] = '<a href="'+Django.url('prodtask:task', row[1])+'/">'+row[1]+'</a>';
+           // row[2] = '<a href="'+Django.url('prodtask:task', row[2])+'/">'+row[2]+'</a>';
+          //  row[3] = '<a href="'+Django.url('prodtask:input_list_approve', row[3])+'/">'+row[3]+'</a>';
 
             row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
 

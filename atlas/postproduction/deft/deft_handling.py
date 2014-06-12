@@ -12,8 +12,9 @@
 # Apr 27, 2014. add SSO
 # May 14, 2014. move production containers handling
 #               add Rucio clients to a separate file
+# June 2, 2014. Set current priority = priority if current_priority=None
 #
-# Last Edit : May 15, 2014 ak
+# Last Edit : Jun 2, 2014 ak
 #
 
 import re
@@ -72,7 +73,6 @@ DATASET_SYNCH_INTERVAL =    72
 #
 TASK_RECOVERY_STEP     = '.recov.'
 
-#def XXX() :
 class DEFTClient(object):
 #
 # author D.Golubkov
@@ -309,8 +309,8 @@ def obsoleteTaskState(task_id, dbupdate) :
                 for sql in sql_update :
                     print sql
                     DButils.QueryUpdate(pdb,sql)
-                #DButils.QueryCommit(pdb)
-                #DButils.closeDB(pdb,dbcur)
+                DButils.QueryCommit(pdb)
+                DButils.closeDB(pdb,dbcur)
             else :
                 print "INFO. obsoleteTaskState : no database update"
 
@@ -808,6 +808,7 @@ def synchronizeJediDeftTasks() :
         td_done= td[3]
         td_submit = td[4]
         td_start  = td[5]
+        td_priority= td[6]
         if td_tid == tj_tid :
          # compare records
          print "Compare records for TID = %s"%(tj_tid)
@@ -834,8 +835,8 @@ def synchronizeJediDeftTasks() :
         td_status = td[1]
         if tj_status != td_status :
          print "Status has changed. DEFT, JEDI : %s, %s"%(td_status,tj_status)
-         if td_status in post_production_status :
-           print "Ignore. DEFT status (in post_production)..."%(td_status)
+         if td_status in  post_production_status :
+           print "Ignore. DEFT status (in post_production)... %s"%(td_status)
          else :
            td_status   = tj_status
            td_done     = tj_done
@@ -856,9 +857,25 @@ def synchronizeJediDeftTasks() :
            sql_update += "WHERE taskid = %s"%(td_tid)
            print sql_update
            sql_update_deft.append(sql_update)
-           
+        elif tj_curprio != td_priority :
+          if td_status in post_production_status or td_status in end_status :
+           print "Ignore. DEFT status (in post_production)... %s"%(td_status) 
+          else :
+           sql_update = 'XYZ'   
+           if tj_curprio != None :
+            sql_update = "UPDATE %s SET current_priority=%s "%(t_table_DEFT, tj_curprio)          
+           else :
+             if td_priority == None :  
+              sql_update = "UPDATE %s SET current_priority=%s "%(t_table_DEFT, td_priority)
+           if sql_update != 'XYZ' :   
+            sql_update+= ",TIMESTAMP = current_timestamp "
+            sql_update+= "WHERE taskid = %s"%(td_tid)
+            print sql_update
+            sql_update_deft.append(sql_update)  
+             
     db_update = True
     if len(sql_update_deft) and db_update == True :
+     print "Update database information (",len(sql_update_deft)," records)"   
      (pdb,dbcur,deftDB) = connectDEFT('W')
      for sql in sql_update_deft :
          print sql
@@ -867,7 +884,7 @@ def synchronizeJediDeftTasks() :
      DButils.closeDB(pdb,dbcur)
     elif db_update == False :
      print "INFO. No database update : db_update = %s"%(db_update)
-
+    
     if len(user_task_list) :
      print "INFO. process JEDI users tasks"
      insertJediTasksJSON(user_task_list)

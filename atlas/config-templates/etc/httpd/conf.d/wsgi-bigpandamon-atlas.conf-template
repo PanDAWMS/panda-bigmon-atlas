@@ -1,39 +1,79 @@
 LoadModule wsgi_module modules/mod_wsgi.so
 
+
 ### multiple mod_wsgi applications ### 
+### as of 2014-06-10: 
+### * /devprodsys2 ... same as / 
+### * /prodsys ... trunk updated via RPM
+### * /dev ... wenaus branch updated via RPM
+### * / ... same as /dev
 
-#################################
-#################################
-#################################
 
+####  #################################
+####  #################################
+####  #################################
+#### 
+####  ### /devprodsys2
+####      WSGISocketPrefix run/wsgi.bigpandamon.devprodsys2
+####      WSGIDaemonProcess bigpandamon-devprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/lib/python2.6/site-packages:/opt/dq2/lib
+####      WSGIScriptAlias /devprodsys2 /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/wsgi.py process-group=bigpandamon-devprodsys2 application-group=%{GLOBAL}
+####      <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas>
+####          <Files wsgi.py>
+####              Order deny,allow
+####              Allow from all
+####          </Files>
+####      </Directory>
+####      <Location /devprodsys2>
+####          WSGIProcessGroup bigpandamon-devprodsys2
+####          WSGIApplicationGroup %{GLOBAL}
+####      </Location>
+####      AliasMatch ^/devprodsys2/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/css/$1
+####      AliasMatch ^/devprodsys2/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/js/$1
+####      Alias /devprodsys2static/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/
+####      <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static>
+####          Order deny,allow
+####          Allow from all
+####      </Directory>
+####      Alias /devprodsys2media/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media/
+####      <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media>
+####          Order deny,allow
+####          Allow from all
+####      </Directory>
+####  ### end of /devprodsys2
+#### RedirectMatch permanent /devprodsys2$ /devprodsys2/ 
+#### 
+####  #################################
+####  #################################
+####  #################################
 
  #################################
  #################################
  #################################
 
  ### /devprodsys2
-     WSGISocketPrefix run/wsgi.bigpandamon.devprodsys2
-     WSGIDaemonProcess bigpandamon-devprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__devprodsys2/lib/python2.6/site-packages:/opt/dq2/lib
-     WSGIScriptAlias /devprodsys2 /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/wsgi.py process-group=bigpandamon-devprodsys2 application-group=%{GLOBAL}
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas>
+     WSGISocketPrefix run/wsgi.bigpandamon.twrpmdevprodsys2
+     WSGIDaemonProcess bigpandamon-twrpmdevprodsys2 processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
+     WSGIScriptAlias /devprodsys2 /data/wenaus/virtualenv/twrpm/pythonpath/lsst/wsgi.py process-group=bigpandamon-twrpmdevprodsys2 application-group=%{GLOBAL}
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst>
          <Files wsgi.py>
              Order deny,allow
              Allow from all
          </Files>
      </Directory>
      <Location /devprodsys2>
-         WSGIProcessGroup bigpandamon-devprodsys2
+         WSGIProcessGroup bigpandamon-twrpmdevprodsys2
          WSGIApplicationGroup %{GLOBAL}
      </Location>
-     AliasMatch ^/devprodsys2/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/css/$1
-     AliasMatch ^/devprodsys2/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/js/$1
-     Alias /devprodsys2static/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static/
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/static>
+     AliasMatch ^/devprodsys2/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/css/$1
+     AliasMatch ^/devprodsys2/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/js/$1
+     AliasMatch ^/devprodsys2/([^/]*\.png)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/images/$1
+     Alias /devprodsys2/static/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static>
          Order deny,allow
          Allow from all
      </Directory>
-     Alias /devprodsys2media/ /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media/
-     <Directory /data/virtualenv/django1.6.1__python2.6.6__devprodsys2/pythonpath/atlas/media>
+     Alias /devprodsys2/media/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media>
          Order deny,allow
          Allow from all
      </Directory>
@@ -44,49 +84,44 @@ RedirectMatch permanent /devprodsys2$ /devprodsys2/
  #################################
  #################################
 
- #################################
- #################################
- #################################
+#################################
+#################################
+#################################
 
- ### /twrpmlsst
-     WSGISocketPrefix run/wsgi.bigpandamon.twrpmlsst
-     WSGIDaemonProcess bigpandamon-twrpmlsst processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
-#     WSGIScriptAlias /twrpmlsst /data/wenaus/virtualenv/twrpm/pythonpath/lsst/wsgi.py process-group=bigpandamon-twrpmlsst application-group=%{GLOBAL}
-     WSGIScriptAlias /lsst /data/wenaus/virtualenv/twrpm/pythonpath/lsst/wsgi.py process-group=bigpandamon-twrpmlsst application-group=%{GLOBAL}
-     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst>
-         <Files wsgi.py>
-             Order deny,allow
-             Allow from all
-         </Files>
-     </Directory>
-#     <Location /twrpmlsst>
-     <Location /lsst>
-         WSGIProcessGroup bigpandamon-twrpmlsst
-         WSGIApplicationGroup %{GLOBAL}
-     </Location>
-#     AliasMatch ^/twrpmlsst/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/css/$1
-#     AliasMatch ^/twrpmlsst/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/js/$1
-#     Alias /twrpmlsst/static/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/
-     AliasMatch ^/lsst/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/css/$1
-     AliasMatch ^/lsst/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/js/$1
-     AliasMatch ^/lsst/([^/]*\.png)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/images/$1
-     Alias /lsst/static/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/
-     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static>
-         Order deny,allow
-         Allow from all
-     </Directory>
-#     Alias /twrpmlsst/media/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media/
-     Alias /lsst/media/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media/
-     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media>
-         Order deny,allow
-         Allow from all
-     </Directory>
- ### end of /twrpmlsst
-RedirectMatch permanent /lsst$ /lsst/ 
+### /prodsys
+    WSGISocketPrefix run/wsgi.bigpandamon.atlas.prodsys
+    WSGIDaemonProcess bigpandamon-atlas-prodsys processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__atlas//lib/python2.6/site-packages:/opt/dq2/lib
+    WSGIScriptAlias /prodsys /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/wsgi.py process-group=bigpandamon-atlas-prodsys application-group=%{GLOBAL}
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas>
+        <Files wsgi.py>
+            Order deny,allow
+            Allow from all
+        </Files>
+    </Directory>
+    <Location />
+        WSGIProcessGroup bigpandamon-atlas-prodsys
+        WSGIApplicationGroup %{GLOBAL}
+    </Location>
+    AliasMatch ^/prodsys/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/css/$1
+    AliasMatch ^/prodsys/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/js/$1
+    Alias /prodsys/static/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static>
+        Order deny,allow
+        Allow from all
+    </Directory>
+    Alias /prodsys/media/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media/
+    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media>
+        Order deny,allow
+        Allow from all
+    </Directory>
+### end of /prodsys
+RedirectMatch permanent /prodsys2$ /prodsys2/ 
 
- #################################
- #################################
- #################################
+#################################
+#################################
+#################################
+
+
 
 
  #################################
@@ -127,83 +162,47 @@ RedirectMatch permanent /dev$ /dev/
  #################################
  #################################
 
-
-#################################
-#################################
-#################################
-
-### /twrpmatlas
-    WSGISocketPrefix run/wsgi.bigpandamon.twrpmatlas
-    WSGIDaemonProcess bigpandamon-twrpmatlas processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
-    WSGIScriptAlias /twrpmatlas /data/wenaus/virtualenv/twrpm/pythonpath/atlas/wsgi.py process-group=bigpandamon-twrpmatlas application-group=%{GLOBAL}
-    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas>
-        <Files wsgi.py>
-            Order deny,allow
-            Allow from all
-        </Files>
-    </Directory>
-    <Location /twrpmatlas>
-        WSGIProcessGroup bigpandamon-twrpmatlas
-        WSGIApplicationGroup %{GLOBAL}
-    </Location>
-    AliasMatch ^/twrpmatlas/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/css/$1
-    AliasMatch ^/twrpmatlas/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/js/$1
-    Alias /twrpmatlas/static/ /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static/
-    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas/static>
-        Order deny,allow
-        Allow from all
-    </Directory>
-    Alias /twrpmatlas/media/ /data/wenaus/virtualenv/twrpm/pythonpath/atlas/media/
-    <Directory /data/wenaus/virtualenv/twrpm/pythonpath/atlas/media>
-        Order deny,allow
-        Allow from all
-    </Directory>
-### end of /twrpmatlas
-RedirectMatch permanent /twrpmatlas$ /twrpmatlas/ 
-
-#################################
-#################################
-#################################
-
-
-#################################
-#################################
-#################################
-
-### /atlas ... running on /
-    WSGISocketPrefix run/wsgi.bigpandamon.atlas
-    WSGIDaemonProcess bigpandamon-atlas processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath:/data/virtualenv/django1.6.1__python2.6.6__atlas//lib/python2.6/site-packages
-    WSGIScriptAlias / /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/wsgi.py process-group=bigpandamon-atlas application-group=%{GLOBAL}
-    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas>
-        <Files wsgi.py>
-            Order deny,allow
-            Allow from all
-        </Files>
-    </Directory>
-    <Location />
-        WSGIProcessGroup bigpandamon-atlas
-        WSGIApplicationGroup %{GLOBAL}
-    </Location>
-    AliasMatch ^/([^/]*\.css) /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/css/$1
-    AliasMatch ^/([^/]*\.js)  /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/js/$1
-    Alias /static/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static/
-    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/static>
-        Order deny,allow
-        Allow from all
-    </Directory>
-    Alias /media/ /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media/
-    <Directory /data/virtualenv/django1.6.1__python2.6.6__atlas/pythonpath/atlas/media>
-        Order deny,allow
-        Allow from all
-    </Directory>
-### end of /atlas
-
-#################################
-#################################
-#################################
-
  
-#################################
-#################################
-#################################
+
+ #################################
+ #################################
+ #################################
+
+ ### / ... /dev/ running on /
+     WSGISocketPrefix run/wsgi.bigpandamon.twrpmprod
+     WSGIDaemonProcess bigpandamon-twrpmprod processes=1 threads=5 python-path=/data/bigpandamon_settings:/data/wenaus/virtualenv/twrpm/pythonpath:/data/wenaus/virtualenv/twrpm/lib/python2.6/site-packages
+     WSGIScriptAlias / /data/wenaus/virtualenv/twrpm/pythonpath/lsst/wsgi.py process-group=bigpandamon-twrpmprod application-group=%{GLOBAL}
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst>
+         <Files wsgi.py>
+             Order deny,allow
+             Allow from all
+         </Files>
+     </Directory>
+     <Location />
+         WSGIProcessGroup bigpandamon-twrpmprod
+         WSGIApplicationGroup %{GLOBAL}
+     </Location>
+     AliasMatch ^/([^/]*\.css) /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/css/$1
+     AliasMatch ^/([^/]*\.js)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/js/$1
+     AliasMatch ^/([^/]*\.png)  /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/images/$1
+     Alias /static/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/static>
+         Order deny,allow
+         Allow from all
+     </Directory>
+     Alias /media/ /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media/
+     <Directory /data/wenaus/virtualenv/twrpm/pythonpath/lsst/media>
+         Order deny,allow
+         Allow from all
+     </Directory>
+ ### end of /dev
+
+ #################################
+ #################################
+ #################################
+ 
+
+
+
+
 
