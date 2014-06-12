@@ -290,7 +290,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
                 var ajaxURL = '';
                 if (isApprove){
-                    ajaxURL = Django.url('prodtask:request_steps_approve',"{{ pr_id }}",approveLevel);
+                    ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/';
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
