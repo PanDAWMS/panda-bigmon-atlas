@@ -195,12 +195,15 @@ RedirectMatch permanent /dev$ /dev/
          Order deny,allow
          Allow from all
      </Directory>
- ### end of /dev
+ ### end of /
 
  #################################
  #################################
  #################################
  
+### 2014-06-12 adding apache redirects before we integrate jobs and prodsys2  mon
+RedirectPermanent /prodtask http://bigpanda.cern.ch/prodsys/prodtask
+RedirectPermanent /getdatasets http://bigpanda.cern.ch/prodsys/getdatasets
 
 
 
