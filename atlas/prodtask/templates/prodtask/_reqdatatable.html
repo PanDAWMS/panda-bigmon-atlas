@@ -465,9 +465,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var project_mode = $.evalJSON(data).project_mode;
                             var input_events = $.evalJSON(data).input_events;
                             var priority = $.evalJSON(data).priority;
+                            var nEventsPerJob = $.evalJSON(data).nEventsPerJob;
+                            var nEventsPerInputFile = $.evalJSON(data).nEventsPerInputFile;
                             $("#project_mode_input").val(project_mode);
                             $('#input_events_input').val(input_events);
                             $('#priority_input').val(priority);
+                            $('#nEventsPerJob_input').val(nEventsPerJob);
+                            $('#nEventsPerInputFile_input').val(nEventsPerInputFile);
                         }
                     });
                   return false;
@@ -501,7 +505,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
         function updateStepParametrs(event){
               sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val(),
-              'input_events':$('#input_events_input').val(),'priority':$('#priority_input').val()};
+              'input_events':$('#input_events_input').val(),'priority':$('#priority_input').val(),
+              'nEventsPerJob':$('#nEventsPerJob_input').val(),
+                  'nEventsPerInputFile':$('#nEventsPerInputFile_input').val()};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:update_project_mode' pr_id %}",
@@ -810,6 +816,28 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 <div class="large-10 columns">
                     <label>Project mode
                         <input type="text" placeholder="project_mode" id="project_mode_input">
+                    </label>
+                </div>
+            </div>
+       </div>
+    </div>
+    <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>nEventsPerJob
+                        <input type="number" placeholder="nEventsPerJob" id="nEventsPerJob_input">
+                    </label>
+                </div>
+            </div>
+       </div>
+    </div>
+    <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>nEventsPerInputFile
+                        <input type="number" placeholder="nEventsPerInputFile" id="nEventsPerInputFile_input">
                     </label>
                 </div>
             </div>

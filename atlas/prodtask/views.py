@@ -13,7 +13,7 @@ from django.core.urlresolvers import reverse
 import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
-    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict
+    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -181,6 +181,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 parent_step = ordered_existed_steps[delete_chain_from-1]
                             if not input_list.project_mode:
                                 st_exec.set_task_config({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
+                                st_exec.set_task_config({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+                                if index == 0:
+                                    st_exec.set_task_config({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
                             else:
                                 st_exec.set_task_config({'project_mode':input_list.project_mode})
                             no_parent = True
@@ -378,6 +381,8 @@ def step_params_from_tag(request, reqid):
             project_mode = ''
             input_events = ''
             priority = ''
+            nEventsPerJob = ''
+            nEventsPerInputFile = ''
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -388,10 +393,15 @@ def step_params_from_tag(request, reqid):
                             task_config = json.loads(step_exec.task_config)
                             if 'project_mode' in task_config:
                                 project_mode = task_config['project_mode']
+                            if 'nEventsPerJob' in task_config:
+                                nEventsPerJob = task_config['nEventsPerJob']
+                            if 'nEventsPerInputFile' in task_config:
+                                nEventsPerInputFile = task_config['nEventsPerInputFile']
                             input_events = step_exec.input_events
                             priority = step_exec.priority
             results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
-                            'priority':str(priority)})
+                            'priority':str(priority),'nEventsPerJob':str(nEventsPerJob),
+                            'nEventsPerInputFile':str(nEventsPerInputFile)})
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -411,6 +421,12 @@ def update_project_mode(request, reqid):
             new_project_mode = checkecd_tag_format['project_mode']
             new_input_events = int(checkecd_tag_format['input_events'])
             new_priority = int(checkecd_tag_format['priority'])
+            new_nEventsPerInputFile = None
+            if checkecd_tag_format['nEventsPerInputFile']:
+                new_nEventsPerInputFile = int(checkecd_tag_format['nEventsPerInputFile'])
+            new_nEventsPerJob = None
+            if checkecd_tag_format['nEventsPerJob']:
+                new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -423,6 +439,10 @@ def update_project_mode(request, reqid):
                                 task_config['project_mode'] = new_project_mode
                                 step_exec.task_config = ''
                                 step_exec.set_task_config(task_config)
+                                if new_nEventsPerInputFile:
+                                    step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
+                                if new_nEventsPerJob:
+                                    step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
                                 step_exec.input_events = new_input_events
                                 step_exec.priority = new_priority
                                 step_exec.save()
