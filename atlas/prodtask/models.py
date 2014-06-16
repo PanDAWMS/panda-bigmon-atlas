@@ -221,6 +221,9 @@ class StepExecution(models.Model):
     def save_with_current_time(self, *args, **kwargs):
         if not self.step_def_time:
             self.step_def_time = timezone.now()
+        if self.status == 'Approved':
+            if not self.step_appr_time:
+                self.step_appr_time = timezone.now()
         self.save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
