@@ -446,7 +446,7 @@ def get_default_nEventsPerJob_dict():
 
 def get_default_project_mode_dict():
     default_dict = {
-         'Evgen':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Evgen':'spacetoken=ATLASDATADISK',
          'Simul':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
          'Merge':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASMCTAPE',
          'Digi':'Npileup=5;spacetoken=ATLASDATADISK',
