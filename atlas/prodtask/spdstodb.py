@@ -47,14 +47,24 @@ def get_key_by_url(url):
 def fill_template(step_name, tag, priority, formats=None, ram=None):
         st = None
         try:
-            if(not formats)and(not ram):
-                st = StepTemplate.objects.all().filter(ctag=tag)[0]
-            if (not formats) and (ram):
-                st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
-            if (formats) and (not ram):
-                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
-            if (formats) and (ram): 
-                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
+            if not step_name:
+                if(not formats)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag)[0]
+                if (not formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
+                if (formats) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
+                if (formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]
+            else:
+                if(not formats)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, step=step_name)[0]
+                if (not formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram, step=step_name)[0]
+                if (formats) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
+                if (formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
                 
         except:
             pass
