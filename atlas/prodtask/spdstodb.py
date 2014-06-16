@@ -54,7 +54,7 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
             if (formats) and (not ram):
                 st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
             if (formats) and (ram): 
-                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]   
+                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
                 
         except:
             pass
