@@ -81,7 +81,7 @@ $(document).ready(function() {
            var found = href.match( /\/task\/(\d+)\/?/ );
            if (!found) { return true; }
            var id = found[1];
-           makeCheckbox("select_task_" + id, id, "cbx_task_select").insertBefore( $(this) );
+           makeCheckbox("select_task_" + id, id, "cbx_task_select").insertBefore( $(this) ).append("&nbsp;");
        });
 
        $("#select_all_tasks").prop('checked', false);
