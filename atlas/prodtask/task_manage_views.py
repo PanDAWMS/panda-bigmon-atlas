@@ -19,14 +19,16 @@ from .task_actions import kill_task, finish_task, change_task_priority, reassign
 import json
 
 
+_task_actions = {
+    'kill': kill_task,
+    'finish': finish_task,
+    'change_priority': change_task_priority,
+    'reassign_to_site': reassign_task_to_site,
+    'reassign_to_cloud': reassign_task_to_cloud,
+}
+
+
 def do_tasks_action(tasks, action, *args):
-    _task_actions = {
-        'kill': kill_task,
-        'finish': finish_task,
-        'change_priority': change_task_priority,
-        'reassign_to_site': reassign_task_to_site,
-        'reassign_to_cloud': reassign_task_to_cloud,
-    }
 
     if (not tasks) or not (action in _task_actions):
         return
