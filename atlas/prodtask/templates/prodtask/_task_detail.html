@@ -33,7 +33,7 @@
 {% block body %}
 <table>
 
-<tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="{% url 'jobList' %}?jeditaskid={{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="{% url 'jobList' %}{{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="step">Step execution:</label></th><td>{% if task.step.id %}<a href="{% url 'prodtask:step_execution' task.step.id %}">{{task.step.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:request' task.request.reqid %}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="parent_id">Parent ID:</label></th><td>{% if task.parent_id %}<a href="{% url 'prodtask:task' task.parent_id  %}">{{task.parent_id}}</a>{% else %}None{% endif %}</td></tr>
