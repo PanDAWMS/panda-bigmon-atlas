@@ -88,7 +88,7 @@ $(document).ready(function() {
 
     });
 
-    $("#select_all_tasks").click( function () {
+    $("#select_all_tasks").change( function () {
         $('.cbx_task_select').prop('checked', this.checked);
         onUpdateSelectedTasks();
     });

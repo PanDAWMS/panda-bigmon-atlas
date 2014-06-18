@@ -286,14 +286,20 @@ $(document).ready(function () {
     });
 
     $("#btn_do_reassign_cloud").click(function() {
-         doTasksAction('reassign_to_cloud');
+        doTasksAction('reassign_to_cloud');
         $("#task_reassign_menu").hide();
     });
 
     $("#btn_do_reassign_site").click(function() {
-         doTasksAction('reassign_to_site');
+        doTasksAction('reassign_to_site');
         $("#task_reassign_menu").hide();
     });
+
+
+   $("[id^=btn_do_]").click(function() {
+       $("#select_all_tasks").prop("checked", false);
+       $("#select_all_tasks").change();
+   });
 
 
     $("#selected_tasks").change(function () {
