@@ -9,6 +9,6 @@ APP_SETTINGS = {
                     'panda_links': 'D:/DEV/deft-ui/branches/sgayazov/bigpandamon/prodtask/panda_links.csv'},
 'prodtask.auth'   : { 'user': 'bigpandamontestuser',
                     'password': 'Y8NLCmjHROqMIRWk'},
-'prodtask.default.email.list' : [''],
-'prodtask.email.from' : 'sbelov@cern.ch'
+'prodtask.default.email.list' : ['mborodin@cern.ch','dmitry.v.golubkov@cern.ch'],
+'prodtask.email.from' : 'mborodin@cern.ch'
 }
