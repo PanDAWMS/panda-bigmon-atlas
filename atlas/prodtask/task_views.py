@@ -42,8 +42,10 @@ def task_details(request, rid=None):
 
    permissions = {}
    # TODO: these actions are needed from DEFT and JEDI (SB)
-   for action in ['edit', 'clone', 'obsolete']:
+   for action in ['edit', 'clone']:
        permissions[action] = False
+
+   permissions['obsolete'] = task.status in ['done', 'finished']
 
    for action in ['abort', 'finish', 'change_prio', 'reassign']:
        permissions[action] = task_not_ended
