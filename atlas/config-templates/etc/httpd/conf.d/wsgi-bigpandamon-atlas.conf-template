@@ -216,6 +216,7 @@ RewriteRule ^/(.*) /prodsys/$1 [r=301,L]
 RewriteCond %{REQUEST_URI} ^/prodsys/
 RewriteCond %{REQUEST_URI} !^/prodsys/prodtask
 RewriteCond %{REQUEST_URI} !^/prodsys/getdatasets
+RewriteCond %{REQUEST_URI} !^/prodsys/djangojs
 RewriteRule ^/prodsys/(.*) /$1 [R=301,L]
 
 
