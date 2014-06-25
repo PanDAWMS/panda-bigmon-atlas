@@ -302,7 +302,6 @@ class ProductionTask(models.Model):
     submit_time = models.DateTimeField(db_column='SUBMIT_TIME', null=False)
     start_time = models.DateTimeField(db_column='START_TIME', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
-    bug_report = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUG_REPORT', null=False)
     pptimestamp = models.DateTimeField(db_column='PPTIMESTAMP', null=True)
     postproduction = models.CharField(max_length=128, db_column='POSTPRODUCTION', null=True)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=True)
