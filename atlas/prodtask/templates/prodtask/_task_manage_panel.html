@@ -48,7 +48,7 @@
                     >Reassign</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_obsolete"
-                    {% if can_obsolete_task %} {% comment %} or not task.id %} {% endcomment %}
+                    {% if can_obsolete_task or not task.id %}
                         data-dropdown="task_obsolete_menu"
                         class="small radio button"
                     {% else %}
@@ -94,6 +94,27 @@
             </div>
         </div>
 
+        <div id="task_obsolete_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-12 columns text-center bodyfont-color">
+                        <br>
+                        <label> Obsoletion of done/finished tasks </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_obsolete" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_obsolete">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_obsolete">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
@@ -102,7 +123,7 @@
                         <input type="text" id="new_priority" placeholder="New priority">
                     </div>
                     <div class="small-4 large-4 columns">
-                        <a class="button postfix" id="btn_do_set_priority">Go</a>
+                        <a class="button postfix" id="btn_do_set_priority">Set</a>
                     </div>
                 </div>
                 <div class="row">
@@ -279,6 +300,11 @@ $(document).ready(function () {
         $("#task_finish_menu").hide();
     });
 
+    $("#btn_do_obsolete").click(function () {
+        doTasksAction('obsolete');
+        $("#task_obsolete_menu").hide();
+    });
+
     $("#btn_do_set_priority").click(function () {
         doTasksAction('change_priority');
         $("#task_change_prio_menu").hide();
@@ -286,14 +312,20 @@ $(document).ready(function () {
     });
 
     $("#btn_do_reassign_cloud").click(function() {
-         doTasksAction('reassign_to_cloud');
+        doTasksAction('reassign_to_cloud');
         $("#task_reassign_menu").hide();
     });
 
     $("#btn_do_reassign_site").click(function() {
-         doTasksAction('reassign_to_site');
+        doTasksAction('reassign_to_site');
         $("#task_reassign_menu").hide();
     });
+
+
+   $("[id^=btn_do_]").click(function() {
+       $("#select_all_tasks").prop("checked", false);
+       $("#select_all_tasks").change();
+   });
 
 
     $("#selected_tasks").change(function () {

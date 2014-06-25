@@ -12,9 +12,10 @@
 # Apr 27, 2014. add SSO
 # May 14, 2014. move production containers handling
 #               add Rucio clients to a separate file
-# June 2, 2014. Set current priority = priority if current_priority=None
+# June  2, 2014. Set current priority = priority if current_priority=None
+# June 12, 2014. changes in DEFT/JEDI synchronization part
 #
-# Last Edit : Jun 2, 2014 ak
+# Last Edit : Jun 12, 2014 ak
 #
 
 import re
@@ -499,6 +500,7 @@ def insertJediTasksJSON(user_task_list):
      if p['start_time'] != 'None' : deft_task_params[i]['START_TIME'] = p['start_time']
      if p['submit_time']!= 'None' : deft_task_params[i]['SUBMIT_TIME']= p['submit_time']
      if p['total_done_jobs'] != None : deft_task_params[i]['TOTAL_DONE_JOBS'] = p['total_done_jobs']
+     if p['total_events'] != None    : deft_task_params[i]['TOTAL_EVENTS']    = p['total_events']
 
      jj = deft_task_params[i]['TASKNAME'].split('.')
      user_project_name = jj[0]
@@ -750,7 +752,7 @@ def synchronizeJediDeftTasks() :
 
     user_task_list      = []
     user_task_params    = {'taskid' : -1,'total_done_jobs':-1,'status' :'','submit_time' : -1, 'start_time' : 'None',\
-                           'priority' : '-1','total_req_jobs':-1}
+                           'priority' : '-1','total_req_jobs':-1, 'total_events':0}
 
     updateIntervalHours = TASK_SYNCH_INTERVAL
     timeIntervalOracleHours = "%s/%s"%(updateIntervalHours,24)
@@ -765,7 +767,7 @@ def synchronizeJediDeftTasks() :
     t_table_DEFT = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
     t_table_JEDI = "%s.%s"%(deftDB,deft_conf.daemon['t_task'])
 
-    sql_select = "SELECT taskid, status,total_req_jobs,total_done_jobs,submit_time, start_time, current_priority "
+    sql_select = "SELECT taskid, status,total_req_jobs,total_done_jobs,submit_time, start_time, current_priority,total_events "
     sql        = sql_select
     sql       += "FROM %s WHERE  timestamp > current_timestamp - %s "%(t_table_DEFT,timeIntervalOracleHours)
     sql       += "AND  taskid > %s "%(MIN_DEFT_TASK_ID)
@@ -777,7 +779,7 @@ def synchronizeJediDeftTasks() :
 
     (pdb,dbcur,deftDB) = connectJEDI('R')
     sql_select = "SELECT taskid, status,total_done_jobs,submit_time, start_time, prodsourcelabel,"
-    sql_select+= "priority,current_priority, taskname, total_req_jobs "
+    sql_select+= "priority,current_priority, taskname, total_req_jobs, total_events "
     sql = sql_select
     sql       += "FROM %s WHERE  timestamp > current_timestamp - %s "%(t_table_JEDI,timeIntervalOracleHours)
     sql       += "AND  taskid > %s "%(MIN_DEFT_TASK_ID)
@@ -800,15 +802,19 @@ def synchronizeJediDeftTasks() :
       tj_curprio = tj[7]
       tj_taskname= tj[8]
       tj_req_jobs= tj[9]
+      tj_total_events = tj[10]
       if tj_req_jobs == None or tj_req_jobs < 0 :
           tj_req_jobs = -1
       found = False
       for td in tasksDEFT :
-        td_tid = td[0]
-        td_done= td[3]
-        td_submit = td[4]
-        td_start  = td[5]
-        td_priority= td[6]
+        td_tid      = td[0]
+        td_status   = td[1]
+        td_req_jobs = td[2]
+        td_done     = td[3]
+        td_submit   = td[4]
+        td_start    = td[5]
+        td_priority = td[6]
+        td_total_events = td[7]
         if td_tid == tj_tid :
          # compare records
          print "Compare records for TID = %s"%(tj_tid)
@@ -828,11 +834,14 @@ def synchronizeJediDeftTasks() :
            user_task_params['current_priority']= tj_curprio
            user_task_params['prodsourcelabel'] = tj_prodsourcelabel
            user_task_params['total_req_jobs']  = tj_req_jobs
+           user_task_params['total_events']    = tj_total_events
            user_task_list.append(user_task_params.copy())
        else :
            print "synchroniseJediDeft WARNING. Task %s NOT FOUND in %s"%(tj_tid,t_table_DEFT)
       if found == True :
+        print "JEDI Task ID, status, priority, total_events ",tj_tid, tj_status, tj_curprio, tj_total_events   
         td_status = td[1]
+        sql_update = None
         if tj_status != td_status :
          print "Status has changed. DEFT, JEDI : %s, %s"%(td_status,tj_status)
          if td_status in  post_production_status :
@@ -841,8 +850,9 @@ def synchronizeJediDeftTasks() :
            td_status   = tj_status
            td_done     = tj_done
            td_req_jobs = tj_req_jobs
-           sql_update  = "UPDATE %s SET status='%s',total_done_jobs=%s,total_req_jobs=%s"%\
-               (t_table_DEFT,td_status,td_done,td_req_jobs)
+           td_total_events = tj_total_events
+           sql_update  = "UPDATE %s SET status='%s',total_done_jobs=%s,total_req_jobs=%s,total_events=%s"%\
+               (t_table_DEFT,td_status,td_done,td_req_jobs,td_total_events)
            if tj_start == None :
                print "Warning. Task ID = %s : invalid start time in t_task : %s (%s)"%(td_tid,tj_start,td_start)
            else :
@@ -855,8 +865,7 @@ def synchronizeJediDeftTasks() :
             sql_update += ",submit_time=to_timestamp('%s','YYYY-MM-DD HH24:MI:SS')"%(td_submit)
            sql_update += ",TIMESTAMP = current_timestamp "
            sql_update += "WHERE taskid = %s"%(td_tid)
-           print sql_update
-           sql_update_deft.append(sql_update)
+
         elif tj_curprio != td_priority :
           if td_status in post_production_status or td_status in end_status :
            print "Ignore. DEFT status (in post_production)... %s"%(td_status) 
@@ -870,9 +879,33 @@ def synchronizeJediDeftTasks() :
            if sql_update != 'XYZ' :   
             sql_update+= ",TIMESTAMP = current_timestamp "
             sql_update+= "WHERE taskid = %s"%(td_tid)
+        elif tj_total_events != td_total_events :
+            if tj_total_events != None :
+             print "Total events (DEFT, JEDI) : ",td_total_events, tj_total_events
+             td_total_events = tj_total_events  
+             sql_update  = "UPDATE %s SET total_events = %s, "%(t_table_DEFT,td_total_events)
+             sql_update += "TIMESTAMP = current_timestamp "
+             sql_update += "WHERE taskid = %s"%(td_tid)
+        elif tj_done != td_done :
+            if tj_done != None :
+             print "Total done jobs (DEFT, JEDI) : ",td_done, tj_done
+             td_done = tj_done  
+             sql_update  = "UPDATE %s SET total_done_jobs = %s, "%(t_table_DEFT,td_done)
+             sql_update += "TIMESTAMP = current_timestamp "
+             sql_update += "WHERE taskid = %s"%(td_tid)
+        elif tj_req_jobs != td_req_jobs :
+             print "Total requested jobs (DEFT, JEDI) : ",td_req_jobs, tj_req_jobs
+             td_req_jobs = tj_req_jobs  
+             sql_update  = "UPDATE %s SET total_req_jobs = %s,"%(t_table_DEFT,td_req_jobs)
+             sql_update += "TIMESTAMP = current_timestamp "
+             sql_update += "WHERE taskid = %s"%(td_tid)
+        else :   
+            print "DEFT Task ID, status, priority, total_events ",td_tid, td_status, td_priority, td_total_events
+            print "Synch done"
+        if sql_update != None and sql_update != 'XYZ' :
             print sql_update
-            sql_update_deft.append(sql_update)  
-             
+            sql_update_deft.append(sql_update)
+            
     db_update = True
     if len(sql_update_deft) and db_update == True :
      print "Update database information (",len(sql_update_deft)," records)"   

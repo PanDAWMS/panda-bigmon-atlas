@@ -44,6 +44,7 @@ urlpatterns = patterns('',
 
     url(r'^task_table/$',               'atlas.prodtask.task_views.task_table',         name='task_table'),
     url(r'^task/(?P<rid>\d+)/$',        'atlas.prodtask.task_views.task_details',       name='task'),
+    url(r'^task/(?P<tid>\d+)/same_slice_tasks/$', 'atlas.prodtask.task_manage_views.get_same_slice_tasks', name='same_slice_tasks'),
     url(r'^task_clone/(?P<rid>\d+)/$',  'atlas.prodtask.task_views.task_clone',         name='task_clone'),
     url(r'^task_update/(?P<rid>\d+)/$', 'atlas.prodtask.task_views.task_update',        name='task_update'),
     url(r'^task_create/$',              'atlas.prodtask.task_views.task_create',        name='task_create'),

@@ -202,10 +202,20 @@ RedirectMatch permanent /dev$ /dev/
  #################################
  
 ### 2014-06-12 adding apache redirects before we integrate jobs and prodsys2  mon
-RedirectPermanent /prodtask http://bigpanda.cern.ch/prodsys/prodtask
-RedirectPermanent /getdatasets http://bigpanda.cern.ch/prodsys/getdatasets
+#RedirectPermanent /prodtask http://bigpanda.cern.ch/prodsys/prodtask
+#RedirectPermanent /getdatasets http://bigpanda.cern.ch/prodsys/getdatasets
 
+RewriteEngine on
 
+# Redirect ProdSys2 URLs to /prodsys/
+RewriteCond %{REQUEST_URI} ^/prodtask [OR]
+RewriteCond %{REQUEST_URI} ^/getdatasets
+RewriteRule ^/(.*) /prodsys/$1 [r=301,L]
 
+# Address requests to code pages to the corresponding / URL (with no /prodsys prefix)
+RewriteCond %{REQUEST_URI} ^/prodsys/
+RewriteCond %{REQUEST_URI} !^/prodsys/prodtask
+RewriteCond %{REQUEST_URI} !^/prodsys/getdatasets
+RewriteRule ^/prodsys/(.*) /$1 [R=301,L]
 
 

@@ -42,8 +42,10 @@ def task_details(request, rid=None):
 
    permissions = {}
    # TODO: these actions are needed from DEFT and JEDI (SB)
-   for action in ['edit', 'clone', 'obsolete']:
+   for action in ['edit', 'clone']:
        permissions[action] = False
+
+   permissions['obsolete'] = task.status in ['done', 'finished']
 
    for action in ['abort', 'finish', 'change_prio', 'reassign']:
        permissions[action] = task_not_ended
@@ -416,14 +418,23 @@ def task_table(request):
 
 
 def get_clouds():
-   clouds = [ x.get('cloud') for x in Schedconfig.objects.values('cloud').distinct() ]
-   locale.setlocale(locale.LC_ALL, '')
-   clouds = sorted(clouds, key=locale.strxfrm)
-   return clouds
+    """
+    Get list of clouds
+    :return: list of clouds names
+    """
+    clouds = [ x.get('cloud') for x in Schedconfig.objects.values('cloud').distinct() ]
+    locale.setlocale(locale.LC_ALL, '')
+    clouds = sorted(clouds, key=locale.strxfrm)
+    return clouds
 
 
 def get_sites():
+    """
+    Get list of site names
+    :return: list of site names
+    """
     sites = [ x.get('siteid') for x in Schedconfig.objects.values('siteid').distinct() ]
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
+

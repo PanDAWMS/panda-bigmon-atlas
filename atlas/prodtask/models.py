@@ -168,7 +168,7 @@ class InputRequestList(models.Model):
     slice = models.DecimalField(decimal_places=0, max_digits=12, db_column='SLICE', null=False)
     brief = models.CharField(max_length=150, db_column='BRIEF')
     phys_comment = models.CharField(max_length=256, db_column='PHYSCOMMENT')
-    comment = models.CharField(max_length=256, db_column='SLICECOMMENT')
+    comment = models.CharField(max_length=512, db_column='SLICECOMMENT')
     input_data = models.CharField(max_length=150, db_column='INPUTDATA')
     project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
@@ -221,6 +221,9 @@ class StepExecution(models.Model):
     def save_with_current_time(self, *args, **kwargs):
         if not self.step_def_time:
             self.step_def_time = timezone.now()
+        if self.status == 'Approved':
+            if not self.step_appr_time:
+                self.step_appr_time = timezone.now()
         self.save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -299,7 +302,6 @@ class ProductionTask(models.Model):
     submit_time = models.DateTimeField(db_column='SUBMIT_TIME', null=False)
     start_time = models.DateTimeField(db_column='START_TIME', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
-    bug_report = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUG_REPORT', null=False)
     pptimestamp = models.DateTimeField(db_column='PPTIMESTAMP', null=True)
     postproduction = models.CharField(max_length=128, db_column='POSTPRODUCTION', null=True)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=True)
@@ -446,7 +448,7 @@ def get_default_nEventsPerJob_dict():
 
 def get_default_project_mode_dict():
     default_dict = {
-         'Evgen':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
+         'Evgen':'spacetoken=ATLASDATADISK',
          'Simul':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASDATADISK',
          'Merge':'cmtconfig=x86_64-slc5-gcc43-opt;spacetoken=ATLASMCTAPE',
          'Digi':'Npileup=5;spacetoken=ATLASDATADISK',

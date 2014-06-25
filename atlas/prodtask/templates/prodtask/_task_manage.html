@@ -81,14 +81,14 @@ $(document).ready(function() {
            var found = href.match( /\/task\/(\d+)\/?/ );
            if (!found) { return true; }
            var id = found[1];
-           makeCheckbox("select_task_" + id, id, "cbx_task_select").insertBefore( $(this) );
+           makeCheckbox("select_task_" + id, id, "cbx_task_select").insertBefore( $(this) ).append("&nbsp;");
        });
 
        $("#select_all_tasks").prop('checked', false);
 
     });
 
-    $("#select_all_tasks").click( function () {
+    $("#select_all_tasks").change( function () {
         $('.cbx_task_select').prop('checked', this.checked);
         onUpdateSelectedTasks();
     });

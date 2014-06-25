@@ -5,6 +5,7 @@ class ProductionDatasetsExec(models.Model):
     taskid = models.DecimalField(decimal_places=0, max_digits=10, db_column='TASK_ID', null=False, default=0)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
+    events =  models.DecimalField(decimal_places=0, max_digits=7, db_column='EVENTS', null=False, default=0)
 
     class Meta:
         app_label = "grisli"

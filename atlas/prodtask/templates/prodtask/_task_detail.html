@@ -33,7 +33,7 @@
 {% block body %}
 <table>
 
-<tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="{% url 'jobList' %}?jeditaskid={{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="{% url 'jobList' %}{{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="step">Step execution:</label></th><td>{% if task.step.id %}<a href="{% url 'prodtask:step_execution' task.step.id %}">{{task.step.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:request' task.request.reqid %}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="parent_id">Parent ID:</label></th><td>{% if task.parent_id %}<a href="{% url 'prodtask:task' task.parent_id  %}">{{task.parent_id}}</a>{% else %}None{% endif %}</td></tr>
@@ -55,7 +55,6 @@
 <tr><th><label for="submit_time">Submit time:</label></th><td>{{ task.submit_time }}</td></tr>
 <tr><th><label for="start_time">Start time:</label></th><td>{{ task.start_time }}</td></tr>
 <tr><th><label for="timestamp">Timestamp:</label></th><td>{{ task.timestamp }}</td></tr>
-<tr><th><label for="bug_report">Bug report:</label></th><td>{{ task.bug_report }}</td></tr>
 <tr><th><label for="reference">Reference:</label></th><td><a href="https://its.cern.ch/jira/browse/{{ task.reference }}">{{ task.reference }}</a></td></tr>
 <tr><th><label for="pptimestamp">Pptimestamp:</label></th><td>{{ task.pptimestamp }}</td></tr>
 <tr><th><label for="postproduction">Postproduction:</label></th><td>{{ task.postproduction }}</td></tr>

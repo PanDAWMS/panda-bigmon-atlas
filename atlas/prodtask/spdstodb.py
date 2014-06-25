@@ -47,14 +47,24 @@ def get_key_by_url(url):
 def fill_template(step_name, tag, priority, formats=None, ram=None):
         st = None
         try:
-            if(not formats)and(not ram):
-                st = StepTemplate.objects.all().filter(ctag=tag)[0]
-            if (not formats) and (ram):
-                st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
-            if (formats) and (not ram):
-                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
-            if (formats) and (ram): 
-                st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]   
+            if not step_name:
+                if(not formats)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag)[0]
+                if (not formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
+                if (formats) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
+                if (formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]
+            else:
+                if(not formats)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, step=step_name)[0]
+                if (not formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram, step=step_name)[0]
+                if (formats) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
+                if (formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
                 
         except:
             pass
@@ -74,24 +84,12 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     memory = int(tr.memory)
                 if not step_name:
                     step_name = tr.step
-                #Ugly hack for https://code.djangoproject.com/ticket/20201
-                try:
-                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
-                                                   ctag=tag, priority=priority,
-                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
-                                                   output_formats=output_formats, trf_name=tr.trf,
-                                                   lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
-                    st.save()
-                except:
-                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
-                                                   ctag=tag, priority=priority,
-                                                   cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
-                                                   output_formats=tr.formats, trf_name=tr.trf,
-                                                   lparams=tr.lparams[100:], vparams=tr.vparams[100:], swrelease=tr.trfv)                    
-                    st.save()
-                    st.lparams = tr.lparams
-                    st.vparams = tr.vparams
-                    st.save()
+                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
+                                               ctag=tag, priority=priority,
+                                               cpu_per_event=int(tr.cpu_per_event), memory=memory,
+                                               output_formats=output_formats, trf_name=tr.trf,
+                                               lparams='', vparams='', swrelease=tr.trfv)
+                st.save()
                 _logger.debug('Created step template: %i' % st.id)
                 return st
 
