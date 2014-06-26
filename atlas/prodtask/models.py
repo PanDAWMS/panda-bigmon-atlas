@@ -38,8 +38,9 @@ class TProject(models.Model):
         db_table = u'"ATLAS_DEFT"."T_PROJECTS"'
 
 class TRequest(models.Model):
-    PHYS_GROUPS=[(x,x) for x in ['physics','Top','StandartModel','Exotics','SUSY','Higgs','JetEtmiss','Tau','FlavourTag',
-                                'Egamma','BPhys','TrackingPerf','HeavyIons','Muon','reprocessing','trig-hlt']]
+    PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
+                                 'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
+                                 'reprocessing','trig-hlt']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)

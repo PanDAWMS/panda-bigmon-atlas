@@ -172,7 +172,7 @@ def hlt_form_prefill(form_data, request):
     # Fill default values
     form_data['request_type'] = 'HLT'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '').replace('GP_','')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '').replace('GP_','')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
@@ -241,7 +241,7 @@ def dpd_form_prefill(form_data, request):
     # Fill default values
     form_data['request_type'] = 'GROUP'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
@@ -309,7 +309,7 @@ def reprocessing_form_prefill(form_data, request):
     # Fill default values
     form_data['request_type'] = 'REPROCESSING'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
