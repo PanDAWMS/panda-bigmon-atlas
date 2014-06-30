@@ -12,5 +12,15 @@ class ProductionDatasetsExec(models.Model):
         managed = False
         db_table = u'"ATLAS_GRISLI_R"."T_PRODUCTIONDATASETS_EXEC"'
 
+class TaskProdSys1(models.Model):
+    taskid = models.DecimalField(decimal_places=0, max_digits=10, db_column='REQID', primary_key=True)
+    total_events =  models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_EVENTS')
+
+    class Meta:
+        app_label = "grisli"
+        managed = False
+        db_table = u'"ATLAS_GRISLI_R"."T_TASK_REQUEST"'
+
+
 class TRequest(models.Model):
     request = models.CharField(max_length=200, db_column='REQUEST', null=True)

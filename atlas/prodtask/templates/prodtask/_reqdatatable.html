@@ -251,10 +251,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
     function approveClick(event,isApprove, approveLevel){
         event.preventDefault();
+        var toChangeDatasets = [];
+        var startFindig = false;
         var sendData = Object();
             $(".checkboxSlice:checked").each(function(){
                 {#                   8 = "checkbox".length#}
                 var sliceID = $(this).attr("id").slice(8);
+                var existSkipped = false;
                 if ($("#inputList_div".concat(sliceID)).is(":visible")){
                     if (! sendData[sliceID]){
                         sendData[sliceID] = Object();
@@ -265,7 +268,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         var val = " ";
                         var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
                         var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
-
+                        if (isSkipped){
+                            existSkipped = true;
+                        }
                         if ($(step_td_short).css("background-color") !=  $("#foreignColor").css("background-color")){
                             val = $(step_td_short).html();
                         } else {
@@ -280,8 +285,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         sliceSteps[{{ forloop.counter0 }}] = {"value":val,"is_skipped":isSkipped, "formats":""};
                     {% endfor %}
                      sliceSteps[{{  step_list|length }}] = {"foreign_id":foreignID};
+                     sliceSteps[{{  step_list|length }}+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()}
                     sendData[sliceID] = sliceSteps;
-
+                    if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
+                        toChangeDatasets.push(sliceID);
+                    }
+                    if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
+                        startFindig = true;
+                    }
                 }
             });
 
@@ -306,12 +317,30 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         if(status){
                             var missedList = $.evalJSON(data).data;
                             var slices = $.evalJSON(data).slices;
-                            if (missedList.length != 0) {
-                                $("#missing_tags_string").html(missedList.toString());
-                                $("#missing_tags").show();
+                            var wrongSLices = $.evalJSON(data).wrong_slices;
+                            console.log(wrongSLices);
+                            var doubleTrf = $.evalJSON(data).double_trf;
+                            if ((missedList.length != 0)||(doubleTrf.length != 0)) {
+                                if (missedList.length != 0) {
+                                    $("#missing_tags_string").html(missedList.toString());
+                                    $("#missing_tags").show();
+                                }
+                                if (doubleTrf.length != 0){
+                                    $("#doubleTagsString").html(doubleTrf.toString());
+                                    $("#doubleTags").show();
+                                }
                             } else {
+                                if(wrongSLices.length>0){
+                                    $("#wrongSliceString").html(wrongSLices.toString());
+                                    $("#wrongSlice").show();
+                                } else {
+                                    $("#wrongSlice").hide();
+                                }
                                 if(slices.length >0){
+                                   var datasets = $.evalJSON(data).datasets_dict;
                                    $("#missing_tags").hide();
+                                   $("#doubleTags").hide();
+
                                    if(isApprove){
                                        $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
@@ -327,6 +356,15 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                    $("#approveDialog").dialog("open");
                                 }
                             }
+                            if (startFindig){
+                                findInputClick(event);
+                            } else{
+                                var i=0;
+                                for (;i<toChangeDatasets.length;i++){
+                                    $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
+                                }
+                            }
+
                         } else {
                             $( "#problemDialog" ).dialog("open");
                         }
@@ -527,6 +565,48 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
               return false;
         };
+        function findInputClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            sendData = sliceList;
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:find_input_datasets' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        var slices = $.evalJSON(data).data;
+                        var slice;
+                        for (slice in slices) {
+                            var sliceName = "#inputDatasetSelect" + slice;
+                            $(sliceName).html("");
+                            for (var i=0;i<slices[slice].length;i++){
+                                $(sliceName).append($('<option>', {
+                                    value: slices[slice][i].dataset_name,
+                                    text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
+                                }));
+                                $(sliceName).show();
+                            }
+                            $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString())
+                            if(slices[slice].length == 1){
+                                $("#inputDatasetSelectCount"+slice).css({'color':'green'})
+                            }else{
+                                 $("#inputDatasetSelectCount"+slice).css({'color':'red'})
+                            }
+                        }
+                    }
+                });
+              return false;
+        };
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -568,7 +648,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
-
+<div id="doubleTags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
+    <span> Please replace these old tags with double trf before approval: </span><span id="doubleTagsString"></span></div>
+<div id="wrongSlice" class="alert-box alert round" style="display: none"><strong >Error: </strong>
+<span> Check these slices: </span><span id="wrongSliceString"></span></div>
 <form >
 <div id="tagIngo" ></div>
 
@@ -619,7 +702,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
     </tr>
 </table>
-</form>
+
 
 
     <div >
@@ -634,7 +717,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  inputList.input_data|length < 10  %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan" style="padding:0px" title="{{ inputList.dataset.name }}">
+                        <span class="showFullSpan" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset.name }}">
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
@@ -645,12 +728,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             {{ inputList.input_data|truncatechars:"58" }}
                         </span>
                     </td>
-                    <td>{{  inputList.dataset.name }}</td>
+                    <td><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
             <td></td>
             </tr>
-            <tr></tr>
+            <tr>
+                <td colspan="10" style="width: 500px" >
+                    <select id="inputDatasetSelect{{ inputList.slice }}" style="display: none">
+
+                    </select>
+                </td>
+                <td><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td>
+            </tr>
+
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
@@ -764,7 +855,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             <div class="small-1 columns">&nbsp;</div>
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
-
+            <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
     </div>
  </form>
