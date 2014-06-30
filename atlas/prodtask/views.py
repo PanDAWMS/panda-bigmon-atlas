@@ -256,16 +256,16 @@ def form_skipped_slice(slice, reqid):
 def find_input_datasets(request, reqid):
     if request.method == 'POST':
         results = {'success':False}
-        try:
-            slice_dataset_dict = {}
-            data = request.body
-            slices = json.loads(data)
-            for slice_number in slices:
+        slice_dataset_dict = {}
+        data = request.body
+        slices = json.loads(data)
+        for slice_number in slices:
+            try:
                 slice_dataset_dict.update(form_skipped_slice(slice_number,reqid))
+            except Exception,e:
+                pass
+        results.update({'success':True,'data':slice_dataset_dict})
 
-            results.update({'success':True,'data':slice_dataset_dict})
-        except Exception,e:
-            pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
@@ -294,7 +294,6 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 
             if not (req.manager) or (req.manager == 'None'):
                 missing_tags.append('No manager name!')
-                results = {'data': missing_tags,'slices': slices, 'success': True}
             else:
                 if req.request_type == 'MC':
                     create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
@@ -317,7 +316,6 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
                                                    status='approved')
                     request_status.save_with_current_time()
-            results = {'data': missing_tags,'slices': slices, 'success': True}
         else:
             _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
