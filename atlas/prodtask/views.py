@@ -238,8 +238,9 @@ def form_skipped_slice(slice, reqid):
         try:
             if len(processed_tags) == 1:
                 input_type = 'EVNT'
+            elif len(processed_tags) == 2:
+                input_type = 'simul.HITS'
             elif len(processed_tags) == 3:
-                #input_type = get_step_input_type(ordered_existed_steps[len(processed_tags)].step_template.ctag)
                 input_type = 'merge.HITS'
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
