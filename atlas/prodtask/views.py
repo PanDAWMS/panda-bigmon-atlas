@@ -234,6 +234,8 @@ def form_skipped_slice(slice, reqid):
     for step in ordered_existed_steps:
         if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
+        else:
+            break
     if input_list.input_data and processed_tags:
         try:
             if len(processed_tags) == 1:
@@ -245,7 +247,7 @@ def form_skipped_slice(slice, reqid):
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
-            print dataset_events
+            #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
             return {slice:dataset_events}
         except Exception,e:
@@ -336,13 +338,14 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     :return: list of dict {'dataset_name':'...','events':...}
     """
     dataset_pattern = "mc"+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
-    print dataset_pattern
+    _logger.debug("Search dataset by pattern %s"%dataset_pattern)
     datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
     return_list = []
     for dataset in datasets:
         task = TaskProdSys1.objects.get(taskid=dataset.taskid)
         return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
-    print datasets
+        _logger.debug("Find dataset: %s"%str(return_list[-1]))
+
     return return_list
 
 
@@ -364,15 +367,20 @@ def step_validation(slice_steps):
     wrong_skipping_slices = set()
     for slice, steps_status in slice_steps.items():
         is_skipped = True
+        is_not_skipped = False
         for steps in steps_status[:-1]:
             if steps['value'] and (steps['value'] not in tags):
                 tags.append(steps['value'])
             if steps['value']:
                 if steps['is_skipped'] == True:
-                    if not is_skipped:
-                        wrong_skipping_slices.add(slice)
+                    is_skipped = True
                 else:
-                    is_skipped = False
+                    if is_not_skipped and is_skipped:
+                        wrong_skipping_slices.add(slice)
+                    else:
+                        is_skipped = False
+                        is_not_skipped = True
+
     missing_tags = find_missing_tags(tags)
     old_double_trf = find_old_double_trf(tags)
     return missing_tags,list(wrong_skipping_slices),old_double_trf
