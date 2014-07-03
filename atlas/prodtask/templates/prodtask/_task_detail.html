@@ -1,6 +1,7 @@
 {% extends parent_template %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -10,15 +11,16 @@
 
 {% block base_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery-1.9.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 
-    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    {% django_js %}
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 
     <script type="text/javascript">
         $(document).foundation();

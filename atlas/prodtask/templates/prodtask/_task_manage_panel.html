@@ -1,3 +1,4 @@
+
 <div id="management_panel">
 
     <div class="button-group">
@@ -140,7 +141,7 @@
             <div class="small-12 large-12 columns bodyfont-color">
                 <div class="row">
                     <div class="small-10 large-10 columns">
-                        <select name="cloud_select" id="cloud_select">
+                        </label><select name="cloud_select" id="cloud_select">
                             <option value="" selected>Select cloud</option>
                         {% for entry in clouds %}
                             <option value="{{ entry }}">{{ entry }}</option>
@@ -189,9 +190,7 @@
 
     </div>
 
-    <div class="bottom" id="request_status_container">
-
-    </div>
+    <div class="bottom" id="request_status_container"></div>
 
 </div>
 
@@ -220,9 +219,63 @@ $.ajaxSetup({
 function makeAlertBox(content, box_id, text_id) {
     var $box = $( "<div/>", { id: box_id, class: "alert-box info radius", "data-alert": ""} )
     .append( $( "<span/>", { id: text_id, html: content} ) )
-    .append( $ ( "<a/>", {href: "#", class: "close", text: '×'} ) );
+    .append( $( "<a/>", {href: "#", class: "close", text: '×'} ) );
     return $box;
 }
+
+var modal_count = 0;
+function makeModalDialog(content) {
+    var $dialog = $("<div/>", { id: "modal_" + (modal_count++), class: "reveal-modal", "data-reveal": ""})
+        .append( $("<span/>", {html: content}) )
+        .append( $("<a/>", { class: "close-reveal-modal", text: "×" }) );
+
+    $('body').append($dialog);
+    return $dialog;
+}
+
+
+function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callback) {
+    function makeButtonBar(groups) {
+        var $bar = $("<div/>", { class: "button-bar" });
+        $.each(groups, function(index, group) {
+            var $group = $("<div/>", { class: "button-group" });
+            $.each(group, function(ind, button) {
+                $group.append(
+                    $("<li/>").append(
+                        $("<a/>", { href: button['href'], class: button['class'], text: button['text'] })
+                        .click(function() { callback( button['return_value'] ) })
+                    )
+                );
+            });
+            $bar.append($group);
+        });
+
+        return $bar;
+    }
+
+    var $title = $("<h3/>", { html: title + "<br/>" });
+    var $content = $("<span/>");
+
+    $content.append($title);
+
+    for (var task in tasks_affected) {
+        $content.append( $("<p/>",
+            { html: "<b> For task " + task + " will be also affected: </b> <br/>" + tasks_affected[task].join(", ") }
+        ) );
+    }
+
+    var btn_class = "small button";
+    $content.append(
+        makeButtonBar([
+            [ { text: "For all affected tasks", return_value: "all", class: btn_class, href:"#" } ],
+            [ { text: "For selected tasks", return_value: "selected", class: btn_class, href:"#" } ],
+            [ { text: "Cancel", return_value: "cancel", class: btn_class, href: "javascript: $('a.close-reveal-modal').trigger('click');" } ]
+        ])
+    );
+
+    return ( makeModalDialog($content) );
+}
+
 
 function getSelectedTasksList() {
     var tasks = $("#selected_tasks").val().split(',');
@@ -232,7 +285,9 @@ function getSelectedTasksList() {
     return tasks;
 }
 
-function doTasksAction(action) {
+
+// Perform specified action with given parameters on the list of tasks
+function doTasksAction(action, tasks, parameters) {
     var tasks = getSelectedTasksList();
 
     if (tasks.length == 0) {
@@ -242,12 +297,8 @@ function doTasksAction(action) {
     var postData = Object();
     postData['tasks'] = tasks;
 
-    if (action == "change_priority") {
-        postData['parameters'] = [$("#new_priority").val()];
-    } else if (action == "reassign_to_site") {
-        postData['parameters'] = [$("#site_select").val()];
-    } else if (action == "reassign_to_cloud") {
-        postData['parameters'] = [$("#cloud_select").val()];
+    if (parameters.length !== 0) {
+        postData['parameters'] = parameters;
     }
 
     var ajaxUrl =  "{% url 'prodtask:task_manage' %}" + action + "/";
@@ -275,6 +326,98 @@ function doTasksAction(action) {
     });
 }
 
+// get IDs and status of the dependent tasks from the same slice as given
+function getTaskSliceDependent(task_id) {
+    var data = {};
+    var ajaxUrl = Django.url('prodtask:same_slice_tasks', task_id);
+
+    $.when( $.ajax( {dataType: "json", url: ajaxUrl, async: false} ) ).then(function(_data){
+        $.each(_data['tasks'], function(key, val) {
+            if (key >= task_id) {
+                data[key] = val;
+            }
+        });
+    });
+
+    return data;
+}
+
+// Perform action on the selected tasks
+function doTasksActionSelected(action) {
+    var tasks = getSelectedTasksList();
+
+    if (tasks.length == 0) {
+        return;
+    }
+
+    var status_active = ['registered', 'assigning', 'submitting', 'running'];
+    var cascade_actions = ['kill', 'finish', 'increase_priority', 'decrease_priority'];
+    var actions_on_active = cascade_actions.concat( ['reassign_to_site', 'reassign_to_cloud'] );
+
+    var parameters = [];
+
+    // fill action parameters from inputs
+    if (action == "change_priority") {
+        parameters = [$("#new_priority").val()];
+    } else if (action == "reassign_to_site") {
+        parameters = [$("#site_select").val()];
+    } else if (action == "reassign_to_cloud") {
+        parameters = [$("#cloud_select").val()];
+    }
+
+    var slices = {};
+
+    $.each(tasks, function(index, task) {
+        slices[task] = getTaskSliceDependent(task);
+    });
+
+
+    if ($.inArray(action, actions_on_active) > -1) {
+        tasks = $.grep(tasks, function (task) {
+            return ($.inArray(slices[task][task]['status'], status_active) > -1);
+        });
+    }
+
+    if ($.inArray(action, cascade_actions) > -1) {
+        var show_dialog = false; // before showing dialog, check if other than selected tasks are affected
+        var tasks_affected = {};
+        var tasks_affected_arr = [];
+        $.each(tasks, function(index, task_id) {
+            tasks_affected[task_id] = [];
+            var dependent = slices[task_id];
+            for (var dep_id in dependent) {
+                if ( (dep_id>task_id)  && ($.inArray(dependent[dep_id]['status'], actions_on_active) > -1) ) {
+                    show_dialog = true;
+                    tasks_affected[task_id].push(dep_id);
+                    tasks_affected_arr.push(dep_id);
+                } // if
+            } // for dep
+        }); // for $.each task
+
+        if (!show_dialog) {
+            doTasksAction(action, tasks, parameters);
+            return;
+        }
+
+        makeTasksActionConfirmDialog(
+                "Perform action '" + action + "'",
+                action, tasks_affected,
+
+                function (response) {
+                    if (response == "all") {
+                        doTasksAction(action, tasks_affected_arr, parameters);
+                    } else if (response == "selected") {
+                        doTasksAction(action, tasks, parameters);
+                    }
+                }
+        ).foundation('reveal', 'open');
+
+    } else {
+        doTasksAction(action, tasks, parameters);
+    } // if action in cascade actions
+
+} // doTasksActionSelected
+
 
 $(document).ready(function () {
     // Make management buttons the same size
@@ -289,35 +432,36 @@ $(document).ready(function () {
 
     }
 
+    // TODO: optimize this with a cycle
     // Setting buttons handlers
     $("#btn_do_abort").click(function () {
-        doTasksAction('kill');
+        doTasksActionSelected('kill');
         $("#task_abort_menu").hide();
     });
 
     $("#btn_do_finish").click(function () {
-        doTasksAction('finish');
+        doTasksActionSelected('finish');
         $("#task_finish_menu").hide();
     });
 
     $("#btn_do_obsolete").click(function () {
-        doTasksAction('obsolete');
+        doTasksActionSelected('obsolete');
         $("#task_obsolete_menu").hide();
     });
 
     $("#btn_do_set_priority").click(function () {
-        doTasksAction('change_priority');
+        doTasksActionSelected('change_priority');
         $("#task_change_prio_menu").hide();
 
     });
 
     $("#btn_do_reassign_cloud").click(function() {
-        doTasksAction('reassign_to_cloud');
+        doTasksActionSelected('reassign_to_cloud');
         $("#task_reassign_menu").hide();
     });
 
     $("#btn_do_reassign_site").click(function() {
-        doTasksAction('reassign_to_site');
+        doTasksActionSelected('reassign_to_site');
         $("#task_reassign_menu").hide();
     });
 

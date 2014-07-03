@@ -90,7 +90,9 @@ def get_same_slice_tasks(request, tid):
     step_id = task.step.id
     slice_id = StepExecution.objects.get(id=step_id).slice.id
     steps = [ str(x.get('id')) for x in StepExecution.objects.filter(slice=slice_id).values("id") ]
-    tasks = [ str(x.get('id')) for x in ProductionTask.objects.filter(step__in=steps).values("id") ]
+    tasks = {}
+    for task in ProductionTask.objects.filter(step__in=steps).only("id", "status"):
+        tasks[str(task.id)] = { "id": str(task.id), "status": task.status }
 
     response = dict(tasks=tasks)
     return HttpResponse(json.dumps(response))
