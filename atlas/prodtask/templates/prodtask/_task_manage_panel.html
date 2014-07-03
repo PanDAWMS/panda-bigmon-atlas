@@ -12,6 +12,9 @@
                 <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
         {% endif %}
 
+                {% comment %}
+                TODO: optimize this with a loop ('can_*' to 'permissions' dict)
+                {% endcomment %}
                 <li><a data-options="is_hover:true" id="btn_abort"
                     {% if can_abort_task or not task.id %}
                         data-dropdown="task_abort_menu"
@@ -63,6 +66,9 @@
             </ul>
         </div>
 
+        {% comment %}
+        TODO: optimize with a loop
+        {% endcomment %}
         <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
@@ -234,6 +240,7 @@ function makeModalDialog(content) {
 }
 
 
+// Make and show modal dialog to confirm which action affects more tasks than it was selected
 function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callback) {
     function makeButtonBar(groups) {
         var $bar = $("<div/>", { class: "button-bar" });
@@ -277,6 +284,7 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
 }
 
 
+// Get list of tasks selected with checkboxes
 function getSelectedTasksList() {
     var tasks = $("#selected_tasks").val().split(',');
     if (tasks.length == 1 && !tasks[0]) {
@@ -379,6 +387,10 @@ function doTasksActionSelected(action) {
         });
     }
 
+    if (tasks.length == 0) {
+        return;
+    }
+
     if ($.inArray(action, cascade_actions) > -1) {
         var show_dialog = false; // before showing dialog, check if other than selected tasks are affected
         var tasks_affected = {};
@@ -433,44 +445,21 @@ $(document).ready(function () {
 
     }
 
-    // TODO: optimize this with a cycle
     // Setting buttons handlers
-    $("#btn_do_abort").click(function () {
-        doTasksActionSelected('kill');
-        $("#task_abort_menu").hide();
-    });
+    var button_action_map = {
+        "abort": "kill", "finish": "finish", "obsolete": "obsolete",
+        "set_priority": "change_priority",
+        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site"
+    };
 
-    $("#btn_do_finish").click(function () {
-        doTasksActionSelected('finish');
-        $("#task_finish_menu").hide();
-    });
-
-    $("#btn_do_obsolete").click(function () {
-        doTasksActionSelected('obsolete');
-        $("#task_obsolete_menu").hide();
-    });
-
-    $("#btn_do_set_priority").click(function () {
-        doTasksActionSelected('change_priority');
-        $("#task_change_prio_menu").hide();
-
-    });
-
-    $("#btn_do_reassign_cloud").click(function() {
-        doTasksActionSelected('reassign_to_cloud');
-        $("#task_reassign_menu").hide();
-    });
-
-    $("#btn_do_reassign_site").click(function() {
-        doTasksActionSelected('reassign_to_site');
-        $("#task_reassign_menu").hide();
-    });
-
-
-   $("[id^=btn_do_]").click(function() {
-       $("#select_all_tasks").prop("checked", false);
-       $("#select_all_tasks").change();
-   });
+    $.each(button_action_map, function(name, action) {
+        $("#btn_do_" +name).click(function(){
+            $('[id^="task_"][id$="_menu"]').hide(); // hide actions menus
+            doTasksActionSelected( button_action_map[name] );
+            $("#select_all_tasks").prop("checked", false); // un-check tasks after action
+            $("#select_all_tasks").change();
+        }); // on click
+    }); // $.each
 
 
     $("#selected_tasks").change(function () {
