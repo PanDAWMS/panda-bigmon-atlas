@@ -139,3 +139,25 @@ def get_tag_formats(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def reject_steps(request, reqid, step_filter):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            changed_steps = 0
+            if step_filter == 'all':
+                req = TRequest.objects.get(reqid=reqid)
+                steps = StepExecution.objects.filter(request=req)
+                for step in steps:
+                    if step.status == 'Approved':
+                        step.status = 'NotChecked'
+                        step.save()
+                        changed_steps += 1
+                    elif step.status == 'Skipped':
+                        step.status = 'NotCheckedSkipped'
+                        step.save()
+                        changed_steps += 1
+            results = {'success':True,'step_changed':str(changed_steps)}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
