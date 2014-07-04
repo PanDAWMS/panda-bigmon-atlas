@@ -408,7 +408,7 @@ class MCPriority(models.Model):
     def priority(self, step, tag):
         priority_py_dict = json.loads(self.priority_dict)
         if step == 'Simul' and tag[0] == 'a':
-            step == 'Simul(Fast)'
+            step = 'Simul(Fast)'
         if step in priority_py_dict:
             return priority_py_dict[step]
         else:
