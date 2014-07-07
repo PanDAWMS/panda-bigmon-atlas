@@ -116,6 +116,8 @@ def approve_existed_step(step, new_status):
 
 
 
+
+
 #TODO: FIX it. Make one commit
 def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99):
     """
@@ -161,9 +163,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                     approve_existed_step(ordered_existed_steps[i],step_status_definition(step_value['is_skipped'], index<=approve_level))
                                     i += 1
                                 else:
-                                    replace_steps = True
-                                    delete_chain_from = i
+                                    if not (ordered_existed_steps[i].status == 'Approved') and not (ordered_existed_steps[i].status == 'Skipped'):
+                                        replace_steps = True
+                                        delete_chain_from = i
+                                    else:
+                                        i += 1
                         if replace_steps:
+                            i += 1
                             #Create new step
                             _logger.debug("Create step: %s execution for request: %i slice: %i "%
                                           (steps_status[index],int(reqid),input_list.slice))
@@ -202,9 +208,12 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             _logger.debug('Step: %i saved; tag: %s priority: %i'%(st_exec.id,
                                                                           step_value['value'],
                                                                           temp_priority))
+                if (i<len(ordered_existed_steps)) and (i<delete_chain_from):
+                    delete_chain_from = i
                 if delete_chain_from >=0:
                     for j in range(delete_chain_from,len(ordered_existed_steps)):
-                        ordered_existed_steps[j].delete()
+                        if not (ordered_existed_steps[j].status == 'Approved') and not (ordered_existed_steps[j].status == 'Skipped'):
+                            ordered_existed_steps[j].delete()
             except Exception,e:
                 _logger.error("Problem step save/approval %s"%str(e))
                 raise e
@@ -231,19 +240,26 @@ def form_skipped_slice(slice, reqid):
     if ordered_existed_steps[0].status == 'Skipped' and input_list.dataset:
         return {}
     processed_tags = []
+    last_step_name = ''
     for step in ordered_existed_steps:
         if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
+            last_step_name = step.step_template.step
         else:
             break
     if input_list.input_data and processed_tags:
         try:
-            if len(processed_tags) == 1:
+            input_type = ''
+            if last_step_name == 'Evgen':
                 input_type = 'EVNT'
-            elif len(processed_tags) == 2:
+            elif last_step_name == 'Simul':
                 input_type = 'simul.HITS'
-            elif len(processed_tags) == 3:
+            elif last_step_name == 'Merge':
                 input_type = 'merge.HITS'
+            elif last_step_name == 'Reco':
+                input_type = 'recon.AOD'
+            elif last_step_name == 'Rec Merge':
+                input_type = 'merge.AOD'
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
