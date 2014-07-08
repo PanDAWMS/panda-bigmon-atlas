@@ -250,7 +250,7 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
                 $group.append(
                     $("<li/>").append(
                         $("<a/>", { href: button['href'], class: button['class'], text: button['text'] })
-                        .click(function() { callback( button['return_value'] ) })
+                        .click(function() { callback( button['return_value'] ); $('a.close-reveal-modal').trigger('click'); })
                     )
                 );
             });
@@ -276,7 +276,7 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
         makeButtonBar([
             [ { text: "For all affected tasks", return_value: "all", class: btn_class, href:"#" } ],
             [ { text: "For selected tasks", return_value: "selected", class: btn_class, href:"#" } ],
-            [ { text: "Cancel", return_value: "cancel", class: btn_class, href: "javascript: $('a.close-reveal-modal').trigger('click');" } ]
+            [ { text: "Cancel", return_value: "cancel", class: btn_class, href: "#" } ]
         ])
     );
 
