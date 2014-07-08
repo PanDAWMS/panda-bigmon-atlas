@@ -56,7 +56,8 @@
             var row = data['aaData'][i];
 {#            TODO: replace to Django.js, when it's ready https://github.com/noirbizarre/django.js/pull/38 #}
             row[0] = '<a href="'+"{% url 'prodtask:home' %}"+'request/'+ row[0] +'/">'+row[0]+'</a>&nbsp;&nbsp;'+'<span style="float: right;" ><a href="'+
-            "{% url 'prodtask:home' %}"+'request_update/' + row[0]+'/">Update</a>&nbsp;'+'<a href="'+"{% url 'prodtask:home' %}"+'inputlist_with_request/'+ row[0]+'/">List</a>';
+            "{% url 'prodtask:home' %}"+'request_update/' + row[0]+'/">Update</a>&nbsp;'+'<a href="'+"{% url 'prodtask:home' %}"+'inputlist_with_request/'+ row[0]+'/">List</a>&nbsp;'
+                    +'<a href="'+"{% url 'prodtask:home' %}"+'task_table/#/?request='+ row[0]+'">Tasks</a>';
 
             row[1] = '<a href="'+row[1]+'">'+row[1]+'</a>';
 
