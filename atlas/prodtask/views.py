@@ -576,6 +576,7 @@ def input_list_approve(request, rid=None):
         if task:
             task_short = task.status[0:8]
         return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
+
     if request.method == 'GET':
         try:
             cur_request = TRequest.objects.get(reqid=rid)
@@ -683,12 +684,12 @@ def input_list_approve(request, rid=None):
                     else:
                         i = 0
                         if not(slice_steps_list) and (len(temp_step_list) == 1):
-                            if current_step[0].step_parent:
-                                if current_step[0].step_parent.id != current_step[0].id:
+                            if temp_step_list[0][0].step_parent:
+                                if temp_step_list[0][0].step_parent.id != temp_step_list[0][0].id:
                                     # step in other chain
-                                    another_chain_step = StepExecution.objects.get(id=current_step[0].step_parent.id)
+                                    another_chain_step = StepExecution.objects.get(id=temp_step_list[0][0].step_parent.id)
                                     slice_steps_list.append((another_chain_step.id, form_step_obj(another_chain_step,{},True)))
-                            slice_steps_list.append((temp_step_list[j][0].id,form_step_obj(temp_step_list[j][0],temp_step_list[j][1])))
+                            slice_steps_list.append((temp_step_list[0][0].id,form_step_obj(temp_step_list[0][0],temp_step_list[0][1])))
                             temp_step_list.pop(0)
                         if not slice_steps_list:
                             step_id_list = [x[0].id for x in temp_step_list]
