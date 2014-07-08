@@ -96,12 +96,18 @@ def form_existed_step_list(step_list):
     return (result_list,another_chain_step)
 
 
+def similar_status(status, is_skipped):
+    return ((((status ==  'Skipped') or (status ==  'NotCheckedSkipped')) and is_skipped) or
+            (((status ==  'Approved') or (status ==  'NotChecked')) and not is_skipped))
+
+
+
 def step_is_equal(step_value, existed_step):
     if step_value['formats']:
         return (existed_step.step_template.output_formats == step_value['formats']) and \
-               (existed_step.step_template.ctag == step_value['value'])
+               (existed_step.step_template.ctag == step_value['value']) and similar_status(existed_step.status,step_value['is_skipped'])
     else:
-        return (existed_step.step_template.ctag == step_value['value'])
+        return (existed_step.step_template.ctag == step_value['value']) and similar_status(existed_step.status,step_value['is_skipped'])
 
 
 def approve_existed_step(step, new_status):
@@ -152,6 +158,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 delete_chain_from = 0
                 replace_steps = True
             i = 0
+            still_skipped = True
             try:
                 for index,step_value in enumerate(steps_status):
                     if step_value['value']:
@@ -161,11 +168,15 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             else:
                                 if step_is_equal(step_value,ordered_existed_steps[i]):
                                     approve_existed_step(ordered_existed_steps[i],step_status_definition(step_value['is_skipped'], index<=approve_level))
+                                    if  not (ordered_existed_steps[i].status == 'NotCheckedSkipped') and not (ordered_existed_steps[i].status == 'Skipped'):
+                                        still_skipped = False
+
                                     i += 1
                                 else:
                                     if not (ordered_existed_steps[i].status == 'Approved') and not (ordered_existed_steps[i].status == 'Skipped'):
                                         replace_steps = True
                                         delete_chain_from = i
+                                        parent_step = ordered_existed_steps[delete_chain_from-1]
                                     else:
                                         i += 1
                         if replace_steps:
@@ -174,9 +185,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             _logger.debug("Create step: %s execution for request: %i slice: %i "%
                                           (steps_status[index],int(reqid),input_list.slice))
                             temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
-                            # store input_vents only for evgen step, otherwise
+                            # store input_vents only for first not skipped step, otherwise
                             temp_input_events = -1
-                            if (index == 0) or (steps_status[0]['value']==''):
+                            if still_skipped:
                                 temp_input_events = input_list.input_events
                             if step_value['formats']:
                                 st = fill_template(STEPS[index],step_value['value'], temp_priority, step_value['formats'])
@@ -185,8 +196,6 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
                             st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
                                                     priority=temp_priority, input_events=temp_input_events)
-                            if delete_chain_from > 0 :
-                                parent_step = ordered_existed_steps[delete_chain_from-1]
                             if not input_list.project_mode:
                                 st_exec.set_task_config({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 st_exec.set_task_config({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
@@ -201,6 +210,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
                             st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
                             st_exec.save_with_current_time()
+                            if  not (st_exec.status == 'NotCheckedSkipped') and not (st_exec.status == 'Skipped'):
+                                still_skipped = False
                             if no_parent:
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
