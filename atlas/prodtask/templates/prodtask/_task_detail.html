@@ -11,15 +11,15 @@
 
 {% block base_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static 'js/jquery-1.9.1.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 
     {% django_js %}
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
     <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 
     <script type="text/javascript">

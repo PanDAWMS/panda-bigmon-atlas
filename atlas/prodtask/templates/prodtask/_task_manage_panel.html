@@ -250,7 +250,15 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
                 $group.append(
                     $("<li/>").append(
                         $("<a/>", { href: button['href'], class: button['class'], text: button['text'] })
-                        .click(function() { callback( button['return_value'] ); $('a.close-reveal-modal').trigger('click'); })
+                        .click(function() {
+                            try {
+                                callback( button['return_value'] );
+                            } catch(e) {
+                                throw e;
+                            } finally {
+                                $('a.close-reveal-modal').trigger('click'); 
+                            }
+                        })
                     )
                 );
             });
