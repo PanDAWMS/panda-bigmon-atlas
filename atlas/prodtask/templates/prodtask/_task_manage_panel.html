@@ -319,7 +319,7 @@ function doTasksAction(action, tasks, parameters) {
     $.ajax({
         url: ajaxUrl,
         type: "POST",
-        data: $.toJSON(postData),
+        data: JSON.stringify(postData),
         dataType: "json",
         success: function (result, status) {
             if (status) {
