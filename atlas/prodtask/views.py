@@ -334,13 +334,14 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     # except:
                     #     pass
                     for slice, new_dataset in slice_new_input.items():
-                        input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
-                        input_list.dataset = fill_dataset(new_dataset)
-                        input_list.save()
+                        if new_dataset:
+                            input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
+                            input_list.dataset = fill_dataset(new_dataset)
+                            input_list.save()
                 else:
                     create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
                 #TODO:Take owner from sso cookies
-                if req.cstatus.lower() == 'created':
+                if (req.cstatus.lower() == 'created') and (approve_level>0):
                     req.cstatus = 'approved'
                     req.save()
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
