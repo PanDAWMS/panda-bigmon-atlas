@@ -271,7 +271,7 @@ class ProductionTaskTable(datatables.DataTable):
         label='SPriority',
         sClass='numbers',
         )
-        
+
     class Meta:
         model = ProductionTask
 
@@ -325,7 +325,7 @@ class ProductionTaskTable(datatables.DataTable):
     def apply_filters(self, request):
         qs = self.get_queryset()
 
-        parameters = [   ('project','project'), ('username','username'), ('taskname','name'),
+        parameters = [   ('project','project'), ('username','username'),
                             ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
@@ -338,16 +338,20 @@ class ProductionTaskTable(datatables.DataTable):
                 else:
                     qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
 
-        task_type = request.GET.get('status', 0)
-        if task_type == 'active':
+        task_name = request.GET.get('taskname', 0)
+        if task_name:
+            qs = qs.filter(Q( **{ 'name__iregex' : task_name } ))
+
+        task_status = request.GET.get('status', 0)
+        if task_status == 'active':
             qs = qs.exclude( status__in=['done','finished','failed','broken','aborted'] )
-        elif task_type == 'ended':
+        elif task_status == 'ended':
             qs = qs.filter( status__in=['done','finished'] )
-        elif task_type == 'regular':
+        elif task_status == 'regular':
             qs = qs.exclude( status__in=['failed','broken','aborted'] )
-        elif task_type == 'irregular':
+        elif task_status == 'irregular':
             qs = qs.filter( status__in=['failed','broken','aborted'] )
-        elif task_type:
+        elif task_status:
             qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
 
         task_type = request.GET.get('task_type', 'production')
