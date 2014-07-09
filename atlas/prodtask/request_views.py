@@ -172,7 +172,7 @@ def hlt_form_prefill(form_data, request):
     # Fill default values
     form_data['request_type'] = 'HLT'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '').replace('GP_','')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '').replace('GP_','')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
@@ -236,12 +236,12 @@ def dpd_form_prefill(form_data, request):
         output_dict = conf_parser.parse_config(file_obj)
     except Exception, e:
         _logger.error('Problem with data gathering %s' % e)
-        eroor_message = str(e)
-        return {},eroor_message
+        error_message = str(e)
+        return {},error_message
     # Fill default values
     form_data['request_type'] = 'GROUP'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
@@ -266,6 +266,13 @@ def dpd_form_prefill(form_data, request):
         project_mode = output_dict['project_mode'][0]
         task_config.update({'project_mode':project_mode})
     if 'ds' in output_dict:
+        if len(output_dict.get('formats', [None]))>1 and len(output_dict.get('formats', [None]))!=len(output_dict['ds']):
+            error_message = 'ds and format lenght do not match'
+            return {}, error_message
+        if len(output_dict.get('formats', [None]))==1:
+            formats = output_dict.get('formats', [None])[0]*len(output_dict['ds'])
+        else:
+            formats = output_dict.get('formats', [None])
         for slice_index, ds in enumerate(output_dict['ds']):
             st_sexec_list = []
             irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
@@ -279,14 +286,14 @@ def dpd_form_prefill(form_data, request):
                              input_events=int(output_dict.get('total_num_genev', [-1])[0]))
                 st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
                                       'memory': output_dict.get('ram', [None])[0],
-                                      'formats': output_dict.get('formats', [None])[0],
+                                      'formats': formats[slice_index],
                                       'task_config':task_config})
             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-    eroor_message = ''
+    error_message = ''
     if not spreadsheet_dict:
-        eroor_message = 'No "ds" data founnd in file.'
+        error_message= 'No "ds" data founnd in file.'
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
-    return spreadsheet_dict, eroor_message
+    return spreadsheet_dict, error_message
 
 
 def reprocessing_form_prefill(form_data, request):
@@ -309,7 +316,7 @@ def reprocessing_form_prefill(form_data, request):
     # Fill default values
     form_data['request_type'] = 'REPROCESSING'
     if 'group' in output_dict:
-        form_data['phys_group'] = output_dict['group'][0].replace('GR_SM', 'StandartModel').replace('GR_', '')
+        form_data['phys_group'] = output_dict['group'][0].replace('GR_', '')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:

@@ -9,7 +9,8 @@ from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from ..getdatasets.models import ProductionDatasetsExec
+from .request_views import fill_dataset
+from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
 
 import core.datatables as datatables
 
@@ -95,12 +96,18 @@ def form_existed_step_list(step_list):
     return (result_list,another_chain_step)
 
 
+def similar_status(status, is_skipped):
+    return ((((status ==  'Skipped') or (status ==  'NotCheckedSkipped')) and is_skipped) or
+            (((status ==  'Approved') or (status ==  'NotChecked')) and not is_skipped))
+
+
+
 def step_is_equal(step_value, existed_step):
     if step_value['formats']:
         return (existed_step.step_template.output_formats == step_value['formats']) and \
-               (existed_step.step_template.ctag == step_value['value'])
+               (existed_step.step_template.ctag == step_value['value']) and similar_status(existed_step.status,step_value['is_skipped'])
     else:
-        return (existed_step.step_template.ctag == step_value['value'])
+        return (existed_step.step_template.ctag == step_value['value']) and similar_status(existed_step.status,step_value['is_skipped'])
 
 
 def approve_existed_step(step, new_status):
@@ -109,6 +116,8 @@ def approve_existed_step(step, new_status):
             step.status = new_status
             step.save_with_current_time()
     pass
+
+
 
 
 
@@ -149,6 +158,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 delete_chain_from = 0
                 replace_steps = True
             i = 0
+            still_skipped = True
             try:
                 for index,step_value in enumerate(steps_status):
                     if step_value['value']:
@@ -158,18 +168,26 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             else:
                                 if step_is_equal(step_value,ordered_existed_steps[i]):
                                     approve_existed_step(ordered_existed_steps[i],step_status_definition(step_value['is_skipped'], index<=approve_level))
+                                    if  not (ordered_existed_steps[i].status == 'NotCheckedSkipped') and not (ordered_existed_steps[i].status == 'Skipped'):
+                                        still_skipped = False
+
                                     i += 1
                                 else:
-                                    replace_steps = True
-                                    delete_chain_from = i
+                                    if not (ordered_existed_steps[i].status == 'Approved') and not (ordered_existed_steps[i].status == 'Skipped'):
+                                        replace_steps = True
+                                        delete_chain_from = i
+                                        parent_step = ordered_existed_steps[delete_chain_from-1]
+                                    else:
+                                        i += 1
                         if replace_steps:
+                            i += 1
                             #Create new step
                             _logger.debug("Create step: %s execution for request: %i slice: %i "%
                                           (steps_status[index],int(reqid),input_list.slice))
                             temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
-                            # store input_vents only for evgen step, otherwise
+                            # store input_vents only for first not skipped step, otherwise
                             temp_input_events = -1
-                            if (index == 0) or (steps_status[0]['value']==''):
+                            if still_skipped:
                                 temp_input_events = input_list.input_events
                             if step_value['formats']:
                                 st = fill_template(STEPS[index],step_value['value'], temp_priority, step_value['formats'])
@@ -178,8 +196,6 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
                             st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
                                                     priority=temp_priority, input_events=temp_input_events)
-                            if delete_chain_from > 0 :
-                                parent_step = ordered_existed_steps[delete_chain_from-1]
                             if not input_list.project_mode:
                                 st_exec.set_task_config({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 st_exec.set_task_config({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
@@ -194,6 +210,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
                             st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
                             st_exec.save_with_current_time()
+                            if  not (st_exec.status == 'NotCheckedSkipped') and not (st_exec.status == 'Skipped'):
+                                still_skipped = False
                             if no_parent:
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
@@ -201,9 +219,12 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             _logger.debug('Step: %i saved; tag: %s priority: %i'%(st_exec.id,
                                                                           step_value['value'],
                                                                           temp_priority))
+                if (i<len(ordered_existed_steps)) and (i<delete_chain_from):
+                    delete_chain_from = i
                 if delete_chain_from >=0:
                     for j in range(delete_chain_from,len(ordered_existed_steps)):
-                        ordered_existed_steps[j].delete()
+                        if not (ordered_existed_steps[j].status == 'Approved') and not (ordered_existed_steps[j].status == 'Skipped'):
+                            ordered_existed_steps[j].delete()
             except Exception,e:
                 _logger.error("Problem step save/approval %s"%str(e))
                 raise e
@@ -211,6 +232,11 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
     except Exception, e:
         _logger.error("Problem step save/approval %s"%str(e))
         raise e
+
+
+def get_step_input_type(ctag):
+    trtf = Ttrfconfig.objects.all().filter(tag=ctag.strip()[0], cid=int(ctag.strip()[1:]))[0]
+    return trtf.input
 
 
 def form_skipped_slice(slice, reqid):
@@ -225,70 +251,108 @@ def form_skipped_slice(slice, reqid):
     if ordered_existed_steps[0].status == 'Skipped' and input_list.dataset:
         return {}
     processed_tags = []
+    last_step_name = ''
     for step in ordered_existed_steps:
-        if step.status == 'NotCheckedSkipped':
+        if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
-            if (input_list.input_data):
-                if step.step_template.step == 'Evgen':
-                    input_type = 'EVNT'
-                else:
-                    input_type = 'AOD'
-                dsid = input_list.input_data.split('.')[1]
-                job_option_pattern = input_list.input_data.split('.')[2]
-                #job_option_pattern="Pythia"
-                dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
-                print dataset_events
-                return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
+            last_step_name = step.step_template.step
+        else:
+            break
+    if input_list.input_data and processed_tags:
+        try:
+            input_type = ''
+            if last_step_name == 'Evgen':
+                input_type = 'EVNT'
+            elif last_step_name == 'Simul':
+                input_type = 'simul.HITS'
+            elif last_step_name == 'Merge':
+                input_type = 'merge.HITS'
+            elif last_step_name == 'Reco':
+                input_type = 'recon.AOD'
+            elif last_step_name == 'Rec Merge':
+                input_type = 'merge.AOD'
+            dsid = input_list.input_data.split('.')[1]
+            job_option_pattern = input_list.input_data.split('.')[2]
+            dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
+            #print dataset_events
+            #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
+            return {slice:dataset_events}
+        except Exception,e:
+            logging.error("Can't find skipped dataset: %s" %str(e))
+            return {}
     return {}
 
+@csrf_protect
+def find_input_datasets(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        slice_dataset_dict = {}
+        data = request.body
+        slices = json.loads(data)
+        for slice_number in slices:
+            try:
+                slice_dataset_dict.update(form_skipped_slice(slice_number,reqid))
+            except Exception,e:
+                pass
+        results.update({'success':True,'data':slice_dataset_dict})
+
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 def request_steps_approve_or_save(request, reqid, approve_level):
-        results = {'success':False}
-        try:
-            data = request.body
-            slice_steps = json.loads(data)
-            _logger.debug("Steps modification for: %s" % slice_steps)
-            slices = slice_steps.keys()
-            for steps_status in slice_steps.values():
-                for steps in steps_status[:-1]:
-                    steps['value'] = steps['value'].strip()
-            # Check input on missing tags, wrong skipping, find input
-            missing_tags,wrong_skipping_tags = step_validation(slice_steps)
-            results = {'data': missing_tags,'slices': slices, 'success': True}
-            datasets_dict = {}
-            if not missing_tags:
-                _logger.debug("Start steps save/approval")
-                req = TRequest.objects.get(reqid=reqid)
+    results = {'success':False}
+    try:
+        data = request.body
+        slice_steps = json.loads(data)
+        _logger.debug("Steps modification for: %s" % slice_steps)
+        slices = slice_steps.keys()
+        for steps_status in slice_steps.values():
+            for steps in steps_status[:-2]:
+                steps['value'] = steps['value'].strip()
+        slice_new_input = {}
+        for slice, steps_status in slice_steps.items():
+            if steps_status[-1]:
+                slice_new_input.update({slice:steps_status[-1]['input_dataset']})
+            slice_steps[slice]= steps_status[:-1]
+        # Check input on missing tags, wrong skipping
+        missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
+        results = {'data': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
+                   'double_trf':old_double_trf, 'success': True}
+        if not missing_tags:
+            _logger.debug("Start steps save/approval")
+            req = TRequest.objects.get(reqid=reqid)
 
-                if not (req.manager) or (req.manager == 'None'):
-                    missing_tags.append('No manager name!')
-                    results = {'data': missing_tags,'slices': slices, 'success': True}
-                else:
-                    if req.request_type == 'MC':
-                        create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
-                        try:
-                            for slice,steps_status in slice_steps.items():
-                                if steps_status[0]['value'] and steps_status[0]['is_skipped'] and (slice not in wrong_skipping_tags):
-                                    datasets_dict.update(form_skipped_slice(slice,reqid))
-                        except:
-                            pass
-                    else:
-                        create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                    #TODO:Take owner from sso cookies
-                    if req.cstatus.lower() == 'created':
-                        req.cstatus = 'approved'
-                        req.save()
-                        request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
-                                                       status='approved')
-                        request_status.save_with_current_time()
-                results = {'data': missing_tags,'slices': slices,'dataset_skipped':datasets_dict, 'success': True}
+            if not (req.manager) or (req.manager == 'None'):
+                missing_tags.append('No manager name!')
             else:
-                _logger.debug("Some tags are missing: %s" % missing_tags)
-        except Exception, e:
-            _logger.error("Problem with step modifiaction: %s" % e)
+                if req.request_type == 'MC':
+                    create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                    # try:
+                    #     for slice,steps_status in slice_steps.items():
+                    #         if steps_status[0]['value'] and steps_status[0]['is_skipped'] and (slice not in wrong_skipping_tags):
+                    #             datasets_dict.update(form_skipped_slice(slice,reqid))
+                    # except:
+                    #     pass
+                    for slice, new_dataset in slice_new_input.items():
+                        if new_dataset:
+                            input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
+                            input_list.dataset = fill_dataset(new_dataset)
+                            input_list.save()
+                else:
+                    create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                #TODO:Take owner from sso cookies
+                if (req.cstatus.lower() == 'created') and (approve_level>0):
+                    req.cstatus = 'approved'
+                    req.save()
+                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
+                                                   status='approved')
+                    request_status.save_with_current_time()
+        else:
+            _logger.debug("Some tags are missing: %s" % missing_tags)
+    except Exception, e:
+        _logger.error("Problem with step modifiaction: %s" % e)
 
-        return HttpResponse(json.dumps(results), content_type='application/json')
+    return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 
@@ -302,13 +366,28 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     :return: list of dict {'dataset_name':'...','events':...}
     """
     dataset_pattern = "mc"+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
-    print dataset_pattern
+    _logger.debug("Search dataset by pattern %s"%dataset_pattern)
     datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
     return_list = []
     for dataset in datasets:
-        return_list.append({'dataset_name':dataset.name,'events':dataset.events})
-    print datasets
+        task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+        return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
+        _logger.debug("Find dataset: %s"%str(return_list[-1]))
+
     return return_list
+
+
+def find_old_double_trf(tags):
+    double_trf_tags = set()
+    for tag in tags:
+        try:
+            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if ',' in trtf[0].trf:
+                double_trf_tags.add(tag)
+        except:
+            pass
+    return list(double_trf_tags)
+
 
 def step_validation(slice_steps):
     tags = []
@@ -316,17 +395,23 @@ def step_validation(slice_steps):
     wrong_skipping_slices = set()
     for slice, steps_status in slice_steps.items():
         is_skipped = True
+        is_not_skipped = False
         for steps in steps_status[:-1]:
             if steps['value'] and (steps['value'] not in tags):
                 tags.append(steps['value'])
             if steps['value']:
                 if steps['is_skipped'] == True:
-                    if not is_skipped:
-                        wrong_skipping_slices.add(slice)
+                    is_skipped = True
                 else:
-                    is_skipped = False
+                    if is_not_skipped and is_skipped:
+                        wrong_skipping_slices.add(slice)
+                    else:
+                        is_skipped = False
+                        is_not_skipped = True
+
     missing_tags = find_missing_tags(tags)
-    return missing_tags,list(wrong_skipping_slices)
+    old_double_trf = find_old_double_trf(tags)
+    return missing_tags,list(wrong_skipping_slices),old_double_trf
 
 
 
@@ -432,135 +517,6 @@ def make_test_request(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-@csrf_protect
-def tag_info(request, tag_name):
-    if request.method == 'GET':
-        results = {'success':False}
-        try:
-            trtf = Ttrfconfig.objects.all().filter(tag=tag_name[0], cid=int(tag_name[1:]))
-            if trtf:
-                results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
-                                'input':trtf[0].input,'step':trtf[0].step})
-        except Exception,e:
-            pass
-        return HttpResponse(json.dumps(results), content_type='application/json')
-
-
-@csrf_protect
-def step_params_from_tag(request, reqid):
-    if request.method == 'POST':
-        results = {'success':False}
-        try:
-            data = request.body
-            checkecd_tag_format = json.loads(data)
-            tag = checkecd_tag_format['tag_format'].split(':')[0]
-            output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
-            output_format = output_format[len(tag)+1:]
-            project_mode = ''
-            input_events = ''
-            priority = ''
-            nEventsPerJob = ''
-            nEventsPerInputFile = ''
-            req = TRequest.objects.get(reqid=reqid)
-            slices = InputRequestList.objects.filter(request=req).order_by("slice")
-            for slice in slices:
-                if slice.slice>=int(slice_from):
-                    step_execs = StepExecution.objects.filter(slice=slice)
-                    for step_exec in step_execs:
-                        if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
-                            task_config = json.loads(step_exec.task_config)
-                            if 'project_mode' in task_config:
-                                project_mode = task_config['project_mode']
-                            if 'nEventsPerJob' in task_config:
-                                nEventsPerJob = task_config['nEventsPerJob']
-                            if 'nEventsPerInputFile' in task_config:
-                                nEventsPerInputFile = task_config['nEventsPerInputFile']
-                            input_events = step_exec.input_events
-                            priority = step_exec.priority
-            results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
-                            'priority':str(priority),'nEventsPerJob':str(nEventsPerJob),
-                            'nEventsPerInputFile':str(nEventsPerInputFile)})
-        except Exception,e:
-            pass
-        return HttpResponse(json.dumps(results), content_type='application/json')
-
-@csrf_protect
-def update_project_mode(request, reqid):
-    if request.method == 'POST':
-        results = {'success':False}
-        updated_slices = []
-        try:
-            data = request.body
-            checkecd_tag_format = json.loads(data)
-            tag = checkecd_tag_format['tag_format'].split(':')[0]
-            output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
-            output_format = output_format[len(tag)+1:]
-            slice_from = 0
-            new_project_mode = checkecd_tag_format['project_mode']
-            new_input_events = int(checkecd_tag_format['input_events'])
-            new_priority = int(checkecd_tag_format['priority'])
-            new_nEventsPerInputFile = None
-            if checkecd_tag_format['nEventsPerInputFile']:
-                new_nEventsPerInputFile = int(checkecd_tag_format['nEventsPerInputFile'])
-            new_nEventsPerJob = None
-            if checkecd_tag_format['nEventsPerJob']:
-                new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
-            req = TRequest.objects.get(reqid=reqid)
-            slices = InputRequestList.objects.filter(request=req).order_by("slice")
-            for slice in slices:
-                if slice.slice>=int(slice_from):
-                    step_execs = StepExecution.objects.filter(slice=slice)
-                    for step_exec in step_execs:
-                        if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
-                            if step_exec.status != 'Approved':
-                                task_config = json.loads(step_exec.task_config)
-                                task_config['project_mode'] = new_project_mode
-                                step_exec.task_config = ''
-                                step_exec.set_task_config(task_config)
-                                if new_nEventsPerInputFile:
-                                    step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
-                                if new_nEventsPerJob:
-                                    step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
-                                step_exec.input_events = new_input_events
-                                step_exec.priority = new_priority
-                                step_exec.save()
-                                if slice.slice not in updated_slices:
-                                   updated_slices.append(str(slice.slice))
-            results.update({'success':True,'slices':updated_slices})
-        except Exception,e:
-            pass
-        return HttpResponse(json.dumps(results), content_type='application/json')
-
-@csrf_protect
-def get_tag_formats(request, reqid):
-    if request.method == 'GET':
-        results = {'success':False}
-        try:
-            tag_formats = []
-            #slice_from = []
-            #project_modes = []
-            req = TRequest.objects.get(reqid=reqid)
-            slices = InputRequestList.objects.filter(request=req).order_by("slice")
-            for slice in slices:
-                step_execs = StepExecution.objects.filter(slice=slice)
-                for step_exec in step_execs:
-                    tag_format = step_exec.step_template.ctag + ":" + step_exec.step_template.output_formats
-                    task_config = json.loads(step_exec.task_config)
-                    project_mode = ''
-                    if 'project_mode' in task_config:
-                        project_mode = task_config['project_mode']
-                    do_update = True
-                    for existed_tag_format in tag_formats:
-                        if (existed_tag_format[0] == tag_format) and (existed_tag_format[1] == project_mode):
-                            do_update = False
-                    if do_update:
-                        tag_formats.append((tag_format,project_mode,slice.slice))
-            results.update({'success':True,'data':[x[0]+'-'+str(x[2]) for x in tag_formats]})
-        except Exception,e:
-            pass
-        return HttpResponse(json.dumps(results), content_type='application/json')
-
-
 def home(request):
     tmpl = get_template('prodtask/_index.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production Home'})
@@ -621,6 +577,7 @@ def input_list_approve(request, rid=None):
         if task:
             task_short = task.status[0:8]
         return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
+
     if request.method == 'GET':
         try:
             cur_request = TRequest.objects.get(reqid=rid)
@@ -728,12 +685,12 @@ def input_list_approve(request, rid=None):
                     else:
                         i = 0
                         if not(slice_steps_list) and (len(temp_step_list) == 1):
-                            if current_step[0].step_parent:
-                                if current_step[0].step_parent.id != current_step[0].id:
+                            if temp_step_list[0][0].step_parent:
+                                if temp_step_list[0][0].step_parent.id != temp_step_list[0][0].id:
                                     # step in other chain
-                                    another_chain_step = StepExecution.objects.get(id=current_step[0].step_parent.id)
+                                    another_chain_step = StepExecution.objects.get(id=temp_step_list[0][0].step_parent.id)
                                     slice_steps_list.append((another_chain_step.id, form_step_obj(another_chain_step,{},True)))
-                            slice_steps_list.append((temp_step_list[j][0].id,form_step_obj(temp_step_list[j][0],temp_step_list[j][1])))
+                            slice_steps_list.append((temp_step_list[0][0].id,form_step_obj(temp_step_list[0][0],temp_step_list[0][1])))
                             temp_step_list.pop(0)
                         if not slice_steps_list:
                             step_id_list = [x[0].id for x in temp_step_list]
