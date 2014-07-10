@@ -365,14 +365,15 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     :param data_type: expected data type
     :return: list of dict {'dataset_name':'...','events':...}
     """
-    dataset_pattern = "mc"+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
-    _logger.debug("Search dataset by pattern %s"%dataset_pattern)
-    datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
     return_list = []
-    for dataset in datasets:
-        task = TaskProdSys1.objects.get(taskid=dataset.taskid)
-        return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
-        _logger.debug("Find dataset: %s"%str(return_list[-1]))
+    for base_value in ['mc','valid']:
+        dataset_pattern = base_value+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
+        _logger.debug("Search dataset by pattern %s"%dataset_pattern)
+        datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
+        for dataset in datasets:
+            task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+            return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
+            _logger.debug("Find dataset: %s"%str(return_list[-1]))
 
     return return_list
 
