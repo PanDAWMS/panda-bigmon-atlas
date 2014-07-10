@@ -309,19 +309,19 @@ function doTasksAction(action, tasks, parameters) {
         return;
     }
 
-    var postData = Object();
-    postData['tasks'] = tasks;
+    var postData = { 'tasks': tasks };
 
     if (parameters.length !== 0) {
         postData['parameters'] = parameters;
     }
 
-    var ajaxUrl =  "{% url 'prodtask:task_manage' %}" + action + "/";
+    var ajaxUrl =  Django.url('prodtask:tasks_action', action);
 
     $("#req_status_box").remove();
     $("#request_status_container").append(
         makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
     );
+
 
     $.ajax({
         url: ajaxUrl,
@@ -341,20 +341,33 @@ function doTasksAction(action, tasks, parameters) {
     });
 }
 
-// get IDs and status of the dependent tasks from the same slice as given
-function getTaskSliceDependent(task_id) {
-    var data = {};
-    var ajaxUrl = Django.url('prodtask:same_slice_tasks', task_id);
+// get IDs and status of the dependent tasks from the same slice as given ones
+function getSliceDependentTasks(tasks) {
+    var ajaxUrl = Django.url('prodtask:same_slice_tasks');
+    var requestParams = {
+        url: ajaxUrl,
+        type: "POST",
+        data: $.toJSON( {"tasks": tasks} ),
+        dataType: "json",
+        async: false
+    };
 
-    $.when( $.ajax( {dataType: "json", url: ajaxUrl, async: false} ) ).then(function(_data){
-        $.each(_data['tasks'], function(key, val) {
-            if (key >= task_id) {
-                data[key] = val;
-            }
+    var result = {};
+
+    $.when( $.ajax( requestParams ) ).then(function(data) {
+        $.each(data, function(task_id, info) {
+            $.each(info["tasks"], function(key, val) {
+                if ( !(task_id in result) ) {
+                    result[task_id] = {};
+                }
+                if (key >= task_id) {
+                    result[task_id][key] = val;
+                }
+            });
         });
     });
 
-    return data;
+    return result;
 }
 
 // Perform action on the selected tasks
@@ -381,12 +394,7 @@ function doTasksActionSelected(action) {
         parameters = [$("#cloud_select").val()];
     }
 
-    var slices = {};
-
-    $.each(tasks, function(index, task) {
-        slices[task] = getTaskSliceDependent(task);
-    });
-
+    var slices = getSliceDependentTasks(tasks);
 
     if ($.inArray(action, actions_on_active) > -1) {
         tasks = $.grep(tasks, function (task) {
@@ -398,18 +406,19 @@ function doTasksActionSelected(action) {
         return;
     }
 
+    tasks.sort();
+
     if ($.inArray(action, cascade_actions) > -1) {
         var show_dialog = false; // before showing dialog, check if other than selected tasks are affected
         var tasks_affected = {};
-        var tasks_affected_arr = [];
         $.each(tasks, function(index, task_id) {
             tasks_affected[task_id] = [];
             var dependent = slices[task_id];
             for (var dep_id in dependent) {
+                if (!dependent.hasOwnProperty(dep_id)) { continue; }
                 if ( (dep_id>task_id)  && ($.inArray(dependent[dep_id]['status'], status_active) > -1) ) {
                     show_dialog = true;
                     tasks_affected[task_id].push(dep_id);
-                    tasks_affected_arr.push(dep_id);
                 } // if
             } // for dep
         }); // for $.each task
@@ -425,7 +434,9 @@ function doTasksActionSelected(action) {
 
                 function (response) {
                     if (response == "all") {
-                        doTasksAction(action, tasks_affected_arr, parameters);
+                        var tasks_affected_list = $.map(tasks_affected, function(val, key){ return key; });
+                        tasks_affected_list.sort();
+                        doTasksAction(action, tasks_affected_list, parameters);
                     } else if (response == "selected") {
                         doTasksAction(action, tasks, parameters);
                     }
