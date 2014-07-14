@@ -270,7 +270,7 @@ def dpd_form_prefill(form_data, request):
             error_message = 'ds and format lenght do not match'
             return {}, error_message
         if len(output_dict.get('formats', [None]))==1:
-            formats = output_dict.get('formats', [None])[0]*len(output_dict['ds'])
+            formats = [(output_dict.get('formats', [None])[0])]*len(output_dict['ds'])
         else:
             formats = output_dict.get('formats', [None])
         for slice_index, ds in enumerate(output_dict['ds']):
