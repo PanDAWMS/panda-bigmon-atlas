@@ -11,7 +11,10 @@ from .models import ProductionTask, TRequest, StepExecution
 
 from .task_views import ProductionTaskTable, get_clouds, get_sites
 
-from .task_actions import kill_task, finish_task, obsolete_task, change_task_priority, reassign_task_to_site, reassign_task_to_cloud
+from .task_actions import kill_task, finish_task, obsolete_task,\
+                          change_task_priority, increase_task_priority, decrease_task_priority, \
+                          reassign_task_to_site, reassign_task_to_cloud, retry_task
+
 
 import json
 
@@ -21,8 +24,11 @@ _task_actions = {
     'finish': finish_task,
     'obsolete': obsolete_task,
     'change_priority': change_task_priority,
+    'increase_priority': increase_task_priority,
+    'decrease_priority': decrease_task_priority,
     'reassign_to_site': reassign_task_to_site,
     'reassign_to_cloud': reassign_task_to_cloud,
+    'retry': retry_task,
 }
 
 

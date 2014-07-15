@@ -46,12 +46,13 @@ def task_details(request, rid=None):
        permissions[action] = False
 
    permissions['obsolete'] = task.status in ['done', 'finished']
+   permissions['retry'] = not task_not_ended
 
    for action in ['abort', 'finish', 'change_prio', 'reassign']:
        permissions[action] = task_not_ended
 
 
-   request_parameters =  {
+   request_parameters = {
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
@@ -61,7 +62,7 @@ def task_details(request, rid=None):
    }
 
    for action, perm in permissions.items():
-       request_parameters['can_' + action + '_task' ] = perm
+       request_parameters['can_' + action + '_task'] = perm
 
    return render(request, 'prodtask/_task_detail.html', request_parameters)
 

@@ -33,6 +33,17 @@
                     {% endif %}
                     >Finish</a>
                 </li>
+                <li><a data-options="is_hover:true" id="btn_retry"
+                    {% if can_retry_task or not task.id %}
+                        data-dropdown="task_retry_menu"
+                        class="small radio button "
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Retry</a>
+                </li>
+
+
                 <li><a data-options="is_hover:true" id="btn_change_prio"
                     {% if can_change_prio_task or not task.id %}
                         class="small radio button"
@@ -101,6 +112,22 @@
             </div>
         </div>
 
+        <div id="task_retry_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_retry" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_retry">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_retry">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="task_obsolete_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
@@ -137,9 +164,26 @@
                     <div class="small-12 columns text-center bodyfont-color">
                         <br>
                         <label> JEDI task priority (100-900) </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_increase_priority">Increase priority level</a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_decrease_priority">Decrease priority level</a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-12 columns text-center bodyfont-color">
+                        <br>
+                        <label> If no level configured for the step, priority change delta is <i>20</i>. </label>
                         <label> Tasks selected:&nbsp; <span id="selected_count_prio">0</span> </label>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -392,6 +436,8 @@ function doTasksActionSelected(action) {
         parameters = [$("#site_select").val()];
     } else if (action == "reassign_to_cloud") {
         parameters = [$("#cloud_select").val()];
+    } else if ((action == 'increase_priority') or (action=='decerease_priority')) {
+        parameters = [20];
     }
 
     var slices = getSliceDependentTasks(tasks);
@@ -467,7 +513,9 @@ $(document).ready(function () {
     var button_action_map = {
         "abort": "kill", "finish": "finish", "obsolete": "obsolete",
         "set_priority": "change_priority",
-        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site"
+        "increase_priority": "increase_priority", "decrease_priority":"decrease_priority",
+        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site",
+        "retry": "retry"
     };
 
     $.each(button_action_map, function(name, action) {
