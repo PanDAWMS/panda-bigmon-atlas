@@ -557,7 +557,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             if 'task_config' in step:
                                 if 'nEventsPerJob' in step['task_config']:
                                     task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                    if (step['step_name']=='Evgen'):
+                                    if step['step_name']!='Evgen':
                                         task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                 if 'project_mode' in step['task_config']:
                                     task_config.update({'project_mode':step['task_config']['project_mode']})
