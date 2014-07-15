@@ -12,9 +12,7 @@
                 <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
         {% endif %}
 
-                {% comment %}
-                TODO: optimize this with a loop ('can_*' to 'permissions' dict)
-                {% endcomment %}
+
                 <li><a data-options="is_hover:true" id="btn_abort"
                     {% if can_abort_task or not task.id %}
                         data-dropdown="task_abort_menu"
@@ -42,8 +40,6 @@
                     {% endif %}
                     >Retry</a>
                 </li>
-
-
                 <li><a data-options="is_hover:true" id="btn_change_prio"
                     {% if can_change_prio_task or not task.id %}
                         class="small radio button"
@@ -51,7 +47,7 @@
                     {% else %}
                         class="small radio button disabled"
                     {% endif %}
-                    >Change&nbsp;priority</a>
+                    >Priority</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_reassign"
                     {% if can_reassign_task or not task.id %}
@@ -86,7 +82,7 @@
                     <div class="small-9 large-9 columns">
                         <label for="btn_do_abort" class="right inline bodyfont-color">
                             Tasks selected:&nbsp;
-                            <span id="selected_count_abrt">0</span>
+                            <span id="selected_count_abort">0</span>
                         </label>
                     </div>
                     <div class="small-3 columns">
@@ -267,10 +263,9 @@ $.ajaxSetup({
 });
 
 function makeAlertBox(content, box_id, text_id) {
-    var $box = $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
+    return $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
     .append( $( "<span/>", { id: text_id, html: content} ) )
     .append( $( "<a/>", {href: "#", "class": "close", text: '×'} ) );
-    return $box;
 }
 
 var modal_count = 0;
@@ -285,7 +280,7 @@ function makeModalDialog(content) {
 
 
 // Make and show modal dialog to confirm which action affects more tasks than it was selected
-function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callback) {
+function makeTasksActionConfirmDialog(title, tasks_affected, callback) {
     function makeButtonBar(groups) {
         var $bar = $("<div/>", { "class": "button-bar" });
         $.each(groups, function(index, group) {
@@ -317,20 +312,42 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
 
     $content.append($title);
 
-    for (var task in tasks_affected) {
-        $content.append( $("<p/>",
-            { html: "<b> For task " + task + " will be also affected: </b> <br/>" + tasks_affected[task].join(", ") }
-        ) );
-    }
+    var tasks_selected = $.map(tasks_affected, function (element,index) { return index });
+    tasks_selected.sort();
+
+    $content.append( $("<p/>", {
+        html: "<b> Selected tasks in suitable states (" + tasks_selected.length + "): </b> <br>"
+                + tasks_selected.join(", ")
+    }) );
+
+    var tasks_shown = $.extend({}, tasks_affected); // keep tasks processed to not display twice
+
+    $.each(tasks_affected, function (task, list) {  // show dependent tasks for each slice
+        list = $.grep(list, function (elem, index) { return !(elem in tasks_shown); });
+
+        if (list.length == 0) { return; } // no dependent task to display
+
+        $.each(list, function(ind, val) { tasks_shown[val] = 1; }); // add tasks to already shown
+
+        $content.append(
+            $( "<p/>", {
+                html: "<b> For task " + task + " will be also affected " + list.length
+                        + " task" + ( (list.length>1) ? "s" : "" ) + ": </b> <br/>" + list.join(", ")
+            } )
+        )
+    });
 
     var btn_class = "small button";
-    $content.append(
+    var buttons_holder = $("<div/>", { "class": "small-12 large-12 columns" });
+    buttons_holder.append(
         makeButtonBar([
             [ { text: "For all affected tasks", return_value: "all", "class": btn_class, href:"#" } ],
             [ { text: "For selected tasks", return_value: "selected", "class": btn_class, href:"#" } ],
             [ { text: "Cancel", return_value: "cancel", "class": btn_class, href: "#" } ]
         ])
     );
+
+    $content.append( $("<div/>", { "class": "row", html: buttons_holder } ) );
 
     return ( makeModalDialog($content) );
 }
@@ -370,7 +387,7 @@ function doTasksAction(action, tasks, parameters) {
     $.ajax({
         url: ajaxUrl,
         type: "POST",
-        data: JSON.stringify(postData),
+        data: $.toJSON(postData),
         dataType: "json",
         success: function (result, status) {
             if (status) {
@@ -476,8 +493,7 @@ function doTasksActionSelected(action) {
 
         makeTasksActionConfirmDialog(
                 "Perform action '" + action + "'",
-                action, tasks_affected,
-
+                tasks_affected,
                 function (response) {
                     if (response == "all") {
                         var tasks_affected_list = $.map(tasks_affected, function(val, key){ return key; });
@@ -486,7 +502,7 @@ function doTasksActionSelected(action) {
                     } else if (response == "selected") {
                         doTasksAction(action, tasks, parameters);
                     }
-                }
+                } // callback function
         ).foundation('reveal', 'open');
 
     } else {
