@@ -46,7 +46,7 @@ def task_details(request, rid=None):
        permissions[action] = False
 
    permissions['obsolete'] = task.status in ['done', 'finished']
-   permissions['retry'] = not task_not_ended
+   permissions['retry'] = task.status in ['finished']
 
    for action in ['abort', 'finish', 'change_prio', 'reassign']:
        permissions[action] = task_not_ended
