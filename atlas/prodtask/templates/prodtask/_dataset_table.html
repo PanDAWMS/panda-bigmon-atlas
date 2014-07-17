@@ -29,19 +29,24 @@
     span.toBeCleaned	{ color : orange;	}
     span.waitCleaned	{ color : orange;	}
 
-    .breaked_word   { word-wrap: break-word; width: 1400px; max-width: 1000px; }
+    .breaked_word   { word-wrap: break-word; min-width: 60%; max-width: 800px }
 
     .px80, .numbers { max-width: 80px; }
     .px100          { max-width: 100px; }
     .px140          { max-width: 140px; }
+    .px180          { max-width: 180px; }
 
     .numbers        { text-align: right; }
+    .centered       { text-align: center; }
 
     table.dataTable td { padding: 0px 5px 0px 0px; }
     table.dataTable thead th { padding: 0px 3px 0px 0px; }
 
     table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
     table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
+ 
+    .dataTables_wrapper { display: inline-block; }
+
   </style>
 
 {% endblock %}

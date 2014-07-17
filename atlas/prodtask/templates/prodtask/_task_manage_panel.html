@@ -12,9 +12,7 @@
                 <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
         {% endif %}
 
-                {% comment %}
-                TODO: optimize this with a loop ('can_*' to 'permissions' dict)
-                {% endcomment %}
+
                 <li><a data-options="is_hover:true" id="btn_abort"
                     {% if can_abort_task or not task.id %}
                         data-dropdown="task_abort_menu"
@@ -33,6 +31,15 @@
                     {% endif %}
                     >Finish</a>
                 </li>
+                <li><a data-options="is_hover:true" id="btn_retry"
+                    {% if can_retry_task or not task.id %}
+                        data-dropdown="task_retry_menu"
+                        class="small radio button "
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Retry</a>
+                </li>
                 <li><a data-options="is_hover:true" id="btn_change_prio"
                     {% if can_change_prio_task or not task.id %}
                         class="small radio button"
@@ -40,7 +47,7 @@
                     {% else %}
                         class="small radio button disabled"
                     {% endif %}
-                    >Change&nbsp;priority</a>
+                    >Priority</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_reassign"
                     {% if can_reassign_task or not task.id %}
@@ -75,7 +82,7 @@
                     <div class="small-9 large-9 columns">
                         <label for="btn_do_abort" class="right inline bodyfont-color">
                             Tasks selected:&nbsp;
-                            <span id="selected_count_abrt">0</span>
+                            <span id="selected_count_abort">0</span>
                         </label>
                     </div>
                     <div class="small-3 columns">
@@ -96,6 +103,22 @@
                     </div>
                     <div class="small-3 columns">
                         <a class="button postfix secondary" id="btn_do_finish">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_retry_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_retry" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_retry">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_retry">Go</a>
                     </div>
                 </div>
             </div>
@@ -123,23 +146,38 @@
             </div>
         </div>
 
-        <div id="task_change_prio_menu" class="small content f-dropdown" data-dropdown-content>
+        <div id="task_change_prio_menu" class="medium content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
                     <div class="small-8 large-8 columns">
-                        <input type="text" id="new_priority" placeholder="New priority">
+                        <input type="text" id="new_priority" placeholder="JEDI task priority (100-900)">
                     </div>
                     <div class="small-4 large-4 columns">
                         <a class="button postfix" id="btn_do_set_priority">Set</a>
                     </div>
                 </div>
+
+                <div class="row">
+                    <p><br></p>
+                </div>
+
+                <div class="row">
+                    <div class="small-6 large-6 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_increase_priority">Increase priority level</a>
+                    </div>
+                    <div class="small-6 large-6 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_decrease_priority">Decrease priority level</a>
+                    </div>
+                </div>
                 <div class="row">
                     <div class="small-12 columns text-center bodyfont-color">
                         <br>
-                        <label> JEDI task priority (100-900) </label>
+                        <label> If no level configured for the step, priority change delta is <i>20</i>. </label>
+                        <br>
                         <label> Tasks selected:&nbsp; <span id="selected_count_prio">0</span> </label>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -147,7 +185,7 @@
             <div class="small-12 large-12 columns bodyfont-color">
                 <div class="row">
                     <div class="small-10 large-10 columns">
-                        </label><select name="cloud_select" id="cloud_select">
+                        <select name="cloud_select" id="cloud_select">
                             <option value="" selected>Select cloud</option>
                         {% for entry in clouds %}
                             <option value="{{ entry }}">{{ entry }}</option>
@@ -220,20 +258,19 @@ $.ajaxSetup({
             xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
         }
     }
-})
+});
 
 function makeAlertBox(content, box_id, text_id) {
-    var $box = $( "<div/>", { id: box_id, class: "alert-box info radius", "data-alert": ""} )
+    return $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
     .append( $( "<span/>", { id: text_id, html: content} ) )
-    .append( $( "<a/>", {href: "#", class: "close", text: '×'} ) );
-    return $box;
+    .append( $( "<a/>", {href: "#", "class": "close", text: '×'} ) );
 }
 
 var modal_count = 0;
 function makeModalDialog(content) {
-    var $dialog = $("<div/>", { id: "modal_" + (modal_count++), class: "reveal-modal", "data-reveal": ""})
+    var $dialog = $("<div/>", { id: "modal_" + (modal_count++), "class": "reveal-modal", "data-reveal": ""})
         .append( $("<span/>", {html: content}) )
-        .append( $("<a/>", { class: "close-reveal-modal", text: "×" }) );
+        .append( $("<a/>", { "class": "close-reveal-modal", text: "×" }) );
 
     $('body').append($dialog);
     return $dialog;
@@ -241,15 +278,15 @@ function makeModalDialog(content) {
 
 
 // Make and show modal dialog to confirm which action affects more tasks than it was selected
-function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callback) {
+function makeTasksActionConfirmDialog(title, tasks_affected, callback) {
     function makeButtonBar(groups) {
-        var $bar = $("<div/>", { class: "button-bar" });
+        var $bar = $("<div/>", { "class": "button-bar" });
         $.each(groups, function(index, group) {
-            var $group = $("<div/>", { class: "button-group" });
+            var $group = $("<div/>", { "class": "button-group" });
             $.each(group, function(ind, button) {
                 $group.append(
                     $("<li/>").append(
-                        $("<a/>", { href: button['href'], class: button['class'], text: button['text'] })
+                        $("<a/>", { href: button['href'], "class": button['class'], text: button['text'] })
                         .click(function() {
                             try {
                                 callback( button['return_value'] );
@@ -273,20 +310,55 @@ function makeTasksActionConfirmDialog(title, action_alias, tasks_affected, callb
 
     $content.append($title);
 
-    for (var task in tasks_affected) {
-        $content.append( $("<p/>",
-            { html: "<b> For task " + task + " will be also affected: </b> <br/>" + tasks_affected[task].join(", ") }
-        ) );
+    var tasks_selected = $.map(tasks_affected, function (element,index) { return index });
+    tasks_selected.sort();
+
+    $content.append( $("<p/>", {
+        html: "<b> Selected tasks in suitable states (" + tasks_selected.length + "): </b> <br>"
+                + tasks_selected.join(", ")
+    }) );
+
+    var tasks_shown = $.extend({}, tasks_affected); // keep tasks processed to not display twice
+    var dependent_tasks_shown = false;
+
+    $.each(tasks_affected, function (task, list) {  // show dependent tasks for each slice
+        list = $.grep(list, function (elem, index) { return !(elem in tasks_shown); });
+
+        if (list.length == 0) { return; } // no dependent task to display
+        dependent_tasks_shown = true;
+
+        $.each(list, function(ind, val) { tasks_shown[val] = 1; }); // add tasks to already shown
+
+        $content.append(
+            $( "<p/>", {
+                html: "<b> For task " + task + " will be also affected " + list.length
+                        + " task" + ( (list.length>1) ? "s" : "" ) + ": </b> <br/>" + list.join(", ")
+            } )
+        )
+    });
+
+    if ( !dependent_tasks_shown ) {
+        $content.append(
+            $( "<p/>", { html: "<b> No other tasks will be affected </b>" })
+        );
     }
 
     var btn_class = "small button";
-    $content.append(
-        makeButtonBar([
-            [ { text: "For all affected tasks", return_value: "all", class: btn_class, href:"#" } ],
-            [ { text: "For selected tasks", return_value: "selected", class: btn_class, href:"#" } ],
-            [ { text: "Cancel", return_value: "cancel", class: btn_class, href: "#" } ]
-        ])
-    );
+
+    var buttons_config = [
+            [ { text: "Apply to all affected tasks", return_value: "all", "class": btn_class, href:"#" } ],
+            [ { text: "Apply to selected tasks", return_value: "selected", "class": btn_class, href:"#" } ],
+            [ { text: "Cancel", return_value: "cancel", "class": btn_class, href: "#" } ]
+        ];
+
+    if ( !dependent_tasks_shown) {
+        buttons_config.splice(0, 1);
+    }
+
+    var buttons_holder = $("<div/>", { "class": "small-12 large-12 columns" });
+    buttons_holder.append( makeButtonBar(buttons_config) );
+
+    $content.append( $("<div/>", { "class": "row", html: buttons_holder } ) );
 
     return ( makeModalDialog($content) );
 }
@@ -309,24 +381,24 @@ function doTasksAction(action, tasks, parameters) {
         return;
     }
 
-    var postData = Object();
-    postData['tasks'] = tasks;
+    var postData = { 'tasks': tasks };
 
     if (parameters.length !== 0) {
         postData['parameters'] = parameters;
     }
 
-    var ajaxUrl =  "{% url 'prodtask:task_manage' %}" + action + "/";
+    var ajaxUrl =  Django.url('prodtask:tasks_action', action);
 
     $("#req_status_box").remove();
     $("#request_status_container").append(
         makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
     );
 
+
     $.ajax({
         url: ajaxUrl,
         type: "POST",
-        data: JSON.stringify(postData),
+        data: $.toJSON(postData),
         dataType: "json",
         success: function (result, status) {
             if (status) {
@@ -341,20 +413,33 @@ function doTasksAction(action, tasks, parameters) {
     });
 }
 
-// get IDs and status of the dependent tasks from the same slice as given
-function getTaskSliceDependent(task_id) {
-    var data = {};
-    var ajaxUrl = Django.url('prodtask:same_slice_tasks', task_id);
+// get IDs and status of the dependent tasks from the same slice as given ones
+function getSliceDependentTasks(tasks) {
+    var ajaxUrl = Django.url('prodtask:same_slice_tasks');
+    var requestParams = {
+        url: ajaxUrl,
+        type: "POST",
+        data: $.toJSON( {"tasks": tasks} ),
+        dataType: "json",
+        async: false
+    };
 
-    $.when( $.ajax( {dataType: "json", url: ajaxUrl, async: false} ) ).then(function(_data){
-        $.each(_data['tasks'], function(key, val) {
-            if (key >= task_id) {
-                data[key] = val;
-            }
+    var result = {};
+
+    $.when( $.ajax( requestParams ) ).then(function(data) {
+        $.each(data, function(task_id, info) {
+            $.each(info["tasks"], function(key, val) {
+                if ( !(task_id in result) ) {
+                    result[task_id] = {};
+                }
+                if (key >= task_id) {
+                    result[task_id][key] = val;
+                }
+            });
         });
     });
 
-    return data;
+    return result;
 }
 
 // Perform action on the selected tasks
@@ -379,14 +464,11 @@ function doTasksActionSelected(action) {
         parameters = [$("#site_select").val()];
     } else if (action == "reassign_to_cloud") {
         parameters = [$("#cloud_select").val()];
+    } else if ((action == 'increase_priority') && (action=='decrease_priority')) {
+        parameters = [20];
     }
 
-    var slices = {};
-
-    $.each(tasks, function(index, task) {
-        slices[task] = getTaskSliceDependent(task);
-    });
-
+    var slices = getSliceDependentTasks(tasks);
 
     if ($.inArray(action, actions_on_active) > -1) {
         tasks = $.grep(tasks, function (task) {
@@ -398,18 +480,19 @@ function doTasksActionSelected(action) {
         return;
     }
 
+    tasks.sort();
+
     if ($.inArray(action, cascade_actions) > -1) {
         var show_dialog = false; // before showing dialog, check if other than selected tasks are affected
         var tasks_affected = {};
-        var tasks_affected_arr = [];
         $.each(tasks, function(index, task_id) {
             tasks_affected[task_id] = [];
             var dependent = slices[task_id];
             for (var dep_id in dependent) {
+                if (!dependent.hasOwnProperty(dep_id)) { continue; }
                 if ( (dep_id>task_id)  && ($.inArray(dependent[dep_id]['status'], status_active) > -1) ) {
                     show_dialog = true;
                     tasks_affected[task_id].push(dep_id);
-                    tasks_affected_arr.push(dep_id);
                 } // if
             } // for dep
         }); // for $.each task
@@ -421,15 +504,16 @@ function doTasksActionSelected(action) {
 
         makeTasksActionConfirmDialog(
                 "Perform action '" + action + "'",
-                action, tasks_affected,
-
+                tasks_affected,
                 function (response) {
                     if (response == "all") {
-                        doTasksAction(action, tasks_affected_arr, parameters);
+                        var tasks_affected_list = $.map(tasks_affected, function(val, key){ return key; });
+                        tasks_affected_list.sort();
+                        doTasksAction(action, tasks_affected_list, parameters);
                     } else if (response == "selected") {
                         doTasksAction(action, tasks, parameters);
                     }
-                }
+                } // callback function
         ).foundation('reveal', 'open');
 
     } else {
@@ -456,7 +540,9 @@ $(document).ready(function () {
     var button_action_map = {
         "abort": "kill", "finish": "finish", "obsolete": "obsolete",
         "set_priority": "change_priority",
-        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site"
+        "increase_priority": "increase_priority", "decrease_priority": "decrease_priority",
+        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site",
+        "retry": "retry"
     };
 
     $.each(button_action_map, function(name, action) {

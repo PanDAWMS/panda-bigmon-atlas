@@ -365,14 +365,15 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     :param data_type: expected data type
     :return: list of dict {'dataset_name':'...','events':...}
     """
-    dataset_pattern = "mc"+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
-    _logger.debug("Search dataset by pattern %s"%dataset_pattern)
-    datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
     return_list = []
-    for dataset in datasets:
-        task = TaskProdSys1.objects.get(taskid=dataset.taskid)
-        return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
-        _logger.debug("Find dataset: %s"%str(return_list[-1]))
+    for base_value in ['mc','valid']:
+        dataset_pattern = base_value+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
+        _logger.debug("Search dataset by pattern %s"%dataset_pattern)
+        datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
+        for dataset in datasets:
+            task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+            return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
+            _logger.debug("Find dataset: %s"%str(return_list[-1]))
 
     return return_list
 
@@ -929,7 +930,7 @@ class ProductionDatasetTable(datatables.DataTable):
 
     phys_group = datatables.Column(
         label='Phys Group',
-        sClass='px100',
+        sClass='px180 centered',
         )
 
     events = datatables.Column(
@@ -944,12 +945,12 @@ class ProductionDatasetTable(datatables.DataTable):
 
     status = datatables.Column(
         label='Status',
-        sClass='px100',
+        sClass='px100 centered',
         )
         
     timestamp = datatables.Column(
         label='Timestamp',
-        sClass='px140',
+        sClass='px140 centered',
         )
 
 
@@ -961,9 +962,11 @@ class ProductionDatasetTable(datatables.DataTable):
         bPaginate = True
         bJQueryUI = True
 
-        sScrollX = '100%'
+        bAutoWidth = False
+
+      #  sScrollX = '100%'
       #  sScrollY = '25em'
-        bScrollCollapse = True
+        bScrollCollapse = False
 
         fnServerParams = "datasetServerParams"
 
@@ -981,8 +984,15 @@ class ProductionDatasetTable(datatables.DataTable):
     def apply_filters(self, request):
         qs = self.get_queryset()
 
-        qs = qs.filter( status__in=['aborted','broken','failed','deleted',
-                'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned'] )
+#        qs = qs.filter( status__in=['aborted','broken','failed','deleted',
+#                'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned'] )
+        filters = 0
+        for status in ['aborted','broken','failed','deleted', 'toBeDeleted','toBeErased','waitErased','toBeCleaned','waitCleaned']:
+            if filters:
+                filters |= Q(status__iexact=status)
+            else:
+                filters = Q(status__iexact=status)
+        qs = qs.filter(filters)
 
         parameters = [ ('datasetname','name'), ('status','status'), ]
 
@@ -992,7 +1002,7 @@ class ProductionDatasetTable(datatables.DataTable):
                 if param[0] == 'datasetname':
                     qs = qs.filter(Q( **{ param[1]+'__iregex' : value } ))
                 else:
-                    qs = qs.filter(Q( **{ param[1]+'__exact' : value } ))
+                    qs = qs.filter(Q( **{ param[1]+'__iexact' : value } ))
 
         self.update_queryset(qs)
 

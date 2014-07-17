@@ -2,7 +2,7 @@
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 
 import core.datatables as datatables
@@ -11,7 +11,10 @@ from .models import ProductionTask, TRequest, StepExecution
 
 from .task_views import ProductionTaskTable, get_clouds, get_sites
 
-from .task_actions import kill_task, finish_task, obsolete_task, change_task_priority, reassign_task_to_site, reassign_task_to_cloud
+from .task_actions import kill_task, finish_task, obsolete_task,\
+                          change_task_priority, increase_task_priority, decrease_task_priority, \
+                          reassign_task_to_site, reassign_task_to_cloud, retry_task
+
 
 import json
 
@@ -21,8 +24,11 @@ _task_actions = {
     'finish': finish_task,
     'obsolete': obsolete_task,
     'change_priority': change_task_priority,
+    'increase_priority': increase_task_priority,
+    'decrease_priority': decrease_task_priority,
     'reassign_to_site': reassign_task_to_site,
     'reassign_to_cloud': reassign_task_to_cloud,
+    'retry': retry_task,
 }
 
 
@@ -72,30 +78,46 @@ def tasks_action(request, action):
     return HttpResponse(json.dumps(response))
 
 
-def get_same_slice_tasks(request, tid):
-    """ Getting all the tasks ids from the slice where specified task is
-    :tid request: task ID
-    :return: tasks of the same slice as specified (dict)
+@never_cache
+@csrf_exempt
+def get_same_slice_tasks(request):
+    """
+    Getting all the tasks' ids from the slices where specified tasks are
+    :param request: HTTP request in form of JSON { "tasks": [id1, ..idN] }
+    :return: information on tasks of the same slices as given ones (dict)
     """
     empty_response = HttpResponse('')
 
-    if not tid:
+    if request.method != 'POST':
         return empty_response
 
-    try:
-        task = ProductionTask.objects.get(id=tid)
-    except:
+    data_json = request.body
+    if not data_json:
+        return empty_response
+    data = json.loads(data_json)
+
+    tasks = data.get("tasks")
+    if not tasks:
         return empty_response
 
-    step_id = task.step.id
-    slice_id = StepExecution.objects.get(id=step_id).slice.id
-    steps = [ str(x.get('id')) for x in StepExecution.objects.filter(slice=slice_id).values("id") ]
-    tasks = {}
-    for task in ProductionTask.objects.filter(step__in=steps).only("id", "status"):
-        tasks[str(task.id)] = { "id": str(task.id), "status": task.status }
+    tasks_slices = {}
 
-    response = dict(tasks=tasks)
-    return HttpResponse(json.dumps(response))
+    for task_id in list(set(tasks)):
+        try:
+            task = ProductionTask.objects.get(id=task_id)
+        except ObjectDoesNotExist:
+            continue
+
+        slice_id = task.step.slice.id
+        steps = [str(x.get('id')) for x in StepExecution.objects.filter(slice=slice_id).values("id")]
+        slice_tasks = {}
+        for task_ in ProductionTask.objects.filter(step__in=steps).only("id", "step", "status"):
+            slice_tasks[str(task_.id)] = dict(step=str(task_.step.id), status=task_.status)
+
+        tasks_slices[task_id] = dict(tasks=slice_tasks, slice=str(slice_id))
+
+    return HttpResponse(json.dumps(tasks_slices))
+
 
 
 @ensure_csrf_cookie

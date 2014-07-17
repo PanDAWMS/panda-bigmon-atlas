@@ -40,15 +40,15 @@
 
 
 function makeCheckbox(id, val, cls) {
-    html = $('<div />', { 'class': 'left' })
-       .append(
-         $('<input />',
-               { 'type': 'checkbox',
-                 'id': id,
-                 'value': val,
-                 'class': cls,
-              })
-        );
+    var html = $('<div />', { 'class': 'left' })
+               .append(
+                 $('<input />',
+                       { 'type': 'checkbox',
+                         'id': id,
+                         'value': val,
+                         'class': cls
+                      })
+                );
     return html;
 }
 
@@ -67,17 +67,17 @@ $(document).ready(function() {
     $("#management_panel_container").insertBefore("#task_table_length");
 
     $("#btn_switch_to_view").click(function() {
-        var view_url_base = $(location).attr('origin') + "{% url 'prodtask:task_table' %}"
+        var view_url_base = $(location).attr('origin') + "{% url 'prodtask:task_table' %}";
         var self_url_base = $(location).attr('origin') + $(location).attr('pathname');
         var view_url_full = $(location).attr('href').replace(self_url_base, view_url_base);
 
         $(location).attr('href', view_url_full);
-        return False;
+        return false;
     });
 
     $("#task_table_wrapper").on("draw", "#task_table", function() {
        $("#task_table tr>td:first-child>a").each( function () {
-           href = $(this).attr("href");
+           var href = $(this).attr("href");
            var found = href.match( /\/task\/(\d+)\/?/ );
            if (!found) { return true; }
            var id = found[1];
