@@ -9,7 +9,8 @@ class ProductionDatasetsExec(models.Model):
 
     class Meta:
         app_label = "grisli"
-        db_table = u"T_PRODUCTIONDATASETS_EXEC"
+        managed = False
+        db_table = u'"ATLAS_GRISLI_R"."T_PRODUCTIONDATASETS_EXEC"'
 
 class TaskProdSys1(models.Model):
     taskid = models.DecimalField(decimal_places=0, max_digits=10, db_column='REQID', primary_key=True)
