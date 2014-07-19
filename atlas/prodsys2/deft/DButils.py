@@ -1,5 +1,6 @@
 import exceptions
 import time
+import sys
 import datetime
 import traceback
 
@@ -36,9 +37,10 @@ def QueryUpdate(connection,query) :
     
     try :
      cursor.execute(query)
-    except DQOracleException, oe :
+    except  :
       error =1
-      raise oe
+      print "Error : QueryUpdate - Oracle exception ; query ",query
+      sys.exit(1)
     cursor.close()
 
     return error
