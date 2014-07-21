@@ -9,8 +9,10 @@ from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from .ddm_api import DDM
 from .request_views import fill_dataset
 from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
+from ..settings import dq2client as dq2_settings
 
 import core.datatables as datatables
 
@@ -176,7 +178,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                     if not (ordered_existed_steps[i].status == 'Approved') and not (ordered_existed_steps[i].status == 'Skipped'):
                                         replace_steps = True
                                         delete_chain_from = i
-                                        parent_step = ordered_existed_steps[delete_chain_from-1]
+                                        if delete_chain_from > 0:
+                                            parent_step = ordered_existed_steps[delete_chain_from-1]
                                     else:
                                         i += 1
                         if replace_steps:
@@ -369,12 +372,40 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     for base_value in ['mc','valid']:
         dataset_pattern = base_value+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
         _logger.debug("Search dataset by pattern %s"%dataset_pattern)
-        datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
-        for dataset in datasets:
-            task = TaskProdSys1.objects.get(taskid=dataset.taskid)
-            return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
-            _logger.debug("Find dataset: %s"%str(return_list[-1]))
-
+        # datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
+        # for dataset in datasets:
+        #     task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+        #     return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
+        #     _logger.debug("Find dataset: %s"%str(return_list[-1]))
+        ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+        datasets_containers = ddm.find_dataset(dataset_pattern.replace('%','*'))
+        containers = [x for x in datasets_containers if x[-1] == '/' ]
+        datasets = [x for x in datasets_containers if x not in containers ]
+        for container in containers:
+            event_count = 0
+            is_good = True
+            datasets_in_container = ddm.dataset_in_container(container)
+            for dataset_name in datasets_in_container:
+                if dataset_name in datasets:
+                    datasets.remove(dataset_name)
+                try:
+                    dataset = ProductionDatasetsExec.objects.get(name=dataset_name)
+                    task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+                    if (task.status not in ['aborted','failed','lost']):
+                        event_count += task.total_events
+                    else:
+                        is_good = False
+                except:
+                    is_good = False
+            if is_good and (event_count>0):
+                return_list.append({'dataset_name':container,'events':str(event_count)})
+        for dataset_name in datasets:
+            try:
+                task = TaskProdSys1.objects.get(taskname=dataset_name)
+                if (task.status not in ['aborted','failed','lost']):
+                    return_list.append({'dataset_name':dataset_name,'events':str(task.total_events)})
+            except:
+                pass
     return return_list
 
 
