@@ -13,7 +13,7 @@ import core.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask, TRequest
+from .models import ProductionTask, TRequest, TTask
 
 from django.db.models import Count, Q
 
@@ -30,6 +30,7 @@ def task_details(request, rid=None):
    if rid:
        try:
            task = ProductionTask.objects.get(id=rid)
+           ttask = TTask.objects.get(id=rid)
           # form = ProductionTaskForm(instance=req)
        except:
            return HttpResponseRedirect('/')
@@ -56,6 +57,7 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
+       'ttask': ttask,
        'clouds': get_clouds(),
        'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
