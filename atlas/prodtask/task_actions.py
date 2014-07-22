@@ -26,7 +26,7 @@ def _exec_jedi_command(task_id, command, *params):
     :return: dict containing keys 'accepted', 'registered', 'jedi_message', 'jedi_status_code'
     """
     # TODO: add logging and permissions checking
-    jedi_commands = ['killTask', 'finishTask', 'changeTaskPriority',
+    jedi_commands = ['killTask', 'finishTask', 'retryTask', 'changeTaskPriority',
                      'reassignTaskToSite', 'reassignTaskToCloud']
 
     if not command in jedi_commands:
