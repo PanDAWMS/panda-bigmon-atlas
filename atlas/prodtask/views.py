@@ -204,6 +204,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 st_exec.set_task_config({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
                                 if index == 0:
                                     st_exec.set_task_config({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+                                elif still_skipped:
+                                    st_exec.set_task_config({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
                             else:
                                 st_exec.set_task_config({'project_mode':input_list.project_mode})
                             no_parent = True
@@ -344,7 +346,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 else:
                     create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
                 #TODO:Take owner from sso cookies
-                if (req.cstatus.lower() == 'created') and (approve_level>0):
+                if (req.cstatus.lower() != 'test') and (approve_level>0):
                     req.cstatus = 'approved'
                     req.save()
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
