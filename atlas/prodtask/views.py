@@ -331,6 +331,11 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 missing_tags.append('No manager name!')
             else:
                 if req.request_type == 'MC':
+                    for steps_status in slice_steps.values():
+                        for index,steps in enumerate(steps_status[:-2]):
+                            if StepExecution.STEPS[index] == 'Reco':
+                                if not steps['formats']:
+                                    steps['formats'] = 'AOD'
                     create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
                     # try:
                     #     for slice,steps_status in slice_steps.items():

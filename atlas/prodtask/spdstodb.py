@@ -136,7 +136,10 @@ def translate_excl_to_dict(excel_dict):
                                 sexec = dict(status='NotChecked', input_events=int(input_events))
                             else:
                                 sexec = dict(status='NotChecked', input_events=-1)
-                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'step_exec': sexec,
+                            formats = None
+                            if currentstep == 'Reco':
+                                formats = 'AOD'
+                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
                                                   'task_config':{'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                  'project_mode':get_default_project_mode_dict().get(st,'')}})
                     return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
