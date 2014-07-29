@@ -139,7 +139,7 @@ class Ttrfconfig(models.Model):
 
 
     class Meta:
-        app_label = 'panda'
+        app_label = 'grisli'
         db_table = u'T_TRF_CONFIG'
 
 
