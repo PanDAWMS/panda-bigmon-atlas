@@ -110,14 +110,31 @@
     <tr>
         <td>Type:</td>
         <td>
-        <input id="type" />
+        <select id="type">
+            <option value="">All</option>
+            <option value="GROUP">GROUP</option>
+            <option value="HLT">HLT</option>
+            <option value="MC">MC</option>
+            <option value="REPROCESSING">REPROCESSING</option>
+        </select>
         </td>
     </tr>
 
     <tr>
         <td>Status:</td>
         <td>
-        <input id="status" />
+        <select id="status">
+            <option value="">All</option>
+            <option value="approved">Approved</option>
+            <option value="done">Done</option>
+            <option value="executing">Executing</option>
+            <option value="finished">Finished</option>
+            <option value="in progress">In progress</option>
+            <option value="processed">Processed</option>
+            <option value="registered">Registered</option>
+            <option value="test">Test</option>
+            <option value="waiting">Waiting</option>
+        </select>
         </td>
     </tr>
 
@@ -328,13 +345,12 @@
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-{#            TODO: replace to Django.js, when it's ready https://github.com/noirbizarre/django.js/pull/38 #}
-            row[0] = '<a href="'+"{% url 'prodtask:home' %}"+'request/'+ row[0] +'/">'+row[0]+'</a>&nbsp;&nbsp;'+'<span style="float: right;" ><a href="'+
-            "{% url 'prodtask:home' %}"+'request_update/' + row[0]+'/">Update</a>&nbsp;'+'<a href="'+"{% url 'prodtask:home' %}"+'inputlist_with_request/'+ row[0]+'/">List</a>&nbsp;'
-                    +'<a href="'+"{% url 'prodtask:home' %}"+'task_table/#/?request='+ row[0]+'">Tasks</a>';
+            row[0] = '<a href="'+ Django.url('prodtask:request', row[0])+'">'+row[0]+'</a>&nbsp;&nbsp;'+'<span style="float: right;" ><a href="'+
+                        Django.url('prodtask:request_update', row[0])+'">Update</a>&nbsp;'+'<a href="'+
+                        Django.url('prodtask:input_list_approve', row[0])+'">List</a>&nbsp;'+'<a href="'+
+                        Django.url('prodtask:task_table')+'#/?request='+ row[0]+'">Tasks</a>';
 
-            row[1] = '<a href="'+row[1]+'">'+row[1]+'</a>';
-
+            row[1] = row[1]==''?'':'<a href="'+row[1]+'">link</a>';
         }
 
         updateInterface(data['request_stat']);
