@@ -42,9 +42,283 @@
 
 
 {% block body %}
+<table>
+<tr>
+<td>
+<table style="text-align: right;">
+    <thead><tr><th colspan="0" style="text-align:center">Request select parameters</th></tr></thead>
+    <tbody>
+    <tr>
+    <td>
 
+    <table>
+    <tr>
+        <td>Request ID:</td>
+        <td>
+            <input id="reqid" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Physics group:</td>
+        <td>
+        <select id="phys_group">
+            <option value="">All</option>
+            <option value="Btagging">Btagging</option>
+            <option value="dataprep">Dataprep</option>
+            <option value="Exotics">Exotics</option>
+            <option value="Higgs">Higgs</option>
+            <option value="JetMet">JetMet</option>
+            <option value="Physics">Physics</option>
+            <option value="SM">SM</option>
+            <option value="Susy">Susy</option>
+            <option value="Top">Top</option>
+            <option value="Validation">Validation</option>
+            <option value="None">None</option>
+        </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>Description:</td>
+        <td>
+            <input id="description" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Manager:</td>
+        <td>
+            <input id="manager" />
+        </td>
+    </tr>
+
+    </table>
+
+    </td>
+    <td>
+
+    <table>
+
+    <tr>
+        <td>Campain:</td>
+        <td>
+            <input id="campain" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Type:</td>
+        <td>
+        <input id="type" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Status:</td>
+        <td>
+        <input id="status" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Provenance:</td>
+        <td>
+        <select id="provenance">
+            <option value="">All</option>
+            <option value="AP">ATLAS</option>
+            <option value="GP">Group</option>
+            <option value="None">User</option>
+        </select>
+        </td>
+    </tr>
+<!--    <tr>
+        <td>Last update time period:</td>
+        <td>
+        <select id="time_period">
+            <option value="custom">Custom</option>
+            <option value="day">Last day</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
+            <option value="year">Last year</option>
+            <option value="all">All time</option>
+        </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            Last update time from:
+        </td>
+        <td>
+            <input type="text" id="time_from" name="time_from">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Last update time to:
+        </td>
+        <td>
+            <input type="text" id="time_to" name="time_to">
+        </td>
+    </tr>
+-->
+    </table>
+
+    </td>
+
+    </tr>
+
+    <tr><td colspan="0"><input id="update_request_table" type="button" value="Update table" /><td></tr>
+
+    </tbody>
+</table>
+
+
+</td>
+
+
+
+<td>
+<div id="request_stat_table">
+
+<table><thead><tr><th colspan="0" style="text-align:center">Request status statistics</th></tr><tr>
+
+</tr></thead>
+<tbody><tr>
+
+</tr></tbody>
+</table>
+
+</div>
+
+<div id="table_request_summary">
+
+</div>
+
+</td>
+</tr>
+</table>
 
 <script type="text/javascript">
+    var parameters_list = [
+        { name: 'reqid',        id: 'reqid',        label: 'REQID'},
+        { name: 'campain',      id: 'campain',      label: 'Campain'},
+        { name: 'manager',      id: 'manager',      label: 'Manager'},
+
+        { name: 'type',         id: 'type',         label: 'Type'},
+
+        { name: 'status',       id: 'status',       label: 'Status'},
+
+        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
+        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
+
+        { name: 'description',  id: 'description',  label: 'Description'},
+
+    //    { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
+    //   { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
+
+    //    { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
+    ];
+
+    function SetParametersToURL()
+    {
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            $.address.parameter( parameters_list[i].name , val );
+        }
+    }
+
+    var changed_params = {};
+
+    function ParseParametersFromURL()
+    {
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value )
+            {
+                switch( parameters_list[i].name )
+                {
+           /*         case 'time_from':
+                    //    time_from = new Date().parse( value );
+                        $( "#time_from" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_to':
+                   //     time_from = new Date().parse( value );
+                        $( "#time_to" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val(value);
+                        break;
+*/
+                    default:
+                        $( "#"+parameters_list[i].id ).val( value );
+                        changed_params[ parameters_list[i].name ] = parameters_list[i];
+                        break;
+                }
+            }
+            else
+            {
+                switch( parameters_list[i].name )
+                {
+        /*            case 'task_type':
+                        $("#task_type").val('production');
+                        break;
+                    case 'time_from':
+                        $( "#time_from" ).datepicker( "setDate", time_from );
+                        break;
+                    case 'time_to':
+                        $( "#time_to" ).datepicker( "setDate", time_to );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val('month');
+                        break;*/
+                    default:
+                        $("#" + parameters_list[i].name).val('');
+                        break;
+                }
+            }
+        }
+
+    }
+
+    function requestServerParams ( aoData )
+    {
+        if( $("#reqid").val() != '' )
+            aoData.push( { "name": "reqid",         "value": $("#reqid").val() } );
+        if( $("#phys_group").val() != '' )
+            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
+        if( $("#campain").val() != '' )
+            aoData.push( { "name": "campain",       "value": $("#campain").val() } );
+        if( $("#manager").val() != '' )
+            aoData.push( { "name": "manager",       "value": $("#manager").val() } );
+        if( $("#type").val() != '' )
+            aoData.push( { "name": "type",          "value": $("#type").val() } );
+        if( $("#status").val() != '' )
+            aoData.push( { "name": "status",        "value": $("#status").val() } );
+        if( $("#provenance").val() != '' )
+            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
+        if( $("#description").val() != '' )
+            aoData.push( { "name": "description",   "value": $("#description").val() } );
+    }
+
+    function requestDrawCallback()
+    {
+        SetParametersToURL();
+
+        var text = '<ul>Filters:';
+
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            if ( val != '')
+                text += '<li>' + parameters_list[i].label + ' : ' + val + '</li>';
+        }
+       text += '</ul>';
+       $("#table_request_summary").html( text ) ;
+    }
 
     function requestServerData( sSource, aoData, fnCallback, oSettings ) {
 
@@ -62,6 +336,9 @@
             row[1] = '<a href="'+row[1]+'">'+row[1]+'</a>';
 
         }
+
+        updateInterface(data['request_stat']);
+
         fnCallback( data, textStatus, jqXHR );
       }
 
@@ -74,12 +351,40 @@
       } )
     }
 
+    function updateInterface(data)
+    {
+        var table = '<table><thead><tr><th colspan="0" style="text-align:center">Request status statistics</th></tr><tr>';
+        for( var i in data )
+        {
+            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+        }
+        table += '</tr></thead><tbody><tr>';
 
+       // table += '<td><span class="total">'+ total_task +'</span></td>';
+        for( var i in data )
+        {
+            table += '<td>'+ data[i].count +'</td>';
+        }
+
+        table += '</tr></tbody></table>';
+
+        $('#request_stat_table').html(table);
+    }
+
+
+    ParseParametersFromURL();
 
 
 </script>
 
 {{ table.as_html }}
 
+<script type="text/javascript">
+$(document).ready(function() {
+
+    $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
+
+});
+ </script>
 
 {% endblock %}

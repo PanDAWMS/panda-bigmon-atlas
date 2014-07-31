@@ -7,6 +7,7 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.utils import timezone
+from django.db.models import Count, Q
 import core.datatables as datatables
 import json
 import logging
@@ -837,13 +838,18 @@ class RequestTable(datatables.DataTable):
         label='Type',
     )
 
-
     cstatus = datatables.Column(
         label='Approval status',
     )
 
+    provenance = datatables.Column(
+        bVisible='false',
+    )
+
 
     class Meta:
+        id = 'request_table'
+        var = 'requestTable'
         model = TRequest
         bSort = True
         bPaginate = True
@@ -871,8 +877,54 @@ class RequestTable(datatables.DataTable):
 
         fnServerData =  'requestServerData'
 
+        fnServerParams = "requestServerParams"
+
+        fnDrawCallback = "requestDrawCallback"
+
+
         def __init__(self):
             self.sAjaxSource = reverse('prodtask:request_table')
+
+    def apply_filters(self, request):
+        qs = self.get_queryset()
+
+        parameters = [
+                        ('reqid','reqid'), ('group','phys_group'),
+                        ('campain','campaign'), ('manager','manager'),
+                        ('type', 'request_type'), ('status','cstatus'),
+                        ('description', 'description'), ('provenance','provenance'),
+                     ]
+
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value:
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
+
+        self.update_queryset(qs)
+
+    def prepare_ajax_data(self, request):
+
+        self.apply_filters(request)
+
+        params = request.fct.parse_params(request)
+
+        qs = request.fct.get_queryset()
+
+        qs = request.fct._handle_ajax_global_search(qs, params)
+        qs = request.fct._handle_ajax_column_specific_search(qs, params)
+
+   #     qs = request.fct.apply_sort_search(qs, params)
+
+        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['cstatus']), 'count':str(x['count']) }  for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
+
+        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
+
+        data['request_stat'] = status_stat
+
+        return data
 
 
 @datatables.datatable(RequestTable, name='fct')
