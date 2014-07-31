@@ -889,8 +889,8 @@ class RequestTable(datatables.DataTable):
         qs = self.get_queryset()
 
         parameters = [
-                        ('reqid','reqid'), ('group','phys_group'),
-                        ('campain','campaign'), ('manager','manager'),
+                        ('reqid','reqid'), ('phys_group','phys_group'),
+                        ('campaign','campaign'), ('manager','manager'),
                         ('type', 'request_type'), ('status','cstatus'),
                         ('description', 'description'), ('provenance','provenance'),
                      ]

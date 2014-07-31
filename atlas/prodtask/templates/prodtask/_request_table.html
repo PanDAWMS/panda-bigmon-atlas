@@ -101,9 +101,9 @@
     <table>
 
     <tr>
-        <td>Campain:</td>
+        <td>Campaign:</td>
         <td>
-            <input id="campain" />
+            <input id="campaign" />
         </td>
     </tr>
 
@@ -203,7 +203,7 @@
 <script type="text/javascript">
     var parameters_list = [
         { name: 'reqid',        id: 'reqid',        label: 'REQID'},
-        { name: 'campain',      id: 'campain',      label: 'Campain'},
+        { name: 'campaign',      id: 'campaign',      label: 'Campaign'},
         { name: 'manager',      id: 'manager',      label: 'Manager'},
 
         { name: 'type',         id: 'type',         label: 'Type'},
@@ -290,8 +290,8 @@
             aoData.push( { "name": "reqid",         "value": $("#reqid").val() } );
         if( $("#phys_group").val() != '' )
             aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#campain").val() != '' )
-            aoData.push( { "name": "campain",       "value": $("#campain").val() } );
+        if( $("#campaign").val() != '' )
+            aoData.push( { "name": "campaign",       "value": $("#campaign").val() } );
         if( $("#manager").val() != '' )
             aoData.push( { "name": "manager",       "value": $("#manager").val() } );
         if( $("#type").val() != '' )
