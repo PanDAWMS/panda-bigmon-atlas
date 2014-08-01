@@ -128,7 +128,7 @@ def mcfile_form_prefill(form_data, request):
             return {}, str(e)
     # Fill default values
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'waiting'
+        form_data['cstatus'] = 'created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -184,7 +184,7 @@ def hlt_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'waiting'
+        form_data['cstatus'] = 'created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -253,7 +253,7 @@ def dpd_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'waiting'
+        form_data['cstatus'] = 'created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -328,7 +328,7 @@ def reprocessing_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'waiting'
+        form_data['cstatus'] = 'created'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -522,7 +522,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     del form.cleaned_data['reqid']
                 # if 'tag_hierarchy' in form.cleaned_data:
                 #         del form.cleaned_data['tag_hierarchy']
-                form.cleaned_data['cstatus'] = 'waiting'
+                form.cleaned_data['cstatus'] = 'created'
                 try:
                     _logger.debug("Creating request : %s" % form.cleaned_data)
 
@@ -530,7 +530,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     req.save()
                     #TODO:Take owner from sso cookies
                     request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
-                                                   status='waiting')
+                                                   status='created')
                     request_status.save_with_current_time()
                     current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                     _logger.debug("e-mail with link %s" % current_uri)
@@ -820,6 +820,7 @@ class RequestTable(datatables.DataTable):
 
     phys_group = datatables.Column(
         label='Group',
+        sClass='centered',
     )
 
     description = datatables.Column(
@@ -828,18 +829,22 @@ class RequestTable(datatables.DataTable):
 
     campaign = datatables.Column(
         label='Campaign',
+        sClass='centered',
     )
 
     manager = datatables.Column(
         label='Manager',
+        sClass='centered',
     )
 
     request_type = datatables.Column(
         label='Type',
+        sClass='centered',
     )
 
     cstatus = datatables.Column(
         label='Approval status',
+        sClass='centered',
     )
 
     provenance = datatables.Column(
