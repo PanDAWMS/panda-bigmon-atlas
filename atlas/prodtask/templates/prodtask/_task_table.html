@@ -325,12 +325,17 @@
         SetParametersToURL();
 
         var text = '<ul>Filters:';
+        var time_period_all = 0;
 
         for(var i in parameters_list)
         {
+            if ( time_period_all && ( parameters_list[i].name == 'time_to' || parameters_list[i].name == 'time_from' ) )
+                continue;
             var val = $( "#"+parameters_list[i].id ).val();
             if ( val != '')
                 text += '<li>' + parameters_list[i].label + ' : ' + val + '</li>';
+            if ( parameters_list[i].name == 'time_period' && val == 'all' )
+                time_period_all = 1;
         }
        text += '</ul>';
        $("#table_request_summary").html( text ) ;
@@ -426,7 +431,6 @@
 
 
     var parameters_list = [
-        { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
         { name: 'project',      id: 'project',      label: 'Project'},
         { name: 'username',     id: 'username',     label: 'Owner'},
 
@@ -439,20 +443,26 @@
         { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
         { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
 
+        { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
         { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
         { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-
-        { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
+        
         { name: 'step_name',    id: 'step_name',    label: 'Step name'},
         { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
+        { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
     ];
 
     function SetParametersToURL()
     {
+        var time_period_all = 0;
         for(var i in parameters_list)
         {
+            if ( time_period_all && ( parameters_list[i].name == 'time_to' || parameters_list[i].name == 'time_from' ) )
+                continue;
             var val = $( "#"+parameters_list[i].id ).val();
             $.address.parameter( parameters_list[i].name , val );
+            if ( parameters_list[i].name == 'time_period' && val == 'all' )
+                time_period_all = 1;
         }
     }
 
@@ -462,6 +472,7 @@
     {
         var time_from = new Date();
         var time_to = new Date();
+        var extern_parameter = 0;
 
         time_from.setMonth( time_from.getMonth() - 1 )
 
@@ -473,6 +484,7 @@
             var value = $.address.parameter( parameters_list[i].name );
             if( value )
             {
+                extern_parameter = 1;
                 switch( parameters_list[i].name )
                 {
                     case 'time_from':
@@ -498,7 +510,10 @@
                 switch( parameters_list[i].name )
                 {
                     case 'task_type':
-                        $("#task_type").val('production');
+                        if( extern_parameter )
+                            $("#task_type").val('all');
+                        else
+                            $("#task_type").val('production');
                         break;
                     case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
@@ -507,7 +522,7 @@
                         $( "#time_to" ).datepicker( "setDate", time_to );
                         break;
                     case 'time_period':
-                        $("#time_period").val('month');
+                        $("#time_period").val('all');
                         break;
                     default:
                         $("#" + parameters_list[i].name).val('');
@@ -583,6 +598,8 @@
 
 
     ParseParametersFromURL();
+    
+    $( "#time_period" ).change();
 
 </script>
 
