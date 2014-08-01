@@ -251,7 +251,7 @@
 
     </tr>
 
-    <tr><td colspan="0"><input id="update_task_table" type="button" value="Update table" /><td></tr>
+    <tr><td colspan="0"><input id="update_task_table" type="button" value="Update table" title="To enable update button please try to change any parameter. You could refresh table content by clicking 'Enter'" /><td></tr>
 
     </tbody>
 </table>
@@ -322,6 +322,7 @@
 
     function taskDrawCallback()
     {
+        $("#update_task_table").button( "disable" );
         SetParametersToURL();
 
         var text = '<ul>Filters:';
@@ -617,7 +618,20 @@ $(document).ready(function() {
     taskTable.fnSetColumnVis( 22, false, false );
     taskTable.fnSetColumnVis( 23, false, false );
 
-    $("#update_task_table").button().click(function(){ taskTable.fnDraw() });
+    $("#update_task_table").button({ disabled: true });
+    $("#update_task_table").tooltip( );
+    $("#update_task_table").click(function(){ taskTable.fnDraw(); });
+    
+    for(var i in parameters_list)
+        $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });
+    
+    $(document).on('keyup', function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            taskTable.fnDraw();
+        }
+    });
+    
     $("#task_type").change(function () {
 
             if( $("#task_type").val() == 'analysis' )
