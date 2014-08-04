@@ -4,7 +4,7 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
-
+from .views import form_existed_step_list
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig
 
@@ -135,6 +135,29 @@ def get_tag_formats(request, reqid):
                     if do_update:
                         tag_formats.append((tag_format,project_mode,slice.slice))
             results.update({'success':True,'data':[x[0]+'-'+str(x[2]) for x in tag_formats]})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def slice_steps(request, reqid, slice_number):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            req = TRequest.objects.get(reqid=reqid)
+            input_list = InputRequestList.objects.get(request=req,slice=slice_number)
+            existed_steps = StepExecution.objects.filter(request=req, slice=input_list)
+            # Check steps which already exist in slice, and change them if needed
+            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            result_list = []
+            if existed_foreign_step:
+                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_type':'foreign'})
+            for step in ordered_existed_steps:
+                is_skipped = 'not_skipped'
+                if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
+                    is_skipped = 'is_skipped'
+                result_list.append({'step':step.step_template.ctag,'step_type':is_skipped})
+            results = {'success':True,'step_types':result_list}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
