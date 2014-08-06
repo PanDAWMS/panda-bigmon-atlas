@@ -43,6 +43,7 @@
 <tr><th><label for="name">Name:</label></th><td>{% if task.id %}<a href="{% url 'prodtask:task' task.id %}">{{task.name}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="project">Project:</label></th><td>{{ task.project }}</td></tr>
 <tr><th><label for="username">Owner:</label></th><td>{{ task.username }}</td></tr>
+<tr><th><label for="campaign">Campaign:</label></th><td>{{ task.campaign }}</td></tr>
 <tr><th><label for="provenance">Provenance:</label></th><td>{{ task.provenance }}</td></tr>
 <tr><th><label for="status">Status:</label></th><td>{{ task.status }}</td></tr>
 <tr><th><label for="priority">Priority:</label></th><td>{{ task.priority }}</td></tr>

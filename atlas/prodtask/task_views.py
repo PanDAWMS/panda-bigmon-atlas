@@ -274,6 +274,10 @@ class ProductionTaskTable(datatables.DataTable):
         label='SPriority',
         sClass='numbers',
         )
+        
+    campaign = datatables.Column(
+        bVisible='false',
+        )
 
     class Meta:
         model = ProductionTask
@@ -328,7 +332,7 @@ class ProductionTaskTable(datatables.DataTable):
     def apply_filters(self, request):
         qs = self.get_queryset()
 
-        parameters = [   ('project','project'), ('username','username'),
+        parameters = [   ('project','project'), ('username','username'), ('campaign','campaign'),
                             ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]

@@ -1032,7 +1032,7 @@ class ProductionDatasetTable(datatables.DataTable):
                 filters = Q(status__iexact=status)
         qs = qs.filter(filters)
 
-        parameters = [ ('datasetname','name'), ('status','status'), ]
+        parameters = [ ('datasetname','name'), ('status','status'), ('campaign','campaign'), ]
 
         for param in parameters:
             value = request.GET.get(param[0], 0)

@@ -155,7 +155,7 @@ class ProductionDataset(models.Model):
     files = models.DecimalField(decimal_places=0, max_digits=7, db_column='FILES', null=False)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
-
+   # campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
 
 
     class Meta:
@@ -174,7 +174,8 @@ class InputRequestList(models.Model):
     project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
-
+    campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
+    
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ')
@@ -313,7 +314,7 @@ class ProductionTask(models.Model):
     inputdataset = models.CharField(max_length=150, db_column='INPUTDATASET', null=True)
     physics_tag = models.CharField(max_length=20, db_column='PHYSICS_TAG', null=True)
     reference = models.CharField(max_length=150, db_column='REFERENCE', null=False)
-
+    campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
 
     def save(self):
         if self.id == None:

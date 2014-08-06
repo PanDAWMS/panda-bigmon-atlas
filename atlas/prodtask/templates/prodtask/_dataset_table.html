@@ -75,7 +75,7 @@
 
     <td>Dataset name pattern:</td>
     <td>
-    <input id="datasetname" />
+        <input id="datasetname" />
     </td>
     <td>Status:</td>
     <td>
@@ -94,8 +94,13 @@
     </select>
     </td>
 
+    <td>Campaign:</td>
+    <td>
+        <input type="text" id="campaign" name="campaign" />
+    </td>
+    
     <td colspan="0">
-    <input id="update_dataset_table" type="button" value="Update table" />
+        <input id="update_dataset_table" type="button" value="Update table" />
     <td>
 
     </tr>
@@ -123,11 +128,10 @@
 
         if( $("#datasetname").val() != '' )
             aoData.push( { "name": "datasetname",      "value": $("#datasetname").val() } );
-
-
         if( $("#status").val() != '' )
             aoData.push( { "name": "status",        "value": $("#status").val() } );
-
+        if( $("#campaign").val() != '' )
+            aoData.push( { "name": "campaign",      "value": $("#campaign").val() } );
 
      //   aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
      //   aoData.push( { "name": "time_from", "value": time_from.getTime() } );

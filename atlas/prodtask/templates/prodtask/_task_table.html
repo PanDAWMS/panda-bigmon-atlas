@@ -161,6 +161,13 @@
     <table>
 
     <tr>
+        <td>Campaign:</td>
+        <td>
+            <input type="text" id="campaign" name="campaign">
+        </td>
+    </tr>
+    
+    <tr>
         <td>Status:</td>
         <td>
         <select id="status">
@@ -314,6 +321,9 @@
             aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
         if( $("#step_output_format").val() != '' )
             aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
+        if( $("#campaign").val() != '' )
+            aoData.push( { "name": "campaign",      "value": $("#campaign").val() } ); 
+            
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -452,6 +462,8 @@
         { name: 'step_name',    id: 'step_name',    label: 'Step name'},
         { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
         { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
+        { name: 'campaign',     id: 'campaign',     label: 'Campaign'},
+        
     ];
 
     function SetParametersToURL()
