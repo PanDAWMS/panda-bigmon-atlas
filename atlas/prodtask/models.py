@@ -155,7 +155,7 @@ class ProductionDataset(models.Model):
     files = models.DecimalField(decimal_places=0, max_digits=7, db_column='FILES', null=False)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
-   # campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
+    campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
 
 
     class Meta:
@@ -174,7 +174,6 @@ class InputRequestList(models.Model):
     project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
-    campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
     
     def save(self, *args, **kwargs):
         if not self.id:
