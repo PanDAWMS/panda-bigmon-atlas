@@ -190,12 +190,12 @@ def slice_steps(request, reqid, slice_number):
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
             if existed_foreign_step:
-                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_type':'foreign'})
+                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign'})
             for step in ordered_existed_steps:
                 is_skipped = 'not_skipped'
                 if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
                     is_skipped = 'is_skipped'
-                result_list.append({'step':step.step_template.ctag,'step_type':is_skipped})
+                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped})
             results = {'success':True,'step_types':result_list}
         except Exception,e:
             pass
