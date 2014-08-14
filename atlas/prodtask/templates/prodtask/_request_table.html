@@ -373,7 +373,7 @@
 
     function expandTaskStat( obj, reqid )
     {
-        $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span><br/><a href="'+Django.url('prodtask:task_table')+'#/?request='+reqid+'" title="ProductionTask list>list</a>' );
+        $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span><br/> <a href="'+Django.url('prodtask:task_table')+'#/?request='+reqid+'" title="ProductionTask list">list</a>' );
         $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).tooltip( "destroy" ); } );
     }
 
