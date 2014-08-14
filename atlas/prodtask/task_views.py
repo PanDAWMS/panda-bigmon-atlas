@@ -386,7 +386,7 @@ class ProductionTaskTable(datatables.DataTable):
         qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
 
         self.update_queryset(qs)
-
+        
     def prepare_ajax_data(self, request):
 
         self.apply_filters(request)
@@ -400,7 +400,7 @@ class ProductionTaskTable(datatables.DataTable):
 
    #     qs = request.fct.apply_sort_search(qs, params)
 
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]
+        status_stat = self.get_status_stat(qs)
 
         data = datatables.DataTable.prepare_ajax_data(request.fct, request)
 
@@ -408,7 +408,14 @@ class ProductionTaskTable(datatables.DataTable):
 
         return data
 
-
+def get_status_stat(qs):
+    return [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]        
+    
+def task_status_stat_by_request(request, rid):
+    qs = ProductionTask.objects.filter(request__reqid=rid)
+    stat = get_status_stat(qs)
+    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat })
+    
 
 
 @datatables.datatable(ProductionTaskTable, name='fct')
