@@ -400,7 +400,7 @@ class ProductionTaskTable(datatables.DataTable):
 
    #     qs = request.fct.apply_sort_search(qs, params)
 
-        status_stat = self.get_status_stat(qs)
+        status_stat = get_status_stat(qs)
 
         data = datatables.DataTable.prepare_ajax_data(request.fct, request)
 
