@@ -2,6 +2,15 @@
 __pycache__/
 *.py[cod]
 
+
+# Local and project specific settings
+atlas/settings/local.py
+atlas/settings/jediclient-ssh/
+
+# Project static collecting dir
+atlas/static/
+
+
 # C extensions
 *.so
 
