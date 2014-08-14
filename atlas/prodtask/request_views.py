@@ -812,6 +812,7 @@ class RequestTable(datatables.DataTable):
     rid = datatables.Column(
         label='Request ID',
         model_field='reqid',
+        sClass='numbers',
     )
 
     ref_link = datatables.Column(
@@ -844,7 +845,7 @@ class RequestTable(datatables.DataTable):
 
     cstatus = datatables.Column(
         label='Approval status',
-        sClass='centered',
+        sClass='centered rstat',
     )
 
     provenance = datatables.Column(
