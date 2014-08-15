@@ -379,7 +379,7 @@
 
     
     function requestServerData( sSource, aoData, fnCallback, oSettings ) {                        
-    
+
       function prepareData( data, textStatus, jqXHR )
       {
         console.log(data)
@@ -388,12 +388,13 @@
             var row = data['aaData'][i];
             
             row[1] = row[1]==''?'':'<a href="'+row[1]+'">link</a>';
-            row[7] = '<span class="tooltiped" onclick="expandTaskStat( this, '+row[0]+')" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
+            row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
             row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';            
         }
         updateInterface(data['request_stat']);
         fnCallback( data, textStatus, jqXHR );
         $(".tooltiped").tooltip( );
+        $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
       }
 
       oSettings.jqXHR = $.ajax( {
