@@ -337,6 +337,10 @@ class ProductionTaskTable(datatables.DataTable):
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
 
+        task_id = request.GET.get('task_id', 0)
+        if task_id:
+            qs = qs.filter(Q( **{ 'id__iregex' : task_id } ))
+
         for param in parameters:
             value = request.GET.get(param[0], 0)
             if value:
