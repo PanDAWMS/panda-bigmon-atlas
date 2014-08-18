@@ -13,7 +13,7 @@ import core.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask, TRequest
+from .models import ProductionTask, TRequest, TTask
 
 from django.db.models import Count, Q
 
@@ -30,6 +30,7 @@ def task_details(request, rid=None):
    if rid:
        try:
            task = ProductionTask.objects.get(id=rid)
+           ttask = TTask.objects.get(id=rid)
           # form = ProductionTaskForm(instance=req)
        except:
            return HttpResponseRedirect('/')
@@ -56,6 +57,7 @@ def task_details(request, rid=None):
        'active_app' : 'prodtask',
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
+       'ttask': ttask,
        'clouds': get_clouds(),
        'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
@@ -272,6 +274,10 @@ class ProductionTaskTable(datatables.DataTable):
         label='SPriority',
         sClass='numbers',
         )
+        
+    campaign = datatables.Column(
+        bVisible='false',
+        )
 
     class Meta:
         model = ProductionTask
@@ -326,10 +332,14 @@ class ProductionTaskTable(datatables.DataTable):
     def apply_filters(self, request):
         qs = self.get_queryset()
 
-        parameters = [   ('project','project'), ('username','username'),
+        parameters = [   ('project','project'), ('username','username'), ('campaign','campaign'),
                             ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
+
+        task_id = request.GET.get('task_id', 0)
+        if task_id:
+            qs = qs.filter(Q( **{ 'id__iregex' : task_id } ))
 
         for param in parameters:
             value = request.GET.get(param[0], 0)
@@ -380,7 +390,7 @@ class ProductionTaskTable(datatables.DataTable):
         qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
 
         self.update_queryset(qs)
-
+        
     def prepare_ajax_data(self, request):
 
         self.apply_filters(request)
@@ -394,7 +404,7 @@ class ProductionTaskTable(datatables.DataTable):
 
    #     qs = request.fct.apply_sort_search(qs, params)
 
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]
+        status_stat = get_status_stat(qs)
 
         data = datatables.DataTable.prepare_ajax_data(request.fct, request)
 
@@ -402,7 +412,14 @@ class ProductionTaskTable(datatables.DataTable):
 
         return data
 
-
+def get_status_stat(qs):
+    return [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]        
+    
+def task_status_stat_by_request(request, rid):
+    qs = ProductionTask.objects.filter(request__reqid=rid)
+    stat = get_status_stat(qs)
+    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat })
+    
 
 
 @datatables.datatable(ProductionTaskTable, name='fct')

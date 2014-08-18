@@ -20,6 +20,7 @@
 <tr><th><label for="parent_id">Parent ID:</label></th><td>{% if dataset.parent_task_id %}<a href="{% url 'prodtask:task' dataset.parent_task_id  %}">{{dataset.parent_task_id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="request">Request:</label></th><td>{% if dataset.rid %}<a href="{% url 'prodtask:request' dataset.rid %}">{{dataset.rid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="phys_group">Phys group:</label></th><td>{{ dataset.phys_group }}</td></tr>
+<tr><th><label for="campaign">Campaign:</label></th><td>{{ dataset.campaign }}</td></tr>
 <tr><th><label for="total_events">Events:</label></th><td>{{ dataset.events }}</td></tr>
 <tr><th><label for="total_events">Files:</label></th><td>{{ dataset.files }}</td></tr>
 <tr><th><label for="status">Status:</label></th><td>{{ dataset.status }}</td></tr>

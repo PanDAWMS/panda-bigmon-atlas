@@ -1,4 +1,5 @@
-panda-bigmon-atlas
-==================
+BigPanDAmon package
+============
 
-BigPanDA monitoring - ATLAS
+Documentation: https://twiki.cern.ch/twiki/bin/view/PanDA/BigPanDAmonitoring
+

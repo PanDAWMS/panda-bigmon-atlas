@@ -7,6 +7,7 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.utils import timezone
+from django.db.models import Count, Q
 import core.datatables as datatables
 import json
 import logging
@@ -127,7 +128,7 @@ def mcfile_form_prefill(form_data, request):
             return {}, str(e)
     # Fill default values
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'created'
+        form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -183,7 +184,7 @@ def hlt_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'created'
+        form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -252,7 +253,7 @@ def dpd_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'created'
+        form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -327,7 +328,7 @@ def reprocessing_form_prefill(form_data, request):
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
     if not form_data.get('cstatus'):
-        form_data['cstatus'] = 'created'
+        form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
@@ -521,7 +522,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     del form.cleaned_data['reqid']
                 # if 'tag_hierarchy' in form.cleaned_data:
                 #         del form.cleaned_data['tag_hierarchy']
-                form.cleaned_data['cstatus'] = 'created'
+                form.cleaned_data['cstatus'] = 'waiting'
                 try:
                     _logger.debug("Creating request : %s" % form.cleaned_data)
 
@@ -529,7 +530,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     req.save()
                     #TODO:Take owner from sso cookies
                     request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
-                                                   status='created')
+                                                   status='waiting')
                     request_status.save_with_current_time()
                     current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                     _logger.debug("e-mail with link %s" % current_uri)
@@ -811,6 +812,7 @@ class RequestTable(datatables.DataTable):
     rid = datatables.Column(
         label='Request ID',
         model_field='reqid',
+        sClass='numbers',
     )
 
     ref_link = datatables.Column(
@@ -819,6 +821,7 @@ class RequestTable(datatables.DataTable):
 
     phys_group = datatables.Column(
         label='Group',
+        sClass='centered',
     )
 
     description = datatables.Column(
@@ -827,32 +830,42 @@ class RequestTable(datatables.DataTable):
 
     campaign = datatables.Column(
         label='Campaign',
+        sClass='centered',
     )
 
     manager = datatables.Column(
         label='Manager',
+        sClass='centered',
     )
 
     request_type = datatables.Column(
         label='Type',
+        sClass='centered',
     )
-
 
     cstatus = datatables.Column(
         label='Approval status',
+        sClass='centered rstat',
+    )
+
+    provenance = datatables.Column(
+        bVisible='false',
     )
 
 
     class Meta:
+        id = 'request_table'
+        var = 'requestTable'
         model = TRequest
         bSort = True
         bPaginate = True
         bJQueryUI = True
-
-        sScrollX = '100%'
-        sScrollY = '25em'
-        bScrollCollapse = True
-
+        
+        bAutoWidth = False
+      #  sScrollX = '100%'
+      #  sScrollY = '25em'
+        bScrollCollapse = False
+        
         aaSorting = [[0, "desc"]]
         aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
         iDisplayLength = 50
@@ -871,8 +884,54 @@ class RequestTable(datatables.DataTable):
 
         fnServerData =  'requestServerData'
 
+        fnServerParams = "requestServerParams"
+
+        fnDrawCallback = "requestDrawCallback"
+
+
         def __init__(self):
             self.sAjaxSource = reverse('prodtask:request_table')
+
+    def apply_filters(self, request):
+        qs = self.get_queryset()
+
+        parameters = [
+                        ('reqid','reqid'), ('phys_group','phys_group'),
+                        ('campaign','campaign'), ('manager','manager'),
+                        ('type', 'request_type'), ('status','cstatus'),
+                        ('description', 'description'), ('provenance','provenance'),
+                     ]
+
+        for param in parameters:
+            value = request.GET.get(param[0], 0)
+            if value:
+                if value != 'None':
+                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+                else:
+                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
+
+        self.update_queryset(qs)
+
+    def prepare_ajax_data(self, request):
+
+        self.apply_filters(request)
+
+        params = request.fct.parse_params(request)
+
+        qs = request.fct.get_queryset()
+
+        qs = request.fct._handle_ajax_global_search(qs, params)
+        qs = request.fct._handle_ajax_column_specific_search(qs, params)
+
+   #     qs = request.fct.apply_sort_search(qs, params)
+
+        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['cstatus']), 'count':str(x['count']) }  for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
+
+        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
+
+        data['request_stat'] = status_stat
+
+        return data
 
 
 @datatables.datatable(RequestTable, name='fct')

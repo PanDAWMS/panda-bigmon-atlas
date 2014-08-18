@@ -15,6 +15,8 @@ class ProductionDatasetsExec(models.Model):
 class TaskProdSys1(models.Model):
     taskid = models.DecimalField(decimal_places=0, max_digits=10, db_column='REQID', primary_key=True)
     total_events =  models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_EVENTS')
+    task_name = models.CharField(max_length=130, db_column='TASKNAME')
+    status = models.CharField(max_length=12, db_column='STATUS')
 
     class Meta:
         app_label = "grisli"
