@@ -49,7 +49,7 @@ class TRequest(models.Model):
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
     ref_link = models.CharField(max_length=256, db_column='REFERENCE_LINK', null=True, blank=True)
     cstatus = models.CharField(max_length=32, db_column='STATUS', null=False, blank=True)
-    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False, blank=True,choices=REQUEST_TYPE)
+    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False, blank=True,choices=PROVENANCE_TYPE)
     request_type = models.CharField(max_length=32, db_column='REQUEST_TYPE',choices=REQUEST_TYPE, null=False, blank=True)
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
     subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)

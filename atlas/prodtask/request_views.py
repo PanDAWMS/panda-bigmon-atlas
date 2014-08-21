@@ -132,11 +132,11 @@ def mcfile_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'ATLAS'
+        form_data['provenance'] = 'AP'
     if not form_data.get('manager'):
         form_data['manager'] = 'None'
     if not form_data.get('request_type'):
-        form_data['request_type'] = 'AP'
+        form_data['request_type'] = 'MC'
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
