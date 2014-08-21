@@ -136,7 +136,7 @@ def mcfile_form_prefill(form_data, request):
     if not form_data.get('manager'):
         form_data['manager'] = 'None'
     if not form_data.get('request_type'):
-        form_data['request_type'] = 'MC'
+        form_data['request_type'] = 'AP'
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
@@ -257,7 +257,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'test'
+        form_data['provenance'] = 'GP'
 
     task_config = {}
     if 'events_per_job' in output_dict:
@@ -332,7 +332,7 @@ def reprocessing_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'test'
+        form_data['provenance'] = 'AP'
     task_config = {}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
@@ -595,7 +595,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     return HttpResponseRedirect(reverse('prodtask:request_table'))
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve',args=(req.reqid,)))
             else:
-                return render(request, 'prodtask/_form.html', {
+                return render(request, 'prodtask/_requestform.html', {
                     'active_app': 'mcprod',
                     'pre_form_text': title,
                     'form': form,
@@ -620,7 +620,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
     # Create prefill form
-    return render(request, 'prodtask/_form.html', {
+    return render(request, 'prodtask/_requestform.html', {
         'active_app': 'mcprod',
         'pre_form_text': title,
         'form': form,
