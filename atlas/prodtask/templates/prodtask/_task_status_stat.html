@@ -1,0 +1,3 @@
+{% for status in stat %}
+<span class="tstat {{status.status}}" title="{{status.status}}">{{ status.count }}</span>{% if forloop.first %}&nbsp{%else%}{% if not forloop.last %}/{%endif%}{%endif%}
+{% endfor %}

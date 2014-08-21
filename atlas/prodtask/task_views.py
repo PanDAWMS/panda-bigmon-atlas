@@ -274,6 +274,10 @@ class ProductionTaskTable(datatables.DataTable):
         label='SPriority',
         sClass='numbers',
         )
+        
+    campaign = datatables.Column(
+        bVisible='false',
+        )
 
     class Meta:
         model = ProductionTask
@@ -301,37 +305,24 @@ class ProductionTaskTable(datatables.DataTable):
 
         fnServerData =  "taskServerData"
 
-
         bServerSide = True
 
         def __init__(self):
             self.sAjaxSource = reverse('task_table')
 
-
-    def apply_first_page_filters(self, request):
-
-        self.apply_filters(request)
-
-        qs = self.get_queryset()
-
-        parameters = [ ('project','project'), ('username','username'), ('request','request__reqid'), ('chain','chain_tid'), ('status','status')]
-        for param in parameters:
-            value = request.GET.get(param[0], 0)
-            if value:
-                if value != 'None':
-                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
-                else:
-                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
-
-        self.update_queryset(qs)
-
-    def apply_filters(self, request):
-        qs = self.get_queryset()
-
-        parameters = [   ('project','project'), ('username','username'),
+    def apply_additional_filters(self, request, qs):
+        """
+        Overload DataTables method for filtering by additional elements of the page
+        :return: filtered queryset
+        """
+        parameters = [   ('project','project'), ('username','username'), ('campaign','campaign'),
                             ('request','request__reqid'), ('chain','chain_tid'),
                             ('provenance', 'provenance'), ('phys_group','phys_group'),
                             ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
+
+        task_id = request.GET.get('task_id', 0)
+        if task_id:
+            qs = qs.filter(Q( **{ 'id__iregex' : task_id } ))
 
         for param in parameters:
             value = request.GET.get(param[0], 0)
@@ -382,40 +373,43 @@ class ProductionTaskTable(datatables.DataTable):
         qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
 
         self.update_queryset(qs)
+        return  qs
 
-    def prepare_ajax_data(self, request):
+    def additional_data(self, request, qs):
+        """
+        Overload DataTables method for adding statuses info at the page
+        :return: dictionary of data should be added to each server response of table data
+        """
+        status_stat = get_status_stat(qs)
+        return { 'task_stat' : status_stat }
 
-        self.apply_filters(request)
-
-        params = request.fct.parse_params(request)
-
-        qs = request.fct.get_queryset()
-
-        qs = request.fct._handle_ajax_global_search(qs, params)
-        qs = request.fct._handle_ajax_column_specific_search(qs, params)
-
-   #     qs = request.fct.apply_sort_search(qs, params)
-
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['status']), 'count':str(x['count']) }  for x in qs.values('status').annotate(count=Count('id')) ]
-
-        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
-
-        data['task_stat'] = status_stat
-
-        return data
+def get_status_stat(qs):
+    """
+    Compute ProductionTasks statuses by query set
+    :return: list of statuses with count of task in corresponding state
+    """
+    return [ { 'status':'total', 'count':qs.count() } ] +\
+            [ { 'status':str(x['status']), 'count':str(x['count']) }
+              for x in qs.values('status').annotate(count=Count('id')) ]
 
 
+def task_status_stat_by_request(request, rid):
+    """
+    ProductionTasks statuses for specific request
+    :return: line with statuses
+    """
+    qs = ProductionTask.objects.filter(request__reqid=rid)
+    stat = get_status_stat(qs)
+    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat })
 
 
 @datatables.datatable(ProductionTaskTable, name='fct')
 def task_table(request):
-
-    qs = request.fct.get_queryset()
-
+    """
+    ProductionTask table
+    :return: table page or data for it
+    """
     last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
-
-  #  request.fct.apply_first_page_filters(request)
-
     return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
                                                                     'active_app' : 'prodtask',
                                                                     'table': request.fct,

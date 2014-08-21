@@ -161,6 +161,20 @@
     <table>
 
     <tr>
+        <td>Task ID:</td>
+        <td>
+        <input placeholder="eg : 4003.* " id="task_id" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Campaign:</td>
+        <td>
+            <input type="text" id="campaign" name="campaign">
+        </td>
+    </tr>
+    
+    <tr>
         <td>Status:</td>
         <td>
         <select id="status">
@@ -314,6 +328,11 @@
             aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
         if( $("#step_output_format").val() != '' )
             aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
+        if( $("#campaign").val() != '' )
+            aoData.push( { "name": "campaign",      "value": $("#campaign").val() } ); 
+        if( $("#task_id").val() != '' )
+            aoData.push( { "name": "task_id",      "value": $("#task_id").val() } );
+
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -417,7 +436,7 @@
             row[11] = '<span class="'+row[11]+'">'+row[11]+'</span>';
         }
 
-        updateInterface(data['task_stat']);
+        updateInterface(data['additional']['task_stat']);
 
         fnCallback( data, textStatus, jqXHR );
       }
@@ -437,6 +456,7 @@
         { name: 'username',     id: 'username',     label: 'Owner'},
 
         { name: 'taskname',     id: 'taskname',     label: 'Task name'},
+        { name: 'task_id',     id: 'task_id',     label: 'Task ID'},
 
         { name: 'request',      id: 'request',      label: 'Request'},
         { name: 'chain',        id: 'chain',        label: 'Chain'},
@@ -452,6 +472,8 @@
         { name: 'step_name',    id: 'step_name',    label: 'Step name'},
         { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
         { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
+        { name: 'campaign',     id: 'campaign',     label: 'Campaign'},
+        
     ];
 
     function SetParametersToURL()

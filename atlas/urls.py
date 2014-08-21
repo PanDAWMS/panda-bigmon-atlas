@@ -1,12 +1,11 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-
-from core.common.urls import *
+from django.conf.urls import *
 
 import atlas.settings
 
-import core.pandajob.views as pandajob_views
+#import core.pandajob.views as pandajob_views
 import atlas.common.views as atlas_common_views
 #import atlas.todoview.views as atlas_todo_views
 
@@ -24,7 +23,7 @@ common_patterns = patterns('',
     url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
     url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
     url(r'^dash/', include('core.pandajob.urls_pandajob_dash')),
-    url(r'^support/', include('core.pandajob.urls_pandajob_support')),
+#    url(r'^support/', include('core.pandajob.urls_pandajob_support')),
 
 #obsoleted.2014-05-01.jschovan#    url(r'^u', include('core.pandajob.urls_users', namespace='user')),
     url(r'^users/', include('core.pandajob.urls_pandajob_users')),

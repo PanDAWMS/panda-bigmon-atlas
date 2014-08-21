@@ -812,6 +812,7 @@ class RequestTable(datatables.DataTable):
     rid = datatables.Column(
         label='Request ID',
         model_field='reqid',
+        sClass='numbers',
     )
 
     ref_link = datatables.Column(
@@ -844,7 +845,7 @@ class RequestTable(datatables.DataTable):
 
     cstatus = datatables.Column(
         label='Approval status',
-        sClass='centered',
+        sClass='centered rstat',
     )
 
     provenance = datatables.Column(
@@ -869,17 +870,7 @@ class RequestTable(datatables.DataTable):
         aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
         iDisplayLength = 50
 
-
         bServerSide = True
-        # fnRowCallback = """
-        #                 function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-        #                 {
-        #                     $('td:eq(0)', nRow).html('<a href="/prodtask/request/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'+
-        #                                              '<span style="float: right;" ><a href="/prodtask/request_update/'+aData[0]+'/">Update</a>&nbsp;'+
-        #                                              '<a href="/prodtask/inputlist_with_request/'+aData[0]+'/">List</a></span>'
-        #                     );
-        #                     $('td:eq(1)', nRow).html('<a href="'+aData[1]+'">'+aData[1]+'</a>');
-        #                 }"""
 
         fnServerData =  'requestServerData'
 
@@ -891,7 +882,11 @@ class RequestTable(datatables.DataTable):
         def __init__(self):
             self.sAjaxSource = reverse('prodtask:request_table')
 
-    def apply_filters(self, request):
+    def apply_additional_filters(self, request, qs):
+        """
+        Overload DataTables method for filtering by additional elements of the page
+        :return: filtered queryset
+        """
         qs = self.get_queryset()
 
         parameters = [
@@ -910,31 +905,31 @@ class RequestTable(datatables.DataTable):
                     qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
 
         self.update_queryset(qs)
+        return qs
 
-    def prepare_ajax_data(self, request):
+    def additional_data(self, request, qs):
+        """
+        Overload DataTables method for adding statuses info at the page
+        :return: dictionary of data should be added to each server response of table data
+        """
+        status_stat = get_status_stat(qs)
+        return { 'request_stat' : status_stat }
 
-        self.apply_filters(request)
-
-        params = request.fct.parse_params(request)
-
-        qs = request.fct.get_queryset()
-
-        qs = request.fct._handle_ajax_global_search(qs, params)
-        qs = request.fct._handle_ajax_column_specific_search(qs, params)
-
-   #     qs = request.fct.apply_sort_search(qs, params)
-
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['cstatus']), 'count':str(x['count']) }  for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
-
-        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
-
-        data['request_stat'] = status_stat
-
-        return data
-
+def get_status_stat(qs):
+    """
+    Compute ProductionRequests statuses by query set
+    :return: list of statuses with count of requests in corresponding state
+    """
+    return [ { 'status':'total', 'count':qs.count() } ] +\
+            [ { 'status':str(x['cstatus']), 'count':str(x['count']) }
+              for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
 
 @datatables.datatable(RequestTable, name='fct')
 def request_table(request):
+    """
+    Request table
+    :return: table page or data for it
+    """
     qs = request.fct.get_queryset()
     request.fct.update_queryset(qs)
     return TemplateResponse(request, 'prodtask/_request_table.html',
