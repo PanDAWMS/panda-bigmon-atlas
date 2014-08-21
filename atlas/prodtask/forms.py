@@ -36,6 +36,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     manager = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
 
+
     class Meta:
         model = TRequest
         exclude = ['reqid']
@@ -48,6 +49,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    hidden_json_slices = CharField(required=False, label="Will be hidden")
 
     class Meta:
         model = TRequest
