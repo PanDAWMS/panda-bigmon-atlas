@@ -187,7 +187,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             #Create new step
                             _logger.debug("Create step: %s execution for request: %i slice: %i "%
                                           (steps_status[index],int(reqid),input_list.slice))
-                            temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
+                            if(STEPS[index]):
+                                temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
+                            else:
+                                temp_priority = priority_obj.priority('Evgen', step_value['value'])
                             # store input_vents only for first not skipped step, otherwise
                             temp_input_events = -1
                             if still_skipped:
