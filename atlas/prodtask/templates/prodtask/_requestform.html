@@ -1,6 +1,7 @@
 {% extends parent_template %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -11,8 +12,74 @@
 {% block subtitle %}
 {{pre_form_text|safe}}
 {% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+{% endblock %}
 
 {% block body %}
+<script>
+
+    function addMoreSlices(event){
+        event.preventDefault();
+        var nextNumber = parseInt($('#sliceNumber').html());
+        var cloneForm = $('#form0').clone().prop({'id':"form"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString());
+        $('#formSet').append(cloneForm);
+        $('#sliceNumber').html((nextNumber+1).toString());
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+$(document).ready(function(){
+
+        bindOnChangeToFieldSet();
+});
+        function bindOnChangeToFieldSet(){
+            $('.storeInput').bind('change',function(){fillSlicesField();});
+        }
+
+        function fillSlicesField(){
+            var resultObject = {};
+            $(".sliceFiledset").each(function(){
+               var sliceNumber = $(this).attr("id").replace("form","");
+                var sliceObject = {};
+               $(this).find(".storeInput").each(function(){
+                   sliceObject[$(this).attr('class').replace(" storeInput","")] = $(this).val();
+               });
+               var datasets='';
+               $(this).find(".datasetNames").each(function(){
+                  if($(this).siblings(".innnerDatasetCheckbox.storeInput").find('input').is(':checked')) {
+                      datasets += $(this).html() + ',';
+                  }
+               });
+               if  (datasets!=''){
+                   sliceObject['datasets']  = datasets;
+               }
+               resultObject[sliceNumber]  = sliceObject;
+            });
+            console.log(resultObject);
+            $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
+          }
+
+        function findDatasets(currentButton){
+            console.log(currentButton);
+            console.log($(currentButton).parentsUntil(".sliceFiledset"));
+            $(currentButton).parentsUntil(".sliceFiledset").find("datasetTBody").html('');
+        }
+
+
+</script>
+
+
 {% if error_message %}
     <strong>ERROR: {{ error_message }} </strong>
 {% endif %}
@@ -32,6 +99,86 @@
 {{ form.as_table }}
 </table>
 {% endif %}
+
+ <a class="button" onclick="addMoreSlices(event);">Add slice</a>
+ <strong id="sliceNumber">1</strong>
+ <div id="formSet">
+     <fieldset id="form0" class="sliceFiledset">
+      <legend>Slice #0</legend>
+      <div class="row">
+        <div class="large-12 columns">
+          <label>Dataset Filter
+            <input type="text" placeholder="dataset pattern" />
+          </label>
+        </div>
+      </div>
+       <div class="row">
+        <div class="large-2 columns">
+            <a class="button" id='searchDatasetButton0' onclick="findDatasets(this);"></a>
+        </div>
+      </div>
+      <div class="row">
+          <div class="large-12 columns">
+          <table>
+              <thead>
+              <tr>
+                <th>Dataset Name</th>
+                <th>events</th>
+                <th><input type="checkbox"/> </th>
+              </tr>
+              </thead>
+              <tbody class="datasetTBody">
+                <tr>
+                    <td class="datasetNames">mc14_8TeV.117050.PowhegPythia_P2011C_ttbar.merge.AOD.e1727_s1933_s1911_r5591_r5625</td>
+                    <td>30000</td>
+                    <td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td>
+                </tr>
+                <tr>
+                    <td class="datasetNames">mc14_8TeV.117050.PowhegPythia_P2011C_ttbar.merge.AOD.e1727_s1933_s1911_r5591_r5625</td>
+                    <td>30000</td>
+                    <td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td>
+                </tr>
+              </tbody>
+          </table>
+          </div>
+      </div>
+      <div class="row">
+        <div class="large-3 columns">
+          <label> Ami tag
+            <input type="text" class="ctag storeInput" placeholder="r2222"  />
+          </label>
+        </div>
+         <div class="large-4 columns">
+          <label>Output formats
+            <input type="text" class="formats storeInput" placeholder="ESD.AOD"  />
+          </label>
+        </div>
+         <div class="large-3 columns">
+          <label>Events per job
+            <input type="number" class="eventsperjob storeInput"  value="1000"  />
+          </label>
+        </div>
+         <div class="large-2 columns">
+          <label>Total events
+            <input type="number" class="totalevents storeInput" value="-1"  />
+          </label>
+        </div>
+       </div>
+        <div class="row">
+        <div class="large-9 columns">
+          <label>cmt project
+            <input type="text" class="cmtproject storeInput" value="spacetoken=ATLASDATADISK" />
+          </label>
+        </div>
+        <div class="large-3 columns">
+          <label>Priority
+            <input type="number" class="priority storeInput" value="900" />
+          </label>
+        </div>
+      </div>
+    </fieldset>
+</div>
+
 {% endblock %}
 
 
