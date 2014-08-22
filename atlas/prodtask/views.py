@@ -6,7 +6,7 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from .ddm_api import DDM
@@ -561,6 +561,7 @@ def home(request):
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production Home'})
     return HttpResponse(tmpl.render(c))
 
+@ensure_csrf_cookie
 def about(request):
     tmpl = get_template('prodtask/_about.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production about', })
