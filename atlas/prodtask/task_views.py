@@ -288,6 +288,8 @@ class ProductionTaskTable(datatables.DataTable):
         bPaginate = True
         bJQueryUI = True
 
+      # sDom = '<fpt>'
+    
         bAutoWidth = False
       #  width = "1200px"
 
@@ -346,7 +348,7 @@ class ProductionTaskTable(datatables.DataTable):
         elif task_status == 'irregular':
             qs = qs.filter( status__in=['failed','broken','aborted'] )
         elif task_status:
-            qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
+            qs = qs.filter( status__icontains=task_status )
 
         task_type = request.GET.get('task_type', 'production')
         if task_type == 'production':
@@ -400,7 +402,7 @@ def task_status_stat_by_request(request, rid):
     """
     qs = ProductionTask.objects.filter(request__reqid=rid)
     stat = get_status_stat(qs)
-    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat })
+    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat, 'reqid': rid})
 
 
 @datatables.datatable(ProductionTaskTable, name='fct')
@@ -438,4 +440,3 @@ def get_sites():
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
-

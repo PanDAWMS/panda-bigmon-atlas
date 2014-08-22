@@ -1,3 +1,4 @@
+{% load url from future %}
 {% for status in stat %}
-<span class="tstat {{status.status}}" title="{{status.status}}">{{ status.count }}</span>{% if forloop.first %}&nbsp{%else%}{% if not forloop.last %}/{%endif%}{%endif%}
+<a href="{% url 'prodtask:task_table' %}#/?request={{reqid}}{% if status.status != 'total' %}&status={{status.status}}{% endif %}" class="tooltiped" title="ProductionTask list '{{status.status}}' in Request №{{reqid}}"><span class="tstat {{status.status}}">{{ status.count }}</span></a>{% if forloop.first and not forloop.last %} || {%else%}{% if not forloop.last %} | {%endif%}{%endif%}
 {% endfor %}
