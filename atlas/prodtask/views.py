@@ -561,7 +561,6 @@ def home(request):
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production Home'})
     return HttpResponse(tmpl.render(c))
 
-@ensure_csrf_cookie
 def about(request):
     tmpl = get_template('prodtask/_about.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production about', })
@@ -571,6 +570,7 @@ def step_skipped(step):
     return (step.status=='Skipped')or(step.status=='NotCheckedSkipped')
 
 #TODO: Optimize by having only one query for steps and tasks
+@ensure_csrf_cookie
 def input_list_approve(request, rid=None):
 
     # Prepare data for step manipulation page
