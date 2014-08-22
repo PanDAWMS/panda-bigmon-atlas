@@ -995,16 +995,17 @@ class ProductionDatasetTable(datatables.DataTable):
 
     class Meta:
         model = ProductionDataset
+
         id = 'dataset_table'
         var = 'datasetTable'
+
         bSort = True
         bPaginate = True
         bJQueryUI = True
 
-        bAutoWidth = False
+        sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
 
-      #  sScrollX = '100%'
-      #  sScrollY = '25em'
+        bAutoWidth = False
         bScrollCollapse = False
 
         fnServerParams = "datasetServerParams"

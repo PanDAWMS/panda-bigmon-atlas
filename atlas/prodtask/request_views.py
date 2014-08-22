@@ -854,16 +854,18 @@ class RequestTable(datatables.DataTable):
 
 
     class Meta:
+        model = TRequest
+
         id = 'request_table'
         var = 'requestTable'
-        model = TRequest
+
         bSort = True
         bPaginate = True
         bJQueryUI = True
+
+        sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
         
         bAutoWidth = False
-      #  sScrollX = '100%'
-      #  sScrollY = '25em'
         bScrollCollapse = False
         
         aaSorting = [[0, "desc"]]

@@ -284,17 +284,14 @@ class ProductionTaskTable(datatables.DataTable):
 
         id = 'task_table'
         var = 'taskTable'
+
         bSort = True
         bPaginate = True
         bJQueryUI = True
 
-      # sDom = '<fpt>'
+        sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
 
         bAutoWidth = False
-      #  width = "1200px"
-
-      #  sScrollX = '100%'
-      #  sScrollY = '25em'
         bScrollCollapse = False
 
         aaSorting = [[4, "desc"]]
