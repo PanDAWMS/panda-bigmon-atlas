@@ -326,6 +326,14 @@ class ProductionTaskTable(datatables.DataTable):
         if task_id:
             qs = qs.filter(Q( **{ 'id__iregex' : task_id } ))
 
+        task_id_gt = request.GET.get('task_id_gt', 0)
+        if task_id_gt:
+            qs = qs.filter(Q( **{ 'id__lte' : task_id_gt } ))
+
+        task_id_lt = request.GET.get('task_id_lt', 0)
+        if task_id_lt:
+            qs = qs.filter(Q( **{ 'id__gte' : task_id_lt } ))
+
         for param in parameters:
             value = request.GET.get(param[0], 0)
             if value:

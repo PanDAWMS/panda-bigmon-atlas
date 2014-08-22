@@ -89,6 +89,27 @@
     </tr>
 
     <tr>
+        <td>Task ID:</td>
+        <td>
+        <input placeholder="eg : 4003.* " id="task_id" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Task ID <= </td>
+        <td>
+        <input id="task_id_gt" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Task ID >= </td>
+        <td>
+        <input id="task_id_lt" />
+        </td>
+    </tr>
+
+    <tr>
         <td>Request:</td>
         <td>
         <input id="request" />
@@ -99,6 +120,20 @@
         <td>Chain:</td>
         <td>
         <input id="chain" />
+        </td>
+    </tr>
+
+    </table>
+
+    </td>
+    <td>
+
+    <table>
+
+    <tr>
+        <td>Campaign:</td>
+        <td>
+            <input type="text" id="campaign" name="campaign">
         </td>
     </tr>
 
@@ -116,27 +151,6 @@
         </td>
     </tr>
 
-    </table>
-
-    </td>
-    <td>
-
-    <table>
-
-    <tr>
-        <td>Task ID:</td>
-        <td>
-        <input placeholder="eg : 4003.* " id="task_id" />
-        </td>
-    </tr>
-
-    <tr>
-        <td>Campaign:</td>
-        <td>
-            <input type="text" id="campaign" name="campaign">
-        </td>
-    </tr>
-    
     <tr>
         <td>Status:</td>
         <td>
@@ -295,7 +309,10 @@
             aoData.push( { "name": "campaign",      "value": $("#campaign").val() } ); 
         if( $("#task_id").val() != '' )
             aoData.push( { "name": "task_id",      "value": $("#task_id").val() } );
-
+        if( $("#task_id_gt").val() != '' )
+            aoData.push( { "name": "task_id_gt",      "value": $("#task_id_gt").val() } );
+        if( $("#task_id_lt").val() != '' )
+            aoData.push( { "name": "task_id_lt",      "value": $("#task_id_lt").val() } );
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -402,7 +419,9 @@
         { name: 'username',     id: 'username',     label: 'Owner'},
 
         { name: 'taskname',     id: 'taskname',     label: 'Task name'},
-        { name: 'task_id',     id: 'task_id',     label: 'Task ID'},
+        { name: 'task_id',      id: 'task_id',      label: 'Task ID'},
+        { name: 'task_id_gt',   id: 'task_id_gt',   label: 'Task ID <= '},
+        { name: 'task_id_lt',   id: 'task_id_lt',   label: 'Task ID >= '},
 
         { name: 'request',      id: 'request',      label: 'Request'},
         { name: 'chain',        id: 'chain',        label: 'Chain'},
