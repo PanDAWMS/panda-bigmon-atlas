@@ -14,38 +14,14 @@
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
 	</style>
 
   <style type="text/css">
 
-	span.failed 	{ color : magenta;	}
-	span.aborted 	{ color : magenta;	}
-	span.broken		{ color : magenta;	}
-    span.deleted	{ color : magenta;	}
-
-	span.toBeDeleted 	{ color : orange;	}
-	span.toBeErased 	{ color : orange;	}
-	span.waitErased		{ color : orange;	}
-    span.toBeCleaned	{ color : orange;	}
-    span.waitCleaned	{ color : orange;	}
-
     .breaked_word   { word-wrap: break-word; min-width: 60%; max-width: 800px }
 
-    .px80, .numbers { max-width: 80px; }
-    .px100          { max-width: 100px; }
-    .px140          { max-width: 140px; }
-    .px180          { max-width: 180px; }
-
-    .numbers        { text-align: right; }
-    .centered       { text-align: center; }
-
-    table.dataTable td { padding: 0px 5px 0px 0px; }
-    table.dataTable thead th { padding: 0px 3px 0px 0px; }
-
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
- 
-    .dataTables_wrapper { display: inline-block; }
+    .numbers { max-width: 80px; }
 
   </style>
 
@@ -63,7 +39,7 @@
 {{ block.super }}
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
 {% endblock %}
-"
+
 
 {% block body %}
 
@@ -138,39 +114,23 @@
      //   aoData.push( { "name": "time_to",   "value": time_to.getTime() } );
     }
 
-
-    function datasetServerData( sSource, aoData, fnCallback, oSettings ) {
-
-      function prepareData( data, textStatus, jqXHR )
-      {
+    function prepareData( data, textStatus, jqXHR )
+    {
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
 
             row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:production_dataset', row[0])+'/">'+row[0]+'</a>';
-            row[1] = '<a href="'+Django.url('prodtask:task', row[1])+'/">'+row[1]+'</a>';
+            row[1] = '<a href="'+Django.url('prodtask:task', row[1])+'">'+row[1]+'</a>';
            // row[2] = '<a href="'+Django.url('prodtask:task', row[2])+'/">'+row[2]+'</a>';
           //  row[3] = '<a href="'+Django.url('prodtask:input_list_approve', row[3])+'/">'+row[3]+'</a>';
 
-            row[7] = '<span class="'+row[7]+'">'+row[7]+'</span>';
+            row[7] = '<span class="dsstat '+row[7]+'">'+row[7]+'</span>';
 
             row[8] = row[8]=='None'? 'None' : parseDate(row[8].slice(0,19)).toString();
             row[8] = row[8]=='None'? 'None' :  row[8].slice(4,21);
-
         }
-
-        fnCallback( data, textStatus, jqXHR );
-      }
-
-      oSettings.jqXHR = $.ajax( {
-        "dataType": 'json',
-        "type": "GET",
-        "url": sSource,
-        "data": aoData,
-        "success": prepareData
-      } )
     }
-
 
 </script>
 

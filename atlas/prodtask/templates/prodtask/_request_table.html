@@ -17,8 +17,8 @@
         @import "{% static "css/prodtask.css" %}";
 	</style>
     
-  <style type="text/css">
-  </style>
+    <style type="text/css">
+    </style>
 
 {% endblock %}
 
@@ -29,8 +29,6 @@
 {% django_js %}
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
-
-
 
 {% block extra_js %}
 {{ block.super }}
@@ -334,6 +332,13 @@
         }
        text += '</ul>';
        $("#table_request_summary").html( text ) ;
+
+       $(".tooltiped").tooltip( );
+       $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
+
+       if( $(".show_tasks").length < 20 )
+           $(".show_tasks").each( function( index, element) { setTimeout ( function(){  $(element).click() }, index * 1000 ) } );
+
     }
 
     function expandTaskStat( obj, reqid )
@@ -343,36 +348,18 @@
         $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).tooltip( "destroy" ); $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
     }
 
-    
-    function requestServerData( sSource, aoData, fnCallback, oSettings ) {                        
-
-      function prepareData( data, textStatus, jqXHR )
-      {
-        console.log(data)
+    function prepareData( data, textStatus, jqXHR )
+    {
+        console.log(data);
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-            
+
             row[1] = row[1]==''?'':'<a href="'+row[1]+'">link</a>';
             row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
-            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';            
+            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';
         }
         updateInterface(data['additional']['request_stat']);
-        fnCallback( data, textStatus, jqXHR );
-        $(".tooltiped").tooltip( );
-        $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
-
-        if( data['aaData'].length < 20 )
-            $(".show_tasks").each( function( index, element) { setTimeout ( function(){  $(element).click() }, index * 1000 ) } );
-      }
-
-      oSettings.jqXHR = $.ajax( {
-        "dataType": 'json',
-        "type": "GET",
-        "url": sSource,
-        "data": aoData,
-        "success": prepareData
-      } )
     }
 
     function updateInterface(data)
@@ -395,9 +382,7 @@
         $('#request_stat_table').html(table);
     }
 
-
     ParseParametersFromURL();
-
 
 </script>
 

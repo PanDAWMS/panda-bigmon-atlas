@@ -20,25 +20,9 @@
 
   <style type="text/css">
     .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
-
-    .px50           { max-width: 50px; }
-    .px80, .numbers { max-width: 80px; }
-    .px100          { max-width: 100px; }
-
-
-    .numbers        { text-align: right; }
-    .centered       { text-align: center; }
-
     .taskid         { min-width: 6em; }
     .datetime       { min-width: 7em; }
-
-    table.dataTable td { padding: 0px 5px 0px 0px; }
-    table.dataTable thead th { padding: 0px 3px 0px 0px; }
-
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
-
-    .dataTables_wrapper { display: inline-block; }
+    .numbers        { max-width: 80px; }
   </style>
 
 {% endblock %}
@@ -348,29 +332,25 @@
     }
 
     jira_url_prefix = "https://its.cern.ch/jira/browse/";
-    
-    function taskServerData( sSource, aoData, fnCallback, oSettings ) {
 
-      function prepareData( data, textStatus, jqXHR )
-      {
+    function prepareData( data, textStatus, jqXHR )
+    {
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-       
+
             row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:task', row[4])+'">'+row[0]+'</a>';
            // row[4] = '<a href="'+Django.url('taskInfo', row[4])+'">'+row[4]+'</a>';
             row[4] = '<a href="http://bigpanda.cern.ch/task/'+row[4]+'/">'+row[4]+'</a>';
             row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[22]+'</a>';
             row[1] = '<a href="'+Django.url('prodtask:input_list_approve', row[1])+'">'+row[1]+'</a>';
-            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>'; 
-            
-           
-            
+            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>';
+
             row[5] = row[5]=='None'? row[23] : row[5];
             row[5] = row[5]=='-1'? 'None' : row[5];
 
             /*
-            switch(row[8]) 
+            switch(row[8])
             {
                 case 'AP': row[8]='ATLAS'; break;
                 case 'GP': row[8]='Group'; break;
@@ -414,21 +394,8 @@
 
             row[11] = '<span class="tstat '+row[11]+'">'+row[11]+'</span>';
         }
-
         updateInterface(data['additional']['task_stat']);
-
-        fnCallback( data, textStatus, jqXHR );
-      }
-
-      oSettings.jqXHR = $.ajax( {
-        "dataType": 'json',
-        "type": "GET",
-        "url": sSource,
-        "data": aoData,
-        "success": prepareData
-      } )
     }
-
 
     var parameters_list = [
         { name: 'project',      id: 'project',      label: 'Project'},

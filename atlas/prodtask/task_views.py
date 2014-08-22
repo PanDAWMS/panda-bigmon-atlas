@@ -289,7 +289,7 @@ class ProductionTaskTable(datatables.DataTable):
         bJQueryUI = True
 
       # sDom = '<fpt>'
-    
+
         bAutoWidth = False
       #  width = "1200px"
 
@@ -305,7 +305,7 @@ class ProductionTaskTable(datatables.DataTable):
 
         fnDrawCallback = "taskDrawCallback"
 
-        fnServerData =  "taskServerData"
+        fnClientTransformData = "prepareData"
 
         bServerSide = True
 

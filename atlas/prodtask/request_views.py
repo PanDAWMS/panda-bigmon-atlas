@@ -872,7 +872,7 @@ class RequestTable(datatables.DataTable):
 
         bServerSide = True
 
-        fnServerData =  'requestServerData'
+        fnClientTransformData = "prepareData"
 
         fnServerParams = "requestServerParams"
 

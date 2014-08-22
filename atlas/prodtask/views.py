@@ -1009,7 +1009,7 @@ class ProductionDatasetTable(datatables.DataTable):
 
         fnServerParams = "datasetServerParams"
 
-        fnServerData =  "datasetServerData"
+        fnClientTransformData = "prepareData"
 
         aaSorting = [[1, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]

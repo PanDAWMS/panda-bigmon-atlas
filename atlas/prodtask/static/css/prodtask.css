@@ -94,6 +94,42 @@ span.tstat.registered {
     color: blue;
 }
 
+span.dsstat.failed {
+    color: magenta;
+}
+
+span.dsstat.aborted {
+    color: magenta;
+}
+
+span.dsstat.broken {
+    color: magenta;
+}
+
+span.dsstat.deleted {
+    color: magenta;
+}
+
+span.dsstat.toBeDeleted {
+    color: orange;
+}
+
+span.dsstat.toBeErased {
+    color: orange;
+}
+
+span.dsstat.waitErased {
+    color: orange;
+}
+
+span.dsstat.toBeCleaned {
+    color: orange;
+}
+
+span.dsstat.waitCleaned {
+    color: orange;
+}
+
 .centered {
     text-align: center;
 }
@@ -102,11 +138,42 @@ span.tstat.registered {
     text-align: right;
 }
 
+table.dataTable td {
+    padding: 0px 5px 0px 0px;
+}
+
+table.dataTable thead th {
+    padding: 0px 3px 0px 0px;
+}
+
+table.dataTable thead th.numbers div.DataTables_sort_wrapper {
+    padding: 0px 0px 0px 16px;
+}
+
+table.dataTable thead th.numbers div.DataTables_sort_wrapper span {
+    left: 0px;
+}
+
 .dataTables_wrapper {
     display: inline-block;
 }
 
+.px100 {
+    max-width: 100px;
+}
 
+.px140 {
+    max-width: 140px;
+}
 
+.px180 {
+    max-width: 180px;
+}
 
+.px50 {
+    max-width: 50px;
+}
 
+.px80 {
+    max-width: 80px;
+}
