@@ -18,6 +18,7 @@
 	</style>
     
     <style type="text/css">
+        {% include 'prodtask/_prodtask_css.html' %}
     </style>
 
 {% endblock %}
@@ -298,7 +299,7 @@
 <script type="text/javascript">
 $(document).ready(function() {
     $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
-    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
+    $.address.change(function(){ ParseParametersFromURL(); requestTable.fnDraw(); });
 });
  </script>
 
