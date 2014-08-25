@@ -9,7 +9,7 @@ import core.datatables as datatables
 
 from .models import ProductionTask, TRequest, StepExecution
 
-from .task_views import ProductionTaskTable, get_clouds, get_sites
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
 
 from .task_actions import kill_task, finish_task, obsolete_task,\
                           change_task_priority, increase_task_priority, decrease_task_priority, \
@@ -123,7 +123,7 @@ def get_same_slice_tasks(request):
 @ensure_csrf_cookie
 @csrf_protect
 @never_cache
-@datatables.datatable(ProductionTaskTable, name='fct')
+@datatables.parametrized_datatable(ProductionTaskTable, Parameters, name='fct')
 def task_manage(request):
     """
 
@@ -138,6 +138,7 @@ def task_manage(request):
                             {'title': 'Manage Production Tasks',
                              'active_app': 'prodtask/task_manage',
                              'table': request.fct,
+                             'parametrized': request.parametrized,
                              'parent_template': 'prodtask/_index.html',
                              'last_task_submit_time': last_task_submit_time,
                              'clouds': get_clouds(),
