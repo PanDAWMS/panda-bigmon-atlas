@@ -561,7 +561,7 @@ $(document).ready(function() {
     $("#update_task_table").tooltip( );
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
 
-    taskTable.one( 'xhr' , function() { $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); }) } );
+    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
     
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });

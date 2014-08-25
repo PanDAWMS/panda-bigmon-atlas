@@ -298,7 +298,7 @@
 <script type="text/javascript">
 $(document).ready(function() {
     $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
-    requestTable.one( 'xhr' , function() { $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); }) } );
+    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
 });
  </script>
 
