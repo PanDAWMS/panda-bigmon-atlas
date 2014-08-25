@@ -15,51 +15,14 @@
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
 	</style>
 
   <style type="text/css">
- 	span.obsolete	{ color : lightblue;}
-	span.holding 	{ color : black;	}
-	span.pending	{ color : blue;		}
-	span.waiting	{ color : blue;	}
-	span.submitting	{ color : blue;	}
-	span.archived 	{ color : magenta;	}
- 	span.submitted	{ color : green;	}
-
-	span.running 	{ color : LightGreen;	}
-
-	span.done 		{ color : darkgreen;	}
-	span.finished	{ color : darkgreen;	}
-
-	span.failures	{ color : orange;	}
-
-	span.failed 	{ color : red;	}
-	span.aborted 	{ color : red;	}
-	span.broken		{ color : red;	}
-
-	span.navy		{ color : blue; }
-    span.registered { color : blue;}
-
     .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
-
-    .px50           { max-width: 50px; }
-    .px80, .numbers { max-width: 80px; }
-    .px100          { max-width: 100px; }
-
-
-    .numbers        { text-align: right; }
-    .centered       { text-align: center; }
-
     .taskid         { min-width: 6em; }
     .datetime       { min-width: 7em; }
-
-    table.dataTable td { padding: 0px 5px 0px 0px; }
-    table.dataTable thead th { padding: 0px 3px 0px 0px; }
-
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper { padding: 0px 0px 0px 16px; }
-    table.dataTable thead th.numbers div.DataTables_sort_wrapper span { left: 0px ; }
-
-    .dataTables_wrapper { display: inline-block; }
+    .numbers        { max-width: 80px; }
   </style>
 
 {% endblock %}
@@ -126,6 +89,27 @@
     </tr>
 
     <tr>
+        <td>Task ID:</td>
+        <td>
+        <input placeholder="eg : 4003.* " id="task_id" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Task ID <= </td>
+        <td>
+        <input id="task_id_gt" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Task ID >= </td>
+        <td>
+        <input id="task_id_lt" />
+        </td>
+    </tr>
+
+    <tr>
         <td>Request:</td>
         <td>
         <input id="request" />
@@ -136,6 +120,20 @@
         <td>Chain:</td>
         <td>
         <input id="chain" />
+        </td>
+    </tr>
+
+    </table>
+
+    </td>
+    <td>
+
+    <table>
+
+    <tr>
+        <td>Campaign:</td>
+        <td>
+            <input type="text" id="campaign" name="campaign">
         </td>
     </tr>
 
@@ -153,27 +151,6 @@
         </td>
     </tr>
 
-    </table>
-
-    </td>
-    <td>
-
-    <table>
-
-    <tr>
-        <td>Task ID:</td>
-        <td>
-        <input placeholder="eg : 4003.* " id="task_id" />
-        </td>
-    </tr>
-
-    <tr>
-        <td>Campaign:</td>
-        <td>
-            <input type="text" id="campaign" name="campaign">
-        </td>
-    </tr>
-    
     <tr>
         <td>Status:</td>
         <td>
@@ -308,31 +285,9 @@
         time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
         time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
 
-        if( $("#project").val() != '' )
-            aoData.push( { "name": "project",       "value": $("#project").val() } );
-        if( $("#username").val() != '' )
-            aoData.push( { "name": "username",      "value": $("#username").val() } );
-        if( $("#taskname").val() != '' )
-            aoData.push( { "name": "taskname",      "value": $("#taskname").val() } );
-        if( $("#request").val() != '' )
-            aoData.push( { "name": "request",       "value": $("#request").val() } );
-        if( $("#chain").val() != '' )
-            aoData.push( { "name": "chain",         "value": $("#chain").val() } );
-        if( $("#status").val() != '' )
-            aoData.push( { "name": "status",        "value": $("#status").val() } );
-        if( $("#provenance").val() != '' )
-            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
-        if( $("#phys_group").val() != '' )
-            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#step_name").val() != '' )
-            aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
-        if( $("#step_output_format").val() != '' )
-            aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
-        if( $("#campaign").val() != '' )
-            aoData.push( { "name": "campaign",      "value": $("#campaign").val() } ); 
-        if( $("#task_id").val() != '' )
-            aoData.push( { "name": "task_id",      "value": $("#task_id").val() } );
-
+        for(var i in parameters_list)
+            if( parameters_list[i].name.slice(0,4) != 'time' && $( "#"+parameters_list[i].id ).val() != '' )
+                aoData.push( { "name": parameters_list[i].name, "value": $( "#"+parameters_list[i].id ).val() } );
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -369,29 +324,25 @@
     }
 
     jira_url_prefix = "https://its.cern.ch/jira/browse/";
-    
-    function taskServerData( sSource, aoData, fnCallback, oSettings ) {
 
-      function prepareData( data, textStatus, jqXHR )
-      {
+    function prepareData( data, textStatus, jqXHR )
+    {
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-       
+
             row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:task', row[4])+'">'+row[0]+'</a>';
            // row[4] = '<a href="'+Django.url('taskInfo', row[4])+'">'+row[4]+'</a>';
             row[4] = '<a href="http://bigpanda.cern.ch/task/'+row[4]+'/">'+row[4]+'</a>';
             row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[22]+'</a>';
             row[1] = '<a href="'+Django.url('prodtask:input_list_approve', row[1])+'">'+row[1]+'</a>';
-            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>'; 
-            
-           
-            
+            row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>';
+
             row[5] = row[5]=='None'? row[23] : row[5];
             row[5] = row[5]=='-1'? 'None' : row[5];
 
             /*
-            switch(row[8]) 
+            switch(row[8])
             {
                 case 'AP': row[8]='ATLAS'; break;
                 case 'GP': row[8]='Group'; break;
@@ -433,48 +384,15 @@
             row[12] = row[12].slice(4,10) + row[12].slice(15,21);
             row[13] = '<span style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
 
-            row[11] = '<span class="'+row[11]+'">'+row[11]+'</span>';
+            row[11] = '<span class="tstat '+row[11]+'">'+row[11]+'</span>';
         }
-
-        updateInterface(data['task_stat']);
-
-        fnCallback( data, textStatus, jqXHR );
-      }
-
-      oSettings.jqXHR = $.ajax( {
-        "dataType": 'json',
-        "type": "GET",
-        "url": sSource,
-        "data": aoData,
-        "success": prepareData
-      } )
+        updateInterface(data['additional']['task_stat']);
     }
 
+    {% load lookupattr %}
+    {% parametrized parametrized %}
 
-    var parameters_list = [
-        { name: 'project',      id: 'project',      label: 'Project'},
-        { name: 'username',     id: 'username',     label: 'Owner'},
-
-        { name: 'taskname',     id: 'taskname',     label: 'Task name'},
-        { name: 'task_id',     id: 'task_id',     label: 'Task ID'},
-
-        { name: 'request',      id: 'request',      label: 'Request'},
-        { name: 'chain',        id: 'chain',        label: 'Chain'},
-        { name: 'status',       id: 'status',       label: 'Status'},
-
-        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
-        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
-
-        { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
-        { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
-        { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-        
-        { name: 'step_name',    id: 'step_name',    label: 'Step name'},
-        { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
-        { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
-        { name: 'campaign',     id: 'campaign',     label: 'Campaign'},
-        
-    ];
+    parameters_list = [{ name: 'time_period',  id: 'time_period',  label: 'Last update time period'}].concat(parameters_list);
 
     function SetParametersToURL()
     {
@@ -534,10 +452,7 @@
                 switch( parameters_list[i].name )
                 {
                     case 'task_type':
-                        if( extern_parameter )
-                            $("#task_type").val('all');
-                        else
-                            $("#task_type").val('production');
+                        $("#task_type").val('all');
                         break;
                     case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
@@ -554,11 +469,15 @@
                 }
             }
         }
+        if( ! extern_parameter )
+            $("#task_type").val('production');
+
+        $( "#time_period" ).change();
 
     }
 
     $( "#time_from" ).datepicker({
-            defaultDate: "-2m",
+            defaultDate: "-1m",
             changeMonth: true,
             numberOfMonths: 1,
             onSelect: function( selectedDate ) {
@@ -605,7 +524,7 @@
         var table = '<table><thead><tr><th colspan="0" style="text-align:center">Tasks status statistics</th></tr><tr>';
         for( var i in data )
         {
-            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+            table += '<th><span class="tstat '+ data[i].status +'">'+ data[i].status +'</span></th>';
         }
         table += '</tr></thead><tbody><tr>';
 
@@ -620,10 +539,7 @@
         $('#task_stat_table').html(table);
     }
 
-
     ParseParametersFromURL();
-    
-    $( "#time_period" ).change();
 
 </script>
 
@@ -644,6 +560,8 @@ $(document).ready(function() {
     $("#update_task_table").button({ disabled: true });
     $("#update_task_table").tooltip( );
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
+
+    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
     
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });
@@ -661,20 +579,19 @@ $(document).ready(function() {
             {
                 taskTable.fnSetColumnVis( 1, false, false );
                 taskTable.fnSetColumnVis( 2, false, false );
-           //     taskTable.fnSetColumnVis( 13, false, false );
+                taskTable.fnSetColumnVis( 17, false, false );
                 taskTable.fnSetColumnVis( 18, false, false );
             }
             else
             {
                 taskTable.fnSetColumnVis( 1, true, false );
                 taskTable.fnSetColumnVis( 2, true, false );
-          //      taskTable.fnSetColumnVis( 13, true, false );
+                taskTable.fnSetColumnVis( 17, true, false );
                 taskTable.fnSetColumnVis( 18, true, false );
             }
         });
 });
  </script>
-
 
 <div id="switch_to_manage" class="button-bar left hide">
     <div class="button-bar">
@@ -708,7 +625,8 @@ $(document).ready(function() {
 
                 $(location).attr('href', manage_url_full);
                 return False;
-            });
+            }); 
+            $(".top-toolbar").children().css("height", "2.0em");
         }
     });
 </script>

@@ -42,12 +42,14 @@ class TRequest(models.Model):
                                  'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
                                  'reprocessing','trig-hlt']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
+    PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
+
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)
     ref_link = models.CharField(max_length=256, db_column='REFERENCE_LINK', null=True, blank=True)
     cstatus = models.CharField(max_length=32, db_column='STATUS', null=False, blank=True)
-    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False, blank=True)
+    provenance = models.CharField(max_length=32, db_column='PROVENANCE', null=False, blank=True,choices=PROVENANCE_TYPE)
     request_type = models.CharField(max_length=32, db_column='REQUEST_TYPE',choices=REQUEST_TYPE, null=False, blank=True)
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
     subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)

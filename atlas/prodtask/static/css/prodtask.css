@@ -1,0 +1,208 @@
+span.rstat.executing {
+    color: LightGreen;
+}
+
+span.rstat.done {
+    color: darkgreen;
+}
+
+span.rstat.finished {
+    color: darkgreen;
+}
+
+span.rstat.processed {
+    color: darkgreen;
+}
+
+span.rstat.registered {
+    color: blue;
+}
+
+span.rstat.waiting {
+    color: blue;
+}
+
+span.rstat.approved {
+    color: green;
+}
+
+span.rstat.executing {
+    color: LightGreen;
+}
+
+span.tstat.obsolete {
+    color: lightblue;
+}
+
+span.tstat.holding {
+    color: black;
+}
+
+span.tstat.pending {
+    color: blue;
+}
+
+span.tstat.waiting {
+    color: blue;
+}
+
+span.tstat.submitting {
+    color: blue;
+}
+
+span.tstat.archived {
+    color: magenta;
+}
+
+span.tstat.submitted {
+    color: green;
+}
+
+span.tstat.running {
+    color: LightGreen;
+}
+
+span.tstat.done {
+    color: darkgreen;
+}
+
+span.tstat.finished {
+    color: darkgreen;
+}
+
+span.tstat.failures {
+    color: orange;
+}
+
+span.tstat.failed {
+    color: red;
+}
+
+span.tstat.aborted {
+    color: red;
+}
+
+span.tstat.broken {
+    color: red;
+}
+
+span.tstat.navy {
+    color: blue;
+}
+
+span.tstat.registered {
+    color: blue;
+}
+
+span.dsstat.failed {
+    color: magenta;
+}
+
+span.dsstat.aborted {
+    color: magenta;
+}
+
+span.dsstat.broken {
+    color: magenta;
+}
+
+span.dsstat.deleted {
+    color: magenta;
+}
+
+span.dsstat.toBeDeleted {
+    color: orange;
+}
+
+span.dsstat.toBeErased {
+    color: orange;
+}
+
+span.dsstat.waitErased {
+    color: orange;
+}
+
+span.dsstat.toBeCleaned {
+    color: orange;
+}
+
+span.dsstat.waitCleaned {
+    color: orange;
+}
+
+.centered {
+    text-align: center;
+}
+
+.numbers {
+    text-align: right;
+}
+
+table.dataTable td {
+    padding: 0px 5px 0px 0px;
+}
+
+table.dataTable thead th {
+    padding: 0px 3px 0px 0px;
+}
+
+table.dataTable thead th.numbers div.DataTables_sort_wrapper {
+    padding: 0px 0px 0px 16px;
+}
+
+table.dataTable thead th.numbers div.DataTables_sort_wrapper span {
+    left: 0px;
+}
+
+.dataTables_wrapper {
+    display: inline-block;
+}
+
+.px100 {
+    max-width: 100px;
+}
+
+.px140 {
+    max-width: 140px;
+}
+
+.px180 {
+    max-width: 180px;
+}
+
+.px50 {
+    max-width: 50px;
+}
+
+.px80 {
+    max-width: 80px;
+}
+
+table tr th, table tr td {
+    color: #222222;
+    font-size: 0.9em;
+}
+
+div.clear {
+    clear: both;
+}
+
+div.top-toolbar {
+    display: inline-block;
+    height: auto;
+    padding: 5px;
+    margin-bottom: -3px;
+    width: 100%;
+}
+
+div.bot-toolbar {
+    display: inline-block;
+    height: auto;
+    padding: 5px;
+    width: 100%;
+}
+
+div.dataTables_filter label {
+    color: #fff;
+    font-weight: bold;
+}

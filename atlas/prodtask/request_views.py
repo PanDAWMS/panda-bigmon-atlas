@@ -132,7 +132,7 @@ def mcfile_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'ATLAS'
+        form_data['provenance'] = 'AP'
     if not form_data.get('manager'):
         form_data['manager'] = 'None'
     if not form_data.get('request_type'):
@@ -257,7 +257,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'test'
+        form_data['provenance'] = 'GP'
 
     task_config = {}
     if 'events_per_job' in output_dict:
@@ -332,7 +332,7 @@ def reprocessing_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'test'
+        form_data['provenance'] = 'AP'
     task_config = {}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
@@ -595,7 +595,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     return HttpResponseRedirect(reverse('prodtask:request_table'))
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve',args=(req.reqid,)))
             else:
-                return render(request, 'prodtask/_form.html', {
+                return render(request, 'prodtask/_requestform.html', {
                     'active_app': 'mcprod',
                     'pre_form_text': title,
                     'form': form,
@@ -620,7 +620,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
     # Create prefill form
-    return render(request, 'prodtask/_form.html', {
+    return render(request, 'prodtask/_requestform.html', {
         'active_app': 'mcprod',
         'pre_form_text': title,
         'form': form,
@@ -854,35 +854,27 @@ class RequestTable(datatables.DataTable):
 
 
     class Meta:
+        model = TRequest
+
         id = 'request_table'
         var = 'requestTable'
-        model = TRequest
+
         bSort = True
         bPaginate = True
         bJQueryUI = True
+
+        sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
         
         bAutoWidth = False
-      #  sScrollX = '100%'
-      #  sScrollY = '25em'
         bScrollCollapse = False
         
         aaSorting = [[0, "desc"]]
         aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
         iDisplayLength = 50
 
-
         bServerSide = True
-        # fnRowCallback = """
-        #                 function( nRow, aData, iDisplayIndex, iDisplayIndexFull )
-        #                 {
-        #                     $('td:eq(0)', nRow).html('<a href="/prodtask/request/'+aData[0]+'/">'+aData[0]+'</a>&nbsp;&nbsp;'+
-        #                                              '<span style="float: right;" ><a href="/prodtask/request_update/'+aData[0]+'/">Update</a>&nbsp;'+
-        #                                              '<a href="/prodtask/inputlist_with_request/'+aData[0]+'/">List</a></span>'
-        #                     );
-        #                     $('td:eq(1)', nRow).html('<a href="'+aData[1]+'">'+aData[1]+'</a>');
-        #                 }"""
 
-        fnServerData =  'requestServerData'
+        fnClientTransformData = "prepareData"
 
         fnServerParams = "requestServerParams"
 
@@ -892,53 +884,45 @@ class RequestTable(datatables.DataTable):
         def __init__(self):
             self.sAjaxSource = reverse('prodtask:request_table')
 
-    def apply_filters(self, request):
-        qs = self.get_queryset()
+    def additional_data(self, request, qs):
+        """
+        Overload DataTables method for adding statuses info at the page
+        :return: dictionary of data should be added to each server response of table data
+        """
+        status_stat = get_status_stat(qs)
+        return { 'request_stat' : status_stat }
 
-        parameters = [
-                        ('reqid','reqid'), ('phys_group','phys_group'),
-                        ('campaign','campaign'), ('manager','manager'),
-                        ('type', 'request_type'), ('status','cstatus'),
-                        ('description', 'description'), ('provenance','provenance'),
-                     ]
-
-        for param in parameters:
-            value = request.GET.get(param[0], 0)
-            if value:
-                if value != 'None':
-                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
-                else:
-                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
-
-        self.update_queryset(qs)
-
-    def prepare_ajax_data(self, request):
-
-        self.apply_filters(request)
-
-        params = request.fct.parse_params(request)
-
-        qs = request.fct.get_queryset()
-
-        qs = request.fct._handle_ajax_global_search(qs, params)
-        qs = request.fct._handle_ajax_column_specific_search(qs, params)
-
-   #     qs = request.fct.apply_sort_search(qs, params)
-
-        status_stat = [ { 'status':'total', 'count':qs.count() } ] + [ { 'status':str(x['cstatus']), 'count':str(x['count']) }  for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
-
-        data = datatables.DataTable.prepare_ajax_data(request.fct, request)
-
-        data['request_stat'] = status_stat
-
-        return data
+def get_status_stat(qs):
+    """
+    Compute ProductionRequests statuses by query set
+    :return: list of statuses with count of requests in corresponding state
+    """
+    return [ { 'status':'total', 'count':qs.count() } ] +\
+            [ { 'status':str(x['cstatus']), 'count':str(x['count']) }
+              for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
 
 
-@datatables.datatable(RequestTable, name='fct')
+class Parameters(datatables.Parametrized):
+    reqid = datatables.Parameter(label='Request ID')
+    phys_group = datatables.Parameter(label='Physics group')
+    campaign = datatables.Parameter(label='Campaign')
+    manager = datatables.Parameter(label='Manager')
+
+    type = datatables.Parameter(label='Type', model_field='request_type')
+    status = datatables.Parameter(label='Status', model_field='cstatus')
+    description = datatables.Parameter(label='Description')
+    provenance = datatables.Parameter(label='Provenance')
+
+
+@datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
 def request_table(request):
+    """
+    Request table
+    :return: table page or data for it
+    """
     qs = request.fct.get_queryset()
     request.fct.update_queryset(qs)
     return TemplateResponse(request, 'prodtask/_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'table': request.fct,
-                             'parent_template': 'prodtask/_index.html'})
+                             'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
 

@@ -6,7 +6,7 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from .ddm_api import DDM
@@ -570,6 +570,7 @@ def step_skipped(step):
     return (step.status=='Skipped')or(step.status=='NotCheckedSkipped')
 
 #TODO: Optimize by having only one query for steps and tasks
+@ensure_csrf_cookie
 def input_list_approve(request, rid=None):
 
     # Prepare data for step manipulation page
@@ -994,21 +995,22 @@ class ProductionDatasetTable(datatables.DataTable):
 
     class Meta:
         model = ProductionDataset
+
         id = 'dataset_table'
         var = 'datasetTable'
+
         bSort = True
         bPaginate = True
         bJQueryUI = True
 
-        bAutoWidth = False
+        sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
 
-      #  sScrollX = '100%'
-      #  sScrollY = '25em'
+        bAutoWidth = False
         bScrollCollapse = False
 
         fnServerParams = "datasetServerParams"
 
-        fnServerData =  "datasetServerData"
+        fnClientTransformData = "prepareData"
 
         aaSorting = [[1, "desc"]]
         aLengthMenu = [[100, 1000, -1], [100, 1000, "All"]]

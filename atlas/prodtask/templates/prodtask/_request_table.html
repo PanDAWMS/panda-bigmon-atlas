@@ -14,46 +14,11 @@
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
 	</style>
     
-  <style type="text/css">
-	span.rstat.executing 	{ color : LightGreen;	}
-	span.rstat.done 		{ color : darkgreen;	}
-	span.rstat.finished	{ color : darkgreen;	}
-    span.rstat.processed	{ color : darkgreen;	}
-    span.rstat.registered { color : blue;         }
-    span.rstat.waiting	{ color : blue;	        }
-    span.rstat.approved	{ color : green;	    }
-    span.rstat.executing 	{ color : LightGreen;	}
-    
- 	span.tstat.obsolete	{ color : lightblue;}
-	span.tstat.holding 	{ color : black;	}
-	span.tstat.pending	{ color : blue;		}
-	span.tstat.waiting	{ color : blue;	}
-	span.tstat.submitting	{ color : blue;	}
-	span.tstat.archived 	{ color : magenta;	}
- 	span.tstat.submitted	{ color : green;	}
-
-	span.tstat.running 	{ color : LightGreen;	}
-
-	span.tstat.done 		{ color : darkgreen;	}
-	span.tstat.finished	{ color : darkgreen;	}
-
-	span.tstat.failures	{ color : orange;	}
-
-	span.tstat.failed 	{ color : red;	}
-	span.tstat.aborted 	{ color : red;	}
-	span.tstat.broken		{ color : red;	}
-
-	span.tstat.navy		{ color : blue; }
-    span.tstat.registered { color : blue;}
-    
-    
-    .centered       { text-align: center; } 
-    .numbers        { text-align: right; }
-    
-    .dataTables_wrapper { display: inline-block; }
-  </style>
+    <style type="text/css">
+    </style>
 
 {% endblock %}
 
@@ -64,8 +29,6 @@
 {% django_js %}
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
-
-
 
 {% block extra_js %}
 {{ block.super }}
@@ -252,107 +215,14 @@
 </table>
 
 <script type="text/javascript">
-    var parameters_list = [
-        { name: 'reqid',        id: 'reqid',        label: 'REQID'},
-        { name: 'campaign',      id: 'campaign',      label: 'Campaign'},
-        { name: 'manager',      id: 'manager',      label: 'Manager'},
-
-        { name: 'type',         id: 'type',         label: 'Type'},
-
-        { name: 'status',       id: 'status',       label: 'Status'},
-
-        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
-        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
-
-        { name: 'description',  id: 'description',  label: 'Description'},
-
-    //    { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
-    //   { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-
-    //    { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
-    ];
-
-    function SetParametersToURL()
-    {
-        for(var i in parameters_list)
-        {
-            var val = $( "#"+parameters_list[i].id ).val();
-            $.address.parameter( parameters_list[i].name , val );
-        }
-    }
-
-    var changed_params = {};
-
-    function ParseParametersFromURL()
-    {
-        for(var i in parameters_list)
-        {
-            var value = $.address.parameter( parameters_list[i].name );
-            if( value )
-            {
-                switch( parameters_list[i].name )
-                {
-           /*         case 'time_from':
-                    //    time_from = new Date().parse( value );
-                        $( "#time_from" ).datepicker( "setDate", value );
-                        break;
-                    case 'time_to':
-                   //     time_from = new Date().parse( value );
-                        $( "#time_to" ).datepicker( "setDate", value );
-                        break;
-                    case 'time_period':
-                        $("#time_period").val(value);
-                        break;
-*/
-                    default:
-                        $( "#"+parameters_list[i].id ).val( value );
-                        changed_params[ parameters_list[i].name ] = parameters_list[i];
-                        break;
-                }
-            }
-            else
-            {
-                switch( parameters_list[i].name )
-                {
-        /*            case 'task_type':
-                        $("#task_type").val('production');
-                        break;
-                    case 'time_from':
-                        $( "#time_from" ).datepicker( "setDate", time_from );
-                        break;
-                    case 'time_to':
-                        $( "#time_to" ).datepicker( "setDate", time_to );
-                        break;
-                    case 'time_period':
-                        $("#time_period").val('month');
-                        break;*/
-                    default:
-                        $("#" + parameters_list[i].name).val('');
-                        break;
-                }
-            }
-        }
-
-    }
+    {% load lookupattr %}
+    {% parametrized parametrized %}
 
     function requestServerParams ( aoData )
     {
-        if( $("#reqid").val() != '' )
-            aoData.push( { "name": "reqid",         "value": $("#reqid").val() } );
-        if( $("#phys_group").val() != '' )
-            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#campaign").val() != '' )
-            aoData.push( { "name": "campaign",       "value": $("#campaign").val() } );
-        if( $("#manager").val() != '' )
-            aoData.push( { "name": "manager",       "value": $("#manager").val() } );
-        if( $("#type").val() != '' )
-            aoData.push( { "name": "type",          "value": $("#type").val() } );
-        if( $("#status").val() != '' )
-            aoData.push( { "name": "status",        "value": $("#status").val() } );
-        if( $("#provenance").val() != '' )
-            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
-        if( $("#description").val() != '' )
-            aoData.push( { "name": "description",   "value": $("#description").val() } );
+        for(var i in parameters_list)
+            if( $( "#"+parameters_list[i].id ).val() != '' )
+                aoData.push( { "name": parameters_list[i].name, "value": $( "#"+parameters_list[i].id ).val() } );
     }
 
     function requestDrawCallback()
@@ -369,41 +239,34 @@
         }
        text += '</ul>';
        $("#table_request_summary").html( text ) ;
+
+       $(".tooltiped").tooltip( );
+       $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
+
+       if( $(".show_tasks").length < 20 )
+           $(".show_tasks").each( function( index, element) { setTimeout ( function(){  $(element).click() }, index * 1000 ) } );
+
     }
 
     function expandTaskStat( obj, reqid )
     {
-        $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span><br/> <a href="'+Django.url('prodtask:task_table')+'#/?request='+reqid+'" title="ProductionTask list">list</a>' );
-        $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).tooltip( "destroy" ); } );
+        $(obj).removeClass('tooltiped');
+        $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span>' );
+        $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
     }
 
-    
-    function requestServerData( sSource, aoData, fnCallback, oSettings ) {                        
-
-      function prepareData( data, textStatus, jqXHR )
-      {
-        console.log(data)
+    function prepareData( data, textStatus, jqXHR )
+    {
+        console.log(data);
         for(var i in data['aaData'])
         {
             var row = data['aaData'][i];
-            
+
             row[1] = row[1]==''?'':'<a href="'+row[1]+'">link</a>';
             row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
-            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';            
+            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';
         }
-        updateInterface(data['request_stat']);
-        fnCallback( data, textStatus, jqXHR );
-        $(".tooltiped").tooltip( );
-        $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
-      }
-
-      oSettings.jqXHR = $.ajax( {
-        "dataType": 'json',
-        "type": "GET",
-        "url": sSource,
-        "data": aoData,
-        "success": prepareData
-      } )
+        updateInterface(data['additional']['request_stat']);
     }
 
     function updateInterface(data)
@@ -411,7 +274,7 @@
         var table = '<table><thead><tr><th colspan="0" style="text-align:center">Request status statistics</th></tr><tr>';
         for( var i in data )
         {
-            table += '<th><span class="'+ data[i].status +'">'+ data[i].status +'</span></th>';
+            table += '<th><span class="rstat '+ data[i].status +'">'+ data[i].status +'</span></th>';
         }
         table += '</tr></thead><tbody><tr>';
 
@@ -426,9 +289,7 @@
         $('#request_stat_table').html(table);
     }
 
-
     ParseParametersFromURL();
-
 
 </script>
 
@@ -436,9 +297,8 @@
 
 <script type="text/javascript">
 $(document).ready(function() {
-    
     $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
-
+    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
 });
  </script>
 
