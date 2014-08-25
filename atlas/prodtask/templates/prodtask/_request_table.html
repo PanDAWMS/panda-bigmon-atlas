@@ -215,107 +215,14 @@
 </table>
 
 <script type="text/javascript">
-    var parameters_list = [
-        { name: 'reqid',        id: 'reqid',        label: 'REQID'},
-        { name: 'campaign',      id: 'campaign',      label: 'Campaign'},
-        { name: 'manager',      id: 'manager',      label: 'Manager'},
-
-        { name: 'type',         id: 'type',         label: 'Type'},
-
-        { name: 'status',       id: 'status',       label: 'Status'},
-
-        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
-        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
-
-        { name: 'description',  id: 'description',  label: 'Description'},
-
-    //    { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
-    //   { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-
-    //    { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
-    ];
-
-    function SetParametersToURL()
-    {
-        for(var i in parameters_list)
-        {
-            var val = $( "#"+parameters_list[i].id ).val();
-            $.address.parameter( parameters_list[i].name , val );
-        }
-    }
-
-    var changed_params = {};
-
-    function ParseParametersFromURL()
-    {
-        for(var i in parameters_list)
-        {
-            var value = $.address.parameter( parameters_list[i].name );
-            if( value )
-            {
-                switch( parameters_list[i].name )
-                {
-           /*         case 'time_from':
-                    //    time_from = new Date().parse( value );
-                        $( "#time_from" ).datepicker( "setDate", value );
-                        break;
-                    case 'time_to':
-                   //     time_from = new Date().parse( value );
-                        $( "#time_to" ).datepicker( "setDate", value );
-                        break;
-                    case 'time_period':
-                        $("#time_period").val(value);
-                        break;
-*/
-                    default:
-                        $( "#"+parameters_list[i].id ).val( value );
-                        changed_params[ parameters_list[i].name ] = parameters_list[i];
-                        break;
-                }
-            }
-            else
-            {
-                switch( parameters_list[i].name )
-                {
-        /*            case 'task_type':
-                        $("#task_type").val('production');
-                        break;
-                    case 'time_from':
-                        $( "#time_from" ).datepicker( "setDate", time_from );
-                        break;
-                    case 'time_to':
-                        $( "#time_to" ).datepicker( "setDate", time_to );
-                        break;
-                    case 'time_period':
-                        $("#time_period").val('month');
-                        break;*/
-                    default:
-                        $("#" + parameters_list[i].name).val('');
-                        break;
-                }
-            }
-        }
-
-    }
+    {% load lookupattr %}
+    {% parametrized parametrized %}
 
     function requestServerParams ( aoData )
     {
-        if( $("#reqid").val() != '' )
-            aoData.push( { "name": "reqid",         "value": $("#reqid").val() } );
-        if( $("#phys_group").val() != '' )
-            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#campaign").val() != '' )
-            aoData.push( { "name": "campaign",       "value": $("#campaign").val() } );
-        if( $("#manager").val() != '' )
-            aoData.push( { "name": "manager",       "value": $("#manager").val() } );
-        if( $("#type").val() != '' )
-            aoData.push( { "name": "type",          "value": $("#type").val() } );
-        if( $("#status").val() != '' )
-            aoData.push( { "name": "status",        "value": $("#status").val() } );
-        if( $("#provenance").val() != '' )
-            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
-        if( $("#description").val() != '' )
-            aoData.push( { "name": "description",   "value": $("#description").val() } );
+        for(var i in parameters_list)
+            if( $( "#"+parameters_list[i].id ).val() != '' )
+                aoData.push( { "name": parameters_list[i].name, "value": $( "#"+parameters_list[i].id ).val() } );
     }
 
     function requestDrawCallback()
@@ -345,7 +252,7 @@
     {
         $(obj).removeClass('tooltiped');
         $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span>' );
-        $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).tooltip( "destroy" ); $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
+        $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
     }
 
     function prepareData( data, textStatus, jqXHR )
@@ -390,9 +297,8 @@
 
 <script type="text/javascript">
 $(document).ready(function() {
-    
     $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
-
+    requestTable.one( 'xhr' , function() { $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); }) } );
 });
  </script>
 

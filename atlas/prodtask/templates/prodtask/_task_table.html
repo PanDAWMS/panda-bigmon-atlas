@@ -285,34 +285,9 @@
         time_from = new Date(time_from.getUTCFullYear(), time_from.getUTCMonth(), time_from.getUTCDate()+2, -17);
         time_to = new Date(time_to.getUTCFullYear(), time_to.getUTCMonth(), time_to.getUTCDate()+3, -17);
 
-        if( $("#project").val() != '' )
-            aoData.push( { "name": "project",       "value": $("#project").val() } );
-        if( $("#username").val() != '' )
-            aoData.push( { "name": "username",      "value": $("#username").val() } );
-        if( $("#taskname").val() != '' )
-            aoData.push( { "name": "taskname",      "value": $("#taskname").val() } );
-        if( $("#request").val() != '' )
-            aoData.push( { "name": "request",       "value": $("#request").val() } );
-        if( $("#chain").val() != '' )
-            aoData.push( { "name": "chain",         "value": $("#chain").val() } );
-        if( $("#status").val() != '' )
-            aoData.push( { "name": "status",        "value": $("#status").val() } );
-        if( $("#provenance").val() != '' )
-            aoData.push( { "name": "provenance",    "value": $("#provenance").val() } );
-        if( $("#phys_group").val() != '' )
-            aoData.push( { "name": "phys_group",    "value": $("#phys_group").val() } );
-        if( $("#step_name").val() != '' )
-            aoData.push( { "name": "step_name",     "value": $("#step_name").val() } );
-        if( $("#step_output_format").val() != '' )
-            aoData.push( { "name": "step_output_format", "value": $("#step_output_format").val() } );
-        if( $("#campaign").val() != '' )
-            aoData.push( { "name": "campaign",      "value": $("#campaign").val() } ); 
-        if( $("#task_id").val() != '' )
-            aoData.push( { "name": "task_id",      "value": $("#task_id").val() } );
-        if( $("#task_id_gt").val() != '' )
-            aoData.push( { "name": "task_id_gt",      "value": $("#task_id_gt").val() } );
-        if( $("#task_id_lt").val() != '' )
-            aoData.push( { "name": "task_id_lt",      "value": $("#task_id_lt").val() } );
+        for(var i in parameters_list)
+            if( parameters_list[i].name.slice(0,4) != 'time' && $( "#"+parameters_list[i].id ).val() != '' )
+                aoData.push( { "name": parameters_list[i].name, "value": $( "#"+parameters_list[i].id ).val() } );
 
         aoData.push( { "name": "task_type", "value": $("#task_type").val() } );
         aoData.push( { "name": "time_from", "value": time_from.getTime() } );
@@ -414,32 +389,10 @@
         updateInterface(data['additional']['task_stat']);
     }
 
-    var parameters_list = [
-        { name: 'project',      id: 'project',      label: 'Project'},
-        { name: 'username',     id: 'username',     label: 'Owner'},
+    {% load lookupattr %}
+    {% parametrized parametrized %}
 
-        { name: 'taskname',     id: 'taskname',     label: 'Task name'},
-        { name: 'task_id',      id: 'task_id',      label: 'Task ID'},
-        { name: 'task_id_gt',   id: 'task_id_gt',   label: 'Task ID <= '},
-        { name: 'task_id_lt',   id: 'task_id_lt',   label: 'Task ID >= '},
-
-        { name: 'request',      id: 'request',      label: 'Request'},
-        { name: 'chain',        id: 'chain',        label: 'Chain'},
-        { name: 'status',       id: 'status',       label: 'Status'},
-
-        { name: 'provenance',   id: 'provenance',   label: 'Provenance'},
-        { name: 'phys_group',   id: 'phys_group',   label: 'Physics group'},
-
-        { name: 'time_period',  id: 'time_period',  label: 'Last update time period'},
-        { name: 'time_from',    id: 'time_from',    label: 'Last update time from'},
-        { name: 'time_to',      id: 'time_to',      label: 'Last update time to'},
-        
-        { name: 'step_name',    id: 'step_name',    label: 'Step name'},
-        { name: 'step_output_format', id: 'step_output_format', label: 'Step output format'},
-        { name: 'task_type',    id: 'task_type',    label: 'Tasks type'},
-        { name: 'campaign',     id: 'campaign',     label: 'Campaign'},
-        
-    ];
+    parameters_list = [{ name: 'time_period',  id: 'time_period',  label: 'Last update time period'}].concat(parameters_list);
 
     function SetParametersToURL()
     {
@@ -499,10 +452,7 @@
                 switch( parameters_list[i].name )
                 {
                     case 'task_type':
-                        if( extern_parameter )
-                            $("#task_type").val('all');
-                        else
-                            $("#task_type").val('production');
+                        $("#task_type").val('all');
                         break;
                     case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
@@ -519,11 +469,15 @@
                 }
             }
         }
+        if( ! extern_parameter )
+            $("#task_type").val('production');
+
+        $( "#time_period" ).change();
 
     }
 
     $( "#time_from" ).datepicker({
-            defaultDate: "-2m",
+            defaultDate: "-1m",
             changeMonth: true,
             numberOfMonths: 1,
             onSelect: function( selectedDate ) {
@@ -585,10 +539,7 @@
         $('#task_stat_table').html(table);
     }
 
-
     ParseParametersFromURL();
-    
-    $( "#time_period" ).change();
 
 </script>
 
@@ -609,6 +560,8 @@ $(document).ready(function() {
     $("#update_task_table").button({ disabled: true });
     $("#update_task_table").tooltip( );
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
+
+    taskTable.one( 'xhr' , function() { $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); }) } );
     
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });
@@ -639,7 +592,6 @@ $(document).ready(function() {
         });
 });
  </script>
-
 
 <div id="switch_to_manage" class="button-bar left hide">
     <div class="button-bar">

@@ -309,79 +309,6 @@ class ProductionTaskTable(datatables.DataTable):
         def __init__(self):
             self.sAjaxSource = reverse('task_table')
 
-    def apply_additional_filters(self, request, qs):
-        """
-        Overload DataTables method for filtering by additional elements of the page
-        :return: filtered queryset
-        """
-        parameters = [   ('project','project'), ('username','username'), ('campaign','campaign'),
-                            ('request','request__reqid'), ('chain','chain_tid'),
-                            ('provenance', 'provenance'), ('phys_group','phys_group'),
-                            ('step_name', 'step__step_template__step'), ('step_output_format', 'step__step_template__output_formats') ]
-
-        task_id = request.GET.get('task_id', 0)
-        if task_id:
-            qs = qs.filter(Q( **{ 'id__iregex' : task_id } ))
-
-        task_id_gt = request.GET.get('task_id_gt', 0)
-        if task_id_gt:
-            qs = qs.filter(Q( **{ 'id__lte' : task_id_gt } ))
-
-        task_id_lt = request.GET.get('task_id_lt', 0)
-        if task_id_lt:
-            qs = qs.filter(Q( **{ 'id__gte' : task_id_lt } ))
-
-        for param in parameters:
-            value = request.GET.get(param[0], 0)
-            if value:
-                if value != 'None':
-                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
-                else:
-                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
-
-        task_name = request.GET.get('taskname', 0)
-        if task_name:
-            qs = qs.filter(Q( **{ 'name__iregex' : task_name } ))
-
-        task_status = request.GET.get('status', 0)
-        if task_status == 'active':
-            qs = qs.exclude( status__in=['done','finished','failed','broken','aborted'] )
-        elif task_status == 'ended':
-            qs = qs.filter( status__in=['done','finished'] )
-        elif task_status == 'regular':
-            qs = qs.exclude( status__in=['failed','broken','aborted'] )
-        elif task_status == 'irregular':
-            qs = qs.filter( status__in=['failed','broken','aborted'] )
-        elif task_status:
-            qs = qs.filter( status__icontains=task_status )
-
-        task_type = request.GET.get('task_type', 'production')
-        if task_type == 'production':
-            qs = qs.exclude(project='user')
-        elif task_type == 'analysis':
-            qs = qs.filter(project='user')
-
-        time_from = request.GET.get('time_from', 0)
-        time_to = request.GET.get('time_to', 0)
-
-        if time_from:
-            time_from = float(time_from)/1000.
-        else:
-            time_from = time.time() - 3600 * 24 * 60
-
-        if time_to:
-            time_to = float(time_to)/1000.
-        else:
-            time_to = time.time()
-
-        time_from = datetime.utcfromtimestamp(time_from).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
-        time_to = datetime.utcfromtimestamp(time_to).replace(tzinfo=utc).strftime(defaultDatetimeFormat)
-
-        qs = qs.filter(timestamp__gt=time_from).filter(timestamp__lt=time_to)
-
-        self.update_queryset(qs)
-        return  qs
-
     def additional_data(self, request, qs):
         """
         Overload DataTables method for adding statuses info at the page
@@ -410,7 +337,52 @@ def task_status_stat_by_request(request, rid):
     return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat, 'reqid': rid})
 
 
-@datatables.datatable(ProductionTaskTable, name='fct')
+class Parameters(datatables.Parametrized):
+
+    task_id = datatables.Parameter(label='Task ID', get_Q=lambda v: Q( **{ 'id__iregex' : v } ) )
+    task_id_gt = datatables.Parameter(label='Task ID <=', get_Q=lambda v: Q( **{ 'id__lte' : v } ) )
+    task_id_lt = datatables.Parameter(label='Task ID >=', get_Q=lambda v: Q( **{ 'id__gte' : v } ) )
+
+    project = datatables.Parameter(label='Project')
+    username = datatables.Parameter(label='Username')
+    campaign = datatables.Parameter(label='Campaign')
+
+    request = datatables.Parameter(label='Request', model_field='request__reqid')
+    chain = datatables.Parameter(label='Chain', model_field='chain_tid')
+    provenance = datatables.Parameter(label='Provenance')
+
+    phys_group = datatables.Parameter(label='Phys Group')
+    step_name = datatables.Parameter(label='Step Name', model_field='step__step_template__step')
+    step_output_format = datatables.Parameter(label='Step output format', model_field='step__step_template__output_formats')
+
+    task_name = datatables.Parameter(label='Task name', name='taskname', id='taskname', get_Q=lambda v: Q( **{ 'name__iregex' : v } ) )
+
+    class Meta:
+        SetParametersToURL = 'SetParametersToURL'
+        ParseParametersFromURL = 'ParseParametersFromURL'
+        var = 'parameters_list'
+
+    def _task_status_Q(value):
+        if value == 'active':
+            return Q( status__in=['done','finished','failed','broken','aborted'] ).__invert__()
+        elif value == 'ended':
+            return Q( status__in=['done','finished'] )
+        elif value == 'regular':
+            return Q( status__in=['failed','broken','aborted'] ).__invert__()
+        elif value == 'irregular':
+            return Q( status__in=['failed','broken','aborted'] )
+        elif value:
+            return Q( status__iexact=value )
+        return Q()
+
+    task_status = datatables.Parameter(label='Status', name='status', id='status', get_Q=_task_status_Q )
+    task_type = datatables.Parameter(label='Task type', get_Q=lambda v: (Q(project='user').__invert__() if (v=='production') else (Q(project='user') if (v=='analysis') else Q()) ) )
+
+    time_from = datatables.Parameter(label='Last update time period from', get_Q=lambda v: Q(timestamp__gt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
+    time_to = datatables.Parameter(label='Last update time period to', get_Q=lambda v: Q(timestamp__lt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
+
+
+@datatables.parametrized_datatable(ProductionTaskTable, Parameters)
 def task_table(request):
     """
     ProductionTask table
@@ -419,7 +391,8 @@ def task_table(request):
     last_task_submit_time = ProductionTask.objects.order_by('-submit_time')[0].submit_time
     return TemplateResponse(request, 'prodtask/_task_table.html', { 'title': 'Production Tasks Table',
                                                                     'active_app' : 'prodtask',
-                                                                    'table': request.fct,
+                                                                    'table': request.datatable,
+                                                                    'parametrized': request.parametrized,
                                                                     'parent_template': 'prodtask/_index.html',
                                                                     'last_task_submit_time' : last_task_submit_time,
                                                                     })

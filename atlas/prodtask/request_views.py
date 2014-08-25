@@ -884,31 +884,6 @@ class RequestTable(datatables.DataTable):
         def __init__(self):
             self.sAjaxSource = reverse('prodtask:request_table')
 
-    def apply_additional_filters(self, request, qs):
-        """
-        Overload DataTables method for filtering by additional elements of the page
-        :return: filtered queryset
-        """
-        qs = self.get_queryset()
-
-        parameters = [
-                        ('reqid','reqid'), ('phys_group','phys_group'),
-                        ('campaign','campaign'), ('manager','manager'),
-                        ('type', 'request_type'), ('status','cstatus'),
-                        ('description', 'description'), ('provenance','provenance'),
-                     ]
-
-        for param in parameters:
-            value = request.GET.get(param[0], 0)
-            if value:
-                if value != 'None':
-                    qs = qs.filter(Q( **{ param[1]+'__icontains' : value } ))
-                else:
-                    qs = qs.filter(Q( **{ param[1]+'__exact' : '' } ))
-
-        self.update_queryset(qs)
-        return qs
-
     def additional_data(self, request, qs):
         """
         Overload DataTables method for adding statuses info at the page
@@ -926,7 +901,20 @@ def get_status_stat(qs):
             [ { 'status':str(x['cstatus']), 'count':str(x['count']) }
               for x in qs.values('cstatus').annotate(count=Count('reqid')) ]
 
-@datatables.datatable(RequestTable, name='fct')
+
+class Parameters(datatables.Parametrized):
+    reqid = datatables.Parameter(label='Request ID')
+    phys_group = datatables.Parameter(label='Physics group')
+    campaign = datatables.Parameter(label='Campaign')
+    manager = datatables.Parameter(label='Manager')
+
+    type = datatables.Parameter(label='Type', model_field='request_type')
+    status = datatables.Parameter(label='Status', model_field='cstatus')
+    description = datatables.Parameter(label='Description')
+    provenance = datatables.Parameter(label='Provenance')
+
+
+@datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
 def request_table(request):
     """
     Request table
@@ -936,5 +924,5 @@ def request_table(request):
     request.fct.update_queryset(qs)
     return TemplateResponse(request, 'prodtask/_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'table': request.fct,
-                             'parent_template': 'prodtask/_index.html'})
+                             'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
 
