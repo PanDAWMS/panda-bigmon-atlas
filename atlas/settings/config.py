@@ -3,6 +3,7 @@ from os.path import dirname, join
 
 import core
 import atlas
+import atlas.prodtask
 
 from .local import MY_SECRET_KEY, dbaccess
 
@@ -33,6 +34,7 @@ STATICFILES_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     join(dirname(core.common.__file__), 'static'),
+	join(dirname(atlas.prodtask.__file__), 'static'),
 #    join(join(dirname(core.__file__),'datatables'), 'static'),
 #    join(dirname(atlas.__file__), 'static'),
 )
