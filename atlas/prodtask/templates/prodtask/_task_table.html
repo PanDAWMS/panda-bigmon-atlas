@@ -412,9 +412,7 @@
         }
     }
 
-    var changed_params = {};
-
-    function ParseParametersFromURL()
+    function LoadDefaultAndParametersFromURL()
     {
         var time_from = new Date();
         var time_to = new Date();
@@ -447,7 +445,6 @@
 
                     default:
                         $( "#"+parameters_list[i].id ).val( value );
-                        changed_params[ parameters_list[i].name ] = parameters_list[i];
                         break;
                 }
             }
@@ -456,7 +453,7 @@
                 switch( parameters_list[i].name )
                 {
                     case 'task_type':
-                        $("#task_type").val('all');
+                  //      $("#task_type").val('all');
                         break;
                     case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
@@ -473,11 +470,41 @@
                 }
             }
         }
-        if( ! extern_parameter )
-            $("#task_type").val('production');
+        if( extern_parameter && ! $.address.parameter('task_type') )
+            $("#task_type").val('all');
 
         $( "#time_period" ).change();
 
+    }
+
+    function UpdateParametersFromURL()
+    {
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value && value != $( "#"+parameters_list[i].id ).val() )
+            {
+                extern_parameter = 1;
+                switch( parameters_list[i].name )
+                {
+                    case 'time_from':
+                    //    time_from = new Date().parse( value );
+                        $( "#time_from" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_to':
+                   //     time_from = new Date().parse( value );
+                        $( "#time_to" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val(value);
+                        break;
+
+                    default:
+                        $( "#"+parameters_list[i].id ).val( value );
+                        break;
+                }
+            }
+        }
     }
 
     $( "#time_from" ).datepicker({
@@ -543,7 +570,9 @@
         $('#task_stat_table').html(table);
     }
 
-    ParseParametersFromURL();
+    LoadDefaultAndParametersFromURL();
+    $("#update_task_table").button({ disabled: true });
+    $("#update_task_table").tooltip( );
 
 </script>
 
@@ -561,11 +590,9 @@ $(document).ready(function() {
     taskTable.fnSetColumnVis( 22, false, false );
     taskTable.fnSetColumnVis( 23, false, false );
 
-    $("#update_task_table").button({ disabled: true });
-    $("#update_task_table").tooltip( );
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
 
-    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
+    taskTable.one("draw", function(){ $.address.change(function(){ UpdateParametersFromURL(); taskTable.fnDraw(); }) });
     
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });

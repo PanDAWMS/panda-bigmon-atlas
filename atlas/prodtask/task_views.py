@@ -300,7 +300,7 @@ class ProductionTaskTable(datatables.DataTable):
 
         fnServerParams = "taskServerParams"
 
-        fnDrawCallback = "taskDrawCallback"
+        fnPreDrawCallback = "taskDrawCallback"
 
         fnClientTransformData = "prepareData"
 
