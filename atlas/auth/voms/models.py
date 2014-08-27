@@ -17,5 +17,5 @@ class VomsUser(models.Model):
 
     class Meta:
         managed = True
-        db_table = u'"VOMS_USERS_MAP"'
+        db_table = u'"ATLAS_DEFT"."VOMS_USERS_MAP"'
         unique_together = (("username", "dn"),)
