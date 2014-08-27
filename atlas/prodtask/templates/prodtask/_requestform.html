@@ -5,6 +5,9 @@
 
 {% block extra_css %}
 {{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
 	<style type="text/css" title="currentStyle">
 	</style>
 {% endblock %}
@@ -33,12 +36,32 @@
         event.preventDefault();
         var nextNumber = parseInt($('#sliceNumber').html());
         var cloneForm = $('#form0').clone().prop({'id':"form"+nextNumber.toString()});
+        var idForm = "form"+nextNumber.toString();
         cloneForm.children("legend").html("Slice #"+(nextNumber).toString());
         $('#formSet').append(cloneForm);
         $('#sliceNumber').html((nextNumber+1).toString());
+        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+nextNumber.toString()});
+        $("#" +idForm+ " .datasetTBody").html("");
+        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+nextNumber.toString()});
+        $("#" +idForm+ " #datasetPattern0").val('');
+        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+nextNumber.toString()});
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
+    var csrftoken = $.cookie('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        crossDomain: false, // obviates need for sameOrigin test
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
 $(document).ready(function(){
 
         bindOnChangeToFieldSet();
@@ -46,6 +69,7 @@ $(document).ready(function(){
         function bindOnChangeToFieldSet(){
             $('.storeInput').bind('change',function(){fillSlicesField();});
         }
+
 
         function fillSlicesField(){
             var resultObject = {};
@@ -66,20 +90,42 @@ $(document).ready(function(){
                }
                resultObject[sliceNumber]  = sliceObject;
             });
-            console.log(resultObject);
             $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
           }
 
         function findDatasets(currentButton){
-            console.log(currentButton);
-            console.log($(currentButton).parentsUntil(".sliceFiledset"));
-            $(currentButton).parentsUntil(".sliceFiledset").find("datasetTBody").html('');
+            var sliceNumber = currentButton.slice("searchDatasetButton".length);
+              sendData = {'datasetPattern':$("#datasetPattern" + sliceNumber).val()}
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:find_datasets_by_pattern' %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        if(status){
+                            var datasets = $.evalJSON(data).data;
+                            $("#datasetsTable" + sliceNumber).html('');
+                            for(var i=0;i<datasets.length;i++){
+                              $("#datasetsTable" + sliceNumber).append('<tr><td class="datasetNames">'+
+                                      datasets[i].dataset_name+'</td><td>'+datasets[i].events+
+                                '</td><td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td></tr>');
+                            }
+                            bindOnChangeToFieldSet();
+                        }
+                    }
+                });
+              return false;
         }
 
 
 </script>
 
-
+<div id="waitingDialog" title="Run" style="display: none">
+  <p>Please wait...</p>
+</div>
 {% if error_message %}
     <strong>ERROR: {{ error_message }} </strong>
 {% endif %}
@@ -108,13 +154,13 @@ $(document).ready(function(){
       <div class="row">
         <div class="large-12 columns">
           <label>Dataset Filter
-            <input type="text" placeholder="dataset pattern" />
+            <input type="text" id='datasetPattern0' placeholder="dataset pattern" />
           </label>
         </div>
       </div>
-       <div class="row">
-        <div class="large-2 columns">
-            <a class="button" id='searchDatasetButton0' onclick="findDatasets(this);"></a>
+       <div class="row buttonRow">
+        <div class="large-4 columns">
+            <a class="button" id='searchDatasetButton0' onclick="findDatasets(this.id);">Find datasets</a>
         </div>
       </div>
       <div class="row">
@@ -127,17 +173,7 @@ $(document).ready(function(){
                 <th><input type="checkbox"/> </th>
               </tr>
               </thead>
-              <tbody class="datasetTBody">
-                <tr>
-                    <td class="datasetNames">mc14_8TeV.117050.PowhegPythia_P2011C_ttbar.merge.AOD.e1727_s1933_s1911_r5591_r5625</td>
-                    <td>30000</td>
-                    <td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td>
-                </tr>
-                <tr>
-                    <td class="datasetNames">mc14_8TeV.117050.PowhegPythia_P2011C_ttbar.merge.AOD.e1727_s1933_s1911_r5591_r5625</td>
-                    <td>30000</td>
-                    <td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td>
-                </tr>
+              <tbody class="datasetTBody" id="datasetsTable0">
               </tbody>
           </table>
           </div>
@@ -153,7 +189,7 @@ $(document).ready(function(){
             <input type="text" class="formats storeInput" placeholder="ESD.AOD"  />
           </label>
         </div>
-         <div class="large-3 columns">
+         <div class="large-2 columns">
           <label>Events per job
             <input type="number" class="eventsperjob storeInput"  value="1000"  />
           </label>
@@ -163,11 +199,16 @@ $(document).ready(function(){
             <input type="number" class="totalevents storeInput" value="-1"  />
           </label>
         </div>
+           <div class="large-1 columns">
+          <label>ram
+            <input type="number" class="ram storeInput" value="2000"  />
+          </label>
+        </div>
        </div>
         <div class="row">
         <div class="large-9 columns">
-          <label>cmt project
-            <input type="text" class="cmtproject storeInput" value="spacetoken=ATLASDATADISK" />
+          <label>project mode
+            <input type="text" class="projectmode storeInput" value="spacetoken=ATLASDATADISK" />
           </label>
         </div>
         <div class="large-3 columns">

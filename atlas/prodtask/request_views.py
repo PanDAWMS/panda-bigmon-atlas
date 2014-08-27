@@ -8,6 +8,8 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.views.decorators.csrf import csrf_protect
+from ..prodtask.ddm_api import find_dataset_events
 import core.datatables as datatables
 import json
 import logging
@@ -220,9 +222,39 @@ def hlt_form_prefill(form_data, request):
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
+def parse_json_slice_dict(json_string):
+    spreadsheet_dict = []
+    input_dict = json.loads(json_string)
+    slice_index = 0
+    for slice_number, slice in input_dict.items():
+            for dataset in slice['datasets'].split(','):
+                if dataset:
+                    irl = dict(slice=slice_index, brief=' ', comment='', dataset=dataset,
+                               input_data='',
+                               project_mode=slice['projectmode'],
+                               priority=int(slice['priority']),
+                               input_events=int(slice['totalevents']))
+                    slice_index += 1
+                    st_sexec_list = []
+                    if slice['ctag']:
+                        task_config = {}
+                        nEventsPerJob = slice['eventsperjob']
+                        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+                        task_config.update({'project_mode':slice['projectmode']})
+                        step_name = step_from_tag(slice['ctag'])
+                        sexec = dict(status='NotChecked', priority=int(slice['priority']),
+                                     input_events=int(slice['totalevents']))
+                        st_sexec_list.append({'step_name': step_name, 'tag': slice['ctag'], 'step_exec': sexec,
+                                              'memory': slice['ram'],
+                                              'formats': slice['formats'],
+                                              'task_config':task_config})
+                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    return spreadsheet_dict
 
 def dpd_form_prefill(form_data, request):
     spreadsheet_dict = []
+    output_dict = {}
+    error_message = ''
     try:
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
@@ -232,9 +264,12 @@ def dpd_form_prefill(form_data, request):
         if form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+        elif form_data.get('hidden_json_slices'):
+            spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+        if not spreadsheet_dict:
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj,['formats'])
 
-        conf_parser = ConfigParser()
-        output_dict = conf_parser.parse_config(file_obj)
     except Exception, e:
         _logger.error('Problem with data gathering %s' % e)
         error_message = str(e)
@@ -258,39 +293,38 @@ def dpd_form_prefill(form_data, request):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'test'
+    if not spreadsheet_dict:
+        task_config = {}
+        if 'events_per_job' in output_dict:
+            nEventsPerJob = output_dict['events_per_job'][0]
+            task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+        if 'project_mode' in output_dict:
+            project_mode = output_dict['project_mode'][0]
+            task_config.update({'project_mode':project_mode})
+        if 'ds' in output_dict:
+            formats = []
+            for index,formats_count in enumerate(output_dict.get('formats_count_list', [None])):
+                formats+=[output_dict['formats'][index]]*formats_count
+            if len(formats)!=len(output_dict['ds']):
+                error_message = 'ds and format lenght do not match'
+                return {}, error_message
+            for slice_index, ds in enumerate(output_dict['ds']):
+                st_sexec_list = []
+                irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
+                           input_data=output_dict.get('joboptions', [''])[0],
+                           project_mode=output_dict.get('project_mode', [''])[0],
+                           priority=int(output_dict.get('priority', [0])[0]),
+                           input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                if 'tag' in output_dict:
+                    step_name = step_from_tag(output_dict['tag'][0])
+                    sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                                 input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                    st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
+                                          'memory': output_dict.get('ram', [None])[0],
+                                          'formats': formats[slice_index],
+                                          'task_config':task_config})
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
 
-    task_config = {}
-    if 'events_per_job' in output_dict:
-        nEventsPerJob = output_dict['events_per_job'][0]
-        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-    if 'project_mode' in output_dict:
-        project_mode = output_dict['project_mode'][0]
-        task_config.update({'project_mode':project_mode})
-    if 'ds' in output_dict:
-        if len(output_dict.get('formats', [None]))>1 and len(output_dict.get('formats', [None]))!=len(output_dict['ds']):
-            error_message = 'ds and format lenght do not match'
-            return {}, error_message
-        if len(output_dict.get('formats', [None]))==1:
-            formats = [(output_dict.get('formats', [None])[0])]*len(output_dict['ds'])
-        else:
-            formats = output_dict.get('formats', [None])
-        for slice_index, ds in enumerate(output_dict['ds']):
-            st_sexec_list = []
-            irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
-                       input_data=output_dict.get('joboptions', [''])[0],
-                       project_mode=output_dict.get('project_mode', [''])[0],
-                       priority=int(output_dict.get('priority', [0])[0]),
-                       input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-            if 'tag' in output_dict:
-                step_name = step_from_tag(output_dict['tag'][0])
-                sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
-                             input_events=int(output_dict.get('total_num_genev', [-1])[0]))
-                st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
-                                      'memory': output_dict.get('ram', [None])[0],
-                                      'formats': formats[slice_index],
-                                      'task_config':task_config})
-            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-    error_message = ''
     if not spreadsheet_dict:
         error_message= 'No "ds" data founnd in file.'
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
@@ -305,11 +339,17 @@ def reprocessing_form_prefill(form_data, request):
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
             with open(file_name) as open_file:
                 file_obj = open_file.read().split('\n')
-        if form_data.get('excelfile'):
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj)
+        elif form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
-        conf_parser = ConfigParser()
-        output_dict = conf_parser.parse_config(file_obj)
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj)
+        elif form_data.get('hidden_json_slices'):
+            output_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+
+
     except Exception, e:
         _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)
@@ -420,7 +460,19 @@ def recursive_string_tag_tree_parsing(rest_list, current_parent, current_positio
     return tag_tree_dict, current_parent, current_position
 
 
-
+@csrf_protect
+def find_datasets_by_pattern(request):
+    if request.method == 'POST':
+        data = request.body
+        input_dict = json.loads(data)
+        dataset_pattern = input_dict['datasetPattern']
+        if dataset_pattern[-1] != '*' or dataset_pattern[-1] != '/':
+            dataset_pattern+='*'
+        return_list = find_dataset_events(dataset_pattern)
+        results = {}
+        results.update({'success':True,'data':return_list})
+        return HttpResponse(json.dumps(results), content_type='application/json')
+    pass
 
 
 #TODO: Change it to real dataset workflow 
@@ -473,7 +525,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         if form.is_valid():
 
             # Process the data from request prefill form
-            if form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile'):
+            if (form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile')) or form.cleaned_data.get('hidden_json_slices'):
                 file_dict, error_message = form_prefill(form.cleaned_data, request)
                 if error_message != '':
                     # recreate prefill form with error message
@@ -513,11 +565,24 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 #TODO: Waiting message
                 #TODO: One commission
                 file_dict = request.session['file_dict']
+                form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
+                if not form2.is_valid():
+                    inputlists = [x['input_dict'] for x in file_dict]
+                    # store data from prefill form to http request
+                    return render(request, 'prodtask/_previewreq.html', {
+                        'active_app': 'mcprod',
+                        'pre_form_text': title,
+                        'form': form2,
+                        'submit_url': submit_url,
+                        'url_args': rid,
+                        'parent_template': 'prodtask/_index.html',
+                        'inputLists': inputlists
+                    })
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
-                    form.cleaned_data['excelfile']
+                    form.cleaned_data['excelfile'], form.cleaned_data['hidden_json_slices']
                 if 'reqid' in form.cleaned_data:
                     del form.cleaned_data['reqid']
                 # if 'tag_hierarchy' in form.cleaned_data:
@@ -595,7 +660,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     return HttpResponseRedirect(reverse('prodtask:request_table'))
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve',args=(req.reqid,)))
             else:
-                return render(request, 'prodtask/_form.html', {
+                return render(request, 'prodtask/_requestform.html', {
                     'active_app': 'mcprod',
                     'pre_form_text': title,
                     'form': form,
@@ -603,6 +668,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     'url_args': rid,
                     'parent_template': 'prodtask/_index.html',
                 })
+
     # GET request
     else:
 
@@ -620,7 +686,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
     # Create prefill form
-    return render(request, 'prodtask/_form.html', {
+    return render(request, 'prodtask/_requestform.html', {
         'active_app': 'mcprod',
         'pre_form_text': title,
         'form': form,

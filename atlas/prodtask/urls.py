@@ -26,8 +26,8 @@ urlpatterns = patterns('',
     url(r'^request_clone/(?P<rid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
     url(r'^request_update/(?P<rid>\d+)/$',  'atlas.prodtask.request_views.request_update',  name='request_update'),
     url(r'^request_create/$',               'atlas.prodtask.request_views.request_create',  name='request_create'),
-    
-    
+    url(r'^find_datasets_by_pattern/$',     'atlas.prodtask.request_views.find_datasets_by_pattern',  name='find_datasets_by_pattern'),
+
     url(r'^dpd_request_create/$',               'atlas.prodtask.request_views.dpd_request_create',  name='dpd_request_create'),
     url(r'^reprocessing_request_create/$',               'atlas.prodtask.request_views.reprocessing_request_create',
         name='reprocessing_request_create'),

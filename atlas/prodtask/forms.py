@@ -23,6 +23,9 @@ class TRequestCreateCloneConfirmation(ModelForm):
     description = CharField(label='Short description', widget=Textarea, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=True)
+    provenance = CharField(required=True)
+    phys_group = CharField(required=True, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
+    campaign = CharField(required=True)
 
     class Meta:
         model = TRequest
@@ -35,7 +38,8 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
-
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
+    campaign = CharField(required=False)
 
     class Meta:
         model = TRequest
@@ -49,7 +53,9 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
-    hidden_json_slices = CharField(required=False, label="Will be hidden")
+    hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
+    campaign = CharField(required=False)
 
     class Meta:
         model = TRequest
@@ -63,6 +69,8 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
+    campaign = CharField(required=False)
 
     class Meta:
         model = TRequest
@@ -78,6 +86,8 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     # tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
     #                           widget=Textarea, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
+    campaign = CharField(required=False)
 
     class Meta:
         model = TRequest
