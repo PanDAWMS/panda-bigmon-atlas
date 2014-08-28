@@ -16,8 +16,10 @@ class ConfigParser(object):
     COMMENT_CHAR = '#'
     OPTION_CHAR = ':'
  
-    def parse_config(self, open_file):
-        
+    def parse_config(self, open_file, count_list=[]):
+        if count_list!= []:
+            for key in count_list:
+                self.options[key+'_count_list'] = []
         for line in open_file:
             # First, remove comments:
             if self.COMMENT_CHAR in line:
@@ -25,11 +27,18 @@ class ConfigParser(object):
                 line, comment = line.split(self.COMMENT_CHAR, 1)
             # Second, find lines with an option=value:
             if self.OPTION_CHAR in line:
+
                 # split on option char:
                 option, value = line.split(self.OPTION_CHAR, 1)
                 # strip spaces:
                 option = option.strip()
                 value = value.strip()
+                for key in count_list:
+                    if key==option:
+                        self.options[key+'_count_list'].append(0)
+                    else:
+                        if self.options[key+'_count_list']:
+                            self.options[key+'_count_list'][-1]+=1
                 # store in dictionary:
                 value_list = self.options.get(option, [])
                 value_list.append(value)
