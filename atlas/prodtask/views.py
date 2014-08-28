@@ -412,7 +412,12 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
                 if (task.status not in ['aborted','failed','lost']):
                     return_list.append({'dataset_name':dataset_name,'events':str(task.total_events)})
             except:
-                pass
+                try:
+                    dataset_in_db = ProductionDataset.objects.get(name=dataset_name)
+                    if dataset_in_db.status == 'done':
+                         return_list.append({'dataset_name':dataset_name,'events':str(-1)})
+                except:
+                    pass
     return return_list
 
 
