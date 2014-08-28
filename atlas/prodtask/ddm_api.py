@@ -1,6 +1,7 @@
 
 import logging
 import os
+from ..prodtask.models import ProductionDataset
 from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
 from ..settings import dq2client as dq2_settings
 
@@ -37,7 +38,12 @@ def find_dataset_events(dataset_pattern):
                 if (task.status not in ['aborted','failed','lost']):
                     return_list.append({'dataset_name':dataset_name,'events':str(task.total_events)})
             except:
-                pass
+                try:
+                    dataset_in_db = ProductionDataset.objects.get(name=dataset_name)
+                    if dataset_in_db.status == 'done':
+                         return_list.append({'dataset_name':dataset_name,'events':str(-1)})
+                except:
+                    pass
         return return_list
 
 class DDM(object):
