@@ -15,9 +15,9 @@ common_patterns = patterns('',
 
     ### the front page
 #obsoleted.2014-05-01.jschovan#    url(r'^$', atlas_common_views.index, name='index'),
-    url(r'^$', include('core.pandajob.urls_pandajob_mainpage')),
+  #  url(r'^$', include('core.pandajob.urls_pandajob_mainpage')),
 
-    url(r'^common/', include('core.common.common_urls')),
+    url(r'^', include('core.common.common_urls')),
 
     ### Applications
     url(r'^htcondorjobs', include('core.htcondor.urls')),
