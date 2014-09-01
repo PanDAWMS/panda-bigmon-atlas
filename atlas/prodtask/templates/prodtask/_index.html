@@ -1,48 +1,10 @@
-{% extends "atlas/_index_grid.html" %}
+{% extends "_base_bigpandamon.html" %}
 {% load url from future %}
 {% load static from staticfiles %}
 
-{% block title %}ATLAS PanDA{% endblock %}
-{% block bl_page_title %}Monte Carlo Production Monitoring{% endblock %}
 
-{% block body %}
+{% block nav-top-toolbar-left %}
 
-{% comment %}
-    <ul>
-        <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
-        <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
-    </ul>
-{% endcomment %}
-
-{% endblock %}
-
-{% block header-nav-chain-1 %}{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-{% block header-nav-chain-2 %}{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}
-{% block header-nav-chain-3 %}{% endblock %}{% block header-nav-chain-3-separator %}{% endblock %}
-{% block header-nav-chain-4 %}{% endblock %}{% block header-nav-chain-4-separator %}{% endblock %}
-{% block header-nav-chain-5 %}{% endblock %}{% block header-nav-chain-5-separator %}{% endblock %}
-{% block header-nav-chain-6 %}{% endblock %}
-
-{% block extra_css %}
-{% endblock %}
-
-{% block extra_js %}
-{% endblock %}
-
-{% comment %}
-{% block top_menu_all_1 %}
-
-<li class="has-dropdown">
-          <a href="#">Panda</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'index' %}">Home</a></li>
-            <li><a href="{% url 'taskInfo' %}">List jobs</a></li>
-            <li class="divider"></li>
-            <li><a href="#">See all &rarr;</a></li>
-          </ul>
- </li>
-{% endblock %}
-{% block top_menu_all_2 %}
 <li class="has-dropdown">
           <a href="#">Requests</a>
           <ul class="dropdown">
@@ -54,30 +16,43 @@
             <li class="divider"></li>
             <li><a href="{% url 'prodtask:reprocessing_request_create' %}">Create Reprocessing Request</a></li>
             <li class="divider"></li>
+            <li><a href="{% url 'prodtask:hlt_request_create' %}">Create HLT Request</a></li>
+            <li class="divider"></li>
             <li><a href="{% url 'prodtask:mcpattern_table' %}">MC Pattern</a></li>
             <li><a href="{% url 'prodtask:mcpriority_table' %}">MC Priority</a></li>
           </ul>
 </li>
-{% endblock %}
 
-{% block top_menu_all_3 %}
 <li class="has-dropdown">
           <a href="#">Tasks</a>
           <ul class="dropdown">
             <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
             <li class="divider"></li>
             <li><a href="{% url 'prodtask:task_create' %}">Create Task</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'taskList' %}">All</a></li>
+            <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
+            <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
           </ul>
 </li>
-{% endblock %}
-
-
-{% block top_menu_all_4 %}
 <li class="has-dropdown">
           <a href="#">Datasets</a>
           <ul class="dropdown">
             <li><a href="{% url 'prodtask:production_dataset_table' %}">Aborted and Obsolete Datasets</a></li>
+            <li><a href="{% url 'getdatasets:request_data_form' %}">Search</a></li>
           </ul>
+</li>
+
+<li class="has-dropdown">
+          <a href="#">Users</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'userList' %}?sortby=date&view=database">Usage stats view</a></li>
+            <li><a href="{% url 'userList' %}?sortby=date&view=dynamic">Dynamic view</a></li>
+          </ul>
+</li>
+
+<li>
+          <a href="{% url 'siteList' %}">Sites</a>
 </li>
 
 <li>
@@ -87,29 +62,5 @@
 <li>
           <a href="http://dashb-atlas-ssb.cern.ch/dashboard/request.py/siteview#currentView=Shifter+view&highlight=false" target="_blank">SSB</a>
 </li>
-{% endblock %}
-{% endcomment %}
-
-{% block bl_header_title %}
-MC Production Monitoring
-{% endblock %}
-
-{% block bl_home_down %}
-<a href="{% url 'mcprod:about' %}">info and help</a>
-{% endblock %}
-
-{% block bl_top_right %}
-<!-- <button id="syncsh" title="Synchronisation of spreadsheet and DB">SYNC</button>
-<p>
- Column in spreadsheet: <input type="text"  id="lineinsps" > </p> -->
-<div id="dialog" title="Synchronisation of spreadsheet and DB" style="display: none;">
-<p>This button push have to call synchronisation of spreadsheet and DB</p>
-</div>
-{% endblock %}
-
-{% block bl_entry_point %}
-    {{ block.super }}
-    $(".meter").tipTip({maxWidth: "auto", edgeOffset: 10});
-
 
 {% endblock %}
