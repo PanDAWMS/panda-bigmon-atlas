@@ -17,8 +17,11 @@
 # June 26, 2014. SSO is modified (DG)
 #                Changes in project name insert part
 # July 17, 2014. Task submission info (e-mails)
+# July 28, 2014. Add link to monitoring page and modify tasks grouping in the report
+# Aug   5, 2014. e-mail notification, final version
+# Aug  11, 2014. GP daily reports
 #
-# Last Edit : July 17, 2014 ak
+# Last Edit : Aug 11, 2014 ak
 #
 
 import re
@@ -111,6 +114,9 @@ Action options :
  """
 
  print usage.__doc__
+
+
+#--- service subs
 
 def execCmd(cmd,flag) :
    (s,o) = commands.getstatusoutput(cmd)
@@ -247,6 +253,24 @@ def JediTaskCmd(cmd,task_id,priority) :
 
     return status
 
+
+def sendEmail(email,subject, buf) :
+
+  msg = "To:%s \n"%(email)
+  msg += "Subject : %s"%(subject)
+  msg += "\n--- begin \n"
+  msg += "This message was generated automatically. Pls do not reply"
+  msg += buf
+  msg += "Timestamp : %s"%time.ctime()
+  msg += "\n--- ends here \n"
+  MAIL = "/usr/lib/sendmail"
+  print msg
+  p = os.popen("%s -t" % MAIL,'w')
+  p.write(msg)
+  exitcode = p.close()
+
+#--- end of service subs
+
 def obsoleteTaskState(task_id, dbupdate) :
 # set task state to 'obsolete' and update datasets states accordingly
     error   = 0
@@ -336,24 +360,38 @@ def generateProdSysReport(flag) :
 #
 # get information about ProdSys2 tasks and send report
 #
-  TR_ID_MIN = 4000000
-  MC_flag   = 'MC'
-  Repro_flag= 'Repro'
-  GP_flag   = 'GP'
-
+  TR_ID_MIN       = 4000000
+  MC_flag         = 'MC'
+  Repro_flag      = 'Repro'
+  GP_flag         = 'GP'
+  send_email_flag = 1
+  header_msg      = ''
+  info_msg        = ''
+  warning_msg     = ''
+  alarm_msg       = ''
+  
   timenow = int(time.time())
   findProcess('deft_handling','generate-prodsys-report','Quit')
+  sql_provenance = ''
+  if flag == MC_flag :
+      sql_provenance = \
+          "AND provenance ='%s' AND (project LIKE '%s' OR project LIKE '%s') "%('AP','mc%','valid%')
+  elif flag == GP_flag :
+      sql_provenance = "AND provenance = '%s' AND project NOT LIKE '%s' "%('GP','user%')
+  else :
+      print "ERROR. Unknown report flag : ",flag,". Quit"
+      sys.exit(1)
   # connect to Oracle
   (pdb,dbcur,deftDB) = connectDEFT('R')
 
   # get information about tasks submitted during last 24h 
   t_table_DEFT    = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
-  sql = "SELECT taskname, taskid, status, provenance, priority, submit_time,timestamp FROM %s "%(t_table_DEFT)
+  sql = "SELECT taskname, taskid, status, provenance, priority, submit_time,timestamp FROM %s "%\
+      (t_table_DEFT)
   sql+= "WHERE (submit_time > current_timestamp -1 OR timestamp > current_timestamp - 1) "
-  if flag == 'MC' :
-      sql += "AND provenance ='%s' AND (project LIKE '%s' OR project LIKE '%s') "%('AP','mc%','valid%')
+  sql+= sql_provenance
   sql+= "ORDER by taskid"
-  #--print sql
+  print sql
   tids = DButils.QueryAll(pdb,sql)
 
   t_tid_MIN = 400000*1000
@@ -362,6 +400,7 @@ def generateProdSysReport(flag) :
   t_start_LAST= -1
 
   ntasks = len(tids)
+  print "Total tasks : ",ntasks
   for t in tids :
       t_name       = t[0]
       t_id         = t[1]
@@ -382,35 +421,40 @@ def generateProdSysReport(flag) :
           if t_start_LAST  < t_submit : t_start_LAST = t_submit
 
   fmt = '%Y-%m-%d %H:%M:%S %Z'
-  t_start_LAST = t_start_LAST.strftime(fmt)
-  t_time_LAST  = t_time_LAST.strftime(fmt) 
+  if ntasks == 0 :
+      t_start_last = "NO submission in the last 24h"
+      t_time_last  = "NO database update within last 24h"
+  else :
+   t_start_LAST = t_start_LAST.strftime(fmt)
+   t_time_LAST  = t_time_LAST.strftime(fmt) 
 
-  print "Production Activity : ",time.ctime(timenow-24*60*60),'-',time.ctime(timenow)
-  print "Tasks states changed: ",ntasks
-  print "Tasks IDs           : ",t_tid_MIN,'-',t_tid_MAX
-  print "Latest task submit time     : ",t_start_LAST
-  print "Latest database update time : ",t_time_LAST
+  header_msg = "Production Activity : %s - %s \n"%(time.ctime(timenow-24*60*60),time.ctime(timenow))
+  header_msg+= "Tasks states changed: %s \n"%(ntasks)
+  header_msg+= "Tasks IDs : %s - %s \n"%(t_tid_MIN,t_tid_MAX)
+  header_msg+= "Latest task submit time     : %s \n"%(t_start_LAST)
+  header_msg+= "Latest database update time : %s \n"%(t_time_LAST)
+  print header_msg
 
   # get information about potentially problematic tasks
   sql = "SELECT taskname, taskid, status, provenance, priority, submit_time,timestamp FROM %s "%(t_table_DEFT)
   sql+= "WHERE taskid > %s "%(TR_ID_MIN)
   sql+= "AND status IN ('assigning','registered','pending') "
-  if flag == 'MC' :
-      sql += "AND provenance ='%s' AND (project LIKE '%s' OR project LIKE '%s') "%('AP','mc%','valid%')
+  sql+= sql_provenance
   sql+= "ORDER by taskid"
   #--print sql
   wtids = DButils.QueryAll(pdb,sql)
 
-  print " "
-  print " "
-  print "Tasks taken by JEDI, but not running yet. #Tasks : ",len(wtids)
-  
+  task_info_msg    = ''
+  task_info_msg = "%s %s"%('\n','\n')
+  task_warning_msg = task_info_msg
+  task_alarm_msg   = task_info_msg
+  task_info_msg += "%s : %s \n"%( "Tasks taken by JEDI, but not running yet. #Tasks",len(wtids))
+  print task_info_msg
 
   sql = "SELECT taskname, taskid, status, provenance, priority, submit_time,timestamp FROM %s "%(t_table_DEFT)
   sql+= "WHERE (submit_time > current_timestamp -1 OR timestamp > current_timestamp - 1) "
   sql+= "AND status IN ('broken','failed') "
-  if flag == 'MC' :
-      sql += "AND provenance ='%s' AND (project LIKE '%s' OR project LIKE '%s') "%('AP','mc%','valid%')
+  sql+= sql_provenance
   sql+= "ORDER by taskid"
   #--print sql
   ftids = DButils.QueryAll(pdb,sql)
@@ -419,8 +463,13 @@ def generateProdSysReport(flag) :
   # get info from JEDI for problematic tasks
   (pdb,dbcur,deftDB) = connectJEDI('R','pandamon')
   t_table_PANDAMON    = "%s"%(deft_conf.daemon['t_jedi_tasks'])
-
-  print '%-8s %6s %-10s %20s'%('Task ID','Prio','Status','JEDI Info')  
+  task_url_prefix     = 'http://bigpanda.cern.ch/task/'
+  JEDI_waiting_tasks = []
+  header_line = '%-60s %8s %5s %12s %-40s %10s \n'%\
+      ('Task Name', 'Task ID','Prio','Status','URL','JEDI Info')
+  print header_line
+  task_waiting_list      = ''
+  task_jedi_warning_list = ''
   for t in wtids :
       t_name       = t[0]
       t_id         = t[1]
@@ -429,18 +478,53 @@ def generateProdSysReport(flag) :
       t_priority   = t[4]
       t_submit     = t[5]
       t_time       = t[6]
+      jj = t_name.split('.')
+      t_name_short = ''
+      i            = 0
+      for j in jj :
+          if i == 2 :
+              t_name_short += "*."
+          else :
+              t_name_short += "%s."%(j)
+          i += 1
+      t_name_short = t_name_short[0:(len(t_name_short)-1)]
+      task_url     ="%s%s"%(task_url_prefix,t_id)
       sql = "SELECT errordialog FROM %s WHERE jeditaskid=%s"%(t_table_PANDAMON,t_id)
       #--print sql
       msg =  DButils.QueryAll(pdb,sql)
-      print t_name
-      print '%-8s %6s %-10s %20s'%(t_id,t_priority,t_status,msg[0][0])
+      if msg[0][0] != None :
+       str = '%-60s %8s %5s %12s %-40s %s \n'%\
+           (t_name_short,t_id,t_priority,t_status,task_url,msg[0][0])
+       task_jedi_warning_list += str
+       print str
+      else :
+       # JEDI msg == None ; just waiting
+       str = "%-60s %8s %5s %12s %-40s %5s \n"%\
+           (t_name_short, t_id,t_priority,t_status,task_url,msg[0][0])
+       JEDI_waiting_tasks.append(str)
+       task_waiting_list += str
+  task_info_msg += header_line
+  task_info_msg += task_waiting_list
+  task_info_msg += "\n \n"
 
-  
-  print " "
-  print " "
-  print "Tasks broken/failed (last 24h). #Tasks : ",len(ftids)
- 
-  print '%-8s %6s %-10s %20s'%('Task ID','Prio','Status','JEDI Info')  
+
+  str = "Tasks not Processed by JEDI yet"
+  task_warning_msg += str
+  header_line = '%-60s %8s %4s %10s %-40s %10s \n'%\
+  ('Task Name', 'Task ID','Prio','Status','URL','JEDI Info')  
+  task_warning_msg += header_line
+  task_warning_msg += task_jedi_warning_list
+  task_warning_msg += "\n \n"
+  print task_jedi_warning_list 
+  #for s in JEDI_waiting_tasks :
+  #  print s
+  #print " "
+  #print " "
+  task_alarm_msg  = "Tasks broken/failed (last 24h). #Tasks : %s \n"%(len(ftids))
+  task_alarm_msg += '%-60s %8s %4s %10s %-40s %10s'%\
+      ('Task Name', 'Task ID','Prio','Status','URL','JEDI Info') 
+  print task_alarm_msg
+
   for t in ftids :
      t_name = t[0] 
      t_id         = t[1]
@@ -452,11 +536,57 @@ def generateProdSysReport(flag) :
      sql = "SELECT errordialog FROM %s WHERE jeditaskid=%s"%(t_table_PANDAMON,t_id)
      #--print sql
      msg =  DButils.QueryAll(pdb,sql)
-     print t_name
-     print '%-8s %6s %-10s %20s '%(t_id,t_priority,t_status,msg[0][0]) 
+     t_name_short = ''
+     i            = 0
+     for j in jj :
+          if i == 2 :
+              t_name_short += "*."
+          else :
+              t_name_short += "%s."%(j)
+          i += 1
+     t_name_short = t_name_short[0:(len(t_name_short)-1)]
+     task_url     ="%s%s"%(task_url_prefix,t_id)
+     str= '%-60s,%8s %4s %10s %-40s %s '%(t_name_short,t_id,t_priority,t_status,task_url,msg[0][0]) 
+     task_alarm_msg += str
+     print str
 
   DButils.closeDB(pdb,dbcur)
+  # send e-mail
+  email_addr = 'XYZ'
+  if flag == MC_flag : email_addr = "jose.enrique.garcia@cern.ch"
+  if flag == GP_flag : email_addr = "nurcan@uta.edu"
 
+  if send_email_flag == 1 :
+   if email_addr == 'XYZ' :
+       print "WARNING : unknown e-mail address or flag"
+   else :
+      email_addr += ",alexei.klimentov@cern.ch"
+      timestamp_email = int(time.time())
+      subject         = "ProdSys2 report (%s). "%(flag)
+      # info e-mail
+      subject+= "Info"
+      subject = "%s %s"%(subject,time.ctime(timestamp_email))
+      mail_body = "\n You receive this e-mail because you are listed as %s Production Manager \n"%(flag)
+      mail_body += "\n\n"
+      mail_body += task_info_msg
+      sendEmail(email_addr,subject,mail_body)
+      # warning e-mail
+      subject+= "Warning"
+      subject = "%s %s"%(subject,time.ctime(timestamp_email))
+      mail_body = "\n You receive this e-mail because you are listed as %s Production Manager \n"%(flag)
+      mail_body += "\n\n"
+      mail_body += task_warning_msg
+      sendEmail(email_addr,subject,mail_body)
+      #alarm e-mail
+      subject+= "Alarm"
+      subject = "%s %s"%(subject,time.ctime(timestamp_email))
+      mail_body = "\n You receive this e-mail because you are listed as %s Production Manager \n"%(flag)
+      mail_body += "\n\n"
+      mail_body += task_alarm_msg
+      #
+      print mail_body
+      #
+      sendEmail(email_addr,subject,mail_body)
 
 def checkAbortedTasks() :
 #
@@ -580,7 +710,7 @@ def insertJediTasksJSON(user_task_list):
     jedi_task_names  = ['userName','taskName','taskPriority','vo']
 
     # connect to Oracle
-    (pdb,dbcur,deftDB) = connectJEDI('R')
+    (pdb,dbcur,deftDB) = connectJEDI('R','jedi')
 
     t_table_DEFT    = "%s.%s"%(deftDB,deft_conf.daemon['t_production_task'])
     t_table_JEDI    = "%s.%s"%(deftDB,deft_conf.daemon['t_task'])
@@ -890,7 +1020,7 @@ def synchronizeJediDeftTasks() :
     DButils.closeDB(pdb,dbcur)
     print "%s DEFT tasks match to the criteria"%(len(tasksDEFT))
 
-    (pdb,dbcur,deftDB) = connectJEDI('R')
+    (pdb,dbcur,deftDB) = connectJEDI('R','jedi')
     sql_select = "SELECT taskid, status,total_done_jobs,submit_time, start_time, prodsourcelabel,"
     sql_select+= "priority,current_priority, taskname, total_req_jobs, total_events "
     sql = sql_select
@@ -1207,6 +1337,7 @@ def main() :
     task_id   = -1       # Task ID
     task_prio = -1       # Task priority
     task_state='unknown' # Task state
+    report_flag = 'XYZ'  # generate report for 'MC', 'GP' et al
 
     for o, a in opts:
      if o in ("-h","--help") :
@@ -1222,6 +1353,8 @@ def main() :
          task_id = int(a.strip())
      elif o == "-p" :
          task_prio = int(a.strip())
+     elif o == '-f' :
+         report_flag = a.strip()
      elif o == "--change-task-state" :
          changeTaskStateF = True
      elif o == '--finish-task' :
@@ -1280,8 +1413,12 @@ def main() :
            status = checkAbortedTasks()
 
     if generateProdSysReportF == True :
+      if report_flag == 'XYZ' :
+          print "ERROR : unknown provenance. Report flag : ", report_flag
+      else :
         findProcess('deft_handling','generate-prodsys-report','Quit')
-        status = generateProdSysReport('MC')
+        print "Generate daily report for ",report_flag,' production'
+        status = generateProdSysReport(report_flag)
 
     if finishTaskF == True :
         if task_id < 0  :
