@@ -58,4 +58,33 @@ defaultDatetimeFormat = defaultDatetimeFormatOracle
 # log directory
 LOG_ROOT = "/data/bigpandamon_virtualhosts/atlas/logs"
 
+DATABASE_ROUTERS = []
 
+VOMODE = 'FIXME'
+
+def set(request):
+    con = {}
+    con['viewParams']={}
+    con['viewParams']['MON_VO']=VOMODE
+    return con
+
+TEMPLATE_CONTEXT_PROCESSORS = ("django.contrib.auth.context_processors.auth",
+"django.core.context_processors.debug",
+"django.core.context_processors.i18n",
+"django.core.context_processors.media",
+"django.core.context_processors.static",
+"django.core.context_processors.tz",
+"django.contrib.messages.context_processors.messages",
+"atlas.settings.local.set",
+)
+
+ENV = {
+    ### Application name
+    'APP_NAME': 'FIXME', \
+    ### Page title default
+    'PAGE_TITLE': 'FIXME', \
+    ### Menu item separator
+    'SEPARATOR_MENU_ITEM': "&nbsp;&nbsp;&nbsp;", \
+    ### Navigation chain item separator
+    'SEPARATOR_NAVIGATION_ITEM': "&nbsp;&#187;&nbsp;" , \
+}
