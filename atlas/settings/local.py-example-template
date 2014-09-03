@@ -59,3 +59,7 @@ defaultDatetimeFormat = defaultDatetimeFormatOracle
 LOG_ROOT = "/data/bigpandamon_virtualhosts/atlas/logs"
 
 
+# DEFT API settings
+
+DEFT_AUTH_USER = 'FIXME'
+DEFT_AUTH_KEY = 'FIXME'
