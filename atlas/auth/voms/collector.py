@@ -30,15 +30,16 @@ def run():
         if not re.match(r"^\w+$", nickname):
             # TODO: log the warning
             continue
+
         if not voms_users.get(nickname):
             voms_users[nickname] = {}
         voms_users[nickname].update({dn: ca})
 
-    result = {'added': 0, 'removed': 0, 'detailed': [],}
+    result = {'added': 0, 'removed': 0, 'detailed': []}
 
     for user in VomsUser.objects.all():
         info = voms_users.get(user.username)
-        if not info or not dn in voms_users[user.username]:
+        if not info or not user.dn in info:
             try:
                 user.delete()
             except:
