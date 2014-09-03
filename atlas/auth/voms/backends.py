@@ -1,5 +1,3 @@
-import os
-
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import Group
@@ -23,7 +21,7 @@ class VomsBackend(ModelBackend):
     """ Adding VOMS-based authentication groups for user. """
 
     def authenticate(self, request=None):
-        """ Chacking user against VOMS data and adding corresponding authentication groups.
+        """ Checking user against VOMS data and adding corresponding authentication groups.
 
         Parameters:
           request: Http request (HttpRequest).
@@ -44,9 +42,7 @@ class VomsBackend(ModelBackend):
         if not dn_map:
             return
 
-        os.environ["X509_USER_PROXY"] = settings.VOMS_PROXY_CERT
-
-        options = VomsInterface.get_identity_options()
+        options = VomsInterface.get_identity_options(proxy_cert=settings.VOMS_PROXY_CERT)
         options.update(settings.VOMS_OPTIONS)
         voms = VomsInterface(options)
 
