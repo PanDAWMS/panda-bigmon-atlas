@@ -1,4 +1,4 @@
-#!/bin/env python
+import os
 
 from VOMSAdmin.VOMSCommands import VOMSAdminProxy
 
@@ -53,10 +53,13 @@ class VomsInterface:
         return attributes.get("nickname")
 
     @staticmethod
-    def get_identity_options(voms_admin_path="/usr/bin/voms-admin"):
+    def get_identity_options(voms_admin_path="/usr/bin/voms-admin", proxy_cert=None):
         import imp
         voms_admin = imp.load_source("voms_admin", voms_admin_path)
         voms_admin.vlog = lambda msg: None
+
+        if proxy_cert:
+            os.environ["X509_USER_PROXY"] = proxy_cert
         voms_admin.setup_identity()
 
         return voms_admin.options
