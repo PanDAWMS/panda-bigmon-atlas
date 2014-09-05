@@ -79,3 +79,9 @@ STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 ## more details on how to customize your logging configuration.
 from .logconfig import LOGGING
 
+# Settings for authentication variables
+META_EMAIL = 'ADFS_EMAIL'
+META_FIRSTNAME = 'ADFS_FIRSTNAME'
+META_GROUP = 'ADFS_GROUP'
+META_LASTNAME = 'ADFS_LASTNAME'
+META_USERNAME = 'ADFS_LOGIN'

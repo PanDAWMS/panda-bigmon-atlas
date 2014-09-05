@@ -1,9 +1,11 @@
+import json
 
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 
 import core.datatables as datatables
 
@@ -11,42 +13,25 @@ from .models import ProductionTask, TRequest, StepExecution
 
 from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
 
-from .task_actions import kill_task, finish_task, obsolete_task,\
-                          change_task_priority, increase_task_priority, decrease_task_priority, \
-                          reassign_task_to_site, reassign_task_to_cloud, retry_task
+from .task_actions import do_action, supported_actions
 
 
-import json
-
-
-_task_actions = {
-    'kill': kill_task,
-    'finish': finish_task,
-    'obsolete': obsolete_task,
-    'change_priority': change_task_priority,
-    'increase_priority': increase_task_priority,
-    'decrease_priority': decrease_task_priority,
-    'reassign_to_site': reassign_task_to_site,
-    'reassign_to_cloud': reassign_task_to_cloud,
-    'retry': retry_task,
-}
-
-
-def do_tasks_action(tasks, action, *args):
+def do_tasks_action(owner, tasks, action, *args):
     """
-    Performing task actions
-    :param tasks: list of tasks affected
-    :param action: name of action
+    Performing tasks actions
+    :param tasks: list of tasks IDs affected
+    :param action: name of the action
     :param args: additional arguments
-    :return: array of actions' statuses
+    :return: array of per-task actions' statuses
     """
-    if (not tasks) or not (action in _task_actions):
+    # TODO: add logging
+    # TODO:
+    if (not tasks) or not (action in supported_actions):
         return
 
     result = []
     for task in tasks:
-        response = _task_actions[action](task, *args)
-        req_info = dict(task_id=task, action=action, response=response)
+        req_info = do_action(owner, task, action, *args)
         result.append(req_info)
 
     return result
@@ -61,7 +46,16 @@ def tasks_action(request, action):
     """
     empty_response = HttpResponse('')
 
-    if request.method != 'POST' or not (action in _task_actions):
+    if request.method != 'POST' or not (action in supported_actions):
+        return empty_response
+
+    # TODO: return comprehensible response anytime
+    # TODO: rewrite with django auth system
+    #if not request.user.groups.filter(name='vomsrole:/atlas/Role=production'):
+    #    return empty_response
+
+    owner = request.META.get(settings.META_USERNAME)
+    if not owner:
         return empty_response
 
     data_json = request.body
@@ -74,7 +68,7 @@ def tasks_action(request, action):
         return empty_response
 
     params = data.get("parameters", [])
-    response = do_tasks_action(tasks, action, *params)
+    response = do_tasks_action(owner, tasks, action, *params)
     return HttpResponse(json.dumps(response))
 
 
@@ -117,7 +111,6 @@ def get_same_slice_tasks(request):
         tasks_slices[task_id] = dict(tasks=slice_tasks, slice=str(slice_id))
 
     return HttpResponse(json.dumps(tasks_slices))
-
 
 
 @ensure_csrf_cookie
