@@ -40,7 +40,7 @@ class TProject(models.Model):
 class TRequest(models.Model):
     PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
                                  'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
-                                 'reprocessing','trig-hlt']]
+                                 'reprocessing','trig-hlt','Validation']]
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
 
