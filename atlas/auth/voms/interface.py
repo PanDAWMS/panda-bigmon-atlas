@@ -2,14 +2,14 @@ import os
 
 from VOMSAdmin.VOMSCommands import VOMSAdminProxy
 
+
 class VomsInterface:
     """
     Retrieving information from VOMS server.
     """
 
     def __init__(self, options):
-        self.options = VomsInterface.get_identity_options()
-        self.options.update(options)
+        self.options = dict(options)
         self.voms = VOMSAdminProxy(**options)
 
     def list_users(self):
@@ -59,7 +59,15 @@ class VomsInterface:
         voms_admin.vlog = lambda msg: None
 
         if proxy_cert:
+            old_proxy = os.environ.get("X509_USER_PROXY")
             os.environ["X509_USER_PROXY"] = proxy_cert
-        voms_admin.setup_identity()
+            voms_admin.setup_identity()
+            # Restore initial environment
+            if old_proxy is None:
+                del os.environ["X509_USER_PROXY"]
+            else:
+                os.environ["X509_USER_PROXY"] = old_proxy
+        else:
+            voms_admin.setup_identity()
 
         return voms_admin.options
