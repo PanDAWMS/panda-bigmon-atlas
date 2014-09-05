@@ -42,10 +42,7 @@ class VomsBackend(ModelBackend):
         if not dn_map:
             return
 
-        options = VomsInterface.get_identity_options(proxy_cert=settings.VOMS_PROXY_CERT)
-        options.update(settings.VOMS_OPTIONS)
-        voms = VomsInterface(options)
-
+        voms = VomsInterface(settings.VOMS_OPTIONS)
         voms_groups = []
 
         for (dn, ca) in dn_map.items():

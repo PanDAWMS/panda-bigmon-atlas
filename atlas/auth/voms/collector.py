@@ -12,11 +12,8 @@ def run():
     :return: dictionary, 'added', 'removed' - records added/removed,
              'details' - more information on operations performed
     """
-    options = VomsInterface.get_identity_options(proxy_cert=settings.VOMS_PROXY_CERT)
-    options.update(settings.VOMS_OPTIONS)
 
-    voms = VomsInterface(options)
-
+    voms = VomsInterface(settings.VOMS_OPTIONS)
     voms_users = {}
 
     for user_info in voms.list_users():
