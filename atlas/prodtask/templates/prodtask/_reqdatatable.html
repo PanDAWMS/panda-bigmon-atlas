@@ -88,6 +88,7 @@
 <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
 {% endblock %}
 
 
@@ -426,13 +427,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
                        var stepColor = $("#startStep{{ forloop.counter0 }}").css("background-color");
                        $(step_td_short).css({"background-color":stepColor});
-                       var stepFormLong = "#".concat(sliceID).concat("{{ forloop.counter0 }}.slice_form");
+                       var stepFormLong = "#".concat(sliceID).concat("s{{ forloop.counter0 }}.slice_form");
                        var step_th_long = "th#step".concat(sliceID).concat("s{{ forloop.counter0 }}.stepchoose");
                        $(step_th_long).css({"background-color":stepColor});
                        if(! emptyPattern()){
                            $(stepFormLong).val(stepValue);
                            $(step_td_short).html(stepValue);
                        }
+                       $("#saveStatus"+sliceID.toString()).html("not saved");
                    }
                 };
             });
@@ -491,7 +493,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
        };
           function chnageStatusToTest(event){
-            sendData = {}
+            sendData = {};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:make_test_request' pr_id%}",
@@ -636,9 +638,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
           event.preventDefault();
           var sliceID = id.slice(10);
           $("#sliceInfo").html('');
-          var check_steps = checkSliceIsSaved(sliceID);
+          var check_steps = changeSliceSaveStatus(sliceID);
           if (check_steps.is_equal){
-              $("#sliceInfo").append($("<strong/>" , {html:sliceID+' is saved!!'}));
+              $('#sliceModal').foundation('reveal', 'open');
           } else {
               $("#sliceInfo").append($("<strong/>" , {html:sliceID+' is not saved!!'}));
               $("#sliceInfo").append($("<span/>" , {html:sliceID, id:'sliceInfoSliceId'}).css({'display':'none'}));
@@ -662,7 +664,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         }
                    }
 
-                   td_current = $("<td/>", {html: $("#short"+sliceID.toString()+ j.toString()).html()}).css({'background-color':$("#short"+sliceID.toString()+ j.toString()).css('background-color') }) ;
+                   td_current = $("<td/>", {html: $("#short"+sliceID.toString() + 's' + j.toString()).html()}).css({'background-color':$("#short"+sliceID.toString()+ 's' + j.toString()).css('background-color') }) ;
                    tr_step = $("<tr>").append(td_current).append(td_db);
 
                   compareTable.append(tr_step);
@@ -692,7 +694,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 is_equal = true;
                 var current_step_tag = [];
                 for (var i=0;i<{{ step_list|length }};i++){
-                    step_id = "#short" + sliceNumber + i.toString();
+                    step_id = "#short" + sliceNumber + 's' + i.toString();
                     if ($(step_id).attr('class') == "notShowFullSpan" ){
                         current_step_tag.push({
                             step: $(step_id).children('a').html(),
@@ -730,12 +732,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         }
 
         function changeSliceSaveStatus(sliceNumber){
-
-            if (! checkSliceIsSaved(sliceNumber).is_equal){
+            sliceDBInfo = checkSliceIsSaved(sliceNumber);
+            if (! sliceDBInfo.is_equal){
                 $("#saveStatus"+sliceNumber).html("not saved");
             }else{
                 $("#saveStatus"+sliceNumber).html("saved");
             }
+            return sliceDBInfo;
         }
 
         function cloneSlicesClick(event){
@@ -1107,4 +1110,85 @@ $(".showSmallSpan").css({"cursor":"pointer"});
        </div>
     </div>
 </form>
+
+{#<div id="sliceModal" class="reveal-modal" data-reveal>#}
+{#  <h2 id="sliceNumberModal"></h2>#}
+{#  <dl class="tabs" data-tab>#}
+{#        {% for step in step_list %}#}
+{#            <dd><a href="#panel{{forloop.counter0}}">{{step.name}}</a></dd>#}
+{#        {% endfor %}#}
+{#  </dl>#}
+{#    <div class="tabs-content">#}
+{#         {% for step in step_list %}#}
+{#             <div class="content" id="panel{{forloop.counter0}}">#}
+{#                <p>This is the {{forloop.counter0}} panel of the basic tab example.</p>#}
+{#            </div>#}
+{#        {% endfor %}#}
+{#    </div>#}
+{#  <a class="close-reveal-modal">&#215;</a>#}
+{#</div>#}
+<div id="sliceModal" class="reveal-modal" data-reveal>
+<p>Dataset:</p>
+<p>job options: </p>
+<div class="section-container auto" data-section>
+        {% for step in step_list %}
+             <section>
+                 <p class="title" data-section-title><a href="#panel{{forloop.counter0}}">{{step.name}}</a></p>
+                    <div class="content" data-section-content>
+                        <fieldset>
+                        <div class="row">
+                                <div class="large-3 columns">
+                                  <label> Ami tag
+                                    <input type="text" class="ctag storeInput storeInputStep{{forloop.counter0}}" placeholder="r2222"  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events Input file
+                                    <input type="number" class="eventsperinput storeInput storeInputStep{{forloop.counter0}}"  placeholder="-1"  />
+                                  </label>
+
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events per job
+                                    <input type="number" class="eventsperjob storeInput storeInputStep{{forloop.counter0}}"  placeholder="1000"  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Total events
+                                    <input type="number" class="totalevents storeInput storeInputStep{{forloop.counter0}}" placeholder="-1"  />
+                                  </label>
+                                </div>
+                               </div>
+                                <div class="row">
+                                <div class="large-5 columns">
+                                  <label>Output formats
+                                    <input type="text" class="formats storeInput storeInputStep{{forloop.counter0}}" placeholder="ESD.AOD"  />
+                                  </label>
+                                </div>
+                                 <div class="large-5 columns">
+                                  <label>Input formats
+                                    <input type="text" class="inputformats storeInput storeInputStep{{forloop.counter0}}" placeholder="ESD.AOD"  />
+                                  </label>
+                                </div>
+                                 </div>
+                                <div class="row">
+                                <div class="large-9 columns">
+                                  <label>project mode
+                                    <input type="text" class="projectmode storeInput storeInputStep{{forloop.counter0}}" placeholder="spacetoken=ATLASDATADISK" />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Priority
+                                    <input type="number" class="priority storeInput storeInputStep{{forloop.counter0}}" placeholder="900" />
+                                  </label>
+                                </div>
+                              </div>
+                            </fieldset>
+                    </div>
+            </section>
+        {% endfor %}
+
+</div>
+  <a class="close-reveal-modal">&#215;</a>
+</div>
 {% endblock %}
