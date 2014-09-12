@@ -24,6 +24,15 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.admin',
+    'shibsso',
+    'atlas.auth.voms',
+
     ### BigPanDAmon core
     'core.common',
     'core.table',
@@ -42,9 +51,13 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS
 JS_I18N_APPS_EXCLUDE = common.settings.base.JS_I18N_APPS_EXCLUDE + ('django_tables2',)
+
 TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.core.context_processors.request', #django-tables2	
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+    'django.core.context_processors.request', #django-tables2
 )
+
 
 ROOT_URLCONF = 'atlas.urls'
 
