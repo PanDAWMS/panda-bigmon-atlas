@@ -226,10 +226,20 @@ def parse_json_slice_dict(json_string):
     spreadsheet_dict = []
     input_dict = json.loads(json_string)
     slice_index = 0
-    for slice_number, slice in input_dict.items():
+    slices_dict = {}
+    for slice_step in input_dict.keys():
+        current_slice,current_step = slice_step.split('_')
+        if int(current_slice) not in slices_dict.keys():
+            slices_dict[int(current_slice)] = {'steps':{}}
+        if current_step == '0':
+            slices_dict[int(current_slice)].update(input_dict[slice_step])
+        else:
+            slices_dict[int(current_slice)]['steps'][int(current_step)] = input_dict[slice_step]
+    for slice_number in range(len(slices_dict.keys())):
+            slice = slices_dict[slice_number]
             for dataset in slice['datasets'].split(','):
                 if dataset:
-                    irl = dict(slice=slice_index, brief=' ', comment='', dataset=dataset,
+                    irl = dict(slice=slice_number, brief=' ', comment='', dataset=dataset,
                                input_data='',
                                project_mode=slice['projectmode'],
                                priority=int(slice['priority']),
@@ -248,6 +258,24 @@ def parse_json_slice_dict(json_string):
                                               'memory': slice['ram'],
                                               'formats': slice['formats'],
                                               'task_config':task_config})
+                        for step_number in range(1,len(slice['steps'])+1):
+                            step = slice['steps'][step_number]
+                            if step['ctag']:
+                                task_config = {}
+                                nEventsPerJob = step['eventsperjob']
+                                task_config.update({'nEventsPerJob':dict((x,nEventsPerJob) for x in StepExecution.STEPS)})
+                                task_config.update({'project_mode':step['projectmode']})
+                                if  step['inputFormat']:
+                                    task_config.update({'input_format':step['inputFormat']})
+                                step_name = step_from_tag(step['ctag'])
+                                sexec = dict(status='NotChecked', priority=int(step['priority']),
+                                             input_events=int(step['totalevents']))
+                                st_sexec_list.append({'step_name': step_name, 'tag': step['ctag'], 'step_exec': sexec,
+                                                      'memory': step['ram'],
+                                                      'formats': step['formats'],
+                                                      'task_config':task_config})
+                            else:
+                                break
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
     return spreadsheet_dict
 
