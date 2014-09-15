@@ -85,8 +85,12 @@ $(document).ready(function(){
                       datasets += $(this).html() + ',';
                   }
                });
-               if  (datasets!=''){
+               sliceObject['datasets']='';
+               if  (datasets&&(datasets!='')){
                    sliceObject['datasets']  = datasets;
+               }
+               if  (sliceObject['datasetList']&&(sliceObject['datasetList']!='')){
+                   sliceObject['datasets'] += sliceObject['datasetList'].replace(/(\r\n|\n|\r)/gm,",");
                }
                resultObject[sliceNumber]  = sliceObject;
             });
@@ -178,6 +182,13 @@ $(document).ready(function(){
           </table>
           </div>
       </div>
+        <div class="row">
+        <div class="large-12 columns">
+          <label> Or datasets list:
+            <textarea  class="datasetList storeInput" placeholder=" " ></textarea>
+          </label>
+        </div>
+        </div>
       <div class="row">
         <div class="large-3 columns">
           <label> Ami tag

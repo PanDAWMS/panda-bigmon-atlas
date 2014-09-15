@@ -630,6 +630,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                         task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                 if 'project_mode' in step['task_config']:
                                     task_config.update({'project_mode':step['task_config']['project_mode']})
+                                if 'input_format' in step['task_config']:
+                                    task_config.update({'input_format':step['task_config']['input_format']})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st

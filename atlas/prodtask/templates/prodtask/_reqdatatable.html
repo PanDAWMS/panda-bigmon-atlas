@@ -766,7 +766,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
                         <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ step.task.status }}" >
                             <div>
-                               <a href="{% url 'prodtask:task' step.task.id %}"><span style="color: #000000">{{ step.task_short }}</span></a>
+                               <a  href="http://bigpanda.cern.ch/task/{{ step.task.id }}"><span style="color: #000000">{{ step.task_short }}</span></a>
                             </div>
                         </td>
                         {% else %}
