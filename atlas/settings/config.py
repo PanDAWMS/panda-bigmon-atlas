@@ -91,7 +91,6 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
-#    'django.contrib.auth.backends.ModelBackend',
     'atlas.auth.voms.backends.VomsBackend',
     'shibsso.backends.ShibSSOBackend',
 )
@@ -104,7 +103,7 @@ SHIB_SSO_CREATE_ACTIVE = True
 SHIB_SSO_CREATE_STAFF = False
 SHIB_SSO_CREATE_SUPERUSER = False
 SHIB_LOGIN_PATH = '/Shibboleth.sso/?target='
-SHIB_LOGOUT_URL = '/'
+SHIB_LOGOUT_URL = 'https://login.cern.ch/adfs/ls/?wa=wsignout1.0&returnurl='
 META_EMAIL = 'ADFS_EMAIL'
 META_FIRSTNAME = 'ADFS_FIRSTNAME'
 META_GROUP = 'ADFS_GROUP'
