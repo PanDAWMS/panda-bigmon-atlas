@@ -68,7 +68,7 @@ urlpatterns = patterns('',
     url(r'^get_tag_formats/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_tag_formats', name='get_tag_formats'),
     url(r'^project_mode_from_tag/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.step_params_from_tag', name='project_mode_from_tag'),
     url(r'^update_project_mode/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.update_project_mode', name='update_project_mode'),
-     url(r'^reject_steps/(?P<reqid>\d+)/(?P<step_filter>\w+)/$', 'atlas.prodtask.step_manage_views.reject_steps', name='reject_steps'),
+    url(r'^reject_steps/(?P<reqid>\d+)/(?P<step_filter>\w+)/$', 'atlas.prodtask.step_manage_views.reject_steps', name='reject_steps'),
 
     url(r'^find_input_datasets/(?P<reqid>\d+)/$', 'atlas.prodtask.views.find_input_datasets', name='find_input_datasets'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
