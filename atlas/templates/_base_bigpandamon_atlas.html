@@ -150,13 +150,13 @@
                         <div> Nickname: {{ user.username }} </div>
                         </a>
                     </li>
-                    <li> <a href="{% url 'prodtask:logout' %}">Logout</a> </li>
+                    <li> <a href="{% url 'prodtask:logout' %}?next={{ request.get_full_path }}">Logout</a> </li>
                 </ul>
             </li>
 
         {% else %}
             <li>
-                <a href="{% url 'prodtask:login' redirect_field_name=request.build_absolute_uri %}">Login</a>
+                <a href="{% url 'prodtask:login' %}?next={{ request.get_full_path }}">Login</a>
             </li>
 
         {% endif %}
