@@ -292,7 +292,6 @@ def parse_json_slice_dict(json_string):
                             else:
                                 break
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-    print spreadsheet_dict
 
     return spreadsheet_dict
 

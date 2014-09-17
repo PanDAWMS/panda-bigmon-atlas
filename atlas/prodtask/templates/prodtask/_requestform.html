@@ -148,7 +148,6 @@ $(document).ready(function(){
                }
                resultObject[sliceNumber]  = sliceObject;
             });
-            console.log($.toJSON(resultObject));
             $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
 
           }
