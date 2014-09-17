@@ -32,22 +32,33 @@
 {% block body %}
 <script>
 
+{#    TODO: Make a class#}
+
+
+    function prepareStep(currentSlice,currentStep,parentSlice,parentStep){
+        var idForm = "form"+currentSlice+'_'+currentStep;
+        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+currentSlice});
+        $("#" +idForm+ " .datasetTBody").html("");
+        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+currentSlice});
+        $("#" +idForm+ " #datasetPattern0").val('');
+        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+currentSlice});
+        $("#" +idForm+ " #addStepButton0_0").prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        $("#" +idForm+ " #addSliceStepButton0_0").prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " .parentstepshort").val(parentSlice +'_'+ parentStep);
+        $("#" +idForm+ " .parentStep").val("Slice #"+ parentSlice +' step #' + parentStep);
+    }
+
     function addMoreSlices(event){
         event.preventDefault();
         var nextNumber = parseInt($('#sliceNumber').html());
         var cloneForm = $('#form0_0').clone().prop({'id':"form"+nextNumber.toString()+'_0'});
-        var idForm = "form"+nextNumber.toString()+'_0';
         var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
         cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
         sliceDiv.append(cloneForm);
         $('#formSet').append(sliceDiv);
         $('#sliceNumber').html((nextNumber+1).toString());
-        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+nextNumber.toString()});
-        $("#" +idForm+ " .datasetTBody").html("");
-        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+nextNumber.toString()});
-        $("#" +idForm+ " #datasetPattern0").val('');
-        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+nextNumber.toString()});
-        $("#" +idForm+ " #addStepButton0_0").prop({'id':"addStepButton"+nextNumber.toString()+'_0'}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        prepareStep(nextNumber.toString(),'0',nextNumber.toString(),'0');
+
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
@@ -61,16 +72,36 @@
         var idForm = "form"+currentID;
         cloneForm.children("legend").html("Slice #"+(currentSlice).toString()+' step #' + currentStep.toString()) ;
         $('#sliceSteps'+currentSlice.toString()).append(cloneForm);
-        $("#" +idForm+ " .datasetTBody").html("");
-        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
-        $("#" +idForm+ " #addStepButton0_0").prop({'id':"addStepButton"+currentID}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        prepareStep(currentSlice.toString(),currentStep.toString(),currentSlice.toString(),(currentStep-1).toString());
         $('#'+buttonID).attr('disabled','disabled').attr('onclick','').click(undefined);
-
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
         $("#" +idForm+ " .showNotFirst").show();
         $("#" +idForm+ " .parentStep").val("Slice #"+(currentSlice).toString()+' step #' + (currentStep-1).toString());
+
+
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
+
+    function addNewSliceStep(buttonID){
+        event.preventDefault();
+        var nextNumber = parseInt($('#sliceNumber').html());
+        var cloneForm = $('#form0_0').clone().prop({'id':"form"+nextNumber.toString()+'_0'});
+        var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
+        sliceDiv.append(cloneForm);
+        $('#formSet').append(sliceDiv);
+        $('#sliceNumber').html((nextNumber+1).toString());
+        prepareStep(nextNumber.toString(),'0',buttonID.replace('addSliceStepButton','').split('_')[0],buttonID.replace('addSliceStepButton','').split('_')[1]);
+        var idForm = "form"+nextNumber.toString()+'_'+0;
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+        $("#" +idForm+ " .showNotFirst").show();
+        $('#'+buttonID.replace('addSliceStepButton','addStepButton')).attr('disabled','disabled').attr('onclick','').click(undefined);
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+
     var csrftoken = $.cookie('csrftoken');
     function csrfSafeMethod(method) {
         // these HTTP methods do not require CSRF protection
@@ -117,6 +148,7 @@ $(document).ready(function(){
                }
                resultObject[sliceNumber]  = sliceObject;
             });
+            console.log($.toJSON(resultObject));
             $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
 
           }
@@ -217,7 +249,8 @@ $(document).ready(function(){
         <div class="row showNotFirst" style="display: none">
         <div class="large-3 columns">
           <label> Parent step
-            <input type="text" class="parentStep storeInput"  readonly />
+            <input type="text" class="parentStep"  readonly />
+            <input type="hidden" class="parentstepshort storeInput" value="0_0"  />
           </label>
          </div>
         <div class="large-3 columns">
@@ -268,7 +301,7 @@ $(document).ready(function(){
       </div>
         <div class="row">
             <a class="button" id="addStepButton0_0" onclick="addStep(this.id);">Add step</a>
-            <a class="button" disabled>Make step starting from new slice</a>
+            <a class="button" id="addSliceStepButton0_0" onclick="addNewSliceStep(this.id);">Make step starting from new slice</a>
       </div>
     </fieldset>
     </div>

@@ -233,17 +233,30 @@ def parse_json_slice_dict(json_string):
             slices_dict[int(current_slice)] = {'steps':{}}
         if current_step == '0':
             slices_dict[int(current_slice)].update(input_dict[slice_step])
+            slices_dict[int(current_slice)].update({'step_order':slice_step})
         else:
             slices_dict[int(current_slice)]['steps'][int(current_step)] = input_dict[slice_step]
+            slices_dict[int(current_slice)]['steps'][int(current_step)].update({'step_order':slice_step})
     for slice_number in range(len(slices_dict.keys())):
             slice = slices_dict[slice_number]
-            for dataset in slice['datasets'].split(','):
+            if  (slice['step_order'] != slice['parentstepshort']):
+                datasets = ['foreign']
+            else:
+                datasets = slice['datasets'].split(',')
+            for dataset in datasets:
                 if dataset:
-                    irl = dict(slice=slice_number, brief=' ', comment='', dataset=dataset,
-                               input_data='',
-                               project_mode=slice['projectmode'],
-                               priority=int(slice['priority']),
-                               input_events=int(slice['totalevents']))
+                    if  dataset == 'foreign':
+                        irl = dict(slice=slice_number, brief=' ', comment='',
+                                   input_data='',
+                                   project_mode=slice['projectmode'],
+                                   priority=int(slice['priority']),
+                                   input_events=int(slice['totalevents']))
+                    else:
+                        irl = dict(slice=slice_number, brief=' ', comment='', dataset=dataset,
+                                   input_data='',
+                                   project_mode=slice['projectmode'],
+                                   priority=int(slice['priority']),
+                                   input_events=int(slice['totalevents']))
                     slice_index += 1
                     st_sexec_list = []
                     if slice['ctag']:
@@ -255,7 +268,8 @@ def parse_json_slice_dict(json_string):
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
                         st_sexec_list.append({'step_name': step_name, 'tag': slice['ctag'], 'step_exec': sexec,
-                                              'memory': slice['ram'],
+                                              'memory': slice['ram'], 'step_order':slice['step_order'],
+                                              'step_parent': slice['parentstepshort'],
                                               'formats': slice['formats'],
                                               'task_config':task_config})
                         for step_number in range(1,len(slice['steps'])+1):
@@ -271,12 +285,15 @@ def parse_json_slice_dict(json_string):
                                 sexec = dict(status='NotChecked', priority=int(step['priority']),
                                              input_events=int(step['totalevents']))
                                 st_sexec_list.append({'step_name': step_name, 'tag': step['ctag'], 'step_exec': sexec,
-                                                      'memory': step['ram'],
+                                                      'memory': step['ram'],'step_order':step['step_order'],
+                                                      'step_parent': step['parentstepshort'],
                                                       'formats': step['formats'],
                                                       'task_config':task_config})
                             else:
                                 break
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    print spreadsheet_dict
+
     return spreadsheet_dict
 
 def dpd_form_prefill(form_data, request):
@@ -361,21 +378,23 @@ def dpd_form_prefill(form_data, request):
 
 def reprocessing_form_prefill(form_data, request):
     spreadsheet_dict = []
+    output_dict = {}
+    error_message = ''
+
     try:
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
             with open(file_name) as open_file:
                 file_obj = open_file.read().split('\n')
-            conf_parser = ConfigParser()
-            output_dict = conf_parser.parse_config(file_obj)
-        elif form_data.get('excelfile'):
+        if form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
-            conf_parser = ConfigParser()
-            output_dict = conf_parser.parse_config(file_obj)
         elif form_data.get('hidden_json_slices'):
-            output_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+            spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+        if not spreadsheet_dict:
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj,['formats'])
 
 
     except Exception, e:
@@ -636,6 +655,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
                     # Saving slices->steps
+                    step_parent_dict = {}
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
@@ -645,7 +665,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         _logger.debug("Filling input data: %s" % input_data)
                         irl = InputRequestList(**input_data)
                         irl.save()
-                        step_parent_dict = {}
                         for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
