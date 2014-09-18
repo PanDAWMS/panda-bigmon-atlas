@@ -624,6 +624,7 @@ $(document).ready(function() {
 });
  </script>
 
+
 <div id="switch_to_manage" class="button-bar left hide">
     <div class="button-bar">
         <ul class="button-group radius">
@@ -639,6 +640,7 @@ $(document).ready(function() {
     </div>
 </div>
 
+
 <script type="text/javascript">
     $(document).ready(function() {
         var manage_url_base = $(location).attr('origin') + "{% url 'prodtask:task_manage' %}";
@@ -651,14 +653,23 @@ $(document).ready(function() {
             $("#switch_to_manage").show();
 
             $("#btn_switch_to_manage").click(function() {
+
+              {% if user.is_authenticated %}
+    {% comment %} Redirect to manage mode {% endcomment %}
                 var view_url_base = $(location).attr('origin') + $(location).attr('pathname');
                 var manage_url_full = $(location).attr('href').replace(view_url_base, manage_url_base);
-
                 $(location).attr('href', manage_url_full);
+              {% else %}
+    {% comment %} Redirect to login page and then to manage mode {%endcomment %}
+                $(location).attr('href', "{% url 'prodtask:login' %}?next={% url 'prodtask:task_manage' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}");
+              {% endif %}
+
                 return False;
             }); 
+
             $(".top-toolbar").children().css("height", "2.0em");
-        }
+        } // if not in managed mode
+
     });
 </script>
 
