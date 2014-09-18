@@ -85,11 +85,10 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    # tag_hierarchy = CharField(help_text='tag hierarhy as python list with tuples as branches',
-    #                           widget=Textarea, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
+    hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
 
     class Meta:
         model = TRequest
