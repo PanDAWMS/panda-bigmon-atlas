@@ -1,3 +1,4 @@
+import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -228,23 +229,29 @@ def parse_json_slice_dict(json_string):
     input_dict = json.loads(json_string)
     slice_index = 0
     slices_dict = {}
+
+
     for slice_step in input_dict.keys():
+        # prepare input
+        current_step_dict = {}
+        for key,item in input_dict[slice_step].items():
+            current_step_dict[key] = str(item).strip()
         current_slice,current_step = slice_step.split('_')
         if int(current_slice) not in slices_dict.keys():
             slices_dict[int(current_slice)] = {'steps':{}}
         if current_step == '0':
-            slices_dict[int(current_slice)].update(input_dict[slice_step])
+            slices_dict[int(current_slice)].update(current_step_dict)
             slices_dict[int(current_slice)].update({'step_order':slice_step})
         else:
-            slices_dict[int(current_slice)]['steps'][int(current_step)] = input_dict[slice_step]
+            slices_dict[int(current_slice)]['steps'][int(current_step)] = current_step_dict
             slices_dict[int(current_slice)]['steps'][int(current_step)].update({'step_order':slice_step})
     for slice_number in range(len(slices_dict.keys())):
             slice = slices_dict[slice_number]
             if  (slice['step_order'] != slice['parentstepshort']):
                 datasets = ['foreign'] * len(slices_dict[int(slice['parentstepshort'].split('_')[0])]['datasets'].split(','))
-                slice['datasets'] = ','.join('foreign')
+                slice['datasets'] = ','.join(datasets)
             else:
-                datasets = slice['datasets'].split(',')
+                datasets = [x.strip() for x in slice['datasets'].split(',') if x]
             for prefix,dataset in enumerate(datasets):
                 if dataset:
                     if  dataset == 'foreign':
@@ -593,7 +600,14 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     #     del form.cleaned_data['tag_hierarchy']
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
-                        inputlists = [x['input_dict'] for x in file_dict]
+                        inputlists = []
+                        for slices in file_dict:
+                            slice = slices['input_dict']
+                            tags = []
+                            for step in slices.get('step_exec_dict'):
+                                tags.append(step.get('tag'))
+                            inputlists.append(copy.deepcopy(slice))
+                            inputlists[-1].update({'tags':','.join(tags)})
                         # store data from prefill form to http request
                         request.session['file_dict'] = file_dict
                         # create request creation form
