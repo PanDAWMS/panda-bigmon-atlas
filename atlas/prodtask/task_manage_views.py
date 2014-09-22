@@ -54,7 +54,7 @@ def tasks_action(request, action):
     #if not request.user.groups.filter(name='vomsrole:/atlas/Role=production'):
     #    return empty_response
 
-    owner = request.META.get(settings.META_USERNAME)
+    owner = request.user.username
     if not owner:
         return empty_response
 
