@@ -1,0 +1,75 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
+
+{% endblock %}
+
+
+{% block subtitle %}
+User's details on {{ user.first_name|safe }} {{ user.last_name|safe }} ({{ user.username|safe }})
+{% endblock %}
+
+
+{% block body %}
+
+{{ block.super }}
+
+<table>
+    <tr>
+        <th> <label>Nickname:</label> </th>
+        <td> {{ user.username|safe }} </td>
+    </tr>
+    <tr>
+        <th> <label>Full name:</label> </th>
+        <td> {{ user.first_name|safe }} {{ user.last_name|safe }} </td>
+    </tr>
+    <tr>
+        <th> <label>E-mail:</label> </th>
+        <td> {{ user.email|safe }} </td>
+    </tr>
+    <tr>
+        <th> <label>Groups:</label> </th>
+        <td>
+            {% if user.groups %}
+                {% for group in user.groups.all %}
+                    {{ group|safe }} <br>
+                {% endfor %}
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <th> <label>Enabled:</label> </th>
+        <td> {{ user.is_active }} </td>
+    </tr>
+
+    {% if user.is_superuser %}
+    <tr>
+        <th> <label>Is superuser in ProdSys2:</label> </th>
+        <td> Yes</td>
+    </tr>
+    {% endif %}
+
+    <tr>
+        <th> <label>Joined on:</label> </th>
+        <td> {{ user.date_joined }} </td>
+    </tr>
+    <tr>
+        <th> <label>Last login:</label> </th>
+        <td> {{ user.last_login }} </td>
+    </tr>
+
+</table>
+
+
+{% endblock %}

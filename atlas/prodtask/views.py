@@ -6,6 +6,7 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
@@ -1026,3 +1027,14 @@ def production_dataset_table(request):
 
     return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
+
+
+@never_cache
+def userinfo(request):
+    return TemplateResponse(request, "prodtask/_userinfo.html",
+            {
+                 'title': 'User info',
+                 'active_app' : 'prodtask',
+                 'parent_template': 'prodtask/_index.html',
+            })
+
