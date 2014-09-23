@@ -77,6 +77,8 @@ urlpatterns = patterns('',
 
     url(r'^login/$', 'shibsso.views.login', name='login'),
     url(r'^logout/$', 'shibsso.views.logout', name='logout'),
+    url(r'^userinfo/$', 'atlas.prodtask.views.userinfo', name='userinfo'),
+
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
