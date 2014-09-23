@@ -143,13 +143,7 @@
             <li class="has-dropdown">
                 <a href="#">Logged as: {{ user.first_name.0 }}. {{ user.last_name }}</a>
                 <ul class="dropdown">
-                    <li>
-                        <a>
-                        <div> {{ user.first_name }} {{user.last_name}} </div>
-                        <div> {{ user.email }} </div>
-                        <div> Nickname: {{ user.username }} </div>
-                        </a>
-                    </li>
+                    <li> <a href="{% url 'prodtask:userinfo' %}"> Account info ({{ user.username }})</a> </li>
                     <li> <a href="{% url 'prodtask:logout' %}?next={{ request.get_full_path }}">Logout</a> </li>
                 </ul>
             </li>
