@@ -30,6 +30,7 @@
        <th>Dataset:</th>
        <th>Job Option:</th>
        <th>Brief:</th>
+       <th>Tags:</th>
     </tr>
     {% for inputList in inputLists %} 
 	<tr>
@@ -37,6 +38,7 @@
 		<td>{{ inputList.dataset }}</td>
         <td>{{ inputList.input_data }}</td>
         <td>{{ inputList.brief }}</td>
+        <td>{{ inputList.tags }}</td>
 	</tr>
 	{% endfor %}
 </table>

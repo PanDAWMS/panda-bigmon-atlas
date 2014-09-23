@@ -25,6 +25,45 @@ def tag_info(request, tag_name):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
+def clone_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            #form levels from input text lines
+            #create chains for each input
+            new_slice_number = InputRequestList.objects.filter(request=reqid).count()
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
+                new_slice = current_slice.values()[0]
+                new_slice['slice'] = new_slice_number
+                new_slice_number += 1
+                del new_slice['id']
+                new_input_data = InputRequestList(**new_slice)
+                new_input_data.save()
+                step_execs = StepExecution.objects.filter(slice=current_slice)
+                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+                for step in ordered_existed_steps:
+                    step.id = None
+                    step.slice = new_input_data
+                    if step.status == 'Skipped':
+                        step.status = 'NotCheckedSkipped'
+                    elif step.status == 'Approved':
+                        step.status = 'NotChecked'
+                    step.save_with_current_time()
+                    if parent_step:
+                        step.step_parent = parent_step
+                    else:
+                        step.step_parent = step
+                    step.save()
+                    parent_step = step
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
 def step_params_from_tag(request, reqid):
     if request.method == 'POST':
         results = {'success':False}

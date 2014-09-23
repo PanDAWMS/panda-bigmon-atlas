@@ -32,22 +32,76 @@
 {% block body %}
 <script>
 
+{#    TODO: Make a class#}
+
+
+    function prepareStep(currentSlice,currentStep,parentSlice,parentStep){
+        var idForm = "form"+currentSlice+'_'+currentStep;
+        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+currentSlice});
+        $("#" +idForm+ " .datasetTBody").html("");
+        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+currentSlice});
+        $("#" +idForm+ " #datasetPattern0").val('');
+        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+currentSlice});
+        $("#" +idForm+ " #addStepButton0_0").prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        $("#" +idForm+ " #addSliceStepButton0_0").prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " .parentstepshort").val(parentSlice +'_'+ parentStep);
+        $("#" +idForm+ " .parentStep").val("Slice #"+ parentSlice +' step #' + parentStep);
+    }
+
     function addMoreSlices(event){
         event.preventDefault();
         var nextNumber = parseInt($('#sliceNumber').html());
-        var cloneForm = $('#form0').clone().prop({'id':"form"+nextNumber.toString()});
-        var idForm = "form"+nextNumber.toString();
-        cloneForm.children("legend").html("Slice #"+(nextNumber).toString());
-        $('#formSet').append(cloneForm);
+        var cloneForm = $('#form0_0').clone().prop({'id':"form"+nextNumber.toString()+'_0'});
+        var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
+        sliceDiv.append(cloneForm);
+        $('#formSet').append(sliceDiv);
         $('#sliceNumber').html((nextNumber+1).toString());
-        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+nextNumber.toString()});
-        $("#" +idForm+ " .datasetTBody").html("");
-        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+nextNumber.toString()});
-        $("#" +idForm+ " #datasetPattern0").val('');
-        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+nextNumber.toString()});
+        prepareStep(nextNumber.toString(),'0',nextNumber.toString(),'0');
+
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
+     function addStep(buttonID){
+        event.preventDefault();
+
+        var currentSlice = parseInt(buttonID.replace('addStepButton','').split('_')[0]);
+        var currentStep = parseInt(buttonID.replace('addStepButton','').split('_')[1])+1;
+        var currentID = currentSlice.toString() + '_' + currentStep.toString();
+        var cloneForm = $('#form'+(currentSlice).toString()+'_' + (currentStep-1).toString()).clone().prop({'id':"form"+currentID});
+        var idForm = "form"+currentID;
+        cloneForm.children("legend").html("Slice #"+(currentSlice).toString()+' step #' + currentStep.toString()) ;
+        $('#sliceSteps'+currentSlice.toString()).append(cloneForm);
+        prepareStep(currentSlice.toString(),currentStep.toString(),currentSlice.toString(),(currentStep-1).toString());
+        $('#'+buttonID).attr('disabled','disabled').attr('onclick','').click(undefined);
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+        $("#" +idForm+ " .showNotFirst").show();
+        $("#" +idForm+ " .parentStep").val("Slice #"+(currentSlice).toString()+' step #' + (currentStep-1).toString());
+
+
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+    function addNewSliceStep(buttonID){
+        event.preventDefault();
+        var nextNumber = parseInt($('#sliceNumber').html());
+        var cloneForm = $('#form'+buttonID.replace('addSliceStepButton','').split('_')[0]+'_'+buttonID.replace('addSliceStepButton','').split('_')[1]).clone().prop({'id':"form"+nextNumber.toString()+'_0'});
+        var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
+        sliceDiv.append(cloneForm);
+        $('#formSet').append(sliceDiv);
+        $('#sliceNumber').html((nextNumber+1).toString());
+        prepareStep(nextNumber.toString(),'0',buttonID.replace('addSliceStepButton','').split('_')[0],buttonID.replace('addSliceStepButton','').split('_')[1]);
+        var idForm = "form"+nextNumber.toString()+'_'+0;
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+        $("#" +idForm+ " .showNotFirst").show();
+        $('#'+buttonID.replace('addSliceStepButton','addStepButton')).attr('disabled','disabled').attr('onclick','').click(undefined);
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+
     var csrftoken = $.cookie('csrftoken');
     function csrfSafeMethod(method) {
         // these HTTP methods do not require CSRF protection
@@ -95,6 +149,7 @@ $(document).ready(function(){
                resultObject[sliceNumber]  = sliceObject;
             });
             $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
+
           }
 
         function findDatasets(currentButton){
@@ -153,21 +208,22 @@ $(document).ready(function(){
  <a class="button" onclick="addMoreSlices(event);">Add slice</a>
  <strong id="sliceNumber">1</strong>
  <div id="formSet">
-     <fieldset id="form0" class="sliceFiledset">
-      <legend>Slice #0</legend>
-      <div class="row">
+    <div id="sliceSteps0">
+     <fieldset id="form0_0" class="sliceFiledset">
+      <legend>Slice #0 step #0</legend>
+      <div class="row hideNotFirst">
         <div class="large-12 columns">
           <label>Dataset Filter
             <input type="text" id='datasetPattern0' placeholder="dataset pattern" />
           </label>
         </div>
       </div>
-       <div class="row buttonRow">
+       <div class="row buttonRow hideNotFirst">
         <div class="large-4 columns">
             <a class="button" id='searchDatasetButton0' onclick="findDatasets(this.id);">Find datasets</a>
         </div>
       </div>
-      <div class="row">
+      <div class="row hideNotFirst">
           <div class="large-12 columns">
           <table>
               <thead>
@@ -182,13 +238,27 @@ $(document).ready(function(){
           </table>
           </div>
       </div>
-        <div class="row">
+        <div class="row hideNotFirst">
         <div class="large-12 columns">
           <label> Or datasets list:
             <textarea  class="datasetList storeInput" placeholder=" " ></textarea>
           </label>
         </div>
         </div>
+        <div class="row showNotFirst" style="display: none">
+        <div class="large-3 columns">
+          <label> Parent step
+            <input type="text" class="parentStep"  readonly />
+            <input type="hidden" class="parentstepshort storeInput" value="0_0"  />
+          </label>
+         </div>
+        <div class="large-3 columns">
+          <label> Input format
+            <input type="text" class="inputFormat storeInput" placeholder="ESD"  />
+          </label>
+        </div>
+
+         </div>
       <div class="row">
         <div class="large-3 columns">
           <label> Ami tag
@@ -212,14 +282,14 @@ $(document).ready(function(){
         </div>
            <div class="large-1 columns">
           <label>ram
-            <input type="number" class="ram storeInput" value="2000"  />
+            <input type="number" class="ram storeInput" placeholder="2000"  />
           </label>
         </div>
        </div>
         <div class="row">
         <div class="large-9 columns">
           <label>project mode
-            <input type="text" class="projectmode storeInput" value="spacetoken=ATLASDATADISK" />
+            <input type="text" class="projectmode storeInput" placeholder="cmtconfig==..." />
           </label>
         </div>
         <div class="large-3 columns">
@@ -228,7 +298,12 @@ $(document).ready(function(){
           </label>
         </div>
       </div>
+        <div class="row">
+            <a class="button" id="addStepButton0_0" onclick="addStep(this.id);" title="Create children step in this slice" >Add step</a>
+            <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(this.id);">Fork</a>
+      </div>
     </fieldset>
+    </div>
 </div>
 
 {% endblock %}

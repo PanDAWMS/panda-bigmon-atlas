@@ -607,6 +607,33 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
               return false;
         };
+        function cloneSlicesClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:clone_slices_in_req' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -617,6 +644,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 </div>
 <div id="waitingDialog" title="Run" style="display: none">
   <p>Please wait...</p>
+</div>
+<div id="reloadDialog" title="Run" style="display: none">
+  <p>Page will be reload now...</p>
 </div>
 <table>
 <tr>
@@ -856,6 +886,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
+            <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone slices</button>
 
     </div>
  </form>

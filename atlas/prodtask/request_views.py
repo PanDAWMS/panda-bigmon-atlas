@@ -1,3 +1,4 @@
+import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -222,18 +223,49 @@ def hlt_form_prefill(form_data, request):
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
+
 def parse_json_slice_dict(json_string):
     spreadsheet_dict = []
     input_dict = json.loads(json_string)
     slice_index = 0
-    for slice_number, slice in input_dict.items():
-            for dataset in slice['datasets'].split(','):
+    slices_dict = {}
+
+
+    for slice_step in input_dict.keys():
+        # prepare input
+        current_step_dict = {}
+        for key,item in input_dict[slice_step].items():
+            current_step_dict[key] = str(item).strip()
+        current_slice,current_step = slice_step.split('_')
+        if int(current_slice) not in slices_dict.keys():
+            slices_dict[int(current_slice)] = {'steps':{}}
+        if current_step == '0':
+            slices_dict[int(current_slice)].update(current_step_dict)
+            slices_dict[int(current_slice)].update({'step_order':slice_step})
+        else:
+            slices_dict[int(current_slice)]['steps'][int(current_step)] = current_step_dict
+            slices_dict[int(current_slice)]['steps'][int(current_step)].update({'step_order':slice_step})
+    for slice_number in range(len(slices_dict.keys())):
+            slice = slices_dict[slice_number]
+            if  (slice['step_order'] != slice['parentstepshort']):
+                datasets = ['foreign'] * len(slices_dict[int(slice['parentstepshort'].split('_')[0])]['datasets'].split(','))
+                slice['datasets'] = ','.join(datasets)
+            else:
+                datasets = [x.strip() for x in slice['datasets'].split(',') if x]
+            for prefix,dataset in enumerate(datasets):
                 if dataset:
-                    irl = dict(slice=slice_index, brief=' ', comment='', dataset=dataset,
-                               input_data='',
-                               project_mode=slice['projectmode'],
-                               priority=int(slice['priority']),
-                               input_events=int(slice['totalevents']))
+                    if  dataset == 'foreign':
+                        irl = dict(slice=slice_index, brief=' ', comment='',
+                                   input_data='',
+                                   project_mode=slice['projectmode'],
+                                   priority=int(slice['priority']),
+                                   input_events=int(slice['totalevents']))
+                    else:
+                        irl = dict(slice=slice_index, brief=' ', comment='', dataset=dataset,
+                                   input_data='',
+                                   project_mode=slice['projectmode'],
+                                   priority=int(slice['priority']),
+                                   input_events=int(slice['totalevents']))
                     slice_index += 1
                     st_sexec_list = []
                     if slice['ctag']:
@@ -245,10 +277,31 @@ def parse_json_slice_dict(json_string):
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
                         st_sexec_list.append({'step_name': step_name, 'tag': slice['ctag'], 'step_exec': sexec,
-                                              'memory': slice['ram'],
+                                              'memory': slice['ram'], 'step_order':str(prefix)+'_'+slice['step_order'],
+                                              'step_parent': str(prefix)+'_'+slice['parentstepshort'],
                                               'formats': slice['formats'],
                                               'task_config':task_config})
+                        for step_number in range(1,len(slice['steps'])+1):
+                            step = slice['steps'][step_number]
+                            if step['ctag']:
+                                task_config = {}
+                                nEventsPerJob = step['eventsperjob']
+                                task_config.update({'nEventsPerJob':dict((x,nEventsPerJob) for x in StepExecution.STEPS)})
+                                task_config.update({'project_mode':step['projectmode']})
+                                if  step['inputFormat']:
+                                    task_config.update({'input_format':step['inputFormat']})
+                                step_name = step_from_tag(step['ctag'])
+                                sexec = dict(status='NotChecked', priority=int(step['priority']),
+                                             input_events=int(step['totalevents']))
+                                st_sexec_list.append({'step_name': step_name, 'tag': step['ctag'], 'step_exec': sexec,
+                                                      'memory': step['ram'],'step_order':str(prefix)+'_'+step['step_order'],
+                                                      'step_parent': str(prefix)+'_'+step['parentstepshort'],
+                                                      'formats': step['formats'],
+                                                      'task_config':task_config})
+                            else:
+                                break
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+
     return spreadsheet_dict
 
 def dpd_form_prefill(form_data, request):
@@ -261,7 +314,7 @@ def dpd_form_prefill(form_data, request):
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
             with open(file_name) as open_file:
                 file_obj = open_file.read().split('\n')
-        if form_data.get('excelfile'):
+        elif form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
         elif form_data.get('hidden_json_slices'):
@@ -333,21 +386,23 @@ def dpd_form_prefill(form_data, request):
 
 def reprocessing_form_prefill(form_data, request):
     spreadsheet_dict = []
+    output_dict = {}
+    error_message = ''
+
     try:
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
             with open(file_name) as open_file:
                 file_obj = open_file.read().split('\n')
-            conf_parser = ConfigParser()
-            output_dict = conf_parser.parse_config(file_obj)
         elif form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
-            conf_parser = ConfigParser()
-            output_dict = conf_parser.parse_config(file_obj)
         elif form_data.get('hidden_json_slices'):
-            output_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+            spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+        if not spreadsheet_dict:
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj,['formats'])
 
 
     except Exception, e:
@@ -527,6 +582,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             # Process the data from request prefill form
             if (form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile')) or form.cleaned_data.get('hidden_json_slices'):
                 file_dict, error_message = form_prefill(form.cleaned_data, request)
+
                 if error_message != '':
                     # recreate prefill form with error message
                     return render(request, 'prodtask/_requestform.html', {
@@ -544,7 +600,14 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     #     del form.cleaned_data['tag_hierarchy']
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
-                        inputlists = [x['input_dict'] for x in file_dict]
+                        inputlists = []
+                        for slices in file_dict:
+                            slice = slices['input_dict']
+                            tags = []
+                            for step in slices.get('step_exec_dict'):
+                                tags.append(step.get('tag'))
+                            inputlists.append(copy.deepcopy(slice))
+                            inputlists[-1].update({'tags':','.join(tags)})
                         # store data from prefill form to http request
                         request.session['file_dict'] = file_dict
                         # create request creation form
@@ -608,6 +671,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                               APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
                               fail_silently=True)
                     # Saving slices->steps
+                    step_parent_dict = {}
                     for current_slice in file_dict:
                         input_data = current_slice["input_dict"]
                         input_data['request'] = req
@@ -617,7 +681,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         _logger.debug("Filling input data: %s" % input_data)
                         irl = InputRequestList(**input_data)
                         irl.save()
-                        step_parent_dict = {}
                         for step in current_slice.get('step_exec_dict'):
                             st = fill_template(step['step_name'], step['tag'], input_data['priority'],
                                                step.get('formats', None), step.get('memory', None))
@@ -640,9 +703,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             st_exec = StepExecution(**step['step_exec'])
                             if step_parent_dict:
                                 if ('step_parent' in step) and ('step_order' in step):
-                                    st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                    if (step['step_parent']==step['step_order']):
+                                        upadte_after = True
+                                    else:
+                                        st_exec.step_parent = step_parent_dict[step['step_parent']]
                                 else:
-                                    st_exec.step_parent = step_parent_dict[0]
+                                    upadte_after = True
                             else:
                                 upadte_after = True
                             if task_config:
