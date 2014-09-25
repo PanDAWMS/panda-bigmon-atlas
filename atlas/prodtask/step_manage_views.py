@@ -195,7 +195,11 @@ def slice_steps(request, reqid, slice_number):
                 is_skipped = 'not_skipped'
                 if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
                     is_skipped = 'is_skipped'
-                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped})
+                task_config = json.loads(step.task_config)
+                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
+                                    'nEventsPerJob':task_config.get('nEventsPerJob'),'nEventsPerInputFile':task_config.get('nEventsPerInputFile'),
+                                    'project_mode':task_config.get('project_mode'),'input_format':task_config.get('input_format'),
+                                    'priority':task_config.get('priority')})
             results = {'success':True,'step_types':result_list}
         except Exception,e:
             pass
