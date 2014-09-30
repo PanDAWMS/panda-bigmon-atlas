@@ -29,7 +29,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.admin',
-    'shibsso',
+    'django.contrib.admindocs',
     'atlas.auth.voms',
 
     ### BigPanDAmon core
