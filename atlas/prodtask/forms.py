@@ -73,6 +73,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
+    hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
 
     class Meta:
         model = TRequest

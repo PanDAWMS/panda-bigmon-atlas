@@ -358,7 +358,12 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 if (req.cstatus.lower() != 'test') and (approve_level>0):
                     req.cstatus = 'approved'
                     req.save()
-                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
+                    owner='default'
+                    try:
+                        owner = request.user.username
+                    except:
+                        pass
+                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
                                                    status='approved')
                     request_status.save_with_current_time()
         else:

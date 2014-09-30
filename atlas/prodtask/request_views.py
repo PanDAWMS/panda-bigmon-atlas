@@ -137,7 +137,10 @@ def mcfile_form_prefill(form_data, request):
     if not form_data.get('provenance'):
         form_data['provenance'] = 'AP'
     if not form_data.get('manager'):
-        form_data['manager'] = 'None'
+        try:
+            form_data['manager'] = request.user.username
+        except:
+            pass
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
@@ -157,22 +160,27 @@ def step_from_tag(tag_name):
 
 def hlt_form_prefill(form_data, request):
     spreadsheet_dict = []
+    output_dict = {}
+    error_message = ''
     try:
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
             with open(file_name) as open_file:
                 file_obj = open_file.read().split('\n')
-        if form_data.get('excelfile'):
+        elif form_data.get('excelfile'):
             file_obj = request.FILES['excelfile'].read().split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+        elif form_data.get('hidden_json_slices'):
+            spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+        if not spreadsheet_dict:
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj,['formats'])
 
-        conf_parser = ConfigParser()
-        output_dict = conf_parser.parse_config(file_obj)
     except Exception, e:
         _logger.error('Problem with data gathering %s' % e)
-        eroor_message = str(e)
-        return {},eroor_message
+        error_message = str(e)
+        return {},error_message
     # Fill default values
     form_data['request_type'] = 'HLT'
     if 'group' in output_dict:
@@ -181,6 +189,11 @@ def hlt_form_prefill(form_data, request):
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    else:
+        try:
+            form_data['manager'] = request.user.username
+        except:
+            pass
     if 'project' in output_dict:
         if not form_data['campaign']:
             form_data['campaign'] = output_dict['project'][0]
@@ -273,6 +286,10 @@ def parse_json_slice_dict(json_string):
                         nEventsPerJob = slice['eventsperjob']
                         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
                         task_config.update({'project_mode':slice['projectmode']})
+                        if slice['destination']:
+                            task_config.update({'destination':slice['destination']})
+                        if slice['token']:
+                             task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -288,6 +305,10 @@ def parse_json_slice_dict(json_string):
                                 nEventsPerJob = step['eventsperjob']
                                 task_config.update({'nEventsPerJob':dict((x,nEventsPerJob) for x in StepExecution.STEPS)})
                                 task_config.update({'project_mode':step['projectmode']})
+                                if step['destination']:
+                                    task_config.update({'destination':step['destination']})
+                                if step['token']:
+                                     task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if  step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
                                 step_name = step_from_tag(step['ctag'])
@@ -335,6 +356,11 @@ def dpd_form_prefill(form_data, request):
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    else:
+        try:
+            form_data['manager'] = request.user.username
+        except:
+            pass
     if 'project' in output_dict:
         if not form_data['campaign']:
             form_data['campaign'] = output_dict['project'][0]
@@ -417,6 +443,11 @@ def reprocessing_form_prefill(form_data, request):
         form_data['description'] = output_dict['comment'][0]
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    else:
+        try:
+            form_data['manager'] = request.user.username
+        except:
+            pass
     if 'project' in output_dict:
         if not form_data['campaign']:
             form_data['campaign'] = output_dict['project'][0]
@@ -691,10 +722,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                     task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     if step['step_name']=='Evgen':
                                         task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                if 'project_mode' in step['task_config']:
-                                    task_config.update({'project_mode':step['task_config']['project_mode']})
-                                if 'input_format' in step['task_config']:
-                                    task_config.update({'input_format':step['task_config']['input_format']})
+                                task_config_options = ['project_mode','input_format','token','destination']
+                                for task_config_option in task_config_options:
+                                    if task_config_option in step['task_config']:
+                                        task_config.update({task_config_option:step['task_config'][task_config_option]})
                             step['step_exec']['request'] = req
                             step['step_exec']['slice'] = irl
                             step['step_exec']['step_template'] = st
