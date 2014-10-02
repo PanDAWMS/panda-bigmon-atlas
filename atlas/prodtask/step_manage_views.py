@@ -199,8 +199,11 @@ def slice_steps(request, reqid, slice_number):
                 result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
                                     'nEventsPerJob':task_config.get('nEventsPerJob'),'nEventsPerInputFile':task_config.get('nEventsPerInputFile'),
                                     'project_mode':task_config.get('project_mode'),'input_format':task_config.get('input_format'),
-                                    'priority':task_config.get('priority')})
-            results = {'success':True,'step_types':result_list}
+                                    'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'total_events':str(step.input_events)})
+            dataset = ''
+            if input_list.dataset:
+                dataset = input_list.dataset.name
+            results = {'success':True,'step_types':result_list, 'dataset': dataset}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

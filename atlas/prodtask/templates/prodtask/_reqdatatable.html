@@ -318,7 +318,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var missedList = $.evalJSON(data).data;
                             var slices = $.evalJSON(data).slices;
                             var wrongSLices = $.evalJSON(data).wrong_slices;
-                            console.log(wrongSLices);
+{#                            console.log(wrongSLices);#}
                             var doubleTrf = $.evalJSON(data).double_trf;
                             if ((missedList.length != 0)||(doubleTrf.length != 0)) {
                                 if (missedList.length != 0) {
@@ -633,14 +633,48 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
         };
 
+        function prepareSliceInfo(check_steps,sliceID){
+            var i=0;
+{#            console.log(check_steps);#}
+            {% for step in step_list %}
+                i = 0;
+
+                for(;((check_steps.db_step_type[i].step_name!="{{ step.name }}")||(i.toString()==="{{ step.name }}"))&&(i<(check_steps.db_step_type.length-1));i++){};
+                if ((check_steps.db_step_type[i].step_name=="{{ step.name }}")||(i.toString()==="{{ step.name }}")) {
+                    for (fieldName in check_steps.db_step_type[i]){
+                        if (fieldName != 'step_name'){
+{#                            console.log(check_steps.db_step_type[i][fieldName]);#}
+{#                            console.log(fieldName);#}
+                           $('#sliceModal .storeOutput{{forloop.counter0}}'+'.'+fieldName).val(check_steps.db_step_type[i][fieldName]);
+                        }
+
+                    }
+                } else {
+                    $('#sliceModal .storeOutput{{forloop.counter0}}').each(function(){$(this).val('')});
+                }
+
+
+            {% endfor %}
+            $('#sliceModalDataset').html(check_steps.dataset);
+            $('#sliceModalSlice').html(sliceID);
+            $('#sliceModalJobOption').html($('#sliceInputJobOptions'+sliceID).attr('title'));
+            $('#sliceModal').foundation('reveal', 'open');
+        }
+
         $(document).foundation();
         function formSliceInfo(id){
           event.preventDefault();
           var sliceID = id.slice(10);
-          $("#sliceInfo").html('');
+        $("#sliceInfo").attr({'class':'small content f-dropdown'});
+            $("#sliceInfo").html('');
           var check_steps = changeSliceSaveStatus(sliceID);
           if (check_steps.is_equal){
-              $('#sliceModal').foundation('reveal', 'open');
+              $("#sliceInfo").attr({'class':'close'});
+                $('#sliceModal').on('opened', function () {
+                  $(this).foundation('section', 'reflow');
+                });
+              prepareSliceInfo(check_steps,sliceID);
+
           } else {
               $("#sliceInfo").append($("<strong/>" , {html:sliceID+' is not saved!!'}));
               $("#sliceInfo").append($("<span/>" , {html:sliceID, id:'sliceInfoSliceId'}).css({'display':'none'}));
@@ -655,7 +689,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                    td_db = $("<td/>", {html: ''}) ;
                    i = 0;
                    for(;check_steps.db_step_type[i].step_name!="{{ step.name }}"&&(i<(check_steps.db_step_type.length-1));i++){};
-                  console.log(check_steps.db_step_type[i]);
+{#                  console.log(check_steps.db_step_type[i]);#}
                    if (check_steps.db_step_type[i].step_name=="{{ step.name }}") {
                         if (check_steps.db_step_type[i].step_type == 'is_skipped') {
                             td_db = $("<td/>", {html: check_steps.db_step_type[i].step}).css({'background-color': $("#skippedColor").css("background-color")});
@@ -688,9 +722,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         function checkSliceIsSaved(sliceNumber){
             var is_equal = undefined;
             var step_types = undefined;
+            var dataset_DB = undefined;
             $.ajaxSetup({async: false});
             $.get(Django.url('prodtask:slice_steps',"{{ pr_id }}",sliceNumber),function(data,status){
                 step_types = data.step_types;
+                dataset_DB = data.dataset;
                 is_equal = true;
                 var current_step_tag = [];
                 for (var i=0;i<{{ step_list|length }};i++){
@@ -725,10 +761,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 }
             });
             $.ajaxSetup({async: true});
-            if (!is_equal){
-                return {is_equal:is_equal,db_step_type:step_types}
-            }
-            return {is_equal:is_equal,db_step_type:undefined};
+
+            return {is_equal:is_equal,db_step_type:step_types, dataset:dataset_DB};
         }
 
         function changeSliceSaveStatus(sliceNumber){
@@ -887,25 +921,25 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
-                    <td>{{ inputList.input_data }}</td>
+                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.input_data }}">
+                        <span class='showFullSpan' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data|truncatechars:"58" }}
                         </span>
                     </td>
-                    <td><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
+                    <td  colspan="2"><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
             <td></td>
             </tr>
             <tr>
-                <td colspan="10" style="width: 500px" >
+                <td colspan="11" style="width: 500px" >
                     <select id="inputDatasetSelect{{ inputList.slice }}" style="display: none">
 
                     </select>
                 </td>
-                <td><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td>
+                <td colspan="2"><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td><td></td>
             </tr>
 
             <tr class="inputListRow">
@@ -920,7 +954,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         {% endifequal %}
                 {% endfor %}
 
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
                         <a href="#" id="saveStatus{{ inputList.slice }}" class="small dropdown " data-dropdown="sliceInfo" onclick="formSliceInfo(this.id);" data-options="is_hover:true" >
                             saved
                         </a></td>
@@ -942,7 +976,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
                         {% endif %}
                         {% endfor %}
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                         </tr>
             {% endif%}
             </tr>
@@ -1127,59 +1161,67 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 {#    </div>#}
 {#  <a class="close-reveal-modal">&#215;</a>#}
 {#</div>#}
+
 <div id="sliceModal" class="reveal-modal" data-reveal>
-<p>Dataset:</p>
-<p>job options: </p>
-<div class="section-container auto" data-section>
+<p>Slice: <span id="sliceModalSlice"></span><br/>
+Dataset: <span id="sliceModalDataset"></span><br/>
+job options: <span id="sliceModalJobOption"></span></p>
+<div>
+<div class="section-container auto" id="sliceInfoContainer" data-section>
         {% for step in step_list %}
-             <section>
-                 <p class="title" data-section-title><a href="#panel{{forloop.counter0}}">{{step.name}}</a></p>
+               {% if  forloop.counter0 == 0%}
+
+                <section class="active">
+                   {% else %}
+                   <section>
+                {% endif %}
+                 <p class="title" data-section-title><a href="#">{{step.name}}</a></p>
                     <div class="content" data-section-content>
                         <fieldset>
                         <div class="row">
                                 <div class="large-3 columns">
                                   <label> Ami tag
-                                    <input type="text" class="ctag storeInput storeInputStep{{forloop.counter0}}" placeholder="r2222"  />
+                                    <input type="text" class="step storeOutput{{forloop.counter0}}" placeholder=" "  />
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
                                   <label>Events Input file
-                                    <input type="number" class="eventsperinput storeInput storeInputStep{{forloop.counter0}}"  placeholder="-1"  />
+                                    <input type="number" class="nEventsPerInputFile storeOutput{{forloop.counter0}}"  placeholder="-1"  />
                                   </label>
 
                                 </div>
                                  <div class="large-2 columns">
                                   <label>Events per job
-                                    <input type="number" class="eventsperjob storeInput storeInputStep{{forloop.counter0}}"  placeholder="1000"  />
+                                    <input type="number" class="nEventsPerJob storeOutput{{forloop.counter0}}"  placeholder="1000"  />
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
                                   <label>Total events
-                                    <input type="number" class="totalevents storeInput storeInputStep{{forloop.counter0}}" placeholder="-1"  />
+                                    <input type="number" class="total_events storeOutput{{forloop.counter0}}" placeholder="-1"  />
                                   </label>
                                 </div>
                                </div>
                                 <div class="row">
                                 <div class="large-5 columns">
                                   <label>Output formats
-                                    <input type="text" class="formats storeInput storeInputStep{{forloop.counter0}}" placeholder="ESD.AOD"  />
+                                    <input type="text" class="output_formats storeOutput{{forloop.counter0}}" placeholder=" "  />
                                   </label>
                                 </div>
                                  <div class="large-5 columns">
                                   <label>Input formats
-                                    <input type="text" class="inputformats storeInput storeInputStep{{forloop.counter0}}" placeholder="ESD.AOD"  />
+                                    <input type="text" class="input_format storeOutput{{forloop.counter0}}" placeholder=" "  />
                                   </label>
                                 </div>
                                  </div>
                                 <div class="row">
                                 <div class="large-9 columns">
                                   <label>project mode
-                                    <input type="text" class="projectmode storeInput storeInputStep{{forloop.counter0}}" placeholder="spacetoken=ATLASDATADISK" />
+                                    <input type="text" class="project_mode storeOutput{{forloop.counter0}}" placeholder=" " />
                                   </label>
                                 </div>
                                 <div class="large-3 columns">
                                   <label>Priority
-                                    <input type="number" class="priority storeInput storeInputStep{{forloop.counter0}}" placeholder="900" />
+                                    <input type="number" class="priority storeOutput{{forloop.counter0}}" placeholder=" " />
                                   </label>
                                 </div>
                               </div>
@@ -1189,6 +1231,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         {% endfor %}
 
 </div>
+</div>
   <a class="close-reveal-modal">&#215;</a>
 </div>
+
 {% endblock %}
