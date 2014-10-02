@@ -190,13 +190,20 @@ def slice_steps(request, reqid, slice_number):
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
             if existed_foreign_step:
-                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_type':'foreign'})
+                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign'})
             for step in ordered_existed_steps:
                 is_skipped = 'not_skipped'
                 if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
                     is_skipped = 'is_skipped'
-                result_list.append({'step':step.step_template.ctag,'step_type':is_skipped})
-            results = {'success':True,'step_types':result_list}
+                task_config = json.loads(step.task_config)
+                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
+                                    'nEventsPerJob':task_config.get('nEventsPerJob'),'nEventsPerInputFile':task_config.get('nEventsPerInputFile'),
+                                    'project_mode':task_config.get('project_mode'),'input_format':task_config.get('input_format'),
+                                    'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'total_events':str(step.input_events)})
+            dataset = ''
+            if input_list.dataset:
+                dataset = input_list.dataset.name
+            results = {'success':True,'step_types':result_list, 'dataset': dataset}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
