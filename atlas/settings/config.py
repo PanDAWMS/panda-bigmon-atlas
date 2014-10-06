@@ -91,6 +91,7 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
+#    'atlas.auth.fake.backends.LoginAsBackend',
     'atlas.auth.voms.backends.VomsBackend',
     'shibsso.backends.ShibSSOBackend',
 )
@@ -110,3 +111,5 @@ META_GROUP = 'ADFS_GROUP'
 META_LASTNAME = 'ADFS_LASTNAME'
 META_USERNAME = 'ADFS_LOGIN'
 LOGIN_REDIRECT_URL = '/'
+
+#FAKE_LOGIN_AS_USER = 'username'
