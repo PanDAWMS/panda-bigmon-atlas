@@ -87,6 +87,8 @@
 {{ block.super }}
 <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
 {% endblock %}
 
 
@@ -199,13 +201,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         {%  else  %}
                             var borderColor = 'grey'
                         {% endif  %}
-                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
+                        $("#short{{ inputList.slice }}s{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
                             "border":'solid',
                         "border-color":borderColor});
-                        $("#short{{ inputList.slice }}{{ forloop.counter0 }}.notShowFullSpan").css({"background-color":stepColor,
+                        $("#short{{ inputList.slice }}s{{ forloop.counter0 }}.notShowFullSpan").css({"background-color":stepColor,
                             "border":'solid',
                         "border-color":borderColor});
-                        $("#step{{ inputList.slice }}{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor,
+                        $("#step{{ inputList.slice }}s{{ forloop.counter0 }}.stepchoose").css({"background-color":stepColor,
                             "border":'solid',
                         "border-color":borderColor});
 
@@ -249,16 +251,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         }
     });
 
-    function approveClick(event,isApprove, approveLevel){
-        event.preventDefault();
+    function approveSlices(isApprove, approveLevel, slices){
         var toChangeDatasets = [];
         var startFindig = false;
         var sendData = Object();
-            $(".checkboxSlice:checked").each(function(){
+            for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
-                var sliceID = $(this).attr("id").slice(8);
+                var sliceID = slices[i];
                 var existSkipped = false;
-                if ($("#inputList_div".concat(sliceID)).is(":visible")){
                     if (! sendData[sliceID]){
                         sendData[sliceID] = Object();
                     }
@@ -266,7 +266,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     var foreignID = "0";
                     {% for step in step_list %}
                         var val = " ";
-                        var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
+                        var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");
                         var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
                         if (isSkipped){
                             existSkipped = true;
@@ -277,7 +277,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             val = " ";
                         }
 
-                        var step_td_short_foreign = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.notShowFullSpan");
+                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.notShowFullSpan");
                         if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
                             foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
                             val = " ";
@@ -293,8 +293,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
                         startFindig = true;
                     }
-                }
-            });
+
+            }
 
             if (!$.isEmptyObject(sendData)){
                 $( "#waitingDialog" ).dialog();
@@ -318,7 +318,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var missedList = $.evalJSON(data).data;
                             var slices = $.evalJSON(data).slices;
                             var wrongSLices = $.evalJSON(data).wrong_slices;
-                            console.log(wrongSLices);
+{#                            console.log(wrongSLices);#}
                             var doubleTrf = $.evalJSON(data).double_trf;
                             if ((missedList.length != 0)||(doubleTrf.length != 0)) {
                                 if (missedList.length != 0) {
@@ -357,12 +357,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                 }
                             }
                             if (startFindig){
-                                findInputClick(event);
+                                findInputForSlices(slices);
                             } else{
-                                var i=0;
-                                for (;i<toChangeDatasets.length;i++){
+                                for (var i=0;i<toChangeDatasets.length;i++){
                                     $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
                                 }
+                            }
+                            for (var i = 0; i < slices.length; i++) {
+                                changeSliceSaveStatus(slices[i]);
                             }
 
                         } else {
@@ -374,6 +376,21 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             }
 
 
+    }
+
+
+    function approveClick(event,isApprove, approveLevel){
+        event.preventDefault();
+        var slices = [];
+        $(".checkboxSlice:checked").each(function() {
+            {#                   8 = "checkbox".length#}
+            var sliceID = $(this).attr("id").slice(8);
+            var existSkipped = false;
+            if ($("#inputList_div".concat(sliceID)).is(":visible")) {
+                slices.push(sliceID);
+            }
+        });
+        approveSlices(isApprove,approveLevel, slices);
     };
 
     function emptyPattern(){
@@ -406,17 +423,18 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                    var sliceID = $(this).attr("id").slice(8);
                    if ($("#inputList_div".concat(sliceID)).is(":visible")){
                        var stepValue = $("#patternform{{ forloop.counter0 }}").val();
-                       var step_td_short = "td#short".concat(sliceID).concat("{{ forloop.counter0 }}.showFullSpan");
+                       var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");
 
                        var stepColor = $("#startStep{{ forloop.counter0 }}").css("background-color");
                        $(step_td_short).css({"background-color":stepColor});
-                       var stepFormLong = "#".concat(sliceID).concat("{{ forloop.counter0 }}.slice_form");
-                       var step_th_long = "th#step".concat(sliceID).concat("{{ forloop.counter0 }}.stepchoose");
+                       var stepFormLong = "#".concat(sliceID).concat("s{{ forloop.counter0 }}.slice_form");
+                       var step_th_long = "th#step".concat(sliceID).concat("s{{ forloop.counter0 }}.stepchoose");
                        $(step_th_long).css({"background-color":stepColor});
                        if(! emptyPattern()){
                            $(stepFormLong).val(stepValue);
                            $(step_td_short).html(stepValue);
                        }
+                       $("#saveStatus"+sliceID.toString()).html("not saved");
                    }
                 };
             });
@@ -426,6 +444,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     function longFormChange(event){
       var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
       $(step_td_short).html($(event.target).val());
+      $("#saveStatus"+$(event.target).attr('id').split("s")[0]).html("not saved");
     };
 
     function selectClick(event){
@@ -474,7 +493,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
        };
           function chnageStatusToTest(event){
-            sendData = {}
+            sendData = {};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:make_test_request' pr_id%}",
@@ -565,8 +584,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
               return false;
         };
-        function findInputClick(event){
-            event.preventDefault();
+
+        function findInputClick(event) {
             var sliceList=[];
             var i=0;
             $(".checkboxSlice:checked").each(function(){
@@ -574,6 +593,12 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 var sliceID = $(this).attr("id").slice(8);
                 sliceList.push(sliceID);
             });
+            findInputForSlices(sliceList);
+        }
+
+
+        function findInputForSlices(sliceList){
+
             sendData = sliceList;
               $( "#waitingDialog" ).dialog();
               $.ajax({
@@ -607,6 +632,149 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
               return false;
         };
+
+        function prepareSliceInfo(check_steps,sliceID){
+            var i=0;
+{#            console.log(check_steps);#}
+            {% for step in step_list %}
+                i = 0;
+
+                for(;((check_steps.db_step_type[i].step_name!="{{ step.name }}")||(i.toString()==="{{ step.name }}"))&&(i<(check_steps.db_step_type.length-1));i++){};
+                if ((check_steps.db_step_type[i].step_name=="{{ step.name }}")||(i.toString()==="{{ step.name }}")) {
+                    for (fieldName in check_steps.db_step_type[i]){
+                        if (fieldName != 'step_name'){
+{#                            console.log(check_steps.db_step_type[i][fieldName]);#}
+{#                            console.log(fieldName);#}
+                           $('#sliceModal .storeOutput{{forloop.counter0}}'+'.'+fieldName).val(check_steps.db_step_type[i][fieldName]);
+                        }
+
+                    }
+                } else {
+                    $('#sliceModal .storeOutput{{forloop.counter0}}').each(function(){$(this).val('')});
+                }
+
+
+            {% endfor %}
+            $('#sliceModalDataset').html(check_steps.dataset);
+            $('#sliceModalSlice').html(sliceID);
+            $('#sliceModalJobOption').html($('#sliceInputJobOptions'+sliceID).attr('title'));
+            $('#sliceModal').foundation('reveal', 'open');
+        }
+
+        $(document).foundation();
+        function formSliceInfo(id){
+          event.preventDefault();
+          var sliceID = id.slice(10);
+        $("#sliceInfo").attr({'class':'small content f-dropdown'});
+            $("#sliceInfo").html('');
+          var check_steps = changeSliceSaveStatus(sliceID);
+          if (check_steps.is_equal){
+              $("#sliceInfo").attr({'class':'close'});
+                $('#sliceModal').on('opened', function () {
+                  $(this).foundation('section', 'reflow');
+                });
+              prepareSliceInfo(check_steps,sliceID);
+
+          } else {
+              $("#sliceInfo").append($("<strong/>" , {html:sliceID+' is not saved!!'}));
+              $("#sliceInfo").append($("<span/>" , {html:sliceID, id:'sliceInfoSliceId'}).css({'display':'none'}));
+            {# make comparison table#}
+              var compareTable = $("<table>").append($("<tr/>",{html:'<th>Current</th><th>DB</th>'}));
+              var j = 0;
+              var tr_step = undefined;
+              var td_db = $("<td/>", {html: ''}) ;
+              var td_current =  undefined;
+              var i = 0;
+              {% for step in step_list %}
+                   td_db = $("<td/>", {html: ''}) ;
+                   i = 0;
+                   for(;check_steps.db_step_type[i].step_name!="{{ step.name }}"&&(i<(check_steps.db_step_type.length-1));i++){};
+{#                  console.log(check_steps.db_step_type[i]);#}
+                   if (check_steps.db_step_type[i].step_name=="{{ step.name }}") {
+                        if (check_steps.db_step_type[i].step_type == 'is_skipped') {
+                            td_db = $("<td/>", {html: check_steps.db_step_type[i].step}).css({'background-color': $("#skippedColor").css("background-color")});
+                        } else {
+                            td_db = $("<td/>", {html: check_steps.db_step_type[i].step}).css({'background-color': $("#doColor").css("background-color")});
+                        }
+                   }
+
+                   td_current = $("<td/>", {html: $("#short"+sliceID.toString() + 's' + j.toString()).html()}).css({'background-color':$("#short"+sliceID.toString()+ 's' + j.toString()).css('background-color') }) ;
+                   tr_step = $("<tr>").append(td_current).append(td_db);
+
+                  compareTable.append(tr_step);
+                   j++;
+              {% endfor %}
+                compareTable.append($("</table>"));
+                compareTable.append($("<a/>",{text: 'save', class: 'button', onclick:'saveOneSlice(event);' }));
+                $("#sliceInfo").append(compareTable);
+          }
+
+
+        };
+        function saveOneSlice(event){
+            event.preventDefault();
+            var slices = [];
+            var sliceID=$('#sliceInfoSliceId').html();
+            slices.push(sliceID);
+            approveSlices(false,99,slices);
+
+        }
+        function checkSliceIsSaved(sliceNumber){
+            var is_equal = undefined;
+            var step_types = undefined;
+            var dataset_DB = undefined;
+            $.ajaxSetup({async: false});
+            $.get(Django.url('prodtask:slice_steps',"{{ pr_id }}",sliceNumber),function(data,status){
+                step_types = data.step_types;
+                dataset_DB = data.dataset;
+                is_equal = true;
+                var current_step_tag = [];
+                for (var i=0;i<{{ step_list|length }};i++){
+                    step_id = "#short" + sliceNumber + 's' + i.toString();
+                    if ($(step_id).attr('class') == "notShowFullSpan" ){
+                        current_step_tag.push({
+                            step: $(step_id).children('a').html(),
+                            step_type: 'foreign'
+                        });
+                    } else{
+                        if ( $(step_id).html() != '') {
+                            var current_type = '';
+                            if ($(step_id).css("background-color") == $("#skippedColor").css("background-color")) {
+                                current_type = 'is_skipped';
+                            } else {
+                                current_type = 'not_skipped';
+                            }
+                            current_step_tag.push({
+                                step: $(step_id).html(),
+                                step_type: current_type
+                            });
+                        }
+                    }
+                }
+                if (step_types.length != current_step_tag.length){
+                    is_equal = false;
+                }
+                for (var i=0;(i<step_types.length) && is_equal;i++){
+                        if ((step_types[i].step!=current_step_tag[i].step) || (step_types[i].step_type!=current_step_tag[i].step_type)){
+                            is_equal = false;
+                        }
+                }
+            });
+            $.ajaxSetup({async: true});
+
+            return {is_equal:is_equal,db_step_type:step_types, dataset:dataset_DB};
+        }
+
+        function changeSliceSaveStatus(sliceNumber){
+            sliceDBInfo = checkSliceIsSaved(sliceNumber);
+            if (! sliceDBInfo.is_equal){
+                $("#saveStatus"+sliceNumber).html("not saved");
+            }else{
+                $("#saveStatus"+sliceNumber).html("saved");
+            }
+            return sliceDBInfo;
+        }
+
         function cloneSlicesClick(event){
             event.preventDefault();
             var sliceList=[];
@@ -733,7 +901,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     </tr>
 </table>
 
-
+<div id="sliceInfo" class="small content f-dropdown" data-dropdown-content>
+     <strong>Slice:</strong>
+</div>
 
     <div >
     {% for inputList, step_exec_dict, approved, show_task, foreignStepID  in inputLists %}
@@ -751,40 +921,43 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             {{ inputList.dataset.name|truncatechars:"58" }}
                         </span>
                     </td>
-                    <td>{{ inputList.input_data }}</td>
+                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan' style="padding:0px" title="{{ inputList.input_data }}">
+                        <span class='showFullSpan' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data|truncatechars:"58" }}
                         </span>
                     </td>
-                    <td><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
+                    <td  colspan="2"><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
             <td></td>
             </tr>
             <tr>
-                <td colspan="10" style="width: 500px" >
+                <td colspan="11" style="width: 500px" >
                     <select id="inputDatasetSelect{{ inputList.slice }}" style="display: none">
 
                     </select>
                 </td>
-                <td><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td>
+                <td colspan="2"><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td><td></td>
             </tr>
 
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'foreign' %}
-                        <td class="notShowFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                        <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a href="#inputList{{ step.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
                         {% else %}
-                        <td class="showFullSpan" id="short{{ inputList.slice }}{{ forloop.counter0 }}"
+                        <td class="showFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                         {% endifequal %}
                 {% endfor %}
 
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td>
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
+                        <a href="#" id="saveStatus{{ inputList.slice }}" class="small dropdown " data-dropdown="sliceInfo" onclick="formSliceInfo(this.id);" data-options="is_hover:true" >
+                            saved
+                        </a></td>
 
             {% if show_task %}
                         <tr>
@@ -803,7 +976,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
                         {% endif %}
                         {% endfor %}
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                         </tr>
             {% endif%}
             </tr>
@@ -849,7 +1022,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 {% else %}
                     <th rowspan="2"></th>
                     {% for step in step_list %}
-                            <th class="stepchoose" id="step{{ inputList.slice }}{{ forloop.counter0 }}" > {{step.name}}</th>
+                            <th class="stepchoose" id="step{{ inputList.slice }}s{{ forloop.counter0 }}" > {{step.name}}</th>
                     {% endfor %}
 
                         <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" class="{{ approved }}"> {{ approved }} </th>
@@ -859,7 +1032,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         {% for step in step_exec_dict %}
                             <td  style="padding: 0px;width: 50px" >
                                 <div  >
-                                    <form><input type="text" onchange="longFormChange(event)" class="slice_form" id="{{ inputList.slice }}{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
+                                    <form><input type="text" onchange="longFormChange(event)" class="slice_form" id="{{ inputList.slice }}s{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
                                 </div>
                             </td>
                         {% endfor %}
@@ -971,4 +1144,95 @@ $(".showSmallSpan").css({"cursor":"pointer"});
        </div>
     </div>
 </form>
+
+{#<div id="sliceModal" class="reveal-modal" data-reveal>#}
+{#  <h2 id="sliceNumberModal"></h2>#}
+{#  <dl class="tabs" data-tab>#}
+{#        {% for step in step_list %}#}
+{#            <dd><a href="#panel{{forloop.counter0}}">{{step.name}}</a></dd>#}
+{#        {% endfor %}#}
+{#  </dl>#}
+{#    <div class="tabs-content">#}
+{#         {% for step in step_list %}#}
+{#             <div class="content" id="panel{{forloop.counter0}}">#}
+{#                <p>This is the {{forloop.counter0}} panel of the basic tab example.</p>#}
+{#            </div>#}
+{#        {% endfor %}#}
+{#    </div>#}
+{#  <a class="close-reveal-modal">&#215;</a>#}
+{#</div>#}
+
+<div id="sliceModal" class="reveal-modal" data-reveal>
+<p>Slice: <span id="sliceModalSlice"></span><br/>
+Dataset: <span id="sliceModalDataset"></span><br/>
+job options: <span id="sliceModalJobOption"></span></p>
+<div>
+<div class="section-container auto" id="sliceInfoContainer" data-section>
+        {% for step in step_list %}
+               {% if  forloop.counter0 == 0%}
+
+                <section class="active">
+                   {% else %}
+                   <section>
+                {% endif %}
+                 <p class="title" data-section-title><a href="#">{{step.name}}</a></p>
+                    <div class="content" data-section-content>
+                        <fieldset>
+                        <div class="row">
+                                <div class="large-3 columns">
+                                  <label> Ami tag
+                                    <input type="text" class="step storeOutput{{forloop.counter0}}" placeholder=" "  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events Input file
+                                    <input type="number" class="nEventsPerInputFile storeOutput{{forloop.counter0}}"  placeholder="-1"  />
+                                  </label>
+
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events per job
+                                    <input type="number" class="nEventsPerJob storeOutput{{forloop.counter0}}"  placeholder="1000"  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Total events
+                                    <input type="number" class="total_events storeOutput{{forloop.counter0}}" placeholder="-1"  />
+                                  </label>
+                                </div>
+                               </div>
+                                <div class="row">
+                                <div class="large-5 columns">
+                                  <label>Output formats
+                                    <input type="text" class="output_formats storeOutput{{forloop.counter0}}" placeholder=" "  />
+                                  </label>
+                                </div>
+                                 <div class="large-5 columns">
+                                  <label>Input formats
+                                    <input type="text" class="input_format storeOutput{{forloop.counter0}}" placeholder=" "  />
+                                  </label>
+                                </div>
+                                 </div>
+                                <div class="row">
+                                <div class="large-9 columns">
+                                  <label>project mode
+                                    <input type="text" class="project_mode storeOutput{{forloop.counter0}}" placeholder=" " />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Priority
+                                    <input type="number" class="priority storeOutput{{forloop.counter0}}" placeholder=" " />
+                                  </label>
+                                </div>
+                              </div>
+                            </fieldset>
+                    </div>
+            </section>
+        {% endfor %}
+
+</div>
+</div>
+  <a class="close-reveal-modal">&#215;</a>
+</div>
+
 {% endblock %}
