@@ -285,11 +285,16 @@ def parse_json_slice_dict(json_string):
                         task_config = {}
                         nEventsPerJob = slice['eventsperjob']
                         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+                        merge_options = ['nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob']
+                        if slice['jediTag']:
+                            task_config.update({'merging_tag':slice['jediTag']})
+                            for merge_option in merge_options:
+                                if slice[merge_option]:
+                                    task_config.update({merge_option:slice[merge_option]})
                         task_config.update({'project_mode':slice['projectmode']})
-                        if slice['destination']:
-                            task_config.update({'destination':slice['destination']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
+
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -305,8 +310,11 @@ def parse_json_slice_dict(json_string):
                                 nEventsPerJob = step['eventsperjob']
                                 task_config.update({'nEventsPerJob':dict((x,nEventsPerJob) for x in StepExecution.STEPS)})
                                 task_config.update({'project_mode':step['projectmode']})
-                                if step['destination']:
-                                    task_config.update({'destination':step['destination']})
+                                if step['jediTag']:
+                                    task_config.update({'merging_tag':step['jediTag']})
+                                    for merge_option in merge_options:
+                                        if step[merge_option]:
+                                            task_config.update({merge_option:step[merge_option]})
                                 if step['token']:
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if  step['inputFormat']:
@@ -722,7 +730,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                     task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     if step['step_name']=='Evgen':
                                         task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                task_config_options = ['project_mode','input_format','token','destination']
+                                task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                                                       'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag']
                                 for task_config_option in task_config_options:
                                     if task_config_option in step['task_config']:
                                         task_config.update({task_config_option:step['task_config'][task_config_option]})

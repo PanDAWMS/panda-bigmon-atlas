@@ -955,9 +955,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 {% endfor %}
 
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
-                        <a href="#" id="saveStatus{{ inputList.slice }}" class="small dropdown " data-dropdown="sliceInfo" onclick="formSliceInfo(this.id);" data-options="is_hover:true" >
+                       <u> <a href="#" id="saveStatus{{ inputList.slice }}" class="small dropdown " data-dropdown="sliceInfo" onclick="formSliceInfo(this.id);" data-options="is_hover:true" >
                             saved
-                        </a></td>
+                        </a></u></td>
 
             {% if show_task %}
                         <tr>

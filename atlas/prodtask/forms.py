@@ -20,7 +20,7 @@ class RequestForm(ModelForm):
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
     cc = EmailField(required=False)
-    description = CharField(label='Short description', widget=Textarea, required=False)
+    description = CharField(label='Short description', widget=Textarea, required=True)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=True)
     provenance = CharField(required=True)
@@ -41,7 +41,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
     provenance = CharField(widget=forms.HiddenInput, required=False)
-
+    description = CharField(label='Short description', widget=Textarea, required=False)
     class Meta:
         model = TRequest
         exclude = ['reqid']
@@ -57,7 +57,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
-
+    description = CharField(label='Short description', widget=Textarea, required=False)
 
     class Meta:
         model = TRequest
@@ -74,6 +74,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
+    description = CharField(label='Short description', widget=Textarea, required=False)
 
     class Meta:
         model = TRequest
@@ -90,6 +91,7 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
+    description = CharField(label='Short description', widget=Textarea, required=False)
 
     class Meta:
         model = TRequest

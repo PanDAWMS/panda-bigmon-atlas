@@ -21,6 +21,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
+from django.contrib.auth.decorators import login_required
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -341,20 +342,8 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
                     create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
-                    # try:
-                    #     for slice,steps_status in slice_steps.items():
-                    #         if steps_status[0]['value'] and steps_status[0]['is_skipped'] and (slice not in wrong_skipping_tags):
-                    #             datasets_dict.update(form_skipped_slice(slice,reqid))
-                    # except:
-                    #     pass
-                    for slice, new_dataset in slice_new_input.items():
-                        if new_dataset:
-                            input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
-                            input_list.dataset = fill_dataset(new_dataset)
-                            input_list.save()
                 else:
                     create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                #TODO:Take owner from sso cookies
                 if (req.cstatus.lower() != 'test') and (approve_level>0):
                     req.cstatus = 'approved'
                     req.save()
@@ -363,9 +352,17 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                         owner = request.user.username
                     except:
                         pass
+                    if not owner:
+                        owner='default'
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
                                                    status='approved')
                     request_status.save_with_current_time()
+                if req.request_type == 'MC':
+                    for slice, new_dataset in slice_new_input.items():
+                        if new_dataset:
+                            input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
+                            input_list.dataset = fill_dataset(new_dataset)
+                            input_list.save()
         else:
             _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
@@ -436,6 +433,7 @@ def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
+
 
 @csrf_protect
 def request_steps_approve(request, reqid, approve_level):

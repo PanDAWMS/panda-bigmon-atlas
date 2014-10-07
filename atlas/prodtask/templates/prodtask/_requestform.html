@@ -40,10 +40,12 @@
         $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+currentSlice});
         $("#" +idForm+ " .datasetTBody").html("");
         $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+currentSlice});
-        $("#" +idForm+ " #datasetPattern0").val('');
-        $("#" +idForm+ " #datasetPattern0").prop({'id':"datasetPattern"+currentSlice});
-        $("#" +idForm+ " #addStepButton0_0").prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
-        $("#" +idForm+ " #addSliceStepButton0_0").prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " #datasetPattern"+parentSlice).val('');
+        $("#" +idForm+ " #datasetPattern"+parentSlice).prop({'id':"datasetPattern"+currentSlice});
+        $("#" +idForm+ " #addStepButton"+parentSlice+'_'+parentStep).prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        $("#" +idForm+ " #addSliceStepButton"+parentSlice+'_'+parentStep).prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " #jediMerging"+parentSlice+'_'+parentStep).prop({'id':"jediMerging"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " #jediParams"+parentSlice+'_'+parentStep).prop({'id':"jediParams"+currentSlice+'_'+currentStep});
         $("#" +idForm+ " .parentstepshort").val(parentSlice +'_'+ parentStep);
         $("#" +idForm+ " .parentStep").val("Slice #"+ parentSlice +' step #' + parentStep);
     }
@@ -57,7 +59,7 @@
         sliceDiv.append(cloneForm);
         $('#formSet').append(sliceDiv);
         $('#sliceNumber').html((nextNumber+1).toString());
-        prepareStep(nextNumber.toString(),'0',nextNumber.toString(),'0');
+        prepareStep(nextNumber.toString(),'0','0','0');
 
         bindOnChangeToFieldSet();
         fillSlicesField();
@@ -101,6 +103,19 @@
         fillSlicesField();
     }
 
+    function switchJediMerging(sliceMergeID){
+
+        var currentSlice = parseInt(sliceMergeID.replace('jediMerging','').split('_')[0]);
+        var currentStep = parseInt(sliceMergeID.replace('jediMerging','').split('_')[1]);
+        if ($('#'+sliceMergeID).is(':checked')){
+            console.log('#jediParams'+currentSlice+'_'+currentStep);
+            $('#jediParams'+currentSlice+'_'+currentStep).show();
+
+        } else{
+            $('#jediParams'+currentSlice+'_'+currentStep).css({display:'none'});
+            $('#jediParams'+currentSlice+'_'+currentStep+' .storeInput').val('');
+        }
+    }
 
     var csrftoken = $.cookie('csrftoken');
     function csrfSafeMethod(method) {
@@ -299,18 +314,41 @@ $(document).ready(function(){
         </div>
       </div>
        <div class="row">
-        <div class="large-5 columns">
-          <label>Destination siteID
-            <input type="text" class="destination storeInput" placeholder="" />
-          </label>
-        </div>
         <div class="large-7 columns">
           <label>Destination token
             <input type="text" class="token storeInput"  />
           </label>
         </div>
       </div>
-
+       <div class="row">
+        <div class="large-7 columns">
+          <label>Jedi internal merging
+            <input type="checkbox" id="jediMerging0_0" onclick="switchJediMerging(this.id); "/>
+          </label>
+        </div>
+         </div>
+        <div class="row" id="jediParams0_0" style="display: none">
+        <div class="large-3 columns">
+          <label>merging tag
+            <input type="text" class="jediTag storeInput"  />
+          </label>
+        </div>
+         <div class="large-3 columns">
+          <label>nFilesPerMergeJob
+            <input type="number" class="nFilesPerMergeJob storeInput"  />
+          </label>
+        </div>
+          <div class="large-3 columns">
+          <label>nGBPerMergeJob
+            <input type="number" class="nGBPerMergeJob storeInput"  />
+          </label>
+        </div>
+         <div class="large-3 columns">
+          <label>nMaxFilesPerMergeJob
+            <input type="number" class="nMaxFilesPerMergeJob storeInput"  />
+          </label>
+        </div>
+        </div>
         <div class="row">
             <a class="button" id="addStepButton0_0" onclick="addStep(this.id);" title="Create children step in this slice" >Add step</a>
             <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(this.id);">Fork</a>
