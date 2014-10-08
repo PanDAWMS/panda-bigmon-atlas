@@ -38,9 +38,38 @@ class TProject(models.Model):
         db_table = u'"ATLAS_DEFT"."T_PROJECTS"'
 
 class TRequest(models.Model):
-    PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
-                                 'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
-                                 'reprocessing','trig-hlt','Validation']]
+    # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
+    #                              'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
+    #                              'reprocessing','trig-hlt','Validation']]
+    PHYS_GROUPS=[(x,x) for x in ['BPHY',
+                                 'COSM',
+                                 'DAPR',
+                                 'EGAM',
+                                 'EXOT',
+                                 'FTAG',
+                                 'HIGG',
+                                 'HION',
+                                 'IDET',
+                                 'IDTR',
+                                 'JETM',
+                                 'LARG',
+                                 'MCGN',
+                                 'SIMU',
+                                 'MDET',
+                                 'MUON',
+                                 'PHYS',
+                                 'REPR',
+                                 'STDM',
+                                 'SUSY',
+                                 'TAUP',
+                                 'TCAL',
+                                 'TDAQ',
+                                 'TOPQ',
+                                 'THLT',
+                                 'TRIG',
+                                 'VALI',
+                                 'UPGR']]
+
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
 

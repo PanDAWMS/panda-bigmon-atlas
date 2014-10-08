@@ -302,9 +302,21 @@ $(document).ready(function(){
         </div>
        </div>
         <div class="row">
-        <div class="large-9 columns">
+        <div class="large-3 columns">
+            <label>cmtconfig
+            <input type="text" list="cmtprojects" value="x86_64-slc6-gcc47-opt" class="cmtconfig storeInput"/>
+            <datalist id="cmtprojects">
+              <option value="i686-slc5-gcc43-opt">
+              <option value="x86_64-slc5-gcc43-opt">
+              <option value="x86_64-slc6-gcc46-opt">
+              <option value="x86_64-slc6-gcc47-opt">
+              <option value="x86_64-slc6-gcc48-opt">
+            </datalist>
+            </label>
+        </div>
+        <div class="large-6 columns">
           <label>project mode
-            <input type="text" class="projectmode storeInput" placeholder="cmtconfig==..." />
+            <input type="text" class="projectmode storeInput" />
           </label>
         </div>
         <div class="large-3 columns">
@@ -322,7 +334,7 @@ $(document).ready(function(){
       </div>
        <div class="row">
         <div class="large-7 columns">
-          <label>Jedi internal merging
+          <label>JEDI internal merging
             <input type="checkbox" id="jediMerging0_0" onclick="switchJediMerging(this.id); "/>
           </label>
         </div>

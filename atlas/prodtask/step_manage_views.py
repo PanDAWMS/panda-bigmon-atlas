@@ -46,7 +46,12 @@ def clone_slices_in_req(request, reqid):
                 step_execs = StepExecution.objects.filter(slice=current_slice)
                 ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
                 for step in ordered_existed_steps:
+
                     step.id = None
+                    step.step_appr_time = None
+                    step.step_def_time = None
+                    step.step_exe_time = None
+                    step.step_done_time = None
                     step.slice = new_input_data
                     if step.status == 'Skipped':
                         step.status = 'NotCheckedSkipped'
