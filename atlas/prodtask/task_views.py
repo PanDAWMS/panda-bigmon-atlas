@@ -347,7 +347,9 @@ class Parameters(datatables.Parametrized):
     username = datatables.Parameter(label='Username')
     campaign = datatables.Parameter(label='Campaign')
 
-    request = datatables.Parameter(label='Request', model_field='request__reqid')
+    request = datatables.Parameter(label='Request ID', model_field='request__reqid')
+    request_id_gt = datatables.Parameter(label='Request ID <=', get_Q=lambda v: Q( **{ 'request__reqid__lte' : v } ) )
+    request_id_lt = datatables.Parameter(label='Request ID >=', get_Q=lambda v: Q( **{ 'request__reqid__gte' : v } ) )
     chain = datatables.Parameter(label='Chain', model_field='chain_tid')
     provenance = datatables.Parameter(label='Provenance')
 
