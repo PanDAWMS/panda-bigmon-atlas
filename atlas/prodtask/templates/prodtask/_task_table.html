@@ -114,16 +114,23 @@
     </tr>
 
     <tr>
-        <td>Request:</td>
+        <td>Request ID:</td>
         <td>
         <input id="request" />
         </td>
     </tr>
 
     <tr>
-        <td>Chain:</td>
+        <td>Request ID <= </td>
         <td>
-        <input id="chain" />
+        <input id="request_id_gt" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Request ID >= </td>
+        <td>
+        <input id="request_id_lt" />
         </td>
     </tr>
 
@@ -133,6 +140,13 @@
     <td>
 
     <table>
+
+    <tr>
+        <td>Chain:</td>
+        <td>
+        <input id="chain" />
+        </td>
+    </tr>
 
     <tr>
         <td>Campaign:</td>
@@ -386,7 +400,7 @@
             row[13] = row[13]=='None'? 'None' : parseDate(row[13].slice(0,19)).toString() ;
 
             row[12] = row[12].slice(4,10) + row[12].slice(15,21);
-            row[13] = '<span style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
+            row[13] = '<span title="Timestamp color codes: black < 24h, 24h < yellow <48h, 48h < orange < 72h, 72h < red" style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
 
             row[11] = '<span class="tstat '+row[11]+'">'+row[11]+'</span>';
         }

@@ -347,13 +347,15 @@ class Parameters(datatables.Parametrized):
     username = datatables.Parameter(label='Username')
     campaign = datatables.Parameter(label='Campaign')
 
-    request = datatables.Parameter(label='Request', model_field='request__reqid')
+    request = datatables.Parameter(label='Request ID', model_field='request__reqid')
+    request_id_gt = datatables.Parameter(label='Request ID <=', get_Q=lambda v: Q( **{ 'request__reqid__lte' : v } ) )
+    request_id_lt = datatables.Parameter(label='Request ID >=', get_Q=lambda v: Q( **{ 'request__reqid__gte' : v } ) )
     chain = datatables.Parameter(label='Chain', model_field='chain_tid')
     provenance = datatables.Parameter(label='Provenance')
 
     phys_group = datatables.Parameter(label='Phys Group')
     step_name = datatables.Parameter(label='Step Name', model_field='step__step_template__step')
-    step_output_format = datatables.Parameter(label='Step output format', model_field='step__step_template__output_formats')
+    step_output_format = datatables.Parameter(label='Step output format', get_Q=lambda v: Q( **{ 'step__step_template__output_formats__iexact' : v } ) )
 
     task_name = datatables.Parameter(label='Task name', name='taskname', id='taskname', get_Q=lambda v: Q( **{ 'name__iregex' : v } ) )
 
