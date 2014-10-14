@@ -83,6 +83,7 @@ def step_params_from_tag(request, reqid):
             priority = ''
             nEventsPerJob = ''
             nEventsPerInputFile = ''
+            destination_token = ''
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -97,11 +98,13 @@ def step_params_from_tag(request, reqid):
                                 nEventsPerJob = task_config['nEventsPerJob']
                             if 'nEventsPerInputFile' in task_config:
                                 nEventsPerInputFile = task_config['nEventsPerInputFile']
+                            if 'token' in task_config:
+                                destination_token = task_config['token']
                             input_events = step_exec.input_events
                             priority = step_exec.priority
             results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
                             'priority':str(priority),'nEventsPerJob':str(nEventsPerJob),
-                            'nEventsPerInputFile':str(nEventsPerInputFile)})
+                            'nEventsPerInputFile':str(nEventsPerInputFile),'destination':destination_token})
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -128,6 +131,9 @@ def update_project_mode(request, reqid):
             new_nEventsPerJob = None
             if checkecd_tag_format['nEventsPerJob']:
                 new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
+            new_destination = None
+            if checkecd_tag_format['destination_token']:
+                new_destination = checkecd_tag_format['destination_token']
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -144,6 +150,8 @@ def update_project_mode(request, reqid):
                                     step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
                                 if new_nEventsPerJob:
                                     step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
+                                if new_destination:
+                                    step_exec.set_task_config({'token':'dst:'+new_destination.replace('dst:','')})
                                 step_exec.input_events = new_input_events
                                 step_exec.priority = new_priority
                                 step_exec.save()

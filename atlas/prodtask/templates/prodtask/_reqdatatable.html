@@ -529,6 +529,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             $('#priority_input').val(priority);
                             $('#nEventsPerJob_input').val(nEventsPerJob);
                             $('#nEventsPerInputFile_input').val(nEventsPerInputFile);
+                            $('#destination_input').val($.evalJSON(data).destination);
                         }
                     });
                   return false;
@@ -564,7 +565,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val(),
               'input_events':$('#input_events_input').val(),'priority':$('#priority_input').val(),
               'nEventsPerJob':$('#nEventsPerJob_input').val(),
-                  'nEventsPerInputFile':$('#nEventsPerInputFile_input').val()};
+                  'nEventsPerInputFile':$('#nEventsPerInputFile_input').val(),
+              'destination_token':$('#destination_input').val()};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:update_project_mode' pr_id %}",
@@ -1133,6 +1135,17 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 <div class="large-10 columns">
                     <label>nEventsPerInputFile
                         <input type="number" placeholder="nEventsPerInputFile" id="nEventsPerInputFile_input">
+                    </label>
+                </div>
+            </div>
+       </div>
+    </div>
+       <div class="row">
+       <div class="large-8 columns">
+            <div class="row collapse">
+                <div class="large-10 columns">
+                    <label>Destination token
+                        <input type="text" placeholder="Destination token" id="destination_input">
                     </label>
                 </div>
             </div>
