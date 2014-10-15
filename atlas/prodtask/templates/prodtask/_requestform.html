@@ -221,14 +221,22 @@ $(document).ready(function(){
 {% endif %}
 
  <a class="button" onclick="addMoreSlices(event);">Add slice</a>
- <strong id="sliceNumber">1</strong>
+ <strong id="sliceNumber" style="display: none">1</strong>
  <div id="formSet">
     <div id="sliceSteps0">
      <fieldset id="form0_0" class="sliceFiledset">
       <legend>Slice #0 step #0</legend>
+
+        <div class="row hideNotFirst">
+        <div class="large-12 columns">
+          <label> Datasets list:
+            <textarea  class="datasetList storeInput" placeholder=" " ></textarea>
+          </label>
+        </div>
+        </div>
       <div class="row hideNotFirst">
         <div class="large-12 columns">
-          <label>Dataset Filter
+          <label>Or search datasets in ddm/prodsys by filter:
             <input type="text" id='datasetPattern0' placeholder="dataset pattern" />
           </label>
         </div>
@@ -253,13 +261,6 @@ $(document).ready(function(){
           </table>
           </div>
       </div>
-        <div class="row hideNotFirst">
-        <div class="large-12 columns">
-          <label> Or datasets list:
-            <textarea  class="datasetList storeInput" placeholder=" " ></textarea>
-          </label>
-        </div>
-        </div>
         <div class="row showNotFirst" style="display: none">
         <div class="large-3 columns">
           <label> Parent step
@@ -269,20 +270,20 @@ $(document).ready(function(){
          </div>
         <div class="large-3 columns">
           <label> Input format
-            <input type="text" class="inputFormat storeInput" placeholder="ESD"  />
+            <input type="text" class="inputFormat storeInput" placeholder=""  />
           </label>
         </div>
 
          </div>
       <div class="row">
         <div class="large-3 columns">
-          <label> Ami tag
+          <label> AMI tag
             <input type="text" class="ctag storeInput" placeholder="r2222"  />
           </label>
         </div>
          <div class="large-4 columns">
           <label>Output formats
-            <input type="text" class="formats storeInput" placeholder="ESD.AOD"  />
+            <input type="text" class="formats storeInput" placeholder=""  />
           </label>
         </div>
          <div class="large-2 columns">

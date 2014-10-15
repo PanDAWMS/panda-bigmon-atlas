@@ -729,6 +729,9 @@ def input_list_approve(request, rid=None):
 
                         edit_mode = True
                         slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{})]*(len(STEPS_LIST)-len(slice_steps_list))
+                        approved = get_approve_status(slice_steps[:len(slice_steps_list)])
+                        if (approved == 'approved')or(approved == 'partially_approved'):
+                                approved_count += 1
                         if another_chain_step:
                             input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task,
                                                 another_chain_step.id, approve_level(slice_steps)))

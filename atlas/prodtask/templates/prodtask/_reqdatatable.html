@@ -641,8 +641,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             {% for step in step_list %}
                 i = 0;
 
-                for(;((check_steps.db_step_type[i].step_name!="{{ step.name }}")||(i.toString()==="{{ step.name }}"))&&(i<(check_steps.db_step_type.length-1));i++){};
+                for(;((check_steps.db_step_type[i].step_name!="{{ step.name }}")&&(i.toString()!="{{ step.name }}"))&&(i<(check_steps.db_step_type.length-1));i++){};
+{#                 console.log(i);#}
                 if ((check_steps.db_step_type[i].step_name=="{{ step.name }}")||(i.toString()==="{{ step.name }}")) {
+
                     for (fieldName in check_steps.db_step_type[i]){
                         if (fieldName != 'step_name'){
 {#                            console.log(check_steps.db_step_type[i][fieldName]);#}
@@ -856,21 +858,21 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 <div id="tagIngo" ></div>
 
 {% if show_reprocessing %}
-<div class="small-8">
-    <form>
-        <fieldset>
-            <legend>Tags:formats for reprocessing</legend>
-            <div class="row">
-              <div class="large-12 columns">
-                <label>Tags:formats</label>
-                <textarea placeholder="tag:formats,e.g. r2222:ESD.AOD r3333:HIST" id="tagsFormatsTA"></textarea>
-                 <a href="#" class="small button" onclick="approveReprocessingClick(event);">Bind</a>
-              </div>
-            </div>
-        </fieldset>
-    </form>
-    <div class="">
-    </div>
+{#<div class="small-8">#}
+{#    <form>#}
+{#        <fieldset>#}
+{#            <legend>Tags:formats for reprocessing</legend>#}
+{#            <div class="row">#}
+{#              <div class="large-12 columns">#}
+{#                <label>Tags:formats</label>#}
+{#                <textarea placeholder="tag:formats,e.g. r2222:ESD.AOD r3333:HIST" id="tagsFormatsTA"></textarea>#}
+{#                 <a href="#" class="small button" onclick="approveReprocessingClick(event);">Bind</a>#}
+{#              </div>#}
+{#            </div>#}
+{#        </fieldset>#}
+{#    </form>#}
+{#    <div class="">#}
+{#    </div>#}
 {% endif %}
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
@@ -1050,19 +1052,33 @@ $(".showSmallSpan").css({"cursor":"pointer"});
  <strong class="hiddenNonEdit">Work with selected slices:</strong>
  <form>
     <div class="row collapse hiddenNonEdit">
-                <div class="small-2 columns">
-                    <a href="#" class="button prefix"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve to:</a>
-                </div>
-                <div class="small-1 columns">
-                    <input type="number" id="approveToInput" value="1">
-                </div>
 
-            <div class="small-1 columns">&nbsp;</div>
-            <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
+
+
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
+            <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
+            <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
-            <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone slices</button>
 
+
+    </div>
+    <div class="row">
+    <div class="large-7 columns">
+    <div class="row collapse ">
+                <div class="large-5 columns">
+                    <a href="#" class="button prefix"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
+                </div>
+
+                <div class="large-1 columns">
+                    <select id="approveToInput" >
+                    {% for step in step_list %}
+                        <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="large-1 columns">&nbsp;</div>
+    </div>
+    </div>
     </div>
  </form>
 {#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
@@ -1193,7 +1209,7 @@ job options: <span id="sliceModalJobOption"></span></p>
                         <fieldset>
                         <div class="row">
                                 <div class="large-3 columns">
-                                  <label> Ami tag
+                                  <label> AMI tag
                                     <input type="text" class="step storeOutput{{forloop.counter0}}" placeholder=" "  />
                                   </label>
                                 </div>
