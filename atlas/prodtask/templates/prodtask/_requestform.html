@@ -278,17 +278,17 @@ $(document).ready(function(){
       <div class="row">
         <div class="large-3 columns">
           <label> AMI tag
-            <input type="text" class="ctag storeInput" placeholder="r2222"  />
+            <input type="text" class="ctag storeInput" placeholder=""  />
           </label>
         </div>
          <div class="large-4 columns">
           <label>Output formats
-            <input type="text" class="formats storeInput" placeholder=""  />
+            <input type="text" class="formats storeInput" placeholder="AOD.ESD"  />
           </label>
         </div>
          <div class="large-2 columns">
           <label>Events per job
-            <input type="number" class="eventsperjob storeInput"  value="1000"  />
+            <input type="number" class="eventsperjob storeInput"  value="5000"  />
           </label>
         </div>
          <div class="large-2 columns">
@@ -305,8 +305,9 @@ $(document).ready(function(){
         <div class="row">
         <div class="large-3 columns">
             <label>cmtconfig
-            <input type="text" list="cmtprojects" value="x86_64-slc6-gcc47-opt" class="cmtconfig storeInput"/>
+            <input type="text" list="cmtprojects" value="" placeholder="default" class="cmtconfig storeInput"/>
             <datalist id="cmtprojects">
+              <option value="">
               <option value="i686-slc5-gcc43-opt">
               <option value="x86_64-slc5-gcc43-opt">
               <option value="x86_64-slc6-gcc46-opt">
@@ -322,7 +323,7 @@ $(document).ready(function(){
         </div>
         <div class="large-3 columns">
           <label>Priority
-            <input type="number" class="priority storeInput" value="900" />
+            <input type="number" class="priority storeInput" value="520" />
           </label>
         </div>
       </div>

@@ -291,8 +291,10 @@ def parse_json_slice_dict(json_string):
                             for merge_option in merge_options:
                                 if slice[merge_option]:
                                     task_config.update({merge_option:slice[merge_option]})
-
-                        task_config.update({'project_mode':'cmtconfig='+slice['cmtconfig']+';'+slice['projectmode']})
+                        if slice['cmtconfig']:
+                            task_config.update({'project_mode':'cmtconfig='+slice['cmtconfig']+';'+slice['projectmode']})
+                        else:
+                            task_config.update({'project_mode':slice['projectmode']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
 
@@ -310,7 +312,10 @@ def parse_json_slice_dict(json_string):
                                 task_config = {}
                                 nEventsPerJob = step['eventsperjob']
                                 task_config.update({'nEventsPerJob':dict((x,nEventsPerJob) for x in StepExecution.STEPS)})
-                                task_config.update({'project_mode':'cmtconfig='+step['cmtconfig']+';'+step['projectmode']})
+                                if step['cmtconfig']:
+                                    task_config.update({'project_mode':'cmtconfig='+step['cmtconfig']+';'+step['projectmode']})
+                                else:
+                                    task_config.update({'project_mode':step['projectmode']})
                                 if step['jediTag']:
                                     task_config.update({'merging_tag':step['jediTag']})
                                     for merge_option in merge_options:
