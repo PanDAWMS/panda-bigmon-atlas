@@ -297,7 +297,8 @@ def parse_json_slice_dict(json_string):
                             task_config.update({'project_mode':slice['projectmode']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
-
+                        if slice['inputFormat']:
+                                    task_config.update({'input_format':slice['inputFormat']})
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
