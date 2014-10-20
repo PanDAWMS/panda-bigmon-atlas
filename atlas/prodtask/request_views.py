@@ -204,7 +204,7 @@ def hlt_form_prefill(form_data, request):
     if not form_data.get('energy_gev'):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
-        form_data['provenance'] = 'test'
+        form_data['provenance'] = 'GP'
 
     task_config = {}
     if 'events_per_job' in output_dict:
