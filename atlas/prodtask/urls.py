@@ -70,6 +70,7 @@ urlpatterns = patterns('',
     url(r'^update_project_mode/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.update_project_mode', name='update_project_mode'),
     url(r'^reject_steps/(?P<reqid>\d+)/(?P<step_filter>\w+)/$', 'atlas.prodtask.step_manage_views.reject_steps', name='reject_steps'),
     url(r'^clone_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
+    url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
 

@@ -806,6 +806,33 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 );
               return false;
         };
+
+         function rejectSlicesClick(event){
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:reject_slices_in_req' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -1058,6 +1085,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
             <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
+            <button id="rejectSlice" title="Reject slices, if they're not approved" onclick="rejectSlicesClick(event);">Reject </button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
 

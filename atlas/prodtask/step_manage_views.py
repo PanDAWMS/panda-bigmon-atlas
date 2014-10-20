@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_protect
 from .views import form_existed_step_list
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig
+from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -64,6 +64,31 @@ def clone_slices_in_req(request, reqid):
                         step.step_parent = step
                     step.save()
                     parent_step = step
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def reject_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
+                new_slice = current_slice.values()[0]
+                step_execs = StepExecution.objects.filter(slice=current_slice)
+                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+                for step in ordered_existed_steps:
+                    if ProductionTask.objects.filter(step=step).count() == 0:
+                        step.step_appr_time = None
+                        if step.status == 'Skipped':
+                            step.status = 'NotCheckedSkipped'
+                        elif step.status == 'Approved':
+                            step.status = 'NotChecked'
+                        step.save()
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

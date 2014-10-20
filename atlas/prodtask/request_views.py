@@ -705,8 +705,14 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
                     req = TRequest(**form.cleaned_data)
                     req.save()
-                    #TODO:Take owner from sso cookies
-                    request_status = RequestStatus(request=req,comment='Request created by WebUI',owner='default',
+                    owner=''
+                    try:
+                        owner = request.user.username
+                    except:
+                        pass
+                    if not owner:
+                        owner = 'default'
+                    request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
                                                    status='waiting')
                     request_status.save_with_current_time()
                     current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
