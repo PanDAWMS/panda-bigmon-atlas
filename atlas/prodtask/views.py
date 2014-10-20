@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+import time
 from ..prodtask.ddm_api import find_dataset_events
 from .request_views import fill_dataset
 
@@ -595,7 +596,21 @@ def input_list_approve(request, rid=None):
 
     if request.method == 'GET':
         try:
+
             cur_request = TRequest.objects.get(reqid=rid)
+            #steps_db =
+
+            steps_db = list(StepExecution.objects.filter(request=rid))
+            steps = {}
+            for current_step in steps_db:
+                steps[current_step.slice.id] = steps.get(current_step.slice.id,[])+[current_step]
+            tasks = {}
+            tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time'))
+            for current_task in tasks_db:
+                tasks[current_task.step.id] =  tasks.get(current_task.step.id,[]) + [current_task]
+
+            # for current_step in steps_db:
+            #     steps[current_step.slice] = steps.get(current_step.slice,[]).append(current_step)
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
                 pattern_list_name = [('Empty', ['' for step in STEPS_LIST])]
@@ -610,6 +625,7 @@ def input_list_approve(request, rid=None):
 
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
+            input_list_count = InputRequestList.objects.filter(request=cur_request).count()
             # input_lists - list of tuples for end to form.
             # tuple format:
             # first element - InputRequestList object
@@ -626,40 +642,46 @@ def input_list_approve(request, rid=None):
                 edit_mode = True
             else:
                 # choose how to form input data pattern: from jobOption or from input dataset
+                slice_pattern = '*'
                 use_input_date_for_pattern = True
                 if not input_lists_pre[0].input_data:
-                    use_input_date_for_pattern = False
-                if use_input_date_for_pattern:
-                    slice_pattern = input_lists_pre[0].input_data.split('.')
-                else:
-                    slice_pattern = input_lists_pre[0].dataset.name.split('.')
+                        use_input_date_for_pattern = False
+                if input_list_count < 50:
+                    if use_input_date_for_pattern:
+                        slice_pattern = input_lists_pre[0].input_data.split('.')
+                    else:
+                        slice_pattern = input_lists_pre[0].dataset.name.split('.')
+
                 for slice in input_lists_pre:
-                    step_execs = StepExecution.objects.filter(slice=slice)
+                    #step_execs = StepExecution.objects.filter(slice=slice)
+
+                    #step_execs = [x for x in steps if x.slice == slice]
+                    step_execs = steps[slice.id]
 
                     slice_steps = {}
                     total_slice += 1
                     show_task = False
                     # creating a pattern
-                    if use_input_date_for_pattern:
-                        if slice.input_data:
-                            current_slice_pattern = slice.input_data.split('.')
-                        else:
-                            current_slice_pattern=''
-                    else:
-                        if slice.dataset:
-                            current_slice_pattern = slice.dataset.name.split('.')
-                        else:
-                            current_slice_pattern=''
-
-                    if current_slice_pattern:
-                        for index,token in enumerate(current_slice_pattern):
-                            if index >= len(slice_pattern):
-                                slice_pattern.append(token)
+                    if input_list_count < 50:
+                        if use_input_date_for_pattern:
+                            if slice.input_data:
+                                current_slice_pattern = slice.input_data.split('.')
                             else:
-                                if token!=slice_pattern[index]:
-                                    slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
-                                    slice_pattern[index] += '*'
+                                current_slice_pattern=''
+                        else:
+                            if slice.dataset:
+                                current_slice_pattern = slice.dataset.name.split('.')
+                            else:
+                                current_slice_pattern=''
 
+                        if current_slice_pattern:
+                            for index,token in enumerate(current_slice_pattern):
+                                if index >= len(slice_pattern):
+                                    slice_pattern.append(token)
+                                else:
+                                    if token!=slice_pattern[index]:
+                                        slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
+                                        slice_pattern[index] += '*'
                     # Creating step dict
                     slice_steps_list = []
                     temp_step_list = []
@@ -667,7 +689,7 @@ def input_list_approve(request, rid=None):
                     for step in step_execs:
                         step_task = {}
                         try:
-                            step_task = ProductionTask.objects.filter(step = step).order_by('-submit_time')[0]
+                            step_task = tasks[step.id][0]
 
                         except Exception,e:
                             step_task = {}
@@ -718,6 +740,7 @@ def input_list_approve(request, rid=None):
                                     slice_steps_list.append((current_step[0].id,form_step_obj(current_step[0],current_step[1])))
                                     temp_step_list.pop(index)
 
+
                         for i in range(len(temp_step_list)):
                             j = 0
                             while (temp_step_list[j][0].step_parent.id!=slice_steps_list[-1][0]):
@@ -753,7 +776,8 @@ def input_list_approve(request, rid=None):
                'pattern': '.'.join(slice_pattern),
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
-               'show_reprocessing':show_reprocessing
+               'show_reprocessing':show_reprocessing,
+               'not_use_input_date_for_pattern':not use_input_date_for_pattern
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

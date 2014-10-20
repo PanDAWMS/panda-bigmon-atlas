@@ -946,17 +946,17 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             <table class="inputListTables" >
             <tr class="inputListRow">
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
-                {% if  inputList.input_data|length < 10  %}
+                {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
                         <span class="showFullSpan" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset.name }}">
-                            {{ inputList.dataset.name|truncatechars:"58" }}
+                            {{ inputList.dataset.name }}
                         </span>
                     </td>
                     <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
                         <span class='showFullSpan' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
-                            {{ inputList.input_data|truncatechars:"58" }}
+                            {{ inputList.input_data}}
                         </span>
                     </td>
                     <td  colspan="2"><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset.name }}</span></td>
