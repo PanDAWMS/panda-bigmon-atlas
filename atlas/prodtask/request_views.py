@@ -205,6 +205,8 @@ def hlt_form_prefill(form_data, request):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'GP'
+    if not form_data.get('phys_group'):
+        form_data['phys_group'] = 'THLT'
 
     task_config = {}
     if 'events_per_job' in output_dict:
@@ -474,6 +476,8 @@ def reprocessing_form_prefill(form_data, request):
         form_data['energy_gev'] = 8000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'AP'
+    if not form_data.get('phys_group'):
+        form_data['phys_group'] = 'REPR'
     task_config = {}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
