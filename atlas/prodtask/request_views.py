@@ -10,6 +10,7 @@ from django.template.response import TemplateResponse
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.views.decorators.csrf import csrf_protect
+from django.db import transaction
 from ..prodtask.ddm_api import find_dataset_events
 import core.datatables as datatables
 import json
@@ -676,7 +677,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             # Process the data from create form form
             elif 'file_dict' in request.session:
                 #TODO: Waiting message
-                #TODO: One commission
                 file_dict = request.session['file_dict']
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
                 if not form2.is_valid():
@@ -705,82 +705,83 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 #         del form.cleaned_data['tag_hierarchy']
                 form.cleaned_data['cstatus'] = 'waiting'
                 try:
-                    _logger.debug("Creating request : %s" % form.cleaned_data)
+                    with transaction.atomic():
+                        _logger.debug("Creating request : %s" % form.cleaned_data)
 
-                    req = TRequest(**form.cleaned_data)
-                    req.save()
-                    owner=''
-                    try:
-                        owner = request.user.username
-                    except:
-                        pass
-                    if not owner:
-                        owner = 'default'
-                    request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
-                                                   status='waiting')
-                    request_status.save_with_current_time()
-                    current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
-                    _logger.debug("e-mail with link %s" % current_uri)
-                    send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
-                              request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri),
-                              APP_SETTINGS['prodtask.email.from'],
-                              APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
-                              fail_silently=True)
-                    # Saving slices->steps
-                    step_parent_dict = {}
-                    for current_slice in file_dict:
-                        input_data = current_slice["input_dict"]
-                        input_data['request'] = req
-                        priority_obj = get_priority_object(input_data['priority'])
-                        if input_data.get('dataset'):
-                                input_data['dataset'] = fill_dataset(input_data['dataset'])
-                        _logger.debug("Filling input data: %s" % input_data)
-                        irl = InputRequestList(**input_data)
-                        irl.save()
-                        for step in current_slice.get('step_exec_dict'):
-                            st = fill_template(step['step_name'], step['tag'], input_data['priority'],
-                                               step.get('formats', None), step.get('memory', None))
-                            task_config= {}
-                            upadte_after = False
-                            if 'task_config' in step:
-                                if 'nEventsPerJob' in step['task_config']:
-                                    task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                    if step['step_name']=='Evgen':
-                                        task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                                       'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag']
-                                for task_config_option in task_config_options:
-                                    if task_config_option in step['task_config']:
-                                        task_config.update({task_config_option:step['task_config'][task_config_option]})
-                            step['step_exec']['request'] = req
-                            step['step_exec']['slice'] = irl
-                            step['step_exec']['step_template'] = st
-                            step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
-                            _logger.debug("Filling step execution data: %s" % step['step_exec'])
-                            st_exec = StepExecution(**step['step_exec'])
-                            if step_parent_dict:
-                                if ('step_parent' in step) and ('step_order' in step):
-                                    if (step['step_parent']==step['step_order']):
-                                        upadte_after = True
+                        req = TRequest(**form.cleaned_data)
+                        req.save()
+                        owner=''
+                        try:
+                            owner = request.user.username
+                        except:
+                            pass
+                        if not owner:
+                            owner = 'default'
+                        request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
+                                                       status='waiting')
+                        request_status.save_with_current_time()
+                        current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
+                        _logger.debug("e-mail with link %s" % current_uri)
+                        send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
+                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri),
+                                  APP_SETTINGS['prodtask.email.from'],
+                                  APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
+                                  fail_silently=True)
+                        # Saving slices->steps
+                        step_parent_dict = {}
+                        for current_slice in file_dict:
+                            input_data = current_slice["input_dict"]
+                            input_data['request'] = req
+                            priority_obj = get_priority_object(input_data['priority'])
+                            if input_data.get('dataset'):
+                                    input_data['dataset'] = fill_dataset(input_data['dataset'])
+                            _logger.debug("Filling input data: %s" % input_data)
+                            irl = InputRequestList(**input_data)
+                            irl.save()
+                            for step in current_slice.get('step_exec_dict'):
+                                st = fill_template(step['step_name'], step['tag'], input_data['priority'],
+                                                   step.get('formats', None), step.get('memory', None))
+                                task_config= {}
+                                upadte_after = False
+                                if 'task_config' in step:
+                                    if 'nEventsPerJob' in step['task_config']:
+                                        task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                        if step['step_name']=='Evgen':
+                                            task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag']
+                                    for task_config_option in task_config_options:
+                                        if task_config_option in step['task_config']:
+                                            task_config.update({task_config_option:step['task_config'][task_config_option]})
+                                step['step_exec']['request'] = req
+                                step['step_exec']['slice'] = irl
+                                step['step_exec']['step_template'] = st
+                                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                                _logger.debug("Filling step execution data: %s" % step['step_exec'])
+                                st_exec = StepExecution(**step['step_exec'])
+                                if step_parent_dict:
+                                    if ('step_parent' in step) and ('step_order' in step):
+                                        if (step['step_parent']==step['step_order']):
+                                            upadte_after = True
+                                        else:
+                                            st_exec.step_parent = step_parent_dict[step['step_parent']]
                                     else:
-                                        st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                        upadte_after = True
                                 else:
                                     upadte_after = True
-                            else:
-                                upadte_after = True
-                            if task_config:
-                                st_exec.set_task_config(task_config)
-                            st_exec.save_with_current_time()
-                            if ('step_parent' in step) and ('step_order' in step):
-                                step_parent_dict.update({step['step_order']:st_exec})
-                            else:
-                                step_parent_dict.update({0:st_exec})
-                            if upadte_after:
+                                if task_config:
+                                    st_exec.set_task_config(task_config)
+                                st_exec.save_with_current_time()
                                 if ('step_parent' in step) and ('step_order' in step):
-                                    st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                    step_parent_dict.update({step['step_order']:st_exec})
                                 else:
-                                    st_exec.step_parent = step_parent_dict[0]
-                                st_exec.save()
+                                    step_parent_dict.update({0:st_exec})
+                                if upadte_after:
+                                    if ('step_parent' in step) and ('step_order' in step):
+                                        st_exec.step_parent = step_parent_dict[step['step_parent']]
+                                    else:
+                                        st_exec.step_parent = step_parent_dict[0]
+                                    st_exec.save()
 
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))
