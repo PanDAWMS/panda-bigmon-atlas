@@ -13,7 +13,7 @@ import core.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask, TRequest, TTask
+from .models import ProductionTask, TRequest, TTask, ProductionDataset
 
 from django.db.models import Count, Q
 
@@ -31,6 +31,7 @@ def task_details(request, rid=None):
        try:
            task = ProductionTask.objects.get(id=rid)
            ttask = TTask.objects.get(id=rid)
+           output_datasets = ProductionDataset.objects.filter(task_id=rid)
           # form = ProductionTaskForm(instance=req)
        except:
            return HttpResponseRedirect('/')
@@ -58,6 +59,7 @@ def task_details(request, rid=None):
        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
        'task': task,
        'ttask': ttask,
+       'output_datasets': output_datasets,
        'clouds': get_clouds(),
        'sites': get_sites(),
        'parent_template' : 'prodtask/_index.html',
