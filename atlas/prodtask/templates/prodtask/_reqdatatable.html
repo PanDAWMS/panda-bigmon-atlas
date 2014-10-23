@@ -509,7 +509,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
        };
         function tagFormatChange(){
-                  sendData = {'tag_format':$("#tagFormatSelect").val()};
+                 event.preventDefault();
+                 sendData = {'tag_format':$("#tagFormatSelect").val()};
                   $( "#waitingDialog" ).dialog();
                   $.ajax({
                         url: "{% url 'prodtask:project_mode_from_tag' pr_id %}",
@@ -536,7 +537,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         };
 
          function refreshTagFormats(event){
-              sendData = {};
+             sendData = {};
               $( "#waitingDialog" ).dialog();
               $.ajax({
                     url: "{% url 'prodtask:get_tag_formats' pr_id%}",
@@ -562,7 +563,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
          };
 
         function updateStepParametrs(event){
-              sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val(),
+            event.preventDefault();
+            sendData = {'tag_format':$("#tagFormatSelect").val(),'project_mode':$("#project_mode_input").val(),
               'input_events':$('#input_events_input').val(),'priority':$('#priority_input').val(),
               'nEventsPerJob':$('#nEventsPerJob_input').val(),
                   'nEventsPerInputFile':$('#nEventsPerInputFile_input').val(),
@@ -588,6 +590,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         };
 
         function findInputClick(event) {
+            event.preventDefault();
             var sliceList=[];
             var i=0;
             $(".checkboxSlice:checked").each(function(){
@@ -667,7 +670,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
         $(document).foundation();
         function formSliceInfo(id){
-          event.preventDefault();
+{#          event.preventDefault();#}
           var sliceID = id.slice(10);
         $("#sliceInfo").attr({'class':'small content f-dropdown'});
             $("#sliceInfo").html('');
@@ -712,7 +715,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 compareTable.append($("<a/>",{text: 'save', class: 'button', onclick:'saveOneSlice(event);' }));
                 $("#sliceInfo").append(compareTable);
           }
-
+        return false;
 
         };
         function saveOneSlice(event){
@@ -755,6 +758,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         }
                     }
                 }
+
                 if (step_types.length != current_step_tag.length){
                     is_equal = false;
                 }
@@ -808,6 +812,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         };
 
          function rejectSlicesClick(event){
+            event.preventDefault();
             var sliceList=[];
             var i=0;
             $(".checkboxSlice:checked").each(function(){
