@@ -509,7 +509,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
        };
         function tagFormatChange(){
-                 event.preventDefault();
+{#                 event.preventDefault();#}
                  sendData = {'tag_format':$("#tagFormatSelect").val()};
                   $( "#waitingDialog" ).dialog();
                   $.ajax({
@@ -537,6 +537,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         };
 
          function refreshTagFormats(event){
+             if(event != undefined){
+                 event.preventDefault();
+             }
+
              sendData = {};
               $( "#waitingDialog" ).dialog();
               $.ajax({
