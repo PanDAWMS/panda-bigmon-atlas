@@ -1,0 +1,28 @@
+
+JEDIMerging = function() {
+    this.ctag = '';
+    this.nFilesPerMergeJob = '';
+    this.nGBPerMergeJob = '';
+    this.nMaxFilesPerMergeJob = '';
+}
+
+processingStep = function() {
+  this.step = '';
+  this.ctag = '';
+  this.output_formats = '';
+  this.input_formats = '';
+  this.status = '';
+  this.priority = '';
+  this.memory = '';
+  this.nEventsPerJob = '';
+  this.nEventsPerInputFile = '';
+  this.project_mode = '';
+  this.token = '';
+  this.position = undefined;
+  this.JEDIMerge = new JEDIMerging();
+};
+
+requestSlice = function() {
+    var stepsInSlice = [];
+
+};
