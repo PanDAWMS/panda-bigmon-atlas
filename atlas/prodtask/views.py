@@ -636,7 +636,7 @@ def input_list_approve(request, rid=None):
             approved_count = 0
             total_slice = 0
             slice_pattern = []
-            edit_mode = False
+            edit_mode = True
             fully_approved = 0
             if not input_lists_pre:
                 edit_mode = True
