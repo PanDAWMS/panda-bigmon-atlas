@@ -656,7 +656,10 @@ def input_list_approve(request, rid=None):
                     #step_execs = StepExecution.objects.filter(slice=slice)
 
                     #step_execs = [x for x in steps if x.slice == slice]
-                    step_execs = steps[slice.id]
+                    try:
+                        step_execs = steps[slice.id]
+                    except:
+                        step_execs = []
 
                     slice_steps = {}
                     total_slice += 1
