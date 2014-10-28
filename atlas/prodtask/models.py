@@ -173,6 +173,15 @@ class Ttrfconfig(models.Model):
         app_label = 'grisli'
         db_table = u'T_TRF_CONFIG'
 
+class TDataFormatAmi(models.Model):
+    format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION')
+    status = models.CharField(max_length=8, db_column='STATUS')
+    last_modified = models.DateTimeField(db_column='LASTMODIFIED')
+
+    class Meta:
+        app_label = 'grisli'
+        db_table = u'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
