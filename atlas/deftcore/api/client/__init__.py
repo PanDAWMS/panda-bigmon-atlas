@@ -88,6 +88,14 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('retry_task', owner, body)
 
+    def change_task_ram_count(self, owner, task_id, ram_count):
+        body = {'task_id': task_id, 'ram_count': ram_count}
+        return self._create_request('change_task_ram_count', owner, body)
+
+    def change_task_wall_time(self, owner, task_id, wall_time):
+        body = {'task_id': task_id, 'wall_time': wall_time}
+        return self._create_request('change_task_wall_time', owner, body)
+
     def add_task_comment(self, owner, task_id, comment):
         body = {'task_id': task_id, 'comment_body': comment}
         return self._create_request('add_task_comment', owner, body)
