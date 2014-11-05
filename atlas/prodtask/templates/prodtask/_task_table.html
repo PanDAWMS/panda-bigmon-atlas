@@ -114,9 +114,23 @@
     </tr>
 
     <tr>
-        <td>Request:</td>
+        <td>Request ID:</td>
         <td>
         <input id="request" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Request ID <= </td>
+        <td>
+        <input id="request_id_gt" />
+        </td>
+    </tr>
+
+    <tr>
+        <td>Request ID >= </td>
+        <td>
+        <input id="request_id_lt" />
         </td>
     </tr>
 
@@ -138,6 +152,13 @@
         <td>Campaign:</td>
         <td>
             <input type="text" id="campaign" name="campaign">
+        </td>
+    </tr>
+
+    <tr>
+        <td>AMI tag exact:</td>
+        <td>
+        <input id="ctag" />
         </td>
     </tr>
 
@@ -195,17 +216,34 @@
         <td>
         <select id="phys_group">
             <option value="">All</option>
-            <option value="Btagging">Btagging</option>
-            <option value="dataprep">Dataprep</option>
-            <option value="Exotics">Exotics</option>
-            <option value="Higgs">Higgs</option>
-            <option value="JetMet">JetMet</option>
-            <option value="Physics">Physics</option>
-            <option value="SM">SM</option>
-            <option value="Susy">Susy</option>
-            <option value="Top">Top</option>
-            <option value="Validation">Validation</option>
-            <option value="None">None</option>
+			<option value="BPHY">BPHY</option>
+			<option value="COSM">COSM</option>
+			<option value="DAPR">DAPR</option>
+			<option value="EGAM">EGAM</option>
+			<option value="EXOT">EXOT</option>
+			<option value="FTAG">FTAG</option>
+			<option value="HIGG">HIGG</option>
+			<option value="HION">HION</option>
+			<option value="IDET">IDET</option>
+			<option value="IDTR">IDTR</option>
+			<option value="JETM">JETM</option>
+			<option value="LARG">LARG</option>
+			<option value="MCGN">MCGN</option>
+			<option value="SIMU">SIMU</option>
+			<option value="MDET">MDET</option>
+			<option value="MUON">MUON</option>
+			<option value="PHYS">PHYS</option>
+			<option value="REPR">REPR</option>
+			<option value="STDM">STDM</option>
+			<option value="SUSY">SUSY</option>
+			<option value="TAUP">TAUP</option>
+			<option value="TCAL">TCAL</option>
+			<option value="TDAQ">TDAQ</option>
+			<option value="TOPQ">TOPQ</option>
+			<option value="THLT">THLT</option>
+			<option value="TRIG">TRIG</option>
+			<option value="VALI">VALI</option>
+			<option value="UPGR">UPGR</option>
         </select>
         </td>
     </tr>
@@ -386,7 +424,7 @@
             row[13] = row[13]=='None'? 'None' : parseDate(row[13].slice(0,19)).toString() ;
 
             row[12] = row[12].slice(4,10) + row[12].slice(15,21);
-            row[13] = '<span style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
+            row[13] = '<span title="Timestamp color codes: black < 24h, 24h < yellow <48h, 48h < orange < 72h, 72h < red" style="color : '+time_stamp_color+';">'+ row[13].slice(4,10) + row[13].slice(15,21) +'</span>';
 
             row[11] = '<span class="tstat '+row[11]+'">'+row[11]+'</span>';
         }
@@ -412,9 +450,7 @@
         }
     }
 
-    var changed_params = {};
-
-    function ParseParametersFromURL()
+    function LoadDefaultAndParametersFromURL()
     {
         var time_from = new Date();
         var time_to = new Date();
@@ -447,7 +483,6 @@
 
                     default:
                         $( "#"+parameters_list[i].id ).val( value );
-                        changed_params[ parameters_list[i].name ] = parameters_list[i];
                         break;
                 }
             }
@@ -456,7 +491,7 @@
                 switch( parameters_list[i].name )
                 {
                     case 'task_type':
-                        $("#task_type").val('all');
+                  //      $("#task_type").val('all');
                         break;
                     case 'time_from':
                         $( "#time_from" ).datepicker( "setDate", time_from );
@@ -473,11 +508,41 @@
                 }
             }
         }
-        if( ! extern_parameter )
-            $("#task_type").val('production');
+        if( extern_parameter && ! $.address.parameter('task_type') )
+            $("#task_type").val('all');
 
         $( "#time_period" ).change();
 
+    }
+
+    function UpdateParametersFromURL()
+    {
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value && value != $( "#"+parameters_list[i].id ).val() )
+            {
+                extern_parameter = 1;
+                switch( parameters_list[i].name )
+                {
+                    case 'time_from':
+                    //    time_from = new Date().parse( value );
+                        $( "#time_from" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_to':
+                   //     time_from = new Date().parse( value );
+                        $( "#time_to" ).datepicker( "setDate", value );
+                        break;
+                    case 'time_period':
+                        $("#time_period").val(value);
+                        break;
+
+                    default:
+                        $( "#"+parameters_list[i].id ).val( value );
+                        break;
+                }
+            }
+        }
     }
 
     $( "#time_from" ).datepicker({
@@ -543,7 +608,9 @@
         $('#task_stat_table').html(table);
     }
 
-    ParseParametersFromURL();
+    LoadDefaultAndParametersFromURL();
+    $("#update_task_table").button({ disabled: true });
+    $("#update_task_table").tooltip( );
 
 </script>
 
@@ -561,11 +628,9 @@ $(document).ready(function() {
     taskTable.fnSetColumnVis( 22, false, false );
     taskTable.fnSetColumnVis( 23, false, false );
 
-    $("#update_task_table").button({ disabled: true });
-    $("#update_task_table").tooltip( );
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
 
-    $.address.change(function(){ ParseParametersFromURL(); taskTable.fnDraw(); });
+    taskTable.one("draw", function(){ $.address.change(function(){ UpdateParametersFromURL(); taskTable.fnDraw(); }) });
     
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });
@@ -597,6 +662,7 @@ $(document).ready(function() {
 });
  </script>
 
+
 <div id="switch_to_manage" class="button-bar left hide">
     <div class="button-bar">
         <ul class="button-group radius">
@@ -612,6 +678,7 @@ $(document).ready(function() {
     </div>
 </div>
 
+
 <script type="text/javascript">
     $(document).ready(function() {
         var manage_url_base = $(location).attr('origin') + "{% url 'prodtask:task_manage' %}";
@@ -624,14 +691,23 @@ $(document).ready(function() {
             $("#switch_to_manage").show();
 
             $("#btn_switch_to_manage").click(function() {
+
+              {% if user.is_authenticated %}
+    {% comment %} Redirect to manage mode {% endcomment %}
                 var view_url_base = $(location).attr('origin') + $(location).attr('pathname');
                 var manage_url_full = $(location).attr('href').replace(view_url_base, manage_url_base);
-
                 $(location).attr('href', manage_url_full);
+              {% else %}
+    {% comment %} Redirect to login page and then to manage mode {%endcomment %}
+                $(location).attr('href', "{% url 'prodtask:login' %}?next={% url 'prodtask:task_manage' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}");
+              {% endif %}
+
                 return False;
             }); 
+
             $(".top-toolbar").children().css("height", "2.0em");
-        }
+        } // if not in managed mode
+
     });
 </script>
 

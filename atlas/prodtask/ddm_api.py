@@ -1,8 +1,50 @@
 
 import logging
 import os
+from ..prodtask.models import ProductionDataset
+from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
+from ..settings import dq2client as dq2_settings
 
 _logger = logging.getLogger('ddm_prodtask')
+
+
+def find_dataset_events(dataset_pattern):
+        return_list = []
+        ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+        datasets_containers = ddm.find_dataset(dataset_pattern.replace('%','*'))
+        containers = [x for x in datasets_containers if x[-1] == '/' ]
+        datasets = [x for x in datasets_containers if x not in containers ]
+        for container in containers:
+            event_count = 0
+            is_good = True
+            datasets_in_container = ddm.dataset_in_container(container)
+            for dataset_name in datasets_in_container:
+                if dataset_name in datasets:
+                    datasets.remove(dataset_name)
+                try:
+                    dataset = ProductionDatasetsExec.objects.get(name=dataset_name)
+                    task = TaskProdSys1.objects.get(taskid=dataset.taskid)
+                    if (task.status not in ['aborted','failed','lost']):
+                        event_count += task.total_events
+                    else:
+                        is_good = False
+                except:
+                    is_good = False
+            if is_good:
+                return_list.append({'dataset_name':container,'events':str(event_count)})
+        for dataset_name in datasets:
+            try:
+                task = TaskProdSys1.objects.get(taskname=dataset_name)
+                if (task.status not in ['aborted','failed','lost']):
+                    return_list.append({'dataset_name':dataset_name,'events':str(task.total_events)})
+            except:
+                try:
+                    dataset_in_db = ProductionDataset.objects.get(name=dataset_name)
+                    if dataset_in_db.status == 'done':
+                         return_list.append({'dataset_name':dataset_name,'events':str(-1)})
+                except:
+                    pass
+        return return_list
 
 class DDM(object):
     """

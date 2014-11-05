@@ -125,6 +125,8 @@ def translate_excl_to_dict(excel_dict):
                                input_events=int(input_events))
 
                     index += 1
+                    reduce_input_format = False
+                    step_index = 0
                     for currentstep in StepExecution.STEPS:
                         if translated_row.get(currentstep):
                             st = currentstep
@@ -137,11 +139,26 @@ def translate_excl_to_dict(excel_dict):
                             else:
                                 sexec = dict(status='NotChecked', input_events=-1)
                             formats = None
+                            task_config = {'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                 'project_mode':get_default_project_mode_dict().get(st,'')}
+
+                            if reduce_input_format:
+                                task_config.update({'input_format':'AOD'})
+                                reduce_input_format = False
                             if currentstep == 'Reco':
-                                formats = 'AOD'
+                                if translated_row.get('format', ''):
+                                    formats = 'AOD'+'.'+translated_row.get('format', '')
+                                    reduce_input_format = True
+                                else:
+                                    formats = 'AOD'
+                            if step_index != 0:
+                                step_index_parent = step_index - 1
+                            else:
+                                step_index_parent = 0
                             st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
-                                                  'task_config':{'nEventsPerJob':get_default_nEventsPerJob_dict(),
-                                                                 'project_mode':get_default_project_mode_dict().get(st,'')}})
+                                                  'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
+                                                  'step_parent':str(index)+'_'+str(step_index_parent)})
+                            step_index += 1
                     return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 

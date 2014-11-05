@@ -38,9 +38,38 @@ class TProject(models.Model):
         db_table = u'"ATLAS_DEFT"."T_PROJECTS"'
 
 class TRequest(models.Model):
-    PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
-                                 'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
-                                 'reprocessing','trig-hlt']]
+    # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
+    #                              'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
+    #                              'reprocessing','trig-hlt','Validation']]
+    PHYS_GROUPS=[(x,x) for x in ['BPHY',
+                                 'COSM',
+                                 'DAPR',
+                                 'EGAM',
+                                 'EXOT',
+                                 'FTAG',
+                                 'HIGG',
+                                 'HION',
+                                 'IDET',
+                                 'IDTR',
+                                 'JETM',
+                                 'LARG',
+                                 'MCGN',
+                                 'SIMU',
+                                 'MDET',
+                                 'MUON',
+                                 'PHYS',
+                                 'REPR',
+                                 'STDM',
+                                 'SUSY',
+                                 'TAUP',
+                                 'TCAL',
+                                 'TDAQ',
+                                 'TOPQ',
+                                 'THLT',
+                                 'TRIG',
+                                 'VALI',
+                                 'UPGR']]
+
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
 
@@ -144,6 +173,15 @@ class Ttrfconfig(models.Model):
         app_label = 'grisli'
         db_table = u'T_TRF_CONFIG'
 
+class TDataFormatAmi(models.Model):
+    format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION')
+    status = models.CharField(max_length=8, db_column='STATUS')
+    last_modified = models.DateTimeField(db_column='LASTMODIFIED')
+
+    class Meta:
+        app_label = 'grisli'
+        db_table = u'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)

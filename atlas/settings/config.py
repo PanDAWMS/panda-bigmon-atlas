@@ -79,3 +79,37 @@ STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 ## more details on how to customize your logging configuration.
 from .logconfig import LOGGING
 
+
+MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'shibsso.middleware.ShibSSOMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+)
+
+
+AUTHENTICATION_BACKENDS = (
+#    'atlas.auth.fake.backends.LoginAsBackend',
+    'atlas.auth.voms.backends.VomsBackend',
+    'shibsso.backends.ShibSSOBackend',
+)
+
+
+# Settings for authentication variables
+
+SHIB_SSO_ADMIN = True
+SHIB_SSO_CREATE_ACTIVE = True
+SHIB_SSO_CREATE_STAFF = False
+SHIB_SSO_CREATE_SUPERUSER = False
+SHIB_LOGIN_PATH = '/Shibboleth.sso/?target='
+SHIB_LOGOUT_URL = 'https://login.cern.ch/adfs/ls/?wa=wsignout1.0&returnurl='
+META_EMAIL = 'ADFS_EMAIL'
+META_FIRSTNAME = 'ADFS_FIRSTNAME'
+META_GROUP = 'ADFS_GROUP'
+META_LASTNAME = 'ADFS_LASTNAME'
+META_USERNAME = 'ADFS_LOGIN'
+LOGIN_REDIRECT_URL = '/'
+
+#FAKE_LOGIN_AS_USER = 'username'

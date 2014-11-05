@@ -299,7 +299,7 @@
 <script type="text/javascript">
 $(document).ready(function() {
     $("#update_request_table").button().click(function(){ requestTable.fnDraw() });
-    $.address.change(function(){ ParseParametersFromURL(); requestTable.fnDraw(); });
+    requestTable.one("draw", function(){ $.address.change(function(){ ParseParametersFromURL(); requestTable.fnDraw(); }) });
 });
  </script>
 

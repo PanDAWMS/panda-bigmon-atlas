@@ -9,6 +9,10 @@ import atlas.settings
 import atlas.common.views as atlas_common_views
 #import atlas.todoview.views as atlas_todo_views
 
+from django.contrib import admin
+admin.autodiscover()
+
+
 common_patterns = patterns('',
     ### robots.txt
     url('^robots\.txt$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
@@ -61,10 +65,10 @@ common_patterns = patterns('',
 
     ### Django Admin
     ### Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     ### Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls),),
 
     ### Django.js
     url(r'^djangojs/', include('djangojs.urls')),

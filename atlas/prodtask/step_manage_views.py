@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_protect
 from .views import form_existed_step_list
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig
+from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -20,6 +20,75 @@ def tag_info(request, tag_name):
             if trtf:
                 results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
                                 'input':trtf[0].input,'step':trtf[0].step})
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def clone_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            #form levels from input text lines
+            #create chains for each input
+            new_slice_number = InputRequestList.objects.filter(request=reqid).count()
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
+                new_slice = current_slice.values()[0]
+                new_slice['slice'] = new_slice_number
+                new_slice_number += 1
+                del new_slice['id']
+                new_input_data = InputRequestList(**new_slice)
+                new_input_data.save()
+                step_execs = StepExecution.objects.filter(slice=current_slice)
+                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+                for step in ordered_existed_steps:
+
+                    step.id = None
+                    step.step_appr_time = None
+                    step.step_def_time = None
+                    step.step_exe_time = None
+                    step.step_done_time = None
+                    step.slice = new_input_data
+                    if step.status == 'Skipped':
+                        step.status = 'NotCheckedSkipped'
+                    elif step.status == 'Approved':
+                        step.status = 'NotChecked'
+                    step.save_with_current_time()
+                    if parent_step:
+                        step.step_parent = parent_step
+                    else:
+                        step.step_parent = step
+                    step.save()
+                    parent_step = step
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def reject_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
+                new_slice = current_slice.values()[0]
+                step_execs = StepExecution.objects.filter(slice=current_slice)
+                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+                for step in ordered_existed_steps:
+                    if ProductionTask.objects.filter(step=step).count() == 0:
+                        step.step_appr_time = None
+                        if step.status == 'Skipped':
+                            step.status = 'NotCheckedSkipped'
+                        elif step.status == 'Approved':
+                            step.status = 'NotChecked'
+                        step.save()
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -39,6 +108,7 @@ def step_params_from_tag(request, reqid):
             priority = ''
             nEventsPerJob = ''
             nEventsPerInputFile = ''
+            destination_token = ''
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -53,11 +123,13 @@ def step_params_from_tag(request, reqid):
                                 nEventsPerJob = task_config['nEventsPerJob']
                             if 'nEventsPerInputFile' in task_config:
                                 nEventsPerInputFile = task_config['nEventsPerInputFile']
+                            if 'token' in task_config:
+                                destination_token = task_config['token']
                             input_events = step_exec.input_events
                             priority = step_exec.priority
             results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
                             'priority':str(priority),'nEventsPerJob':str(nEventsPerJob),
-                            'nEventsPerInputFile':str(nEventsPerInputFile)})
+                            'nEventsPerInputFile':str(nEventsPerInputFile),'destination':destination_token})
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -84,6 +156,9 @@ def update_project_mode(request, reqid):
             new_nEventsPerJob = None
             if checkecd_tag_format['nEventsPerJob']:
                 new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
+            new_destination = None
+            if checkecd_tag_format['destination_token']:
+                new_destination = checkecd_tag_format['destination_token']
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
@@ -100,6 +175,8 @@ def update_project_mode(request, reqid):
                                     step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
                                 if new_nEventsPerJob:
                                     step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
+                                if new_destination:
+                                    step_exec.set_task_config({'token':'dst:'+new_destination.replace('dst:','')})
                                 step_exec.input_events = new_input_events
                                 step_exec.priority = new_priority
                                 step_exec.save()
@@ -151,13 +228,20 @@ def slice_steps(request, reqid, slice_number):
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
             if existed_foreign_step:
-                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_type':'foreign'})
+                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign'})
             for step in ordered_existed_steps:
                 is_skipped = 'not_skipped'
                 if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
                     is_skipped = 'is_skipped'
-                result_list.append({'step':step.step_template.ctag,'step_type':is_skipped})
-            results = {'success':True,'step_types':result_list}
+                task_config = json.loads(step.task_config)
+                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
+                                    'nEventsPerJob':task_config.get('nEventsPerJob'),'nEventsPerInputFile':task_config.get('nEventsPerInputFile'),
+                                    'project_mode':task_config.get('project_mode'),'input_format':task_config.get('input_format'),
+                                    'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'total_events':str(step.input_events)})
+            dataset = ''
+            if input_list.dataset:
+                dataset = input_list.dataset.name
+            results = {'success':True,'step_types':result_list, 'dataset': dataset}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

@@ -1,9 +1,13 @@
 {% extends parent_template %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
 
 {% block extra_css %}
 {{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
 	<style type="text/css" title="currentStyle">
 	</style>
 {% endblock %}
@@ -11,8 +15,191 @@
 {% block subtitle %}
 {{pre_form_text|safe}}
 {% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+{% endblock %}
 
 {% block body %}
+<script>
+
+{#    TODO: Make a class#}
+
+
+    function prepareStep(currentSlice,currentStep,parentSlice,parentStep){
+        var idForm = "form"+currentSlice+'_'+currentStep;
+        $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+currentSlice});
+        $("#" +idForm+ " .datasetTBody").html("");
+        $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+currentSlice});
+        $("#" +idForm+ " #datasetPattern"+parentSlice).val('');
+        $("#" +idForm+ " #datasetPattern"+parentSlice).prop({'id':"datasetPattern"+currentSlice});
+        $("#" +idForm+ " #addStepButton"+parentSlice+'_'+parentStep).prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        $("#" +idForm+ " #addSliceStepButton"+parentSlice+'_'+parentStep).prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " #jediMerging"+parentSlice+'_'+parentStep).prop({'id':"jediMerging"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " #jediParams"+parentSlice+'_'+parentStep).prop({'id':"jediParams"+currentSlice+'_'+currentStep});
+        $("#" +idForm+ " .parentstepshort").val(parentSlice +'_'+ parentStep);
+        $("#" +idForm+ " .parentStep").val("Slice #"+ parentSlice +' step #' + parentStep);
+    }
+
+    function addMoreSlices(event){
+        event.preventDefault();
+        var nextNumber = parseInt($('#sliceNumber').html());
+        var cloneForm = $('#form0_0').clone().prop({'id':"form"+nextNumber.toString()+'_0'});
+        var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
+        sliceDiv.append(cloneForm);
+        $('#formSet').append(sliceDiv);
+        $('#sliceNumber').html((nextNumber+1).toString());
+        prepareStep(nextNumber.toString(),'0','0','0');
+
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+     function addStep(buttonID){
+        event.preventDefault();
+
+        var currentSlice = parseInt(buttonID.replace('addStepButton','').split('_')[0]);
+        var currentStep = parseInt(buttonID.replace('addStepButton','').split('_')[1])+1;
+        var currentID = currentSlice.toString() + '_' + currentStep.toString();
+        var cloneForm = $('#form'+(currentSlice).toString()+'_' + (currentStep-1).toString()).clone().prop({'id':"form"+currentID});
+        var idForm = "form"+currentID;
+        cloneForm.children("legend").html("Slice #"+(currentSlice).toString()+' step #' + currentStep.toString()) ;
+        $('#sliceSteps'+currentSlice.toString()).append(cloneForm);
+        prepareStep(currentSlice.toString(),currentStep.toString(),currentSlice.toString(),(currentStep-1).toString());
+        $('#'+buttonID).attr('disabled','disabled').attr('onclick','').click(undefined);
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+        $("#" +idForm+ " .showNotFirst").show();
+        $("#" +idForm+ " .parentStep").val("Slice #"+(currentSlice).toString()+' step #' + (currentStep-1).toString());
+
+
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+    function addNewSliceStep(buttonID){
+        event.preventDefault();
+        var nextNumber = parseInt($('#sliceNumber').html());
+        var cloneForm = $('#form'+buttonID.replace('addSliceStepButton','').split('_')[0]+'_'+buttonID.replace('addSliceStepButton','').split('_')[1]).clone().prop({'id':"form"+nextNumber.toString()+'_0'});
+        var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
+        cloneForm.children("legend").html("Slice #"+(nextNumber).toString()+' step #0');
+        sliceDiv.append(cloneForm);
+        $('#formSet').append(sliceDiv);
+        $('#sliceNumber').html((nextNumber+1).toString());
+        prepareStep(nextNumber.toString(),'0',buttonID.replace('addSliceStepButton','').split('_')[0],buttonID.replace('addSliceStepButton','').split('_')[1]);
+        var idForm = "form"+nextNumber.toString()+'_'+0;
+        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+        $("#" +idForm+ " .showNotFirst").show();
+        $('#'+buttonID.replace('addSliceStepButton','addStepButton')).attr('disabled','disabled').attr('onclick','').click(undefined);
+        bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+    function switchJediMerging(sliceMergeID){
+
+        var currentSlice = parseInt(sliceMergeID.replace('jediMerging','').split('_')[0]);
+        var currentStep = parseInt(sliceMergeID.replace('jediMerging','').split('_')[1]);
+        if ($('#'+sliceMergeID).is(':checked')){
+            console.log('#jediParams'+currentSlice+'_'+currentStep);
+            $('#jediParams'+currentSlice+'_'+currentStep).show();
+
+        } else{
+            $('#jediParams'+currentSlice+'_'+currentStep).css({display:'none'});
+            $('#jediParams'+currentSlice+'_'+currentStep+' .storeInput').val('');
+        }
+    }
+
+    var csrftoken = $.cookie('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        crossDomain: false, // obviates need for sameOrigin test
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+$(document).ready(function(){
+
+        bindOnChangeToFieldSet();
+});
+        function bindOnChangeToFieldSet(){
+            $('.storeInput').bind('change',function(){fillSlicesField();});
+        }
+
+
+        function fillSlicesField(){
+            var resultObject = {};
+            $(".sliceFiledset").each(function(){
+               var sliceNumber = $(this).attr("id").replace("form","");
+                var sliceObject = {};
+               $(this).find(".storeInput").each(function(){
+                   sliceObject[$(this).attr('class').replace(" storeInput","")] = $(this).val();
+               });
+               var datasets='';
+               $(this).find(".datasetNames").each(function(){
+                  if($(this).siblings(".innnerDatasetCheckbox.storeInput").find('input').is(':checked')) {
+                      datasets += $(this).html() + ',';
+                  }
+               });
+               sliceObject['datasets']='';
+               if  (datasets&&(datasets!='')){
+                   sliceObject['datasets']  = datasets;
+               }
+               if  (sliceObject['datasetList']&&(sliceObject['datasetList']!='')){
+                   sliceObject['datasets'] += sliceObject['datasetList'].replace(/(\r\n|\n|\r)/gm,",");
+               }
+               resultObject[sliceNumber]  = sliceObject;
+            });
+            $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
+
+          }
+
+        function findDatasets(currentButton){
+            var sliceNumber = currentButton.slice("searchDatasetButton".length);
+              sendData = {'datasetPattern':$("#datasetPattern" + sliceNumber).val()}
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:find_datasets_by_pattern' %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        if(status){
+                            var datasets = $.evalJSON(data).data;
+                            $("#datasetsTable" + sliceNumber).html('');
+                            for(var i=0;i<datasets.length;i++){
+                              $("#datasetsTable" + sliceNumber).append('<tr><td class="datasetNames">'+
+                                      datasets[i].dataset_name+'</td><td>'+datasets[i].events+
+                                '</td><td class="innnerDatasetCheckbox storeInput"><input type="checkbox" value="checked"/> </td></tr>');
+                            }
+                            bindOnChangeToFieldSet();
+                        }
+                    }
+                });
+              return false;
+        }
+
+
+</script>
+
+<div id="waitingDialog" title="Run" style="display: none">
+  <p>Please wait...</p>
+</div>
 {% if error_message %}
     <strong>ERROR: {{ error_message }} </strong>
 {% endif %}
@@ -32,6 +219,158 @@
 {{ form.as_table }}
 </table>
 {% endif %}
+
+ <a class="button" onclick="addMoreSlices(event);">Add slice</a>
+ <strong id="sliceNumber" style="display: none">1</strong>
+ <div id="formSet">
+    <div id="sliceSteps0">
+     <fieldset id="form0_0" class="sliceFiledset">
+      <legend>Slice #0 step #0</legend>
+
+        <div class="row hideNotFirst">
+        <div class="large-12 columns">
+          <label> Datasets list:
+            <textarea  class="datasetList storeInput" placeholder=" " ></textarea>
+          </label>
+        </div>
+        </div>
+      <div class="row hideNotFirst">
+        <div class="large-12 columns">
+          <label>Or search datasets in ddm/prodsys by filter:
+            <input type="text" id='datasetPattern0' placeholder="dataset pattern" />
+          </label>
+        </div>
+      </div>
+       <div class="row buttonRow hideNotFirst">
+        <div class="large-4 columns">
+            <a class="button" id='searchDatasetButton0' onclick="findDatasets(this.id);">Find datasets</a>
+        </div>
+      </div>
+      <div class="row hideNotFirst">
+          <div class="large-12 columns">
+          <table>
+              <thead>
+              <tr>
+                <th>Dataset Name</th>
+                <th>events</th>
+                <th><input type="checkbox"/> </th>
+              </tr>
+              </thead>
+              <tbody class="datasetTBody" id="datasetsTable0">
+              </tbody>
+          </table>
+          </div>
+      </div>
+        <div class="row showNotFirst" style="display: none">
+        <div class="large-3 columns">
+          <label> Parent step
+            <input type="text" class="parentStep"  readonly />
+            <input type="hidden" class="parentstepshort storeInput" value="0_0"  />
+          </label>
+         </div>
+        <div class="large-3 columns">
+          <label> Input format
+            <input type="text" class="inputFormat storeInput" placeholder=""  />
+          </label>
+        </div>
+
+         </div>
+      <div class="row">
+        <div class="large-3 columns">
+          <label> AMI tag
+            <input type="text" class="ctag storeInput" placeholder=""  />
+          </label>
+        </div>
+         <div class="large-4 columns">
+          <label>Output formats (e.g. AOD.ESD )
+            <input type="text" class="formats storeInput" placeholder=""  />
+          </label>
+        </div>
+         <div class="large-2 columns">
+          <label>Events per job
+            <input type="number" class="eventsperjob storeInput"  value="5000"  />
+          </label>
+        </div>
+         <div class="large-2 columns">
+          <label>Total events
+            <input type="number" class="totalevents storeInput" value="-1"  />
+          </label>
+        </div>
+           <div class="large-1 columns">
+          <label>ram
+            <input type="number" class="ram storeInput" placeholder="2000"  />
+          </label>
+        </div>
+       </div>
+        <div class="row">
+        <div class="large-3 columns">
+            <label>cmtconfig
+            <input type="text" list="cmtprojects" value="" placeholder="default" class="cmtconfig storeInput"/>
+            <datalist id="cmtprojects">
+              <option value="">
+              <option value="i686-slc5-gcc43-opt">
+              <option value="x86_64-slc5-gcc43-opt">
+              <option value="x86_64-slc6-gcc46-opt">
+              <option value="x86_64-slc6-gcc47-opt">
+              <option value="x86_64-slc6-gcc48-opt">
+            </datalist>
+            </label>
+        </div>
+        <div class="large-6 columns">
+          <label>project mode
+            <input type="text" class="projectmode storeInput" />
+          </label>
+        </div>
+        <div class="large-3 columns">
+          <label>Priority
+            <input type="number" class="priority storeInput" value="520" />
+          </label>
+        </div>
+      </div>
+       <div class="row">
+        <div class="large-7 columns">
+          <label>Destination token
+            <input type="text" class="token storeInput"  />
+          </label>
+        </div>
+      </div>
+       <div class="row">
+        <div class="large-7 columns">
+          <label>JEDI internal merging
+            <input type="checkbox" id="jediMerging0_0" onclick="switchJediMerging(this.id); "/>
+          </label>
+        </div>
+         </div>
+        <div class="row" id="jediParams0_0" style="display: none">
+        <div class="large-3 columns">
+          <label>merging tag
+            <input type="text" class="jediTag storeInput"  />
+          </label>
+        </div>
+         <div class="large-3 columns">
+          <label>nFilesPerMergeJob
+            <input type="number" class="nFilesPerMergeJob storeInput"  />
+          </label>
+        </div>
+          <div class="large-3 columns">
+          <label>nGBPerMergeJob
+            <input type="number" class="nGBPerMergeJob storeInput"  />
+          </label>
+        </div>
+         <div class="large-3 columns">
+          <label>nMaxFilesPerMergeJob
+            <input type="number" class="nMaxFilesPerMergeJob storeInput"  />
+          </label>
+        </div>
+        </div>
+        <div class="row">
+            <a class="button" id="addStepButton0_0" onclick="addStep(this.id);" title="Create children step in this slice" >Add step</a>
+            <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(this.id);">Fork</a>
+      </div>
+    </fieldset>
+    </div>
+</div>
+
 {% endblock %}
 
 

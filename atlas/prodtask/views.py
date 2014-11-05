@@ -6,13 +6,14 @@ from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from .ddm_api import DDM
+import time
+from ..prodtask.ddm_api import find_dataset_events
 from .request_views import fill_dataset
-from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
-from ..settings import dq2client as dq2_settings
+
 
 import core.datatables as datatables
 
@@ -21,6 +22,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
+from django.contrib.auth.decorators import login_required
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -187,7 +189,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             #Create new step
                             _logger.debug("Create step: %s execution for request: %i slice: %i "%
                                           (steps_status[index],int(reqid),input_list.slice))
-                            temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
+                            if(STEPS[index]):
+                                temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
+                            else:
+                                temp_priority = priority_obj.priority('Evgen', step_value['value'])
                             # store input_vents only for first not skipped step, otherwise
                             temp_input_events = -1
                             if still_skipped:
@@ -287,6 +292,7 @@ def form_skipped_slice(slice, reqid):
             return {}
     return {}
 
+
 @csrf_protect
 def find_input_datasets(request, reqid):
     if request.method == 'POST':
@@ -337,26 +343,27 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
                     create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
-                    # try:
-                    #     for slice,steps_status in slice_steps.items():
-                    #         if steps_status[0]['value'] and steps_status[0]['is_skipped'] and (slice not in wrong_skipping_tags):
-                    #             datasets_dict.update(form_skipped_slice(slice,reqid))
-                    # except:
-                    #     pass
+                else:
+                    create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                if (req.cstatus.lower() != 'test') and (approve_level>0):
+                    req.cstatus = 'approved'
+                    req.save()
+                    owner='default'
+                    try:
+                        owner = request.user.username
+                    except:
+                        pass
+                    if not owner:
+                        owner='default'
+                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
+                                                   status='approved')
+                    request_status.save_with_current_time()
+                if req.request_type == 'MC':
                     for slice, new_dataset in slice_new_input.items():
                         if new_dataset:
                             input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
                             input_list.dataset = fill_dataset(new_dataset)
                             input_list.save()
-                else:
-                    create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                #TODO:Take owner from sso cookies
-                if (req.cstatus.lower() != 'test') and (approve_level>0):
-                    req.cstatus = 'approved'
-                    req.save()
-                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner='default',
-                                                   status='approved')
-                    request_status.save_with_current_time()
         else:
             _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
@@ -379,41 +386,9 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     for base_value in ['mc','valid']:
         dataset_pattern = base_value+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
         _logger.debug("Search dataset by pattern %s"%dataset_pattern)
-        # datasets = ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern]).exclude(status__iexact = u'deleted')
-        # for dataset in datasets:
-        #     task = TaskProdSys1.objects.get(taskid=dataset.taskid)
-        #     return_list.append({'dataset_name':dataset.name,'events':str(task.total_events)})
-        #     _logger.debug("Find dataset: %s"%str(return_list[-1]))
-        ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
-        datasets_containers = ddm.find_dataset(dataset_pattern.replace('%','*'))
-        containers = [x for x in datasets_containers if x[-1] == '/' ]
-        datasets = [x for x in datasets_containers if x not in containers ]
-        for container in containers:
-            event_count = 0
-            is_good = True
-            datasets_in_container = ddm.dataset_in_container(container)
-            for dataset_name in datasets_in_container:
-                if dataset_name in datasets:
-                    datasets.remove(dataset_name)
-                try:
-                    dataset = ProductionDatasetsExec.objects.get(name=dataset_name)
-                    task = TaskProdSys1.objects.get(taskid=dataset.taskid)
-                    if (task.status not in ['aborted','failed','lost']):
-                        event_count += task.total_events
-                    else:
-                        is_good = False
-                except:
-                    is_good = False
-            if is_good and (event_count>0):
-                return_list.append({'dataset_name':container,'events':str(event_count)})
-        for dataset_name in datasets:
-            try:
-                task = TaskProdSys1.objects.get(taskname=dataset_name)
-                if (task.status not in ['aborted','failed','lost']):
-                    return_list.append({'dataset_name':dataset_name,'events':str(task.total_events)})
-            except:
-                pass
+        return_list += find_dataset_events(dataset_pattern)
     return return_list
+
 
 
 def find_old_double_trf(tags):
@@ -459,6 +434,7 @@ def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
+
 
 @csrf_protect
 def request_steps_approve(request, reqid, approve_level):
@@ -620,7 +596,21 @@ def input_list_approve(request, rid=None):
 
     if request.method == 'GET':
         try:
+
             cur_request = TRequest.objects.get(reqid=rid)
+            #steps_db =
+
+            steps_db = list(StepExecution.objects.filter(request=rid))
+            steps = {}
+            for current_step in steps_db:
+                steps[current_step.slice.id] = steps.get(current_step.slice.id,[])+[current_step]
+            tasks = {}
+            tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time'))
+            for current_task in tasks_db:
+                tasks[current_task.step.id] =  tasks.get(current_task.step.id,[]) + [current_task]
+
+            # for current_step in steps_db:
+            #     steps[current_step.slice] = steps.get(current_step.slice,[]).append(current_step)
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
                 pattern_list_name = [('Empty', ['' for step in STEPS_LIST])]
@@ -635,6 +625,7 @@ def input_list_approve(request, rid=None):
 
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
+            input_list_count = InputRequestList.objects.filter(request=cur_request).count()
             # input_lists - list of tuples for end to form.
             # tuple format:
             # first element - InputRequestList object
@@ -645,46 +636,55 @@ def input_list_approve(request, rid=None):
             approved_count = 0
             total_slice = 0
             slice_pattern = []
-            edit_mode = False
+            edit_mode = True
             fully_approved = 0
             if not input_lists_pre:
                 edit_mode = True
             else:
                 # choose how to form input data pattern: from jobOption or from input dataset
+                slice_pattern = '*'
                 use_input_date_for_pattern = True
                 if not input_lists_pre[0].input_data:
-                    use_input_date_for_pattern = False
-                if use_input_date_for_pattern:
-                    slice_pattern = input_lists_pre[0].input_data.split('.')
-                else:
-                    slice_pattern = input_lists_pre[0].dataset.name.split('.')
+                        use_input_date_for_pattern = False
+                if input_list_count < 50:
+                    if use_input_date_for_pattern:
+                        slice_pattern = input_lists_pre[0].input_data.split('.')
+                    else:
+                        slice_pattern = input_lists_pre[0].dataset.name.split('.')
+
                 for slice in input_lists_pre:
-                    step_execs = StepExecution.objects.filter(slice=slice)
+                    #step_execs = StepExecution.objects.filter(slice=slice)
+
+                    #step_execs = [x for x in steps if x.slice == slice]
+                    try:
+                        step_execs = steps[slice.id]
+                    except:
+                        step_execs = []
 
                     slice_steps = {}
                     total_slice += 1
                     show_task = False
                     # creating a pattern
-                    if use_input_date_for_pattern:
-                        if slice.input_data:
-                            current_slice_pattern = slice.input_data.split('.')
-                        else:
-                            current_slice_pattern=''
-                    else:
-                        if slice.dataset:
-                            current_slice_pattern = slice.dataset.name.split('.')
-                        else:
-                            current_slice_pattern=''
-
-                    if current_slice_pattern:
-                        for index,token in enumerate(current_slice_pattern):
-                            if index >= len(slice_pattern):
-                                slice_pattern.append(token)
+                    if input_list_count < 50:
+                        if use_input_date_for_pattern:
+                            if slice.input_data:
+                                current_slice_pattern = slice.input_data.split('.')
                             else:
-                                if token!=slice_pattern[index]:
-                                    slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
-                                    slice_pattern[index] += '*'
+                                current_slice_pattern=''
+                        else:
+                            if slice.dataset:
+                                current_slice_pattern = slice.dataset.name.split('.')
+                            else:
+                                current_slice_pattern=''
 
+                        if current_slice_pattern:
+                            for index,token in enumerate(current_slice_pattern):
+                                if index >= len(slice_pattern):
+                                    slice_pattern.append(token)
+                                else:
+                                    if token!=slice_pattern[index]:
+                                        slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
+                                        slice_pattern[index] += '*'
                     # Creating step dict
                     slice_steps_list = []
                     temp_step_list = []
@@ -692,7 +692,7 @@ def input_list_approve(request, rid=None):
                     for step in step_execs:
                         step_task = {}
                         try:
-                            step_task = ProductionTask.objects.filter(step = step).order_by('-submit_time')[0]
+                            step_task = tasks[step.id][0]
 
                         except Exception,e:
                             step_task = {}
@@ -743,6 +743,7 @@ def input_list_approve(request, rid=None):
                                     slice_steps_list.append((current_step[0].id,form_step_obj(current_step[0],current_step[1])))
                                     temp_step_list.pop(index)
 
+
                         for i in range(len(temp_step_list)):
                             j = 0
                             while (temp_step_list[j][0].step_parent.id!=slice_steps_list[-1][0]):
@@ -754,6 +755,9 @@ def input_list_approve(request, rid=None):
 
                         edit_mode = True
                         slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{})]*(len(STEPS_LIST)-len(slice_steps_list))
+                        approved = get_approve_status(slice_steps[:len(slice_steps_list)])
+                        if (approved == 'approved')or(approved == 'partially_approved'):
+                                approved_count += 1
                         if another_chain_step:
                             input_lists.append((slice, slice_steps, get_approve_status(slice_steps),  show_task,
                                                 another_chain_step.id, approve_level(slice_steps)))
@@ -775,7 +779,8 @@ def input_list_approve(request, rid=None):
                'pattern': '.'.join(slice_pattern),
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
-               'show_reprocessing':show_reprocessing
+               'show_reprocessing':show_reprocessing,
+               'not_use_input_date_for_pattern':not use_input_date_for_pattern
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
@@ -1055,3 +1060,14 @@ def production_dataset_table(request):
 
     return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
+
+
+@never_cache
+def userinfo(request):
+    return TemplateResponse(request, "prodtask/_userinfo.html",
+            {
+                 'title': 'User info',
+                 'active_app' : 'prodtask',
+                 'parent_template': 'prodtask/_index.html',
+            })
+

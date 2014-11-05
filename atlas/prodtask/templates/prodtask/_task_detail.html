@@ -66,7 +66,7 @@
 <tr><th><label for="update_owner">Update owner:</label></th><td>{{ task.update_owner }}</td></tr>
 <tr><th><label for="comments">Comments:</label></th><td>{{ task.comments }}</td></tr>
 <tr><th><label for="input_dataset">Input dataset:</label></th><td>{{ task.input_dataset }}</td></tr>
-<tr><th><label for="output_dataset">Output dataset:</label></th><td>{{ task.output_dataset }}</td></tr>
+<tr><th><label for="output_dataset">Output dataset:</label></th><td>{% for od in output_datasets %}{{ od.name }}<br/>{% endfor %}</td></tr>
 <tr><th><label for="physics_tag">Physics tag:</label></th><td>{{ task.physics_tag }}</td></tr>
 </table>
 

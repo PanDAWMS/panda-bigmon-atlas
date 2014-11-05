@@ -128,15 +128,35 @@
 </li>
 {% endblock %}
 
-        {% block top_menu_all_6 %}
-        <li class="has-dropdown">
-          {% block top_menu_6 %}
-          <a href="#">Help</a>
-          <ul class="dropdown">
-            <li><a href="http://twiki.cern.ch/twiki/bin/view/PanDA/PanDA">PanDA home</a></li>
-            <li><a href="http://pandawms.org">Big PanDA home</a></li>
-          </ul>
-          {% endblock %}
-        </li>
-       {% endblock %}
+{% block top_menu_all_6 %}
+    <li class="has-dropdown">
+      {% block top_menu_6 %}
+      <a href="#">Help</a>
+      <ul class="dropdown">
+        <li><a href="http://twiki.cern.ch/twiki/bin/view/PanDA/PanDA">PanDA home</a></li>
+        <li><a href="http://pandawms.org">Big PanDA home</a></li>
+      </ul>
+      {% endblock %}
+    </li>
+
+{% if user.is_authenticated %}
+    <li class="has-dropdown">
+        <a href="#">{{ user.first_name.0 }}. {{ user.last_name }}</a>
+        <ul class="dropdown">
+            <li> <a href="{% url 'prodtask:userinfo' %}">Account info ({{ user.username }})</a> </li>
+            {% if user.is_superuser %}
+            <li> <a href="{% url 'admin:index' %}">Admin interface</a>  </li>
+            {% endif %}
+            <li> <a href="{% url 'prodtask:logout' %}?next={{ request.get_full_path }}">Logout</a> </li>
+        </ul>
+    </li>
+
+{% else %}
+    <li>
+        <a href="{% url 'prodtask:login' %}?next={{ request.get_full_path }}">Login</a>
+    </li>
+{% endif %}
+
+
+{% endblock %}
 
