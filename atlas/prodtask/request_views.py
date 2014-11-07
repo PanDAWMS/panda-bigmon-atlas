@@ -571,12 +571,16 @@ def find_datasets_by_pattern(request):
     if request.method == 'POST':
         data = request.body
         input_dict = json.loads(data)
-        dataset_pattern = input_dict['datasetPattern']
-        if dataset_pattern[-1] != '*' or dataset_pattern[-1] != '/':
-            dataset_pattern+='*'
-        return_list = find_dataset_events(dataset_pattern)
-        results = {}
-        results.update({'success':True,'data':return_list})
+        try:
+            dataset_pattern = input_dict['datasetPattern']
+            if dataset_pattern[-1] != '*' or dataset_pattern[-1] != '/':
+                dataset_pattern+='*'
+            return_list = find_dataset_events(dataset_pattern)
+            results = {}
+            results.update({'success':True,'data':return_list})
+        except Exception, e:
+            _logger.error('Problem with ddm %s' % e)
+            results.update({'success':True,'data':[]})
         return HttpResponse(json.dumps(results), content_type='application/json')
     pass
 
@@ -848,18 +852,18 @@ def mcpattern_create(request, pattern_id=None):
         try:
             values = MCPattern.objects.values().get(id=pattern_id)
             pattern_dict = json.loads(values['pattern_dict'])
-            pattern_step_list = [(step, pattern_dict.get(step, '')) for step in MCPattern.STEPS]
+            pattern_step_list = [(step, decompress_pattern(pattern_dict.get(step, ''))) for step in MCPattern.STEPS]
         except:
             return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
         values = {}
-        pattern_step_list = [(step, '') for step in MCPattern.STEPS]
+        pattern_step_list = [(step, ['']*3) for step in MCPattern.STEPS]
     if request.method == 'POST':
-        form = MCPatternForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        form = MCPatternForm(request.POST, steps=[(step, ['']*3) for step in MCPattern.STEPS])
         if form.is_valid():
             mcp = MCPattern.objects.create(pattern_name=form.cleaned_data['pattern_name'],
                                            pattern_status=form.cleaned_data['pattern_status'],
-                                           pattern_dict=json.dumps(form.steps_dict()))
+                                           pattern_dict=json.dumps(compress_pattern(form.steps_dict())))
 
             mcp.save()
             return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
@@ -879,19 +883,42 @@ def step_list_from_json(json_pattern, STEPS=MCPattern.STEPS):
     pattern_dict = json.loads(json_pattern)
     return [(step, pattern_dict.get(step, '')) for step in STEPS]
 
+def decompress_pattern(pattern_dict):
+    if pattern_dict:
+        try:
+            return [pattern_dict['ctag'],pattern_dict['project_mode'],pattern_dict['nEventsPerJob']]
+        except:
+            return [pattern_dict,'','']
+    else:
+        return ['','','']
+
+def compress_pattern(form_dict):
+    return_dict = {}
+    for step in form_dict.keys():
+        value_list = json.loads(form_dict[step])
+        if value_list:
+            return_dict[step] = {'ctag':value_list[0],'project_mode':value_list[1],'nEventsPerJob':value_list[2]}
+        else:
+            return_dict[step] = {'ctag':'','project_mode':'','nEventsPerJob':''}
+    return return_dict
+
+def step_list_pattern_from_json(json_pattern, STEPS=MCPattern.STEPS):
+    pattern_dict = json.loads(json_pattern)
+
+    return [(step, decompress_pattern(pattern_dict.get(step, {}))) for step in STEPS]
 
 def mcpattern_update(request, pattern_id):
     try:
         values = MCPattern.objects.values().get(id=pattern_id)
-        pattern_step_list = step_list_from_json(values['pattern_dict'],MCPattern.STEPS)
+        pattern_step_list = step_list_pattern_from_json(values['pattern_dict'],MCPattern.STEPS)
     except:
         return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     if request.method == 'POST':
-        form = MCPatternUpdateForm(request.POST, steps=[(step, '') for step in MCPattern.STEPS])
+        form = MCPatternUpdateForm(request.POST, steps=[(step, ['']*3) for step in MCPattern.STEPS])
         if form.is_valid():
             mcp = MCPattern.objects.get(id=pattern_id)
             mcp.pattern_status=form.cleaned_data['pattern_status']
-            mcp.pattern_dict=json.dumps(form.steps_dict())
+            mcp.pattern_dict=json.dumps(compress_pattern(form.steps_dict()))
             mcp.save()
             return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
@@ -917,7 +944,7 @@ def mcpattern_table(request):
         current_pattern = {}
         current_pattern.update({'id':mcpattern.id})
         current_pattern.update({'name':mcpattern.pattern_name})
-        current_pattern.update({'pattern_steps':[x[1] for x in step_list_from_json(mcpattern.pattern_dict,MCPattern.STEPS)]})
+        current_pattern.update({'pattern_steps':[x[1][0] for x in step_list_pattern_from_json(mcpattern.pattern_dict,MCPattern.STEPS)]})
         if mcpattern.pattern_status == 'IN USE':
             patterns_in_use.append(current_pattern)
         else:
