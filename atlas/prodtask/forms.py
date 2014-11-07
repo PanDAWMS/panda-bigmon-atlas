@@ -1,20 +1,22 @@
 from django import forms
-from django.forms import ModelForm, ModelChoiceField
+from django.forms import ModelForm, ModelChoiceField, MultiValueField
 from django.forms import CharField
 from django.forms import EmailField
 from django.forms import Textarea
 from django.forms import FileField
 from django.forms import DecimalField
 from django.forms import Form
+import json
 from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject
 from django.forms.widgets import TextInput
-
+from django.forms import widgets
 
 class RequestForm(ModelForm):
     cstatus =  CharField(label='Status', required=False)
 
     class Meta:
         model = TRequest
+
 
 
 class TRequestCreateCloneConfirmation(ModelForm):
@@ -80,6 +82,49 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
         model = TRequest
         exclude = ['reqid']
 
+class PatternTextInput(widgets.MultiWidget):
+    def __init__(self, attrs={'0':None,'1':None}):
+
+        _widgets = (
+            widgets.TextInput(attrs=attrs['0'] ),
+            widgets.TextInput(attrs=attrs['1']),
+            widgets.NumberInput(attrs=attrs['2']),
+        )
+        super(PatternTextInput, self).__init__(_widgets, attrs)
+
+    def decompress(self, value):
+        if value:
+            return [value[0],value[1],value[2]]
+        return None
+
+    def format_output(self, rendered_widgets):
+        return ''.join(rendered_widgets)
+
+    def value_from_datadict(self, data, files, name):
+        datelist = [
+            widget.value_from_datadict(data, files, name + '_%s' % i)
+            for i, widget in enumerate(self.widgets)]
+        try:
+            D = [datelist[0], datelist[1], datelist[2]]
+        except ValueError:
+            return ''
+        else:
+            return D
+
+class DoubleCharField(MultiValueField):
+    def __init__(self, *args, **kwargs):
+
+
+        fields = (
+            CharField(),
+            CharField(),
+            DecimalField()
+        )
+        super(DoubleCharField, self).__init__(fields=fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        return json.dumps([str(x) for x in data_list])
+
 
 class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="First step LIST link")
@@ -97,15 +142,25 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
         model = TRequest
         exclude = ['reqid']
 
+
+
+
+
+
 class MCPatternForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         steps = kwargs.pop('steps')
         super(MCPatternForm, self).__init__(*args, **kwargs)
         for step, value in steps:
-            self.fields['custom_%s' % step] = CharField(label=step, required=False)
-            if value:
-                self.data['custom_%s' % step] = value
+            #self.fields['custom_%s' % step] = CharField(label=step, required=False)
+            self.fields['custom_%s' % step] = DoubleCharField(label=step,
+                                                              required=False,
+                                                              widget=PatternTextInput(attrs={'0':{'placeholder':'ami tag', 'value':value[0]},
+                                                                                             '1':{'placeholder':'project mode', 'value':value[1]},
+                                                                                             '2':{'placeholder':'nEventsPerJob', 'value':value[2]}}))
+            # if value:
+            #     self.data['custom_%s' % step] = ['a','n',1]
 
 
 

@@ -4,7 +4,7 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
-from .views import form_existed_step_list
+from .views import form_existed_step_list, form_step_in_page
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
 
@@ -201,7 +201,10 @@ def get_tag_formats(request, reqid):
                 step_execs = StepExecution.objects.filter(slice=slice)
                 for step_exec in step_execs:
                     tag_format = step_exec.step_template.ctag + ":" + step_exec.step_template.output_formats
-                    task_config = json.loads(step_exec.task_config)
+                    task_config = '{}'
+                    if step_exec.task_config:
+                        task_config = step_exec.task_config
+                    task_config = json.loads(task_config)
                     project_mode = ''
                     if 'project_mode' in task_config:
                         project_mode = task_config['project_mode']
@@ -227,17 +230,30 @@ def slice_steps(request, reqid, slice_number):
             # Check steps which already exist in slice, and change them if needed
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
+            if req.request_type == 'MC':
+                step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS)
+            else:
+                step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
             if existed_foreign_step:
-                result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign'})
-            for step in ordered_existed_steps:
-                is_skipped = 'not_skipped'
-                if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
-                    is_skipped = 'is_skipped'
-                task_config = json.loads(step.task_config)
-                result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
-                                    'nEventsPerJob':task_config.get('nEventsPerJob'),'nEventsPerInputFile':task_config.get('nEventsPerInputFile'),
-                                    'project_mode':task_config.get('project_mode'),'input_format':task_config.get('input_format'),
-                                    'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'total_events':str(step.input_events)})
+                    result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':'','step_type':'foreign',
+                                        'nEventsPerJob':'','nEventsPerInputFile':'',
+                                        'project_mode':'','input_format':'',
+                                        'priority':'', 'output_formats':'','input_events':'',
+                                        'token':''})
+            step_as_in_page = step_as_in_page[:-1]
+            for step in step_as_in_page:
+                if not step:
+                    result_list.append({'step':'','step_name':'','step_type':''})
+                else:
+                    is_skipped = 'not_skipped'
+                    if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
+                        is_skipped = 'is_skipped'
+                    task_config = json.loads(step.task_config)
+                    result_list.append({'step':step.step_template.ctag,'step_name':step.step_template.step,'step_type':is_skipped,
+                                        'nEventsPerJob':task_config.get('nEventsPerJob',''),'nEventsPerInputFile':task_config.get('nEventsPerInputFile',''),
+                                        'project_mode':task_config.get('project_mode',''),'input_format':task_config.get('input_format',''),
+                                        'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'input_events':str(step.input_events),
+                                        'token':task_config.get('token','')})
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name
