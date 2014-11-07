@@ -40,15 +40,6 @@
                     {% endif %}
                     >Retry</a>
                 </li>
-                <li><a data-options="is_hover:true" id="btn_change_prio"
-                    {% if can_change_prio_task or not task.id %}
-                        class="small radio button"
-                        data-dropdown="task_change_prio_menu"
-                    {% else %}
-                        class="small radio button disabled"
-                    {% endif %}
-                    >Priority</a>
-                </li>
                 <li><a data-options="is_hover:true" id="btn_reassign"
                     {% if can_reassign_task or not task.id %}
                         data-dropdown="task_reassign_menu"
@@ -67,6 +58,16 @@
                     {% endif %}
                     >Obsolete</a>
                 </li>
+                <li><a data-options="is_hover:true" id="btn_change_parameters"
+                    {% if can_change_prio_task or not task.id %}
+                        class="small radio button"
+                        data-dropdown="task_change_parameters_menu"
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Parameters</a>
+                </li>
+
         {% if edit_mode %}
                 <li><a class="small radio button secondary" id="_btn_switch_to_view">View&nbsp;mode</a></li>
         {% endif %}
@@ -153,19 +154,20 @@
             </div>
         </div>
 
-        <div id="task_change_prio_menu" class="medium content f-dropdown" data-dropdown-content>
-            <div class="small-12 large-12 columns">
+        <div id="task_change_parameters_menu" class="medium content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns panel" id="priority_panel">
                 <div class="row">
-                    <div class="small-8 large-8 columns">
-                        <input type="text" id="new_priority" placeholder="JEDI task priority (100-900)">
+                    <div class="small-4 large-4 columns">
+                        <label for="new_priority" class="inline"> JEDI task priority </label>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_priority"placeholder="100-900">
                     </div>
                     <div class="small-4 large-4 columns">
                         <a class="button postfix" id="btn_do_set_priority">Set</a>
                     </div>
-                </div>
 
-                <div class="row">
-                    <p><br></p>
+                    <p> &nbsp; </p>
                 </div>
 
                 <div class="row">
@@ -176,15 +178,46 @@
                         <a class="button postfix" id="btn_do_decrease_priority">Decrease priority level</a>
                     </div>
                 </div>
+
                 <div class="row">
                     <div class="small-12 columns text-center bodyfont-color">
-                        <br>
-                        <label> If no level configured for the step, priority change delta is <i>20</i>. </label>
-                        <br>
-                        <label> Tasks selected:&nbsp; <span id="selected_count_prio">0</span> </label>
+                        <p> <label> If no level configured for the step, priority change delta is <i>20</i>. </label> </p>
                     </div>
                 </div>
+            </div>
 
+            <div class="small-12 large-12 columns panel" id="ramcount_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="new_ramcount" class="inline"> RAM count </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_ramcount" placeholder="RAM count">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_ramcount">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="walltime_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="new_walltime" class="inline"> Walltime </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_walltime" placeholder="Walltime">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_walltime">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="small-12 columns text-center bodyfont-color">
+                    <label> Tasks selected:&nbsp; <span id="selected_count_params">0</span> </label>
+                </div>
             </div>
         </div>
 
@@ -229,10 +262,10 @@
 
                 <div class="row">
                     <div class="small-12 large-12 columns text-center bodyfont-color">
-                         <label>
-                           Tasks selected:&nbsp;
-                           <span id="selected_count_reassign">0</span>
-                         </label>
+                        <label>
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_reassign">0</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -401,7 +434,6 @@ function doTasksAction(action, tasks, parameters) {
         makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
     );
 
-
     $.ajax({
         url: ajaxUrl,
         type: "POST",
@@ -473,6 +505,10 @@ function doTasksActionSelected(action) {
         parameters = [$("#cloud_select").val()];
     } else if ((action == 'increase_priority') && (action=='decrease_priority')) {
         parameters = [20];
+    } else if (action == "change_ram_count") {
+        parameters = [$("#new_ramcount").val()];
+    } else if (action == "change_wall_time") {
+        parameters = [$("#new_walltime").val()];
     }
 
     var slices = getSliceDependentTasks(tasks);
@@ -549,7 +585,8 @@ $(document).ready(function () {
         "set_priority": "change_priority",
         "increase_priority": "increase_priority", "decrease_priority": "decrease_priority",
         "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site",
-        "retry": "retry"
+        "retry": "retry",
+        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time"
     };
 
     $.each(button_action_map, function(name, action) {
