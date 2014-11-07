@@ -18,6 +18,8 @@ _deft_actions = {
     'reassign_to_site': 'reassign_task_to_site',
     'reassign_to_cloud': 'reassign_task_to_cloud',
     'retry': 'retry_task',
+    'change_ram_count': 'change_task_ram_count',
+    'change_wall_time': 'change_task_wall_time',
 }
 
 supported_actions = _deft_actions.keys()
