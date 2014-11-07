@@ -12,7 +12,6 @@
                 <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
         {% endif %}
 
-
                 <li><a data-options="is_hover:true" id="btn_abort"
                     {% if can_abort_task or not task.id %}
                         data-dropdown="task_abort_menu"
@@ -581,10 +580,14 @@ $(document).ready(function () {
 
     // Setting buttons handlers
     var button_action_map = {
-        "abort": "kill", "finish": "finish", "obsolete": "obsolete",
+        "abort": "kill",
+        "finish": "finish",
+        "obsolete": "obsolete",
         "set_priority": "change_priority",
-        "increase_priority": "increase_priority", "decrease_priority": "decrease_priority",
-        "reassign_cloud": "reassign_to_cloud", "reassign_site": "reassign_to_site",
+        "increase_priority": "increase_priority",
+        "decrease_priority": "decrease_priority",
+        "reassign_cloud": "reassign_to_cloud",
+        "reassign_site": "reassign_to_site",
         "retry": "retry",
         "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time"
     };
