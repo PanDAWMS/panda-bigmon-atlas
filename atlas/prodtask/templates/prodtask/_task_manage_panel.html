@@ -433,22 +433,32 @@ function doTasksAction(action, tasks, parameters) {
         makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
     );
 
+    var request_error = false;
+    var request_done = false;
+
     $.ajax({
         url: ajaxUrl,
         type: "POST",
         data: $.toJSON(postData),
         dataType: "json",
         success: function (result, status) {
+            request_done = true;
             if (status) {
                 $("#req_status_text").html("Request status: done");
             } else {
+                request_error = true;
                 $("#req_status_text").html("Request status: error - " + status);
             }
         },
         failure: function (errorMsg) {
+            request_error = true;
             $("#request_status_text").html("Error: " + errorMsg);
         }
     });
+
+    if ( !(request_error && request_done) ) {
+        $("#req_status_text").html("Request status: accepted and is being processed");
+    }
 }
 
 // get IDs and status of the dependent tasks from the same slice as given ones
