@@ -981,12 +981,6 @@ function changeSliceChanges(that){
     }
 };
 
-function JEDIMerging() {
-    this.ctag = undefined;
-    this.nFilesPerMergeJob = undefined;
-    this.nGBPerMergeJob = undefined;
-    this.nMaxFilesPerMergeJob = undefined;
-};
 
 function ProcessingStep() {
   this.step = undefined;
@@ -1003,7 +997,10 @@ function ProcessingStep() {
   this.position = undefined;
   this.status = undefined;
   this.input_events = undefined;
-  this.JEDIMerge = new JEDIMerging();
+  this.merging_tag = undefined;
+  this.nFilesPerMergeJob = undefined;
+  this.nGBPerMergeJob = undefined;
+  this.nMaxFilesPerMergeJob = undefined;
 };
 
  function RequestSlice(sliceNumber) {
@@ -1484,6 +1481,34 @@ job options: <span id="sliceModalJobOption"></span></p>
                                     <input type="text" class="token storeOutput{{forloop.counter0}} storeInput" placeholder=" " />
                                   </label>
                                 </div>
+                              </div>
+                                <div class="row">
+                                <div class="large-12 columns">
+                                  <strong>JEDI internal merging:
+                                  </strong>
+                                </div>
+                              </div>
+                              <div class="row">
+                                <div class="large-3 columns">
+                                  <label>merging tag
+                                    <input type="text" class="merging_tag storeOutput{{forloop.counter0}} storeInput"  />
+                                  </label>
+                                </div>
+                                 <div class="large-3 columns">
+                                  <label>nFilesPerMergeJob
+                                    <input type="number" class="nFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
+                                  </label>
+                                </div>
+                                  <div class="large-3 columns">
+                                  <label>nGBPerMergeJob
+                                    <input type="number" class="nGBPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
+                                  </label>
+                                </div>
+                                 <div class="large-3 columns">
+                                  <label>nMaxFilesPerMergeJob
+                                    <input type="number" class="nMaxFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
+                                  </label>
+                                  </div>
                               </div>
                             </fieldset>
                     </div>

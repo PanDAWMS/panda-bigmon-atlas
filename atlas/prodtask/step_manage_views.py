@@ -253,7 +253,9 @@ def slice_steps(request, reqid, slice_number):
                                         'nEventsPerJob':task_config.get('nEventsPerJob',''),'nEventsPerInputFile':task_config.get('nEventsPerInputFile',''),
                                         'project_mode':task_config.get('project_mode',''),'input_format':task_config.get('input_format',''),
                                         'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'input_events':str(step.input_events),
-                                        'token':task_config.get('token','')})
+                                        'token':task_config.get('token',''),'merging_tag':task_config.get('merging_tag',''),
+                                        'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
+                                        'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob','')})
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name
