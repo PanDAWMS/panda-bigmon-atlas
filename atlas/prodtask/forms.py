@@ -21,7 +21,7 @@ class RequestForm(ModelForm):
 
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
-    cc = EmailField(required=False)
+    cc = CharField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=True)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=True)
@@ -31,7 +31,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid']
+        exclude = ['reqid','is_error','jira_reference']
 
 
 
@@ -46,7 +46,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     description = CharField(label='Short description', widget=Textarea, required=False)
     class Meta:
         model = TRequest
-        exclude = ['reqid']
+        exclude = ['reqid','is_error','jira_reference']
 
 
 class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -63,7 +63,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid']
+        exclude = ['reqid','is_error','jira_reference']
 
 
 class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -80,7 +80,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid']
+        exclude = ['reqid','is_error','jira_reference']
 
 class PatternTextInput(widgets.MultiWidget):
     def __init__(self, attrs={'0':None,'1':None}):
@@ -140,7 +140,7 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid']
+        exclude = ['reqid','is_error','jira_reference']
 
 
 

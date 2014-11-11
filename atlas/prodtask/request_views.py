@@ -715,12 +715,18 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         req = TRequest(**form.cleaned_data)
                         req.save()
                         owner=''
+                        owner_mail = ''
                         try:
                             owner = request.user.username
+                            owner_mail = request.user.email
                         except:
                             pass
                         if not owner:
                             owner = 'default'
+                        if not owner_mail:
+                            owner_mails = []
+                        else:
+                            owner_mails = [owner_mail]
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
                                                        status='waiting')
                         request_status.save_with_current_time()
@@ -729,7 +735,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
                                   request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri),
                                   APP_SETTINGS['prodtask.email.from'],
-                                  APP_SETTINGS['prodtask.default.email.list'] + cc.replace(';', ',').split(','),
+                                  APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
                                   fail_silently=True)
                         # Saving slices->steps
                         step_parent_dict = {}

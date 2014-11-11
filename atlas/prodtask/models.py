@@ -85,6 +85,8 @@ class TRequest(models.Model):
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
     energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
     project = models.ForeignKey(TProject,db_column='PROJECT', null=True, blank=False)
+    is_error = models.NullBooleanField(db_column='EXCEPTION', null=True, blank=False)
+    jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.reqid:

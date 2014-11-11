@@ -1071,6 +1071,10 @@ var changeMode = true;
 <tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
+{% if has_deft_problem %}
+    <div class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
+    <a href="https://its.cern.ch/jira/browse/{{ jira_problem_link }}" target="_blank">{{ jira_problem_link }}</a></div>
+{% endif %}
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>

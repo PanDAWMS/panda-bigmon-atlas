@@ -853,6 +853,13 @@ def input_list_approve(request, rid=None):
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
+            jira_problem_link = ''
+            if cur_request.is_error:
+                has_deft_problem = True
+                if cur_request.jira_reference:
+                    jira_problem_link = cur_request.jira_reference
+            else:
+                has_deft_problem = False
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -866,7 +873,9 @@ def input_list_approve(request, rid=None):
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
                'show_reprocessing':show_reprocessing,
-               'not_use_input_date_for_pattern':not use_input_date_for_pattern
+               'not_use_input_date_for_pattern':not use_input_date_for_pattern,
+               'has_deft_problem':has_deft_problem,
+               'jira_problem_link':jira_problem_link
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
