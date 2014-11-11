@@ -192,7 +192,11 @@ setup(
         'atlas.postproduction.deft',
         'atlas.prodtask',
         'atlas.todoview',
-	'atlas.getdatasets',
+        'atlas.getdatasets',
+        'atlas.auth',
+        'atlas.auth.voms',
+        'atlas.auth.voms.management.commands',
+        'atlas.auth.fake',
     ],
     data_files=[ #FIXME
                 # config files 
