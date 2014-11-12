@@ -615,7 +615,7 @@ Technical details:
 
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
-                            form_prefill):
+                            form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}):
     """
     Fill form for creating request. Create request->slice->steps for POST
     View create two forms: first for request prefill, second for request creation
@@ -648,6 +648,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'url_args': rid,
                         'error_message': error_message,
                         'parent_template': 'prodtask/_index.html',
+                        'default_step_values': default_step_values
                      })
                 else:
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
@@ -806,6 +807,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     'submit_url': submit_url,
                     'url_args': rid,
                     'parent_template': 'prodtask/_index.html',
+                     'default_step_values': default_step_values
                 })
 
     # GET request
@@ -832,26 +834,30 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         'submit_url': submit_url,
         'url_args': rid,
         'parent_template': 'prodtask/_index.html',
+        'default_step_values': default_step_values
     })
 
 
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
-                                   TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill)
+                                   TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
+                                   {'nEventsPerJob':'1000','priority':'880'})
 
 
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
-                                   TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
+                                   TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
+                                   {'nEventsPerJob':'5000','priority':'520'})
 
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
-                                   TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill)
+                                   TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
+                                   {'nEventsPerJob':'1000','priority':'880'})
 
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill)
+                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880'})
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
