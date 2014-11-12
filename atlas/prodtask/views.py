@@ -124,7 +124,27 @@ def approve_existed_step(step, new_status):
 
 
 
+def form_step_in_page(ordered_existed_steps,STEPS):
+    if STEPS[0]:
+        return_list = []
+        i = 0
+        if len(ordered_existed_steps)==0:
+            return [None]*len(STEPS)
 
+        for STEP_NAME in STEPS:
+            if i >= len(ordered_existed_steps):
+                return_list.append(None)
+            else:
+                if STEP_NAME == ordered_existed_steps[i].step_template.step:
+                    return_list.append(ordered_existed_steps[i])
+                    i += 1
+                else:
+                    return_list.append(None)
+        if len(ordered_existed_steps)!=i:
+            raise ValueError('Not consistent chain')
+        return return_list
+    else:
+        return ordered_existed_steps+[None]*(len(STEPS)-len(ordered_existed_steps))
 
 
 
@@ -139,7 +159,11 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
     """
 
+
     try:
+        APPROVED_STATUS = ['Skipped','Approved']
+        SKIPPED_STATUS = ['NotCheckedSkipped','Skipped']
+        error_slices = []
         cur_request = TRequest.objects.get(reqid=reqid)
         for slice, steps_status in slice_steps.items():
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
@@ -150,98 +174,152 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             except ValueError,e:
                 ordered_existed_steps, existed_foreign_step = [],None
-            replace_steps = False
-            delete_chain_from = -1
+
             parent_step = None
             foreign_step = 0
             if int(steps_status[-1]['foreign_id']) !=0:
                 foreign_step = int(steps_status[-1]['foreign_id'])
                 parent_step = StepExecution.objects.get(id=foreign_step)
             steps_status.pop()
-            if (foreign_step != 0) and (existed_foreign_step.id != foreign_step):
-                delete_chain_from = 0
-                replace_steps = True
-            i = 0
-            still_skipped = True
+            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS)
+            if foreign_step !=0 :
+                step_as_in_page = [None] + step_as_in_page
+            first_not_approved_index = 0
+            total_events = input_list.input_events
+            for index,step in enumerate(step_as_in_page):
+                if step:
+                    if step.status in APPROVED_STATUS:
+                        first_not_approved_index = index + 1
+                        parent_step = step
+                        if step.status not in SKIPPED_STATUS:
+                           total_events = -1
             try:
-                for index,step_value in enumerate(steps_status):
-                    if step_value['value']:
-                        if not replace_steps:
-                            if i >= len(ordered_existed_steps):
-                                replace_steps = True
+                to_delete = []
+                for index,step_value in enumerate(steps_status[first_not_approved_index:],first_not_approved_index):
+                    step_in_db = step_as_in_page[index]
+                    if not step_value['value'] and not step_in_db:
+                        continue
+                    if not step_value['value'] and step_in_db:
+                        to_delete.append(step_in_db)
+                        continue
+                    if step_value['changes']:
+                        for key in step_value['changes'].keys():
+                            if type(step_value['changes'][key]) != dict:
+                                step_value['changes'][key].strip()
                             else:
-                                if step_is_equal(step_value,ordered_existed_steps[i]):
-                                    approve_existed_step(ordered_existed_steps[i],step_status_definition(step_value['is_skipped'], index<=approve_level))
-                                    if  not (ordered_existed_steps[i].status == 'NotCheckedSkipped') and not (ordered_existed_steps[i].status == 'Skipped'):
-                                        still_skipped = False
+                                for key_second_level in step_value['changes'][key].keys():
+                                    step_value['changes'][key][key_second_level].strip()
+                    if step_in_db:
+                        if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
+                                (not step_value['changes']) and (total_events==step_in_db.input_events) and \
+                                similar_status(step_in_db.status,step_value['is_skipped']):
+                            approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'], index<=approve_level))
+                            if step_in_db.status not in SKIPPED_STATUS:
+                                total_events = -1
+                            parent_step = step_in_db
+                        else:
 
-                                    i += 1
-                                else:
-                                    if not (ordered_existed_steps[i].status == 'Approved') and not (ordered_existed_steps[i].status == 'Skipped'):
-                                        replace_steps = True
-                                        delete_chain_from = i
-                                        if delete_chain_from > 0:
-                                            parent_step = ordered_existed_steps[delete_chain_from-1]
-                                    else:
-                                        i += 1
-                        if replace_steps:
-                            i += 1
-                            #Create new step
-                            _logger.debug("Create step: %s execution for request: %i slice: %i "%
-                                          (steps_status[index],int(reqid),input_list.slice))
+                            if step_in_db.task_config:
+                                task_config = json.loads(step_in_db.task_config)
+                            else:
+                                task_config = {}
+                            for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode']:
+                                if x in step_value['changes']:
+                                    task_config[x] = step_value['changes'][x]
+                            change_template = False
+                            ctag = step_value['value']
+                            if ctag != step_in_db.step_template.ctag:
+                                change_template = True
+                            output_formats = step_in_db.step_template.output_formats
+                            if 'output_formats' in step_value['changes']:
+                                output_formats = step_value['changes']['output_formats']
+                                change_template = True
+                            memory = step_in_db.step_template.memory
+                            if 'memory' in step_value['changes']:
+                                change_template = True
+                                memory = step_value['changes']['memory']
+                            if change_template:
+                                step_in_db.step_template = fill_template(step_in_db.step_template.step,ctag, step_in_db.step_template.priority, output_formats, memory)
+                            if 'priority' in step_value['changes']:
+                                step_in_db.priority = step_value['changes']['priority']
+                            if parent_step:
+                                step_in_db.step_parent = parent_step
+                            else:
+                                step_in_db.step_parent = step_in_db
+                            step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+                            if 'input_events' in step_value['changes']:
+                                step_in_db.input_events = step_value['changes']['input_events']
+                            else:
+                                step_in_db.input_events = total_events
+                            if step_in_db.status not in SKIPPED_STATUS:
+                                total_events = -1
+                            step_in_db.set_task_config(task_config)
+                            step_in_db.step_def_time = None
+                            step_in_db.save_with_current_time()
+                            parent_step = step_in_db
+                    else:
+                            task_config = {}
+                            if not input_list.project_mode:
+                                task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
+                                task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+                                if index == 0:
+                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+                                elif total_events !=-1 :
+                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+                            else:
+                                task_config.update({'project_mode':input_list.project_mode})
+                                task_config = {}
+                            for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode']:
+                                if x in step_value['changes']:
+                                    task_config[x] = step_value['changes'][x]
+                            ctag = step_value['value']
+                            output_formats = ''
+                            if 'output_formats' in step_value['changes']:
+                                output_formats = step_value['changes']['output_formats']
+                            memory = None
+                            if 'memory' in step_value['changes']:
+                                memory = step_value['changes']['memory']
                             if(STEPS[index]):
                                 temp_priority = priority_obj.priority(STEPS[index], step_value['value'])
                             else:
                                 temp_priority = priority_obj.priority('Evgen', step_value['value'])
-                            # store input_vents only for first not skipped step, otherwise
-                            temp_input_events = -1
-                            if still_skipped:
-                                temp_input_events = input_list.input_events
-                            if step_value['formats']:
-                                st = fill_template(STEPS[index],step_value['value'], temp_priority, step_value['formats'])
-                            else:
-                                st = fill_template(STEPS[index],step_value['value'], temp_priority)
 
-                            st_exec = StepExecution(request=cur_request,slice=input_list,step_template=st,
-                                                    priority=temp_priority, input_events=temp_input_events)
-                            if not input_list.project_mode:
-                                st_exec.set_task_config({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
-                                st_exec.set_task_config({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                if index == 0:
-                                    st_exec.set_task_config({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                elif still_skipped:
-                                    st_exec.set_task_config({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
-                            else:
-                                st_exec.set_task_config({'project_mode':input_list.project_mode})
+                            step_template = fill_template(STEPS[index], ctag, temp_priority, output_formats, memory)
+                            if 'priority' in step_value['changes']:
+                                temp_priority = step_value['changes']['priority']
+                            st_exec = StepExecution(request=cur_request,slice=input_list,step_template=step_template,
+                                        priority=temp_priority)
                             no_parent = True
+                            st_exec.set_task_config(task_config)
                             if parent_step:
                                 st_exec.step_parent = parent_step
                                 no_parent = False
-
                             st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+                            if 'input_events' in step_value['changes']:
+                                st_exec.input_events = step_value['changes']['input_events']
+                            else:
+                                st_exec.input_events = total_events
+                            if st_exec.status not in SKIPPED_STATUS:
+                                total_events = -1
+
                             st_exec.save_with_current_time()
-                            if  not (st_exec.status == 'NotCheckedSkipped') and not (st_exec.status == 'Skipped'):
-                                still_skipped = False
                             if no_parent:
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
                             parent_step = st_exec
-                            _logger.debug('Step: %i saved; tag: %s priority: %i'%(st_exec.id,
-                                                                          step_value['value'],
-                                                                          temp_priority))
-                if (i<len(ordered_existed_steps)) and (i<delete_chain_from):
-                    delete_chain_from = i
-                if delete_chain_from >=0:
-                    for j in range(delete_chain_from,len(ordered_existed_steps)):
-                        if not (ordered_existed_steps[j].status == 'Approved') and not (ordered_existed_steps[j].status == 'Skipped'):
-                            ordered_existed_steps[j].delete()
+                for step in to_delete:
+                            step.step_parent = step
+                            step.save()
+                            step.delete()
             except Exception,e:
                 _logger.error("Problem step save/approval %s"%str(e))
-                raise e
-
+                error_slices.append(int(slice))
     except Exception, e:
         _logger.error("Problem step save/approval %s"%str(e))
         raise e
+    return error_slices
 
 
 def get_step_input_type(ctag):
@@ -342,10 +420,10 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                             if StepExecution.STEPS[index] == 'Reco':
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
-                    create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                    error_slice = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
                 else:
-                    create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                if (req.cstatus.lower() != 'test') and (approve_level>0):
+                    error_slice = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                if (req.cstatus.lower() != 'test') and (approve_level>=0):
                     req.cstatus = 'approved'
                     req.save()
                     owner='default'
@@ -594,6 +672,16 @@ def input_list_approve(request, rid=None):
             task_short = task.status[0:8]
         return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
 
+    def unwrap(pattern_dict):
+        return_list = []
+        if type(pattern_dict) == dict:
+            for key in pattern_dict:
+                if key != 'ctag':
+                    return_list.append((key,pattern_dict[key]))
+            return pattern_dict.get('ctag',''), return_list
+        else:
+            return pattern_dict,[('ctag',pattern_dict)]
+
     if request.method == 'GET':
         try:
 
@@ -613,15 +701,16 @@ def input_list_approve(request, rid=None):
             #     steps[current_step.slice] = steps.get(current_step.slice,[]).append(current_step)
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
-                pattern_list_name = [('Empty', ['' for step in STEPS_LIST])]
+                pattern_list_name = [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in STEPS_LIST])]
             else:
+                pattern_list_name = []
                 STEPS_LIST = StepExecution.STEPS
                 # Load patterns which are currently in use
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pattern_list_name = [(x.pattern_name,
-                                      [json.loads(x.pattern_dict).get(step,'') for step in StepExecution.STEPS]) for x in pattern_list]
+                                      [unwrap(json.loads(x.pattern_dict).get(step,{'ctag':'','project_mode':'','nEventsPerJob':''})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
-                pattern_list_name += [('Empty', ['' for step in StepExecution.STEPS])]
+                pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in StepExecution.STEPS])]
 
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
@@ -767,6 +856,13 @@ def input_list_approve(request, rid=None):
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
+            jira_problem_link = ''
+            if cur_request.is_error:
+                has_deft_problem = True
+                if cur_request.jira_reference:
+                    jira_problem_link = cur_request.jira_reference
+            else:
+                has_deft_problem = False
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -780,7 +876,9 @@ def input_list_approve(request, rid=None):
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
                'show_reprocessing':show_reprocessing,
-               'not_use_input_date_for_pattern':not use_input_date_for_pattern
+               'not_use_input_date_for_pattern':not use_input_date_for_pattern,
+               'has_deft_problem':has_deft_problem,
+               'jira_problem_link':jira_problem_link
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
