@@ -345,7 +345,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     success: function(data,status) {
                         $( "#waitingDialog" ).dialog('close');
                         if(status){
-                            var missedList = $.evalJSON(data).data;
+                            var missedList = $.evalJSON(data).missing_tags;
+                            var errorSlices =  $.evalJSON(data).error_slices;
+                            var notChangedSlices = $.evalJSON(data).no_action_slices;
                             var slices = $.evalJSON(data).slices;
                             var wrongSLices = $.evalJSON(data).wrong_slices;
 {#                            console.log(wrongSLices);#}
@@ -366,13 +368,27 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                 } else {
                                     $("#wrongSlice").hide();
                                 }
-                                if(slices.length >0){
+                                if((slices.length >0)||(errorSlices.length>0)||(notChangedSlices.length>0)){
                                    var datasets = $.evalJSON(data).datasets_dict;
                                    $("#missing_tags").hide();
                                    $("#doubleTags").hide();
-
+                                    $("#approveDialog").html('');
+                                   if (errorSlices.length==1){
+                                       $("#approveDialog").append($('<p/>').html('Slice has problem: '+errorSlices[0]));
+                                   } else{
+                                       if (errorSlices.length>1){
+                                           $("#approveDialog").append($('<p/>').html(errorSlices.length+'Slices have problem: '+errorSlices.toString()));
+                                       }
+                                   }
+                                   if (notChangedSlices.length==1){
+                                       $("#approveDialog").append($('<p/>').html('Slice was not changed: '+notChangedSlices[0]));
+                                   } else{
+                                       if (notChangedSlices.length>1){
+                                           $("#approveDialog").append($('<p/>').html(notChangedSlices.length+'Slices were not changed: '+notChangedSlices.toString()));
+                                       }
+                                   }
                                    if(isApprove){
-                                       $("#approveDialog>span").text("Sucessfully approved slices: ".concat(slices.toString()));
+                                       $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
                                        for (i=0;i<slices.length;i++){
                                            $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");
@@ -380,7 +396,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                        }
 
                                    } else {
-                                       $("#approveDialog>span").text("Sucessfully saved slices: ".concat(slices.toString()));
+                                       $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: "+slices.toString()));
                                        $("#approveDialog").attr("title","Steps saved");
                                    }
                                    $("#approveDialog").dialog("open");
@@ -461,7 +477,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                            var stepFormLong = "#".concat(sliceID).concat("s{{ forloop.counter0 }}.slice_form");
                            var step_th_long = "th#step".concat(sliceID).concat("s{{ forloop.counter0 }}.stepchoose");
                            $(step_th_long).css({"background-color":stepColor});
-                           if(! emptyPattern()){
+                           if($('#replaceByPattern').is(':checked')||(stepValue!='')){
                                $(stepFormLong).val(stepValue);
                                $(step_td_short).html(stepValue);
                            }
@@ -1061,7 +1077,7 @@ var changeMode = true;
 
 <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 {% if approvedCount > 0 %}
-    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>
+{#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
 {% endif %}
 <h6> With pattern: {{ pattern }}</h6>
 <table style="padding: 0px;margin-bottom:0px;border: hidden">
@@ -1080,7 +1096,7 @@ var changeMode = true;
 <div id="wrongSlice" class="alert-box alert round" style="display: none"><strong >Error: </strong>
 <span> Check these slices: </span><span id="wrongSliceString"></span></div>
 <form >
-<div id="tagIngo" ></div>
+
 
 
 <table style="margin-left: 50px;border: hidden" id="patternTable">
@@ -1093,13 +1109,11 @@ var changeMode = true;
             {% endfor %}
         </select>
     </th>
-    <th rowspan="2">
+    <th >
         <td><button id="showPattern" title="Show current pattern" onclick="showPatternClick(event);">Show</button></td>
-        <td></td>
     </th>
-    <th rowspan="2">
+    <th >
         <td><button id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
-        <td></td>
     </th>
 
 </tr>
@@ -1111,10 +1125,14 @@ var changeMode = true;
     <tr>
         {% for step in step_list %}
             <td style="padding: 0px;width: 50px">
-            <form><input type="text" class="patternForm"  id="patternform{{forloop.counter0}}" value=""></form>
+            <form><input type="text" class="patternForm"  id="patternform{{forloop.counter0}}" value=""/></form>
             </td>
         {% endfor %}
-
+          <td colspan="4">
+              <label> Replace empty
+                <input type="checkbox" id="replaceByPattern"  />
+              </label>
+          </td>
     </tr>
 </table>
 
@@ -1286,7 +1304,9 @@ var changeMode = true;
                 <div class="large-1 columns">
                     <select id="approveToInput" >
                     {% for step in step_list %}
-                        <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                        {% if forloop.counter0 > 0 %}
+                            <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                        {% endif %}
                     {% endfor %}
                     </select>
                 </div>

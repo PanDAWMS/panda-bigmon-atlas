@@ -164,6 +164,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         APPROVED_STATUS = ['Skipped','Approved']
         SKIPPED_STATUS = ['NotCheckedSkipped','Skipped']
         error_slices = []
+        no_action_slices = []
         cur_request = TRequest.objects.get(reqid=reqid)
         for slice, steps_status in slice_steps.items():
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
@@ -176,6 +177,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 ordered_existed_steps, existed_foreign_step = [],None
 
             parent_step = None
+            no_action = True
             foreign_step = 0
             if int(steps_status[-1]['foreign_id']) !=0:
                 foreign_step = int(steps_status[-1]['foreign_id'])
@@ -202,6 +204,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                     if not step_value['value'] and step_in_db:
                         to_delete.append(step_in_db)
                         continue
+                    no_action = False
                     if step_value['changes']:
                         for key in step_value['changes'].keys():
                             if type(step_value['changes'][key]) != dict:
@@ -316,10 +319,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             except Exception,e:
                 _logger.error("Problem step save/approval %s"%str(e))
                 error_slices.append(int(slice))
+            else:
+                if no_action:
+                    no_action_slices.append(int(slice))
     except Exception, e:
         _logger.error("Problem step save/approval %s"%str(e))
         raise e
-    return error_slices
+    return error_slices,no_action_slices
 
 
 def get_step_input_type(ctag):
@@ -405,7 +411,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
             slice_steps[slice]= steps_status[:-1]
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
-        results = {'data': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
+        results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True}
         if not missing_tags:
             _logger.debug("Start steps save/approval")
@@ -420,9 +426,14 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                             if StepExecution.STEPS[index] == 'Reco':
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
-                    error_slice = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                    error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
                 else:
-                    error_slice = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                    error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                results = {'missing_tags': missing_tags,
+                           'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
+                           'wrong_slices':wrong_skipping_slices,
+                           'double_trf':old_double_trf, 'error_slices':error_slices,
+                           'no_action_slices' :no_action_slices,'success': True}
                 if (req.cstatus.lower() != 'test') and (approve_level>=0):
                     req.cstatus = 'approved'
                     req.save()
