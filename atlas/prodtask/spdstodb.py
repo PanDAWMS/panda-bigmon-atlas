@@ -65,14 +65,15 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
                 if (formats) and (ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
-                
         except:
             pass
         finally:
-            if st  :
-                return st
-            else:
-                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if st:
+                if st.status == 'Approved':
+                    return st
+
+            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if trtf:
                 tr = trtf[0]
                 if(formats):
                     output_formats = formats
@@ -84,14 +85,33 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     memory = int(tr.memory)
                 if not step_name:
                     step_name = tr.step
-                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
-                                               ctag=tag, priority=priority,
-                                               cpu_per_event=int(tr.cpu_per_event), memory=memory,
-                                               output_formats=output_formats, trf_name=tr.trf,
-                                               lparams='', vparams='', swrelease=tr.trfv)
+                if st:
+                    st.status = 'Approved'
+                    st.output_formats = output_formats
+                    st.memory = memory
+                    st.cpu_per_event = int(tr.cpu_per_event)
+                else:
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
+                                                   ctag=tag, priority=priority,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
+                                                   output_formats=output_formats, trf_name=tr.trf,
+                                                   lparams='', vparams='', swrelease=tr.trfv)
                 st.save()
                 _logger.debug('Created step template: %i' % st.id)
                 return st
+            else:
+                if (not step_name) or (not tag):
+                    raise ValueError("Can't create an empty step")
+                else:
+                    if st:
+                       return st
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
+                               ctag=tag, priority=0,
+                               cpu_per_event=0, memory=0,
+                               output_formats='', trf_name='',
+                               lparams='', vparams='', swrelease='')
+                    st.save()
+                    return st
 
 def translate_excl_to_dict(excel_dict):      
         return_list = []
