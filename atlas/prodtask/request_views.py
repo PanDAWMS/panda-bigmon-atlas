@@ -909,6 +909,8 @@ def compress_pattern(form_dict):
     for step in form_dict.keys():
         value_list = json.loads(form_dict[step])
         if value_list:
+            if value_list[2] == 'None':
+                value_list[2] = ''
             return_dict[step] = {'ctag':value_list[0],'project_mode':value_list[1],'nEventsPerJob':value_list[2]}
         else:
             return_dict[step] = {'ctag':'','project_mode':'','nEventsPerJob':''}
