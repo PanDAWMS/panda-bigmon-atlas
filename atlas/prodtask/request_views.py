@@ -19,7 +19,7 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
-    get_priority_object, RequestStatus
+    get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
@@ -869,7 +869,7 @@ def mcpattern_create(request, pattern_id=None):
             return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
         values = {}
-        pattern_step_list = [(step, ['']*3) for step in MCPattern.STEPS]
+        pattern_step_list = [(step, ['']*2 + [get_default_nEventsPerJob_dict().get(step,'')]) for step in MCPattern.STEPS]
     if request.method == 'POST':
         form = MCPatternForm(request.POST, steps=[(step, ['']*3) for step in MCPattern.STEPS])
         if form.is_valid():
