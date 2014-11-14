@@ -236,7 +236,7 @@ def slice_steps(request, reqid, slice_number):
                 step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
             if existed_foreign_step:
                     result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':'','step_type':'foreign',
-                                        'nEventsPerJob':'','nEventsPerInputFile':'',
+                                        'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                         'project_mode':'','input_format':'',
                                         'priority':'', 'output_formats':'','input_events':'',
                                         'token':''})
@@ -255,7 +255,9 @@ def slice_steps(request, reqid, slice_number):
                                         'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'input_events':str(step.input_events),
                                         'token':task_config.get('token',''),'merging_tag':task_config.get('merging_tag',''),
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
-                                        'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob','')})
+                                        'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
+                                        'nFilesPerJob':task_config.get('nFilesPerJob','')})
+
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name

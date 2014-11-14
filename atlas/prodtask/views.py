@@ -228,7 +228,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             else:
                                 task_config = {}
                             for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
-                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode']:
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
+                                      'nFilesPerJob']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             change_template = False
@@ -280,7 +281,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config.update({'project_mode':input_list.project_mode})
                                 task_config = {}
                             for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
-                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode']:
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             ctag = step_value['value']

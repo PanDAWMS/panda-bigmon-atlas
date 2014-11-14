@@ -1019,6 +1019,7 @@ function ProcessingStep() {
   this.nFilesPerMergeJob = undefined;
   this.nGBPerMergeJob = undefined;
   this.nMaxFilesPerMergeJob = undefined;
+  this.nFilesPerJob = undefined;
 };
 
  function RequestSlice(sliceNumber) {
@@ -1465,6 +1466,11 @@ job options: <span id="sliceModalJobOption"></span></p>
                                  <div class="large-2 columns">
                                   <label>Events per job
                                     <input type="number" class="nEventsPerJob storeOutput{{forloop.counter0}} storeInput"  placeholder="1000"  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Files per job
+                                    <input type="number" class="nFilesPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
                                   </label>
                                 </div>
                                  <div class="large-2 columns">

@@ -300,8 +300,11 @@ def parse_json_slice_dict(json_string):
                             task_config.update({'project_mode':slice['projectmode']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
+
                         if slice['inputFormat']:
                                     task_config.update({'input_format':slice['inputFormat']})
+                        if slice['nFilesPerJob']:
+                                    task_config.update({'nFilesPerJob':slice['nFilesPerJob']})
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -329,6 +332,8 @@ def parse_json_slice_dict(json_string):
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if  step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
+                                if  step['nFilesPerJob']:
+                                    task_config.update({'nFilesPerJob':step['nFilesPerJob']})
                                 step_name = step_from_tag(step['ctag'])
                                 sexec = dict(status='NotChecked', priority=int(step['priority']),
                                              input_events=int(step['totalevents']))
@@ -760,7 +765,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                         if step['step_name']=='Evgen':
                                             task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag']
+                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
