@@ -24,7 +24,7 @@ from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
 from .dpdconfparser import ConfigParser
-from core.xls_parser import open_tempfile_from_url
+from .xls_parser_new import open_tempfile_from_url
 
 
 _logger = logging.getLogger('prodtaskwebui')

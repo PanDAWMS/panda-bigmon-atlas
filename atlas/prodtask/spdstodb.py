@@ -14,7 +14,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttr
 import urllib2
 
 
-from core.xls_parser import XlrParser, open_tempfile_from_url
+from .xls_parser_new import XlrParser, open_tempfile_from_url
 #from prodtask.models import get_default_nEventsPerJob_dict
 from .models import get_default_nEventsPerJob_dict
 
@@ -36,7 +36,9 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
 def get_key_by_url(url):
         response = urllib2.urlopen(url)
         r = response.url
+        format = ''
         if r.find('key')>0:
+            format = 'xls'
             google_key = ''
             if r.find("key%3D") > 0:
                 google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
@@ -45,9 +47,10 @@ def get_key_by_url(url):
             if not google_key:
                 google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]
         else:
+            format = 'xlsx'
             google_key = r[r.find("/d/") + len("/d/"):r.find('/edit', r.find("/d/"))]
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
-        return google_key
+        return (google_key, format)
     
 def fill_template(step_name, tag, priority, formats=None, ram=None):
         st = None
@@ -198,7 +201,8 @@ def fill_steptemplate_from_gsprd(gsprd_link):
 
         try:
             excel_parser = XlrParser()
-            excel_dict = excel_parser.open_by_key(get_key_by_url(gsprd_link))[0]
+            url, xls_format = get_key_by_url(gsprd_link)
+            excel_dict = excel_parser.open_by_key(url,xls_format)[0]
         except Exception, e:
             raise RuntimeError("Problem with link openning, \n %s" % e)
         return translate_excl_to_dict(excel_dict) 
