@@ -33,14 +33,19 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
                          'Atlf TAG',
                          "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"]
 
-def get_key_by_url(url):       
+def get_key_by_url(url):
         response = urllib2.urlopen(url)
         r = response.url
-        google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
-        if not google_key:
-            google_key = r[r.find("key=") + len("key="):r.find('#')]
-        if not google_key:
-            google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]  
+        if r.find('key')>0:
+            google_key = ''
+            if r.find("key%3D") > 0:
+                google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
+            if not google_key:
+                google_key = r[r.find("key=") + len("key="):r.find('#')]
+            if not google_key:
+                google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]
+        else:
+            google_key = r[r.find("/d/") + len("/d/"):r.find('/edit', r.find("/d/"))]
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
         return google_key
     
