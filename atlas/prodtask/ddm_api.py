@@ -35,7 +35,7 @@ def find_dataset_events(dataset_pattern):
                             if dataset_in_db.events:
                                 if dataset_in_db.events > 0:
                                     event_count += task.total_events
-                                    is_good = True
+                            is_good = True
 
                     except:
                         pass
