@@ -16,7 +16,7 @@ def find_dataset_events(dataset_pattern):
         datasets = [x for x in datasets_containers if x not in containers ]
         for container in containers:
             event_count = 0
-            is_good = True
+            is_good = False
             datasets_in_container = ddm.dataset_in_container(container)
             for dataset_name in datasets_in_container:
                 if dataset_name in datasets:
@@ -26,10 +26,20 @@ def find_dataset_events(dataset_pattern):
                     task = TaskProdSys1.objects.get(taskid=dataset.taskid)
                     if (task.status not in ['aborted','failed','lost']):
                         event_count += task.total_events
-                    else:
-                        is_good = False
+                        is_good = True
+
                 except:
-                    is_good = False
+                    try:
+                        dataset_in_db = ProductionDataset.objects.get(name=dataset_name)
+                        if dataset_in_db.status == 'done':
+                            if dataset_in_db.events:
+                                if dataset_in_db.events > 0:
+                                    event_count += task.total_events
+                                    is_good = True
+
+                    except:
+                        pass
+
             if is_good:
                 return_list.append({'dataset_name':container,'events':str(event_count)})
         for dataset_name in datasets:
