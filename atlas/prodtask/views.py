@@ -261,7 +261,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 if index == 0:
                                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
                                 elif total_events !=-1 :
-                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+                                    if parent_step:
+                                        task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+                                    else:
+                                        task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'-1')})
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
                             step_in_db.set_task_config(task_config)
@@ -822,8 +825,27 @@ def input_list_approve(request, rid=None):
                             else:
                                 temp_step_list.append((step,step_task))
                     if cur_request.request_type == 'MC':
-                        slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
+                        first_step = True
+                        slice_steps_ordered = []
+                        another_chain_step_dict = {}
+                        for step_name in StepExecution.STEPS:
+                            if step_name not in slice_steps:
+                                slice_steps_ordered.append(form_step_obj({},{},slice.slice))
+                            else:
+                                slice_steps_ordered.append(slice_steps[step_name])
+                                if first_step:
+                                    first_step = False
+                                    if slice_steps[step_name]['step']['id'] != slice_steps[step_name]['step']['step_parent_id']:
+                                        another_chain_step = StepExecution.objects.get(id=slice_steps[step_name]['step']['step_parent_id'])
+                                        another_chain_step_dict = model_to_dict(another_chain_step)
+                                        another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
+                                        another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
+                                        slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
+                                                                                                 ,{}, another_chain_step.slice.slice,
+                                                                                              True)
+                        #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
                         approved = get_approve_status(slice_steps_ordered)
+
                         if (approved == 'approved')or(approved == 'partially_approved'):
                                 approved_count += 1
                         if (approved == 'approved'):
@@ -831,9 +853,12 @@ def input_list_approve(request, rid=None):
                         slice_dict = model_to_dict(slice)
                         if not slice_dict['dataset']:
                             slice_dict['dataset'] = ''
-                        input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered),
-                                            show_task,'',approve_level(slice_steps_ordered)))
-
+                        if another_chain_step_dict:
+                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered),
+                                                show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered)))
+                        else:
+                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered),
+                                                show_task,'',approve_level(slice_steps_ordered)))
                         if (not show_task)or(fully_approved<total_slice):
                             edit_mode = True
                     else:
@@ -841,10 +866,11 @@ def input_list_approve(request, rid=None):
                         if not(slice_steps_list) and (len(temp_step_list) == 1):
                             if temp_step_list[0][0]['step_parent_id'] != temp_step_list[0][0]['id']:
                                 # step in other chain
-                                another_chain_step = StepExecution.objects.filter(id=temp_step_list[0][0]['step_parent_id']).values()[0]
-                                another_chain_step.update({'ctag':step_templates[another_chain_step['step_template_id']].ctag})
+                                another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
+                                another_chain_step = model_to_dict(another_chain_step_obj)
+                                another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
                                 slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
-                                                                                              slice.slice,
+                                                                                              another_chain_step_obj.slice.slice,
                                                                                               True)))
                             slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],slice.slice)))
                             temp_step_list.pop(0)
@@ -854,10 +880,11 @@ def input_list_approve(request, rid=None):
                             for index,current_step in enumerate(temp_step_list):
                                 if current_step[0]['step_parent_id'] not in step_id_list:
                                     # step in other chain
-                                    another_chain_step = StepExecution.objects.filter(id=temp_step_list[0][0]['step_parent_id']).values()[0]
-                                    another_chain_step.update({'ctag':step_templates[another_chain_step['step_template_id']].ctag})
+                                    another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
+                                    another_chain_step = model_to_dict(another_chain_step_obj)
+                                    another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
                                     slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
-                                                                                                  slice.slice,
+                                                                                                  another_chain_step_obj.slice.slice,
                                                                                                   True)))
                                     slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],slice.slice)))
                                     temp_step_list.pop(index)

@@ -62,7 +62,7 @@ def clone_slices_in_req(request, reqid):
                     elif step.status == 'Approved':
                         step.status = 'NotChecked'
                     if step.step_parent.id in old_new_step:
-                        step.step_parent = old_new_step[old_step_id]
+                        step.step_parent = old_new_step[int(step.step_parent.id)]
                     step.save_with_current_time()
                     if self_looped:
                         step.step_parent = step
