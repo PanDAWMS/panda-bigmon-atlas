@@ -544,6 +544,32 @@ $(".showSmallSpan").css({"cursor":"pointer"});
       });
 
     };
+     function checkSlice(event) {
+
+             currentSlice = ($(event.target).attr('id')).slice('checkbox'.length);
+             if (event.shiftKey) {
+                 if (lastCheckedSlice > -1) {
+
+                     if (lastCheckedSlice > currentSlice) {
+                         fromSlice = currentSlice;
+                         toSlice = lastCheckedSlice;
+                     } else {
+                         fromSlice = lastCheckedSlice;
+                         toSlice = currentSlice;
+                     }
+                     for(var i=fromSlice;i<=toSlice;i++){
+                        if ($("#inputList_div".concat(i)).is(":visible")){
+                            $('#checkbox'+i).prop("checked",lastChecked);
+                        }
+                     }
+
+                 }
+
+                 lastCheckedSlice = currentSlice;
+             }
+            lastCheckedSlice = parseInt(currentSlice);
+            lastChecked = $(event.target).is(':checked');
+     }
           function approveReprocessingClick(event){
             var sendData = Object();
             var sliceList=[];
@@ -1043,6 +1069,8 @@ RequestSlice.prototype.getStepByNumber = function(stepNumber){
 var changesList = {};
 var patternDict = [];
 var changeMode = true;
+var lastCheckedSlice = -1;
+var lastChecked = true;
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -1148,7 +1176,7 @@ var changeMode = true;
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
-            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" checked></form></td>
+            <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" onclick='checkSlice(event);' checked></form></td>
             <td style="padding:0px;margin:0px">
             <table class="inputListTables" >
             <tr class="inputListRow">
