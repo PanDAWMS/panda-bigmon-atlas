@@ -195,8 +195,12 @@ setup(
         'atlas.getdatasets',
         'atlas.auth',
         'atlas.auth.voms',
+        'atlas.auth.voms.management',
         'atlas.auth.voms.management.commands',
         'atlas.auth.fake',
+        'atlas.deftcore',
+        'atlas.deftcore.api',
+        'atlas.deftcore.api.client',
     ],
     data_files=[ #FIXME
                 # config files 
