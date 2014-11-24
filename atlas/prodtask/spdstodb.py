@@ -14,7 +14,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttr
 import urllib2
 
 
-from core.xls_parser import XlrParser, open_tempfile_from_url
+from .xls_parser_new import XlrParser, open_tempfile_from_url
 #from prodtask.models import get_default_nEventsPerJob_dict
 from .models import get_default_nEventsPerJob_dict
 
@@ -33,16 +33,24 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
                          'Atlf TAG',
                          "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"]
 
-def get_key_by_url(url):       
+def get_key_by_url(url):
         response = urllib2.urlopen(url)
         r = response.url
-        google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
-        if not google_key:
-            google_key = r[r.find("key=") + len("key="):r.find('#')]
-        if not google_key:
-            google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]  
+        format = ''
+        if r.find('key')>0:
+            format = 'xls'
+            google_key = ''
+            if r.find("key%3D") > 0:
+                google_key = r[r.find("key%3D") + len("key%3D"):r.find('%26')]
+            if not google_key:
+                google_key = r[r.find("key=") + len("key="):r.find('#')]
+            if not google_key:
+                google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]
+        else:
+            format = 'xlsx'
+            google_key = r[r.find("/d/") + len("/d/"):r.find('/edit', r.find("/d/"))]
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
-        return google_key
+        return (google_key, format)
     
 def fill_template(step_name, tag, priority, formats=None, ram=None):
         st = None
@@ -65,14 +73,15 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
                 if (formats) and (ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
-                
         except:
             pass
         finally:
-            if st  :
-                return st
-            else:
-                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if st:
+                if st.status == 'Approved':
+                    return st
+
+            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            if trtf:
                 tr = trtf[0]
                 if(formats):
                     output_formats = formats
@@ -84,14 +93,33 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     memory = int(tr.memory)
                 if not step_name:
                     step_name = tr.step
-                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
-                                               ctag=tag, priority=priority,
-                                               cpu_per_event=int(tr.cpu_per_event), memory=memory,
-                                               output_formats=output_formats, trf_name=tr.trf,
-                                               lparams='', vparams='', swrelease=tr.trfv)
+                if st:
+                    st.status = 'Approved'
+                    st.output_formats = output_formats
+                    st.memory = memory
+                    st.cpu_per_event = int(tr.cpu_per_event)
+                else:
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
+                                                   ctag=tag, priority=priority,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
+                                                   output_formats=output_formats, trf_name=tr.trf,
+                                                   lparams='', vparams='', swrelease=tr.trfv)
                 st.save()
                 _logger.debug('Created step template: %i' % st.id)
                 return st
+            else:
+                if (not step_name) or (not tag):
+                    raise ValueError("Can't create an empty step")
+                else:
+                    if st:
+                       return st
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
+                               ctag=tag, priority=0,
+                               cpu_per_event=0, memory=0,
+                               output_formats='', trf_name='',
+                               lparams='', vparams='', swrelease='')
+                    st.save()
+                    return st
 
 def translate_excl_to_dict(excel_dict):      
         return_list = []
@@ -173,7 +201,8 @@ def fill_steptemplate_from_gsprd(gsprd_link):
 
         try:
             excel_parser = XlrParser()
-            excel_dict = excel_parser.open_by_key(get_key_by_url(gsprd_link))[0]
+            url, xls_format = get_key_by_url(gsprd_link)
+            excel_dict = excel_parser.open_by_key(url,xls_format)[0]
         except Exception, e:
             raise RuntimeError("Problem with link openning, \n %s" % e)
         return translate_excl_to_dict(excel_dict) 

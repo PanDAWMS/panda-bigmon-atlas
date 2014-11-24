@@ -32,10 +32,13 @@ def clone_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            ordered_slices = map(int,slices)
+            ordered_slices.sort()
             #form levels from input text lines
             #create chains for each input
             new_slice_number = InputRequestList.objects.filter(request=reqid).count()
-            for slice_number in slices:
+            old_new_step = {}
+            for slice_number in ordered_slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
                 new_slice = current_slice.values()[0]
                 new_slice['slice'] = new_slice_number
@@ -46,7 +49,8 @@ def clone_slices_in_req(request, reqid):
                 step_execs = StepExecution.objects.filter(slice=current_slice)
                 ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
                 for step in ordered_existed_steps:
-
+                    self_looped = step.id == step.step_parent.id
+                    old_step_id = step.id
                     step.id = None
                     step.step_appr_time = None
                     step.step_def_time = None
@@ -57,13 +61,13 @@ def clone_slices_in_req(request, reqid):
                         step.status = 'NotCheckedSkipped'
                     elif step.status == 'Approved':
                         step.status = 'NotChecked'
+                    if step.step_parent.id in old_new_step:
+                        step.step_parent = old_new_step[int(step.step_parent.id)]
                     step.save_with_current_time()
-                    if parent_step:
-                        step.step_parent = parent_step
-                    else:
+                    if self_looped:
                         step.step_parent = step
                     step.save()
-                    parent_step = step
+                    old_new_step[old_step_id] = step
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -236,7 +240,7 @@ def slice_steps(request, reqid, slice_number):
                 step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
             if existed_foreign_step:
                     result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':'','step_type':'foreign',
-                                        'nEventsPerJob':'','nEventsPerInputFile':'',
+                                        'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                         'project_mode':'','input_format':'',
                                         'priority':'', 'output_formats':'','input_events':'',
                                         'token':''})
@@ -255,7 +259,9 @@ def slice_steps(request, reqid, slice_number):
                                         'priority':str(step.priority), 'output_formats':step.step_template.output_formats,'input_events':str(step.input_events),
                                         'token':task_config.get('token',''),'merging_tag':task_config.get('merging_tag',''),
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
-                                        'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob','')})
+                                        'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
+                                        'nFilesPerJob':task_config.get('nFilesPerJob','')})
+
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name

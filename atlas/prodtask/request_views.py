@@ -19,12 +19,12 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
-    get_priority_object, RequestStatus
+    get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
 from .dpdconfparser import ConfigParser
-from core.xls_parser import open_tempfile_from_url
+from .xls_parser_new import open_tempfile_from_url
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -300,8 +300,11 @@ def parse_json_slice_dict(json_string):
                             task_config.update({'project_mode':slice['projectmode']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
+
                         if slice['inputFormat']:
                                     task_config.update({'input_format':slice['inputFormat']})
+                        if slice['nFilesPerJob']:
+                                    task_config.update({'nFilesPerJob':slice['nFilesPerJob']})
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -329,6 +332,8 @@ def parse_json_slice_dict(json_string):
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if  step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
+                                if  step['nFilesPerJob']:
+                                    task_config.update({'nFilesPerJob':step['nFilesPerJob']})
                                 step_name = step_from_tag(step['ctag'])
                                 sexec = dict(status='NotChecked', priority=int(step['priority']),
                                              input_events=int(step['totalevents']))
@@ -615,7 +620,7 @@ Technical details:
 
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
-                            form_prefill):
+                            form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}):
     """
     Fill form for creating request. Create request->slice->steps for POST
     View create two forms: first for request prefill, second for request creation
@@ -648,6 +653,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'url_args': rid,
                         'error_message': error_message,
                         'parent_template': 'prodtask/_index.html',
+                        'default_step_values': default_step_values
                      })
                 else:
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
@@ -759,7 +765,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                         if step['step_name']=='Evgen':
                                             task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag']
+                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
@@ -806,6 +812,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     'submit_url': submit_url,
                     'url_args': rid,
                     'parent_template': 'prodtask/_index.html',
+                     'default_step_values': default_step_values
                 })
 
     # GET request
@@ -832,26 +839,30 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         'submit_url': submit_url,
         'url_args': rid,
         'parent_template': 'prodtask/_index.html',
+        'default_step_values': default_step_values
     })
 
 
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
-                                   TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill)
+                                   TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
+                                   {'nEventsPerJob':'1000','priority':'880'})
 
 
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
-                                   TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill)
+                                   TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
+                                   {'nEventsPerJob':'5000','priority':'520'})
 
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
-                                   TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill)
+                                   TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
+                                   {'nEventsPerJob':'1000','priority':'880'})
 
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill)
+                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880'})
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
@@ -863,7 +874,7 @@ def mcpattern_create(request, pattern_id=None):
             return HttpResponseRedirect(reverse('prodtask:mcpattern_table'))
     else:
         values = {}
-        pattern_step_list = [(step, ['']*3) for step in MCPattern.STEPS]
+        pattern_step_list = [(step, ['']*2 + [get_default_nEventsPerJob_dict().get(step,'')]) for step in MCPattern.STEPS]
     if request.method == 'POST':
         form = MCPatternForm(request.POST, steps=[(step, ['']*3) for step in MCPattern.STEPS])
         if form.is_valid():
@@ -903,6 +914,8 @@ def compress_pattern(form_dict):
     for step in form_dict.keys():
         value_list = json.loads(form_dict[step])
         if value_list:
+            if value_list[2] == 'None':
+                value_list[2] = ''
             return_dict[step] = {'ctag':value_list[0],'project_mode':value_list[1],'nEventsPerJob':value_list[2]}
         else:
             return_dict[step] = {'ctag':'','project_mode':'','nEventsPerJob':''}
