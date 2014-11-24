@@ -25,7 +25,7 @@ def tag_info(request, tag_name):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
-def clone_slices_in_req(request, reqid):
+def clone_slices_in_req(request, reqid, step_from, make_link_value):
     if request.method == 'POST':
         results = {'success':False}
         try:
@@ -37,7 +37,13 @@ def clone_slices_in_req(request, reqid):
             #form levels from input text lines
             #create chains for each input
             new_slice_number = InputRequestList.objects.filter(request=reqid).count()
+            current_request = TRequest.objects.get(reqid=reqid)
             old_new_step = {}
+            if make_link_value == '1':
+                make_link = True
+            else:
+                make_link = False
+            step_from = int(step_from)
             for slice_number in ordered_slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
                 new_slice = current_slice.values()[0]
@@ -48,26 +54,35 @@ def clone_slices_in_req(request, reqid):
                 new_input_data.save()
                 step_execs = StepExecution.objects.filter(slice=current_slice)
                 ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-                for step in ordered_existed_steps:
-                    self_looped = step.id == step.step_parent.id
-                    old_step_id = step.id
-                    step.id = None
-                    step.step_appr_time = None
-                    step.step_def_time = None
-                    step.step_exe_time = None
-                    step.step_done_time = None
-                    step.slice = new_input_data
-                    if step.status == 'Skipped':
-                        step.status = 'NotCheckedSkipped'
-                    elif step.status == 'Approved':
-                        step.status = 'NotChecked'
-                    if step.step_parent.id in old_new_step:
-                        step.step_parent = old_new_step[int(step.step_parent.id)]
-                    step.save_with_current_time()
-                    if self_looped:
-                        step.step_parent = step
-                    step.save()
-                    old_new_step[old_step_id] = step
+                if current_request.request_type == 'MC':
+                    STEPS = StepExecution.STEPS
+                else:
+                    STEPS = ['']*len(StepExecution.STEPS)
+                step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS)
+                first_changed = not make_link
+                for index,step in enumerate(step_as_in_page):
+                    if step:
+                        if (index >= step_from) or (not make_link):
+                            self_looped = step.id == step.step_parent.id
+                            old_step_id = step.id
+                            step.id = None
+                            step.step_appr_time = None
+                            step.step_def_time = None
+                            step.step_exe_time = None
+                            step.step_done_time = None
+                            step.slice = new_input_data
+                            if (step.status == 'Skipped') or (index < step_from):
+                                step.status = 'NotCheckedSkipped'
+                            elif step.status == 'Approved':
+                                step.status = 'NotChecked'
+                            if first_changed and (step.step_parent.id in old_new_step):
+                                step.step_parent = old_new_step[int(step.step_parent.id)]
+                            step.save_with_current_time()
+                            if self_looped:
+                                step.step_parent = step
+                            first_changed = True
+                            step.save()
+                            old_new_step[old_step_id] = step
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

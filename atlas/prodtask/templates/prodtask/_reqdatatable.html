@@ -207,9 +207,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var stepColor = $("#foreignColor").css("background-color");
                         {% endifequal %}
                         {% if  forloop.counter0 < approve_level %}
-                            var borderColor = 'green'
+                            var borderColor = 'green';
                         {%  else  %}
-                            var borderColor = 'grey'
+                            var borderColor = 'grey';
                         {% endif  %}
                         $("#short{{ inputList.slice }}s{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
                             "border":'solid',
@@ -933,10 +933,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 var sliceID = $(this).attr("id").slice(8);
                 sliceList.push(sliceID);
             });
-            sendData = sliceList;
+            var makeLink = '0';
+            if ($('#makeLinkCheckbox').is(':checked')){
+                makeLink = '1';
+            }
+            var sendData = sliceList;
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: "{% url 'prodtask:clone_slices_in_req' pr_id %}",
+                    url: Django.url('prodtask:clone_slices_in_req',"{{ pr_id }}",$('#cloneFromStep').val(),makeLink),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1319,10 +1323,31 @@ var lastChecked = true;
 
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
-            <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
+            <button  title="Clone slices" href="#" data-dropdown="dropCloneMenu">Clone </button>
             <button id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
+
+        <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
+            <div class="row">
+            <label> Make link
+                <input type="checkbox" id="makeLinkCheckbox"  />
+              </label>
+            </div>
+                <div class="row">
+                    <label> Clone from step:
+                    <select id="cloneFromStep" >
+                    <option value="-1">all</option>
+                    {% for step in step_list %}
+                            <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                    </label>
+                </div>
+             <div class="row">
+                 <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
+             </div>
+        </div>
 
     </div>
     <div class="row">
