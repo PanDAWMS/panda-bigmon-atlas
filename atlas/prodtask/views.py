@@ -658,13 +658,24 @@ def fixPattern(pattern):
     pattern.pattern_dict = json.dumps(pattern_d)
     pattern.save()
 
-#TODO: Optimize by having only one query for steps and tasks
+
+
 @ensure_csrf_cookie
 def input_list_approve(request, rid=None):
+    return request_table_view(request, rid, show_hidden=False)
 
+@ensure_csrf_cookie
+def input_list_approve_full(request, rid=None):
+    return request_table_view(request, rid, show_hidden=True)
+
+
+def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
 
-    def get_approve_status(ste_task_list):
+    def get_approve_status(ste_task_list,slice=None):
+        if slice:
+            if slice.is_hide:
+                return 'hidden'
         return_status = 'not_approved'
         exist_approved = False
         exist_not_approved = False
@@ -764,6 +775,7 @@ def input_list_approve(request, rid=None):
             slice_pattern = []
             edit_mode = True
             fully_approved = 0
+            hidden_slices = 0
             if not input_lists_pre:
                 edit_mode = True
             else:
@@ -779,6 +791,9 @@ def input_list_approve(request, rid=None):
                         slice_pattern = input_lists_pre[0].dataset.name.split('.')
 
                 for slice in input_lists_pre:
+                    if (not show_hidden) and slice.is_hide:
+                        hidden_slices += 1
+                        continue
                     #step_execs = StepExecution.objects.filter(slice=slice)
 
                     #step_execs = [x for x in steps if x.slice == slice]
@@ -868,10 +883,10 @@ def input_list_approve(request, rid=None):
                         if not slice_dict['dataset']:
                             slice_dict['dataset'] = ''
                         if another_chain_step_dict:
-                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered),
+                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
                                                 show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered)))
                         else:
-                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered),
+                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
                                                 show_task,'',approve_level(slice_steps_ordered)))
                         if (not show_task)or(fully_approved<total_slice):
                             edit_mode = True
@@ -922,10 +937,10 @@ def input_list_approve(request, rid=None):
                         if not slice_dict['dataset']:
                             slice_dict['dataset'] = ''
                         if another_chain_step:
-                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps),  show_task,
+                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
                                                 another_chain_step['id'], approve_level(slice_steps)))
                         else:
-                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps),  show_task, '',
+                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
                                                 approve_level(slice_steps)))
 
 
@@ -952,7 +967,8 @@ def input_list_approve(request, rid=None):
                'show_reprocessing':show_reprocessing,
                'not_use_input_date_for_pattern':not use_input_date_for_pattern,
                'has_deft_problem':has_deft_problem,
-               'jira_problem_link':jira_problem_link
+               'jira_problem_link':jira_problem_link,
+               'hidden_slices':hidden_slices
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

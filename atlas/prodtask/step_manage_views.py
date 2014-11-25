@@ -113,6 +113,26 @@ def reject_slices_in_req(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
+def hide_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
+                if not current_slice.is_hide:
+                    current_slice.is_hide = True
+                else:
+                    current_slice.is_hide = False
+                current_slice.save()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
 def step_params_from_tag(request, reqid):
     if request.method == 'POST':
         results = {'success':False}

@@ -71,6 +71,7 @@
     td.approved { color : green;	}
     td.not_approved { color : red;}
     td.partially_approved { color : orange;	}
+    td.hidden { color : #463cff;	}
    </style>
 
 {% endblock %}
@@ -984,6 +985,34 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
         };
 
+         function hideClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:hide_slices_in_req' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
+
 function spreadAMI(that){
     currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
     currentSlice = $('#sliceModalSlice').html();
@@ -1109,8 +1138,11 @@ var lastChecked = true;
   <td>{{ trequest.cstatus}}</td>
 </tr>
 </table>
-
-<h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+{% if hidden_slices > 0 %}
+    <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }} and hidden: {{ hidden_slices }}</h6>
+{% else %}
+    <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+{% endif %}
 {% if approvedCount > 0 %}
 {#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
 {% endif %}
@@ -1130,8 +1162,6 @@ var lastChecked = true;
     <span> Please replace these old tags with double trf before approval: </span><span id="doubleTagsString"></span></div>
 <div id="wrongSlice" class="alert-box alert round" style="display: none"><strong >Error: </strong>
 <span> Check these slices: </span><span id="wrongSliceString"></span></div>
-<form >
-
 
 
 <table style="margin-left: 50px;border: hidden" id="patternTable">
@@ -1325,6 +1355,7 @@ var lastChecked = true;
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
             <button  title="Clone slices" href="#" data-dropdown="dropCloneMenu">Clone </button>
             <button id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
+            <button id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
 
@@ -1601,5 +1632,10 @@ job options: <span id="sliceModalJobOption"></span></p>
    <button id="saveButton" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
+{% if hidden_slices > 0 %}
+    <a href= "{% url 'prodtask:input_list_approve_full' pr_id %}">Show {{ hidden_slices }} hidden slices </a>
+    <p/>
+
+{% endif %}
 <a href="#" class="tiny secondary" onclick="chnageStatusToTest(event);">Make as test</a>
 {% endblock %}

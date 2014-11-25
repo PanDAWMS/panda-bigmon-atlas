@@ -227,7 +227,8 @@ class InputRequestList(models.Model):
     project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
-    
+    is_hide = models.NullBooleanField(db_column='HIDED', null=True, blank=False)
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ')

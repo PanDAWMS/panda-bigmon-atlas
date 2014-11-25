@@ -16,6 +16,8 @@ urlpatterns = patterns('',
     url(r'^stepex/(?P<rid>\d+)/$', 'atlas.prodtask.views.stepex_details', name='step_execution'),
     
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
+    url(r'^input_list_approve_full/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve_full', name='input_list_approve_full'),
+
     #url(r'^taskpriority_table/$', 'task.views.taskpriority_table', name='taskpriority_table'),
 
     url(r'^production_dataset_table/$', 'atlas.prodtask.views.production_dataset_table',    name='production_dataset_table'),
@@ -71,6 +73,7 @@ urlpatterns = patterns('',
     url(r'^reject_steps/(?P<reqid>\d+)/(?P<step_filter>\w+)/$', 'atlas.prodtask.step_manage_views.reject_steps', name='reject_steps'),
     url(r'^clone_slices_in_req/(?P<reqid>\d+)/(?P<step_from>[-+]?\d+)/(?P<make_link_value>[01])/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
     url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
+    url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
 
