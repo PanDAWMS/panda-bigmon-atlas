@@ -52,9 +52,12 @@ def find_missing_tags(tags):
         try:
             trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
             if not trtf:
-                return_list.append(tag)
+                if (tag[0]=='r') and (int(tag[1:])<6000):
+                    return_list.append(tag)
+                else:
+                    pass
         except ObjectDoesNotExist,e:
-            return_list.append(tag)
+                pass
         except Exception,e:
             raise e
 
