@@ -644,6 +644,17 @@ def about(request):
 def step_skipped(step):
     return (step.status=='Skipped')or(step.status=='NotCheckedSkipped')
 
+def fixPattern(pattern):
+    pattern_d = json.loads(pattern.pattern_dict)
+    for step in pattern_d.keys():
+        if not pattern_d[step]['ctag']:
+            if not pattern_d[step]['project_mode']:
+                pattern_d[step]['project_mode'] = get_default_project_mode_dict()[step]
+            if not pattern_d[step]['nEventsPerJob']:
+                pattern_d[step]['nEventsPerJob'] = get_default_nEventsPerJob_dict()[step]
+    pattern.pattern_dict = json.dumps(pattern_d)
+    pattern.save()
+
 #TODO: Optimize by having only one query for steps and tasks
 @ensure_csrf_cookie
 def input_list_approve(request, rid=None):
@@ -731,9 +742,9 @@ def input_list_approve(request, rid=None):
                 # Load patterns which are currently in use
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE')
                 pattern_list_name = [(x.pattern_name,
-                                      [unwrap(json.loads(x.pattern_dict).get(step,{'ctag':'','project_mode':'','nEventsPerJob':''})) for step in StepExecution.STEPS]) for x in pattern_list]
+                                      [unwrap(json.loads(x.pattern_dict).get(step,{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
-                pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in StepExecution.STEPS])]
+                pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
 
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
