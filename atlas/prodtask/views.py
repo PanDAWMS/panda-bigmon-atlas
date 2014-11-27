@@ -454,7 +454,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
-                   'double_trf':old_double_trf, 'success': True}
+                   'double_trf':old_double_trf, 'success': True, 'new_status':''}
         if not missing_tags:
             _logger.debug("Start steps save/approval")
             req = TRequest.objects.get(reqid=reqid)
@@ -471,11 +471,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
                 else:
                     error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
-                results = {'missing_tags': missing_tags,
-                           'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
-                           'wrong_slices':wrong_skipping_slices,
-                           'double_trf':old_double_trf, 'error_slices':error_slices,
-                           'no_action_slices' :no_action_slices,'success': True}
+
                 if (req.cstatus.lower() != 'test') and (approve_level>=0):
                     req.cstatus = request_approve_status(req,request)
                     req.save()
@@ -495,6 +491,11 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                             input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
                             input_list.dataset = fill_dataset(new_dataset)
                             input_list.save()
+                results = {'missing_tags': missing_tags,
+                           'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
+                           'wrong_slices':wrong_skipping_slices,
+                           'double_trf':old_double_trf, 'error_slices':error_slices,
+                           'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus}
         else:
             _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
