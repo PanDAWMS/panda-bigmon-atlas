@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from django.forms import model_to_dict
 import json
 import logging
@@ -12,6 +13,7 @@ from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 import time
+from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
 from .request_views import fill_dataset
 
@@ -406,6 +408,33 @@ def find_input_datasets(request, reqid):
 
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase']
+
+def request_approve_status(production_request, request):
+    if production_request.request_type == 'MC':
+        user_name=''
+        is_superuser=False
+        try:
+            user_name = request.user.username
+            is_superuser = request.user.is_superuser
+        except:
+            pass
+        # change to VOMS
+        if (user_name in MC_COORDINATORS) or is_superuser:
+            return 'approved'
+        else:
+            current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(production_request.reqid,)))
+            mess = '''
+Request %i is waiting approval:
+%s
+            '''%(production_request.reqid,current_uri)
+            send_mail("Request %i was regisered"%production_request.reqid,mess,APP_SETTINGS['prodtask.email.from'],['atlas-phys-mcprod-team@cern.ch','mborodin@cern.ch'],
+                      fail_silently=True)
+            return 'registered'
+
+    else:
+        return 'approved'
+
 
 def request_steps_approve_or_save(request, reqid, approve_level):
     results = {'success':False}
@@ -448,7 +477,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                            'double_trf':old_double_trf, 'error_slices':error_slices,
                            'no_action_slices' :no_action_slices,'success': True}
                 if (req.cstatus.lower() != 'test') and (approve_level>=0):
-                    req.cstatus = 'approved'
+                    req.cstatus = request_approve_status(req,request)
                     req.save()
                     owner='default'
                     try:
@@ -458,7 +487,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     if not owner:
                         owner='default'
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
-                                                   status='approved')
+                                                   status=req.cstatus)
                     request_status.save_with_current_time()
                 if req.request_type == 'MC':
                     for slice, new_dataset in slice_new_input.items():
