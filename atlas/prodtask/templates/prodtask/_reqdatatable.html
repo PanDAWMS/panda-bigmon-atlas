@@ -934,7 +934,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             return sliceDBInfo;
         }
 
-        function cloneSlicesClick(event){
+        function cloneSlicesClick(event, makeLink, cloneFromStepNumber){
             event.preventDefault();
             var sliceList=[];
             var i=0;
@@ -943,14 +943,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 var sliceID = $(this).attr("id").slice(8);
                 sliceList.push(sliceID);
             });
-            var makeLink = '0';
-            if ($('#makeLinkCheckbox').is(':checked')){
-                makeLink = '1';
-            }
             var sendData = sliceList;
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:clone_slices_in_req',"{{ pr_id }}",$('#cloneFromStep').val(),makeLink),
+                    url: Django.url('prodtask:clone_slices_in_req',"{{ pr_id }}",cloneFromStepNumber,makeLink),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1372,18 +1368,14 @@ var lastChecked = true;
 
             <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
             <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
-            <button  title="Clone slices" href="#" data-dropdown="dropCloneMenu">Clone </button>
+            <button  title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
+            <button  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
             <button id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
             <button id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
             <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
 
         <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
-            <div class="row">
-            <label> Make link
-                <input type="checkbox" id="makeLinkCheckbox"  />
-              </label>
-            </div>
                 <div class="row">
                     <label> Clone from step:
                     <select id="cloneFromStep" >
@@ -1395,7 +1387,7 @@ var lastChecked = true;
                     </label>
                 </div>
              <div class="row">
-                 <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
+                 <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event,'1',$('#cloneFromStep').val());">Fix</button>
              </div>
         </div>
 
