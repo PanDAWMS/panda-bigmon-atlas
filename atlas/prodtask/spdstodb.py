@@ -114,15 +114,15 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     if st:
                        return st
                     output_formats = ''
-                    if(formats):
+                    if formats:
                         output_formats = formats
                     memory = 0
-                    if(ram):
+                    if ram:
                         memory = ram
                     st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
                                ctag=tag, priority=0,
-                               cpu_per_event=0, memory=0,
-                               output_formats='', trf_name='',
+                               cpu_per_event=0, memory=memory,
+                               output_formats=output_formats, trf_name='',
                                lparams='', vparams='', swrelease='')
                     st.save()
                     return st
