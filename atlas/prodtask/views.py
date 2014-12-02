@@ -190,8 +190,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 parent_step = StepExecution.objects.get(id=foreign_step)
             steps_status.pop()
             step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS)
-            if foreign_step !=0 :
-                step_as_in_page = [None] + step_as_in_page
+            # if foreign_step !=0 :
+            #     step_as_in_page = [None] + step_as_in_page
             first_not_approved_index = 0
             total_events = input_list.input_events
             for index,step in enumerate(step_as_in_page):

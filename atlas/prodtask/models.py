@@ -204,16 +204,16 @@ class ProductionDataset(models.Model):
         #db_table = u'T_PRODUCTION_DATASET'
         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_DATASET"'
 
-# class ProductionContainer(models.Model):
-#     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
-#     parent_task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=True)
-#     rid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
-#     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
-#     status = models.CharField(max_length=12, db_column='STATUS', null=True)
-#
-#     class Meta:
-#         #db_table = u'T_PRODUCTION_DATASET'
-#         db_table = u'"ATLAS_DEFT"."T_PRODUCTION_CONTAINER"'
+class ProductionContainer(models.Model):
+    name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
+    parent_task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=True)
+    rid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
+    phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+
+    class Meta:
+        #db_table = u'T_PRODUCTION_DATASET'
+        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_CONTAINER"'
 
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
