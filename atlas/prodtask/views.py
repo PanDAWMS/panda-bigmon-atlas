@@ -261,7 +261,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
                             else:
-                                step_in_db.input_events = total_events
+                                if (step_in_db.input_events == -1) or (total_events == -1):
+                                    step_in_db.input_events = total_events
+                                else:
+                                    total_events = step_in_db.input_events
                             if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and (total_events !=-1):
                                 if index == 0:
                                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
