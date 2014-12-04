@@ -40,7 +40,7 @@ def task_details(request, rid=None):
 
    # TODO: check user permissions on the task (SB)
    # TODO: handle actions for 'waiting' tasks (they're in DEFT, not yet in JEDI) (SB)
-   task_not_ended = (task.status in ['registered', 'assigning', 'submitting', 'running'])
+   task_not_ended = (task.status in ['registered', 'assigning', 'submitting', 'ready', 'running'])
 
    permissions = {}
    # TODO: these actions are needed from DEFT and JEDI (SB)
