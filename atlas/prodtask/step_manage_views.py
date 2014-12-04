@@ -162,7 +162,7 @@ def find_double_task(request_from,request_to):
                         if len(input_dict[input_dataset])>1:
                             total_steps += 1
                             total += len(input_dict[input_dataset])
-                            #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
+                            print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
             print request_id, '-', (total-total1),(total_steps-total_steps1)
         except Exception,e:
             print e

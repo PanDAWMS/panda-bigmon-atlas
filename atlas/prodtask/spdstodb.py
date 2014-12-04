@@ -150,7 +150,7 @@ def translate_excl_to_dict(excel_dict):
                     if input_events == 0:
                         input_events = translated_row.get('eva2', 0)
                     if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
-                        if translated_row['joboptions'].split('.')[1] !=  str(int(translated_row['ds'])):
+                        if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
                             raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
                     irl = dict(slice=index, brief=translated_row.get('brief', ''),
                                comment=translated_row.get('comment', ''),
