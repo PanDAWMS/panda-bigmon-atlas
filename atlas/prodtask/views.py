@@ -414,7 +414,7 @@ def find_input_datasets(request, reqid):
 MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase']
 
 def request_approve_status(production_request, request):
-    if production_request.request_type == 'MC':
+    if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
         user_name=''
         is_superuser=False
         try:

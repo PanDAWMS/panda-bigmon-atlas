@@ -87,6 +87,18 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+def reject_steps_in_slice(current_slice):
+    step_execs = StepExecution.objects.filter(slice=current_slice)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    for step in ordered_existed_steps:
+        if ProductionTask.objects.filter(step=step).count() == 0:
+            step.step_appr_time = None
+            if step.status == 'Skipped':
+                step.status = 'NotCheckedSkipped'
+            elif step.status == 'Approved':
+                step.status = 'NotChecked'
+            step.save()
+
 @csrf_protect
 def reject_slices_in_req(request, reqid):
     if request.method == 'POST':
@@ -97,17 +109,7 @@ def reject_slices_in_req(request, reqid):
             slices = input_dict
             for slice_number in slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
-                new_slice = current_slice.values()[0]
-                step_execs = StepExecution.objects.filter(slice=current_slice)
-                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-                for step in ordered_existed_steps:
-                    if ProductionTask.objects.filter(step=step).count() == 0:
-                        step.step_appr_time = None
-                        if step.status == 'Skipped':
-                            step.status = 'NotCheckedSkipped'
-                        elif step.status == 'Approved':
-                            step.status = 'NotChecked'
-                        step.save()
+                reject_steps_in_slice(current_slice)
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -124,6 +126,7 @@ def hide_slices_in_req(request, reqid):
                 current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
                 if not current_slice.is_hide:
                     current_slice.is_hide = True
+                    reject_steps_in_slice(current_slice)
                 else:
                     current_slice.is_hide = False
                 current_slice.save()
@@ -131,6 +134,40 @@ def hide_slices_in_req(request, reqid):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+def find_double_task(request_from,request_to):
+    total = 0
+    total_steps = 0
+    for request_id in range(request_from,request_to):
+        try:
+            total1 = total
+            total_steps1 = total_steps
+            steps = StepExecution.objects.filter(request=request_id)
+            tasks = list(ProductionTask.objects.filter(request=request_id))
+            tasks_by_step = {}
+            for task in tasks:
+                tasks_by_step[task.step_id] = tasks_by_step.get(task.step_id,[])+[task]
+
+            for current_step in steps:
+                input_dict = {}
+                if tasks_by_step.get(current_step.id,None):
+
+                    for current_task in tasks_by_step[current_step.id]:
+                        real_name = current_task.input_dataset[current_task.input_dataset.find(':')+1:]
+                        input_dict[real_name]=input_dict.get(real_name,[])+[current_task]
+                    # if len(input_dict.keys())>1:
+                    #     long_step += 1
+                    #     print 'check - ', current_step.id,input_dict[input_dict.keys()[0]][0].inputdataset
+                    for input_dataset in input_dict.keys():
+                        if len(input_dict[input_dataset])>1:
+                            total_steps += 1
+                            total += len(input_dict[input_dataset])
+                            #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
+            print request_id, '-', (total-total1),(total_steps-total_steps1)
+        except Exception,e:
+            print e
+            pass
+    print total_steps,total
 
 @csrf_protect
 def step_params_from_tag(request, reqid):
