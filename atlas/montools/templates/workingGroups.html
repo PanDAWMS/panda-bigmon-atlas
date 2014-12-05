@@ -1,0 +1,78 @@
+{% extends "_base_bigpandamon_atlas.html" %}
+{% load url from future %}
+
+{% block page_title %} {{ viewParams.MON_VO }} PanDA working groups{% endblock %}
+{% block title %} <a href="{% url 'index' %}">{{ viewParams.MON_VO }} PanDA monitor</a>{% endblock %}
+{% block subtitle %}PanDA working group dashboard{{ viewParams.selection|safe }}
+{% endblock %}
+{% block body %}
+
+{{ viewParams.header }}
+
+{% if wgsummary %}
+
+<table>
+<tr class='tablesection'><th colspan=30> Working group task summary</span> &nbsp; &nbsp; <font size=-1>Hover over state name to see full name. <a href="https://twiki.cern.ch/twiki/bin/view/PanDA/PandaJEDI#Transition_of_task_status">Task state documentation</a></font> </th></tr>
+<tr class='tablesection'>
+<th>Working group</th>
+<th><font size=-1>nTask</font></th>
+{% for state in taskstates %}
+<th><div title="{{state.state}}"><font size=-1><span class="{{ state.state }}"> {{ state.short }} </span></font></div></th>
+{% endfor %}
+</tr>
+
+{% for fdict in tasksummary %}
+<tr><td> {{ fdict.field }} </td>
+<td> <a href="{% url 'taskList' %}?workinggroup={{fdict.field}}&days={{days}}">{{ fdict.count }}</a></td>
+{% for item in fdict.list %}
+<td {% if item.kvalue > 0 %}class="{{item.kname}}_fill"{% endif %}> <a href="{% url 'taskList' %}?workinggroup={{fdict.field}}&status={{item.kname}}&days={{days}}"><span class='{{item.kname}}{% if item.kvalue > 0 %}_fill{% endif %}'>{{ item.kvalue }}</span></a></td>
+{% endfor %}
+</tr>
+{% endfor %}
+
+</table>
+
+<p>
+
+<table>
+<tr class='tablesection'><th colspan=30> Working group job summary </th></tr>
+<tr class='tablesection'>
+<th> Working group</th>
+<th> nJobs </th>
+<th> %failed </th>
+<th class='defined'> defined </th>
+<th class='waiting'> waiting </th>
+<th class='pending'> pending </th>
+<th class='assigned'> assigned </th>
+<th class='throttled'> throttled </th>
+<th class='activated'> activated </th>
+<th class='sent'> sent </th>
+<th class='starting'> starting </th>
+<th class='running'> running </th>
+<th class='holding'> holding </th>
+<th class='transferring'> transferring </th>
+<th class='finished'> finished </th>
+<th class='failed'> failed </th>
+<th class='cancelled'> cancelled </th>
+<th class='merging'> merging </th>
+</tr>
+
+{% for wg in wgsummary %}
+<tr>
+<td> {{ wg.name }} </td>
+<td align='right'> <a href="{% url 'jobList' %}?workinggroup={{ wg.name }}&days={{days}}&display_limit=100">{{ wg.count }}</a> </td>
+{% for state in wg.statelist %}
+<td align='right' {% if state.count > 0 %} class='{{ state.name }}_fill' {% endif %}> <a href="{% url 'jobList' %}?workinggroup={{ wg.name }}&jobstatus={{ state.name }}&days={{days}}&jobtype={{ view }}&display_limit=100"> <span class="{{ state.name }}{% if state.count > 0 %}_fill{% endif %}">{{ state.count }}</span></a> </td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+{% else %}
+
+No jobs with working group set were found.
+
+{% endif %}
+
+{% endblock %}
+

@@ -49,6 +49,13 @@ common_patterns = patterns('',
     url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
 
+
+    ####shaojun
+
+    url(r'^montools/', include('atlas.montools.urls', namespace='montools')),
+
+
+    ####todo
     url(r'^todo', include('atlas.todoview.urls', namespace='todoview')),
 
 #    ### TEST/Playground
@@ -60,6 +67,9 @@ common_patterns = patterns('',
 #    url(r'^api/jedi/', include('core.api.jedi.jobsintask.urls')),
 #    url(r'^api/user/', include('core.api.user.urls')),
 
+    ###shaojun
+
+    
 #obsoleted.2014-05-01.jschovan#    url(r'^api-jedi', include('core.api.jedi.jobsintask.urls')),
 #obsoleted.2014-05-01.jschovan#    url(r'^api-user', include('core.api.user.urls')),
 

@@ -6,7 +6,7 @@ from core import common
 from core.common.settings.base import COMMON_INSTALLED_APPS
 import atlas
 import atlas.todoview as atlas_todoview
-
+import atlas.montools as mont
 
 VERSIONS = {
     'core': core.__versionstr__,
@@ -21,6 +21,7 @@ TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),
     join(dirname(atlas_todoview.__file__), 'templates'),
     join(dirname(common.__file__), 'templates'),
+    join(dirname(mont.__file__), 'templates'),
 )
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
@@ -31,7 +32,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'atlas.auth.voms',
-
+    'highcharts',
     ### BigPanDAmon core
     'core.common',
     'core.table',
@@ -46,6 +47,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',
     'atlas.getdatasets', 
+    'atlas.montools',
     'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS

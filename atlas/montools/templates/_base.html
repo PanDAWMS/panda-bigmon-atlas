@@ -1,0 +1,164 @@
+{% extends "atlas/_base_grid.html" %}
+{% load url from future %}
+
+{% block title %}ATLAS PanDA{% endblock %}
+{% block page_title %}ATLAS PanDA Monitoring{% endblock %}
+{% block bl_page_title %}ATLAS PanDA Monitoring{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block extra_js %}{% endblock %}
+{% block gacode %}UA-44940804-1{% endblock %}
+{% block gaweb %}pandawms.org{% endblock %}
+{% block subtitle %}ATLAS PanDA{% endblock %}
+{% comment %}  
+{% block top_menu_1 %}{% endblock %}
+{% block top_menu_all_2 %}{% endblock %}{% block top_menu_all_3 %}{% endblock %}
+{% block top_menu_all_4 %}{% endblock %}{% block top_menu_all_5 %}{% endblock %}
+{% block top_menu_6 %}
+          <a href="#">Help</a>
+          <ul class="dropdown">
+            <li><a href="http://pandawms.org/monreq">Monitoring requirements</a></li>
+          </ul>
+{% endblock %}
+{% endcomment %}
+{% block header-nav-chain-1 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-2 %}<a href="{% url 'index' %}">ItemSub1</a>{% endblock %}{% block header-nav-chain-2-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-3 %}<a href="{% url 'index' %}">ItemSub2</a>{% endblock %}{% block header-nav-chain-3-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-4 %}<a href="{% url 'index' %}">ItemSub3</a>{% endblock %}{% block header-nav-chain-4-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-5 %}<a href="{% url 'index' %}">ItemSub4</a>{% endblock %}{% block header-nav-chain-5-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
+{% block header-nav-chain-6 %}<a href="{% url 'index' %}">CurrentView</a>{% endblock %}
+{% block left_menu %}{% endblock %}
+{% block body %}{% endblock %}
+{% block body_mobile %}{% endblock %}
+{% block bottom_info %}{% endblock %}
+{% comment %}  
+{% block bottom_copy %}{% endblock %}
+{% block bottom_link_all_1 %}{% endblock %}
+{% block bottom_link_all_2 %}{% endblock %}
+{% block bottom_link_all_3 %}{% endblock %}
+{% block bottom_link_4 %}<a href="{% url 'index' %}">{{ APP_NAME }}</a>{% endblock %}
+{% endcomment %}
+
+
+{% block top_menu_all_1 %}
+<li class="has-dropdown">
+	<a href="#">Dashboard</a>
+	<ul class="dropdown">
+		<li><a href="{% url 'dashboard' %}">All</a></li>
+		<li><a href="{% url 'dashAnalysis' %}">Analysis</a></li>
+		<li><a href="{% url 'dashProduction' %}">Production</a></li>
+	</ul>
+</li>
+{% endblock %}
+{% block top_menu_all_2 %}
+<li class="has-dropdown">
+          <a href="#">Jobs</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'jobList' %}">All</a></li>
+            <li><a href="{% url 'jobList' %}?jobtype=analysis">Analysis</a></li>
+            <li><a href="{% url 'jobList' %}?jobtype=production">Production</a></li>
+            <li><a href="{% url 'jobList' %}?jobtype=test">Test</a></li>
+          </ul>
+</li>
+{% endblock %}
+
+{% block top_menu_all_3 %}
+<li class="has-dropdown">
+          <a href="#">Requests</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:request_create' %}">Create MC Request</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:dpd_request_create' %}">Create DPD Request</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:reprocessing_request_create' %}">Create Reprocessing Request</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:hlt_request_create' %}">Create HLT Request</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:mcpattern_table' %}">MC Pattern</a></li>
+            <li><a href="{% url 'prodtask:mcpriority_table' %}">MC Priority</a></li>
+          </ul>
+</li>
+{% endblock %}
+
+
+{% block top_menu_all_4 %}
+<li class="has-dropdown">
+          <a href="#">Tasks</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'prodtask:task_create' %}">Create Task</a></li>
+            <li class="divider"></li>
+            <li><a href="{% url 'taskList' %}">All</a></li>
+            <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
+            <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
+          </ul>
+</li>
+<li class="has-dropdown">
+          <a href="#">Datasets</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:production_dataset_table' %}">Aborted and Obsolete Datasets</a></li>
+            <li><a href="{% url 'getdatasets:request_data_form' %}">Search</a></li>
+          </ul>
+</li>
+
+<li class="has-dropdown">
+          <a href="#">Users</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'userList' %}?sortby=date&view=database">Usage stats view</a></li>
+            <li><a href="{% url 'userList' %}?sortby=date&view=dynamic">Dynamic view</a></li>
+          </ul>
+</li>
+
+<li>
+          <a href="{% url 'siteList' %}">Sites</a>
+</li>
+
+<li>
+          <a href="http://dashb-atlas-data.cern.ch/ddm2/" target="_blank">DDMDash</a>
+</li>
+
+<li>
+          <a href="http://dashb-atlas-ssb.cern.ch/dashboard/request.py/siteview#currentView=Shifter+view&highlight=false" target="_blank">SSB</a>
+</li>
+{% endblock %}
+
+{% block top_menu_all_5 %}
+<li>
+          <a href="{% url 'index' %}">Quick search</a>
+</li>
+{% endblock %}
+
+{% block top_menu_all_6 %}
+    <li class="has-dropdown">
+      {% block top_menu_6 %}
+      <a href="#">Help</a>
+      <ul class="dropdown">
+        <li><a href="http://twiki.cern.ch/twiki/bin/view/PanDA/PanDA">PanDA home</a></li>
+        <li><a href="http://pandawms.org">Big PanDA home</a></li>
+      </ul>
+      {% endblock %}
+    </li>
+
+{% if user.is_authenticated %}
+    <li class="has-dropdown">
+        <a href="#">{{ user.first_name.0 }}. {{ user.last_name }}</a>
+        <ul class="dropdown">
+            <li> <a href="{% url 'prodtask:userinfo' %}">Account info ({{ user.username }})</a> </li>
+            {% if user.is_superuser %}
+            <li> <a href="{% url 'admin:index' %}">Admin interface</a>  </li>
+            {% endif %}
+            <li> <a href="{% url 'prodtask:logout' %}?next={{ request.get_full_path }}">Logout</a> </li>
+        </ul>
+    </li>
+
+{% else %}
+    <li>
+        <a href="{% url 'prodtask:login' %}?next={{ request.get_full_path }}">Login</a>
+    </li>
+{% endif %}
+
+
+{% endblock %}
+
