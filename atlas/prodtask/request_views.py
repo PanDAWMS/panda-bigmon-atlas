@@ -72,6 +72,9 @@ def request_clone(request, rid=None):
                                        TRequestCreateCloneConfirmation, mcfile_form_prefill)
 
 
+def create_json(production_request_id):
+    pass
+
 def request_update(request, rid=None):
     if request.method == 'POST':
         try:

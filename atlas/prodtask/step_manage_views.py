@@ -4,6 +4,8 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
+from time import sleep
+from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
@@ -135,15 +137,22 @@ def hide_slices_in_req(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def find_double_task(request_from,request_to):
+def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,obsoleteOnly=True):
     total = 0
     total_steps = 0
+    total_tasks = 0
+    nothing = 0
+    alreadyObsolete = 0
+    obsolets = []
+    aborts = []
+    status_list = ['obsolete','broken','failed','aborted','submitting','submitted','assigning','registered','ready','running','finished','done']
     for request_id in range(request_from,request_to):
         try:
             total1 = total
             total_steps1 = total_steps
             steps = StepExecution.objects.filter(request=request_id)
             tasks = list(ProductionTask.objects.filter(request=request_id))
+            total_tasks +=  len(tasks)
             tasks_by_step = {}
             for task in tasks:
                 tasks_by_step[task.step_id] = tasks_by_step.get(task.step_id,[])+[task]
@@ -162,12 +171,56 @@ def find_double_task(request_from,request_to):
                         if len(input_dict[input_dataset])>1:
                             total_steps += 1
                             total += len(input_dict[input_dataset])
-                            print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
-            print request_id, '-', (total-total1),(total_steps-total_steps1)
+                            dataset_to_stay = 0
+                            max_status_index = status_list.index(input_dict[input_dataset][0].status)
+                            #print '-'
+                            for index,ds in enumerate(input_dict[input_dataset][1:]):
+                                if status_list.index(ds.status) > max_status_index:
+                                    dataset_to_stay = index+1
+                                    max_status_index = status_list.index(ds.status)
+                            #print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id
+                            for index,ds in enumerate(input_dict[input_dataset]):
+
+                                if ds.status == 'obsolete':
+                                    if showObsolete:
+                                        print ds.output_dataset
+                                    alreadyObsolete += 1
+                                if index != dataset_to_stay:
+                                    if ds.status in ['obsolete','broken','failed','aborted']:
+                                        #print 'Do nothing:',ds.status,ds.id
+                                        nothing += 1
+                                        pass
+                                    elif ds.status in ['finished','done']:
+                                        #print 'Obsolete:',ds.status,ds.id
+                                        obsolets.append(ds.id)
+                                        print dataset_to_stay,'-',[(x.status,x.id) for x in input_dict[input_dataset]]
+                                    else:
+                                        print 'Abort:',ds.status,ds.id
+                                        aborts.append(ds.id)
+
+                            #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
+#            print request_id, '-',len(tasks), (total-total1),(total_steps-total_steps1)
+            if (not checkMode):
+                for task_id in obsolets:
+                    res = do_action('mborodin',task_id,'obsolete')
+                if not obsoleteOnly:
+                    for task_id in aborts:
+                        res = do_action('mborodin',str(task_id),'kill')
+                        try:
+                            if res['status']['jedi_info']['status_code']!=0:
+                                print res
+                        except:
+                            pass
+                        #print res
+                        #sleep(1)
         except Exception,e:
             print e
             pass
-    print total_steps,total
+    print total_tasks,total_steps,total
+    print 'obsoletes:',len(obsolets),'abort:',len(aborts),'Already obsolete:',alreadyObsolete
+
+
+
 
 @csrf_protect
 def step_params_from_tag(request, reqid):
@@ -306,20 +359,33 @@ def slice_steps(request, reqid, slice_number):
             # Check steps which already exist in slice, and change them if needed
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
+            foreign_step_dict_index = -1
             if req.request_type == 'MC':
                 step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS)
             else:
                 step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
             if existed_foreign_step:
-                    result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':'','step_type':'foreign',
-                                        'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
-                                        'project_mode':'','input_format':'',
-                                        'priority':'', 'output_formats':'','input_events':'',
-                                        'token':''})
-            step_as_in_page = step_as_in_page[:-1]
-            for step in step_as_in_page:
+                    if req.request_type != 'MC':
+                        result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
+                                            'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
+                                            'project_mode':'','input_format':'',
+                                            'priority':'', 'output_formats':'','input_events':'',
+                                            'token':''})
+                        step_as_in_page = step_as_in_page[:-1]
+                    else:
+                        foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
+                                            'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
+                                            'project_mode':'','input_format':'',
+                                            'priority':'', 'output_formats':'','input_events':'',
+                                            'token':''}
+                        foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
+
+            for index,step in enumerate(step_as_in_page):
                 if not step:
-                    result_list.append({'step':'','step_name':'','step_type':''})
+                    if index == foreign_step_dict_index:
+                        result_list.append(foreign_step_dict)
+                    else:
+                        result_list.append({'step':'','step_name':'','step_type':''})
                 else:
                     is_skipped = 'not_skipped'
                     if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
