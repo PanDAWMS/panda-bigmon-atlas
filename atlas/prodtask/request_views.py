@@ -72,7 +72,8 @@ def request_clone(request, rid=None):
                                        TRequestCreateCloneConfirmation, mcfile_form_prefill)
 
 
-def create_json(production_request_id):
+def create_json(production_request,slices):
+
     pass
 
 def request_update(request, rid=None):
@@ -609,8 +610,9 @@ def fill_dataset(ds):
             return dataset
 
 
-def request_email_body(long_description,ref_link,energy,campaign, link):
-    return """
+def request_email_body(long_description,ref_link,energy,campaign, link, excel_link):
+    if excel_link:
+        return """
  %s
 
  The request thread is : %s
@@ -618,7 +620,17 @@ def request_email_body(long_description,ref_link,energy,campaign, link):
 Technical details:
 - Campaign %s %s
 - Link to Request: %s
+- Link to data source: %s
+    """%(long_description,ref_link,energy,campaign, link, excel_link)
+    else:
+        return """
+ %s
 
+ The request thread is : %s
+
+Technical details:
+- Campaign %s %s
+- Link to Request: %s
     """%(long_description,ref_link,energy,campaign, link)
 
 
@@ -659,6 +671,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'default_step_values': default_step_values
                      })
                 else:
+                    if form.cleaned_data['excellink']:
+                        request.session['excel_link'] = form.cleaned_data['excellink']
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
                     # if 'tag_hierarchy' in form.cleaned_data:
                     #     del form.cleaned_data['tag_hierarchy']
@@ -691,6 +705,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             elif 'file_dict' in request.session:
                 #TODO: Waiting message
                 file_dict = request.session['file_dict']
+                excel_link = ''
+                if 'excel_link' in request.session:
+                    excel_link = request.session['excel_link']
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
                 if not form2.is_valid():
                     inputlists = [x['input_dict'] for x in file_dict]
@@ -707,6 +724,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
+
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
                     form.cleaned_data['excelfile']
                 form.cleaned_data['hidden_json_slices'] = 'a'
@@ -742,7 +760,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
                         send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
-                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri),
+                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri,excel_link),
                                   APP_SETTINGS['prodtask.email.from'],
                                   APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
                                   fail_silently=True)

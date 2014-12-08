@@ -162,6 +162,10 @@ def translate_excl_to_dict(excel_dict):
                     reduce_input_format = False
                     step_index = 0
                     for currentstep in StepExecution.STEPS:
+                        if translated_row.get('format', '') and (currentstep == 'Reco') and (not translated_row.get(currentstep)):
+                            translated_row[currentstep]='r9999'
+                        if translated_row.get('format', '') and reduce_input_format and (not translated_row.get(currentstep)):
+                            translated_row[currentstep]='p9999'
                         if translated_row.get(currentstep):
                             st = currentstep
                             tag = translated_row[currentstep]
