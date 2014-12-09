@@ -141,7 +141,7 @@ def translate_excl_to_dict(excel_dict):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
             st = ''
             sexec = {}
-            if ('joboptions' in translated_row) and ('brief' in translated_row) and ('ds' in translated_row):
+            if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row)) and ('ds' in translated_row):
                 if translated_row in checked_rows:
                     continue
                 else:
