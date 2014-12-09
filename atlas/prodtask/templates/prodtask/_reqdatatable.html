@@ -1326,7 +1326,7 @@ var lastChecked = true;
                             <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
                                                                 </td>
                             <td colspan="5" >
-                                <a href="{% url 'jobList'  %}?jeditaskid={{ step.task.id }}">
+                                <a href="http://bigpanda.cern.ch/jobs/?jeditaskid={{ step.task.id }}">
                                     <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
                                 </a>
                             </td>
