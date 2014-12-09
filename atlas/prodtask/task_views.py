@@ -192,7 +192,7 @@ class ProductionTaskTable(datatables.DataTable):
         )
 
     total_req_jobs = datatables.Column(
-        label='Req Jobs',
+        label='Total Jobs',
         sClass='numbers',
         )
 
