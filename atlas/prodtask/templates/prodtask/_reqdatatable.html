@@ -865,6 +865,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             step: $(step_id).children('a').html(),
                             step_type: 'foreign'
                         });
+
                     } else{
 
                             var current_type = '';
@@ -890,11 +891,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         if (!(no_changes)){
                             is_equal = false;
                         }
+
                         if ((step_types[i].step != '') || (current_step_tag[i].step != '')){
                             if ((step_types[i].step != current_step_tag[i].step) || (step_types[i].step_type != current_step_tag[i].step_type) || !(no_changes)) {
                                 is_equal = false;
                             }
                         }
+
                 }
             });
             $.ajaxSetup({async: true});
@@ -933,7 +936,48 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             }
             return sliceDBInfo;
         }
+        function cloneRequest(event){
+            event.preventDefault();
+            var sliceList=[];
+            if ($('#radioCloneAll').is(':checked')){
+                $(".checkboxSlice").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+            }
+            else{
+                $(".checkboxSlice:checked").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+            }
+            description = $('#newDescription').val();
+              var sendData = {slices:sliceList,description:description};
+             console.log(sendData);
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:request_clone2',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
 
+
+                       var newRequestID = $.evalJSON(data).new_request;
+                       var is_good =  $.evalJSON(data).success;
+
+                        if(is_good){
+                           window.location.href = Django.url('prodtask:input_list_approve',newRequestID.toString());
+                        }
+                        }
+                    }
+
+                );
+        }
         function cloneSlicesClick(event, makeLink, cloneFromStepNumber){
             event.preventDefault();
             var sliceList=[];
@@ -961,7 +1005,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 );
               return false;
         };
+        function showModalClone(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            $('#allClone').html('All'+'('+$('.checkboxSlice').length+')');
+            $('#selectClone').html('Only selected'+'('+sliceList.length+')');
+             $('#cloneModal').foundation('reveal', 'open');
 
+        }
          function rejectSlicesClick(event){
             event.preventDefault();
             var sliceList=[];
@@ -1150,7 +1207,7 @@ var lastChecked = true;
 
 <ul id="drop1" class="f-dropdown" data-dropdown-content>
   <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
-{#  <li><a href="#">Clone</a></li>#}
+  <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
   <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
 </ul>
 {% if hidden_slices > 0 %}
@@ -1528,6 +1585,18 @@ var lastChecked = true;
   <ul id="patternModalBody">
   </ul>
   <a id='closeReveal' class="close-reveal-modal" >&#215;</a>
+</div>
+
+<div id="cloneModal" class="reveal-modal" data-reveal>
+    <p>Request: {{  trequest.reqid }}<br/>
+    <p>Old description: {{  trequest.description }}<br/>
+    <label> New description:
+        <input type="text" id="newDescription" placeholder=" "   />
+    </label>
+      <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneAll"  CHECKED><span class="custom radio checked"></span><span id='allClone'>All</span></label>
+      <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneSelect" ><span class="custom radio"></span > <span id='selectClone'>Selected</span></label>
+    <button id="cloneRequestButton" title="clone request" onclick="cloneRequest(event);$('#closeCloneReveal').click()">Clone request</button>
+<a id='closeCloneReveal' class="close-reveal-modal" >&#215;</a>
 </div>
 
 

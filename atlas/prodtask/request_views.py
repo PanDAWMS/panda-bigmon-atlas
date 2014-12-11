@@ -11,6 +11,8 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
+from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
+
 from ..prodtask.ddm_api import find_dataset_events
 import core.datatables as datatables
 import json
@@ -47,29 +49,100 @@ def request_details(request, rid=None):
     })
 
 
-def request_clone(request, rid=None):
-    if rid:
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link):
+        ordered_slices = map(int,slices)
+        ordered_slices.sort()
+        #form levels from input text lines
+        #create chains for each input
+        request_source = TRequest.objects.get(reqid=reqid_source)
+        if reqid_source == reqid_destination:
+            request_destination = request_source
+        else:
+            request_destination = TRequest.objects.get(reqid=reqid_destination)
+        new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
+        old_new_step = {}
+        for slice_number in ordered_slices:
+            current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
+            new_slice = current_slice.values()[0]
+            new_slice['slice'] = new_slice_number
+            new_slice_number += 1
+            del new_slice['id']
+            del new_slice['request_id']
+            new_slice['request'] = request_destination
+            new_input_data = InputRequestList(**new_slice)
+            new_input_data.save()
+            step_execs = StepExecution.objects.filter(slice=current_slice)
+            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+            if request_source.request_type == 'MC':
+                STEPS = StepExecution.STEPS
+            else:
+                STEPS = ['']*len(StepExecution.STEPS)
+            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+            first_changed = not make_link
+            for index,step in enumerate(step_as_in_page):
+                if step:
+                    if (index >= step_from) or (not make_link):
+                        self_looped = step.id == step.step_parent.id
+                        old_step_id = step.id
+                        step.id = None
+                        step.step_appr_time = None
+                        step.step_def_time = None
+                        step.step_exe_time = None
+                        step.step_done_time = None
+                        step.slice = new_input_data
+                        step.request = request_destination
+                        if (step.status == 'Skipped') or (index < step_from):
+                            step.status = 'NotCheckedSkipped'
+                        elif step.status == 'Approved':
+                            step.status = 'NotChecked'
+                        if first_changed and (step.step_parent.id in old_new_step):
+                            step.step_parent = old_new_step[int(step.step_parent.id)]
+                        step.save_with_current_time()
+                        if self_looped:
+                            step.step_parent = step
+                        first_changed = True
+                        step.save()
+                        old_new_step[old_step_id] = step
+
+def request_clone_slices(reqid, owner, new_short_description, slices):
+    _logger.debug("Clone request #%i"%(int(reqid)))
+    request_destination = TRequest.objects.get(reqid=reqid)
+    request_destination.reqid = None
+    request_destination.cstatus = 'waiting'
+    request_destination.description = new_short_description
+    request_destination.save()
+    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
+                                                       status='waiting')
+    _logger.debug("New request: #%i"%(int(reqid)))
+    clone_slices(reqid,request_destination.reqid,slices,0,False)
+    return request_destination.reqid
+
+
+
+
+@csrf_protect
+def request_clone2(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
         try:
-            values = TRequest.objects.values().get(reqid=rid)
-            if values['request_type'] == 'MC':
-                return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
-                                               'prodtask:request_clone', TRequestMCCreateCloneForm,
-                                               TRequestCreateCloneConfirmation, mcfile_form_prefill)
-            elif values['request_type'] == 'GROUP':
-                return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
-                                               TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation,
-                                               dpd_form_prefill)
-            elif values['request_type'] == 'REPROCESSING':
-                 return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
-                                                TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                                reprocessing_form_prefill)
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            ordered_slices = map(int,slices)
+            ordered_slices.sort()
+            new_short_description = input_dict['description']
+            owner=''
+            try:
+                owner = request.user.username
+            except:
+                pass
+            if not owner:
+                owner = 'default'
+            new_request_id = request_clone_slices(reqid,owner,new_short_description,ordered_slices)
+            results = {'success':True,'new_request':int(new_request_id)}
         except Exception, e:
-            _logger.error("Problem with request clonning #%i: %s"%(rid,e))
-            return HttpResponseRedirect(reverse('prodtask:request_table'))
-    else:
-        return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
-                                       'prodtask:request_clone', TRequestMCCreateCloneForm,
-                                       TRequestCreateCloneConfirmation, mcfile_form_prefill)
+            _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 def create_tarball_input(production_request_id):
@@ -614,20 +687,7 @@ def find_datasets_by_pattern(request):
     pass
 
 
-#TODO: Change it to real dataset workflow 
-def fill_dataset(ds):
-    dataset = None
-    try:
-        dataset = ProductionDataset.objects.all().filter(name=ds)[0]
-    except:
-        pass
-    finally:
-        if dataset:
-            return dataset
-        else:
-            dataset = ProductionDataset.objects.create(name=ds, files=-1, timestamp=timezone.now())
-            dataset.save()
-            return dataset
+
 
 
 def request_email_body(long_description,ref_link,energy,campaign, link, excel_link):

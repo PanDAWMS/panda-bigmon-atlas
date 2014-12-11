@@ -5,6 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
+from ..prodtask.request_views import clone_slices
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page
 
@@ -26,6 +27,10 @@ def tag_info(request, tag_name):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+
+
+
+
 @csrf_protect
 def clone_slices_in_req(request, reqid, step_from, make_link_value):
     if request.method == 'POST':
@@ -36,55 +41,13 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             slices = input_dict
             ordered_slices = map(int,slices)
             ordered_slices.sort()
-            #form levels from input text lines
-            #create chains for each input
-            new_slice_number = InputRequestList.objects.filter(request=reqid).count()
-            current_request = TRequest.objects.get(reqid=reqid)
-            old_new_step = {}
             if make_link_value == '1':
                 make_link = True
             else:
                 make_link = False
             step_from = int(step_from)
-            for slice_number in ordered_slices:
-                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
-                new_slice = current_slice.values()[0]
-                new_slice['slice'] = new_slice_number
-                new_slice_number += 1
-                del new_slice['id']
-                new_input_data = InputRequestList(**new_slice)
-                new_input_data.save()
-                step_execs = StepExecution.objects.filter(slice=current_slice)
-                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-                if current_request.request_type == 'MC':
-                    STEPS = StepExecution.STEPS
-                else:
-                    STEPS = ['']*len(StepExecution.STEPS)
-                step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS)
-                first_changed = not make_link
-                for index,step in enumerate(step_as_in_page):
-                    if step:
-                        if (index >= step_from) or (not make_link):
-                            self_looped = step.id == step.step_parent.id
-                            old_step_id = step.id
-                            step.id = None
-                            step.step_appr_time = None
-                            step.step_def_time = None
-                            step.step_exe_time = None
-                            step.step_done_time = None
-                            step.slice = new_input_data
-                            if (step.status == 'Skipped') or (index < step_from):
-                                step.status = 'NotCheckedSkipped'
-                            elif step.status == 'Approved':
-                                step.status = 'NotChecked'
-                            if first_changed and (step.step_parent.id in old_new_step):
-                                step.step_parent = old_new_step[int(step.step_parent.id)]
-                            step.save_with_current_time()
-                            if self_looped:
-                                step.step_parent = step
-                            first_changed = True
-                            step.save()
-                            old_new_step[old_step_id] = step
+            clone_slices(reqid,reqid,ordered_slices,step_from,make_link)
+            results = {'success':True}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -361,17 +324,17 @@ def slice_steps(request, reqid, slice_number):
             result_list = []
             foreign_step_dict_index = -1
             if req.request_type == 'MC':
-                step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS)
+                step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
             else:
-                step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
+                step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS),existed_foreign_step)
             if existed_foreign_step:
                     if req.request_type != 'MC':
-                        result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
+                        foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':''})
-                        step_as_in_page = step_as_in_page[:-1]
+                                            'token':''}
+                        foreign_step_dict_index = 0
                     else:
                         foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',

@@ -12,10 +12,11 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 import time
 from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
-from .request_views import fill_dataset
+
 
 
 import core.datatables as datatables
@@ -128,9 +129,22 @@ def approve_existed_step(step, new_status):
     pass
 
 
+#TODO: Change it to real dataset workflow
+def fill_dataset(ds):
+    dataset = None
+    try:
+        dataset = ProductionDataset.objects.all().filter(name=ds)[0]
+    except:
+        pass
+    finally:
+        if dataset:
+            return dataset
+        else:
+            dataset = ProductionDataset.objects.create(name=ds, files=-1, timestamp=timezone.now())
+            dataset.save()
+            return dataset
 
-
-def form_step_in_page(ordered_existed_steps,STEPS):
+def form_step_in_page(ordered_existed_steps,STEPS, is_foreign):
     if STEPS[0]:
         return_list = []
         i = 0
@@ -150,7 +164,11 @@ def form_step_in_page(ordered_existed_steps,STEPS):
             raise ValueError('Not consistent chain')
         return return_list
     else:
-        return ordered_existed_steps+[None]*(len(STEPS)-len(ordered_existed_steps))
+        if is_foreign:
+            return [None]+ordered_existed_steps+[None]*(len(STEPS)-len(ordered_existed_steps)-1)
+        else:
+            return ordered_existed_steps+[None]*(len(STEPS)-len(ordered_existed_steps))
+
 
 
 
@@ -189,7 +207,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                 foreign_step = int(steps_status[-1]['foreign_id'])
                 parent_step = StepExecution.objects.get(id=foreign_step)
             steps_status.pop()
-            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS)
+            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,existed_foreign_step)
             # if foreign_step !=0 :
             #     step_as_in_page = [None] + step_as_in_page
             first_not_approved_index = 0
