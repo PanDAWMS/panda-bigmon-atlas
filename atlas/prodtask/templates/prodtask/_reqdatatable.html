@@ -354,6 +354,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 {#                            console.log(wrongSLices);#}
                             var doubleTrf = $.evalJSON(data).double_trf;
                             var newStatus = $.evalJSON(data).new_status;
+                            var removeDataset =  $.evalJSON(data).removed_input;
                             if ((newStatus != undefined) && (newStatus != '')){
                                 $('#requestStatus').html(newStatus);
                             }
@@ -413,6 +414,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                 for (var i=0;i<toChangeDatasets.length;i++){
                                     $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
                                 }
+                            }
+                            for (var i=0; i < removeDataset.length; i++){
+                                 $("#inputDatasetName"+removeDataset[i]).html('');
                             }
                             if (slices.length < 200){
                                 for (var i = 0; i < slices.length; i++) {
