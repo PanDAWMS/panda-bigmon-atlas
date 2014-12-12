@@ -1192,6 +1192,7 @@ var lastChecked = true;
   <th>Reference:</th>
   <th>Manager:</th>
   <th>Physic group:</th>
+  <th>Project:</th>
   <th>Status:</th>
 </tr>
 <tr>
@@ -1201,6 +1202,7 @@ var lastChecked = true;
   <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
   <td>{{ trequest.manager}}</td>
   <td>{{ trequest.phys_group}}</td>
+  <td>{{ trequest.project}}</td>
 {% if trequest.cstatus == 'registered' %}
       <td><span id="requestStatus">{{ trequest.cstatus}}</span> <a href="#" onclick="approveEmpty(event);" class="button">Approve</a></td>
 {% else %}

@@ -108,7 +108,7 @@ def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,ob
     alreadyObsolete = 0
     obsolets = []
     aborts = []
-    status_list = ['obsolete','broken','failed','aborted','submitting','submitted','assigning','registered','ready','running','finished','done']
+    status_list = ['obsolete','aborted','broken','failed','submitting','submitted','assigning','registered','ready','running','finished','done']
     for request_id in range(request_from,request_to):
         try:
             total1 = total
@@ -141,7 +141,8 @@ def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,ob
                                 if status_list.index(ds.status) > max_status_index:
                                     dataset_to_stay = index+1
                                     max_status_index = status_list.index(ds.status)
-                            #print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id
+                            if input_dict[input_dataset][dataset_to_stay].status != 'done':
+                                print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id,input_dataset
                             for index,ds in enumerate(input_dict[input_dataset]):
 
                                 if ds.status == 'obsolete':
@@ -154,7 +155,7 @@ def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,ob
                                         nothing += 1
                                         pass
                                     elif ds.status in ['finished','done']:
-                                        #print 'Obsolete:',ds.status,ds.id
+                                        print 'Obsolete:',ds.status,ds.id
                                         obsolets.append(ds.id)
                                         print dataset_to_stay,'-',[(x.status,x.id) for x in input_dict[input_dataset]]
                                     else:
@@ -164,18 +165,19 @@ def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,ob
                             #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
 #            print request_id, '-',len(tasks), (total-total1),(total_steps-total_steps1)
             if (not checkMode):
-                for task_id in obsolets:
-                    res = do_action('mborodin',task_id,'obsolete')
-                if not obsoleteOnly:
-                    for task_id in aborts:
-                        res = do_action('mborodin',str(task_id),'kill')
-                        try:
-                            if res['status']['jedi_info']['status_code']!=0:
-                                print res
-                        except:
-                            pass
-                        #print res
-                        #sleep(1)
+                pass
+                # for task_id in obsolets:
+                #     res = do_action('mborodin',task_id,'obsolete')
+                # if not obsoleteOnly:
+                #     for task_id in aborts:
+                #         res = do_action('mborodin',str(task_id),'kill')
+                #         try:
+                #             if res['status']['jedi_info']['status_code']!=0:
+                #                 print res
+                #         except:
+                #             pass
+                #         #print res
+                #         #sleep(1)
         except Exception,e:
             print e
             pass
