@@ -32,10 +32,11 @@ def find_dataset_events(dataset_pattern):
         datasets_containers = []
         for pattern_for_container in patterns_for_container:
             datasets_containers += ddm.find_dataset(pattern_for_container).keys()
-        if len(datasets_containers)>1:
-            containers = [x for x in datasets_containers if x[-1] == '/' ]
-        else:
-            containers = datasets_containers
+        containers = datasets_containers
+        # if len(datasets_containers)>1:
+        #     containers = [x for x in datasets_containers if x[-1] == '/' ]
+        # else:
+        #     containers = datasets_containers
         #datasets = [x for x in datasets_containers if x not in containers ]
         for container in containers:
             if container[-1]!='/':
