@@ -958,7 +958,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
             }
             description = $('#newDescription').val();
-              var sendData = {slices:sliceList,description:description};
+            newRef = $('#newLink').val();
+              var sendData = {slices:sliceList,description:description,ref:newRef};
              console.log(sendData);
               $( "#reloadDialog" ).dialog();
               $.ajax({
@@ -1598,6 +1599,10 @@ var lastChecked = true;
     <p>Old description: {{  trequest.description }}<br/>
     <label> New description:
         <input type="text" id="newDescription" placeholder=" "   />
+    </label>
+    <p>Old link: {{  trequest.ref_link }}<br/>
+    <label> New link:
+        <input type="text" id="newLink" placeholder=" "   />
     </label>
       <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneAll"  CHECKED><span class="custom radio checked"></span><span id='allClone'>All</span></label>
       <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneSelect" ><span class="custom radio"></span > <span id='selectClone'>Selected</span></label>

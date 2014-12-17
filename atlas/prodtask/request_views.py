@@ -104,12 +104,15 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link)
                         step.save()
                         old_new_step[old_step_id] = step
 
-def request_clone_slices(reqid, owner, new_short_description, slices):
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     _logger.debug("Clone request #%i"%(int(reqid)))
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
     request_destination.cstatus = 'waiting'
     request_destination.description = new_short_description
+    request_destination.jira_reference = None
+    request_destination.is_error = None
+    request_destination.ref_link = new_ref
     request_destination.save()
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
@@ -131,6 +134,7 @@ def request_clone2(request, reqid):
             ordered_slices = map(int,slices)
             ordered_slices.sort()
             new_short_description = input_dict['description']
+            new_ref = input_dict['ref']
             owner=''
             try:
                 owner = request.user.username
@@ -138,7 +142,7 @@ def request_clone2(request, reqid):
                 pass
             if not owner:
                 owner = 'default'
-            new_request_id = request_clone_slices(reqid,owner,new_short_description,ordered_slices)
+            new_request_id = request_clone_slices(reqid,owner,new_short_description,new_ref,ordered_slices)
             results = {'success':True,'new_request':int(new_request_id)}
         except Exception, e:
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
