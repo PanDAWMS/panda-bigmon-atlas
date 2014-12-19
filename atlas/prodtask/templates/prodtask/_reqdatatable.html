@@ -1634,7 +1634,7 @@ job options: <span id="sliceModalJobOption"></span></p>
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
-                                  <label>Events Input file
+                                  <label>Events per Input file
                                     <input type="number" class="nEventsPerInputFile storeOutput{{forloop.counter0}} storeInput"  placeholder="-1"  />
                                   </label>
 
@@ -1645,22 +1645,35 @@ job options: <span id="sliceModalJobOption"></span></p>
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
-                                  <label>Files per job
-                                    <input type="number" class="nFilesPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
-                                  </label>
-                                </div>
-                                 <div class="large-2 columns">
                                   <label>Total events
                                     <input type="number" class="input_events storeOutput{{forloop.counter0}} storeInput" placeholder="-1"  />
                                   </label>
                                 </div>
                                </div>
+                               <div class="row">
+                                <div class="large-2 columns">
+                                  <label>Files per job
+                                    <input type="number" class="nFilesPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>nGB per job
+                                    <input type="number" class="nGBPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                <div class="large-2 columns">
+                                  <label>max attempt
+                                    <input type="number" class="maxAttempt storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                </div>
                                 <div class="row">
                                 <div class="large-5 columns">
                                   <label>Output formats
                                     <input type="text" class="output_formats storeOutput{{forloop.counter0}} storeInput" placeholder=" "  />
                                   </label>
                                 </div>
+
                                  <div class="large-5 columns">
                                   <label>Input format
                                     <input type="text" class="input_format storeOutput{{forloop.counter0}} storeInput" placeholder=" "  />

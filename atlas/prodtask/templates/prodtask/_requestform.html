@@ -328,17 +328,29 @@ $(document).ready(function(){
         </div>
       </div>
        <div class="row">
-        <div class="large-7 columns">
-          <label>Destination token
-            <input type="text" class="token storeInput"  />
-          </label>
-        </div>
           <div class="large-3 columns">
           <label>Files per job
             <input type="number" class="nFilesPerJob storeInput"  />
           </label>
         </div>
+          <div class="large-3 columns">
+          <label>GB per job
+            <input type="number" class="nGBPerJob storeInput"  />
+          </label>
+        </div>
+          <div class="large-3 columns">
+          <label>Max attempt
+            <input type="number" class="maxAttempt storeInput" value="{{ default_step_values.maxAttempt }}" />
+          </label>
+        </div>
       </div>
+       <div class="row">
+        <div class="large-7 columns">
+          <label>Destination token
+            <input type="text" class="token storeInput"  />
+          </label>
+        </div>
+        </div>
        <div class="row">
         <div class="large-7 columns">
           <label>JEDI internal merging

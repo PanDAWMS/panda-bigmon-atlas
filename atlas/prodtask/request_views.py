@@ -402,10 +402,11 @@ def parse_json_slice_dict(json_string):
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
 
-                        if slice['inputFormat']:
-                                    task_config.update({'input_format':slice['inputFormat']})
-                        if slice['nFilesPerJob']:
-                                    task_config.update({'nFilesPerJob':slice['nFilesPerJob']})
+                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                            if slice[parameter]:
+                                    task_config.update({parameter:slice[parameter]})
+
+
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -431,10 +432,11 @@ def parse_json_slice_dict(json_string):
                                             task_config.update({merge_option:step[merge_option]})
                                 if step['token']:
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
-                                if  step['inputFormat']:
+                                if step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
-                                if  step['nFilesPerJob']:
-                                    task_config.update({'nFilesPerJob':step['nFilesPerJob']})
+                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                                    if step[parameter]:
+                                        task_config.update({parameter:step[parameter]})
                                 step_name = step_from_tag(step['ctag'])
                                 sexec = dict(status='NotChecked', priority=int(step['priority']),
                                              input_events=int(step['totalevents']))
@@ -870,7 +872,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                         if step['step_name']=='Evgen':
                                             task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob']
+                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
+                                                           'nGBPerJob','maxAttempt']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
@@ -967,7 +970,7 @@ def hlt_request_create(request):
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880','projectmode':'maxAttempt=15;'})
+                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:

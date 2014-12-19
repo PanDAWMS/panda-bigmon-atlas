@@ -9,7 +9,7 @@ from ..prodtask.request_views import clone_slices
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
+from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -335,14 +335,14 @@ def slice_steps(request, reqid, slice_number):
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':''}
                         foreign_step_dict_index = 0
                     else:
                         foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':''}
                         foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
 
             for index,step in enumerate(step_as_in_page):
@@ -363,7 +363,8 @@ def slice_steps(request, reqid, slice_number):
                                         'token':task_config.get('token',''),'merging_tag':task_config.get('merging_tag',''),
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
-                                        'nFilesPerJob':task_config.get('nFilesPerJob','')})
+                                        'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
+                                        'maxAttempt':task_config.get('maxAttempt','')})
 
             dataset = ''
             if input_list.dataset:
@@ -395,3 +396,27 @@ def reject_steps(request, reqid, step_filter):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def fix_dima_error():
+    inputSlice = InputRequestList.objects.filter(request=1240)
+    counter =0
+    for i in inputSlice:
+        if i.slice > 622:
+            step = StepExecution.objects.get(slice=i)
+            parent = StepExecution.objects.get(id=step.step_parent.id)
+            tasks = ProductionTask.objects.filter(step=parent)
+            datasets = None
+            for task in tasks:
+                if task.status == 'done':
+                    datasets= ProductionDataset.objects.filter(task_id=task.id)
+
+            for dataset in datasets:
+                if  dataset.name.find('log')==-1:
+                    counter +=1
+                    print dataset.name
+                    i.dataset = dataset
+                    i.save()
+                    step.step_parent = step
+                    step.save()
+    print counter
