@@ -794,6 +794,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 excel_link = ''
                 if 'excel_link' in request.session:
                     excel_link = request.session['excel_link']
+                    request.session['excel_link']=''
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
                 if not form2.is_valid():
                     inputlists = [x['input_dict'] for x in file_dict]
