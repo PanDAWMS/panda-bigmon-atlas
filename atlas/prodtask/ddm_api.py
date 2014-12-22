@@ -29,6 +29,7 @@ def find_dataset_events(dataset_pattern):
             else:
                 patterns_for_container.add(current_dataset['name'])
             dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['task_id'],'events':current_dataset['events']}})
+
         datasets_containers = []
         for pattern_for_container in patterns_for_container:
             datasets_containers += ddm.find_dataset(pattern_for_container).keys()
@@ -50,6 +51,9 @@ def find_dataset_events(dataset_pattern):
                     event_count += dataset_dict[dataset_name[dataset_name.find(':')+1:]]['events']
             if is_good:
                 return_list.append({'dataset_name':container,'events':str(event_count)})
+        if (not return_list) and dataset_dict:
+            for dataset in dataset_dict.keys():
+                return_list.append({'dataset_name':dataset,'events':str(dataset['events'])})
         # for dataset_name in datasets:
         #     try:
         #         task = TaskProdSys1.objects.get(taskname=dataset_name)
