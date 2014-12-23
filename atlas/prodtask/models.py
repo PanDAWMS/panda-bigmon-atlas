@@ -202,7 +202,7 @@ class ProductionDataset(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_DATASET"'
+        db_table = u'T_PRODUCTION_DATASET'
 
 class ProductionContainer(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
@@ -213,7 +213,7 @@ class ProductionContainer(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_CONTAINER"'
+        db_table = u'T_PRODUCTION_CONTAINER'
 
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
@@ -236,7 +236,7 @@ class InputRequestList(models.Model):
 
     class Meta:
         #db_table = u'T_INPUT_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_INPUT_DATASET"'
+        db_table = u'T_INPUT_DATASET'
 
 class StepExecution(models.Model):
     STEPS = ['Evgen',
@@ -289,7 +289,7 @@ class StepExecution(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_STEP"'
+        db_table = u'T_PRODUCTION_STEP'
 
 
 
@@ -332,7 +332,7 @@ class TTask(models.Model):
 
     class Meta:
         managed = False
-        db_table = u'"ATLAS_DEFT"."T_TASK"'
+        db_table = u'T_TASK'
         app_label = 'taskmon'
 
 
@@ -404,7 +404,7 @@ class ProductionTask(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_TASK"'
+        db_table = u'"T_PRODUCTION_TASK'
 
 
 
@@ -431,7 +431,7 @@ class MCPattern(models.Model):
         super(MCPattern, self).save(*args, **kwargs)
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PATTERN"'
+        db_table = u'T_PRODUCTION_MC_PATTERN'
 
 
 
@@ -471,7 +471,7 @@ class MCPriority(models.Model):
 
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PRIORITY"'
+        db_table = u'T_PRODUCTION_MC_PRIORITY'
 
 
 def get_priority_object(priority_key):
