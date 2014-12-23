@@ -53,7 +53,7 @@ def find_dataset_events(dataset_pattern):
                 return_list.append({'dataset_name':container,'events':str(event_count)})
         if (not return_list) and dataset_dict:
             for dataset in dataset_dict.keys():
-                return_list.append({'dataset_name':dataset,'events':str(dataset['events'])})
+                return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events'])})
         # for dataset_name in datasets:
         #     try:
         #         task = TaskProdSys1.objects.get(taskname=dataset_name)
