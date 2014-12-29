@@ -5,18 +5,35 @@ from django.db import connection
 from django.db import connections
 from django.utils import timezone
 
-def prefetch_id(db, seq_name):
+def prefetch_id(db, seq_name, table_name=None, id_field_name=None):
     """ Fetch the next value in a django id oracle sequence """
+    conn =  connections[db]
     cursor = connections[db].cursor()
-    new_id = -1
-    try:
-        query = "SELECT %s.nextval FROM dual" % seq_name
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        new_id = rows[0][0]
-    finally:
-        if cursor:
-            cursor.close()
+    new_id = None
+    if cursor.db.client.executable_name != 'sqlite3':
+
+        try:
+            query = "SELECT %s.nextval FROM dual" % seq_name
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            new_id = rows[0][0]
+        finally:
+            if cursor:
+                cursor.close()
+    else:
+        #only for tests
+        try:
+            query = "SELECT MAX(%s) AS max_id FROM %s"%(id_field_name,table_name)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            if not(rows[0][0]):
+                new_id = 1
+            else:
+                new_id = rows[0][0] + 1
+
+        finally:
+            if cursor:
+                cursor.close()
     return new_id
 
 class TProject(models.Model):
@@ -34,8 +51,8 @@ class TProject(models.Model):
         return "%s" % self.project
 
     class Meta:
-        #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_PROJECTS"'
+
+        db_table = u'T_PROJECTS'
 
 class TRequest(models.Model):
     # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
@@ -90,13 +107,12 @@ class TRequest(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.reqid:
-            self.reqid = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ')
+            self.reqid = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ','T_PRODMANAGER_REQUEST','PR_ID')
 
         super(TRequest, self).save(*args, **kwargs)
 
     class Meta:
-        #db_table = u'T_PRODMANAGER_REQUEST'
-        db_table = u'"ATLAS_DEFT"."T_PRODMANAGER_REQUEST"'
+        db_table = u'T_PRODMANAGER_REQUEST'
 
 
 class RequestStatus(models.Model):
@@ -115,7 +131,7 @@ class RequestStatus(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ','T_PRODMANAGER_REQUEST_STATUS','REQ_S_ID')
         super(RequestStatus, self).save(*args, **kwargs)
 
     def save_with_current_time(self, *args, **kwargs):
@@ -124,8 +140,7 @@ class RequestStatus(models.Model):
         self.save(*args, **kwargs)
 
     class Meta:
-        #db_table = u'T_PRODMANAGER_REQUEST_STATUS'
-        db_table = u'"ATLAS_DEFT"."T_PRODMANAGER_REQUEST_STATUS"'
+        db_table = u'T_PRODMANAGER_REQUEST_STATUS'
 
 class StepTemplate(models.Model):
     id =  models.DecimalField(decimal_places=0, max_digits=12,  db_column='STEP_T_ID', primary_key=True)
@@ -144,12 +159,12 @@ class StepTemplate(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_STEP_TEMPLATE_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_STEP_TEMPLATE_ID_SEQ','T_STEP_TEMPLATE','STEP_T_ID')
         super(StepTemplate, self).save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_STEP_TEMPLATE'
-        db_table = u'"ATLAS_DEFT"."T_STEP_TEMPLATE"'
+        db_table = u'T_STEP_TEMPLATE'
 
 class Ttrfconfig(models.Model):
     tag = models.CharField(max_length=1, db_column='TAG', default='-')
@@ -202,7 +217,7 @@ class ProductionDataset(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_DATASET"'
+        db_table = u'T_PRODUCTION_DATASET'
 
 class ProductionContainer(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
@@ -213,7 +228,7 @@ class ProductionContainer(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_CONTAINER"'
+        db_table = u'T_PRODUCTION_CONTAINER'
 
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
@@ -231,12 +246,12 @@ class InputRequestList(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
         super(InputRequestList, self).save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_INPUT_DATASET'
-        db_table = u'"ATLAS_DEFT"."T_INPUT_DATASET"'
+        db_table = u'T_INPUT_DATASET'
 
 class StepExecution(models.Model):
     STEPS = ['Evgen',
@@ -284,12 +299,14 @@ class StepExecution(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
+        if not self.step_parent_id:
+            self.step_parent_id = self.id
         super(StepExecution, self).save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_STEP"'
+        db_table = u'T_PRODUCTION_STEP'
 
 
 
@@ -332,7 +349,7 @@ class TTask(models.Model):
 
     class Meta:
         managed = False
-        db_table = u'"ATLAS_DEFT"."T_TASK"'
+        db_table = u'T_TASK'
         app_label = 'taskmon'
 
 
@@ -371,20 +388,7 @@ class ProductionTask(models.Model):
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
 
     def save(self):
-        if self.id == None:
-            self.id = self.getId()
-        super(ProductionTask, self).save()
-
-    def getId(self):
-        cursor = connection.cursor()
-        try:
-            query = "SELECT %s.nextval FROM dual" % 'ATLAS_DEFT.T_PRODUCTION_TASK_ID_SEQ'
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            return rows[0][0]
-        finally:
-            if cursor:
-                cursor.close()
+        raise NotImplementedError
 
     @property
     def input_dataset(self):
@@ -404,7 +408,7 @@ class ProductionTask(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_TASK"'
+        db_table = u'T_PRODUCTION_TASK'
 
 
 
@@ -427,11 +431,11 @@ class MCPattern(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ','T_PRODUCTION_MC_PATTERN','MCP_ID')
         super(MCPattern, self).save(*args, **kwargs)
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PATTERN"'
+        db_table = u'T_PRODUCTION_MC_PATTERN'
 
 
 
@@ -457,7 +461,7 @@ class MCPriority(models.Model):
         if self.priority_key == -1:
             return
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ','T_PRODUCTION_MC_PRIORITY','MCPRIOR_ID')
         super(MCPriority, self).save(*args, **kwargs)
 
     def priority(self, step, tag):
@@ -471,7 +475,7 @@ class MCPriority(models.Model):
 
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_PRODUCTION_MC_PRIORITY"'
+        db_table = u'T_PRODUCTION_MC_PRIORITY'
 
 
 def get_priority_object(priority_key):
