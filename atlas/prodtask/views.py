@@ -212,13 +212,17 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             #     step_as_in_page = [None] + step_as_in_page
             first_not_approved_index = 0
             total_events = input_list.input_events
+            still_skipped = True
             for index,step in enumerate(step_as_in_page):
                 if step:
                     if step.status in APPROVED_STATUS:
                         first_not_approved_index = index + 1
                         parent_step = step
                         if step.status not in SKIPPED_STATUS:
-                           total_events = -1
+                            total_events = -1
+                            still_skipped = False
+                        else:
+                            total_events = step.input_events
             try:
                 to_delete = []
                 for index,step_value in enumerate(steps_status[first_not_approved_index:],first_not_approved_index):
@@ -243,6 +247,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'], index<=approve_level))
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
+                                still_skipped = False
                             parent_step = step_in_db
                         else:
 
@@ -278,21 +283,21 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
+                                total_events = step_in_db.input_events
                             else:
-                                if (step_in_db.input_events == -1) or (total_events == -1):
-                                    step_in_db.input_events = total_events
-                                else:
-                                    total_events = step_in_db.input_events
-                            if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and (total_events !=-1):
+                                step_in_db.input_events = total_events
+
+                            if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and still_skipped:
                                 if index == 0:
                                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                elif total_events !=-1 :
+                                else:
                                     if parent_step:
                                         task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
                                     else:
                                         task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'-1')})
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
+                                still_skipped = False
                             step_in_db.set_task_config(task_config)
                             step_in_db.step_def_time = None
                             step_in_db.save_with_current_time()
@@ -304,7 +309,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
                                 if index == 0:
                                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                elif total_events !=-1 :
+                                elif still_skipped:
                                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
@@ -343,7 +348,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 st_exec.input_events = total_events
                             if st_exec.status not in SKIPPED_STATUS:
                                 total_events = -1
-
+                                still_skipped = False
                             st_exec.save_with_current_time()
                             if no_parent:
                                 st_exec.step_parent = st_exec
