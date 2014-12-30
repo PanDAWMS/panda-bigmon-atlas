@@ -182,7 +182,17 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
      :param is_approve: approve if true, save if false
 
     """
-
+    def events_per_input_file(index, STEPS, task_config, parent_step):
+        if index == 0:
+            task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+        else:
+            if parent_step:
+                if json.loads(parent_step.task_config).get('nEventsPerJob',''):
+                    task_config.update({'nEventsPerInputFile':json.loads(parent_step.task_config)['nEventsPerJob']})
+                else:
+                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+            else:
+                task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'-1')})
 
     try:
         APPROVED_STATUS = ['Skipped','Approved']
@@ -213,6 +223,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             first_not_approved_index = 0
             total_events = input_list.input_events
             still_skipped = True
+            new_step = False
             for index,step in enumerate(step_as_in_page):
                 if step:
                     if step.status in APPROVED_STATUS:
@@ -243,7 +254,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                     if step_in_db:
                         if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
                                 (not step_value['changes']) and (total_events==step_in_db.input_events) and \
-                                similar_status(step_in_db.status,step_value['is_skipped']):
+                                similar_status(step_in_db.status,step_value['is_skipped']) and (not new_step):
                             approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'], index<=approve_level))
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
@@ -288,13 +299,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.input_events = total_events
 
                             if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and still_skipped:
-                                if index == 0:
-                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                else:
-                                    if parent_step:
-                                        task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
-                                    else:
-                                        task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'-1')})
+                                events_per_input_file(index,STEPS,task_config,parent_step)
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
                                 still_skipped = False
@@ -307,10 +312,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                if index == 0:
-                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
-                                elif still_skipped:
-                                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+                                events_per_input_file(index,STEPS,task_config,parent_step)
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
                                 task_config = {}
@@ -354,6 +356,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
                             parent_step = st_exec
+                            new_step = True
                 for step in to_delete:
                             step.step_parent = step
                             step.save()
