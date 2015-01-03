@@ -276,7 +276,7 @@ class StepExecution(models.Model):
     step_appr_time = models.DateTimeField(db_column='STEP_APPR_TIME', null=True)
     step_exe_time = models.DateTimeField(db_column='STEP_EXE_TIME', null=True)
     step_done_time = models.DateTimeField(db_column='STEP_DONE_TIME', null=True)
-    input_events = models.DecimalField(decimal_places=0, max_digits=8, db_column='INPUT_EVENTS', null=True)
+    input_events = models.DecimalField(decimal_places=0, max_digits=10, db_column='INPUT_EVENTS', null=True)
     task_config = models.CharField(max_length=2000, db_column='TASK_CONFIG')
     step_parent = models.ForeignKey('self', db_column='STEP_PARENT_ID')
 
