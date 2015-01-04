@@ -77,7 +77,7 @@ urlpatterns = patterns('',
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
-
+    url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', 'atlas.prodtask.report_view.make_report', name='make_report'),
 
     url(r'^find_input_datasets/(?P<reqid>\d+)/$', 'atlas.prodtask.views.find_input_datasets', name='find_input_datasets'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
