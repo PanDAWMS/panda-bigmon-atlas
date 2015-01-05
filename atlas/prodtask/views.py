@@ -188,7 +188,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         else:
             if parent_step:
                 if json.loads(parent_step.task_config).get('nEventsPerJob',''):
-                    task_config.update({'nEventsPerInputFile':json.loads(parent_step.task_config)['nEventsPerJob']})
+                    task_config.update({'nEventsPerInputFile':int(json.loads(parent_step.task_config)['nEventsPerJob'])})
                 else:
                     task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
             else:
@@ -266,11 +266,17 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config = json.loads(step_in_db.task_config)
                             else:
                                 task_config = {}
-                            for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
+                            for x in ['input_format','nEventsPerJob','token','merging_tag',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
                                       'nFilesPerJob','nGBPerJob','maxAttempt']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
+                            for x in ['nEventsPerInputFile']:
+                                if x in step_value['changes']:
+                                    if step_value['changes'][x]:
+                                        task_config[x] = int(step_value['changes'][x])
+                                    else:
+                                        task_config[x] = ''
                             change_template = False
                             ctag = step_value['value']
                             if ctag != step_in_db.step_template.ctag:
@@ -316,11 +322,17 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
                                 task_config = {}
-                            for x in ['input_format','nEventsPerJob','nEventsPerInputFile','token','merging_tag',
+                            for x in ['input_format','nEventsPerJob','token','merging_tag',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
                                       'nGBPerJob','maxAttempt']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
+                            for x in ['nEventsPerInputFile']:
+                                if x in step_value['changes']:
+                                    if step_value['changes'][x]:
+                                        task_config[x] = int(step_value['changes'][x])
+                                    else:
+                                        task_config[x] = ''
                             ctag = step_value['value']
                             output_formats = ''
                             if 'output_formats' in step_value['changes']:
