@@ -105,6 +105,7 @@ $(document).ready(function(){
     <th>Status</th>
     <th>Group</th>
     <th>Timestamp</th>
+    <th>Owner</th>
     <th>Manage</th>
     </tr>
     </thead>
@@ -116,6 +117,7 @@ $(document).ready(function(){
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
         </tr>
     {% endfor %}
@@ -130,6 +132,7 @@ $(document).ready(function(){
     <th>Status</th>
     <th>Group</th>
     <th>Timestamp</th>
+    <th>Owner</th>
     <th>Manage</th>
     </tr>
     </thead>
@@ -141,6 +144,7 @@ $(document).ready(function(){
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
         </tr>
     {% endfor %}
@@ -155,6 +159,7 @@ $(document).ready(function(){
     <th>Status</th>
     <th>Group</th>
     <th>Timestamp</th>
+    <th>Owner</th>
     <th>Manage</th>
     </tr>
     </thead>
@@ -166,6 +171,7 @@ $(document).ready(function(){
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
         </tr>
     {% endfor %}

@@ -72,7 +72,8 @@ def make_report(request, production_request_type, number_of_days):
                 if failed_task['request_id'] in requests_list.keys():
 
                     error_list.append({'request':failed_task['request_id'],'task_id':failed_task['id'],
-                                       'status':failed_task['status'],'group':failed_task['phys_group'],'time':failed_task['timestamp']})
+                                       'status':failed_task['status'],'group':failed_task['phys_group'],
+                                       'time':failed_task['timestamp'],'owner':failed_task['username']})
             running_tasks = []
             running_tasks = list(ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','done','finished','obsolete']).__invert__(),
                                                            Q(provenance = type_provenance[production_request_type])).order_by('request__reqid').values())
@@ -80,7 +81,8 @@ def make_report(request, production_request_type, number_of_days):
                 if running_task['request_id'] in requests_list:
                     stale_time = datetime.utcnow().replace(tzinfo=pytz.utc) - running_task['timestamp']
                     to_append = {'request':running_task['request_id'],'task_id':running_task['id'],
-                                       'status':running_task['status'],'group':running_task['phys_group'],'time':running_task['timestamp']}
+                                       'status':running_task['status'],'group':running_task['phys_group'],
+                                       'time':running_task['timestamp'],'owner':failed_task['username']}
                     if stale_time > timedelta(hours=3*24):
                         to_append.update({'reason':'stale more than 3 days'})
                         stale_list.append(to_append)
