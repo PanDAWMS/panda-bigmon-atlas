@@ -887,7 +887,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                     if use_input_date_for_pattern:
                         slice_pattern = input_lists_pre[0].input_data.split('.')
                     else:
-                        slice_pattern = input_lists_pre[0].dataset.name.split('.')
+                        if input_lists_pre[0].dataset:
+                            slice_pattern = input_lists_pre[0].dataset.name.split('.')
+                        else:
+                            slice_pattern = ''
 
                 for slice in input_lists_pre:
                     if (not show_hidden) and slice.is_hide:
