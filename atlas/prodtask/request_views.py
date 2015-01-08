@@ -48,6 +48,20 @@ def request_details(request, rid=None):
         'parent_template': 'prodtask/_index.html',
     })
 
+@csrf_protect
+def close_deft_ref(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            if json.loads(data)['close']:
+                production_request = TRequest.objects.get(reqid=reqid)
+                production_request.is_error = False
+                production_request.save()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link):
         ordered_slices = map(int,slices)

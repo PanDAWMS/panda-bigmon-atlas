@@ -1080,6 +1080,23 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
         };
 
+        function closeDeftRef(event){
+            event.preventDefault();
+            sendData = {'close':true};
+              $.ajax({
+                    url: "{% url 'prodtask:close_deft_ref' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $('#closeDeftRef').css({'display':'none'});
+                        $('#deftRef').css({'display':'none'});
+                    }
+              });
+              return false;
+        };
+
 function spreadAMI(that){
     currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
     currentSlice = $('#sliceModalSlice').html();
@@ -1231,8 +1248,17 @@ var lastChecked = true;
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
 {% if has_deft_problem %}
-    <div class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
+    <table>
+    <tr>
+    <td>
+    <button id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
+    </td>
+    <td>
+        <div id="deftRef" class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
     <a href="https://its.cern.ch/jira/browse/{{ jira_problem_link }}" target="_blank">{{ jira_problem_link }}</a></div>
+    </td>
+    </tr>
+    </table>
 {% endif %}
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
