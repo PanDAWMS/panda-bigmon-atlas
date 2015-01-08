@@ -310,7 +310,7 @@ def hlt_form_prefill(form_data, request):
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'THLT'
 
-    task_config = {}
+    task_config = {'maxAttempt':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -499,7 +499,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('provenance'):
         form_data['provenance'] = 'GP'
     if not spreadsheet_dict:
-        task_config = {}
+        task_config = {'maxAttempt':15}
         if 'events_per_job' in output_dict:
             nEventsPerJob = output_dict['events_per_job'][0]
             task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -587,7 +587,7 @@ def reprocessing_form_prefill(form_data, request):
         form_data['provenance'] = 'AP'
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'REPR'
-    task_config = {}
+    task_config = {'maxAttempt':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -955,18 +955,18 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
-                                   {'nEventsPerJob':'5000','priority':'520'})
+                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'15'})
 
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',

@@ -314,14 +314,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.save_with_current_time()
                             parent_step = step_in_db
                     else:
-                            task_config = {}
+                            task_config = {'maxAttempt':15}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
                                 events_per_input_file(index,STEPS,task_config,parent_step)
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
-                                task_config = {}
                             for x in ['input_format','nEventsPerJob','token','merging_tag',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
                                       'nGBPerJob','maxAttempt']:
