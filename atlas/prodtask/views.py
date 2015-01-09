@@ -302,7 +302,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.input_events = step_value['changes']['input_events']
                                 total_events = step_in_db.input_events
                             else:
-                                step_in_db.input_events = total_events
+                                if step_in_db.input_events==-1:
+                                    step_in_db.input_events = total_events
+                                else:
+                                    if not still_skipped:
+                                        step_in_db.input_events = -1
+                                    else:
+                                        total_events = step_in_db.input_events
 
                             if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and still_skipped:
                                 events_per_input_file(index,STEPS,task_config,parent_step)
