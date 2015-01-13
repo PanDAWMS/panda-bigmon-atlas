@@ -804,7 +804,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         return max_level+1
 
 
-    def form_step_obj(step,task,input_slice,foreign=False):
+    def form_step_obj(step,tasks,input_slice,foreign=False):
         skipped = 'skipped'
         tag = ''
         slice = ''
@@ -818,9 +818,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                 skipped = 'run'
             tag = step['ctag']
         task_short = ''
-        if task:
-            task_short = task['status'][0:8]
-        return {'step':step, 'tag':tag, 'skipped':skipped, 'task':task, 'task_short':task_short,'slice':slice}
+        if tasks:
+            for task in tasks:
+                task['short'] = task['status'][0:8]
+        return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks':tasks, 'slice':slice}
 
     def unwrap(pattern_dict):
         return_list = []
@@ -843,7 +844,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
                 step_templates_set.add(current_step['step_template_id'])
             tasks = {}
-            tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
+            tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('id').values())
             for current_task in tasks_db:
                 tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
             step_templates = {}
@@ -938,12 +939,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                     temp_step_list = []
                     another_chain_step = None
                     for step in step_execs:
-                        step_task = {}
+                        step_task = []
                         try:
-                            step_task = tasks[step['id']][0]
+                            step_task = tasks[step['id']]
 
                         except Exception,e:
-                            step_task = {}
+                            step_task = []
 
                         if step_task:
                             show_task = True

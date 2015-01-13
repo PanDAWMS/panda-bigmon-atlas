@@ -1369,16 +1369,39 @@ var lastChecked = true;
                         <td>T:</td>
 
                         {% for step in step_exec_dict %}
-                        {% if step.task %}
+                        {% if step.tasks|length == 1 %}
+                        {% for task in step.tasks %}
+                        {% if task %}
 
-
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ step.task.status }}" >
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
                             <div>
-                               <a  href="http://bigpanda.cern.ch/task/{{ step.task.id }}"><span style="color: #000000">{{ step.task_short }}</span></a>
+                               <a  href="http://bigpanda.cern.ch/task/{{ task.id }}"><span style="color: #000000">{{ task.short }}</span></a>
                             </div>
                         </td>
                         {% else %}
                             <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% else %}
+                        <td style="padding:0px;margin:0px">
+                        <table style="padding:0px;margin:0px">
+                        {% for task in step.tasks %}
+                        {% if task %}
+
+                        <tr style="padding:0px;margin:0px;height: 20px">
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
+                            <div>
+                               <a  href="http://bigpanda.cern.ch/task/{{ task.id }}"><span style="color: #000000">{{ task.short }}</span></a>
+                            </div>
+                        </td>
+                        {% else %}
+                            <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        </table>
+                        </td>
                         {% endif %}
                         {% endfor %}
                         <td colspan="3"></td>
@@ -1407,22 +1430,24 @@ var lastChecked = true;
                 {% if show_task %}
                         <tr><td></td><td colspan="11">Tasks:</td></tr>
                         {% for step in step_exec_dict %}
-                        {% if step.task %}
+                        {% for task in step.tasks %}
+                        {% if task %}
                             <tr><td></td>
-                            <td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
-                            <td colspan="2" ><span class="{{ step.task.status }}" >{{ step.task.status }}</span></td>
-                            <td colspan="7">{{ step.task.name }}</td>
+                            <td colspan="2"><a href="{% url 'prodtask:task' task.id %}">{{ task.id }}</a></td>
+                            <td colspan="2" ><span class="{{ task.status }}" >{{ task.status }}</span></td>
+                            <td colspan="7">{{ task.name }}</td>
                             </tr>
-                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
+                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ task.timestamp }}
                                                                 </td>
                             <td colspan="5" >
-                                <a href="http://bigpanda.cern.ch/jobs/?jeditaskid={{ step.task.id }}">
-                                    <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
+                                <a href="http://bigpanda.cern.ch/jobs/?jeditaskid={{task.id }}">
+                                    <u>Jobs: {{ task.total_done_jobs }}/{{ task.total_req_jobs }}</u>
                                 </a>
                             </td>
-                            <td colspan="4">bug: {{ step.task.bug_report }}</td>
+                            <td colspan="4">bug: {{ task.bug_report }}</td>
                             </tr>
                         {% endif %}
+                        {% endfor %}
                         {% endfor %}
 
                 {% else %}
