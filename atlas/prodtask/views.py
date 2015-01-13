@@ -339,7 +339,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                     else:
                                         task_config[x] = ''
                             ctag = step_value['value']
-                            output_formats = ''
+                            output_formats = step_value['formats']
                             if 'output_formats' in step_value['changes']:
                                 output_formats = step_value['changes']['output_formats']
                             memory = None
@@ -535,7 +535,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 if req.request_type == 'MC':
                     for steps_status in slice_steps.values():
                         for index,steps in enumerate(steps_status[:-2]):
-                            if StepExecution.STEPS[index] == 'Reco':
+                            if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
                     error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)

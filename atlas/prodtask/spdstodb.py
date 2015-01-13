@@ -166,6 +166,8 @@ def translate_excl_to_dict(excel_dict):
                             translated_row[currentstep]='r9999'
                         if translated_row.get('format', '') and reduce_input_format and (not translated_row.get(currentstep)):
                             translated_row[currentstep]='p9999'
+                        if translated_row.get('format', '') and (currentstep == 'Atlfast') and (not translated_row.get(currentstep)):
+                            translated_row[currentstep]='a9999'
                         if translated_row.get(currentstep):
                             st = currentstep
                             tag = translated_row[currentstep]
@@ -183,7 +185,7 @@ def translate_excl_to_dict(excel_dict):
                             if reduce_input_format:
                                 task_config.update({'input_format':'AOD'})
                                 reduce_input_format = False
-                            if currentstep == 'Reco':
+                            if (currentstep == 'Reco') or (currentstep == 'Atlfast'):
                                 if translated_row.get('format', ''):
                                     formats = 'AOD'+'.'+translated_row.get('format', '')
                                     reduce_input_format = True
