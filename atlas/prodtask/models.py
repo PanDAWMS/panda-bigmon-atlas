@@ -386,7 +386,7 @@ class ProductionTask(models.Model):
     physics_tag = models.CharField(max_length=20, db_column='PHYSICS_TAG', null=True)
     reference = models.CharField(max_length=150, db_column='REFERENCE', null=False)
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
-
+    jedi_info = models.CharField(max_length=256, db_column='JEDI_INFO', null=False, blank=True)
     def save(self):
         raise NotImplementedError
 

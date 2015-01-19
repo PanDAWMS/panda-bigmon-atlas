@@ -107,6 +107,7 @@ $(document).ready(function(){
     <th>Timestamp</th>
     <th>Owner</th>
     <th>Manage</th>
+    <th>JEDI_Info</th>
     </tr>
     </thead>
     <tbody>
@@ -119,6 +120,7 @@ $(document).ready(function(){
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
             <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -134,6 +136,7 @@ $(document).ready(function(){
     <th>Timestamp</th>
     <th>Owner</th>
     <th>Manage</th>
+    <th>JEDI_Info</th>
     </tr>
     </thead>
     <tbody>
@@ -146,6 +149,7 @@ $(document).ready(function(){
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
             <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
         </tr>
     {% endfor %}
     </tbody>
@@ -161,6 +165,7 @@ $(document).ready(function(){
     <th>Timestamp</th>
     <th>Owner</th>
     <th>Manage</th>
+    <th>JEDI_Info</th>
     </tr>
     </thead>
     <tbody>
@@ -173,6 +178,7 @@ $(document).ready(function(){
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
             <td>{{ task.owner }}</td>
             <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
         </tr>
     {% endfor %}
     </tbody>
