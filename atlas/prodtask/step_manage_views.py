@@ -369,7 +369,11 @@ def slice_steps(request, reqid, slice_number):
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name
-            results = {'success':True,'step_types':result_list, 'dataset': dataset}
+            jobOption = ''
+            if input_list.input_data:
+                jobOption = input_list.input_data
+            results = {'success':True,'step_types':result_list, 'dataset': dataset, 'jobOption':jobOption,
+                       'totalEvents':int(input_list.input_events)}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

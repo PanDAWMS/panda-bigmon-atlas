@@ -505,6 +505,33 @@ def remove_input(good_slices, reqid):
     return removed_input_slices
 
 
+def save_slice_changes(reqid, slice_steps):
+    not_changed = []
+    for slice_number, steps_status in slice_steps.items():
+            if steps_status['changes']:
+                do_action = False
+                for field in ['jobOption','datasetName','eventsNumber']:
+                    if steps_status['changes'].get(field):
+                        do_action = True
+                if do_action:
+                    try:
+                        current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
+                        if StepExecution.objects.filter(slice=current_slice,status = 'Approved').count() > 0:
+                            not_changed.append(slice)
+                        else:
+                            if steps_status['changes'].get('jobOption'):
+                                current_slice.input_data = steps_status['changes'].get('jobOption')
+                            if steps_status['changes'].get('datasetName'):
+                                current_slice.dataset = fill_dataset(steps_status['changes'].get('datasetName'))
+                            if steps_status['changes'].get('eventsNumber'):
+                                current_slice.input_events = steps_status['changes'].get('eventsNumber')
+                            current_slice.save()
+                    except Exception,e:
+                        not_changed.append(slice)
+    return []
+
+
+
 def request_steps_approve_or_save(request, reqid, approve_level):
     results = {'success':False}
     try:
@@ -512,6 +539,9 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         slice_steps = json.loads(data)
         _logger.debug("Steps modification for: %s" % slice_steps)
         slices = slice_steps.keys()
+        fail_slice_save = save_slice_changes(reqid, slice_steps)
+        for slice, steps_status in slice_steps.items():
+            slice_steps[slice] = steps_status['sliceSteps']
         for steps_status in slice_steps.values():
             for steps in steps_status[:-2]:
                 steps['value'] = steps['value'].strip()
@@ -520,10 +550,11 @@ def request_steps_approve_or_save(request, reqid, approve_level):
             if steps_status[-1]:
                 slice_new_input.update({slice:steps_status[-1]['input_dataset']})
             slice_steps[slice]= steps_status[:-1]
+
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
-                   'double_trf':old_double_trf, 'success': True, 'new_status':''}
+                   'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save}
         if not missing_tags:
             _logger.debug("Start steps save/approval")
             req = TRequest.objects.get(reqid=reqid)
@@ -569,7 +600,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                            'wrong_slices':wrong_skipping_slices,
                            'double_trf':old_double_trf, 'error_slices':error_slices,
                            'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
-                           'removed_input':removed_input}
+                           'removed_input':removed_input, 'fail_slice_save':''}
         else:
             _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:

@@ -316,8 +316,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                      sliceSteps[{{  step_list|length }}+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
 
 
-
-                    sendData[sliceID] = sliceSteps;
+                    if (sliceID in changesList){
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':changesList[sliceID]};
+                    } else {
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':''};
+                    }
                     if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
                         toChangeDatasets.push(sliceID);
                     }
@@ -812,22 +815,40 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         });
                     }
 {#                    console.log(stepHasChanges);#}
-                    currentHTML = $("#sectionName" + i.toString()).html();
+                    currentHTML = $("#sectionName" + i.toString()).html()
                     if (stepHasChanges){
 
-                      if (currentHTML.indexOf('*') == -1) {
-                          $("#sectionName" + i.toString()).html(currentHTML + '*');
-                      }
-                    }else{
-                          newName = currentHTML.replace('*','');
-                         $("#sectionName" + i.toString()).html(newName);
+                              if (currentHTML.indexOf('*') == -1) {
+                                  $("#sectionName" + i.toString()).html(currentHTML + '*');
+                              }
+                    }
+                    else{
+                                  newName = currentHTML.replace('*','');
+                                 $("#sectionName" + i.toString()).html(newName);
                     }
 
                 }
+{#            console.log(check_steps);#}
+            check_steps['is_eaqual'] = undefined;
+            check_steps['db_step_type'] = undefined;
+            for (sliceField in check_steps){
+                notUpdateFromDB = false;
+                if (parseInt(sliceID) in changesList) {
+                    if (changesList[sliceID][sliceField]!= undefined) {
+                            if (changesList[sliceID][sliceField] != check_steps[sliceField]) {
+                                notUpdateFromDB = true;
+                                $('#'+sliceField+'Modal').val(changesList[sliceID][sliceField]);
+                                $('#'+sliceField+'Modal').parent().css({'color': 'red'});
+                            }
+                    }
+                }
+                if (!notUpdateFromDB) {
+                   $('#'+sliceField+'Modal').parent().css({'color': 'initial'});
+                   $('#'+sliceField+'Modal').val(check_steps[sliceField]);
+                }
+            }
 
-            $('#sliceModalDataset').html(check_steps.dataset);
             $('#sliceModalSlice').html(sliceID);
-            $('#sliceModalJobOption').html($('#sliceInputJobOptions'+sliceID).attr('title'));
             $('#sliceModal').foundation('reveal', 'open');
             changeMode = true;
         }
@@ -855,11 +876,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         function checkSliceIsSaved(sliceNumber){
             var is_equal = undefined;
             var step_types = undefined;
-            var dataset_DB = undefined;
+            var slice_data = {};
             $.ajaxSetup({async: false});
             $.get(Django.url('prodtask:slice_steps',"{{ pr_id }}",sliceNumber),function(data,status){
                 step_types = data.step_types;
-                dataset_DB = data.dataset;
+                slice_data['datasetName'] = data.dataset;
+                slice_data['jobOption'] = data.jobOption;
+                slice_data['eventsNumber'] = data.totalEvents;
                 is_equal = true;
                 var current_step_tag = [];
                 for (var i=0;i<{{ step_list|length }};i++){
@@ -903,14 +926,39 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         }
 
                 }
+                is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
 
-            return {is_equal:is_equal,db_step_type:step_types, dataset:dataset_DB};
+            return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
+        }
+
+        function clearChangesSlice(sliceNumber, sliceData){
+            var no_changes = true;
+{#            console.log(changesList[sliceNumber],sliceData)#}
+            if (sliceNumber in changesList){
+                for (var field in sliceData){
+
+{#                    console.log(sliceData[field]);#}
+                    if (field in changesList[sliceNumber]){
+                        if (changesList[sliceNumber][field] != undefined){
+                            if (changesList[sliceNumber][field] != sliceData[field]){
+                                                        console.log(changesList[sliceNumber][field]);
+                                console.log(sliceData[field]);
+                                no_changes = false;
+                            }else{
+                                   changesList[sliceNumber][field] = undefined;
+                               }
+                        }
+                    }
+                }
+
+            }
+            return no_changes;
         }
 
         function clearChanges(sliceNumber,i,current_step){
-            no_changes = true;
+            var no_changes = true;
             if (sliceNumber in changesList){
                 if (changesList[sliceNumber].stepsInSlice.length > i){
 {#                    console.log(current_step);#}
@@ -1111,9 +1159,14 @@ function changeSliceChanges(that){
         $(that).parent().css({'color':'red'});
         var currentStepNumber = '';
         var currentField = '';
+        var isSliceData = false;
+        console.log(that);
         for(i=0;i<currentClass.length;i++){
             if (currentClass[i] != ''){
-                if (currentClass[i].lastIndexOf('storeOutput', 0) === 0){
+                if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0){
+                    isSliceData = true;
+                }
+                else if (currentClass[i].lastIndexOf('storeOutput', 0) === 0){
                     currentStepNumber = currentClass[i].slice('storeOutput'.length);
                     currentHTML = $("#sectionName"+currentStepNumber).html();
 
@@ -1127,17 +1180,23 @@ function changeSliceChanges(that){
             }
         }
         currentSlice = $('#sliceModalSlice').html();
-        if (!(currentSlice in changesList)){
+        if (!(currentSlice in changesList)) {
             changesList[currentSlice] = new RequestSlice();
         }
-        if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber)+1)){
-            for(i=changesList[currentSlice].stepsInSlice.length;i<(parseInt(currentStepNumber)+1);i++){
-                var newStep = new ProcessingStep();
-                changesList[currentSlice].addStep(newStep);
+        if (isSliceData){
+            changesList[currentSlice][currentField] =  $(that).val();
+            $('.change'+currentField+currentSlice.toString()).html(changesList[currentSlice][currentField]);
+        } else {
+
+            if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber) + 1)) {
+                for (i = changesList[currentSlice].stepsInSlice.length; i < (parseInt(currentStepNumber) + 1); i++) {
+                    var newStep = new ProcessingStep();
+                    changesList[currentSlice].addStep(newStep);
+                }
             }
+            var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
+            currentChangeStep[currentField] = $(that).val();
         }
-        var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
-        currentChangeStep[currentField] = $(that).val();
 {#        console.log(currentChangeStep,currentField,$(that).val());#}
     }
 };
@@ -1168,7 +1227,9 @@ function ProcessingStep() {
  function RequestSlice(sliceNumber) {
     this.stepsInSlice = [];
     this.sliceNumber = sliceNumber;
-
+    this.datasetName = undefined;
+    this.jobOption = undefined;
+    this.eventsNumber = undefined;
 };
 
 RequestSlice.prototype.addStep = function(newStep){
@@ -1322,18 +1383,18 @@ var lastChecked = true;
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
+                        <span class="showFullSpan changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
+                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class='showFullSpan changejobOption{{ inputList.slice }}' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
                         </span>
                     </td>
-                    <td  colspan="2"><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
+                    <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
             <td></td>
@@ -1411,11 +1472,11 @@ var lastChecked = true;
             </table>
             <table class="inputListTablesLong" style="display: none">
                 <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
-                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="filterField">{{ inputList.dataset }}</span></td></tr>
-                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
+                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="changedatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td></tr>
+                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="changejobOption{{ inputList.slice }} filterField">{{ inputList.input_data }}</span></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
                 <tr><td></td><td colspan="11">Comment: <span class="filterField">{{ inputList.comment }}</span></td></tr>
-                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: {{ inputList.input_events }}</td></tr>
+                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: <span class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
                     <select id="selectPattern" >
                         <option value="" disabled selected>Select pattern</option>
@@ -1664,8 +1725,22 @@ var lastChecked = true;
 
 <div id="sliceModal" class="reveal-modal" data-reveal>
 <p>Slice: <span id="sliceModalSlice"></span><br/>
-Dataset: <span id="sliceModalDataset"></span><br/>
-job options: <span id="sliceModalJobOption"></span></p>
+    <div>
+    <div class="row">
+        <div class="column large-12">
+            <label> Dataset: <input id='datasetNameModal' type="text" class="datasetName storeOutputSlice  storeInput" placeholder=" "  /></label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column large-9">
+            <label> job options: <input id="jobOptionModal" type="text" class="jobOption storeOutputSlice storeInput" placeholder=" "  /></label>
+        </div>
+        <div class="column large-3">
+            <label> Input events: <input id='eventsNumberModal' type="number" class="eventsNumber storeOutputSlice storeInput"  placeholder="-1"  /></label>
+        </div>
+    </div>
+    </div>
+
 <div>
 <div class="section-container auto" id="sliceInfoContainer" data-section>
         {% for step in step_list %}
