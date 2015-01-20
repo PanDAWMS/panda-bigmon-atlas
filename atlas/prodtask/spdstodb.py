@@ -147,13 +147,19 @@ def translate_excl_to_dict(excel_dict):
                 else:
                     checked_rows.append(translated_row)
                     input_events = translated_row.get('evfs', 0)
+                    is_fullsym = True
                     if input_events == 0:
                         input_events = translated_row.get('eva2', 0)
+                        is_fullsym = False
+                    if is_fullsym:
+                        comment = '(Fullsim)'+translated_row.get('comment', '')
+                    else:
+                        comment = '(Atlfast)'+translated_row.get('comment', '')
                     if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
                         if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
                             raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
                     irl = dict(slice=index, brief=translated_row.get('brief', ''),
-                               comment=translated_row.get('comment', ''),
+                               comment=comment,
                                input_data=translated_row.get('joboptions', ''),
                                priority=int(translated_row.get('priority', 0)),
                                input_events=int(input_events))
@@ -162,11 +168,11 @@ def translate_excl_to_dict(excel_dict):
                     reduce_input_format = False
                     step_index = 0
                     for currentstep in StepExecution.STEPS:
-                        if translated_row.get('format', '') and (currentstep == 'Reco') and (not translated_row.get(currentstep)):
+                        if translated_row.get('format', '') and (currentstep == 'Reco') and (not translated_row.get(currentstep)) and (is_fullsym):
                             translated_row[currentstep]='r9999'
                         if translated_row.get('format', '') and reduce_input_format and (not translated_row.get(currentstep)):
                             translated_row[currentstep]='p9999'
-                        if translated_row.get('format', '') and (currentstep == 'Atlfast') and (not translated_row.get(currentstep)):
+                        if translated_row.get('format', '') and (currentstep == 'Atlfast') and (not translated_row.get(currentstep)) and (not is_fullsym):
                             translated_row[currentstep]='a9999'
                         if translated_row.get(currentstep):
                             st = currentstep
@@ -185,7 +191,7 @@ def translate_excl_to_dict(excel_dict):
                             if reduce_input_format:
                                 task_config.update({'input_format':'AOD'})
                                 reduce_input_format = False
-                            if (currentstep == 'Reco') or (currentstep == 'Atlfast'):
+                            if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
                                 if translated_row.get('format', ''):
                                     formats = 'AOD'+'.'+translated_row.get('format', '')
                                     reduce_input_format = True
