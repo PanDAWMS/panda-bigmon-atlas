@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
 from ..prodtask.request_views import clone_slices
+from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page
 
@@ -40,6 +41,7 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             input_dict = json.loads(data)
             slices = input_dict
             ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Clone slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
             if make_link_value == '1':
                 make_link = True
@@ -72,6 +74,7 @@ def reject_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))
             for slice_number in slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
                 reject_steps_in_slice(current_slice)
@@ -87,6 +90,7 @@ def hide_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
             for slice_number in slices:
                 current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
                 if not current_slice.is_hide:
@@ -237,6 +241,7 @@ def update_project_mode(request, reqid):
         try:
             data = request.body
             checkecd_tag_format = json.loads(data)
+            _logger.debug(form_request_log(reqid,request,'Update steps: %s' % str(checkecd_tag_format)))
             tag = checkecd_tag_format['tag_format'].split(':')[0]
             output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
             output_format = output_format[len(tag)+1:]

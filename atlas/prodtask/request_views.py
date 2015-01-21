@@ -2,34 +2,33 @@ import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
-from django.shortcuts import render, render_to_response
-from django.template import Context, Template, RequestContext
-from django.template.loader import get_template
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
 from django.template.response import TemplateResponse
-from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
-from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
-
-from ..prodtask.ddm_api import find_dataset_events
-import core.datatables as datatables
 import json
 import logging
+
+from ..prodtask.helper import form_request_log
+from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
+from ..prodtask.ddm_api import find_dataset_events
+import core.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
-from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
-    get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
+from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
 from .models import MCPriority
 from .settings import APP_SETTINGS
-from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
+from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
 from .dpdconfparser import ConfigParser
 from .xls_parser_new import open_tempfile_from_url
 
 
 _logger = logging.getLogger('prodtaskwebui')
+
+
 
 def request_details(request, rid=None):
     if rid:
@@ -122,7 +121,6 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                         old_new_step[old_step_id] = step
 
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
-    _logger.debug("Clone request #%i"%(int(reqid)))
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
     request_destination.cstatus = 'waiting'
@@ -133,7 +131,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination.save()
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
-    _logger.debug("New request: #%i"%(int(reqid)))
+    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
@@ -159,6 +157,7 @@ def request_clone2(request, reqid):
                 pass
             if not owner:
                 owner = 'default'
+            _logger.debug(form_request_log(reqid,request,'Clone request' ))
             new_request_id = request_clone_slices(reqid,owner,new_short_description,new_ref,ordered_slices)
             results = {'success':True,'new_request':int(new_request_id)}
         except Exception, e:
@@ -190,34 +189,34 @@ def create_tarball_input(production_request_id):
     return result
 
 
-def request_update(request, rid=None):
+def request_update(request, reqid=None):
     if request.method == 'POST':
         try:
-            req = TRequest.objects.get(reqid=rid)
+            req = TRequest.objects.get(reqid=reqid)
             form = RequestUpdateForm(request.POST, instance=req)  # A form bound to the POST data
         except:
             return HttpResponseRedirect(reverse('prodtask:request_table'))
         if form.is_valid():
             # Process the data in form.cleaned_data
-            _logger.debug("Update request #%i: %s"%(int(rid), form.cleaned_data))
+            _logger.debug(form_request_log(reqid,request,'Update request: %s' % str(form.cleaned_data)))
             try:
                 req = TRequest(**form.cleaned_data)
                 req.save()
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(req.reqid,)))  # Redirect after POST
             except Exception,e :
-                 _logger.error("Problem with request update #%i: %s"%(int(rid), e))
+                 _logger.error("Problem with request update #%i: %s"%(int(reqid), e))
     else:
         try:
-            req = TRequest.objects.get(reqid=rid)
+            req = TRequest.objects.get(reqid=reqid)
             form = RequestUpdateForm(instance=req)
         except:
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return render(request, 'prodtask/_form.html', {
         'active_app': 'prodtask',
-        'pre_form_text': 'Updating of TRequest with ID = %s' % rid,
+        'pre_form_text': 'Updating of TRequest with ID = %s' % reqid,
         'form': form,
         'submit_url': 'prodtask:request_update',
-        'url_args': rid,
+        'url_args': reqid,
         'parent_template': 'prodtask/_index.html',
     })
 

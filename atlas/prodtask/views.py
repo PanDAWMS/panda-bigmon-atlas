@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 import time
+from ..prodtask.helper import form_request_log
 from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
 
@@ -537,7 +538,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
     try:
         data = request.body
         slice_steps = json.loads(data)
-        _logger.debug("Steps modification for: %s" % slice_steps)
+        _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
         slices = slice_steps.keys()
         fail_slice_save = save_slice_changes(reqid, slice_steps)
         for slice, steps_status in slice_steps.items():
@@ -762,6 +763,7 @@ def make_test_request(request, reqid):
     results = {}
     if request.method == 'POST':
         try:
+            _logger.debug(form_request_log(reqid,request,'Make as test'))
             cur_request = TRequest.objects.get(reqid=reqid)
             cur_request.cstatus = 'test'
             cur_request.save()
