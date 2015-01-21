@@ -46,7 +46,7 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             else:
                 make_link = False
             step_from = int(step_from)
-            clone_slices(reqid,reqid,ordered_slices,step_from,make_link)
+            clone_slices(reqid,reqid,ordered_slices,step_from,make_link,True)
             results = {'success':True}
         except Exception,e:
             pass

@@ -63,7 +63,7 @@ def close_deft_ref(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link):
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False):
         ordered_slices = map(int,slices)
         ordered_slices.sort()
         #form levels from input text lines
@@ -85,6 +85,9 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link)
             new_slice['request'] = request_destination
             new_input_data = InputRequestList(**new_slice)
             new_input_data.save()
+            if fill_slice_from:
+                new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
+                new_input_data.save()
             step_execs = StepExecution.objects.filter(slice=current_slice)
             ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
             if request_source.request_type == 'MC':

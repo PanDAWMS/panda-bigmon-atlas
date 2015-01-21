@@ -912,6 +912,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             edit_mode = True
             fully_approved = 0
             hidden_slices = 0
+            input_list_index = {}
             if not input_lists_pre:
                 edit_mode = True
             else:
@@ -1021,12 +1022,20 @@ def request_table_view(request, rid=None, show_hidden=False):
                         slice_dict = model_to_dict(slice)
                         if not slice_dict['dataset']:
                             slice_dict['dataset'] = ''
+                        input_list_index.update({slice_dict['id']:len(input_lists)})
+                        cloned = 'no'
+                        if slice_dict['cloned_from']:
+                            if slice_dict['cloned_from'] in input_list_index:
+                               temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
+                               temp_list[6] = str(slice_dict['slice'])
+                               input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                         if another_chain_step_dict:
                             input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered)))
+                                                show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned))
                         else:
                             input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                show_task,'',approve_level(slice_steps_ordered)))
+                                                show_task,'',approve_level(slice_steps_ordered),cloned))
+
                         if (not show_task)or(fully_approved<total_slice):
                             edit_mode = True
                     else:
@@ -1075,12 +1084,19 @@ def request_table_view(request, rid=None, show_hidden=False):
                         slice_dict =  model_to_dict(slice)
                         if not slice_dict['dataset']:
                             slice_dict['dataset'] = ''
+                        input_list_index.update({slice_dict['id']:len(input_lists)})
+                        cloned = 'no'
+                        if slice_dict['cloned_from']:
+                            if slice_dict['cloned_from'] in input_list_index:
+                               temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
+                               temp_list[6] = str(slice_dict['slice'])
+                               input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                         if another_chain_step:
                             input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
-                                                another_chain_step['id'], approve_level(slice_steps)))
+                                                another_chain_step['id'], approve_level(slice_steps),cloned))
                         else:
                             input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
-                                                approve_level(slice_steps)))
+                                                approve_level(slice_steps),cloned))
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]

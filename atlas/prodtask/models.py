@@ -243,6 +243,7 @@ class InputRequestList(models.Model):
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
     is_hide = models.NullBooleanField(db_column='HIDED', null=True, blank=False)
+    cloned_from = models.ForeignKey('self',db_column='CLONED_FROM', null=True)
 
     def save(self, *args, **kwargs):
         if not self.id:

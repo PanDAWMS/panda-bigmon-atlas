@@ -1372,7 +1372,7 @@ var lastChecked = true;
 </div>
 
     <div >
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -1388,7 +1388,12 @@ var lastChecked = true;
                         </span>
                     </td>
                     <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
+                    {% if cloned != 'no' %}
+                        <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
+                    {% else %}
+                        <td></td>
+                    {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
                         <span class='showFullSpan changejobOption{{ inputList.slice }}' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
@@ -1396,9 +1401,10 @@ var lastChecked = true;
                         </span>
                     </td>
                     <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" >{{ inputList.dataset }}</span></td>
+                    <td></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
-            <td></td>
+
             </tr>
             {% if  not not_use_input_date_for_pattern %}
               <tr>
@@ -1408,7 +1414,12 @@ var lastChecked = true;
                         </span>
                     </td>
                     <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td>
-               <td></td>
+                   {% if cloned != 'no' %}
+                        <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
+
+                    {% else %}
+                        <td></td>
+                    {% endif %}
               </tr>
             {% endif %}
             <tr>
