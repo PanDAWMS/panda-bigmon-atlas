@@ -251,7 +251,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         });
 
     $("#tagFormatSelect").change(function(){return tagFormatChange()});
-    refreshTagFormats(null);
+    {% if not show_as_huge %}
+        refreshTagFormats(null);
+    {% endif %}
 });
 
     var csrftoken = $.cookie('csrftoken');
@@ -272,10 +274,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         var toChangeDatasets = [];
         var startFindig = false;
         var sendData = Object();
+        var doReload = false;
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
                 var existSkipped = false;
+                if (sliceID == '-1'){
+                    doReload = true;
+                }
                     if (! sendData[sliceID]){
                         sendData[sliceID] = Object();
                     }
@@ -396,6 +402,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                            $("#approveDialog").append($('<p/>').html(notChangedSlices.length+'Slices were not changed: '+notChangedSlices.toString()));
                                        }
                                    }
+                                    if(doReload){
+                                        location.reload();
+                                    }
                                    if(isApprove){
                                        $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
@@ -929,7 +938,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
-
+            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });
             return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
         }
 
@@ -1329,6 +1338,30 @@ var lastChecked = true;
 <div id="wrongSlice" class="alert-box alert round" style="display: none"><strong >Error: </strong>
 <span> Check these slices: </span><span id="wrongSliceString"></span></div>
 
+{% if show_as_huge %}
+    <div>
+    <div class="row" >
+        <div class="large-12 column">Steps:</div>
+    </div>
+    <div class="row" >
+        <div class="large-2 column">Total steps: {{ total_steps }} </div>
+        <div class="large-3 column">steps approved: {{ approved_steps }} </div>
+        <div class="large-8 column"></div>
+    </div>
+    <div class="row" >
+        <div class="large-12 column">Tasks:</div>
+    </div>
+    <div class="row" >
+        <div class="large-3 column"><span style="color: red">failed/broken/aborted {{ total_tasks.red }} </span></div>
+        <div class="large-2 column"><span style="color: green">done {{ total_tasks.done }} </span> </div>
+        <div class="large-2 column"><span style="color: green">finished {{ total_tasks.finished }} </span> </div>
+        <div class="large-2 column"><span style="color: greenyellow">running {{ total_tasks.running }} </span> </div>
+        <div class="large-2 column"><span style="color: blue">other states {{ total_tasks.finished }} </span> </div>
+        <div class="large-1 column"> </div>
+    </div>
+    </div>
+
+{% endif %}
 
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
@@ -1615,7 +1648,7 @@ var lastChecked = true;
  </form>
 {#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
 
-
+{% if not show_as_huge %}
 <form>
     <div class="row">
         <div class="large-8 columns">
@@ -1705,7 +1738,7 @@ var lastChecked = true;
        </div>
     </div>
 </form>
-
+{% endif %}
 {#<div id="sliceModal" class="reveal-modal" data-reveal>#}
 {#  <h2 id="sliceNumberModal"></h2>#}
 {#  <dl class="tabs" data-tab>#}

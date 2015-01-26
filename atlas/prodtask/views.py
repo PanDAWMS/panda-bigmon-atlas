@@ -3,6 +3,7 @@ from django.forms import model_to_dict
 import json
 import logging
 import os
+from copy import deepcopy
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -506,9 +507,34 @@ def remove_input(good_slices, reqid):
     return removed_input_slices
 
 
+def fill_all_slices_from_0_slice(reqid):
+    slices = InputRequestList.objects.filter(request=reqid).order_by('slice')
+    steps_slice_0 = list(StepExecution.objects.filter(request = reqid,slice=slices[0]))
+    steps_total_count = StepExecution.objects.filter(request = reqid).count()
+    if len(steps_slice_0) == steps_total_count:
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(steps_slice_0)
+        #steps_dict = [model_to_dict(x) for x in ordered_existed_steps]
+        for step in ordered_existed_steps:
+            step.id = None
+            step.step_parent = step
+
+        for slice in slices:
+            if slice.slice != 0:
+                parent = None
+                for step_dict in ordered_existed_steps:
+                    current_step = deepcopy(step_dict)
+                    current_step.slice = slice
+                    if parent:
+                        current_step.step_parent = parent
+                    current_step.save()
+                    if not parent:
+                        current_step.step_parent = current_step
+                    parent = current_step
+
 def save_slice_changes(reqid, slice_steps):
     not_changed = []
     for slice_number, steps_status in slice_steps.items():
+        if slice_number != '-1':
             if steps_status['changes']:
                 do_action = False
                 for field in ['jobOption','datasetName','eventsNumber']:
@@ -559,53 +585,68 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         if not missing_tags:
             _logger.debug("Start steps save/approval")
             req = TRequest.objects.get(reqid=reqid)
-
-            if not (req.manager) or (req.manager == 'None'):
-                missing_tags.append('No manager name!')
-            else:
-                removed_input = []
-                if req.request_type == 'MC':
-                    for steps_status in slice_steps.values():
-                        for index,steps in enumerate(steps_status[:-2]):
-                            if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
-                                if not steps['formats']:
-                                    steps['formats'] = 'AOD'
-                    error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
-                    good_slices = [int(x) for x in slices if int(x) not in error_slices]
-                    removed_input = remove_input(good_slices,reqid)
+            removed_input = []
+            if ['-1'] == slice_steps.keys():
+                slice_0 = deepcopy(slice_steps['-1'])
+                error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level)
+                approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
+                if (0 not in error_slices) and (approved_steps == 0):
+                    fill_all_slices_from_0_slice(reqid)
                 else:
-                    error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                    slice_count = InputRequestList.objects.filter(request=reqid).count()
+                    extended_slice_steps = {}
+                    for i in range(1,slice_count):
+                        extended_slice_steps.update({str(i):deepcopy(slice_0)})
+                    error_slices, no_action_slices = create_steps(extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
+            else:
+                if '-1' in  slice_steps.keys():
+                    del slice_steps['-1']
+                if not (req.manager) or (req.manager == 'None'):
+                    missing_tags.append('No manager name!')
+                else:
+                    removed_input = []
+                    if req.request_type == 'MC':
+                        for steps_status in slice_steps.values():
+                            for index,steps in enumerate(steps_status[:-2]):
+                                if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
+                                        if not steps['formats']:
+                                            steps['formats'] = 'AOD'
+                        error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                        good_slices = [int(x) for x in slices if int(x) not in error_slices]
+                        removed_input = remove_input(good_slices,reqid)
+                    else:
+                        error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
-                if (req.cstatus.lower() != 'test') and (approve_level>=0):
-                    req.cstatus = request_approve_status(req,request)
-                    req.save()
-                    owner='default'
-                    try:
-                        owner = request.user.username
-                    except:
-                        pass
-                    if not owner:
+                    if (req.cstatus.lower() != 'test') and (approve_level>=0):
+                        req.cstatus = request_approve_status(req,request)
+                        req.save()
                         owner='default'
-                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
-                                                   status=req.cstatus)
-                    request_status.save_with_current_time()
-                if req.request_type == 'MC':
+                        try:
+                            owner = request.user.username
+                        except:
+                            pass
+                        if not owner:
+                            owner='default'
+                        request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
+                                                       status=req.cstatus)
+                        request_status.save_with_current_time()
+                    if req.request_type == 'MC':
 
-                    for slice, new_dataset in slice_new_input.items():
-                        if new_dataset:
-                            input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
-                            input_list.dataset = fill_dataset(new_dataset)
-                            input_list.save()
-                results = {'missing_tags': missing_tags,
-                           'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
-                           'wrong_slices':wrong_skipping_slices,
-                           'double_trf':old_double_trf, 'error_slices':error_slices,
-                           'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
-                           'removed_input':removed_input, 'fail_slice_save':''}
+                        for slice, new_dataset in slice_new_input.items():
+                            if new_dataset:
+                                input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
+                                input_list.dataset = fill_dataset(new_dataset)
+                                input_list.save()
+                    results = {'missing_tags': missing_tags,
+                               'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
+                               'wrong_slices':wrong_skipping_slices,
+                               'double_trf':old_double_trf, 'error_slices':error_slices,
+                               'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
+                               'removed_input':removed_input, 'fail_slice_save':''}
         else:
-            _logger.debug("Some tags are missing: %s" % missing_tags)
+                _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
-        _logger.error("Problem with step modifiaction: %s" % e)
+            _logger.error("Problem with step modifiaction: %s" % e)
 
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -870,21 +911,8 @@ def request_table_view(request, rid=None, show_hidden=False):
         try:
             cur_request = TRequest.objects.get(reqid=rid)
             #steps_db =
-            step_templates_set = set()
-            steps_db = list(StepExecution.objects.filter(request=rid).values())
-            steps = {}
-            for current_step in steps_db:
-                steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
-                step_templates_set.add(current_step['step_template_id'])
-            tasks = {}
-            tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('id').values())
-            for current_task in tasks_db:
-                tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
-            step_templates = {}
-            for step_template in step_templates_set:
-                step_templates[step_template] = StepTemplate.objects.get(id=step_template)
-            # for current_step in steps_db:
-            #     steps[current_step.slice] = steps.get(current_step.slice,[]).append(current_step)
+            _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
+
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
                 pattern_list_name = [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in STEPS_LIST])]
@@ -899,7 +927,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
 
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
-            input_lists_pre = InputRequestList.objects.filter(request=cur_request).order_by('slice')
+            input_lists_pre = list(InputRequestList.objects.filter(request=cur_request).order_by('slice'))
             input_list_count = InputRequestList.objects.filter(request=cur_request).count()
             # input_lists - list of tuples for end to form.
             # tuple format:
@@ -915,6 +943,10 @@ def request_table_view(request, rid=None, show_hidden=False):
             fully_approved = 0
             hidden_slices = 0
             input_list_index = {}
+            total_task_dict = {}
+            total_steps_count = 0
+            approved_steps_count = 0
+            show_as_huge = False
             if not input_lists_pre:
                 edit_mode = True
             else:
@@ -931,133 +963,194 @@ def request_table_view(request, rid=None, show_hidden=False):
                             slice_pattern = input_lists_pre[0].dataset.name.split('.')
                         else:
                             slice_pattern = ''
+                failed_slices = set()
+                cloned_slices = []
+                do_all = True
+                do_cloned_and_failed = False
+                if (input_list_count>8) and (cur_request.request_type == 'MC'):
 
-                for slice in input_lists_pre:
-                    if (not show_hidden) and slice.is_hide:
-                        hidden_slices += 1
-                        continue
-                    #step_execs = StepExecution.objects.filter(slice=slice)
-
-                    #step_execs = [x for x in steps if x.slice == slice]
-                    try:
-                        step_execs = steps[slice.id]
-                    except:
-                        step_execs = []
-
-                    slice_steps = {}
-                    total_slice += 1
-                    show_task = False
-                    # creating a pattern
-                    if input_list_count < 50:
-                        if use_input_date_for_pattern:
-                            if slice.input_data:
-                                current_slice_pattern = slice.input_data.split('.')
-                            else:
-                                current_slice_pattern=''
+                    show_as_huge = True
+                    do_all = False
+                    pattern_steps = StepExecution.objects.filter(request=rid, slice=input_lists_pre[0])
+                    total_task_dict['red'] = 0
+                    total_task_dict['done'] = 0
+                    total_task_dict['finished'] = 0
+                    total_task_dict['blue'] = 0
+                    total_task_dict['running'] = 0
+                    total_task_dict['total'] = ProductionTask.objects.filter(request=rid).count()
+                    if total_task_dict['total'] != 0:
+                        failed_task_list = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted']),Q(request=cur_request))
+                        total_task_dict['red'] = len(failed_task_list)
+                        total_task_dict['done'] = ProductionTask.objects.filter(Q(status='done'),Q(request=cur_request)).count()
+                        total_task_dict['finished'] = ProductionTask.objects.filter(Q(status='finished'),Q(request=cur_request)).count()
+                        total_task_dict['running'] = ProductionTask.objects.filter(Q(status='running'),Q(request=cur_request)).count()
+                        total_task_dict['blue'] = total_task_dict['total'] - (total_task_dict['red'] +  total_task_dict['done'] + total_task_dict['finished'] + total_task_dict['running'])
+                    #Find slices with broken slices
+                    if (total_task_dict['red']>0)and(total_task_dict['red']<600):
+                        map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list)
+                        cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
+                        do_cloned_and_failed = True
+                    input_lists_pre_pattern = deepcopy(input_lists_pre[0])
+                    total_steps_count = StepExecution.objects.filter(request=rid).count()
+                    approved_steps_count = StepExecution.objects.filter(request=rid, status='Approved').count()
+                    steps = {}
+                    for step in pattern_steps:
+                        steps[step.step_template.step] = step
+                    slice_steps_ordered = []
+                    input_lists_pre_pattern.input_data = '=> %i slices <=' % input_list_count
+                    input_lists_pre_pattern.slice = '-1'
+                    for step_name in StepExecution.STEPS:
+                        if step_name not in steps:
+                            slice_steps_ordered.append(form_step_obj({},{},-1))
                         else:
-                            if slice.dataset:
-                                current_slice_pattern = slice.dataset.name.split('.')
-                            else:
-                                current_slice_pattern=''
+                            step_dict = model_to_dict(steps[step_name])
+                            step_dict.update({'ctag':steps[step_name].step_template.ctag})
+                            step_dict.update({'slice':input_lists_pre_pattern})
+                            slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
+                    approved = (total_steps_count >= input_list_count) and ((approve_level(slice_steps_ordered)*input_list_count)==(approved_steps_count))
 
-                        if current_slice_pattern:
-                            for index,token in enumerate(current_slice_pattern):
-                                if index >= len(slice_pattern):
-                                    slice_pattern.append(token)
-                                else:
-                                    if token!=slice_pattern[index]:
-                                        slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
-                                        slice_pattern[index] += '*'
-                    # Creating step dict
-                    slice_steps_list = []
-                    temp_step_list = []
-                    another_chain_step = None
-                    for step in step_execs:
-                        step_task = []
-                        try:
-                            step_task = tasks[step['id']]
-
-                        except Exception,e:
-                            step_task = []
-
-                        if step_task:
-                            show_task = True
-                        ctag = step_templates[step['step_template_id']].ctag
-                        step_name = step_templates[step['step_template_id']].step
-                        step.update({'ctag':ctag})
-                        if cur_request.request_type == 'MC':
-
-                            slice_steps.update({step_name:form_step_obj(step,step_task,slice.slice)})
-
-                        else:
-
-                            if step['id'] == step['step_parent_id']:
-                                slice_steps_list.append((step['id'],form_step_obj(step,step_task,slice.slice)))
-                            else:
-                                temp_step_list.append((step,step_task))
-                    if cur_request.request_type == 'MC':
-                        first_step = True
-                        slice_steps_ordered = []
-                        another_chain_step_dict = {}
-                        for step_name in StepExecution.STEPS:
-                            if step_name not in slice_steps:
-                                slice_steps_ordered.append(form_step_obj({},{},slice.slice))
-                            else:
-                                slice_steps_ordered.append(slice_steps[step_name])
-                                if first_step:
-                                    first_step = False
-                                    if slice_steps[step_name]['step']['id'] != slice_steps[step_name]['step']['step_parent_id']:
-                                        another_chain_step = StepExecution.objects.get(id=slice_steps[step_name]['step']['step_parent_id'])
-                                        another_chain_step_dict = model_to_dict(another_chain_step)
-                                        another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
-                                        another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
-                                        slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
-                                                                                                 ,{}, another_chain_step.slice.slice,
-                                                                                              True)
-                        #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
-                        approved = get_approve_status(slice_steps_ordered)
-
-                        if (approved == 'approved')or(approved == 'partially_approved'):
-                                approved_count += 1
-                        if (approved == 'approved'):
-                            fully_approved +=1
-                        slice_dict = model_to_dict(slice)
-                        if not slice_dict['dataset']:
-                            slice_dict['dataset'] = ''
-                        input_list_index.update({slice_dict['id']:len(input_lists)})
-                        cloned = 'no'
-                        if slice_dict['cloned_from']:
-                            if slice_dict['cloned_from'] in input_list_index:
-                               temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
-                               temp_list[6] = str(slice_dict['slice'])
-                               input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
-                        if another_chain_step_dict:
-                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned))
-                        else:
-                            input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                show_task,'',approve_level(slice_steps_ordered),cloned))
-
-                        if (not show_task)or(fully_approved<total_slice):
-                            edit_mode = True
+                    slice_dict = model_to_dict(input_lists_pre_pattern)
+                    slice_dict['dataset'] = ''
+                    if approved:
+                        input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,input_lists_pre_pattern),
+                                            False,'',approve_level(slice_steps_ordered),'no'))
                     else:
-                        i = 0
-                        if not(slice_steps_list) and (len(temp_step_list) == 1):
-                            if temp_step_list[0][0]['step_parent_id'] != temp_step_list[0][0]['id']:
-                                # step in other chain
-                                another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
-                                another_chain_step = model_to_dict(another_chain_step_obj)
-                                another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
-                                slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
-                                                                                              another_chain_step_obj.slice.slice,
-                                                                                              True)))
-                            slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],slice.slice)))
-                            temp_step_list.pop(0)
-                        if not slice_steps_list:
-                            step_id_list = [x[0]['id'] for x in temp_step_list]
-                            # find a root of chain
-                            for index,current_step in enumerate(temp_step_list):
-                                if current_step[0]['step_parent_id'] not in step_id_list:
+                        input_lists.append((slice_dict, slice_steps_ordered, 'not_approved',
+                                            False,'',-1,'no'))
+                if do_all or do_cloned_and_failed:
+                    if do_all or ((len(cloned_slices)+len(failed_slices))>80):
+                        steps_db = list(StepExecution.objects.filter(request=rid).values())
+
+                    else:
+                        steps_db = list(StepExecution.objects.filter(Q(request=rid),Q(slice_id__in=cloned_slices+list(failed_slices))).values())
+                    tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
+                    step_templates_set = set()
+                    steps = {}
+                    for current_step in steps_db:
+                        steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
+                        step_templates_set.add(current_step['step_template_id'])
+                    tasks = {}
+
+                    for current_task in tasks_db:
+                        tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
+                    step_templates = {}
+                    for step_template in step_templates_set:
+                        step_templates[step_template] = StepTemplate.objects.get(id=step_template)
+                    for slice in input_lists_pre:
+                        if (not show_hidden) and slice.is_hide:
+                            hidden_slices += 1
+                            continue
+                        if (do_cloned_and_failed):
+                            if slice.id not in (cloned_slices+list(failed_slices)):
+                                continue
+                        #step_execs = StepExecution.objects.filter(slice=slice)
+
+                        #step_execs = [x for x in steps if x.slice == slice]
+                        try:
+                            step_execs = steps[slice.id]
+                        except:
+                            step_execs = []
+
+                        slice_steps = {}
+                        total_slice += 1
+                        show_task = False
+                        # creating a pattern
+                        if input_list_count < 50:
+                            if use_input_date_for_pattern:
+                                if slice.input_data:
+                                    current_slice_pattern = slice.input_data.split('.')
+                                else:
+                                    current_slice_pattern=''
+                            else:
+                                if slice.dataset:
+                                    current_slice_pattern = slice.dataset.name.split('.')
+                                else:
+                                    current_slice_pattern=''
+
+                            if current_slice_pattern:
+                                for index,token in enumerate(current_slice_pattern):
+                                    if index >= len(slice_pattern):
+                                        slice_pattern.append(token)
+                                    else:
+                                        if token!=slice_pattern[index]:
+                                            slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
+                                            slice_pattern[index] += '*'
+                        # Creating step dict
+                        slice_steps_list = []
+                        temp_step_list = []
+                        another_chain_step = None
+                        for step in step_execs:
+                            step_task = []
+                            try:
+                                step_task = tasks[step['id']]
+
+                            except Exception,e:
+                                step_task = []
+
+                            if step_task:
+                                show_task = True
+                            ctag = step_templates[step['step_template_id']].ctag
+                            step_name = step_templates[step['step_template_id']].step
+                            step.update({'ctag':ctag})
+                            if cur_request.request_type == 'MC':
+
+                                slice_steps.update({step_name:form_step_obj(step,step_task,slice.slice)})
+
+                            else:
+
+                                if step['id'] == step['step_parent_id']:
+                                    slice_steps_list.append((step['id'],form_step_obj(step,step_task,slice.slice)))
+                                else:
+                                    temp_step_list.append((step,step_task))
+                        if cur_request.request_type == 'MC':
+                            first_step = True
+                            slice_steps_ordered = []
+                            another_chain_step_dict = {}
+                            for step_name in StepExecution.STEPS:
+                                if step_name not in slice_steps:
+                                    slice_steps_ordered.append(form_step_obj({},{},slice.slice))
+                                else:
+                                    slice_steps_ordered.append(slice_steps[step_name])
+                                    if first_step:
+                                        first_step = False
+                                        if slice_steps[step_name]['step']['id'] != slice_steps[step_name]['step']['step_parent_id']:
+                                            another_chain_step = StepExecution.objects.get(id=slice_steps[step_name]['step']['step_parent_id'])
+                                            another_chain_step_dict = model_to_dict(another_chain_step)
+                                            another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
+                                            another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
+                                            slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
+                                                                                                     ,{}, another_chain_step.slice.slice,
+                                                                                                  True)
+                            #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
+                            approved = get_approve_status(slice_steps_ordered)
+
+                            if (approved == 'approved')or(approved == 'partially_approved'):
+                                    approved_count += 1
+                            if (approved == 'approved'):
+                                fully_approved +=1
+                            slice_dict = model_to_dict(slice)
+                            if not slice_dict['dataset']:
+                                slice_dict['dataset'] = ''
+                            input_list_index.update({slice_dict['id']:len(input_lists)})
+                            cloned = 'no'
+                            if slice_dict['cloned_from']:
+                                if slice_dict['cloned_from'] in input_list_index:
+                                   temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
+                                   temp_list[6] = str(slice_dict['slice'])
+                                   input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
+                            if another_chain_step_dict:
+                                input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
+                                                    show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned))
+                            else:
+                                input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
+                                                    show_task,'',approve_level(slice_steps_ordered),cloned))
+
+                            if (not show_task)or(fully_approved<total_slice):
+                                edit_mode = True
+                        else:
+                            i = 0
+                            if not(slice_steps_list) and (len(temp_step_list) == 1):
+                                if temp_step_list[0][0]['step_parent_id'] != temp_step_list[0][0]['id']:
                                     # step in other chain
                                     another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
                                     another_chain_step = model_to_dict(another_chain_step_obj)
@@ -1065,40 +1158,54 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
                                                                                                   another_chain_step_obj.slice.slice,
                                                                                                   True)))
-                                    slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],slice.slice)))
-                                    temp_step_list.pop(index)
+                                slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],slice.slice)))
+                                temp_step_list.pop(0)
+                            if not slice_steps_list:
+                                step_id_list = [x[0]['id'] for x in temp_step_list]
+                                # find a root of chain
+                                for index,current_step in enumerate(temp_step_list):
+                                    if current_step[0]['step_parent_id'] not in step_id_list:
+                                        # step in other chain
+                                        another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
+                                        another_chain_step = model_to_dict(another_chain_step_obj)
+                                        another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
+                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                                                                                      another_chain_step_obj.slice.slice,
+                                                                                                      True)))
+                                        slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],slice.slice)))
+                                        temp_step_list.pop(index)
 
 
-                        for i in range(len(temp_step_list)):
-                            j = 0
-                            while (temp_step_list[j][0]['step_parent_id']!=slice_steps_list[-1][0]):
-                                j+=1
-                                if j >= len(temp_step_list):
-                                    raise ValueError('Not linked chain')
-                                    #break
-                            slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],slice.slice)))
+                            for i in range(len(temp_step_list)):
+                                j = 0
+                                while (temp_step_list[j][0]['step_parent_id']!=slice_steps_list[-1][0]):
+                                    j+=1
+                                    if j >= len(temp_step_list):
+                                        raise ValueError('Not linked chain')
+                                        #break
+                                slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],slice.slice)))
 
-                        edit_mode = True
-                        slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
-                        approved = get_approve_status(slice_steps[:len(slice_steps_list)])
-                        if (approved == 'approved')or(approved == 'partially_approved'):
-                                approved_count += 1
-                        slice_dict =  model_to_dict(slice)
-                        if not slice_dict['dataset']:
-                            slice_dict['dataset'] = ''
-                        input_list_index.update({slice_dict['id']:len(input_lists)})
-                        cloned = 'no'
-                        if slice_dict['cloned_from']:
-                            if slice_dict['cloned_from'] in input_list_index:
-                               temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
-                               temp_list[6] = str(slice_dict['slice'])
-                               input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
-                        if another_chain_step:
-                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
-                                                another_chain_step['id'], approve_level(slice_steps),cloned))
-                        else:
-                            input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
-                                                approve_level(slice_steps),cloned))
+                            edit_mode = True
+                            slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
+                            approved = get_approve_status(slice_steps[:len(slice_steps_list)])
+                            if (approved == 'approved')or(approved == 'partially_approved'):
+                                    approved_count += 1
+                            slice_dict =  model_to_dict(slice)
+                            if not slice_dict['dataset']:
+                                slice_dict['dataset'] = ''
+                            input_list_index.update({slice_dict['id']:len(input_lists)})
+                            cloned = 'no'
+                            if slice_dict['cloned_from']:
+                                if slice_dict['cloned_from'] in input_list_index:
+                                   temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
+                                   temp_list[6] = str(slice_dict['slice'])
+                                   input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
+                            if another_chain_step:
+                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
+                                                    another_chain_step['id'], approve_level(slice_steps),cloned))
+                            else:
+                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
+                                                    approve_level(slice_steps),cloned))
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
@@ -1109,6 +1216,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     jira_problem_link = cur_request.jira_reference
             else:
                 has_deft_problem = False
+            _logger.debug(form_request_log(rid,request,'Finish prepare data fro request page'))
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -1125,7 +1233,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                'not_use_input_date_for_pattern':not use_input_date_for_pattern,
                'has_deft_problem':has_deft_problem,
                'jira_problem_link':jira_problem_link,
-               'hidden_slices':hidden_slices
+               'hidden_slices':hidden_slices,
+               'total_tasks': total_task_dict,
+               'show_as_huge': show_as_huge,
+               'approved_steps': approved_steps_count,
+               'total_steps' : total_steps_count
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

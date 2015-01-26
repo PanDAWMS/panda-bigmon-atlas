@@ -4,10 +4,37 @@ from django.db import models
 from django.db import connection
 from django.db import connections
 from django.utils import timezone
+from ..prodtask.helper import Singleton
+
+
+class sqliteID(Singleton):
+    def get_id(self,cursor,id_field_name,table_name):
+        if (id_field_name+table_name) in self.__id_dict.keys():
+            self.__id_dict[id_field_name+table_name] = self.__id_dict[id_field_name+table_name] + 1
+        else:
+            self.__id_dict[id_field_name+table_name] = self.__get_first_id(cursor,id_field_name,table_name)
+        return self.__id_dict[id_field_name+table_name]
+
+    def __get_first_id(self, cursor, id_field_name,table_name):
+        new_id = None
+        try:
+            query = "SELECT MAX(%s) AS max_id FROM %s"%(id_field_name,table_name)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            if not(rows[0][0]):
+                new_id = 1
+            else:
+                new_id = rows[0][0] + 1
+        finally:
+            if cursor:
+                cursor.close()
+        return new_id
+
+    def __init__(self):
+        self.__id_dict = {}
 
 def prefetch_id(db, seq_name, table_name=None, id_field_name=None):
     """ Fetch the next value in a django id oracle sequence """
-    conn =  connections[db]
     cursor = connections[db].cursor()
     new_id = None
     if cursor.db.client.executable_name != 'sqlite3':
@@ -22,18 +49,8 @@ def prefetch_id(db, seq_name, table_name=None, id_field_name=None):
                 cursor.close()
     else:
         #only for tests
-        try:
-            query = "SELECT MAX(%s) AS max_id FROM %s"%(id_field_name,table_name)
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            if not(rows[0][0]):
-                new_id = 1
-            else:
-                new_id = rows[0][0] + 1
-
-        finally:
-            if cursor:
-                cursor.close()
+        sqlite_id = sqliteID.getInstance()
+        new_id = sqlite_id.get_id(cursor, id_field_name, table_name)
     return new_id
 
 class TProject(models.Model):

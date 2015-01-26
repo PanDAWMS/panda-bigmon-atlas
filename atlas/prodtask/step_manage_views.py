@@ -40,6 +40,8 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
             ordered_slices = map(int,slices)
             _logger.debug(form_request_log(reqid,request,'Clone slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
@@ -74,6 +76,8 @@ def reject_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))
             for slice_number in slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
@@ -90,6 +94,8 @@ def hide_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
             for slice_number in slices:
                 current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
@@ -323,6 +329,8 @@ def slice_steps(request, reqid, slice_number):
     if request.method == 'GET':
         results = {'success':False}
         try:
+            if slice_number == '-1':
+                slice_number = 0
             req = TRequest.objects.get(reqid=reqid)
             input_list = InputRequestList.objects.get(request=req,slice=slice_number)
             existed_steps = StepExecution.objects.filter(request=req, slice=input_list)
