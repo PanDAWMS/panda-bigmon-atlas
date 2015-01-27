@@ -186,15 +186,15 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
     """
     def events_per_input_file(index, STEPS, task_config, parent_step):
         if index == 0:
-            task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+            task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
         else:
             if parent_step:
-                if json.loads(parent_step.task_config).get('nEventsPerJob',''):
-                    task_config.update({'nEventsPerInputFile':int(json.loads(parent_step.task_config)['nEventsPerJob'])})
+                if 'nEventsPerJob' in json.loads(parent_step.task_config):
+                    task_config.update({'nEventsPerInputFile': json.loads(parent_step.task_config)['nEventsPerJob']})
                 else:
-                    task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'-1')})
+                    task_config.update({'nEventsPerInputFile': get_default_nEventsPerJob_dict().get(parent_step.step_template.step,'')})
             else:
-                task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'-1')})
+                task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index-1],'')})
 
     try:
         APPROVED_STATUS = ['Skipped','Approved']
@@ -325,7 +325,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             task_config = {'maxAttempt':15}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
-                                task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'-1')})
+                                task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
                                 events_per_input_file(index,STEPS,task_config,parent_step)
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
@@ -529,6 +529,8 @@ def fill_all_slices_from_0_slice(reqid):
                     current_step.save()
                     if not parent:
                         current_step.step_parent = current_step
+                        current_step.input_events = slice.input_events
+                        current_step.save()
                     parent = current_step
 
 def save_slice_changes(reqid, slice_steps):
@@ -583,8 +585,15 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save}
         if not missing_tags:
+
             _logger.debug("Start steps save/approval")
             req = TRequest.objects.get(reqid=reqid)
+            if req.request_type == 'MC':
+                for steps_status in slice_steps.values():
+                    for index,steps in enumerate(steps_status[:-2]):
+                        if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
+                                if not steps['formats']:
+                                    steps['formats'] = 'AOD'
             removed_input = []
             if ['-1'] == slice_steps.keys():
                 slice_0 = deepcopy(slice_steps['-1'])
@@ -606,11 +615,6 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 else:
                     removed_input = []
                     if req.request_type == 'MC':
-                        for steps_status in slice_steps.values():
-                            for index,steps in enumerate(steps_status[:-2]):
-                                if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
-                                        if not steps['formats']:
-                                            steps['formats'] = 'AOD'
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
