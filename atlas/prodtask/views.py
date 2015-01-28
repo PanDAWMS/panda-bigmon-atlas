@@ -397,6 +397,9 @@ def get_step_input_type(ctag):
     return trtf.input
 
 
+
+
+
 def form_skipped_slice(slice, reqid):
     cur_request = TRequest.objects.get(reqid=reqid)
     input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
@@ -439,6 +442,26 @@ def form_skipped_slice(slice, reqid):
             logging.error("Can't find skipped dataset: %s" %str(e))
             return {}
     return {}
+
+
+def get_skipped_steps(production_request, slice):
+    existed_steps = StepExecution.objects.filter(request=production_request, slice=slice)
+    # Check steps which already exist in slice
+    try:
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+    except ValueError,e:
+        ordered_existed_steps, existed_foreign_step = [],None
+    processed_tags = []
+    last_step_name = ''
+    last_step = None
+    for step in ordered_existed_steps:
+        if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
+            processed_tags.append(step.step_template.ctag)
+            last_step_name = step.step_template.step
+        else:
+            last_step = step
+            break
+    return last_step_name, processed_tags, last_step
 
 
 @csrf_protect
@@ -550,14 +573,44 @@ def save_slice_changes(reqid, slice_steps):
                         else:
                             if steps_status['changes'].get('jobOption'):
                                 current_slice.input_data = steps_status['changes'].get('jobOption')
+                                current_slice.save()
                             if steps_status['changes'].get('datasetName'):
-                                current_slice.dataset = fill_dataset(steps_status['changes'].get('datasetName'))
+                                change_dataset_in_slice(reqid,slice_number,steps_status['changes'].get('datasetName'))
                             if steps_status['changes'].get('eventsNumber'):
                                 current_slice.input_events = steps_status['changes'].get('eventsNumber')
-                            current_slice.save()
+                                current_slice.save()
                     except Exception,e:
                         not_changed.append(slice)
     return []
+
+
+def find_input_per_file(dataset_name):
+    if 'tid' not in dataset_name:
+        to_search = dataset_name.replace('/','')[dataset_name.find(':')+1:]+'_tid%'
+    else:
+        to_search = dataset_name.replace('/','')[dataset_name.find(':')+1:]
+    try:
+        dataset = ProductionDataset.objects.extra(where=['name like %s'], params=[to_search]).first()
+        if dataset:
+            current_task = ProductionTask.objects.get(id=dataset.task_id)
+            return json.loads(current_task.step.task_config).get('nEventsPerJob','')
+    except Exception,e:
+        return ''
+
+
+
+
+def change_dataset_in_slice(req, slice, new_dataset_name):
+    input_list = InputRequestList.objects.get(request=req, slice=int(slice))
+    events_per_file = find_input_per_file(new_dataset_name)
+    dataset = fill_dataset(new_dataset_name)
+    input_list.dataset = dataset
+    input_list.save()
+    if events_per_file:
+        temp1, pattern_tags, approved_step = get_skipped_steps(req,input_list)
+        if json.loads(approved_step.task_config).get('nEventsPerInputFile','') != events_per_file:
+            approved_step.set_task_config({'nEventsPerInputFile':events_per_file})
+            approved_step.save()
 
 
 
@@ -621,32 +674,31 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     else:
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
-                    if (req.cstatus.lower() != 'test') and (approve_level>=0):
-                        req.cstatus = request_approve_status(req,request)
-                        req.save()
-                        owner='default'
-                        try:
-                            owner = request.user.username
-                        except:
-                            pass
-                        if not owner:
-                            owner='default'
-                        request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
-                                                       status=req.cstatus)
-                        request_status.save_with_current_time()
-                    if req.request_type == 'MC':
+            if (req.cstatus.lower() != 'test') and (approve_level>=0):
+                req.cstatus = request_approve_status(req,request)
+                req.save()
+                owner='default'
+                try:
+                    owner = request.user.username
+                except:
+                    pass
+                if not owner:
+                    owner='default'
+                request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
+                                               status=req.cstatus)
+                request_status.save_with_current_time()
+            if req.request_type == 'MC':
 
-                        for slice, new_dataset in slice_new_input.items():
-                            if new_dataset:
-                                input_list = InputRequestList.objects.filter(request=req, slice=int(slice))[0]
-                                input_list.dataset = fill_dataset(new_dataset)
-                                input_list.save()
-                    results = {'missing_tags': missing_tags,
-                               'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
-                               'wrong_slices':wrong_skipping_slices,
-                               'double_trf':old_double_trf, 'error_slices':error_slices,
-                               'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
-                               'removed_input':removed_input, 'fail_slice_save':''}
+                for slice, new_dataset in slice_new_input.items():
+                    if new_dataset:
+                        change_dataset_in_slice(req, int(slice), new_dataset)
+
+            results = {'missing_tags': missing_tags,
+                       'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
+                       'wrong_slices':wrong_skipping_slices,
+                       'double_trf':old_double_trf, 'error_slices':error_slices,
+                       'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
+                       'removed_input':removed_input, 'fail_slice_save':''}
         else:
                 _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:
