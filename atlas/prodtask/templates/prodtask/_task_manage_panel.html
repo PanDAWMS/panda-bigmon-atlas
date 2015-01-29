@@ -500,7 +500,7 @@ function doTasksActionSelected(action) {
 
     // TODO: add 'waiting' status while using DEFT API
     var status_active = ['registered', 'assigning', 'submitting', 'ready', 'running'];
-    var cascade_actions = ['kill', 'finish', 'increase_priority', 'decrease_priority'];
+    var cascade_actions = ['abort', 'finish', 'increase_priority', 'decrease_priority'];
     var actions_on_active = cascade_actions.concat( ['reassign_to_site', 'reassign_to_cloud'] );
 
     var parameters = [];
@@ -590,7 +590,7 @@ $(document).ready(function () {
 
     // Setting buttons handlers
     var button_action_map = {
-        "abort": "kill",
+        "abort": "abort",
         "finish": "finish",
         "obsolete": "obsolete",
         "set_priority": "change_priority",

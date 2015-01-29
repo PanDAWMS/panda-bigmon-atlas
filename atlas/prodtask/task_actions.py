@@ -12,7 +12,7 @@ _deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
 
 # Mapping between task actions and DEFT task actions
 _deft_actions = {
-    'kill': 'abort_task',
+    'abort': 'abort_task',
     'finish': 'finish_task',
     'change_priority': 'change_task_priority',
     'reassign_to_site': 'reassign_task_to_site',

@@ -180,7 +180,7 @@ def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,ob
                 #     res = do_action('mborodin',task_id,'obsolete')
                 # if not obsoleteOnly:
                 #     for task_id in aborts:
-                #         res = do_action('mborodin',str(task_id),'kill')
+                #         res = do_action('mborodin',str(task_id),'abort')
                 #         try:
                 #             if res['status']['jedi_info']['status_code']!=0:
                 #                 print res
