@@ -127,7 +127,15 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                     st.save()
                     return st
 
-def translate_excl_to_dict(excel_dict):      
+
+def format_check(format):
+    #TODO: implement regular expression for format
+    if format.find(',')>-1:
+        raise ValueError('Wrong format: %s'%format)
+
+
+
+def translate_excl_to_dict(excel_dict):
         return_list = []
         index = 0
         checked_rows = []
@@ -193,6 +201,7 @@ def translate_excl_to_dict(excel_dict):
                                 reduce_input_format = False
                             if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
                                 if translated_row.get('format', ''):
+                                    format_check(translated_row.get('format', ''))
                                     formats = 'AOD'+'.'+translated_row.get('format', '')
                                     reduce_input_format = True
                                 else:

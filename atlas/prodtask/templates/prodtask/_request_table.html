@@ -95,6 +95,13 @@
     </tr>
 
     <tr>
+        <td>Reference link:</td>
+        <td>
+            <input id="ref_link" />
+        </td>
+   </tr>
+
+    <tr>
         <td>Description:</td>
         <td>
             <input id="description" />
@@ -280,7 +287,14 @@
         {
             var row = data['aaData'][i];
 
-            row[1] = row[1]==''?'':'<a href="'+row[1]+'">link</a>';
+            // Extract JIRA ticket number if possible
+            var ref_as_num = row[1].match(/\/(\w+-\d+)\s*$/);
+            if (ref_as_num) {
+               row[1] = '<a href="' + row[1] + '">' + ref_as_num[1] + '</a>';
+            } else {
+                row[1] = row[1]==''?'' : '<a href="' + row[1] + '">link</a>';
+            }
+
             row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
             row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';
         }
