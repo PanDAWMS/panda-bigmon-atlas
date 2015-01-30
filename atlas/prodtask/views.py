@@ -420,21 +420,25 @@ def form_skipped_slice(slice, reqid):
         if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
             last_step_name = step.step_template.step
+
         else:
+            input_step_format = step.get_task_config('input_format')
             break
     if input_list.input_data and processed_tags:
         try:
             input_type = ''
-            if last_step_name == 'Evgen':
-                input_type = 'EVNT'
-            elif last_step_name == 'Simul':
-                input_type = 'simul.HITS'
-            elif last_step_name == 'Merge':
-                input_type = 'merge.HITS'
-            elif last_step_name == 'Reco':
-                input_type = 'recon.AOD'
-            elif last_step_name == 'Rec Merge':
-                input_type = 'merge.AOD'
+            default_input_type_prefix = {
+                'Evgen': {'format':'EVNT','prefix':''},
+                'Simul': {'format':'HITS','prefix':'simul.'},
+                'Merge': {'format':'HITS','prefix':'merge.'},
+                'Reco': {'format':'AOD','prefix':'recon.'},
+                'Rec Merge': {'format':'AOD','prefix':'merge.'}
+            }
+            if last_step_name in default_input_type_prefix:
+                if input_step_format:
+                    input_type = default_input_type_prefix[last_step_name]['prefix'] + input_step_format
+                else:
+                    input_type = default_input_type_prefix[last_step_name]['prefix'] + default_input_type_prefix[last_step_name]['format']
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)

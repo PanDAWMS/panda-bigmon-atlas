@@ -307,6 +307,13 @@ class StepExecution(models.Model):
         currrent_dict.update(update_dict)
         self.task_config = json.dumps(currrent_dict)
 
+    def get_task_config(self, field = None):
+        return_dict = json.loads(self.task_config)
+        if field:
+            return return_dict.get(field,None)
+        else:
+            return return_dict
+
     def save_with_current_time(self, *args, **kwargs):
         if not self.step_def_time:
             self.step_def_time = timezone.now()
