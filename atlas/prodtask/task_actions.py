@@ -23,7 +23,32 @@ _deft_actions = {
 }
 
 supported_actions = _deft_actions.keys()
+# Non-DEFT actions here
 supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
+
+# Allowed task actions per status
+allowed_task_actions = {
+    'waiting': ['abort', 'reassign', 'change_priority', 'change_parameters'],
+    'registered': [],
+    'assigning': [],
+    'submitting': [],
+    'ready': [],
+    'running': [],
+    'done': ['obsolete'],
+    'finished': ['retry', 'change_parameters', 'obsolete'],
+}
+
+# Actions for tasks in "active" states
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running']:
+    allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority', 'change_parameters', 'reassign'])
+# Extending actions by groups of them
+for _status in allowed_task_actions:
+    if 'change_priority' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['increase_priority', 'decrease_priority'])
+    if 'change_parameters' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time'])
+    if 'reassign' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud'])
 
 
 def do_action(owner, task_id, action, *args):
@@ -34,6 +59,8 @@ def do_action(owner, task_id, action, *args):
     if not action in supported_actions:
         result['exception'] = "Action '%s' is not supported" % action
         return result
+
+    # TODO: add a check whether action is allowed for task in this state
 
     if action in _deft_actions:
         result.update(_do_deft_action(owner, task_id, action, *args))
