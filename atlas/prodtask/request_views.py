@@ -1270,6 +1270,7 @@ def get_status_stat(qs):
 
 class Parameters(datatables.Parametrized):
     reqid = datatables.Parameter(label='Request ID')
+    ref_link = datatables.Parameter(label='Link')
     phys_group = datatables.Parameter(label='Physics group')
     campaign = datatables.Parameter(label='Campaign')
     manager = datatables.Parameter(label='Manager')
