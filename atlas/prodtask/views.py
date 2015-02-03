@@ -1012,6 +1012,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             show_as_huge = False
             if not input_lists_pre:
                 edit_mode = True
+                use_input_date_for_pattern = True
             else:
                 # choose how to form input data pattern: from jobOption or from input dataset
                 slice_pattern = '*'
