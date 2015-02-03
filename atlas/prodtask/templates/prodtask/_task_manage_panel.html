@@ -58,7 +58,7 @@
                     >Obsolete</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_change_parameters"
-                    {% if can_change_prio_task or not task.id %}
+                    {% if can_change_priority_task or can_change_parameters_task or not task.id %}
                         class="small radio button"
                         data-dropdown="task_change_parameters_menu"
                     {% else %}
