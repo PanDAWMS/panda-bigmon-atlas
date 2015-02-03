@@ -36,6 +36,8 @@ allowed_task_actions = {
     'running': [],
     'done': ['obsolete'],
     'finished': ['retry', 'change_parameters', 'obsolete'],
+    'broken': [],
+    'failed': [],
 }
 
 # Actions for tasks in "active" states
