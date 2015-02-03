@@ -58,7 +58,7 @@
                     >Obsolete</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_change_parameters"
-                    {% if can_change_prio_task or not task.id %}
+                    {% if can_change_priority_task or can_change_parameters_task or not task.id %}
                         class="small radio button"
                         data-dropdown="task_change_parameters_menu"
                     {% else %}
@@ -500,7 +500,7 @@ function doTasksActionSelected(action) {
 
     // TODO: add 'waiting' status while using DEFT API
     var status_active = ['registered', 'assigning', 'submitting', 'ready', 'running'];
-    var cascade_actions = ['kill', 'finish', 'increase_priority', 'decrease_priority'];
+    var cascade_actions = ['abort', 'finish', 'increase_priority', 'decrease_priority'];
     var actions_on_active = cascade_actions.concat( ['reassign_to_site', 'reassign_to_cloud'] );
 
     var parameters = [];
@@ -590,7 +590,7 @@ $(document).ready(function () {
 
     // Setting buttons handlers
     var button_action_map = {
-        "abort": "kill",
+        "abort": "abort",
         "finish": "finish",
         "obsolete": "obsolete",
         "set_priority": "change_priority",
