@@ -487,7 +487,7 @@ def find_input_datasets(request, reqid):
 
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin']
+MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta']
 
 def request_approve_status(production_request, request):
     if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
