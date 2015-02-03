@@ -14,6 +14,7 @@ from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest, TTask, ProductionDataset
+from .task_actions import allowed_task_actions
 
 from django.db.models import Count, Q
 
@@ -39,20 +40,15 @@ def task_details(request, rid=None):
        return HttpResponseRedirect('/')
 
    # TODO: check user permissions on the task (SB)
-   # TODO: handle actions for 'waiting' tasks (they're in DEFT, not yet in JEDI) (SB)
-   task_not_ended = (task.status in ['registered', 'assigning', 'submitting', 'ready', 'running'])
 
    permissions = {}
+   if task.status in allowed_task_actions:
+       for action in allowed_task_actions[task.status]:
+           permissions[action] = True
+
    # TODO: these actions are needed from DEFT and JEDI (SB)
    for action in ['edit', 'clone']:
        permissions[action] = False
-
-   permissions['obsolete'] = task.status in ['done', 'finished']
-   permissions['retry'] = task.status in ['finished']
-
-   for action in ['abort', 'finish', 'change_prio', 'reassign']:
-       permissions[action] = task_not_ended
-
 
    request_parameters = {
        'active_app' : 'prodtask',
