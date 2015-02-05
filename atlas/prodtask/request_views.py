@@ -131,6 +131,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination.save()
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
+    request_status.save()
     _logger.debug("New request: #%i"%(int(request_destination.reqid)))
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
