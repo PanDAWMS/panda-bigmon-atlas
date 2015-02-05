@@ -21,3 +21,10 @@ before all other backends.
 * Set FAKE_LOGIN_AS_USER = 'username' , pointing to the desired username existing
 in the database
 
+
+urls.py
+.......
+
+* Add (or change) the following lines for your login and logout urls:
+url(r'^login/$', 'auth.fake.views.login', name='login'),
+url(r'^logout/$', 'auth.fake.views.logout', name='logout'),
