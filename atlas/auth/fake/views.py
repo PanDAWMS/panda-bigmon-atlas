@@ -30,7 +30,7 @@ def login(request, redirect_field_name=REDIRECT_FIELD_NAME):
 
 @never_cache
 def logout(request, redirect_field_name=REDIRECT_FIELD_NAME):
-    "Logs out the user and redirects to another page."
+    """Logs out the user and redirects to another page."""
 
     auth.logout(request)
 
