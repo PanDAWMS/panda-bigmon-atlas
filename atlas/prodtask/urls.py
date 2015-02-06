@@ -85,8 +85,9 @@ urlpatterns = patterns('',
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 
 
-    url(r'^login/$', 'shibsso.views.login', name='login'),
-    url(r'^logout/$', 'shibsso.views.logout', name='logout'),
+    url(r'^login/$', 'auth.views.login', name='login'),
+    url(r'^logout/$', 'auth.views.logout', name='logout'),
+
     url(r'^userinfo/$', 'atlas.prodtask.views.userinfo', name='userinfo'),
 
 
