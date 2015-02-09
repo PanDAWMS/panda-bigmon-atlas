@@ -509,7 +509,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                $(stepFormLong).val(stepValue);
                                $(step_td_short).html(stepValue);
                            }
-                           $("#saveStatus"+sliceID.toString()).html("not saved");
+                           $("#saveStatus"+sliceID.toString()).html("edit (not saved)");
                        {% endfor %}
                            var sliceIDint = parseInt(sliceID);
                            if (!(sliceIDint in changesList)){
@@ -551,7 +551,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     function longFormChange(event){
       var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
       $(step_td_short).html($(event.target).val());
-      $("#saveStatus"+$(event.target).attr('id').split("s")[0]).html("not saved");
+      $("#saveStatus"+$(event.target).attr('id').split("s")[0]).html("edit (not saved)");
     };
 
     function selectClick(event){
@@ -991,9 +991,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         function changeSliceSaveStatus(sliceNumber){
             sliceDBInfo = checkSliceIsSaved(sliceNumber);
             if (! sliceDBInfo.is_equal){
-                $("#saveStatus"+sliceNumber).html("not saved");
+                $("#saveStatus"+sliceNumber).html("edit (not saved)");
             }else{
-                $("#saveStatus"+sliceNumber).html("saved");
+                $("#saveStatus"+sliceNumber).html("edit (saved)");
             }
             return sliceDBInfo;
         }
@@ -1304,7 +1304,12 @@ var lastChecked = true;
   <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
   <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
 </ul>
-{% if hidden_slices > 0 %}
+
+    <div>
+    <a onclick="$('#longDescription').toggle('slow')" style="cursor: pointer;"><u>Show/hide long description</u></a>
+    <div id="longDescription" style="display: none">{{ long_description|linebreaks}}</div>
+    </div>
+        {% if hidden_slices > 0 %}
     <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }} and hidden: {{ hidden_slices }}</h6>
 {% else %}
     <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
@@ -1478,7 +1483,7 @@ var lastChecked = true;
 
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
-                            saved
+                            edit (saved)
                         </a></u></td>
 
             {% if show_task %}

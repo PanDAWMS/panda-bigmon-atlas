@@ -31,7 +31,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference']
+        exclude = ['reqid','is_error','jira_reference','info_fields']
 
 
 
@@ -46,7 +46,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     description = CharField(label='Short description', widget=Textarea, required=False)
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference']
+        exclude = ['reqid','is_error','jira_reference','info_fields']
 
 
 class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -63,7 +63,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference']
+        exclude = ['reqid','is_error','jira_reference','info_fields']
 
 
 class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -80,7 +80,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference']
+        exclude = ['reqid','is_error','jira_reference','info_fields']
 
 class PatternTextInput(widgets.MultiWidget):
     def __init__(self, attrs={'0':None,'1':None}):

@@ -842,9 +842,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 try:
                     with transaction.atomic():
                         _logger.debug("Creating request : %s" % form.cleaned_data)
-
-                        req = TRequest(**form.cleaned_data)
-                        req.save()
                         owner=''
                         owner_mail = ''
                         try:
@@ -858,8 +855,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             owner_mails = []
                         else:
                             owner_mails = [owner_mail]
+                        req = TRequest(**form.cleaned_data)
+                        req.info_fields = json.dumps({'long_description':longdesc,'cc':cc})
+                        req.save()
+
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
                                                        status='waiting')
+
                         request_status.save_with_current_time()
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
@@ -869,6 +871,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                   APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
                                   fail_silently=True)
                         # Saving slices->steps
+
                         step_parent_dict = {}
                         for current_slice in file_dict:
                             input_data = current_slice["input_dict"]

@@ -121,6 +121,14 @@ class TRequest(models.Model):
     project = models.ForeignKey(TProject,db_column='PROJECT', null=True, blank=False)
     is_error = models.NullBooleanField(db_column='EXCEPTION', null=True, blank=False)
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
+    info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
+
+    def info_field(self,field):
+        if self.info_fields:
+            info_field_dict = json.loads(self.info_fields)
+            return info_field_dict.get(field,None)
+        else:
+            return None
 
     def save(self, *args, **kwargs):
         if not self.reqid:

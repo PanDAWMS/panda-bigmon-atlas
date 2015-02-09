@@ -975,7 +975,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             cur_request = TRequest.objects.get(reqid=rid)
             #steps_db =
             _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
-
+            long_description = cur_request.info_field('long_description')
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
                 pattern_list_name = [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in STEPS_LIST])]
@@ -1301,7 +1301,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'total_tasks': total_task_dict,
                'show_as_huge': show_as_huge,
                'approved_steps': approved_steps_count,
-               'total_steps' : total_steps_count
+               'total_steps' : total_steps_count,
+               'long_description':long_description
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
