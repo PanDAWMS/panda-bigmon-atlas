@@ -60,7 +60,7 @@ def do_action(owner, task_id, action, *args):
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
-    if not action in supported_actions:
+    if action not in supported_actions:
         result['exception'] = "Action '%s' is not supported" % action
         return result
 
