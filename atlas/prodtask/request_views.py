@@ -889,9 +889,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                 upadte_after = False
                                 if 'task_config' in step:
                                     if 'nEventsPerJob' in step['task_config']:
-                                        task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                        if step['step_name']=='Evgen':
-                                            task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                        if step['task_config']['nEventsPerJob'].get(step['step_name'],''):
+                                            task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name']))})
+
+                                            if step['step_name']=='Evgen':
+                                                task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
+                                        else:
+                                            task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
                                                            'nGBPerJob','maxAttempt']

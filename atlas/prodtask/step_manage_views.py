@@ -255,12 +255,14 @@ def update_project_mode(request, reqid):
             new_project_mode = checkecd_tag_format['project_mode']
             new_input_events = int(checkecd_tag_format['input_events'])
             new_priority = int(checkecd_tag_format['priority'])
-            new_nEventsPerInputFile = None
             if checkecd_tag_format['nEventsPerInputFile']:
                 new_nEventsPerInputFile = int(checkecd_tag_format['nEventsPerInputFile'])
-            new_nEventsPerJob = None
+            else:
+                new_nEventsPerInputFile = ''
             if checkecd_tag_format['nEventsPerJob']:
                 new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
+            else:
+                new_nEventsPerJob = ''
             new_destination = None
             if checkecd_tag_format['destination_token']:
                 new_destination = checkecd_tag_format['destination_token']
@@ -276,10 +278,8 @@ def update_project_mode(request, reqid):
                                 task_config['project_mode'] = new_project_mode
                                 step_exec.task_config = ''
                                 step_exec.set_task_config(task_config)
-                                if new_nEventsPerInputFile:
-                                    step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
-                                if new_nEventsPerJob:
-                                    step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
+                                step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
+                                step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
                                 if new_destination:
                                     step_exec.set_task_config({'token':'dst:'+new_destination.replace('dst:','')})
                                 step_exec.input_events = new_input_events
