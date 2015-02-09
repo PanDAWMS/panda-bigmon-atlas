@@ -107,6 +107,10 @@ class Client(object):
         body = {'task_id': task_id, 'comment_body': comment}
         return self._create_request('add_task_comment', owner, body)
 
+    def abort_unfinished_jobs(self, owner, task_id, code=9):
+        body = {'task_id': task_id, 'code': code}
+        return self._create_request('abort_unfinished_jobs', owner, body)
+
     def _search_task(self, filter_dict):
         if len(filter_dict.keys()):
             filter_dict.update({'limit': 0})

@@ -20,6 +20,7 @@ _deft_actions = {
     'retry': 'retry_task',
     'change_ram_count': 'change_task_ram_count',
     'change_wall_time': 'change_task_wall_time',
+    'increase_attempt_number': 'increase_attempt_number',
 }
 
 supported_actions = _deft_actions.keys()
@@ -28,7 +29,7 @@ supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 
 # Allowed task actions per status
 allowed_task_actions = {
-    'waiting': ['abort', 'reassign', 'change_priority', 'change_parameters'],
+    'waiting': ['abort', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number'],
     'registered': [],
     'assigning': [],
     'submitting': [],
@@ -42,7 +43,8 @@ allowed_task_actions = {
 
 # Actions for tasks in "active" states
 for _status in ['registered', 'assigning', 'submitting', 'ready', 'running']:
-    allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority', 'change_parameters', 'reassign'])
+    allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
+                                          'change_parameters', 'reassign', 'increase_attempt_number'])
 # Extending actions by groups of them
 for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:
@@ -58,7 +60,7 @@ def do_action(owner, task_id, action, *args):
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
-    if not action in supported_actions:
+    if action not in supported_actions:
         result['exception'] = "Action '%s' is not supported" % action
         return result
 
