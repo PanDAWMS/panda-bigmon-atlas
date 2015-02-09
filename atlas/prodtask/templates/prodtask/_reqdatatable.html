@@ -120,6 +120,12 @@ $(document).ready(function(){
 
 var slices_changes = {};
 
+    {% if not user.is_authenticated %}
+      $(".btn_is_authenticated").each(function(){
+          this.disabled=true;
+          $(this).attr('onclick','');
+          $(this).addClass('disabled')});
+    {% endif %}
 
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
                          "cursor":"pointer","user-select": "none"});
@@ -1292,7 +1298,7 @@ var lastChecked = true;
   <td>{{ trequest.phys_group}}</td>
   <td>{{ trequest.project}}</td>
 {% if trequest.cstatus == 'registered' %}
-      <td><span id="requestStatus">{{ trequest.cstatus}}</span> <a href="#" onclick="approveEmpty(event);" class="button">Approve</a></td>
+      <td><span id="requestStatus">{{ trequest.cstatus}}</span> <a href="#" onclick="approveEmpty(event);" class="button btn_is_authenticated">Approve</a></td>
 {% else %}
       <td><span id="requestStatus">{{ trequest.cstatus}}</span></td>
 {% endif %}
@@ -1300,9 +1306,13 @@ var lastChecked = true;
 </table>
 
 <ul id="drop1" class="f-dropdown" data-dropdown-content>
-  <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
-  <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
-  <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
+    {% if user.is_authenticated %}
+      <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
+      <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
+      <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
+    {% else %}
+      <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
+    {% endif %}
 </ul>
 
     <div>
@@ -1326,7 +1336,7 @@ var lastChecked = true;
     <table>
     <tr>
     <td>
-    <button id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
+    <button class="btn_is_authenticated" id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
     </td>
     <td>
         <div id="deftRef" class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
@@ -1382,7 +1392,7 @@ var lastChecked = true;
         <td><button id="showPattern" title="Show current pattern" onclick="showPatternClick(event);">Show</button></td>
     </th>
     <th >
-        <td><button id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
+        <td><button class="btn_is_authenticated" id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
     </th>
 
 </tr>
@@ -1546,8 +1556,8 @@ var lastChecked = true;
                         {% endfor %}
                     </select>
                 </td>
-                <td><button id="bind{{ inputList.slice }}" class="slice_bind" title="Create step execution">Bind</button></td>
-                <td><button id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
+                <td><button id="bind{{ inputList.slice }}" class="slice_bind btn_is_authenticated" title="Create step execution">Bind</button></td>
+                <td><button class="btn_is_authenticated" id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
                 <tr>
                 {% if show_task %}
                         <tr><td></td><td colspan="11">Tasks:</td></tr>
@@ -1602,15 +1612,19 @@ var lastChecked = true;
  <form>
     <div class="row collapse hiddenNonEdit">
 
+                {% if not user.is_authenticated %}
+                    <a class="small radio button success"
+                       href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+                    >Login</a>
+                {% endif %}
 
-
-            <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
-            <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
-            <button  title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
-            <button  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
-            <button id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
-            <button id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
-            <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
+            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
+            <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
+            <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
+            <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
+            <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
+            <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
+            <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
 
         <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
@@ -1625,7 +1639,7 @@ var lastChecked = true;
                     </label>
                 </div>
              <div class="row">
-                 <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event,'1',$('#cloneFromStep').val());">Fix</button>
+                 <button id="cloneSlice" class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'1',$('#cloneFromStep').val());">Fix</button>
              </div>
         </div>
 
@@ -1634,7 +1648,7 @@ var lastChecked = true;
     <div class="large-7 columns">
     <div class="row collapse ">
                 <div class="large-5 columns">
-                    <a href="#" class="button prefix"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
+                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
                 </div>
 
                 <div class="large-1 columns">
@@ -1739,7 +1753,7 @@ var lastChecked = true;
     </div>
      <div class="row">
        <div class="large-2 columns">
-            <a href="#" class="button postfix" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
+            <a href="#" class="button postfix btn_is_authenticated" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
        </div>
     </div>
 </form>
@@ -1921,7 +1935,7 @@ var lastChecked = true;
 
 </div>
 </div>
-   <button id="saveButton" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
+   <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
 {% if hidden_slices > 0 %}
