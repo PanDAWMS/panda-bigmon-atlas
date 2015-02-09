@@ -631,7 +631,12 @@ $(document).ready(function () {
 
 
     {% if not user.is_authenticated %}
-      $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        // disable "disabled" buttons
+        $("a.button.disabled").click(function(event) {
+            event.stopImmediatePropagation();
+            return(false);
+        });
     {% endif %}
 
 
