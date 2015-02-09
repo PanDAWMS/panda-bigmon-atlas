@@ -13,7 +13,7 @@ from .models import ProductionTask, TRequest, StepExecution
 
 from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
 
-from .task_actions import do_action, supported_actions
+from .task_actions import do_action
 
 
 def do_tasks_action(owner, tasks, action, *args):
@@ -24,9 +24,8 @@ def do_tasks_action(owner, tasks, action, *args):
     :param args: additional arguments
     :return: array of per-task actions' statuses
     """
-    # TODO: add logging
-    # TODO:
-    if (not tasks) or not (action in supported_actions):
+    # TODO: add local logging
+    if not tasks:
         return
 
     result = []
@@ -37,6 +36,15 @@ def do_tasks_action(owner, tasks, action, *args):
     return result
 
 
+def _http_json_response(data):
+    """
+    Wrap dictionary JSON dump to a HTTP response
+    :param data: JSON contents of the response
+    :return: HTTP response with the data dumped to string
+    """
+    return HttpResponse(json.dumps(data))
+
+
 def tasks_action(request, action):
     """
     Handling task actions requests
@@ -44,32 +52,38 @@ def tasks_action(request, action):
     :param action: action name
     :return: HTTP response with action status (JSON)
     """
-    empty_response = HttpResponse('')
 
-    if request.method != 'POST' or not (action in supported_actions):
-        return empty_response
+    response = {"action": action}
 
-    # TODO: return comprehensible response anytime
+    if request.method != 'POST':
+        response["exception"] = \
+            "Request method % is not supported" % request.method
+        return _http_json_response(response)
+
     # TODO: rewrite with django auth system
     #if not request.user.groups.filter(name='vomsrole:/atlas/Role=production'):
     #    return empty_response
 
     owner = request.user.username
     if not owner:
-        return empty_response
+        response["exception"] = "Username is empty"
+        return _http_json_response(response)
 
     data_json = request.body
     if not data_json:
-        return empty_response
+        response["exception"] = "Request data is empty"
+        return _http_json_response(response)
+
     data = json.loads(data_json)
 
     tasks = data.get("tasks")
     if not tasks:
-        return empty_response
+        response["exception"] = "Tasks list is empty"
+        return _http_json_response(response)
 
     params = data.get("parameters", [])
     response = do_tasks_action(owner, tasks, action, *params)
-    return HttpResponse(json.dumps(response))
+    return _http_json_response(response)
 
 
 @never_cache
@@ -80,19 +94,21 @@ def get_same_slice_tasks(request):
     :param request: HTTP request in form of JSON { "tasks": [id1, ..idN] }
     :return: information on tasks of the same slices as given ones (dict)
     """
-    empty_response = HttpResponse('')
 
     if request.method != 'POST':
-        return empty_response
+        return _http_json_response(
+            {"exception": "Request method %s is not supported" % request.method}
+        )
 
     data_json = request.body
     if not data_json:
-        return empty_response
+        return _http_json_response({"exception": "Request data is empty"})
+
     data = json.loads(data_json)
 
     tasks = data.get("tasks")
     if not tasks:
-        return empty_response
+        return _http_json_response({"exception": "Tasks list is empty"})
 
     tasks_slices = {}
 
@@ -110,7 +126,7 @@ def get_same_slice_tasks(request):
 
         tasks_slices[task_id] = dict(tasks=slice_tasks, slice=str(slice_id))
 
-    return HttpResponse(json.dumps(tasks_slices))
+    return _http_json_response(tasks_slices)
 
 
 @ensure_csrf_cookie
