@@ -1230,7 +1230,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 for index,current_step in enumerate(temp_step_list):
                                     if current_step[0]['step_parent_id'] not in step_id_list:
                                         # step in other chain
-                                        another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
+                                        another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[index][0]['step_parent_id'])
                                         another_chain_step = model_to_dict(another_chain_step_obj)
                                         another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
                                         slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
