@@ -21,6 +21,7 @@ _deft_actions = {
     'change_ram_count': 'change_task_ram_count',
     'change_wall_time': 'change_task_wall_time',
     'increase_attempt_number': 'increase_attempt_number',
+    'abort_unfinished_jobs': 'abort_unfinished_jobs',
 }
 
 supported_actions = _deft_actions.keys()
@@ -44,7 +45,8 @@ allowed_task_actions = {
 # Actions for tasks in "active" states
 for _status in ['registered', 'assigning', 'submitting', 'ready', 'running']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
-                                          'change_parameters', 'reassign', 'increase_attempt_number'])
+                                          'change_parameters', 'reassign',
+                                          'increase_attempt_number', 'abort_unfinished_jobs'])
 # Extending actions by groups of them
 for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:
