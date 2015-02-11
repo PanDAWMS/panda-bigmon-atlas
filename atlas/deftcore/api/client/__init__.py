@@ -71,8 +71,8 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('abort_task', owner, body)
 
-    def finish_task(self, owner, task_id):
-        body = {'task_id': task_id}
+    def finish_task(self, owner, task_id, soft=False):
+        body = {'task_id': task_id, 'soft': soft}
         return self._create_request('finish_task', owner, body)
 
     def reassign_task_to_site(self, owner, task_id, site):
