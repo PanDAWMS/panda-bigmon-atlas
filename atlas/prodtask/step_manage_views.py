@@ -5,6 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
+from atlas.prodtask.models import RequestStatus
 from ..prodtask.request_views import clone_slices
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
@@ -105,6 +106,26 @@ def hide_slices_in_req(request, reqid):
                 else:
                     current_slice.is_hide = False
                 current_slice.save()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def add_request_comment(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            comment = input_dict['comment']
+            _logger.debug(form_request_log(reqid,request,'Add comment: %s' % str(comment)))
+            new_comment = RequestStatus()
+            new_comment.comment = comment
+            new_comment.owner = request.user.username
+            new_comment.request = TRequest.objects.get(reqid=reqid)
+            new_comment.status = 'comment'
+            new_comment.save_with_current_time()
             results = {'success':True}
         except Exception,e:
             pass

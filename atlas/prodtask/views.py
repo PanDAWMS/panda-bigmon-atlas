@@ -1009,6 +1009,12 @@ def request_table_view(request, rid=None, show_hidden=False):
             total_task_dict = {}
             total_steps_count = 0
             approved_steps_count = 0
+            comment_author = ' '
+            last_comment = ' '
+            comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
+            if comments:
+                comment_author = comments.owner
+                last_comment = comments.comment
             show_as_huge = False
             if not input_lists_pre:
                 edit_mode = True
@@ -1304,7 +1310,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                'show_as_huge': show_as_huge,
                'approved_steps': approved_steps_count,
                'total_steps' : total_steps_count,
-               'long_description':long_description
+               'long_description':long_description,
+               'last_comment':last_comment,
+               'comment_author':comment_author
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

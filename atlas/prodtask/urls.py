@@ -28,6 +28,10 @@ urlpatterns = patterns('',
     #url(r'^request_clone/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
     url(r'^request_clone2/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone2',   name='request_clone2'),
     url(r'^request_update/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_update',  name='request_update'),
+
+    url(r'^request_comments/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_comments',  name='request_comments'),
+    url(r'^make_user_as_owner/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.make_user_as_owner',  name='make_user_as_owner'),
+
     url(r'^request_create/$',               'atlas.prodtask.request_views.request_create',  name='request_create'),
     url(r'^find_datasets_by_pattern/$',     'atlas.prodtask.request_views.find_datasets_by_pattern',  name='find_datasets_by_pattern'),
 
@@ -76,6 +80,8 @@ urlpatterns = patterns('',
     url(r'^clone_slices_in_req/(?P<reqid>\d+)/(?P<step_from>[-+]?\d+)/(?P<make_link_value>[01])/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
     url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
+
+    url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
     url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', 'atlas.prodtask.report_view.make_report', name='make_report'),

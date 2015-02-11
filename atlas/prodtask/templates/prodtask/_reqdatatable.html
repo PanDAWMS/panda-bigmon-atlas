@@ -199,7 +199,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
            });
        }
     });
-
+    $("#newComment").keyup(function(event){
+    if(event.keyCode == 13){
+        addComment(event);
+    };
+    });
     {#Fill pattern table#}
     (function(){
        {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
@@ -743,8 +747,39 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             });
             findInputForSlices(sliceList);
         }
+        function addComment(event){
+            event.preventDefault();
+            sendData = {'comment':$('#newComment').val()};
+            $.ajax({
+                    url: "{% url 'prodtask:add_request_comment' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
 
-
+                        $('#commentList').prepend('<li>Now; {{ request.user.username }}-'+sendData['comment']+'</li>');
+                        $('#lastComment').html('{{ request.user.username }}-'+sendData['comment']);
+                    }
+                });
+        }
+        function makeUserOwner(event){
+            event.preventDefault();
+            sendData = {};
+            $.ajax({
+                    url: "{% url 'prodtask:make_user_as_owner' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        var newOwnerName =  $.evalJSON(data).ownerName;
+                        if ((newOwnerName!='')&&(newOwnerName!=undefined)){
+                            $('#ownerName').html(newOwnerName);
+                        }
+                    }
+                });
+        }
         function findInputForSlices(sliceList){
 
             sendData = sliceList;
@@ -1087,6 +1122,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
              $('#cloneModal').foundation('reveal', 'open');
 
         }
+
          function rejectSlicesClick(event){
             event.preventDefault();
             var sliceList=[];
@@ -1168,28 +1204,43 @@ function spreadAMI(that){
 
 }
 
+
+        function showModalComment(event){
+                event.preventDefault();
+            $.ajaxSetup({async: false});
+            $.get("{% url 'prodtask:request_comments' pr_id %}",function(data,status){
+                $('#commentList').html('');
+                var comments = data.comments;
+                for (var i=0;i<comments.length;i++){
+                    $('#commentList').prepend('<li>'+comments[i]+'</li>');
+                }
+            });
+            $.ajaxSetup({async: true});
+                $('#commentModal').foundation('reveal', 'open');
+            }
+
 function changeSliceChanges(that){
     if(changeMode) {
-        currentClass = $(that).attr("class").replace("storeInput",'').split(' ');
-        $(that).parent().css({'color':'red'});
+        currentClass = $(that).attr("class").replace("storeInput", '').split(' ');
+        $(that).parent().css({'color': 'red'});
         var currentStepNumber = '';
         var currentField = '';
         var isSliceData = false;
         console.log(that);
-        for(i=0;i<currentClass.length;i++){
-            if (currentClass[i] != ''){
-                if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0){
+        for (i = 0; i < currentClass.length; i++) {
+            if (currentClass[i] != '') {
+                if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0) {
                     isSliceData = true;
                 }
-                else if (currentClass[i].lastIndexOf('storeOutput', 0) === 0){
+                else if (currentClass[i].lastIndexOf('storeOutput', 0) === 0) {
                     currentStepNumber = currentClass[i].slice('storeOutput'.length);
-                    currentHTML = $("#sectionName"+currentStepNumber).html();
+                    currentHTML = $("#sectionName" + currentStepNumber).html();
 
                     if (currentHTML.indexOf('*') == -1) {
                         $("#sectionName" + currentStepNumber).html(currentHTML + '*');
                     }
                 }
-                else{
+                else {
                     currentField = currentClass[i];
                 }
             }
@@ -1198,9 +1249,9 @@ function changeSliceChanges(that){
         if (!(currentSlice in changesList)) {
             changesList[currentSlice] = new RequestSlice();
         }
-        if (isSliceData){
-            changesList[currentSlice][currentField] =  $(that).val();
-            $('.change'+currentField+currentSlice.toString()).html(changesList[currentSlice][currentField]);
+        if (isSliceData) {
+            changesList[currentSlice][currentField] = $(that).val();
+            $('.change' + currentField + currentSlice.toString()).html(changesList[currentSlice][currentField]);
         } else {
 
             if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber) + 1)) {
@@ -1212,7 +1263,7 @@ function changeSliceChanges(that){
             var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
             currentChangeStep[currentField] = $(that).val();
         }
-{#        console.log(currentChangeStep,currentField,$(that).val());#}
+        {#        console.log(currentChangeStep,currentField,$(that).val());#}
     }
 };
 
@@ -1278,6 +1329,8 @@ var lastChecked = true;
 <div id="reloadDialog" title="Run" style="display: none">
   <p>Page reloading…</p>
 </div>
+<div class="row">
+<div class="large-12">
 <table>
 <tr>
   <th></th>
@@ -1294,7 +1347,7 @@ var lastChecked = true;
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
   <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
-  <td>{{ trequest.manager}}</td>
+  <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
   <td>{{ trequest.phys_group}}</td>
   <td>{{ trequest.project}}</td>
 {% if trequest.cstatus == 'registered' %}
@@ -1304,7 +1357,8 @@ var lastChecked = true;
 {% endif %}
 </tr>
 </table>
-
+</div>
+</div>
 <ul id="drop1" class="f-dropdown" data-dropdown-content>
     {% if user.is_authenticated %}
       <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
@@ -1314,7 +1368,15 @@ var lastChecked = true;
       <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
     {% endif %}
 </ul>
-
+<div>
+    <div class="row">
+        <div class="large-5 column"><span>last comment: <span id="lastComment">{{ comment_author }}-{{ last_comment }}</span></span></div>
+        <div class="large-2 column"><a class="button postfix" onclick="showModalComment(event);">New comment</a></div>
+         <div class="large-5 column"></div>
+    </div>
+</div>
+<div class="row">
+<div class="large-12">
     <div>
     <a onclick="$('#longDescription').toggle('slow')" style="cursor: pointer;"><u>Show/hide long description</u></a>
     <div id="longDescription" style="display: none">{{ long_description|linebreaks}}</div>
@@ -1345,6 +1407,8 @@ var lastChecked = true;
     </tr>
     </table>
 {% endif %}
+</div>
+</div>
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
@@ -1938,6 +2002,26 @@ var lastChecked = true;
    <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
+
+<div id="commentModal" class="reveal-modal" data-reveal>
+    <h3>Comments:</h3>
+    <div class="row">
+            <div class="large-4 column">
+                <label>{{ request.user.username }}:
+                <input type="text" id="newComment"  maxlength="140"  /></label>
+            </div>
+            <div class="large-1 column">
+                <a href='#' class="button btn_is_authenticated postfix" onclick="addComment(event);">Add</a>
+            </div>
+            <div class="large-7 column"></div>
+        </div>
+
+    <ul id="commentList">
+
+    </ul>
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
 {% if hidden_slices > 0 %}
     <a href= "{% url 'prodtask:input_list_approve_full' pr_id %}">Show {{ hidden_slices }} hidden slices </a>
     <p/>

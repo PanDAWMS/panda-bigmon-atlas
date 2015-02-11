@@ -137,7 +137,45 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
+def request_comments(request, reqid):
+     if request.method == 'GET':
+        results = {'success':False}
+        try:
+            _logger.debug(form_request_log(reqid,request,'Comments' ))
+            comments = RequestStatus.objects.filter(request=reqid,status='comment').order_by('-timestamp')
+            str_comments = []
+            for comment in comments:
+                str_comments.append(str(comment.timestamp)+'; '+comment.owner+'-'+comment.comment)
+            results = {'success':True,'comments':str_comments}
+        except Exception, e:
+            _logger.error("Problem with comments")
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def make_user_as_owner(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            production_request = TRequest.objects.get(reqid=reqid)
+            current_manager = production_request.manager
+            if production_request.cstatus in ['waiting','registered','test']:
+                owner=''
+                try:
+                    owner = request.user.username
+                except:
+                    pass
+                _logger.debug(form_request_log(reqid,request,'Change manager %s'%owner ))
+                try:
+                    if owner and (owner != current_manager):
+                        production_request.manager = owner
+                        production_request.save()
+                        current_manager = owner
+                except:
+                    pass
+            results = {'success':True,'ownerName':current_manager}
+        except Exception, e:
+            _logger.error("Problem with changing manager #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 @csrf_protect
