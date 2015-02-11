@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.db.models import Count
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 import json
 import logging
@@ -976,22 +977,29 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     })
 
 
+
+@login_required(login_url='/prodtask/login/')
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
                                    {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 
+@login_required(login_url='/prodtask/login/')
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
                                    {'nEventsPerJob':'5000','priority':'520','maxAttempt':'15'})
 
+
+@login_required(login_url='/prodtask/login/')
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
                                    {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
+
+@login_required(login_url='/prodtask/login/')
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
