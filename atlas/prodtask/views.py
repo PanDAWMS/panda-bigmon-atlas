@@ -1171,10 +1171,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                             slice_steps_ordered = []
                             another_chain_step_dict = {}
                             for step_name in StepExecution.STEPS:
+                                slice_steps_ordered.append(form_step_obj({},{},slice.slice))
+                            for index,step_name in enumerate(StepExecution.STEPS):
                                 if step_name not in slice_steps:
-                                    slice_steps_ordered.append(form_step_obj({},{},slice.slice))
+                                    pass
                                 else:
-                                    slice_steps_ordered.append(slice_steps[step_name])
+                                    slice_steps_ordered[index] = slice_steps[step_name]
                                     if first_step:
                                         first_step = False
                                         if slice_steps[step_name]['step']['id'] != slice_steps[step_name]['step']['step_parent_id']:
