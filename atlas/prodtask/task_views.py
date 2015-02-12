@@ -357,7 +357,7 @@ class Parameters(datatables.Parametrized):
 
     phys_group = datatables.Parameter(label='Phys Group')
     step_name = datatables.Parameter(label='Step Name', model_field='step__step_template__step')
-    step_output_format = datatables.Parameter(label='Step output format', get_Q=lambda v: Q( **{ 'step__step_template__output_formats__iexact' : v } ) )
+    step_output_format = datatables.Parameter(label='Step output format', get_Q=lambda v: Q( **{ 'step__step_template__output_formats__iregex' : v } ) )
 
     ctag = datatables.Parameter(label='AMI tag exact', get_Q=lambda v: Q( **{ 'step__step_template__ctag__iexact' : v } ) )
 
