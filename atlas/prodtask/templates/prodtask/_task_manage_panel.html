@@ -30,6 +30,15 @@
                     {% endif %}
                     >Finish</a>
                 </li>
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+                    {% if can_finish_task or not task.id %}
+                        data-dropdown="task_kill_jobs_menu"
+                        class="small radio button "
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Kill jobs</a>
+                </li>
                 <li><a data-options="is_hover:true" id="btn_retry"
                     {% if can_retry_task or not task.id %}
                         data-dropdown="task_retry_menu"
@@ -121,6 +130,22 @@
                     </div>
                     <div class="small-3 columns">
                         <a class="button postfix secondary" id="btn_do_finish">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_kill_jobs" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_kill_jobs">Go</a>
                     </div>
                 </div>
             </div>
@@ -630,7 +655,8 @@ $(document).ready(function () {
         "reassign_site": "reassign_to_site",
         "retry": "retry",
         "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time",
-        "increase_attempt": "increase_attempt_number"
+        "increase_attempt": "increase_attempt_number",
+        "kill_jobs": "abort_unfinished_jobs"
     };
 
     $.each(button_action_map, function(name, action) {
