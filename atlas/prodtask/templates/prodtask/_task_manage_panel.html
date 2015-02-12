@@ -101,6 +101,17 @@
 
         <div id="task_finish_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
+                <div class="row" title="Wait for running jobs">
+                    <div class="small-9 large-9 columns">
+                        <label class="right inline bodyfont-color">
+                            Soft finish  &nbsp;
+                        </label>
+                        <p> &nbsp; </p>
+                    </div>
+                    <div class="small-3 columns">
+                        <input type="checkbox" id="cbx_soft_finish" value="1">
+                    </div>
+                </div>
                 <div class="row">
                     <div class="small-9 large-9 columns">
                         <label for="btn_do_finish" class="right inline bodyfont-color">
@@ -521,7 +532,9 @@ function doTasksActionSelected(action) {
     var parameters = [];
 
     // fill action parameters from inputs
-    if (action == "change_priority") {
+    if (action == "finish") {
+        parameters = [$("#cbx_soft_finish").attr("checked") ? 1 : 0];
+    } else if (action == "change_priority") {
         parameters = [$("#new_priority").val()];
     } else if (action == "reassign_to_site") {
         parameters = [$("#site_select").val()];
