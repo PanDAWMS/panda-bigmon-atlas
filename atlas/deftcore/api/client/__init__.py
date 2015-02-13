@@ -9,9 +9,12 @@ import urllib
 class Client(object):
     BASE_URL = 'https://aipanda015.cern.ch'
 
-    def __init__(self, auth_user, auth_key, verify_ssl_cert=False):
+    def __init__(self, auth_user, auth_key, verify_ssl_cert=False, base_url=None):
         self.verify_ssl_cert = verify_ssl_cert
-        self.base_url = self.BASE_URL
+        if base_url:
+            self.base_url = base_url
+        else:
+            self.base_url = self.BASE_URL
         self.api_url = '/api/v1/request/'
         self.api_search_task_url = '/api/v1/task/'
         self.headers = {'Content-Type': 'application/json',
@@ -68,8 +71,8 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('abort_task', owner, body)
 
-    def finish_task(self, owner, task_id):
-        body = {'task_id': task_id}
+    def finish_task(self, owner, task_id, soft=False):
+        body = {'task_id': task_id, 'soft': soft}
         return self._create_request('finish_task', owner, body)
 
     def reassign_task_to_site(self, owner, task_id, site):
@@ -88,6 +91,10 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('retry_task', owner, body)
 
+    def increase_attempt_number(self, owner, task_id, increment):
+        body = {'task_id': task_id, 'increment': increment}
+        return self._create_request('increase_attempt_number', owner, body)
+
     def change_task_ram_count(self, owner, task_id, ram_count):
         body = {'task_id': task_id, 'ram_count': ram_count}
         return self._create_request('change_task_ram_count', owner, body)
@@ -99,6 +106,10 @@ class Client(object):
     def add_task_comment(self, owner, task_id, comment):
         body = {'task_id': task_id, 'comment_body': comment}
         return self._create_request('add_task_comment', owner, body)
+
+    def abort_unfinished_jobs(self, owner, task_id, code=9):
+        body = {'task_id': task_id, 'code': code}
+        return self._create_request('abort_unfinished_jobs', owner, body)
 
     def _search_task(self, filter_dict):
         if len(filter_dict.keys()):

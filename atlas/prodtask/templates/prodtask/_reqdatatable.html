@@ -71,6 +71,7 @@
     td.approved { color : green;	}
     td.not_approved { color : red;}
     td.partially_approved { color : orange;	}
+    td.hidden { color : #463cff;	}
    </style>
 
 {% endblock %}
@@ -119,6 +120,12 @@ $(document).ready(function(){
 
 var slices_changes = {};
 
+    {% if not user.is_authenticated %}
+      $(".btn_is_authenticated").each(function(){
+          this.disabled=true;
+          $(this).attr('onclick','');
+          $(this).addClass('disabled')});
+    {% endif %}
 
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
                          "cursor":"pointer","user-select": "none"});
@@ -192,7 +199,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
            });
        }
     });
-
+    $("#newComment").keyup(function(event){
+    if(event.keyCode == 13){
+        addComment(event);
+    };
+    });
     {#Fill pattern table#}
     (function(){
        {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
@@ -207,9 +218,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var stepColor = $("#foreignColor").css("background-color");
                         {% endifequal %}
                         {% if  forloop.counter0 < approve_level %}
-                            var borderColor = 'green'
+                            var borderColor = 'green';
                         {%  else  %}
-                            var borderColor = 'grey'
+                            var borderColor = 'grey';
                         {% endif  %}
                         $("#short{{ inputList.slice }}s{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
                             "border":'solid',
@@ -250,7 +261,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         });
 
     $("#tagFormatSelect").change(function(){return tagFormatChange()});
-    refreshTagFormats(null);
+    {% if not show_as_huge %}
+        refreshTagFormats(null);
+    {% endif %}
 });
 
     var csrftoken = $.cookie('csrftoken');
@@ -271,10 +284,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         var toChangeDatasets = [];
         var startFindig = false;
         var sendData = Object();
+        var doReload = false;
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
                 var existSkipped = false;
+                if (sliceID == '-1'){
+                    doReload = true;
+                }
                     if (! sendData[sliceID]){
                         sendData[sliceID] = Object();
                     }
@@ -315,8 +332,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                      sliceSteps[{{  step_list|length }}+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
 
 
-
-                    sendData[sliceID] = sliceSteps;
+                    if (sliceID in changesList){
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':changesList[sliceID]};
+                    } else {
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':''};
+                    }
                     if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
                         toChangeDatasets.push(sliceID);
                     }
@@ -326,7 +346,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
             }
 
-            if (!$.isEmptyObject(sendData)){
+            if (true){
                 $( "#waitingDialog" ).dialog();
 
                 var ajaxURL = '';
@@ -352,6 +372,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             var wrongSLices = $.evalJSON(data).wrong_slices;
 {#                            console.log(wrongSLices);#}
                             var doubleTrf = $.evalJSON(data).double_trf;
+                            var newStatus = $.evalJSON(data).new_status;
+                            var removeDataset =  $.evalJSON(data).removed_input;
+                            if ((newStatus != undefined) && (newStatus != '')){
+                                $('#requestStatus').html(newStatus);
+                            }
                             if ((missedList.length != 0)||(doubleTrf.length != 0)) {
                                 if (missedList.length != 0) {
                                     $("#missing_tags_string").html(missedList.toString());
@@ -387,6 +412,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                            $("#approveDialog").append($('<p/>').html(notChangedSlices.length+'Slices were not changed: '+notChangedSlices.toString()));
                                        }
                                    }
+                                    if(doReload){
+                                        location.reload();
+                                    }
                                    if(isApprove){
                                        $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()));
                                        $("#approveDialog").attr("title","Steps approved");
@@ -408,6 +436,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                 for (var i=0;i<toChangeDatasets.length;i++){
                                     $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
                                 }
+                            }
+                            for (var i=0; i < removeDataset.length; i++){
+                                 $("#inputDatasetName"+removeDataset[i]).html('');
                             }
                             if (slices.length < 200){
                                 for (var i = 0; i < slices.length; i++) {
@@ -439,6 +470,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             }
         });
         approveSlices(isApprove,approveLevel, slices);
+    };
+    function approveEmpty(event){
+        event.preventDefault();
+        var slices = [];
+        approveSlices(true,99, slices);
     };
 
     function emptyPattern(){
@@ -483,7 +519,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                                $(stepFormLong).val(stepValue);
                                $(step_td_short).html(stepValue);
                            }
-                           $("#saveStatus"+sliceID.toString()).html("not saved");
+                           $("#saveStatus"+sliceID.toString()).html("edit (not saved)");
                        {% endfor %}
                            var sliceIDint = parseInt(sliceID);
                            if (!(sliceIDint in changesList)){
@@ -525,7 +561,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     function longFormChange(event){
       var step_td_short = "td#short".concat($(event.target).attr('id'))  ;
       $(step_td_short).html($(event.target).val());
-      $("#saveStatus"+$(event.target).attr('id').split("s")[0]).html("not saved");
+      $("#saveStatus"+$(event.target).attr('id').split("s")[0]).html("edit (not saved)");
     };
 
     function selectClick(event){
@@ -711,8 +747,39 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             });
             findInputForSlices(sliceList);
         }
+        function addComment(event){
+            event.preventDefault();
+            sendData = {'comment':$('#newComment').val()};
+            $.ajax({
+                    url: "{% url 'prodtask:add_request_comment' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
 
-
+                        $('#commentList').prepend('<li>Now; {{ request.user.username }}-'+sendData['comment']+'</li>');
+                        $('#lastComment').html('{{ request.user.username }}-'+sendData['comment']);
+                    }
+                });
+        }
+        function makeUserOwner(event){
+            event.preventDefault();
+            sendData = {};
+            $.ajax({
+                    url: "{% url 'prodtask:make_user_as_owner' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        var newOwnerName =  $.evalJSON(data).ownerName;
+                        if ((newOwnerName!='')&&(newOwnerName!=undefined)){
+                            $('#ownerName').html(newOwnerName);
+                        }
+                    }
+                });
+        }
         function findInputForSlices(sliceList){
 
             sendData = sliceList;
@@ -798,22 +865,40 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         });
                     }
 {#                    console.log(stepHasChanges);#}
-                    currentHTML = $("#sectionName" + i.toString()).html();
+                    currentHTML = $("#sectionName" + i.toString()).html()
                     if (stepHasChanges){
 
-                      if (currentHTML.indexOf('*') == -1) {
-                          $("#sectionName" + i.toString()).html(currentHTML + '*');
-                      }
-                    }else{
-                          newName = currentHTML.replace('*','');
-                         $("#sectionName" + i.toString()).html(newName);
+                              if (currentHTML.indexOf('*') == -1) {
+                                  $("#sectionName" + i.toString()).html(currentHTML + '*');
+                              }
+                    }
+                    else{
+                                  newName = currentHTML.replace('*','');
+                                 $("#sectionName" + i.toString()).html(newName);
                     }
 
                 }
+{#            console.log(check_steps);#}
+            check_steps['is_eaqual'] = undefined;
+            check_steps['db_step_type'] = undefined;
+            for (sliceField in check_steps){
+                notUpdateFromDB = false;
+                if (parseInt(sliceID) in changesList) {
+                    if (changesList[sliceID][sliceField]!= undefined) {
+                            if (changesList[sliceID][sliceField] != check_steps[sliceField]) {
+                                notUpdateFromDB = true;
+                                $('#'+sliceField+'Modal').val(changesList[sliceID][sliceField]);
+                                $('#'+sliceField+'Modal').parent().css({'color': 'red'});
+                            }
+                    }
+                }
+                if (!notUpdateFromDB) {
+                   $('#'+sliceField+'Modal').parent().css({'color': 'initial'});
+                   $('#'+sliceField+'Modal').val(check_steps[sliceField]);
+                }
+            }
 
-            $('#sliceModalDataset').html(check_steps.dataset);
             $('#sliceModalSlice').html(sliceID);
-            $('#sliceModalJobOption').html($('#sliceInputJobOptions'+sliceID).attr('title'));
             $('#sliceModal').foundation('reveal', 'open');
             changeMode = true;
         }
@@ -841,11 +926,13 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         function checkSliceIsSaved(sliceNumber){
             var is_equal = undefined;
             var step_types = undefined;
-            var dataset_DB = undefined;
+            var slice_data = {};
             $.ajaxSetup({async: false});
             $.get(Django.url('prodtask:slice_steps',"{{ pr_id }}",sliceNumber),function(data,status){
                 step_types = data.step_types;
-                dataset_DB = data.dataset;
+                slice_data['datasetName'] = data.dataset;
+                slice_data['jobOption'] = data.jobOption;
+                slice_data['eventsNumber'] = data.totalEvents;
                 is_equal = true;
                 var current_step_tag = [];
                 for (var i=0;i<{{ step_list|length }};i++){
@@ -855,6 +942,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             step: $(step_id).children('a').html(),
                             step_type: 'foreign'
                         });
+
                     } else{
 
                             var current_type = '';
@@ -880,20 +968,47 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         if (!(no_changes)){
                             is_equal = false;
                         }
+
                         if ((step_types[i].step != '') || (current_step_tag[i].step != '')){
                             if ((step_types[i].step != current_step_tag[i].step) || (step_types[i].step_type != current_step_tag[i].step_type) || !(no_changes)) {
                                 is_equal = false;
                             }
                         }
+
                 }
+                is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
+            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });
+            return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
+        }
 
-            return {is_equal:is_equal,db_step_type:step_types, dataset:dataset_DB};
+        function clearChangesSlice(sliceNumber, sliceData){
+            var no_changes = true;
+{#            console.log(changesList[sliceNumber],sliceData)#}
+            if (sliceNumber in changesList){
+                for (var field in sliceData){
+
+{#                    console.log(sliceData[field]);#}
+                    if (field in changesList[sliceNumber]){
+                        if (changesList[sliceNumber][field] != undefined){
+                            if (changesList[sliceNumber][field] != sliceData[field]){
+                                                        console.log(changesList[sliceNumber][field]);
+                                console.log(sliceData[field]);
+                                no_changes = false;
+                            }else{
+                                   changesList[sliceNumber][field] = undefined;
+                               }
+                        }
+                    }
+                }
+
+            }
+            return no_changes;
         }
 
         function clearChanges(sliceNumber,i,current_step){
-            no_changes = true;
+            var no_changes = true;
             if (sliceNumber in changesList){
                 if (changesList[sliceNumber].stepsInSlice.length > i){
 {#                    console.log(current_step);#}
@@ -917,14 +1032,56 @@ $(".showSmallSpan").css({"cursor":"pointer"});
         function changeSliceSaveStatus(sliceNumber){
             sliceDBInfo = checkSliceIsSaved(sliceNumber);
             if (! sliceDBInfo.is_equal){
-                $("#saveStatus"+sliceNumber).html("not saved");
+                $("#saveStatus"+sliceNumber).html("edit (not saved)");
             }else{
-                $("#saveStatus"+sliceNumber).html("saved");
+                $("#saveStatus"+sliceNumber).html("edit (saved)");
             }
             return sliceDBInfo;
         }
+        function cloneRequest(event){
+            event.preventDefault();
+            var sliceList=[];
+            if ($('#radioCloneAll').is(':checked')){
+                $(".checkboxSlice").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+            }
+            else{
+                $(".checkboxSlice:checked").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+            }
+            description = $('#newDescription').val();
+            newRef = $('#newLink').val();
+              var sendData = {slices:sliceList,description:description,ref:newRef};
+             console.log(sendData);
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:request_clone2',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
 
-        function cloneSlicesClick(event){
+
+                       var newRequestID = $.evalJSON(data).new_request;
+                       var is_good =  $.evalJSON(data).success;
+
+                        if(is_good){
+                           window.location.href = Django.url('prodtask:input_list_approve',newRequestID.toString());
+                        }
+                        }
+                    }
+
+                );
+        }
+        function cloneSlicesClick(event, makeLink, cloneFromStepNumber){
             event.preventDefault();
             var sliceList=[];
             var i=0;
@@ -933,10 +1090,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 var sliceID = $(this).attr("id").slice(8);
                 sliceList.push(sliceID);
             });
-            sendData = sliceList;
+            var sendData = sliceList;
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: "{% url 'prodtask:clone_slices_in_req' pr_id %}",
+                    url: Django.url('prodtask:clone_slices_in_req',"{{ pr_id }}",cloneFromStepNumber,makeLink),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -951,6 +1108,20 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 );
               return false;
         };
+        function showModalClone(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            $('#allClone').html('All'+'('+$('.checkboxSlice').length+')');
+            $('#selectClone').html('Only selected'+'('+sliceList.length+')');
+             $('#cloneModal').foundation('reveal', 'open');
+
+        }
 
          function rejectSlicesClick(event){
             event.preventDefault();
@@ -980,6 +1151,51 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
         };
 
+         function hideClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:hide_slices_in_req' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
+
+        function closeDeftRef(event){
+            event.preventDefault();
+            sendData = {'close':true};
+              $.ajax({
+                    url: "{% url 'prodtask:close_deft_ref' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $('#closeDeftRef').css({'display':'none'});
+                        $('#deftRef').css({'display':'none'});
+                    }
+              });
+              return false;
+        };
+
 function spreadAMI(that){
     currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
     currentSlice = $('#sliceModalSlice').html();
@@ -988,40 +1204,66 @@ function spreadAMI(that){
 
 }
 
+
+        function showModalComment(event){
+                event.preventDefault();
+            $.ajaxSetup({async: false});
+            $.get("{% url 'prodtask:request_comments' pr_id %}",function(data,status){
+                $('#commentList').html('');
+                var comments = data.comments;
+                for (var i=0;i<comments.length;i++){
+                    $('#commentList').prepend('<li>'+comments[i]+'</li>');
+                }
+            });
+            $.ajaxSetup({async: true});
+                $('#commentModal').foundation('reveal', 'open');
+            }
+
 function changeSliceChanges(that){
     if(changeMode) {
-        currentClass = $(that).attr("class").replace("storeInput",'').split(' ');
-        $(that).parent().css({'color':'red'});
+        currentClass = $(that).attr("class").replace("storeInput", '').split(' ');
+        $(that).parent().css({'color': 'red'});
         var currentStepNumber = '';
         var currentField = '';
-        for(i=0;i<currentClass.length;i++){
-            if (currentClass[i] != ''){
-                if (currentClass[i].lastIndexOf('storeOutput', 0) === 0){
+        var isSliceData = false;
+        console.log(that);
+        for (i = 0; i < currentClass.length; i++) {
+            if (currentClass[i] != '') {
+                if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0) {
+                    isSliceData = true;
+                }
+                else if (currentClass[i].lastIndexOf('storeOutput', 0) === 0) {
                     currentStepNumber = currentClass[i].slice('storeOutput'.length);
-                    currentHTML = $("#sectionName"+currentStepNumber).html();
+                    currentHTML = $("#sectionName" + currentStepNumber).html();
 
                     if (currentHTML.indexOf('*') == -1) {
                         $("#sectionName" + currentStepNumber).html(currentHTML + '*');
                     }
                 }
-                else{
+                else {
                     currentField = currentClass[i];
                 }
             }
         }
         currentSlice = $('#sliceModalSlice').html();
-        if (!(currentSlice in changesList)){
+        if (!(currentSlice in changesList)) {
             changesList[currentSlice] = new RequestSlice();
         }
-        if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber)+1)){
-            for(i=changesList[currentSlice].stepsInSlice.length;i<(parseInt(currentStepNumber)+1);i++){
-                var newStep = new ProcessingStep();
-                changesList[currentSlice].addStep(newStep);
+        if (isSliceData) {
+            changesList[currentSlice][currentField] = $(that).val();
+            $('.change' + currentField + currentSlice.toString()).html(changesList[currentSlice][currentField]);
+        } else {
+
+            if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber) + 1)) {
+                for (i = changesList[currentSlice].stepsInSlice.length; i < (parseInt(currentStepNumber) + 1); i++) {
+                    var newStep = new ProcessingStep();
+                    changesList[currentSlice].addStep(newStep);
+                }
             }
+            var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
+            currentChangeStep[currentField] = $(that).val();
         }
-        var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
-        currentChangeStep[currentField] = $(that).val();
-{#        console.log(currentChangeStep,currentField,$(that).val());#}
+        {#        console.log(currentChangeStep,currentField,$(that).val());#}
     }
 };
 
@@ -1051,7 +1293,9 @@ function ProcessingStep() {
  function RequestSlice(sliceNumber) {
     this.stepsInSlice = [];
     this.sliceNumber = sliceNumber;
-
+    this.datasetName = undefined;
+    this.jobOption = undefined;
+    this.eventsNumber = undefined;
 };
 
 RequestSlice.prototype.addStep = function(newStep){
@@ -1083,8 +1327,10 @@ var lastChecked = true;
   <p>Please wait...</p>
 </div>
 <div id="reloadDialog" title="Run" style="display: none">
-  <p>Page will be reload now...</p>
+  <p>Page reloading…</p>
 </div>
+<div class="row">
+<div class="large-12">
 <table>
 <tr>
   <th></th>
@@ -1093,20 +1339,53 @@ var lastChecked = true;
   <th>Reference:</th>
   <th>Manager:</th>
   <th>Physic group:</th>
+  <th>Project:</th>
   <th>Status:</th>
 </tr>
 <tr>
-  <td><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></td>
+  <td><a href="#" data-dropdown="drop1" >&#9776;</a></td>
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
   <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
-  <td>{{ trequest.manager}}</td>
+  <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
   <td>{{ trequest.phys_group}}</td>
-  <td>{{ trequest.cstatus}}</td>
+  <td>{{ trequest.project}}</td>
+{% if trequest.cstatus == 'registered' %}
+      <td><span id="requestStatus">{{ trequest.cstatus}}</span> <a href="#" onclick="approveEmpty(event);" class="button btn_is_authenticated">Approve</a></td>
+{% else %}
+      <td><span id="requestStatus">{{ trequest.cstatus}}</span></td>
+{% endif %}
 </tr>
 </table>
-
-<h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+</div>
+</div>
+<ul id="drop1" class="f-dropdown" data-dropdown-content>
+    {% if user.is_authenticated %}
+      <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
+      <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
+      <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
+    {% else %}
+      <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
+    {% endif %}
+</ul>
+<div>
+    <div class="row">
+        <div class="large-5 column"><span>last comment: <span id="lastComment">{{ comment_author }}-{{ last_comment }}</span></span></div>
+        <div class="large-2 column"><a class="button postfix" onclick="showModalComment(event);">New comment</a></div>
+         <div class="large-5 column"></div>
+    </div>
+</div>
+<div class="row">
+<div class="large-12">
+    <div>
+    <a onclick="$('#longDescription').toggle('slow')" style="cursor: pointer;"><u>Show/hide long description</u></a>
+    <div id="longDescription" style="display: none">{{ long_description|linebreaks}}</div>
+    </div>
+        {% if hidden_slices > 0 %}
+    <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }} and hidden: {{ hidden_slices }}</h6>
+{% else %}
+    <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
+{% endif %}
 {% if approvedCount > 0 %}
 {#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
 {% endif %}
@@ -1116,9 +1395,20 @@ var lastChecked = true;
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
 {% if has_deft_problem %}
-    <div class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
+    <table>
+    <tr>
+    <td>
+    <button class="btn_is_authenticated" id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
+    </td>
+    <td>
+        <div id="deftRef" class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
     <a href="https://its.cern.ch/jira/browse/{{ jira_problem_link }}" target="_blank">{{ jira_problem_link }}</a></div>
+    </td>
+    </tr>
+    </table>
 {% endif %}
+</div>
+</div>
 <div id="missing_tags" class="alert-box alert round" style="display: none"><strong >Error: </strong>
     <span> Please create these tags before approval: </span>
     <a href="http://panda.cern.ch/server/pandamon/query?mode=defNewTag" target="_blank"><span id="missing_tags_string"></span></a></div>
@@ -1126,9 +1416,31 @@ var lastChecked = true;
     <span> Please replace these old tags with double trf before approval: </span><span id="doubleTagsString"></span></div>
 <div id="wrongSlice" class="alert-box alert round" style="display: none"><strong >Error: </strong>
 <span> Check these slices: </span><span id="wrongSliceString"></span></div>
-<form >
 
+{% if show_as_huge %}
+    <div>
+    <div class="row" >
+        <div class="large-12 column">Steps:</div>
+    </div>
+    <div class="row" >
+        <div class="large-2 column">Total steps: {{ total_steps }} </div>
+        <div class="large-3 column">steps approved: {{ approved_steps }} </div>
+        <div class="large-8 column"></div>
+    </div>
+    <div class="row" >
+        <div class="large-12 column">Tasks:</div>
+    </div>
+    <div class="row" >
+        <div class="large-3 column"><span style="color: red">failed/broken/aborted {{ total_tasks.red }} </span></div>
+        <div class="large-2 column"><span style="color: green">done {{ total_tasks.done }} </span> </div>
+        <div class="large-2 column"><span style="color: green">finished {{ total_tasks.finished }} </span> </div>
+        <div class="large-2 column"><span style="color: greenyellow">running {{ total_tasks.running }} </span> </div>
+        <div class="large-2 column"><span style="color: blue">other states {{ total_tasks.blue }} </span> </div>
+        <div class="large-1 column"> </div>
+    </div>
+    </div>
 
+{% endif %}
 
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
@@ -1144,7 +1456,7 @@ var lastChecked = true;
         <td><button id="showPattern" title="Show current pattern" onclick="showPatternClick(event);">Show</button></td>
     </th>
     <th >
-        <td><button id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
+        <td><button class="btn_is_authenticated" id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
     </th>
 
 </tr>
@@ -1172,7 +1484,7 @@ var lastChecked = true;
 </div>
 
     <div >
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -1183,22 +1495,45 @@ var lastChecked = true;
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
+                        <span class="showFullSpan changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
+                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
+                    {% if cloned != 'no' %}
+                        <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
+
+                    {% else %}
+                        <td></td>
+                    {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class='showFullSpan changejobOption{{ inputList.slice }}' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
                         </span>
                     </td>
-                    <td  colspan="2"><span id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
+                    <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
+                    <td></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
-            <td></td>
+
             </tr>
+            {% if  not not_use_input_date_for_pattern %}
+              <tr>
+                    <td colspan="11" style="width: 500px" >
+                        <span class="showFullSpan" style="padding:0px" title="{{ inputList.comment }}">
+                            {{ inputList.comment }}
+                        </span>
+                    </td>
+                    <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td>
+                   {% if cloned != 'no' %}
+                        <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
+
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+              </tr>
+            {% endif %}
             <tr>
                 <td colspan="11" style="width: 500px" >
                     <select id="inputDatasetSelect{{ inputList.slice }}" style="display: none">
@@ -1222,7 +1557,7 @@ var lastChecked = true;
 
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
-                            saved
+                            edit (saved)
                         </a></u></td>
 
             {% if show_task %}
@@ -1230,16 +1565,39 @@ var lastChecked = true;
                         <td>T:</td>
 
                         {% for step in step_exec_dict %}
-                        {% if step.task %}
+                        {% if step.tasks|length == 1 %}
+                        {% for task in step.tasks %}
+                        {% if task %}
 
-
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ step.task.status }}" >
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
                             <div>
-                               <a  href="http://bigpanda.cern.ch/task/{{ step.task.id }}"><span style="color: #000000">{{ step.task_short }}</span></a>
+                               <a  href="http://bigpanda.cern.ch/task/{{ task.id }}"><span style="color: #000000">{{ task.short }}</span></a>
                             </div>
                         </td>
                         {% else %}
                             <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% else %}
+                        <td style="padding:0px;margin:0px">
+                        <table style="padding:0px;margin:0px">
+                        {% for task in step.tasks %}
+                        {% if task %}
+
+                        <tr style="padding:0px;margin:0px;height: 20px">
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
+                            <div>
+                               <a  href="http://bigpanda.cern.ch/task/{{ task.id }}"><span style="color: #000000">{{ task.short }}</span></a>
+                            </div>
+                        </td>
+                        {% else %}
+                            <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        </table>
+                        </td>
                         {% endif %}
                         {% endfor %}
                         <td colspan="3"></td>
@@ -1249,10 +1607,11 @@ var lastChecked = true;
             </table>
             <table class="inputListTablesLong" style="display: none">
                 <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
-                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="filterField">{{ inputList.dataset }}</span></td></tr>
-                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="filterField">{{ inputList.input_data }}</span></td></tr>
+                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="changedatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td></tr>
+                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="changejobOption{{ inputList.slice }} filterField">{{ inputList.input_data }}</span></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
-                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: {{ inputList.input_events }}</td></tr>
+                <tr><td></td><td colspan="11">Comment: <span class="filterField">{{ inputList.comment }}</span></td></tr>
+                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: <span class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
                     <select id="selectPattern" >
                         <option value="" disabled selected>Select pattern</option>
@@ -1261,28 +1620,30 @@ var lastChecked = true;
                         {% endfor %}
                     </select>
                 </td>
-                <td><button id="bind{{ inputList.slice }}" class="slice_bind" title="Create step execution">Bind</button></td>
-                <td><button id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
+                <td><button id="bind{{ inputList.slice }}" class="slice_bind btn_is_authenticated" title="Create step execution">Bind</button></td>
+                <td><button class="btn_is_authenticated" id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
                 <tr>
                 {% if show_task %}
                         <tr><td></td><td colspan="11">Tasks:</td></tr>
                         {% for step in step_exec_dict %}
-                        {% if step.task %}
+                        {% for task in step.tasks %}
+                        {% if task %}
                             <tr><td></td>
-                            <td colspan="2"><a href="{% url 'prodtask:task' step.task.id %}">{{ step.task.id }}</a></td>
-                            <td colspan="2" ><span class="{{ step.task.status }}" >{{ step.task.status }}</span></td>
-                            <td colspan="7">{{ step.task.name }}</td>
+                            <td colspan="2"><a href="{% url 'prodtask:task' task.id %}">{{ task.id }}</a></td>
+                            <td colspan="2" ><span class="{{ task.status }}" >{{ task.status }}</span></td>
+                            <td colspan="7">{{ task.name }}</td>
                             </tr>
-                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ step.task.timestamp }}
+                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ task.timestamp }}
                                                                 </td>
                             <td colspan="5" >
-                                <a href="{% url 'jobList'  %}?jeditaskid={{ step.task.id }}">
-                                    <u>Jobs: {{ step.task.total_done_jobs }}/{{ step.task.total_req_jobs }}</u>
+                                <a href="http://bigpanda.cern.ch/jobs/?jeditaskid={{task.id }}">
+                                    <u>Jobs: {{ task.total_done_jobs }}/{{ task.total_req_jobs }}</u>
                                 </a>
                             </td>
-                            <td colspan="4">bug: {{ step.task.bug_report }}</td>
+                            <td colspan="4">bug: {{ task.bug_report }}</td>
                             </tr>
                         {% endif %}
+                        {% endfor %}
                         {% endfor %}
 
                 {% else %}
@@ -1315,21 +1676,43 @@ var lastChecked = true;
  <form>
     <div class="row collapse hiddenNonEdit">
 
+                {% if not user.is_authenticated %}
+                    <a class="small radio button success"
+                       href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+                    >Login</a>
+                {% endif %}
+
+            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
+            <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
+            <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
+            <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
+            <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
+            <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
+            <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
 
-            <button id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
-            <button id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
-            <button id="cloneSlice" title="Clone slices" onclick="cloneSlicesClick(event);">Clone </button>
-            <button id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
-            <button id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
-
+        <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
+                <div class="row">
+                    <label> Clone from step:
+                    <select id="cloneFromStep" >
+                    <option value="-1">all</option>
+                    {% for step in step_list %}
+                            <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                    </label>
+                </div>
+             <div class="row">
+                 <button id="cloneSlice" class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'1',$('#cloneFromStep').val());">Fix</button>
+             </div>
+        </div>
 
     </div>
     <div class="row">
     <div class="large-7 columns">
     <div class="row collapse ">
                 <div class="large-5 columns">
-                    <a href="#" class="button prefix"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
+                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
                 </div>
 
                 <div class="large-1 columns">
@@ -1348,7 +1731,7 @@ var lastChecked = true;
  </form>
 {#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
 
-
+{% if not show_as_huge %}
 <form>
     <div class="row">
         <div class="large-8 columns">
@@ -1434,11 +1817,11 @@ var lastChecked = true;
     </div>
      <div class="row">
        <div class="large-2 columns">
-            <a href="#" class="button postfix" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
+            <a href="#" class="button postfix btn_is_authenticated" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
        </div>
     </div>
 </form>
-
+{% endif %}
 {#<div id="sliceModal" class="reveal-modal" data-reveal>#}
 {#  <h2 id="sliceNumberModal"></h2>#}
 {#  <dl class="tabs" data-tab>#}
@@ -1462,11 +1845,41 @@ var lastChecked = true;
   <a id='closeReveal' class="close-reveal-modal" >&#215;</a>
 </div>
 
+<div id="cloneModal" class="reveal-modal" data-reveal>
+    <p>Request: {{  trequest.reqid }}<br/>
+    <p>Old description: {{  trequest.description }}<br/>
+    <label> New description:
+        <input type="text" id="newDescription" placeholder=" "   />
+    </label>
+    <p>Old link: {{  trequest.ref_link }}<br/>
+    <label> New link:
+        <input type="text" id="newLink" placeholder=" "   />
+    </label>
+      <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneAll"  CHECKED><span class="custom radio checked"></span><span id='allClone'>All</span></label>
+      <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneSelect" ><span class="custom radio"></span > <span id='selectClone'>Selected</span></label>
+    <button id="cloneRequestButton" title="clone request" onclick="cloneRequest(event);$('#closeCloneReveal').click()">Clone request</button>
+<a id='closeCloneReveal' class="close-reveal-modal" >&#215;</a>
+</div>
+
 
 <div id="sliceModal" class="reveal-modal" data-reveal>
 <p>Slice: <span id="sliceModalSlice"></span><br/>
-Dataset: <span id="sliceModalDataset"></span><br/>
-job options: <span id="sliceModalJobOption"></span></p>
+    <div>
+    <div class="row">
+        <div class="column large-12">
+            <label> Dataset: <input id='datasetNameModal' type="text" class="datasetName storeOutputSlice  storeInput" placeholder=" "  /></label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column large-9">
+            <label> job options: <input id="jobOptionModal" type="text" class="jobOption storeOutputSlice storeInput" placeholder=" "  /></label>
+        </div>
+        <div class="column large-3">
+            <label> Input events: <input id='eventsNumberModal' type="number" class="eventsNumber storeOutputSlice storeInput"  placeholder="-1"  /></label>
+        </div>
+    </div>
+    </div>
+
 <div>
 <div class="section-container auto" id="sliceInfoContainer" data-section>
         {% for step in step_list %}
@@ -1486,7 +1899,7 @@ job options: <span id="sliceModalJobOption"></span></p>
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
-                                  <label>Events Input file
+                                  <label>Events per Input file
                                     <input type="number" class="nEventsPerInputFile storeOutput{{forloop.counter0}} storeInput"  placeholder="-1"  />
                                   </label>
 
@@ -1497,22 +1910,35 @@ job options: <span id="sliceModalJobOption"></span></p>
                                   </label>
                                 </div>
                                  <div class="large-2 columns">
-                                  <label>Files per job
-                                    <input type="number" class="nFilesPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
-                                  </label>
-                                </div>
-                                 <div class="large-2 columns">
                                   <label>Total events
                                     <input type="number" class="input_events storeOutput{{forloop.counter0}} storeInput" placeholder="-1"  />
                                   </label>
                                 </div>
                                </div>
+                               <div class="row">
+                                <div class="large-2 columns">
+                                  <label>Files per job
+                                    <input type="number" class="nFilesPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>nGB per job
+                                    <input type="number" class="nGBPerJob storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                <div class="large-2 columns">
+                                  <label>max attempt
+                                    <input type="number" class="maxAttempt storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  </label>
+                                </div>
+                                </div>
                                 <div class="row">
                                 <div class="large-5 columns">
                                   <label>Output formats
                                     <input type="text" class="output_formats storeOutput{{forloop.counter0}} storeInput" placeholder=" "  />
                                   </label>
                                 </div>
+
                                  <div class="large-5 columns">
                                   <label>Input format
                                     <input type="text" class="input_format storeOutput{{forloop.counter0}} storeInput" placeholder=" "  />
@@ -1573,8 +1999,33 @@ job options: <span id="sliceModalJobOption"></span></p>
 
 </div>
 </div>
-   <button id="saveButton" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
+   <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
+
+<div id="commentModal" class="reveal-modal" data-reveal>
+    <h3>Comments:</h3>
+    <div class="row">
+            <div class="large-4 column">
+                <label>{{ request.user.username }}:
+                <input type="text" id="newComment"  maxlength="140"  /></label>
+            </div>
+            <div class="large-1 column">
+                <a href='#' class="button btn_is_authenticated postfix" onclick="addComment(event);">Add</a>
+            </div>
+            <div class="large-7 column"></div>
+        </div>
+
+    <ul id="commentList">
+
+    </ul>
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
+{% if hidden_slices > 0 %}
+    <a href= "{% url 'prodtask:input_list_approve_full' pr_id %}">Show {{ hidden_slices }} hidden slices </a>
+    <p/>
+
+{% endif %}
 <a href="#" class="tiny secondary" onclick="chnageStatusToTest(event);">Make as test</a>
 {% endblock %}

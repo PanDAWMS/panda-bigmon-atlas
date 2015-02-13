@@ -2,32 +2,34 @@ import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
-from django.shortcuts import render, render_to_response
-from django.template import Context, Template, RequestContext
-from django.template.loader import get_template
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
 from django.template.response import TemplateResponse
-from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from ..prodtask.ddm_api import find_dataset_events
-import core.datatables as datatables
 import json
 import logging
+
+from ..prodtask.helper import form_request_log
+from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
+from ..prodtask.ddm_api import find_dataset_events
+import core.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
-from .models import TRequest, InputRequestList, StepExecution, ProductionDataset, MCPattern, StepTemplate, \
-    get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
+from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
 from .models import MCPriority
 from .settings import APP_SETTINGS
-from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file, UrFromSpds
+from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
 from .dpdconfparser import ConfigParser
 from .xls_parser_new import open_tempfile_from_url
 
 
 _logger = logging.getLogger('prodtaskwebui')
+
+
 
 def request_details(request, rid=None):
     if rid:
@@ -46,60 +48,215 @@ def request_details(request, rid=None):
         'parent_template': 'prodtask/_index.html',
     })
 
-
-def request_clone(request, rid=None):
-    if rid:
+@csrf_protect
+def close_deft_ref(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
         try:
-            values = TRequest.objects.values().get(reqid=rid)
-            if values['request_type'] == 'MC':
-                return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
-                                               'prodtask:request_clone', TRequestMCCreateCloneForm,
-                                               TRequestCreateCloneConfirmation, mcfile_form_prefill)
-            elif values['request_type'] == 'GROUP':
-                return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
-                                               TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation,
-                                               dpd_form_prefill)
-            elif values['request_type'] == 'REPROCESSING':
-                 return request_clone_or_create(request, rid, 'Clonning TRequest', 'prodtask:request_clone',
-                                                TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                                reprocessing_form_prefill)
+            data = request.body
+            if json.loads(data)['close']:
+                production_request = TRequest.objects.get(reqid=reqid)
+                production_request.is_error = False
+                production_request.save()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False):
+        ordered_slices = map(int,slices)
+        ordered_slices.sort()
+        #form levels from input text lines
+        #create chains for each input
+        request_source = TRequest.objects.get(reqid=reqid_source)
+        if reqid_source == reqid_destination:
+            request_destination = request_source
+        else:
+            request_destination = TRequest.objects.get(reqid=reqid_destination)
+        new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
+        old_new_step = {}
+        for slice_number in ordered_slices:
+            current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
+            new_slice = current_slice.values()[0]
+            new_slice['slice'] = new_slice_number
+            new_slice_number += 1
+            del new_slice['id']
+            del new_slice['request_id']
+            new_slice['request'] = request_destination
+            new_input_data = InputRequestList(**new_slice)
+            new_input_data.save()
+            if fill_slice_from:
+                new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
+                new_input_data.save()
+            step_execs = StepExecution.objects.filter(slice=current_slice)
+            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+            if request_source.request_type == 'MC':
+                STEPS = StepExecution.STEPS
+            else:
+                STEPS = ['']*len(StepExecution.STEPS)
+            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+            first_changed = not make_link
+            for index,step in enumerate(step_as_in_page):
+                if step:
+                    if (index >= step_from) or (not make_link):
+                        self_looped = step.id == step.step_parent.id
+                        old_step_id = step.id
+                        step.id = None
+                        step.step_appr_time = None
+                        step.step_def_time = None
+                        step.step_exe_time = None
+                        step.step_done_time = None
+                        step.slice = new_input_data
+                        step.request = request_destination
+                        if (step.status == 'Skipped') or (index < step_from):
+                            step.status = 'NotCheckedSkipped'
+                        elif step.status == 'Approved':
+                            step.status = 'NotChecked'
+                        if first_changed and (step.step_parent.id in old_new_step):
+                            step.step_parent = old_new_step[int(step.step_parent.id)]
+                        step.save_with_current_time()
+                        if self_looped:
+                            step.step_parent = step
+                        first_changed = True
+                        step.save()
+                        old_new_step[old_step_id] = step
+
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
+    request_destination = TRequest.objects.get(reqid=reqid)
+    request_destination.reqid = None
+    request_destination.cstatus = 'waiting'
+    request_destination.description = new_short_description
+    request_destination.jira_reference = None
+    request_destination.is_error = None
+    request_destination.ref_link = new_ref
+    request_destination.save()
+    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
+                                                       status='waiting')
+    request_status.save_with_current_time()
+    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
+    clone_slices(reqid,request_destination.reqid,slices,0,False)
+    return request_destination.reqid
+
+def request_comments(request, reqid):
+     if request.method == 'GET':
+        results = {'success':False}
+        try:
+            _logger.debug(form_request_log(reqid,request,'Comments' ))
+            comments = RequestStatus.objects.filter(request=reqid,status='comment').order_by('-timestamp')
+            str_comments = []
+            for comment in comments:
+                str_comments.append(str(comment.timestamp)+'; '+comment.owner+'-'+comment.comment)
+            results = {'success':True,'comments':str_comments}
         except Exception, e:
-            _logger.error("Problem with request clonning #%i: %s"%(rid,e))
-            return HttpResponseRedirect(reverse('prodtask:request_table'))
-    else:
-        return request_clone_or_create(request, rid, 'Clonning of TRequest with ID = %s' % rid,
-                                       'prodtask:request_clone', TRequestMCCreateCloneForm,
-                                       TRequestCreateCloneConfirmation, mcfile_form_prefill)
+            _logger.error("Problem with comments")
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def make_user_as_owner(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            production_request = TRequest.objects.get(reqid=reqid)
+            current_manager = production_request.manager
+            if production_request.cstatus in ['waiting','registered','test']:
+                owner=''
+                try:
+                    owner = request.user.username
+                except:
+                    pass
+                _logger.debug(form_request_log(reqid,request,'Change manager %s'%owner ))
+                try:
+                    if owner and (owner != current_manager):
+                        production_request.manager = owner
+                        production_request.save()
+                        current_manager = owner
+                except:
+                    pass
+            results = {'success':True,'ownerName':current_manager}
+        except Exception, e:
+            _logger.error("Problem with changing manager #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
-def request_update(request, rid=None):
+@csrf_protect
+def request_clone2(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            ordered_slices = map(int,slices)
+            ordered_slices.sort()
+            new_short_description = input_dict['description']
+            new_ref = input_dict['ref']
+            owner=''
+            try:
+                owner = request.user.username
+            except:
+                pass
+            if not owner:
+                owner = 'default'
+            _logger.debug(form_request_log(reqid,request,'Clone request' ))
+            new_request_id = request_clone_slices(reqid,owner,new_short_description,new_ref,ordered_slices)
+            results = {'success':True,'new_request':int(new_request_id)}
+        except Exception, e:
+            _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def create_tarball_input(production_request_id):
+    result = ''
+    try:
+        result_list = []
+        production_request = TRequest.objects.get(reqid=production_request_id)
+        steps = StepExecution.objects.filter(request=production_request)
+        energy = production_request.energy_gev
+        group = production_request.phys_group
+        for step in steps:
+            if (step.step_template.step=='Evgen') and (step.status not in StepExecution.STEPS_APPROVED_STATUS):
+                dsid = ''
+                short = ''
+                if step.slice.input_data:
+                    dsid = step.slice.input_data.split('.')[1]
+                    short =  step.slice.input_data.split('.')[2]
+                result_list.append(dict(group=group,dsid=int(dsid),stats=int(step.input_events),short=short,ecm=int(energy),
+                                        jo=step.slice.input_data,etag=step.step_template.ctag))
+        result = json.dumps(result_list)
+    except Exception,e:
+        # log error
+        pass
+    return result
+
+
+def request_update(request, reqid=None):
     if request.method == 'POST':
         try:
-            req = TRequest.objects.get(reqid=rid)
+            req = TRequest.objects.get(reqid=reqid)
             form = RequestUpdateForm(request.POST, instance=req)  # A form bound to the POST data
         except:
             return HttpResponseRedirect(reverse('prodtask:request_table'))
         if form.is_valid():
             # Process the data in form.cleaned_data
-            _logger.debug("Update request #%i: %s"%(int(rid), form.cleaned_data))
+            _logger.debug(form_request_log(reqid,request,'Update request: %s' % str(form.cleaned_data)))
             try:
                 req = TRequest(**form.cleaned_data)
                 req.save()
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(req.reqid,)))  # Redirect after POST
             except Exception,e :
-                 _logger.error("Problem with request update #%i: %s"%(int(rid), e))
+                 _logger.error("Problem with request update #%i: %s"%(int(reqid), e))
     else:
         try:
-            req = TRequest.objects.get(reqid=rid)
+            req = TRequest.objects.get(reqid=reqid)
             form = RequestUpdateForm(instance=req)
         except:
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return render(request, 'prodtask/_form.html', {
         'active_app': 'prodtask',
-        'pre_form_text': 'Updating of TRequest with ID = %s' % rid,
+        'pre_form_text': 'Updating of TRequest with ID = %s' % reqid,
         'form': form,
         'submit_url': 'prodtask:request_update',
-        'url_args': rid,
+        'url_args': reqid,
         'parent_template': 'prodtask/_index.html',
     })
 
@@ -209,7 +366,7 @@ def hlt_form_prefill(form_data, request):
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'THLT'
 
-    task_config = {}
+    task_config = {'maxAttempt':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -301,10 +458,11 @@ def parse_json_slice_dict(json_string):
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
 
-                        if slice['inputFormat']:
-                                    task_config.update({'input_format':slice['inputFormat']})
-                        if slice['nFilesPerJob']:
-                                    task_config.update({'nFilesPerJob':slice['nFilesPerJob']})
+                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                            if slice[parameter]:
+                                    task_config.update({parameter:slice[parameter]})
+
+
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
                                      input_events=int(slice['totalevents']))
@@ -330,10 +488,11 @@ def parse_json_slice_dict(json_string):
                                             task_config.update({merge_option:step[merge_option]})
                                 if step['token']:
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
-                                if  step['inputFormat']:
+                                if step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
-                                if  step['nFilesPerJob']:
-                                    task_config.update({'nFilesPerJob':step['nFilesPerJob']})
+                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                                    if step[parameter]:
+                                        task_config.update({parameter:step[parameter]})
                                 step_name = step_from_tag(step['ctag'])
                                 sexec = dict(status='NotChecked', priority=int(step['priority']),
                                              input_events=int(step['totalevents']))
@@ -396,7 +555,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('provenance'):
         form_data['provenance'] = 'GP'
     if not spreadsheet_dict:
-        task_config = {}
+        task_config = {'maxAttempt':15}
         if 'events_per_job' in output_dict:
             nEventsPerJob = output_dict['events_per_job'][0]
             task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -484,7 +643,7 @@ def reprocessing_form_prefill(form_data, request):
         form_data['provenance'] = 'AP'
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'REPR'
-    task_config = {}
+    task_config = {'maxAttempt':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -590,24 +749,12 @@ def find_datasets_by_pattern(request):
     pass
 
 
-#TODO: Change it to real dataset workflow 
-def fill_dataset(ds):
-    dataset = None
-    try:
-        dataset = ProductionDataset.objects.all().filter(name=ds)[0]
-    except:
-        pass
-    finally:
-        if dataset:
-            return dataset
-        else:
-            dataset = ProductionDataset.objects.create(name=ds, files=-1, timestamp=timezone.now())
-            dataset.save()
-            return dataset
 
 
-def request_email_body(long_description,ref_link,energy,campaign, link):
-    return """
+
+def request_email_body(long_description,ref_link,energy,campaign, link, excel_link):
+    if excel_link:
+        return """
  %s
 
  The request thread is : %s
@@ -615,7 +762,17 @@ def request_email_body(long_description,ref_link,energy,campaign, link):
 Technical details:
 - Campaign %s %s
 - Link to Request: %s
+- Link to data source: %s
+    """%(long_description,ref_link,energy,campaign, link, excel_link)
+    else:
+        return """
+ %s
 
+ The request thread is : %s
+
+Technical details:
+- Campaign %s %s
+- Link to Request: %s
     """%(long_description,ref_link,energy,campaign, link)
 
 
@@ -656,6 +813,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'default_step_values': default_step_values
                      })
                 else:
+                    if form.cleaned_data['excellink']:
+                        request.session['excel_link'] = form.cleaned_data['excellink']
                     del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
                     # if 'tag_hierarchy' in form.cleaned_data:
                     #     del form.cleaned_data['tag_hierarchy']
@@ -688,6 +847,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
             elif 'file_dict' in request.session:
                 #TODO: Waiting message
                 file_dict = request.session['file_dict']
+                excel_link = ''
+                if 'excel_link' in request.session:
+                    excel_link = request.session['excel_link']
+                    request.session['excel_link']=''
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
                 if not form2.is_valid():
                     inputlists = [x['input_dict'] for x in file_dict]
@@ -704,6 +867,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
+
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
                     form.cleaned_data['excelfile']
                 form.cleaned_data['hidden_json_slices'] = 'a'
@@ -717,9 +881,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 try:
                     with transaction.atomic():
                         _logger.debug("Creating request : %s" % form.cleaned_data)
-
-                        req = TRequest(**form.cleaned_data)
-                        req.save()
                         owner=''
                         owner_mail = ''
                         try:
@@ -733,17 +894,23 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             owner_mails = []
                         else:
                             owner_mails = [owner_mail]
+                        req = TRequest(**form.cleaned_data)
+                        req.info_fields = json.dumps({'long_description':longdesc,'cc':cc})
+                        req.save()
+
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
                                                        status='waiting')
+
                         request_status.save_with_current_time()
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
                         send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
-                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri),
+                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri,excel_link),
                                   APP_SETTINGS['prodtask.email.from'],
                                   APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
                                   fail_silently=True)
                         # Saving slices->steps
+
                         step_parent_dict = {}
                         for current_slice in file_dict:
                             input_data = current_slice["input_dict"]
@@ -761,11 +928,16 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                 upadte_after = False
                                 if 'task_config' in step:
                                     if 'nEventsPerJob' in step['task_config']:
-                                        task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
-                                        if step['step_name']=='Evgen':
-                                            task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],-1))})
+                                        if step['task_config']['nEventsPerJob'].get(step['step_name'],''):
+                                            task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name']))})
+
+                                            if step['step_name']=='Evgen':
+                                                task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
+                                        else:
+                                            task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob']
+                                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
+                                                           'nGBPerJob','maxAttempt']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
@@ -843,26 +1015,33 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     })
 
 
+
+@login_required(login_url='/prodtask/login/')
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 
+@login_required(login_url='/prodtask/login/')
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
-                                   {'nEventsPerJob':'5000','priority':'520'})
+                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'15'})
 
+
+@login_required(login_url='/prodtask/login/')
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
+
+@login_required(login_url='/prodtask/login/')
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880'})
+                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
@@ -1145,6 +1324,7 @@ def get_status_stat(qs):
 
 class Parameters(datatables.Parametrized):
     reqid = datatables.Parameter(label='Request ID')
+    ref_link = datatables.Parameter(label='Link')
     phys_group = datatables.Parameter(label='Physics group')
     campaign = datatables.Parameter(label='Campaign')
     manager = datatables.Parameter(label='Manager')

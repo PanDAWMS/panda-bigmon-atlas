@@ -42,7 +42,7 @@
         $("#" +idForm+ " .datasetTBody").prop({'id':"datasetsTable"+currentSlice});
         $("#" +idForm+ " #datasetPattern"+parentSlice).val('');
         $("#" +idForm+ " #datasetPattern"+parentSlice).prop({'id':"datasetPattern"+currentSlice});
-        $("#" +idForm+ " #addStepButton"+parentSlice+'_'+parentStep).prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(this.id);');
+        $("#" +idForm+ " #addStepButton"+parentSlice+'_'+parentStep).prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(event,this.id);');
         $("#" +idForm+ " #addSliceStepButton"+parentSlice+'_'+parentStep).prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
         $("#" +idForm+ " #jediMerging"+parentSlice+'_'+parentStep).prop({'id':"jediMerging"+currentSlice+'_'+currentStep});
         $("#" +idForm+ " #jediParams"+parentSlice+'_'+parentStep).prop({'id':"jediParams"+currentSlice+'_'+currentStep});
@@ -64,7 +64,7 @@
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
-     function addStep(buttonID){
+     function addStep(event, buttonID){
         event.preventDefault();
 
         var currentSlice = parseInt(buttonID.replace('addStepButton','').split('_')[0]);
@@ -85,7 +85,7 @@
         fillSlicesField();
     }
 
-    function addNewSliceStep(buttonID){
+    function addNewSliceStep(event, buttonID){
         event.preventDefault();
         var nextNumber = parseInt($('#sliceNumber').html());
         var cloneForm = $('#form'+buttonID.replace('addSliceStepButton','').split('_')[0]+'_'+buttonID.replace('addSliceStepButton','').split('_')[1]).clone().prop({'id':"form"+nextNumber.toString()+'_0'});
@@ -318,7 +318,7 @@ $(document).ready(function(){
         </div>
         <div class="large-6 columns">
           <label>project mode
-            <input type="text" class="projectmode storeInput" />
+            <input type="text" class="projectmode storeInput" value="{{ default_step_values.projectmode }}" />
           </label>
         </div>
         <div class="large-3 columns">
@@ -328,17 +328,29 @@ $(document).ready(function(){
         </div>
       </div>
        <div class="row">
-        <div class="large-7 columns">
-          <label>Destination token
-            <input type="text" class="token storeInput"  />
-          </label>
-        </div>
           <div class="large-3 columns">
           <label>Files per job
             <input type="number" class="nFilesPerJob storeInput"  />
           </label>
         </div>
+          <div class="large-3 columns">
+          <label>GB per job
+            <input type="number" class="nGBPerJob storeInput"  />
+          </label>
+        </div>
+          <div class="large-3 columns">
+          <label>Max attempt
+            <input type="number" class="maxAttempt storeInput" value="{{ default_step_values.maxAttempt }}" />
+          </label>
+        </div>
       </div>
+       <div class="row">
+        <div class="large-7 columns">
+          <label>Destination token
+            <input type="text" class="token storeInput"  />
+          </label>
+        </div>
+        </div>
        <div class="row">
         <div class="large-7 columns">
           <label>JEDI internal merging
@@ -369,8 +381,8 @@ $(document).ready(function(){
         </div>
         </div>
         <div class="row">
-            <a class="button" id="addStepButton0_0" onclick="addStep(this.id);" title="Create children step in this slice" >Add step</a>
-            <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(this.id);">Fork</a>
+            <a class="button" id="addStepButton0_0" onclick="addStep(event, this.id);" title="Create children step in this slice" >Add step</a>
+            <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(event, this.id);">Fork</a>
       </div>
     </fieldset>
     </div>

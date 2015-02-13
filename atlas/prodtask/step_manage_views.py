@@ -4,9 +4,14 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
+from time import sleep
+from atlas.prodtask.models import RequestStatus
+from ..prodtask.request_views import clone_slices
+from ..prodtask.helper import form_request_log
+from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask
+from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -24,53 +29,45 @@ def tag_info(request, tag_name):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+
+
+
+
 @csrf_protect
-def clone_slices_in_req(request, reqid):
+def clone_slices_in_req(request, reqid, step_from, make_link_value):
     if request.method == 'POST':
         results = {'success':False}
         try:
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
             ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Clone slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
-            #form levels from input text lines
-            #create chains for each input
-            new_slice_number = InputRequestList.objects.filter(request=reqid).count()
-            old_new_step = {}
-            for slice_number in ordered_slices:
-                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
-                new_slice = current_slice.values()[0]
-                new_slice['slice'] = new_slice_number
-                new_slice_number += 1
-                del new_slice['id']
-                new_input_data = InputRequestList(**new_slice)
-                new_input_data.save()
-                step_execs = StepExecution.objects.filter(slice=current_slice)
-                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-                for step in ordered_existed_steps:
-                    self_looped = step.id == step.step_parent.id
-                    old_step_id = step.id
-                    step.id = None
-                    step.step_appr_time = None
-                    step.step_def_time = None
-                    step.step_exe_time = None
-                    step.step_done_time = None
-                    step.slice = new_input_data
-                    if step.status == 'Skipped':
-                        step.status = 'NotCheckedSkipped'
-                    elif step.status == 'Approved':
-                        step.status = 'NotChecked'
-                    if step.step_parent.id in old_new_step:
-                        step.step_parent = old_new_step[int(step.step_parent.id)]
-                    step.save_with_current_time()
-                    if self_looped:
-                        step.step_parent = step
-                    step.save()
-                    old_new_step[old_step_id] = step
+            if make_link_value == '1':
+                make_link = True
+            else:
+                make_link = False
+            step_from = int(step_from)
+            clone_slices(reqid,reqid,ordered_slices,step_from,make_link,True)
+            results = {'success':True}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+def reject_steps_in_slice(current_slice):
+    step_execs = StepExecution.objects.filter(slice=current_slice)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    for step in ordered_existed_steps:
+        if ProductionTask.objects.filter(step=step).count() == 0:
+            step.step_appr_time = None
+            if step.status == 'Skipped':
+                step.status = 'NotCheckedSkipped'
+            elif step.status == 'Approved':
+                step.status = 'NotChecked'
+            step.save()
 
 @csrf_protect
 def reject_slices_in_req(request, reqid):
@@ -80,22 +77,146 @@ def reject_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))
             for slice_number in slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
-                new_slice = current_slice.values()[0]
-                step_execs = StepExecution.objects.filter(slice=current_slice)
-                ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-                for step in ordered_existed_steps:
-                    if ProductionTask.objects.filter(step=step).count() == 0:
-                        step.step_appr_time = None
-                        if step.status == 'Skipped':
-                            step.status = 'NotCheckedSkipped'
-                        elif step.status == 'Approved':
-                            step.status = 'NotChecked'
-                        step.save()
+                reject_steps_in_slice(current_slice)
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def hide_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
+            for slice_number in slices:
+                current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
+                if not current_slice.is_hide:
+                    current_slice.is_hide = True
+                    reject_steps_in_slice(current_slice)
+                else:
+                    current_slice.is_hide = False
+                current_slice.save()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def add_request_comment(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            comment = input_dict['comment']
+            _logger.debug(form_request_log(reqid,request,'Add comment: %s' % str(comment)))
+            new_comment = RequestStatus()
+            new_comment.comment = comment
+            new_comment.owner = request.user.username
+            new_comment.request = TRequest.objects.get(reqid=reqid)
+            new_comment.status = 'comment'
+            new_comment.save_with_current_time()
+            results = {'success':True}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,obsoleteOnly=True):
+    total = 0
+    total_steps = 0
+    total_tasks = 0
+    nothing = 0
+    alreadyObsolete = 0
+    obsolets = []
+    aborts = []
+    status_list = ['obsolete','aborted','broken','failed','submitting','submitted','assigning','registered','ready','running','finished','done']
+    for request_id in range(request_from,request_to):
+        try:
+            total1 = total
+            total_steps1 = total_steps
+            steps = StepExecution.objects.filter(request=request_id)
+            tasks = list(ProductionTask.objects.filter(request=request_id))
+            total_tasks +=  len(tasks)
+            tasks_by_step = {}
+            for task in tasks:
+                tasks_by_step[task.step_id] = tasks_by_step.get(task.step_id,[])+[task]
+
+            for current_step in steps:
+                input_dict = {}
+                if tasks_by_step.get(current_step.id,None):
+
+                    for current_task in tasks_by_step[current_step.id]:
+                        real_name = current_task.input_dataset[current_task.input_dataset.find(':')+1:]
+                        input_dict[real_name]=input_dict.get(real_name,[])+[current_task]
+                    # if len(input_dict.keys())>1:
+                    #     long_step += 1
+                    #     print 'check - ', current_step.id,input_dict[input_dict.keys()[0]][0].inputdataset
+                    for input_dataset in input_dict.keys():
+                        if len(input_dict[input_dataset])>1:
+                            total_steps += 1
+                            total += len(input_dict[input_dataset])
+                            dataset_to_stay = 0
+                            max_status_index = status_list.index(input_dict[input_dataset][0].status)
+                            #print '-'
+                            for index,ds in enumerate(input_dict[input_dataset][1:]):
+                                if status_list.index(ds.status) > max_status_index:
+                                    dataset_to_stay = index+1
+                                    max_status_index = status_list.index(ds.status)
+                            if input_dict[input_dataset][dataset_to_stay].status != 'done':
+                                print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id,input_dataset
+                            for index,ds in enumerate(input_dict[input_dataset]):
+
+                                if ds.status == 'obsolete':
+                                    if showObsolete:
+                                        print ds.output_dataset
+                                    alreadyObsolete += 1
+                                if index != dataset_to_stay:
+                                    if ds.status in ['obsolete','broken','failed','aborted']:
+                                        #print 'Do nothing:',ds.status,ds.id
+                                        nothing += 1
+                                        pass
+                                    elif ds.status in ['finished','done']:
+                                        print 'Obsolete:',ds.status,ds.id
+                                        obsolets.append(ds.id)
+                                        print dataset_to_stay,'-',[(x.status,x.id) for x in input_dict[input_dataset]]
+                                    else:
+                                        print 'Abort:',ds.status,ds.id
+                                        aborts.append(ds.id)
+
+                            #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
+#            print request_id, '-',len(tasks), (total-total1),(total_steps-total_steps1)
+            if (not checkMode):
+                pass
+                # for task_id in obsolets:
+                #     res = do_action('mborodin',task_id,'obsolete')
+                # if not obsoleteOnly:
+                #     for task_id in aborts:
+                #         res = do_action('mborodin',str(task_id),'abort')
+                #         try:
+                #             if res['status']['jedi_info']['status_code']!=0:
+                #                 print res
+                #         except:
+                #             pass
+                #         #print res
+                #         #sleep(1)
+        except Exception,e:
+            print e
+            pass
+    print total_tasks,total_steps,total
+    print 'obsoletes:',len(obsolets),'abort:',len(aborts),'Already obsolete:',alreadyObsolete
+
+
+
 
 @csrf_protect
 def step_params_from_tag(request, reqid):
@@ -147,6 +268,7 @@ def update_project_mode(request, reqid):
         try:
             data = request.body
             checkecd_tag_format = json.loads(data)
+            _logger.debug(form_request_log(reqid,request,'Update steps: %s' % str(checkecd_tag_format)))
             tag = checkecd_tag_format['tag_format'].split(':')[0]
             output_format, slice_from = checkecd_tag_format['tag_format'].split('-')
             output_format = output_format[len(tag)+1:]
@@ -154,12 +276,14 @@ def update_project_mode(request, reqid):
             new_project_mode = checkecd_tag_format['project_mode']
             new_input_events = int(checkecd_tag_format['input_events'])
             new_priority = int(checkecd_tag_format['priority'])
-            new_nEventsPerInputFile = None
             if checkecd_tag_format['nEventsPerInputFile']:
                 new_nEventsPerInputFile = int(checkecd_tag_format['nEventsPerInputFile'])
-            new_nEventsPerJob = None
+            else:
+                new_nEventsPerInputFile = ''
             if checkecd_tag_format['nEventsPerJob']:
                 new_nEventsPerJob = int(checkecd_tag_format['nEventsPerJob'])
+            else:
+                new_nEventsPerJob = ''
             new_destination = None
             if checkecd_tag_format['destination_token']:
                 new_destination = checkecd_tag_format['destination_token']
@@ -175,10 +299,8 @@ def update_project_mode(request, reqid):
                                 task_config['project_mode'] = new_project_mode
                                 step_exec.task_config = ''
                                 step_exec.set_task_config(task_config)
-                                if new_nEventsPerInputFile:
-                                    step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
-                                if new_nEventsPerJob:
-                                    step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
+                                step_exec.set_task_config({'nEventsPerInputFile':new_nEventsPerInputFile})
+                                step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
                                 if new_destination:
                                     step_exec.set_task_config({'token':'dst:'+new_destination.replace('dst:','')})
                                 step_exec.input_events = new_input_events
@@ -228,26 +350,41 @@ def slice_steps(request, reqid, slice_number):
     if request.method == 'GET':
         results = {'success':False}
         try:
+            if slice_number == '-1':
+                slice_number = 0
             req = TRequest.objects.get(reqid=reqid)
             input_list = InputRequestList.objects.get(request=req,slice=slice_number)
             existed_steps = StepExecution.objects.filter(request=req, slice=input_list)
             # Check steps which already exist in slice, and change them if needed
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             result_list = []
+            foreign_step_dict_index = -1
             if req.request_type == 'MC':
-                step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS)
+                step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
             else:
-                step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS))
+                step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS),existed_foreign_step)
             if existed_foreign_step:
-                    result_list.append({'step':existed_foreign_step.step_template.ctag,'step_name':'','step_type':'foreign',
-                                        'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
-                                        'project_mode':'','input_format':'',
-                                        'priority':'', 'output_formats':'','input_events':'',
-                                        'token':''})
-            step_as_in_page = step_as_in_page[:-1]
-            for step in step_as_in_page:
+                    if req.request_type != 'MC':
+                        foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
+                                            'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
+                                            'project_mode':'','input_format':'',
+                                            'priority':'', 'output_formats':'','input_events':'',
+                                            'token':'','nGBPerJob':'','maxAttempt':''}
+                        foreign_step_dict_index = 0
+                    else:
+                        foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
+                                            'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
+                                            'project_mode':'','input_format':'',
+                                            'priority':'', 'output_formats':'','input_events':'',
+                                            'token':'','nGBPerJob':'','maxAttempt':''}
+                        foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
+
+            for index,step in enumerate(step_as_in_page):
                 if not step:
-                    result_list.append({'step':'','step_name':'','step_type':''})
+                    if index == foreign_step_dict_index:
+                        result_list.append(foreign_step_dict)
+                    else:
+                        result_list.append({'step':'','step_name':'','step_type':''})
                 else:
                     is_skipped = 'not_skipped'
                     if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
@@ -260,12 +397,17 @@ def slice_steps(request, reqid, slice_number):
                                         'token':task_config.get('token',''),'merging_tag':task_config.get('merging_tag',''),
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
-                                        'nFilesPerJob':task_config.get('nFilesPerJob','')})
+                                        'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
+                                        'maxAttempt':task_config.get('maxAttempt','')})
 
             dataset = ''
             if input_list.dataset:
                 dataset = input_list.dataset.name
-            results = {'success':True,'step_types':result_list, 'dataset': dataset}
+            jobOption = ''
+            if input_list.input_data:
+                jobOption = input_list.input_data
+            results = {'success':True,'step_types':result_list, 'dataset': dataset, 'jobOption':jobOption,
+                       'totalEvents':int(input_list.input_events)}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -292,3 +434,27 @@ def reject_steps(request, reqid, step_filter):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def fix_dima_error():
+    inputSlice = InputRequestList.objects.filter(request=1240)
+    counter =0
+    for i in inputSlice:
+        if i.slice > 622:
+            step = StepExecution.objects.get(slice=i)
+            parent = StepExecution.objects.get(id=step.step_parent.id)
+            tasks = ProductionTask.objects.filter(step=parent)
+            datasets = None
+            for task in tasks:
+                if task.status == 'done':
+                    datasets= ProductionDataset.objects.filter(task_id=task.id)
+
+            for dataset in datasets:
+                if  dataset.name.find('log')==-1:
+                    counter +=1
+                    print dataset.name
+                    i.dataset = dataset
+                    i.save()
+                    step.step_parent = step
+                    step.save()
+    print counter

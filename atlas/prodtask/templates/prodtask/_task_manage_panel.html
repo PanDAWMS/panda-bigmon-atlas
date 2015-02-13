@@ -30,6 +30,15 @@
                     {% endif %}
                     >Finish</a>
                 </li>
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+                    {% if can_finish_task or not task.id %}
+                        data-dropdown="task_kill_jobs_menu"
+                        class="small radio button "
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Kill jobs</a>
+                </li>
                 <li><a data-options="is_hover:true" id="btn_retry"
                     {% if can_retry_task or not task.id %}
                         data-dropdown="task_retry_menu"
@@ -58,7 +67,7 @@
                     >Obsolete</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_change_parameters"
-                    {% if can_change_prio_task or not task.id %}
+                    {% if can_change_priority_task or can_change_parameters_task or not task.id %}
                         class="small radio button"
                         data-dropdown="task_change_parameters_menu"
                     {% else %}
@@ -101,6 +110,19 @@
 
         <div id="task_finish_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
+                <div class="row" title="Wait for running jobs">
+                    <div class="small-9 large-9 columns">
+                        <label class="right inline bodyfont-color">
+                            Soft finish
+                        </label>
+                        <p></p>
+                    </div>
+                    <div class="small-3 columns">
+                        <label class="left inline">
+                            <input type="checkbox" id="cbx_soft_finish" value="1">
+                        </label>
+                    </div>
+                </div>
                 <div class="row">
                     <div class="small-9 large-9 columns">
                         <label for="btn_do_finish" class="right inline bodyfont-color">
@@ -110,6 +132,22 @@
                     </div>
                     <div class="small-3 columns">
                         <a class="button postfix secondary" id="btn_do_finish">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_kill_jobs" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_kill_jobs">Go</a>
                     </div>
                 </div>
             </div>
@@ -209,6 +247,20 @@
                     </div>
                     <div class="small-4 large-4 columns">
                         <a class="button postfix" id="btn_do_set_walltime">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="attempts_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="increase_attempt_num" class="inline"> Increase attempts </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="increase_attempt_num" placeholder="Increase by">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_increase_attempt">Set</a>
                     </div>
                 </div>
             </div>
@@ -499,14 +551,17 @@ function doTasksActionSelected(action) {
     }
 
     // TODO: add 'waiting' status while using DEFT API
-    var status_active = ['registered', 'assigning', 'submitting', 'running'];
-    var cascade_actions = ['kill', 'finish', 'increase_priority', 'decrease_priority'];
+    // TODO: rewiew actions on 'active' and other actions (get the list from task_actions?)
+    var status_active = ['registered', 'assigning', 'submitting', 'ready', 'running'];
+    var cascade_actions = ['abort', 'finish', 'increase_priority', 'decrease_priority'];
     var actions_on_active = cascade_actions.concat( ['reassign_to_site', 'reassign_to_cloud'] );
 
     var parameters = [];
 
     // fill action parameters from inputs
-    if (action == "change_priority") {
+    if (action == "finish") {
+        parameters = [$("#cbx_soft_finish").attr("checked") ? 1 : 0];
+    } else if (action == "change_priority") {
         parameters = [$("#new_priority").val()];
     } else if (action == "reassign_to_site") {
         parameters = [$("#site_select").val()];
@@ -518,6 +573,8 @@ function doTasksActionSelected(action) {
         parameters = [$("#new_ramcount").val()];
     } else if (action == "change_wall_time") {
         parameters = [$("#new_walltime").val()];
+    } else if (action == "increase_attempt_number") {
+        parameters = [$("#increase_attempt_num").val()];
     }
 
     var slices = getSliceDependentTasks(tasks);
@@ -590,7 +647,7 @@ $(document).ready(function () {
 
     // Setting buttons handlers
     var button_action_map = {
-        "abort": "kill",
+        "abort": "abort",
         "finish": "finish",
         "obsolete": "obsolete",
         "set_priority": "change_priority",
@@ -599,7 +656,9 @@ $(document).ready(function () {
         "reassign_cloud": "reassign_to_cloud",
         "reassign_site": "reassign_to_site",
         "retry": "retry",
-        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time"
+        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time",
+        "increase_attempt": "increase_attempt_number",
+        "kill_jobs": "abort_unfinished_jobs"
     };
 
     $.each(button_action_map, function(name, action) {
@@ -613,7 +672,12 @@ $(document).ready(function () {
 
 
     {% if not user.is_authenticated %}
-      $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        // disable "disabled" buttons
+        $("a.button.disabled").click(function(event) {
+            event.stopImmediatePropagation();
+            return(false);
+        });
     {% endif %}
 
 

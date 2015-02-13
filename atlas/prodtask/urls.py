@@ -16,6 +16,8 @@ urlpatterns = patterns('',
     url(r'^stepex/(?P<rid>\d+)/$', 'atlas.prodtask.views.stepex_details', name='step_execution'),
     
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
+    url(r'^input_list_approve_full/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve_full', name='input_list_approve_full'),
+
     #url(r'^taskpriority_table/$', 'task.views.taskpriority_table', name='taskpriority_table'),
 
     url(r'^production_dataset_table/$', 'atlas.prodtask.views.production_dataset_table',    name='production_dataset_table'),
@@ -23,8 +25,13 @@ urlpatterns = patterns('',
     
     url(r'^request_table/$',                'atlas.prodtask.request_views.request_table',   name='request_table'),
     url(r'^request/(?P<rid>\d+)/$',         'atlas.prodtask.request_views.request_details', name='request'),
-    url(r'^request_clone/(?P<rid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
-    url(r'^request_update/(?P<rid>\d+)/$',  'atlas.prodtask.request_views.request_update',  name='request_update'),
+    #url(r'^request_clone/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
+    url(r'^request_clone2/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone2',   name='request_clone2'),
+    url(r'^request_update/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_update',  name='request_update'),
+
+    url(r'^request_comments/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_comments',  name='request_comments'),
+    url(r'^make_user_as_owner/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.make_user_as_owner',  name='make_user_as_owner'),
+
     url(r'^request_create/$',               'atlas.prodtask.request_views.request_create',  name='request_create'),
     url(r'^find_datasets_by_pattern/$',     'atlas.prodtask.request_views.find_datasets_by_pattern',  name='find_datasets_by_pattern'),
 
@@ -42,6 +49,7 @@ urlpatterns = patterns('',
     url(r'^mcpriority_create/$',                    'atlas.prodtask.request_views.mcpriority_create',  name='mcpriority_create'),
     url(r'^mcpriority_update/(?P<pattern_id>\d+)/$','atlas.prodtask.request_views.mcpriority_update',  name='mcpriority_update'),
 
+    url(r'^close_deft_ref/(?P<reqid>\d+)/$','atlas.prodtask.request_views.close_deft_ref',  name='close_deft_ref'),
     url(r'^task_table/$',               'atlas.prodtask.task_views.task_table',         name='task_table'),
     url(r'^task/(?P<rid>\d+)/$',        'atlas.prodtask.task_views.task_details',       name='task'),
     url(r'^task_clone/(?P<rid>\d+)/$',  'atlas.prodtask.task_views.task_clone',         name='task_clone'),
@@ -69,19 +77,23 @@ urlpatterns = patterns('',
     url(r'^project_mode_from_tag/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.step_params_from_tag', name='project_mode_from_tag'),
     url(r'^update_project_mode/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.update_project_mode', name='update_project_mode'),
     url(r'^reject_steps/(?P<reqid>\d+)/(?P<step_filter>\w+)/$', 'atlas.prodtask.step_manage_views.reject_steps', name='reject_steps'),
-    url(r'^clone_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
+    url(r'^clone_slices_in_req/(?P<reqid>\d+)/(?P<step_from>[-+]?\d+)/(?P<make_link_value>[01])/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
     url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
-    url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
+    url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
 
+    url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
+    url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
-
+    url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', 'atlas.prodtask.report_view.make_report', name='make_report'),
+    url(r'^make_default_report/$', 'atlas.prodtask.report_view.make_default_report', name='make_default_report'),
     url(r'^find_input_datasets/(?P<reqid>\d+)/$', 'atlas.prodtask.views.find_input_datasets', name='find_input_datasets'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 
 
-    url(r'^login/$', 'shibsso.views.login', name='login'),
-    url(r'^logout/$', 'shibsso.views.logout', name='logout'),
+    url(r'^login/$', 'auth.views.login', name='login'),
+    url(r'^logout/$', 'auth.views.logout', name='logout'),
+
     url(r'^userinfo/$', 'atlas.prodtask.views.userinfo', name='userinfo'),
 
 

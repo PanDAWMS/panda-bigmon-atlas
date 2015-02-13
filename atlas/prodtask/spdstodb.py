@@ -113,15 +113,29 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 else:
                     if st:
                        return st
+                    output_formats = ''
+                    if formats:
+                        output_formats = formats
+                    memory = 0
+                    if ram:
+                        memory = ram
                     st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
                                ctag=tag, priority=0,
-                               cpu_per_event=0, memory=0,
-                               output_formats='', trf_name='',
+                               cpu_per_event=0, memory=memory,
+                               output_formats=output_formats, trf_name='',
                                lparams='', vparams='', swrelease='')
                     st.save()
                     return st
 
-def translate_excl_to_dict(excel_dict):      
+
+def format_check(format):
+    #TODO: implement regular expression for format
+    if format.find(',')>-1:
+        raise ValueError('Wrong format: %s'%format)
+
+
+
+def translate_excl_to_dict(excel_dict):
         return_list = []
         index = 0
         checked_rows = []
@@ -135,19 +149,25 @@ def translate_excl_to_dict(excel_dict):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
             st = ''
             sexec = {}
-            if ('joboptions' in translated_row) and ('brief' in translated_row) and ('ds' in translated_row):
+            if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row)) and ('ds' in translated_row):
                 if translated_row in checked_rows:
                     continue
                 else:
                     checked_rows.append(translated_row)
                     input_events = translated_row.get('evfs', 0)
+                    is_fullsym = True
                     if input_events == 0:
                         input_events = translated_row.get('eva2', 0)
+                        is_fullsym = False
+                    if is_fullsym:
+                        comment = '(Fullsim)'+translated_row.get('comment', '')
+                    else:
+                        comment = '(Atlfast)'+translated_row.get('comment', '')
                     if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
-                        if translated_row['joboptions'].split('.')[1] !=  str(int(translated_row['ds'])):
+                        if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
                             raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
-                    irl = dict(slice=index, brief=translated_row.get('brief', ''),
-                               comment=translated_row.get('comment', ''),
+                    irl = dict(slice=index, brief=translated_row.get('brief', ' '),
+                               comment=comment,
                                input_data=translated_row.get('joboptions', ''),
                                priority=int(translated_row.get('priority', 0)),
                                input_events=int(input_events))
@@ -156,6 +176,12 @@ def translate_excl_to_dict(excel_dict):
                     reduce_input_format = False
                     step_index = 0
                     for currentstep in StepExecution.STEPS:
+                        if translated_row.get('format', '') and (currentstep == 'Reco') and (not translated_row.get(currentstep)) and (is_fullsym):
+                            translated_row[currentstep]='r9999'
+                        if translated_row.get('format', '') and reduce_input_format and (not translated_row.get(currentstep)):
+                            translated_row[currentstep]='p9999'
+                        if translated_row.get('format', '') and (currentstep == 'Atlfast') and (not translated_row.get(currentstep)) and (not is_fullsym):
+                            translated_row[currentstep]='a9999'
                         if translated_row.get(currentstep):
                             st = currentstep
                             tag = translated_row[currentstep]
@@ -167,14 +193,15 @@ def translate_excl_to_dict(excel_dict):
                             else:
                                 sexec = dict(status='NotChecked', input_events=-1)
                             formats = None
-                            task_config = {'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                            task_config = {'maxAttempt':15,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                  'project_mode':get_default_project_mode_dict().get(st,'')}
 
                             if reduce_input_format:
                                 task_config.update({'input_format':'AOD'})
                                 reduce_input_format = False
-                            if currentstep == 'Reco':
+                            if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
                                 if translated_row.get('format', ''):
+                                    format_check(translated_row.get('format', ''))
                                     formats = 'AOD'+'.'+translated_row.get('format', '')
                                     reduce_input_format = True
                                 else:

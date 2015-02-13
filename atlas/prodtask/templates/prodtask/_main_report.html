@@ -1,0 +1,187 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
+	</style>
+    <style>
+    table.stale,table.info td,table.info th {
+    border: 1px solid orange;
+    }
+
+    table.stale th {
+        background-color: orange;
+        color: white;
+    }
+        table.alarm,table.alarm td,table.alarm th {
+    border: 1px solid red;
+    }
+
+    table.alarm th {
+        background-color: red;
+        color: white;
+    }
+        table.warning,table.warning td,table.warning th {
+    border: 1px solid #ffff00;
+    }
+
+    table.warning th {
+        background-color: #ffff00;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+<script>
+$(document).ready(function(){
+
+        $('#selectType').val('{{ type }}');
+        $('#selectDays').val('{{ days }}');
+
+
+});
+    function showReport(event){
+        event.preventDefault();
+        window.location.href = Django.url('prodtask:make_report',$('#selectType').val(),$('#selectDays').val());
+    }
+
+</script>
+<div class="row">
+    <div class="large-2 columns">Type:
+        <select id="selectType" >
+            <option value="MC">MC</option>
+            <option value="GROUP">GROUP</option>
+            <option value="REPROCESSING">REPROCESSING</option>
+        </select>
+    </div>
+    <div class="large-2 columns">Days:
+        <select id="selectDays" >
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+    </div>
+    <div class="large-2 columns">
+        <button onclick="showReport(event)">Show</button>
+    </div>
+    <div class="large-6 columns"></div>
+</div>
+<ul>
+    <li><a href="#deftProblem">Deft not started tasks: {{ not_started|length }}</a></li>
+    <li><a href="#failedTasks">Failed tasks: {{ error_list|length }}</a></li>
+    <li><a href="#staleTasks">Stale tasks: {{ stale_list|length }}</a></li>
+    <li><a href="#warningTasks">Stale for 1 day tasks: {{ warning_list|length }}</a></li>
+</ul>
+<h4 style="color: red" id="deftProblem"> Request with task, which were not started by DEfT </h4>
+    {%  for request_id in not_started %}
+      <span><a href="{%  url 'prodtask:input_list_approve' request_id %}">{{ request_id }}</a>,</span>
+    {% endfor  %}
+<h4 style="color: red" id="failedTasks">Failed tasks:</h4>
+    <table class="alarm">
+    <thead>
+    <tr>
+    <th>Request</th>
+    <th>Task ID</th>
+    <th>Status</th>
+    <th>Group</th>
+    <th>Timestamp</th>
+    <th>Owner</th>
+    <th>Manage</th>
+    <th>JEDI_Info</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for task in error_list %}
+        <tr>
+            <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
+            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
+            <td>{{ task.group }}</td>
+            <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
+            <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+<h4 style="color: orange" id="staleTasks">Stale for more than 3 days:</h4>
+    <table class="stale">
+    <thead>
+    <tr>
+    <th>Request ID</th>
+    <th>Task ID</th>
+    <th>Status</th>
+    <th>Group</th>
+    <th>Timestamp</th>
+    <th>Owner</th>
+    <th>Manage</th>
+    <th>JEDI_Info</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for task in stale_list %}
+        <tr>
+            <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
+            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
+            <td>{{ task.group }}</td>
+            <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
+            <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+<h4 style="color: orange" id="warningTasks">Warning, stale for 1 day:</h4>
+    <table class="warning">
+    <thead>
+    <tr>
+    <th>Request ID</th>
+    <th>Task ID</th>
+    <th>Status</th>
+    <th>Group</th>
+    <th>Timestamp</th>
+    <th>Owner</th>
+    <th>Manage</th>
+    <th>JEDI_Info</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for task in warning_list %}
+        <tr>
+            <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
+            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
+            <td>{{ task.group }}</td>
+            <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
+            <td>{{ task.owner }}</td>
+            <td><a href="{%  url 'prodtask:task' task.task_id %}">Manage</a></td>
+            <td>{{ task.jedi_info }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+{% endblock %}
