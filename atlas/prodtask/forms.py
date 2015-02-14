@@ -217,6 +217,7 @@ class RequestUpdateForm(ModelForm):
         model = TRequest
         widgets = {
             'reqid': TextInput(attrs={'readonly': 'readonly'}),
+            'info_fields': TextInput(attrs={'readonly': 'readonly'}),
         }
 
 
