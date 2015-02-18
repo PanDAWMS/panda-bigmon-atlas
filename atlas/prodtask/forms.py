@@ -48,7 +48,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
     def clean(self):
         cleaned_data = super(TRequestCreateCloneConfirmation, self).clean()
-        if(type(self)==TRequestCreateCloneConfirmation):
+        if type(self) == TRequestCreateCloneConfirmation:
             project = cleaned_data.get('project')
             energy = cleaned_data.get('energy_gev')
             if project:

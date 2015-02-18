@@ -108,7 +108,8 @@ $("#doColor").css({'background-color':step_bc[0]});
 $("#skippedColor").css({'background-color':step_bc[1]});
 $("#foreignColor").css({'background-color':step_bc[2]});
 $(document).ready(function(){
-
+var temp_ref_link = '{{ trequest.ref_link}}';
+$('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,temp_ref_link.length));
 {% if not edit_mode %}
     $("#patternTable").hide();
     $("#approveButton").hide();
@@ -1343,10 +1344,20 @@ var lastChecked = true;
   <th>Status:</th>
 </tr>
 <tr>
-  <td><a href="#" data-dropdown="drop1" >&#9776;</a></td>
+  <td><a href="#" data-dropdown="drop1" >&#9776;</a>
+      <ul id="drop1" class="f-dropdown" data-dropdown-content>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
+          <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
+          <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
+        {% else %}
+          <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
+        {% endif %}
+    </ul>
+  </td>
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
-  <td><a href={{trequest.ref_link}} >{{ trequest.ref_link}}</a></td>
+  <td><a href='{{trequest.ref_link}}' id='request_link'>{{ trequest.ref_link}}</a></td>
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
   <td>{{ trequest.phys_group}}</td>
   <td>{{ trequest.project}}</td>
@@ -1359,15 +1370,7 @@ var lastChecked = true;
 </table>
 </div>
 </div>
-<ul id="drop1" class="f-dropdown" data-dropdown-content>
-    {% if user.is_authenticated %}
-      <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
-      <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
-      <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
-    {% else %}
-      <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
-    {% endif %}
-</ul>
+
 <div>
     <div class="row">
         <div class="large-5 column"><span>last comment: <span id="lastComment">{{ comment_author }}-{{ last_comment }}</span></span></div>
