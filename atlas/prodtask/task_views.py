@@ -5,6 +5,7 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import user_passes_test#Ruslan
 
 from ..settings import defaultDatetimeFormat
 
@@ -24,8 +25,39 @@ from datetime import datetime
 import locale
 import time
 
+def a_permissions(the_func):
+    """
+    Get user's permissions
+    """
+    def _decorated(request, rid):
+        user_name=''
+        is_superuser=False
+        user_permissions = []
+        group_permissions = []
+        owner = ProductionTask.objects.values('username').get(id=rid).get('username')
+  
+        try:
+                user_name = request.user.username
+                user_groups = request.user.groups.all()
+                is_superuser = request.user.is_superuser
+                user_permissions = request.user.user_permissions.all()
+                for gp in user_groups:
+                        group_permissions += list(gp.permissions.all())
+        except:
+                pass
 
-def task_details(request, rid=None):
+        if is_superuser:
+                return the_func(request, rid, True)
+
+        if user_name==owner:
+                return the_func(request, rid, True)
+
+        return the_func(request, rid, False)
+
+    return _decorated
+
+@a_permissions
+def task_details(request, rid=None, is_permitted=False):
     if rid:
         try:
             task = ProductionTask.objects.get(id=rid)
@@ -37,12 +69,12 @@ def task_details(request, rid=None):
     else:
         return HttpResponseRedirect('/')
 
-    # TODO: check user permissions on the task (SB)
+    # TODO: sophisticate user permissions on the task (RM)
 
     permissions = {}
     if task.status in allowed_task_actions:
         for action in allowed_task_actions[task.status]:
-            permissions[action] = True
+            permissions[action] = is_permitted
 
     # TODO: these actions are needed from DEFT and JEDI (SB)
     for action in ['edit', 'clone']:
@@ -421,3 +453,6 @@ def get_sites():
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
+
+
+
