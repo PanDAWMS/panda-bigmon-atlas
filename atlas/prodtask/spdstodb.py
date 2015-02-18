@@ -5,6 +5,7 @@ Created on Nov 6, 2013
 '''
 import logging
 from django.utils import timezone
+import re
 from atlas.prodtask.models import get_default_project_mode_dict
 
 import core.gspread as gspread
@@ -210,10 +211,11 @@ def translate_excl_to_dict(excel_dict):
                                 step_index_parent = step_index - 1
                             else:
                                 step_index_parent = 0
-                            st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
-                                                  'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
-                                                  'step_parent':str(index)+'_'+str(step_index_parent)})
-                            step_index += 1
+                            if re.match('\w\d+',tag):
+                                st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
+                                                      'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
+                                                      'step_parent':str(index)+'_'+str(step_index_parent)})
+                                step_index += 1
                     return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 
