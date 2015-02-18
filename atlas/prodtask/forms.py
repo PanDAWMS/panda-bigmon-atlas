@@ -18,6 +18,18 @@ class RequestForm(ModelForm):
         model = TRequest
 
 
+def energy_to_str(energy):
+    if int(energy)>1000:
+        gev = str(int(energy))
+        if gev[1]!='0':
+            return gev[0:-3]+'p'+gev[-3:].rstrip('0')+'TeV'
+        else:
+            return gev[0:-3]+gev[-3:].rstrip('0')+'TeV'
+
+
+    else:
+        return str(energy)+'GeV'
+
 
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
@@ -29,10 +41,26 @@ class TRequestCreateCloneConfirmation(ModelForm):
     phys_group = CharField(required=True, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=True)
 
+
     class Meta:
         model = TRequest
         exclude = ['reqid','is_error','jira_reference','info_fields']
 
+    def clean(self):
+        cleaned_data = super(TRequestCreateCloneConfirmation, self).clean()
+        if(type(self)==TRequestCreateCloneConfirmation):
+            project = cleaned_data.get('project')
+            energy = cleaned_data.get('energy_gev')
+            if project:
+                if 'eV' in str(project):
+                    if energy_to_str(energy) not in str(project):
+                        msg = "Energy doesn't correspond project"
+                        self._errors['project'] = self.error_class([msg])
+                        self._errors['energy_gev'] = self.error_class([msg])
+                        del cleaned_data['project']
+                        del cleaned_data['energy_gev']
+
+        return cleaned_data
 
 
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -47,6 +75,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     class Meta:
         model = TRequest
         exclude = ['reqid','is_error','jira_reference','info_fields']
+
 
 
 class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
