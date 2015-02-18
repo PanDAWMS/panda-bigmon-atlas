@@ -91,8 +91,8 @@ urlpatterns = patterns('',
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
 
 
-    url(r'^login/$', 'auth.views.login', name='login'),
-    url(r'^logout/$', 'auth.views.logout', name='logout'),
+    url(r'^login/$', 'atlas.auth.views.login', name='login'),
+    url(r'^logout/$', 'atlas.auth.views.logout', name='logout'),
 
     url(r'^userinfo/$', 'atlas.prodtask.views.userinfo', name='userinfo'),
 
