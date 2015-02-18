@@ -19,7 +19,8 @@ import core.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
-from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict
+from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
+    ProductionTask
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
@@ -29,6 +30,21 @@ from .xls_parser_new import open_tempfile_from_url
 
 _logger = logging.getLogger('prodtaskwebui')
 
+
+def clean_old_request(do_action=False):
+    all_requests = TRequest.objects.filter(cstatus='test')
+    total_request = 0
+    for request in all_requests:
+        task_count = ProductionTask.objects.filter(request=request).count()
+        if (task_count == 0):
+            print request.reqid
+            if do_action:
+                steps = StepExecution.objects.filter(request=request)
+                for step in steps:
+                    step.delete()
+                request.delete()
+            total_request +=1
+    print total_request
 
 
 def request_details(request, rid=None):
