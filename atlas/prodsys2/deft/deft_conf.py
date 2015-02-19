@@ -1,7 +1,8 @@
 # config parameters for DEFT handling subroutines
 # Mar 2014. A.Klimentov
+# Feb 17, 2015. INTR -> ADCR
 #
-# Last Edit : July 17, 2014
+# Last Edit : Feb 17, 2015
 #
 daemon = {
     'deftDB_host'    : 'ATLAS_DEFT',
@@ -23,6 +24,7 @@ daemon = {
     't_production_dataset'         : 't_production_dataset',
     't_production_container'       : 't_production_container',
     't_projects'                   : 't_projects',
+    't_prodsys2_reports'           : 't_prodsys2_reports',
     # DEFT-JEDI
     't_task'               : 't_task',
     't_input_dataset'      : 't_input_dataset',
