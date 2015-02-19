@@ -21,7 +21,8 @@ class RequestForm(ModelForm):
 def energy_to_str(energy):
     if int(energy)>1000:
         gev = str(int(energy))
-        if gev[1]!='0':
+        print gev[-3]
+        if gev[-3]!='0':
             return gev[0:-3]+'p'+gev[-3:].rstrip('0')+'TeV'
         else:
             return gev[0:-3]+gev[-3:].rstrip('0')+'TeV'
@@ -64,6 +65,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
 
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
+
     excellink = CharField(required=False, label="Spreadsheet Link")
     excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
