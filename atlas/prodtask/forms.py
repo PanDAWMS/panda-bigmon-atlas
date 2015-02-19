@@ -19,6 +19,8 @@ class RequestForm(ModelForm):
 
 
 def energy_to_str(energy):
+    if int(energy)==5023:
+        return '5TeV'
     if int(energy)>1000:
         gev = str(int(energy))
         print gev[-3]
