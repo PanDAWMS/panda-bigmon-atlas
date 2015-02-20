@@ -200,11 +200,11 @@ $(".showSmallSpan").css({"cursor":"pointer"});
            });
        }
     });
-    $("#newComment").keyup(function(event){
-    if(event.keyCode == 13){
-        addComment(event);
-    };
-    });
+{#    $("#newComment").keyup(function(event){#}
+{#    if(event.keyCode == 13){#}
+{#        addComment(event);#}
+{#    };#}
+{#    });#}
     {#Fill pattern table#}
     (function(){
        {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
@@ -282,6 +282,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     });
 
     function approveSlices(isApprove, approveLevel, slices){
+        var toChangeDatasets = [];
         var toChangeDatasets = [];
         var startFindig = false;
         var sendData = Object();
@@ -2011,7 +2012,7 @@ var lastChecked = true;
     <div class="row">
             <div class="large-4 column">
                 <label>{{ request.user.username }}:
-                <input type="text" id="newComment"  maxlength="140"  /></label>
+                <textarea  id="newComment"  maxlength="250"  ></textarea></label>
             </div>
             <div class="large-1 column">
                 <a href='#' class="button btn_is_authenticated postfix" onclick="addComment(event);">Add</a>
