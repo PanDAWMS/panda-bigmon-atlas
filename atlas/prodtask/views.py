@@ -1011,6 +1011,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             approved_steps_count = 0
             comment_author = ' '
             last_comment = ' '
+            autorized_change_request = True
+            if cur_request.request_type == 'MC':
+                try:
+                    if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS):
+                        autorized_change_request = False
+                except:
+                    autorized_change_request = False
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
             if comments:
                 comment_author = comments.owner
@@ -1312,7 +1319,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'total_steps' : total_steps_count,
                'long_description':long_description,
                'last_comment':last_comment,
-               'comment_author':comment_author
+               'comment_author':comment_author,
+               'autorized_change_request':autorized_change_request
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

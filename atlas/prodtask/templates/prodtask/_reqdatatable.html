@@ -126,6 +126,17 @@ var slices_changes = {};
           this.disabled=true;
           $(this).attr('onclick','');
           $(this).addClass('disabled')});
+      $(".btn_is_authorized").each(function(){
+          this.disabled=true;
+          $(this).attr('onclick','');
+          $(this).addClass('disabled')});
+    {% endif %}
+
+    {% if not autorized_change_request %}
+      $(".btn_is_authenticated").each(function(){
+          this.disabled=true;
+          $(this).attr('onclick','');
+          $(this).addClass('disabled')});
     {% endif %}
 
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
@@ -2015,7 +2026,7 @@ var lastChecked = true;
                 <textarea  id="newComment"  maxlength="250"  ></textarea></label>
             </div>
             <div class="large-1 column">
-                <a href='#' class="button btn_is_authenticated postfix" onclick="addComment(event);">Add</a>
+                <a href='#' class="button btn_is_authorized postfix" onclick="addComment(event);">Add</a>
             </div>
             <div class="large-7 column"></div>
         </div>
