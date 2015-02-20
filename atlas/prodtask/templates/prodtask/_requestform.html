@@ -130,9 +130,74 @@
             }
         }
     });
+    {#TODO: make a django form behaviour#}
+    function changeInputOnSelect(input_id,input_name,new_input_id,option_list){
+                var new_selector=$('<select id='+input_id+' name='+input_name+'></select>');
+                for (var i=0; i<option_list.length; i++){
+                    if ($('#'+input_id).val()==option_list[i]){
+                       new_selector.append($('<option>', {
+                                        value: option_list[i],
+                                        text: option_list[i],
+                                        selected: 'selected'
+                                    }));
+                    } else {
+                        new_selector.append($('<option>', {
+                                        value: option_list[i],
+                                        text: option_list[i]
+                                    }));
+                    }
+
+                }
+
+                $('#'+input_id).hide().attr('id',new_input_id);
+                $("#"+new_input_id).parent().append(new_selector);
+                return $('#'+input_id).val();
+    }
+    function changeSelectOnInput(selector_id,input_id){
+
+        $('#'+input_id).val($('#'+selector_id).val());
+        $('#'+selector_id).attr('id',selector_id+'to_delete');
+        $('#'+input_id).attr('id',selector_id).show();
+        $('#'+selector_id+'to_delete').remove();
+
+    }
+
+    function changeSelector(selectID, baseList, sourceSelectID){
+        var baseValue = $(selectID).val();
+        $(sourceSelectID).html('');
+        for (var i=0; i<baseList.length;i++){
+            var new_option = baseValue + baseList[i];
+            $(sourceSelectID).append($('<option>', {
+                value: new_option,
+                text: new_option
+            }));
+
+        }
+    }
+    function  MCCampaignHandling(){
+        var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15'];
+        var SUB_CAMPAIGN = ['a','b','c','d','e','f'];
+        if ($("#{{ form.request_type.auto_id }}").val()=='MC'){
+            var campaign_name = changeInputOnSelect("{{ form.campaign.auto_id }}","campaign",'none_mc_campaign',MC_CAMPAIGN_LIST);
+            var sub_campaign_list = [];
+            for (var i=0; i<SUB_CAMPAIGN.length;i++){
+                sub_campaign_list.push(campaign_name + SUB_CAMPAIGN[i]);
+            }
+            var sub_campaign_name = changeInputOnSelect("{{ form.subcampaign.auto_id }}","subcampaign",'none_mc_subcampaign',sub_campaign_list);
+            $("#{{ form.campaign.auto_id }}").change(function(){changeSelector("#{{ form.campaign.auto_id }}",SUB_CAMPAIGN,"#{{ form.subcampaign.auto_id }}")});
+        } else{
+            if ($('#none_mc_campaign').val()!=undefined){
+                changeSelectOnInput("{{ form.campaign.auto_id }}",'none_mc_campaign');
+                changeSelectOnInput("{{ form.subcampaign.auto_id }}",'none_mc_subcampaign');
+            }
+        }
+    }
 
 $(document).ready(function(){
-
+        (function(){MCCampaignHandling()})();
+        $("#{{ form.request_type.auto_id }}").change(function(){
+            MCCampaignHandling();
+        });
         bindOnChangeToFieldSet();
 });
         function bindOnChangeToFieldSet(){

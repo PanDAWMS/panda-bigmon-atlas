@@ -219,6 +219,7 @@ def translate_excl_to_dict(excel_dict):
                     return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 
+
 def fill_steptemplate_from_gsprd(gsprd_link):
         """Parse google spreadsheet. 
 
