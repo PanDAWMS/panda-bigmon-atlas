@@ -1012,7 +1012,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             comment_author = ' '
             last_comment = ' '
             autorized_change_request = True
-            if cur_request.request_type == 'MC':
+            if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
                     if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS):
                         autorized_change_request = False
