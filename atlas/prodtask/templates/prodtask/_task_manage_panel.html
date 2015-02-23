@@ -357,102 +357,6 @@ function makeAlertBox(content, box_id, text_id) {
     .append( $( "<a/>", {href: "#", "class": "close", text: '×'} ) );
 }
 
-var modal_count = 0;
-function makeModalDialog(content) {
-    var $dialog = $("<div/>", { id: "modal_" + (modal_count++), "class": "reveal-modal", "data-reveal": ""})
-        .append( $("<span/>", {html: content}) )
-        .append( $("<a/>", { "class": "close-reveal-modal", text: "×" }) );
-
-    $('body').append($dialog);
-    return $dialog;
-}
-
-
-// Make and show modal dialog to confirm which action affects more tasks than it was selected
-function makeTasksActionConfirmDialog(title, tasks_affected, callback) {
-    function makeButtonBar(groups) {
-        var $bar = $("<div/>", { "class": "button-bar" });
-        $.each(groups, function(index, group) {
-            var $group = $("<div/>", { "class": "button-group" });
-            $.each(group, function(ind, button) {
-                $group.append(
-                    $("<li/>").append(
-                        $("<a/>", { href: button['href'], "class": button['class'], text: button['text'] })
-                        .click(function() {
-                            try {
-                                callback( button['return_value'] );
-                            } catch(e) {
-                                throw e;
-                            } finally {
-                                $('a.close-reveal-modal').trigger('click'); 
-                            }
-                        })
-                    )
-                );
-            });
-            $bar.append($group);
-        });
-
-        return $bar;
-    }
-
-    var $title = $("<h3/>", { html: title + "<br/>" });
-    var $content = $("<span/>");
-
-    $content.append($title);
-
-    var tasks_selected = $.map(tasks_affected, function (element,index) { return index });
-    tasks_selected.sort();
-
-    $content.append( $("<p/>", {
-        html: "<b> Selected tasks in suitable states (" + tasks_selected.length + "): </b> <br>"
-                + tasks_selected.join(", ")
-    }) );
-
-    var tasks_shown = $.extend({}, tasks_affected); // keep tasks processed to not display twice
-    var dependent_tasks_shown = false;
-
-    $.each(tasks_affected, function (task, list) {  // show dependent tasks for each slice
-        list = $.grep(list, function (elem, index) { return !(elem in tasks_shown); });
-
-        if (list.length == 0) { return; } // no dependent task to display
-        dependent_tasks_shown = true;
-
-        $.each(list, function(ind, val) { tasks_shown[val] = 1; }); // add tasks to already shown
-
-        $content.append(
-            $( "<p/>", {
-                html: "<b> For task " + task + " will be also affected " + list.length
-                        + " task" + ( (list.length>1) ? "s" : "" ) + ": </b> <br/>" + list.join(", ")
-            } )
-        )
-    });
-
-    if ( !dependent_tasks_shown ) {
-        $content.append(
-            $( "<p/>", { html: "<b> No other tasks will be affected </b>" })
-        );
-    }
-
-    var btn_class = "small button";
-
-    var buttons_config = [
-            [ { text: "Apply to all affected tasks", return_value: "all", "class": btn_class, href:"#" } ],
-            [ { text: "Apply to selected tasks", return_value: "selected", "class": btn_class, href:"#" } ],
-            [ { text: "Cancel", return_value: "cancel", "class": btn_class, href: "#" } ]
-        ];
-
-    if ( !dependent_tasks_shown) {
-        buttons_config.splice(0, 1);
-    }
-
-    var buttons_holder = $("<div/>", { "class": "small-12 large-12 columns" });
-    buttons_holder.append( makeButtonBar(buttons_config) );
-
-    $content.append( $("<div/>", { "class": "row", html: buttons_holder } ) );
-
-    return ( makeModalDialog($content) );
-}
 
 
 // Get list of tasks selected with checkboxes
@@ -493,19 +397,16 @@ function doTasksAction(action, tasks, parameters) {
         type: "POST",
         data: $.toJSON(postData),
         dataType: "json",
-        success: function (result, status) {
+        complete: function (jqXHR, textStatus) {
             request_done = true;
-            if (status) {
+            if (textStatus == 'success') {
                 $("#req_status_text").html("Request status: done");
             } else {
                 request_error = true;
-                $("#req_status_text").html("Request status: error - " + status);
+                $("#req_status_text").html("Request status: '" + textStatus + "', details: '" + jqXHR.statusText + "'");
             }
-        },
-        failure: function (errorMsg) {
-            request_error = true;
-            $("#request_status_text").html("Error: " + errorMsg);
-        }
+        } // 'complete' event handler
+
     });
 
     if ( !(request_error && request_done) ) {
@@ -513,34 +414,6 @@ function doTasksAction(action, tasks, parameters) {
     }
 }
 
-// get IDs and status of the dependent tasks from the same slice as given ones
-function getSliceDependentTasks(tasks) {
-    var ajaxUrl = Django.url('prodtask:same_slice_tasks');
-    var requestParams = {
-        url: ajaxUrl,
-        type: "POST",
-        data: $.toJSON( {"tasks": tasks} ),
-        dataType: "json",
-        async: false
-    };
-
-    var result = {};
-
-    $.when( $.ajax( requestParams ) ).then(function(data) {
-        $.each(data, function(task_id, info) {
-            $.each(info["tasks"], function(key, val) {
-                if ( !(task_id in result) ) {
-                    result[task_id] = {};
-                }
-                if (key >= task_id) {
-                    result[task_id][key] = val;
-                }
-            });
-        });
-    });
-
-    return result;
-}
 
 // Perform action on the selected tasks
 function doTasksActionSelected(action) {
@@ -549,12 +422,6 @@ function doTasksActionSelected(action) {
     if (tasks.length == 0) {
         return;
     }
-
-    // TODO: add 'waiting' status while using DEFT API
-    // TODO: rewiew actions on 'active' and other actions (get the list from task_actions?)
-    var status_active = ['registered', 'assigning', 'submitting', 'ready', 'running'];
-    var cascade_actions = ['abort', 'finish', 'increase_priority', 'decrease_priority'];
-    var actions_on_active = cascade_actions.concat( ['reassign_to_site', 'reassign_to_cloud'] );
 
     var parameters = [];
 
@@ -577,57 +444,9 @@ function doTasksActionSelected(action) {
         parameters = [$("#increase_attempt_num").val()];
     }
 
-    var slices = getSliceDependentTasks(tasks);
-
-    if ($.inArray(action, actions_on_active) > -1) {
-        tasks = $.grep(tasks, function (task) {
-            return ($.inArray(slices[task][task]['status'], status_active) > -1);
-        });
-    }
-
-    if (tasks.length == 0) {
-        return;
-    }
-
     tasks.sort();
 
-    if ($.inArray(action, cascade_actions) > -1) {
-        var show_dialog = false; // before showing dialog, check if other than selected tasks are affected
-        var tasks_affected = {};
-        $.each(tasks, function(index, task_id) {
-            tasks_affected[task_id] = [];
-            var dependent = slices[task_id];
-            for (var dep_id in dependent) {
-                if (!dependent.hasOwnProperty(dep_id)) { continue; }
-                if ( (dep_id>task_id)  && ($.inArray(dependent[dep_id]['status'], status_active) > -1) ) {
-                    show_dialog = true;
-                    tasks_affected[task_id].push(dep_id);
-                } // if
-            } // for dep
-        }); // for $.each task
-
-        if (!show_dialog) {
-            doTasksAction(action, tasks, parameters);
-            return;
-        }
-
-        makeTasksActionConfirmDialog(
-                "Perform action '" + action + "'",
-                tasks_affected,
-                function (response) {
-                    if (response == "all") {
-                        var tasks_affected_list = $.map(tasks_affected, function(val, key){ return key; });
-                        tasks_affected_list.sort();
-                        doTasksAction(action, tasks_affected_list, parameters);
-                    } else if (response == "selected") {
-                        doTasksAction(action, tasks, parameters);
-                    }
-                } // callback function
-        ).foundation('reveal', 'open');
-
-    } else {
-        doTasksAction(action, tasks, parameters);
-    } // if action in cascade actions
+    doTasksAction(action, tasks, parameters);
 
 } // doTasksActionSelected
 
