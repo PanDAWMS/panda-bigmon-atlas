@@ -768,28 +768,40 @@ def find_datasets_by_pattern(request):
 
 
 
-def request_email_body(long_description,ref_link,energy,campaign, link, excel_link):
-    if excel_link:
-        return """
- %s
 
- The request thread is : %s
 
-Technical details:
-- Campaign %s %s
-- Link to Request: %s
-- Link to data source: %s
-    """%(long_description,ref_link,energy,campaign, link, excel_link)
+
+def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link):
+    subject = 'Request {group_name} {description}'.format(group_name=production_request.phys_group,
+                                                          description=production_request.description.replace('\n','').replace('\r',''))
+    mail_body = """
+ {long_description}
+
+Best,
+
+Details:
+- JIRA for the request : {ref_link}
+- Campaign {energy} {campaign} {sub_campaign}
+- Link to Request: {link}
+""".format(long_description=long_description,ref_link=production_request.ref_link,
+               energy=production_request.energy_gev,campaign=production_request.campaign,
+               sub_campaign=production_request.subcampaign, link = current_uri)
+    if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
+        mail_body = "Dear Monica, James and Marumi,\n"+mail_body
+        mail_from = "atlas-csc-prodman@cern.ch"
+        owner_mails += ["atlas-csc-prodman@cern.ch"]
     else:
-        return """
- %s
-
- The request thread is : %s
-
-Technical details:
-- Campaign %s %s
-- Link to Request: %s
-    """%(long_description,ref_link,energy,campaign, link)
+        mail_from = APP_SETTINGS['prodtask.email.from']
+        pass
+    if excel_link:
+        mail_body += "- Data source: %s\n" % excel_link
+    send_mail(subject,
+      mail_body,
+      mail_from,
+      APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
+      fail_silently=True)
+    #print subject,mail_body
+    pass
 
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
@@ -911,7 +923,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         else:
                             owner_mails = [owner_mail]
                         req = TRequest(**form.cleaned_data)
-                        req.info_fields = json.dumps({'long_description':longdesc,'cc':cc})
+                        req.info_fields = json.dumps({'long_description':longdesc,'cc':cc,'data_source':excel_link})
                         req.save()
 
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
@@ -920,11 +932,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         request_status.save_with_current_time()
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
-                        send_mail('Request %i: %s %s %s' % (req.reqid,req.phys_group,req.campaign,req.description),
-                                  request_email_body(longdesc, req.ref_link, req.energy_gev, req.campaign,current_uri,excel_link),
-                                  APP_SETTINGS['prodtask.email.from'],
-                                  APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
-                                  fail_silently=True)
+                        form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link)
+
                         # Saving slices->steps
 
                         step_parent_dict = {}
