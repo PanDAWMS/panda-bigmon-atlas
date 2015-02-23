@@ -397,19 +397,16 @@ function doTasksAction(action, tasks, parameters) {
         type: "POST",
         data: $.toJSON(postData),
         dataType: "json",
-        success: function (result, status) {
+        complete: function (jqXHR, textStatus) {
             request_done = true;
-            if (status) {
+            if (textStatus == 'success') {
                 $("#req_status_text").html("Request status: done");
             } else {
                 request_error = true;
-                $("#req_status_text").html("Request status: error - " + status);
+                $("#req_status_text").html("Request status: '" + textStatus + "', details: '" + jqXHR.statusText + "'");
             }
-        },
-        failure: function (errorMsg) {
-            request_error = true;
-            $("#request_status_text").html("Error: " + errorMsg);
-        }
+        } // 'complete' event handler
+
     });
 
     if ( !(request_error && request_done) ) {
