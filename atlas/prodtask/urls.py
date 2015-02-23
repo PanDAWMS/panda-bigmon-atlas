@@ -70,6 +70,9 @@ urlpatterns = patterns('',
         name='request_reprocessing_steps_create'),
     url(r'^make_test_request/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_test_request',
         name='make_test_request'),
+    url(r'^make_request_fast/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_request_fast',
+        name='make_request_fast'),
+
     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
 
     url(r'^tag_info/(?P<tag_name>\w+)/$', 'atlas.prodtask.step_manage_views.tag_info', name='tag_info'),

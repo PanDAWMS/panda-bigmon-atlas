@@ -875,6 +875,19 @@ def make_test_request(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def make_request_fast(request, reqid):
+    results = {}
+    if request.method == 'POST':
+        try:
+            _logger.debug(form_request_log(reqid,request,'Make request fast'))
+            cur_request = TRequest.objects.get(reqid=reqid)
+            cur_request.is_fast = True
+            cur_request.save()
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
 def home(request):
     tmpl = get_template('prodtask/_index.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production Home'})
@@ -1012,6 +1025,9 @@ def request_table_view(request, rid=None, show_hidden=False):
             comment_author = ' '
             last_comment = ' '
             autorized_change_request = True
+            show_is_fast = False
+            if (cur_request.request_type in ['HLT','REPROCESSING']) or (cur_request.phys_group == 'VALI'):
+                show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
                     if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS):
@@ -1320,7 +1336,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'long_description':long_description,
                'last_comment':last_comment,
                'comment_author':comment_author,
-               'autorized_change_request':autorized_change_request
+               'autorized_change_request':autorized_change_request,
+               'show_is_fast':show_is_fast
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

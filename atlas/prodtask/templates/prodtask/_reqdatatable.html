@@ -664,6 +664,23 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 });
               return false;
        };
+        function chnageRequestToFast(event){
+            event.preventDefault();
+            sendData = {};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:make_request_fast' pr_id%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        $("#isFast").html(" :Yes");
+                    }
+                });
+              return false;
+        }
         function tagFormatChange(){
 {#                 event.preventDefault();#}
                  sendData = {'tag_format':$("#tagFormatSelect").val()};
@@ -2042,5 +2059,14 @@ var lastChecked = true;
     <p/>
 
 {% endif %}
-<a href="#" class="tiny secondary" onclick="chnageStatusToTest(event);">Make as test</a>
+{% if show_is_fast %}
+    <a href="#" class="tiny secondary" onclick="chnageRequestToFast(event);">Start tasks without delay</a>
+    {% if trequest.is_fast %}
+        <span id="isFast"> :Yes</span>
+    {% else %}
+        <span id="isFast"> :No</span>
+    {% endif %}
+{% endif %}
+    <p/>
+    <a href="#" class="tiny secondary" onclick="chnageStatusToTest(event);">Make as test</a>
 {% endblock %}

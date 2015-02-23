@@ -122,6 +122,7 @@ class TRequest(models.Model):
     is_error = models.NullBooleanField(db_column='EXCEPTION', null=True, blank=False)
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
+    is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
 
     def info_field(self,field):
         if self.info_fields:
