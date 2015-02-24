@@ -771,7 +771,7 @@ def find_datasets_by_pattern(request):
 
 
 
-def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link):
+def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve):
     subject = 'Request {group_name} {description}'.format(group_name=production_request.phys_group,
                                                           description=production_request.description.replace('\n','').replace('\r',''))
     mail_body = """
@@ -789,7 +789,8 @@ Details:
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
         mail_body = "Dear Monica, James and Marumi,\n"+mail_body
         mail_from = "atlas-csc-prodman@cern.ch"
-        owner_mails += ["atlas-csc-prodman@cern.ch"]
+        if need_approve:
+            owner_mails += ["atlas-csc-prodman@cern.ch"]
     else:
         mail_from = APP_SETTINGS['prodtask.email.from']
         pass
@@ -800,8 +801,6 @@ Details:
       mail_from,
       APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
       fail_silently=True)
-    #print subject,mail_body
-    pass
 
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
@@ -895,9 +894,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
-
+                need_approve = form2.cleaned_data['need_approve']
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
-                    form.cleaned_data['excelfile']
+                    form.cleaned_data['excelfile'], form.cleaned_data['need_approve']
                 form.cleaned_data['hidden_json_slices'] = 'a'
                 if form.cleaned_data.get('hidden_json_slices'):
                     del form.cleaned_data['hidden_json_slices']
@@ -932,7 +931,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         request_status.save_with_current_time()
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
-                        form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link)
+                        form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve)
 
                         # Saving slices->steps
 

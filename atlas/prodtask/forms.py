@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import ModelForm, ModelChoiceField, MultiValueField
+from django.forms import ModelForm, ModelChoiceField, MultiValueField, NullBooleanField, BooleanField
 from django.forms import CharField
 from django.forms import EmailField
 from django.forms import Textarea
@@ -43,7 +43,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
     provenance = CharField(required=True)
     phys_group = CharField(required=True, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=True)
-
+    need_approve = NullBooleanField(required=False,initial=True)
 
     class Meta:
         model = TRequest
@@ -76,6 +76,8 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     campaign = CharField(required=False)
     provenance = CharField(widget=forms.HiddenInput, required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
+    need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
+
     class Meta:
         model = TRequest
         exclude = ['reqid','is_error','jira_reference','info_fields']
@@ -93,6 +95,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
+    need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
 
     class Meta:
         model = TRequest
@@ -110,6 +113,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     description = CharField(label='Short description', widget=Textarea, required=False)
+    need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
 
     class Meta:
         model = TRequest
@@ -170,6 +174,7 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     description = CharField(label='Short description', widget=Textarea, required=False)
+    need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
 
     class Meta:
         model = TRequest
