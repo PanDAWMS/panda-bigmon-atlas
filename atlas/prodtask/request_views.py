@@ -775,7 +775,7 @@ def form_and_send_email(production_request, owner_mails, cc, long_description,cu
     subject = 'Request {group_name} {description}'.format(group_name=production_request.phys_group,
                                                           description=production_request.description.replace('\n','').replace('\r',''))
     mail_body = """
- {long_description}
+{long_description}
 
 Best,
 
@@ -931,8 +931,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         request_status.save_with_current_time()
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
-                        form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve)
-
+                        try:
+                            form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve)
+                        except Exception,e:
+                            _logger.error("Problem during mail sending: %s" % str(e))
                         # Saving slices->steps
 
                         step_parent_dict = {}
