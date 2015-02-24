@@ -74,6 +74,7 @@
         var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15'];
         var SUB_CAMPAIGN = ['a','b','c','d','e','f'];
         if ($("#{{ form.request_type.auto_id }}").val()=='MC'){
+            $("#{{ form.need_approve.auto_id }}").parent().parent().show();
             var campaign_name = changeInputOnSelect("{{ form.campaign.auto_id }}","campaign",'none_mc_campaign',MC_CAMPAIGN_LIST);
             var sub_campaign_list = [];
             for (var i=0; i<SUB_CAMPAIGN.length;i++){
@@ -82,6 +83,7 @@
             var sub_campaign_name = changeInputOnSelect("{{ form.subcampaign.auto_id }}","subcampaign",'none_mc_subcampaign',sub_campaign_list);
             $("#{{ form.campaign.auto_id }}").change(function(){changeSelector("#{{ form.campaign.auto_id }}",SUB_CAMPAIGN,"#{{ form.subcampaign.auto_id }}")});
         } else{
+            $("#{{ form.need_approve.auto_id }}").parent().parent().hide();
             if ($('#none_mc_campaign').val()!=undefined){
                 changeSelectOnInput("{{ form.campaign.auto_id }}",'none_mc_campaign');
                 changeSelectOnInput("{{ form.subcampaign.auto_id }}",'none_mc_subcampaign');
@@ -91,6 +93,8 @@
 
 $(document).ready(function(){
         (function(){MCCampaignHandling()})();
+
+
         $("#{{ form.request_type.auto_id }}").change(function(){
             MCCampaignHandling();
         });
