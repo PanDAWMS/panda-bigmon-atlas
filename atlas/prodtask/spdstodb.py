@@ -52,8 +52,14 @@ def get_key_by_url(url):
             google_key = r[r.find("/d/") + len("/d/"):r.find('/edit', r.find("/d/"))]
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
         return (google_key, format)
-    
+
+
+
 def fill_template(step_name, tag, priority, formats=None, ram=None):
+        STEP_FORMAT = { 'Evgen':'EVNT','Simul':'HITS','Merge':'HITS','Rec TAG':'TAG',
+                        'Atlf Merge':'AOD','Atlf TAG':'TAG'
+
+        }
         st = None
         try:
             if not step_name:
@@ -114,7 +120,7 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 else:
                     if st:
                        return st
-                    output_formats = ''
+                    output_formats = STEP_FORMAT.get(step_name,'')
                     if formats:
                         output_formats = formats
                     memory = 0
