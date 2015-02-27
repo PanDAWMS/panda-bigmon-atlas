@@ -6,6 +6,8 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import user_passes_test#Ruslan
+from core.common.models import JediDatasets
+
 
 from ..settings import defaultDatetimeFormat
 
@@ -24,40 +26,11 @@ from datetime import datetime
 
 import locale
 import time
+import json
 
-def a_permissions(the_func):
-    """
-    Get user's permissions
-    """
-    def _decorated(request, rid):
-        user_name=''
-        is_superuser=False
-        user_permissions = []
-        group_permissions = []
-        owner = ProductionTask.objects.values('username').get(id=rid).get('username')
-  
-        try:
-                user_name = request.user.username
-                user_groups = request.user.groups.all()
-                is_superuser = request.user.is_superuser
-                user_permissions = request.user.user_permissions.all()
-                for gp in user_groups:
-                        group_permissions += list(gp.permissions.all())
-        except:
-                pass
+from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
-        if is_superuser:
-                return the_func(request, rid, True)
-
-        if user_name==owner:
-                return the_func(request, rid, True)
-
-        return the_func(request, rid, False)
-
-    return _decorated
-
-@a_permissions
-def task_details(request, rid=None, is_permitted=False):
+def task_details(request, rid=None):
     if rid:
         try:
             task = ProductionTask.objects.get(id=rid)
@@ -69,7 +42,10 @@ def task_details(request, rid=None, is_permitted=False):
     else:
         return HttpResponseRedirect('/')
 
-    # TODO: sophisticate user permissions on the task (RM)
+    # TODO: check user permissions on the task (SB)
+    tasks=[]
+    tasks.append(rid)
+    is_permitted,denied_task = get_permissions(request,tasks)
 
     permissions = {}
     if task.status in allowed_task_actions:
@@ -454,5 +430,38 @@ def get_sites():
     sites = sorted(sites, key=locale.strxfrm)
     return sites
 
+def get_permissions(request,tasks):
+    """
+
+    :param request: HTTP request
+    :return: is_permitted: True/False
+    """
 
 
+    is_superuser=False
+    user_permissions = []
+    group_permissions = []
+    task_owner = ""
+
+    try:
+            user = request.user.username
+            user_groups = request.user.groups.all()
+            is_superuser = request.user.is_superuser
+            user_permissions = request.user.user_permissions.all()
+            for gp in user_groups:
+                    group_permissions += list(gp.permissions.all())
+    except:
+            pass
+
+    is_permitted=False
+    denied_tasks=[]
+
+    for task in tasks:
+            task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
+            if is_superuser is False and user!=task_owner:
+            #if user==task_owner:
+                    denied_tasks.append(task)
+            else:
+                    is_permitted=True
+
+    return (is_permitted,denied_tasks)

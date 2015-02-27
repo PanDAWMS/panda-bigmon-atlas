@@ -12,6 +12,7 @@ import core.datatables as datatables
 from .models import ProductionTask, TRequest, StepExecution
 
 from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
+from .task_views import get_permissions
 
 from .task_actions import do_action
 
@@ -44,7 +45,6 @@ def _http_json_response(data):
     """
     return HttpResponse(json.dumps(data))
 
-
 def tasks_action(request, action):
     """
     Handling task actions requests
@@ -63,7 +63,6 @@ def tasks_action(request, action):
     # TODO: rewrite with django auth system
     #if not request.user.groups.filter(name='vomsrole:/atlas/Role=production'):
     #    return empty_response
-
     owner = request.user.username
     if not owner:
         response["exception"] = "Username is empty"
@@ -82,7 +81,15 @@ def tasks_action(request, action):
         return _http_json_response(response)
 
     params = data.get("parameters", [])
-    response = do_tasks_action(owner, tasks, action, *params)
+
+    is_permitted, denied_tasks = get_permissions(request,tasks)
+
+    if is_permitted is False:
+            denied_tasks_string = ", ".join(denied_tasks)
+            response["exception"] = "User '%s' don't have permissions to make action '%s' with task(s) '%s'" % (owner,action,denied_tasks_string)     
+    else:
+            response = do_tasks_action(owner, tasks, action, *params)
+
     return _http_json_response(response)
 
 
@@ -154,4 +161,6 @@ def task_manage(request):
                              'sites': get_sites(),
                              'edit_mode': True,
                             })
+
+
 
