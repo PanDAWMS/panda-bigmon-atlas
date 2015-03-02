@@ -398,9 +398,14 @@ function doTasksAction(action, tasks, parameters) {
         data: $.toJSON(postData),
         dataType: "json",
         complete: function (jqXHR, textStatus) {
+            var response = JSON.parse(jqXHR.responseText);
             request_done = true;
             if (textStatus == 'success') {
-                $("#req_status_text").html("Request status: done");
+                if (!response.exception || response.exception === "") {
+                    $("#req_status_text").html("Request status: Done");
+                } else {
+                    $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                }
             } else {
                 request_error = true;
                 $("#req_status_text").html("Request status: '" + textStatus + "', details: '" + jqXHR.statusText + "'");
