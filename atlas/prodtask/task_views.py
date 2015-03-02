@@ -205,6 +205,12 @@ class ProductionTaskTable(datatables.DataTable):
         sClass='numbers',
         )
 
+    total_failure_rate = datatables.Column(
+        label='Failure rate %',
+        sClass='numbers',
+        bSortable=False,
+        )
+
     total_events = datatables.Column(
         label='Events',
         sClass='numbers',
@@ -439,6 +445,8 @@ def get_permissions(request,tasks):
 
 
     is_superuser=False
+    user = ""
+    user_groups = ""
     user_permissions = []
     group_permissions = []
     task_owner = ""
@@ -453,15 +461,17 @@ def get_permissions(request,tasks):
     except:
             pass
 
+    #target_group = user_groups.filter(name='vomsgroup:/atlas')#TODO Could be any VOMS/e-Group RM    
     is_permitted=False
     denied_tasks=[]
 
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            if is_superuser is False and user!=task_owner:
-            #if user==task_owner:
-                    denied_tasks.append(task)
-            else:
+            #if is_superuser is True or user==task_owner or target_group:#TODO Implement e-Groups check RM
+            if is_superuser is True or user==task_owner:
                     is_permitted=True
+            else:
+                    denied_tasks.append(task)
+
 
     return (is_permitted,denied_tasks)
