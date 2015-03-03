@@ -209,6 +209,7 @@ class ProductionTaskTable(datatables.DataTable):
         label='Failure rate %',
         sClass='numbers',
         bSortable=False,
+        bVisible='false',
         )
 
     total_events = datatables.Column(
@@ -239,7 +240,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     provenance = datatables.Column(
         label='Provenance',
-        bVisible='false',
+        #bVisible='false',
         )
 
     phys_group = datatables.Column(
@@ -374,6 +375,9 @@ class Parameters(datatables.Parametrized):
 
     task_name = datatables.Parameter(label='Task name', name='taskname', id='taskname', get_Q=lambda v: Q( **{ 'name__iregex' : v } ) )
 
+    #type = datatables.Parameter(label='Type', model_field='request_type')
+    type = datatables.Parameter(label='Type', model_field='request__request_type')
+
     class Meta:
         SetParametersToURL = 'SetParametersToURL'
         ParseParametersFromURL = 'ParseParametersFromURL'
@@ -394,6 +398,7 @@ class Parameters(datatables.Parametrized):
 
     task_status = datatables.Parameter(label='Status', name='status', id='status', get_Q=_task_status_Q )
     task_type = datatables.Parameter(label='Task type', get_Q=lambda v: (Q(project='user').__invert__() if (v=='production') else (Q(project='user') if (v=='analysis') else Q()) ) )
+
 
     time_from = datatables.Parameter(label='Last update time period from', get_Q=lambda v: Q(timestamp__gt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
     time_to = datatables.Parameter(label='Last update time period to', get_Q=lambda v: Q(timestamp__lt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
