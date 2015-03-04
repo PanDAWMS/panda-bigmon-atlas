@@ -205,6 +205,13 @@ class ProductionTaskTable(datatables.DataTable):
         sClass='numbers',
         )
 
+    total_failure_rate = datatables.Column(
+        label='Failure rate %',
+        sClass='numbers',
+        bSortable=False,
+        bVisible='false',
+        )
+
     total_events = datatables.Column(
         label='Events',
         sClass='numbers',
@@ -233,7 +240,7 @@ class ProductionTaskTable(datatables.DataTable):
 
     provenance = datatables.Column(
         label='Provenance',
-        bVisible='false',
+        #bVisible='false',
         )
 
     phys_group = datatables.Column(
@@ -368,6 +375,9 @@ class Parameters(datatables.Parametrized):
 
     task_name = datatables.Parameter(label='Task name', name='taskname', id='taskname', get_Q=lambda v: Q( **{ 'name__iregex' : v } ) )
 
+    #type = datatables.Parameter(label='Type', model_field='request_type')
+    type = datatables.Parameter(label='Type', model_field='request__request_type')
+
     class Meta:
         SetParametersToURL = 'SetParametersToURL'
         ParseParametersFromURL = 'ParseParametersFromURL'
@@ -388,6 +398,7 @@ class Parameters(datatables.Parametrized):
 
     task_status = datatables.Parameter(label='Status', name='status', id='status', get_Q=_task_status_Q )
     task_type = datatables.Parameter(label='Task type', get_Q=lambda v: (Q(project='user').__invert__() if (v=='production') else (Q(project='user') if (v=='analysis') else Q()) ) )
+
 
     time_from = datatables.Parameter(label='Last update time period from', get_Q=lambda v: Q(timestamp__gt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
     time_to = datatables.Parameter(label='Last update time period to', get_Q=lambda v: Q(timestamp__lt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
@@ -439,6 +450,8 @@ def get_permissions(request,tasks):
 
 
     is_superuser=False
+    user = ""
+    user_groups = ""
     user_permissions = []
     group_permissions = []
     task_owner = ""
@@ -453,15 +466,17 @@ def get_permissions(request,tasks):
     except:
             pass
 
+    #target_group = user_groups.filter(name='vomsgroup:/atlas')#TODO Could be any VOMS/e-Group RM    
     is_permitted=False
     denied_tasks=[]
 
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            if is_superuser is False and user!=task_owner:
-            #if user==task_owner:
-                    denied_tasks.append(task)
-            else:
+            #if is_superuser is True or user==task_owner or target_group:#TODO Implement e-Groups check RM
+            if is_superuser is True or user==task_owner:
                     is_permitted=True
+            else:
+                    denied_tasks.append(task)
+
 
     return (is_permitted,denied_tasks)
