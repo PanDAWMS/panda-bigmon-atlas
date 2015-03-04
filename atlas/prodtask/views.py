@@ -569,7 +569,7 @@ def save_slice_changes(reqid, slice_steps):
         if slice_number != '-1':
             if steps_status['changes']:
                 do_action = False
-                for field in ['jobOption','datasetName','eventsNumber']:
+                for field in ['jobOption','datasetName','eventsNumber','comment']:
                     if steps_status['changes'].get(field):
                         do_action = True
                 if do_action:
@@ -585,6 +585,15 @@ def save_slice_changes(reqid, slice_steps):
                                 change_dataset_in_slice(reqid,slice_number,steps_status['changes'].get('datasetName'))
                             if steps_status['changes'].get('eventsNumber'):
                                 current_slice.input_events = steps_status['changes'].get('eventsNumber')
+                                current_slice.save()
+                            if steps_status['changes'].get('comment'):
+                                new_comment = steps_status['changes'].get('comment')
+                                if ('(Fullsim)' not in new_comment) and ('(Atlfast)' not in new_comment):
+                                    if '(Fullsim)' in current_slice.comment:
+                                        new_comment = '(Fullsim)' + new_comment
+                                    elif '(Atlfast)' in current_slice.comment:
+                                        new_comment = '(Atlfast)' + new_comment
+                                current_slice.comment = new_comment
                                 current_slice.save()
                     except Exception,e:
                         not_changed.append(slice)

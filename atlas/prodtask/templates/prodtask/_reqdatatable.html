@@ -908,7 +908,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                     }
 
                 }
-{#            console.log(check_steps);#}
+            console.log(check_steps);
             check_steps['is_eaqual'] = undefined;
             check_steps['db_step_type'] = undefined;
             for (sliceField in check_steps){
@@ -963,6 +963,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 slice_data['datasetName'] = data.dataset;
                 slice_data['jobOption'] = data.jobOption;
                 slice_data['eventsNumber'] = data.totalEvents;
+                slice_data['comment']=data.comment;
                 is_equal = true;
                 var current_step_tag = [];
                 for (var i=0;i<{{ step_list|length }};i++){
@@ -1009,8 +1010,8 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
-            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });
-            return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
+            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });
+            return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
         }
 
         function clearChangesSlice(sliceNumber, sliceData){
@@ -1326,6 +1327,7 @@ function ProcessingStep() {
     this.datasetName = undefined;
     this.jobOption = undefined;
     this.eventsNumber = undefined;
+    this.comment = undefined;
 };
 
 RequestSlice.prototype.addStep = function(newStep){
@@ -1553,7 +1555,7 @@ var lastChecked = true;
             {% if  not not_use_input_date_for_pattern %}
               <tr>
                     <td colspan="11" style="width: 500px" >
-                        <span class="showFullSpan" style="padding:0px" title="{{ inputList.comment }}">
+                        <span class="showFullSpan changecomment{{ inputList.slice }}" style="padding:0px" title="{{ inputList.comment }}">
                             {{ inputList.comment }}
                         </span>
                     </td>
@@ -1642,7 +1644,7 @@ var lastChecked = true;
                  <td colspan="11" class='showSmallSpan'>Dataset: <span class="changedatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td></tr>
                 <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="changejobOption{{ inputList.slice }} filterField">{{ inputList.input_data }}</span></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
-                <tr><td></td><td colspan="11">Comment: <span class="filterField">{{ inputList.comment }}</span></td></tr>
+                <tr><td></td><td colspan="11">Comment: <span class="changecomment{{ inputList.slice }} filterField">{{ inputList.comment }}</span></td></tr>
                 <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: <span class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
                     <select id="selectPattern" >
@@ -1908,6 +1910,11 @@ var lastChecked = true;
         </div>
         <div class="column large-3">
             <label> Input events: <input id='eventsNumberModal' type="number" class="eventsNumber storeOutputSlice storeInput"  placeholder="-1"  /></label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column large-12">
+            <label> Comment: <input id="commentModal" type="text" class="comment storeOutputSlice storeInput" placeholder=" "  /></label>
         </div>
     </div>
     </div>
