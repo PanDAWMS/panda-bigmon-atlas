@@ -842,7 +842,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 else:
                     if form.cleaned_data['excellink']:
                         request.session['excel_link'] = form.cleaned_data['excellink']
-                    del form.cleaned_data['excellink'], form.cleaned_data['excelfile']
+                    if form.cleaned_data.has_key('excelfile'):
+                        del form.cleaned_data['excelfile']
+                    del form.cleaned_data['excellink']
                     # if 'tag_hierarchy' in form.cleaned_data:
                     #     del form.cleaned_data['tag_hierarchy']
                     try:
@@ -895,8 +897,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
                 need_approve = form2.cleaned_data['need_approve']
+                if form.cleaned_data.has_key('excelfile'):
+                    del form.cleaned_data['excelfile']
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
-                    form.cleaned_data['excelfile'], form.cleaned_data['need_approve']
+                     form.cleaned_data['need_approve']
                 form.cleaned_data['hidden_json_slices'] = 'a'
                 if form.cleaned_data.get('hidden_json_slices'):
                     del form.cleaned_data['hidden_json_slices']

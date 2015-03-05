@@ -69,7 +69,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
 
     excellink = CharField(required=False, label="Spreadsheet Link")
-    excelfile = FileField(required=False, label="Spreadsheet File")
+    #excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
