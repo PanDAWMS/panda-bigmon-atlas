@@ -1247,7 +1247,7 @@ function spreadAMI(that){
                 }
             });
             $.ajaxSetup({async: true});
-                $('#commentModal').foundation('reveal', 'open');
+                $('#commentModalWindow').foundation('reveal', 'open');
             }
 
 function changeSliceChanges(that){
@@ -2042,7 +2042,7 @@ var lastChecked = true;
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
 
-<div id="commentModal" class="reveal-modal" data-reveal>
+<div id="commentModalWindow" class="reveal-modal" data-reveal>
     <h3>Comments:</h3>
     <div class="row">
             <div class="large-4 column">
