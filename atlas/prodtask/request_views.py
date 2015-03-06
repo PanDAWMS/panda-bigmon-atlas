@@ -1356,12 +1356,26 @@ def get_status_stat(qs):
 class Parameters(datatables.Parametrized):
     reqid = datatables.Parameter(label='Request ID')
     ref_link = datatables.Parameter(label='Link')
-    phys_group = datatables.Parameter(label='Physics group')
+    #phys_group = datatables.Parameter(label='Physics group')
+
+    def _phys_group_Q(value):
+        if value == 'NOVALI':
+            return Q( phys_group__iexact='VALI').__invert__()
+        return Q( phys_group__iexact=value )
+
+    phys_group = datatables.Parameter(label='Physics group', get_Q=_phys_group_Q )
     campaign = datatables.Parameter(label='Campaign')
     manager = datatables.Parameter(label='Manager')
 
     type = datatables.Parameter(label='Type', model_field='request_type')
-    status = datatables.Parameter(label='Status', model_field='cstatus')
+    #status = datatables.Parameter(label='Status', model_field='cstatus')
+
+    def _status_Q(value):
+        if value == 'notest':
+            return Q( cstatus__iexact='test').__invert__()
+        return Q( cstatus__iexact=value )
+
+    status = datatables.Parameter(label='Status', model_field='cstatus', get_Q=_status_Q)
     description = datatables.Parameter(label='Description')
     provenance = datatables.Parameter(label='Provenance')
 
