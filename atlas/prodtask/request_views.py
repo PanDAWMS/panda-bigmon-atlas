@@ -144,6 +144,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination.description = new_short_description
     request_destination.jira_reference = None
     request_destination.is_error = None
+    request_destination.manager = owner
     request_destination.ref_link = new_ref
     request_destination.save()
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
