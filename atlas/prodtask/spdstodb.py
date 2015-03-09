@@ -84,7 +84,7 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
             pass
         finally:
             if st:
-                if st.status == 'Approved':
+                if (st.status == 'Approved') or (st.status == 'dummy'):
                     return st
 
             trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
