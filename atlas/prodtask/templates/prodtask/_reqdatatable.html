@@ -271,7 +271,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 }
             }
         });
-
+    makeJobOptionURL();
     $("#tagFormatSelect").change(function(){return tagFormatChange()});
     {% if not show_as_huge %}
         refreshTagFormats(null);
@@ -291,6 +291,15 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             }
         }
     });
+    function makeJobOptionURL(){
+        $('.makeJOUrl').each(function(){
+		      var joboptions = $(this).html().replace(/ /g,'');
+		      var jo = joboptions.split(".");
+		      var dsid = jo[1].substring(0,3)+"xxx";
+		      var link = "https://svnweb.cern.ch/cern/wsvn/atlasoff/Generators/"+jo[0]+"JobOptions/trunk/share/DSID"+dsid+"/"+joboptions
+              $(this).attr('href',link);
+        });
+    }
 
     function approveSlices(isApprove, approveLevel, slices){
         var toChangeDatasets = [];
@@ -1257,7 +1266,7 @@ function changeSliceChanges(that){
         var currentStepNumber = '';
         var currentField = '';
         var isSliceData = false;
-        console.log(that);
+{#        console.log(that);#}
         for (i = 0; i < currentClass.length; i++) {
             if (currentClass[i] != '') {
                 if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0) {
@@ -1283,6 +1292,9 @@ function changeSliceChanges(that){
         if (isSliceData) {
             changesList[currentSlice][currentField] = $(that).val();
             $('.change' + currentField + currentSlice.toString()).html(changesList[currentSlice][currentField]);
+            if (currentField=='jobOption'){
+                makeJobOptionURL();
+            }
         } else {
 
             if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber) + 1)) {
@@ -1533,7 +1545,7 @@ var lastChecked = true;
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }}"  title="{{ inputList.input_data }}">{{ inputList.input_data }}</td>
+                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl "  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
                     {% if cloned != 'no' %}
                         <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
@@ -1542,9 +1554,9 @@ var lastChecked = true;
                     {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class='showFullSpan changejobOption{{ inputList.slice }}' style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class="showFullSpan">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
-                        </span>
+                        </a>
                     </td>
                     <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
                     <td></td>
@@ -1642,9 +1654,9 @@ var lastChecked = true;
             <table class="inputListTablesLong" style="display: none">
                 <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
                  <td colspan="11" class='showSmallSpan'>Dataset: <span class="changedatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td></tr>
-                <tr><td></td><td colspan="11" class='showSmallSpan'>JobOption: <span class="changejobOption{{ inputList.slice }} filterField">{{ inputList.input_data }}</span></td></tr>
+                <tr><td></td><td colspan="11" >JobOption: <a href='' target="_blank" class="changejobOption{{ inputList.slice }} filterField makeJOUrl">{{ inputList.input_data }}</a></td></tr>
                 <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
-                <tr><td></td><td colspan="11">Comment: <span class="changecomment{{ inputList.slice }} filterField">{{ inputList.comment }}</span></td></tr>
+                <tr><td></td><td colspan="11">Comment: <span class=" changecomment{{ inputList.slice }} filterField">{{ inputList.comment }}</span></td></tr>
                 <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: <span class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td></tr>
                 <tr style="display: none"><td></td><td colspan="9">
                     <select id="selectPattern" >

@@ -155,6 +155,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
+
 def request_comments(request, reqid):
      if request.method == 'GET':
         results = {'success':False}
@@ -168,6 +169,7 @@ def request_comments(request, reqid):
         except Exception, e:
             _logger.error("Problem with comments")
         return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 @csrf_protect
 def make_user_as_owner(request, reqid):
