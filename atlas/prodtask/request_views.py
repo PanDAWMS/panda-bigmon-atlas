@@ -772,6 +772,18 @@ def find_datasets_by_pattern(request):
 
 
 
+def resend_email(request,reqid):
+    if request.method == 'GET':
+        if request.user.is_superuser:
+            try:
+                production_request = TRequest.objects.get(reqid=reqid)
+                owner_mails = []
+                current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(reqid,)))
+                form_and_send_email(production_request,owner_mails,'',production_request.info_field('long_description'),
+                                    current_uri,production_request.info_field('data_source'),True)
+            except Exception,e:
+                print e
+        return HttpResponseRedirect('/')
 
 
 
@@ -792,7 +804,7 @@ Details:
                sub_campaign=production_request.subcampaign, link = current_uri)
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
         mail_body = "Dear Monica, James and Marumi,\n"+mail_body
-        mail_from = "atlas-csc-prodman@cern.ch"
+        mail_from = "atlas.mc-production@cern.ch"
         if need_approve:
             owner_mails += ["atlas-csc-prodman@cern.ch"]
     else:
@@ -800,6 +812,7 @@ Details:
         pass
     if excel_link:
         mail_body += "- Data source: %s\n" % excel_link
+    # print subject, mail_body, mail_from, APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
     send_mail(subject,
       mail_body,
       mail_from,
