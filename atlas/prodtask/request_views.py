@@ -280,6 +280,54 @@ def request_update(request, reqid=None):
         'parent_template': 'prodtask/_index.html',
     })
 
+MAX_EVENTS_IN_SLICE = 2000000
+
+
+def check_need_split(spreadsheet_dict):
+    total_number = 0
+    for slice_input in spreadsheet_dict:
+        if int(slice_input['input_dict']['input_events']) > MAX_EVENTS_IN_SLICE:
+            total_number += 1
+    return total_number
+
+
+def change_order_slice(slice_input_dict,step_exec_dict,new_index):
+    slice_input_dict['slice'] = new_index
+    for step in step_exec_dict:
+        step['step_order'] = str(new_index) + step['step_order'].split('_')[1]
+        step['step_parent'] = str(new_index) + step['step_parent'].split('_')[1]
+    return {'input_dict':slice_input_dict, 'step_exec_dict':step_exec_dict}
+
+
+def do_big_slice_split(spreadsheet_dict, divider):
+    modified_spreadsheet_dict= []
+    new_index = 0
+    for index,slice_input in enumerate(spreadsheet_dict):
+        if slice_input['input_dict']['input_events'] > divider:
+            for i in range(int(slice_input['input_dict']['input_events']) / int(divider)):
+                slice_input_dict = copy.deepcopy(slice_input['input_dict'])
+                step_exec_dict = copy.deepcopy(slice_input['step_exec_dict'])
+                slice_input_dict['input_events'] = int(divider)
+                comment = slice_input_dict['comment']
+                slice_input_dict['comment'] = comment[:comment.find(')')+1] + '('+str(i)+')' + comment[comment.find(')')+1:]
+                modified_spreadsheet_dict.append(change_order_slice(slice_input_dict,step_exec_dict,new_index))
+                new_index += 1
+            if (slice_input['input_dict']['input_events'] % divider) != 0:
+                slice_input_dict = copy.deepcopy(slice_input['input_dict'])
+                step_exec_dict = copy.deepcopy(slice_input['step_exec_dict'])
+                slice_input_dict['input_events'] = int(slice_input['input_dict']['input_events']) % int(divider)
+                comment = slice_input_dict['comment']
+                slice_input_dict['comment'] = comment[:comment.find(')')+1] + '('+str((int(slice_input['input_dict']['input_events']) / int(divider)) )+')' + comment[comment.find(')')+1:]
+                modified_spreadsheet_dict.append(change_order_slice(slice_input_dict,step_exec_dict,new_index))
+                new_index += 1
+        else:
+            if index != new_index:
+                modified_spreadsheet_dict.append(change_order_slice(slice_input['input_dict'],slice_input['step_exec_dict'],new_index))
+            else:
+                modified_spreadsheet_dict.append(slice_input)
+            new_index += 1
+    return modified_spreadsheet_dict
+
 
 def mcfile_form_prefill(form_data, request):
     spreadsheet_dict = []
@@ -321,6 +369,9 @@ def mcfile_form_prefill(form_data, request):
             pass
     if not form_data.get('request_type'):
         form_data['request_type'] = 'MC'
+    form_data['need_split'] = (check_need_split(spreadsheet_dict) > 0)
+    # if form_data['need_split']:
+    #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
@@ -835,6 +886,17 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     :param form_prefill: function for prefilling data from inpu files and setting default fields
 
     """
+    def form_input_list_for_preview(file_dict):
+        input_lists = []
+        for slices in file_dict:
+            slice = slices['input_dict']
+            tags = []
+            for step in slices.get('step_exec_dict'):
+                tags.append(step.get('tag'))
+            input_lists.append(copy.deepcopy(slice))
+            input_lists[-1].update({'tags':','.join(tags)})
+        return input_lists
+
     if request.method == 'POST':
         # Check prefill form
         form = TRequestCreateCloneForm(request.POST, request.FILES)
@@ -866,14 +928,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     #     del form.cleaned_data['tag_hierarchy']
                     try:
                         form = TRequestCreateCloneConfirmation(form.cleaned_data)
-                        inputlists = []
-                        for slices in file_dict:
-                            slice = slices['input_dict']
-                            tags = []
-                            for step in slices.get('step_exec_dict'):
-                                tags.append(step.get('tag'))
-                            inputlists.append(copy.deepcopy(slice))
-                            inputlists[-1].update({'tags':','.join(tags)})
+                        inputlists = form_input_list_for_preview(file_dict)
                         # store data from prefill form to http request
                         request.session['file_dict'] = file_dict
                         # create request creation form
@@ -884,7 +939,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             'submit_url': submit_url,
                             'url_args': rid,
                             'parent_template': 'prodtask/_index.html',
-                            'inputLists': inputlists
+                            'inputLists': inputlists,
+                            'bigSliceNumber': check_need_split(file_dict)
                         })
                     except Exception, e:
                         _logger.error("Problem during request form creating: %s" % e)
@@ -898,8 +954,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     excel_link = request.session['excel_link']
                     request.session['excel_link']=''
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
+
                 if not form2.is_valid():
-                    inputlists = [x['input_dict'] for x in file_dict]
+                    if (not form2.cleaned_data.get('need_split')) and (form2.cleaned_data.get('split_divider',-1)!=-1):
+                        file_dict = do_big_slice_split(file_dict,int(form2.cleaned_data['split_divider']))
+                        request.session['file_dict'] = file_dict
+                    inputlists = form_input_list_for_preview(file_dict)
                     # store data from prefill form to http request
                     return render(request, 'prodtask/_previewreq.html', {
                         'active_app': 'mcprod',
@@ -910,12 +970,14 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'parent_template': 'prodtask/_index.html',
                         'inputLists': inputlists
                     })
+
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
                 need_approve = form2.cleaned_data['need_approve']
-                if form.cleaned_data.has_key('excelfile'):
-                    del form.cleaned_data['excelfile']
+                for x in ['excelfile','need_split','split_divider']:
+                    if form.cleaned_data.has_key(x):
+                        del form.cleaned_data[x]
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
                      form.cleaned_data['need_approve']
                 form.cleaned_data['hidden_json_slices'] = 'a'

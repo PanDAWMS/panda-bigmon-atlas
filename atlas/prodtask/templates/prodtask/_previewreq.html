@@ -21,6 +21,7 @@
 {{ block.super }}
 <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 {% endblock %}
 
 
@@ -90,14 +91,37 @@
             }
         }
     }
+    function splitSlices(event,doSplit){
+            if(doSplit){
+                $("#{{ form.split_divider.auto_id }}").val($('#splitNumber').val());
+                $("#form_submit").click();
+            } else {
+                $("#{{ form.split_divider.auto_id }}").val(-1);
+                $('#closeSplitModal').click();
+            }
+
+
+    }
+
 
 $(document).ready(function(){
         (function(){MCCampaignHandling()})();
-
+        $(document).foundation();
 
         $("#{{ form.request_type.auto_id }}").change(function(){
             MCCampaignHandling();
         });
+
+
+        (function(){
+            if (($("#{{ form.request_type.auto_id }}").val()=='MC')&&($("#{{ form.need_split.auto_id }}").val()=='True')){
+
+                $("#{{ form.need_split.auto_id }}").val('False');
+                $('#splitModalWindow').foundation('reveal', 'open');
+
+            }
+        })();
+
 
 });
 
@@ -111,7 +135,7 @@ $(document).ready(function(){
 <table>
 {{ form.as_table }}
 </table>
-<input type="submit" value="Submit" />
+<input type="submit" value="Submit" id="form_submit" />
 </form>
 <h2> Input List </h2>
 <table>
@@ -121,6 +145,7 @@ $(document).ready(function(){
        <th>Job Option:</th>
        <th>Brief:</th>
        <th>Tags:</th>
+       <th>Events</th>
     </tr>
     {% for inputList in inputLists %} 
 	<tr>
@@ -129,13 +154,48 @@ $(document).ready(function(){
         <td>{{ inputList.input_data }}</td>
         <td>{{ inputList.brief }}</td>
         <td>{{ inputList.tags }}</td>
+        <td>{{ inputList.input_events }}</td>
 	</tr>
 	{% endfor %}
 </table>
+<div id="splitModalWindow" class="reveal-modal" data-reveal>
+    <h3>{{ bigSliceNumber }} slices have more than 2 000 000 events</h3>
+    <div class="row">
+            <div class="large-4 column">
+                <label>Max events per slice:
+                <input  id="splitNumber" type="number" value="2000000"  ></label>
+            </div>
+            <div class="large-8 column">
+            </div>
+    </div>
+    <div class="row">
+            <div class="large-4 column">
+                <span>Do you want to split them?</span>
+            </div>
+            <div class="large-8 column">
+            </div>
+
+    </div>
+    <div class="row">
+            <div class="large-1 column">
+                <a class="button" onclick="splitSlices(event,true);">Split</a>
+            </div>
+            <div class="large-4 column">
+                <a class="button" onclick="splitSlices(event,false);">Continue without splitting</a>
+            </div>
+            <div class="large-7 column">
+
+            </div>
+    </div>
+  <a  id='closeSplitModal' class="close-reveal-modal">&#215;</a>
+</div>
 {% else %}
 <table>
 {{ form.as_table }}
 </table>
+
+
+
 
 {% endif %}
 

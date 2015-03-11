@@ -44,6 +44,8 @@ class TRequestCreateCloneConfirmation(ModelForm):
     phys_group = CharField(required=True, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=True)
     need_approve = NullBooleanField(required=False,initial=True)
+    need_split = NullBooleanField(widget=forms.HiddenInput, required=False,initial=False)
+    split_divider = DecimalField(widget=forms.HiddenInput, required=False, initial=-1)
 
     class Meta:
         model = TRequest
@@ -77,6 +79,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
+    need_split = NullBooleanField(widget=forms.HiddenInput,required=False,initial=False)
 
     class Meta:
         model = TRequest
@@ -96,6 +99,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     campaign = CharField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
+    need_split = NullBooleanField(widget=forms.HiddenInput,required=False,initial=False)
 
     class Meta:
         model = TRequest
@@ -114,6 +118,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
+    need_split = NullBooleanField(widget=forms.HiddenInput,required=False,initial=False)
 
     class Meta:
         model = TRequest
