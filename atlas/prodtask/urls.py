@@ -30,7 +30,7 @@ urlpatterns = patterns('',
     url(r'^request_update/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_update',  name='request_update'),
 
     url(r'^request_comments/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.request_comments',  name='request_comments'),
-    url(r'^resend_email/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.resend_email',  name='resend_email'),
+
 
     url(r'^make_user_as_owner/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.make_user_as_owner',  name='make_user_as_owner'),
 
