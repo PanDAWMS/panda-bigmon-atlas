@@ -852,8 +852,9 @@ def resend_email(request,reqid):
 
 
 def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
-    subject = 'Request {group_name} {description}'.format(group_name=production_request.phys_group,
-                                                          description=production_request.description.replace('\n','').replace('\r',''))
+    subject = 'Request {group_name} {description} {energy} GeV'.format(group_name=production_request.phys_group,
+                                                          description=production_request.description.replace('\n','').replace('\r',''),
+                                                          energy=str(production_request.energy_gev))
     mail_body = """
 {long_description}
 
