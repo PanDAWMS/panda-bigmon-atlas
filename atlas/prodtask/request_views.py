@@ -80,7 +80,16 @@ def close_deft_ref(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False):
+
+def get_problematic_task_list(step_id):
+    tasks = ProductionTask.objects.filter((Q(status__in=['failed','broken','aborted']),Q(step=step_id)))
+    return_list = []
+    for task in tasks:
+        return_list.append(task.id)
+    return return_list
+
+
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False):
         ordered_slices = map(int,slices)
         ordered_slices.sort()
         #form levels from input text lines
@@ -125,6 +134,10 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                         step.step_done_time = None
                         step.slice = new_input_data
                         step.request = request_destination
+                        if do_smart:
+                            problematic_tasks = get_problematic_task_list(old_step_id)
+                            if problematic_tasks:
+                                step.set_task_config({'previous_task_list':problematic_tasks})
                         if (step.status == 'Skipped') or (index < step_from):
                             step.status = 'NotCheckedSkipped'
                         elif step.status == 'Approved':
@@ -303,7 +316,7 @@ def do_big_slice_split(spreadsheet_dict, divider):
     modified_spreadsheet_dict= []
     new_index = 0
     for index,slice_input in enumerate(spreadsheet_dict):
-        if slice_input['input_dict']['input_events'] > divider:
+        if (slice_input['input_dict']['input_events'] > divider) and ((int(slice_input['input_dict']['input_events']) / int(divider)) < 200):
             for i in range(int(slice_input['input_dict']['input_events']) / int(divider)):
                 slice_input_dict = copy.deepcopy(slice_input['input_dict'])
                 step_exec_dict = copy.deepcopy(slice_input['step_exec_dict'])
@@ -957,6 +970,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
                 if not form2.is_valid():
                     if (not form2.cleaned_data.get('need_split')) and (form2.cleaned_data.get('split_divider',-1)!=-1):
+                        _logger.error('Try to split slices by %s' % str((form2.cleaned_data['split_divider'])))
                         file_dict = do_big_slice_split(file_dict,int(form2.cleaned_data['split_divider']))
                         request.session['file_dict'] = file_dict
                     inputlists = form_input_list_for_preview(file_dict)
