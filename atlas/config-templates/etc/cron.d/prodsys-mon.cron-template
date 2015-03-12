@@ -1,6 +1,6 @@
 MYPROXY_SERVER=myproxy.cern.ch
 MYPROXY_USER=prodsys-mon
-MYPROXY_KEY=prodsys-mon_hostname
+MYPROXY_KEY=prodsys-mon_hostname # replace with actual myproxy key
 PROXY_OWNER=apache:apache
 PROXY_CERT_FILE=/tmp/x509_prodsys_mon
 
