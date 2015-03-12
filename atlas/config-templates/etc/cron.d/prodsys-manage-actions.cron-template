@@ -1,0 +1,8 @@
+# This cron should be enabled on one machine only
+PROJECT_DIR=/data/deft/
+PYTHONPATH=/data/deft/bigpandamon-core:/data/deft/shibsso
+LOGDIR=/tmp
+
+27 */2 * * * apache (PYTHONPATH=${PYTHONPATH} python ${PROJECT_DIR}/bigpandamon-atlas/atlas/manage.py updatevomsmap) >>${LOGDIR}/vomsmap.log 2>&1
+
+01 18 * * * apache (PYTHONPATH=${PYTHONPATH} python ${PROJECT_DIR}/bigpandamon-atlas/atlas/manage.py clearsessions) >>${LOGDIR}/clearsessions.log 2>&1
