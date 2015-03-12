@@ -851,7 +851,7 @@ def resend_email(request,reqid):
 
 
 
-def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve):
+def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
     subject = 'Request {group_name} {description}'.format(group_name=production_request.phys_group,
                                                           description=production_request.description.replace('\n','').replace('\r',''))
     mail_body = """
@@ -859,13 +859,15 @@ def form_and_send_email(production_request, owner_mails, cc, long_description,cu
 
 Best,
 
+{manager_name}
+
 Details:
 - JIRA for the request : {ref_link}
 - Campaign {energy} {campaign} {sub_campaign}
 - Link to Request: {link}
 """.format(long_description=long_description,ref_link=production_request.ref_link,
                energy=production_request.energy_gev,campaign=production_request.campaign,
-               sub_campaign=production_request.subcampaign, link = current_uri)
+               sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name )
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
         mail_body = "Dear Monica, James and Marumi,\n"+mail_body
         mail_from = "atlas.mc-production@cern.ch"
@@ -876,7 +878,7 @@ Details:
         pass
     if excel_link:
         mail_body += "- Data source: %s\n" % excel_link
-    # print subject, mail_body, mail_from, APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),
+    #print subject, mail_body, mail_from, APP_SETTINGS['prodtask.default.email.list'] + owner_mails + cc.replace(';', ',').split(','),manager_name
     send_mail(subject,
       mail_body,
       mail_from,
@@ -1018,6 +1020,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             owner_mails = []
                         else:
                             owner_mails = [owner_mail]
+                        manager_name = request.user.first_name + ' ' + request.user.last_name
                         req = TRequest(**form.cleaned_data)
                         req.info_fields = json.dumps({'long_description':longdesc,'cc':cc,'data_source':excel_link})
                         req.save()
@@ -1029,7 +1032,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         _logger.debug("e-mail with link %s" % current_uri)
                         try:
-                            form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve)
+                            form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve,manager_name)
                         except Exception,e:
                             _logger.error("Problem during mail sending: %s" % str(e))
                         # Saving slices->steps
