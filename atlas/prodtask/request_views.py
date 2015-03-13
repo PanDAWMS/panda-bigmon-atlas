@@ -502,7 +502,9 @@ def parse_json_slice_dict(json_string):
         else:
             slices_dict[int(current_slice)]['steps'][int(current_step)] = current_step_dict
             slices_dict[int(current_slice)]['steps'][int(current_step)].update({'step_order':slice_step})
-    for slice_number in range(len(slices_dict.keys())):
+    slice_numbers = slices_dict.keys()
+    slice_numbers.sort()
+    for slice_number in slice_numbers:
             slice = slices_dict[slice_number]
             if  (slice['step_order'] != slice['parentstepshort']):
                 datasets = ['foreign'] * len(slices_dict[int(slice['parentstepshort'].split('_')[0])]['datasets'].split(','))

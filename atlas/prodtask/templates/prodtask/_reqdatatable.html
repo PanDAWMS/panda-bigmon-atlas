@@ -293,11 +293,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     });
     function makeJobOptionURL(){
         $('.makeJOUrl').each(function(){
-		      var joboptions = $(this).html().replace(/ /g,'');
-		      var jo = joboptions.split(".");
-		      var dsid = jo[1].substring(0,3)+"xxx";
-		      var link = "https://svnweb.cern.ch/cern/wsvn/atlasoff/Generators/"+jo[0]+"JobOptions/trunk/share/DSID"+dsid+"/"+joboptions
-              $(this).attr('href',link);
+
+              var joboptions = $(this).html().replace(/ /g,'');
+		      if ((joboptions!='')&&(joboptions!=undefined)) {
+                var jo = joboptions.split(".");
+                var dsid = jo[1].substring(0, 3) + "xxx";
+                var link = "https://svnweb.cern.ch/cern/wsvn/atlasoff/Generators/" + jo[0] + "JobOptions/trunk/share/DSID" + dsid + "/" + joboptions
+                $(this).attr('href', link);
+               }
         });
     }
 

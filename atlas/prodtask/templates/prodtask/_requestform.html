@@ -43,6 +43,7 @@
         $("#" +idForm+ " #datasetPattern"+parentSlice).val('');
         $("#" +idForm+ " #datasetPattern"+parentSlice).prop({'id':"datasetPattern"+currentSlice});
         $("#" +idForm+ " #addStepButton"+parentSlice+'_'+parentStep).prop({'id':"addStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','addStep(event,this.id);');
+        $("#" +idForm+ " #removeStepButton"+parentSlice+'_'+parentStep).prop({'id':"removeStepButton"+currentSlice+'_'+currentStep}).removeAttr("disabled").attr('onclick','removeStep(event,this.id);');
         $("#" +idForm+ " #addSliceStepButton"+parentSlice+'_'+parentStep).prop({'id':"addSliceStepButton"+currentSlice+'_'+currentStep});
         $("#" +idForm+ " #jediMerging"+parentSlice+'_'+parentStep).prop({'id':"jediMerging"+currentSlice+'_'+currentStep});
         $("#" +idForm+ " #jediParams"+parentSlice+'_'+parentStep).prop({'id':"jediParams"+currentSlice+'_'+currentStep});
@@ -60,7 +61,7 @@
         $('#formSet').append(sliceDiv);
         $('#sliceNumber').html((nextNumber+1).toString());
         prepareStep(nextNumber.toString(),'0','0','0');
-
+        $("#form"+nextNumber.toString()+'_0'+ " .parentstepshort").val(nextNumber.toString() +'_0');
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
@@ -95,11 +96,58 @@
         $('#formSet').append(sliceDiv);
         $('#sliceNumber').html((nextNumber+1).toString());
         prepareStep(nextNumber.toString(),'0',buttonID.replace('addSliceStepButton','').split('_')[0],buttonID.replace('addSliceStepButton','').split('_')[1]);
+
         var idForm = "form"+nextNumber.toString()+'_'+0;
         $("#" +idForm+ " .hideNotFirst").css({display:'none'});
         $("#" +idForm+ " .showNotFirst").show();
         $('#'+buttonID.replace('addSliceStepButton','addStepButton')).attr('disabled','disabled').attr('onclick','').click(undefined);
         bindOnChangeToFieldSet();
+        fillSlicesField();
+    }
+
+    function findChild(currentSlice,currentStep){
+        var new_element = true;
+        var parents = [];
+        parents.push(currentSlice.toString() + '_' + currentStep.toString());
+
+
+        var iteration = 0;
+        while (new_element){
+            new_element = false;
+            for (slice in currentTree) {
+                if ((($.inArray(currentTree[slice]['parentstepshort'],parents)>-1)&&($.inArray(slice.toString(),parents)==-1))){
+                    new_element = true;
+                    parents.push(slice.toString());
+                }
+            }
+        }
+        return parents;
+    }
+
+
+
+
+    function removeStep(event, buttonID){
+        var currentSlice = parseInt(buttonID.replace('removeStepButton','').split('_')[0]);
+        var currentStep = parseInt(buttonID.replace('removeStepButton','').split('_')[1]);
+
+        var toDeleteForms = findChild(currentSlice,currentStep);
+        for (var i=0; i<toDeleteForms.length;i++){
+            if (toDeleteForms[i]!='0_0'){
+                $('#form'+toDeleteForms[i]).remove();
+
+                if ((parseInt(toDeleteForms[i].split('_')[1])-1)>=0){
+                    var previousID = toDeleteForms[i].split('_')[0] + '_' + (parseInt(toDeleteForms[i].split('_')[1])-1).toString();
+                    console.log(previousID);
+                    if($.inArray(previousID,toDeleteForms)==-1){
+
+                        $("#addStepButton"+previousID).removeAttr("disabled").attr('onclick','addStep(event,this.id);');
+                    }
+                }
+            } else {
+                $("#addStepButton0_0").removeAttr("disabled").attr('onclick','addStep(event,this.id);');
+            }
+        }
         fillSlicesField();
     }
 
@@ -192,6 +240,7 @@
             }
         }
     }
+var currentTree = {};
 
 $(document).ready(function(){
         (function(){MCCampaignHandling()})();
@@ -229,7 +278,7 @@ $(document).ready(function(){
                resultObject[sliceNumber]  = sliceObject;
             });
             $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
-
+            currentTree = resultObject;
           }
 
         function findDatasets(currentButton){
@@ -447,6 +496,7 @@ $(document).ready(function(){
         </div>
         <div class="row">
             <a class="button" id="addStepButton0_0" onclick="addStep(event, this.id);" title="Create children step in this slice" >Add step</a>
+            <a class="button" id="removeStepButton0_0" onclick="removeStep(event, this.id);" title="Remove step and it childs" >Remove step</a>
             <a class="button" id="addSliceStepButton0_0"  title="Create children step in a new slice" onclick="addNewSliceStep(event, this.id);">Fork</a>
       </div>
     </fieldset>
