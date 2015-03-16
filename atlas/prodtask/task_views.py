@@ -466,14 +466,17 @@ def get_permissions(request,tasks):
     except:
             pass
 
-    #target_group = user_groups.filter(name='vomsgroup:/atlas')#TODO Could be any VOMS/e-Group RM    
+    target_group_THLT = user_groups.filter(name='atlas-trigger-offline-monitoring-expert') 
     is_permitted=False
     denied_tasks=[]
 
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            #if is_superuser is True or user==task_owner or target_group:#TODO Implement e-Groups check RM
+            physgroup = ProductionTask.objects.values('phys_group').get(id=task,phys_group="THLT").get('phys_group')
+           
             if is_superuser is True or user==task_owner:
+                    is_permitted=True
+            elif target_group_THLT and physgroup:
                     is_permitted=True
             else:
                     denied_tasks.append(task)

@@ -84,12 +84,12 @@ def tasks_action(request, action):
 
     is_permitted, denied_tasks = get_permissions(request,tasks)
 
-    if is_permitted is False:
+    #if is_permitted is False:
+    if denied_tasks:
             denied_tasks_string = ", ".join(denied_tasks)
             response["exception"] = "User '%s' don't have permissions to make action '%s' with task(s) '%s'" % (owner,action,denied_tasks_string)     
     else:
             response = do_tasks_action(owner, tasks, action, *params)
-
     return _http_json_response(response)
 
 
