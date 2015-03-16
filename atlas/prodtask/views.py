@@ -587,6 +587,14 @@ def save_slice_changes(reqid, slice_steps):
                             if steps_status['changes'].get('eventsNumber'):
                                 current_slice.input_events = steps_status['changes'].get('eventsNumber')
                                 current_slice.save()
+                                if int(steps_status['changes'].get('eventsNumber')) == -1:
+                                    for step in steps_status['sliceSteps']:
+                                        if step['value']:
+                                            if step['changes']:
+                                                if not step['changes'].has_key('input_events'):
+                                                    step['changes'].update({'input_events':'-1'})
+                                            else:
+                                                step['changes'] = {'input_events':'-1'}
                             if steps_status['changes'].get('comment'):
                                 new_comment = steps_status['changes'].get('comment')
                                 if ('(Fullsim)' not in new_comment) and ('(Atlfast)' not in new_comment):
