@@ -472,7 +472,7 @@ def get_permissions(request,tasks):
 
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            physgroup = ProductionTask.objects.values('phys_group').get(id=task,phys_group="THLT").get('phys_group')
+            #physgroup = ProductionTask.objects.values('phys_group').get(id=task,phys_group="THLT").get('phys_group')
            
             if is_superuser is True or user==task_owner:
                     is_permitted=True
