@@ -5,6 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
+from copy import deepcopy
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.request_views import clone_slices
 from ..prodtask.helper import form_request_log
@@ -434,6 +435,102 @@ def reject_steps(request, reqid, step_filter):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def split_slice(reqid, slice_number, divider):
+    """
+    Create a new slices in reqid with number of events in each slice = total_events in slice / divider
+    :param reqid: request id
+    :param slice_number: slice number to split
+    :param divider: divider count
+
+    """
+
+    def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number):
+            new_slice = slice_to_split.values()[0]
+            new_slice['slice'] = new_slice_number
+            del new_slice['id']
+            new_slice['input_events'] = new_event_number
+            comment = new_slice['comment']
+            new_slice['comment'] = comment[:comment.find(')')+1] + '('+str(index)+')' + comment[comment.find(')')+1:]
+            new_input_data = InputRequestList(**new_slice)
+            new_input_data.save()
+            parent = None
+            for step_dict in ordered_existed_steps:
+                current_step = deepcopy(step_dict)
+                current_step.slice = new_input_data
+                if parent:
+                    current_step.step_parent = parent
+                current_step.save()
+                if current_step.input_events == slice_to_split[0].input_events:
+                    current_step.input_events = new_input_data.input_events
+                    current_step.save()
+                if not parent:
+                    current_step.step_parent = current_step
+                    current_step.save()
+                parent = current_step
+
+    production_request = TRequest.objects.get(reqid=reqid)
+    slice_to_split = InputRequestList.objects.filter(request = production_request, slice = slice_number)
+    new_slice_number = (InputRequestList.objects.filter(request=production_request).order_by('-slice')[0]).slice + 1
+    step_execs = StepExecution.objects.filter(slice=slice_to_split[0])
+    ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
+    for step in ordered_existed_steps:
+            step.id = None
+            step.step_parent = step
+    if (slice_to_split[0].input_events != -1) and (slice_to_split[0].input_events > divider) and \
+            ((int(slice_to_split[0].input_events) / divider) < 200):
+        for step_dict in ordered_existed_steps:
+            if (step_dict.input_events != slice_to_split[0].input_events) and (step_dict.input_events != -1):
+                raise ValueError("Can't split slice wrong event in step %s" % str(step_dict.input_events))
+            if step_dict.status in StepExecution.STEPS_APPROVED_STATUS:
+                raise ValueError("Can't split slice step %s is approved" % str(step_dict.status))
+        for i in range(int(slice_to_split[0].input_events) / int(divider)):
+            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider)
+            new_slice_number += 1
+        if (slice_to_split[0].input_events % divider) != 0:
+            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
+                                   int(slice_to_split[0].input_events) / int(divider), slice_to_split[0].input_events % divider)
+            new_slice_number += 1
+
+    else:
+        raise ValueError("Can't split slice total events: %s on %s" % (str(slice_to_split[0].input_events),str(divider)))
+
+
+
+@csrf_protect
+def split_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            divider = int(input_dict['divider'])
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Split slices: %s' % str(slices)))
+            good_slices = []
+            bad_slices = []
+            for slice_number in slices:
+                try:
+                    split_slice(reqid,slice_number,divider)
+                    good_slices.append(slice_number)
+                    splitted_slice = InputRequestList.objects.get(request = reqid, slice = slice_number)
+                    splitted_slice.is_hide = True
+                    splitted_slice.comment = 'Splitted'
+                    splitted_slice.save()
+                except  Exception,e:
+                    bad_slices.append(slice_number)
+                    _logger.error("Problem with slice splitting : %s"%( e))
+            if len(bad_slices) > 0:
+                results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
+            else:
+                results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 
 def fix_dima_error():

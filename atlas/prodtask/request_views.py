@@ -974,10 +974,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
 
                 if not form2.is_valid():
-                    if (not form2.cleaned_data.get('need_split')) and (form2.cleaned_data.get('split_divider',-1)!=-1):
-                        _logger.error('Try to split slices by %s' % str((form2.cleaned_data['split_divider'])))
-                        file_dict = do_big_slice_split(file_dict,int(form2.cleaned_data['split_divider']))
-                        request.session['file_dict'] = file_dict
+
                     inputlists = form_input_list_for_preview(file_dict)
                     # store data from prefill form to http request
                     return render(request, 'prodtask/_previewreq.html', {

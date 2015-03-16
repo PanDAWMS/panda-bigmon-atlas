@@ -1151,6 +1151,34 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                 );
               return false;
         };
+
+        function splitSlicesClick(event, splitNumber){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            var sendData = {slices:sliceList,divider:splitNumber};
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:split_slices_in_req',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
         function showModalClone(event){
             event.preventDefault();
             var sliceList=[];
@@ -1758,8 +1786,6 @@ var lastChecked = true;
 
     </div>
     <div class="row">
-    <div class="large-7 columns">
-    <div class="row collapse ">
                 <div class="large-5 columns">
                     <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
                 </div>
@@ -1774,9 +1800,25 @@ var lastChecked = true;
                     </select>
                 </div>
                 <div class="large-1 columns">&nbsp;</div>
+    <div class="large-3 columns">
+        {% if show_split %}
+            <button class="btn_is_authenticated"  title="Split slices" href="#" data-dropdown="dropSplitMenu">Split </button>
+            <div id="dropSplitMenu" class="f-dropdown content" data-dropdown-content>
+                    <div class="row">
+                        <label> Split on:
+                            <input type="number" id="splitNumber" value="2000000" />
+                        </label>
+                    </div>
+                 <div class="row">
+                     <button id="splitSlice" class="btn_is_authenticated" title="Split slices" onclick="splitSlicesClick(event,$('#splitNumber').val());">Split</button>
+                 </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="large-1 columns">
     </div>
     </div>
-    </div>
+
  </form>
 {#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
 

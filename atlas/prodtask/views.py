@@ -563,6 +563,7 @@ def fill_all_slices_from_0_slice(reqid):
                         current_step.save()
                     parent = current_step
 
+
 def save_slice_changes(reqid, slice_steps):
     not_changed = []
     for slice_number, steps_status in slice_steps.items():
@@ -932,6 +933,8 @@ def input_list_approve_full(request, rid=None):
     return request_table_view(request, rid, show_hidden=True)
 
 
+NUMBER_EVENTS_TO_SPLIT = 2000000
+
 def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
 
@@ -1035,6 +1038,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             last_comment = ' '
             autorized_change_request = True
             show_is_fast = False
+            show_split = False
             if (cur_request.request_type in ['HLT','REPROCESSING']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
@@ -1139,6 +1143,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                     for step_template in step_templates_set:
                         step_templates[step_template] = StepTemplate.objects.get(id=step_template)
                     for slice in input_lists_pre:
+                        if slice.input_events >= NUMBER_EVENTS_TO_SPLIT:
+                            show_split = True
                         if (not show_hidden) and slice.is_hide:
                             hidden_slices += 1
                             continue
@@ -1346,7 +1352,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'last_comment':last_comment,
                'comment_author':comment_author,
                'autorized_change_request':autorized_change_request,
-               'show_is_fast':show_is_fast
+               'show_is_fast':show_is_fast,
+               'show_split':show_split
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
