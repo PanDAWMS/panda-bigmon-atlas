@@ -399,7 +399,8 @@ def slice_steps(request, reqid, slice_number):
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
                                         'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
-                                        'maxAttempt':task_config.get('maxAttempt','')})
+                                        'maxAttempt':task_config.get('maxAttempt',''),
+                                        'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''
             if input_list.dataset:
@@ -435,6 +436,135 @@ def reject_steps(request, reqid, step_filter):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def prepare_slices_to_retry(production_request, ordered_slices):
+    """
+    Function to prepare action to recovery broken tasks. If task are broken it creates new slice with broken task setting
+    in step previous_task. If task was already restarted it's not go again.
+    :param production_request: request id
+    :param ordered_slices: ordered slice numbers
+    :return: dictionary of action {slice number: [list of task per step] }
+    """
+    def remove_task_chain(list_to_remove, tasks_checked, task_id, tasks_parent):
+        slice_steps = tasks_checked.pop(task_id)
+        for slice_step in slice_steps:
+            if task_id in list_to_remove[slice_step[0]][slice_step[1]]:
+                list_to_remove[slice_step[0]][slice_step[1]].remove(task_id)
+            if tasks_parent[task_id] in tasks_checked:
+                remove_task_chain(list_to_remove, tasks_checked, tasks_parent[task_id], tasks_parent)
+
+
+
+    tasks_db = list(ProductionTask.objects.filter(request=production_request).order_by('-submit_time').values())
+    tasks = {}
+    tasks_parent = {}
+    tasks_checked = {}
+    result_dict = {}
+    for current_task in tasks_db:
+        tasks[current_task['step_id']] = tasks.get(current_task['step_id'],[]) + [current_task]
+        tasks_parent[current_task['id']] = current_task['parent_id']
+    for slice in ordered_slices:
+        current_slice = InputRequestList.objects.get(slice=slice,request=production_request)
+        step_execs = StepExecution.objects.filter(slice=current_slice)
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
+        result_dict[slice] = []
+        for index, step in enumerate(ordered_existed_steps):
+            tasks_to_fix = []
+            previous_tasks = step.get_task_config('previous_task_list')
+            if previous_tasks:
+                for task in previous_tasks:
+                    remove_task_chain(result_dict,tasks_checked,task,tasks_parent)
+            if tasks.has_key(step.id):
+                for task in tasks[step.id]:
+                    if task['status'] in ['broken','failed','aborted']:
+                        tasks_to_fix.append(task['id'])
+                        tasks_checked[task['id']] = tasks_checked.get(task['id'],[])+[(slice, index)]
+                    else:
+                        if task['id'] in tasks_checked:
+                            remove_task_chain(result_dict,tasks_checked,task['id'],tasks_parent)
+                        if tasks_parent[task['id']] in tasks_checked:
+                            remove_task_chain(result_dict,tasks_checked,tasks_parent[task['id']],tasks_parent)
+
+            result_dict[slice].append(tasks_to_fix)
+    return result_dict
+
+
+def apply_retry_action(production_request, retry_action):
+    new_slice_number = (InputRequestList.objects.filter(request=production_request).order_by('-slice')[0]).slice + 1
+    request_source = TRequest.objects.get(reqid=production_request)
+    old_new_step = {}
+    for slice_number in sorted(retry_action):
+        if reduce(lambda x,y: x+y,retry_action[slice_number]):
+            current_slice = InputRequestList.objects.filter(request=production_request,slice=int(slice_number))
+            step_execs = StepExecution.objects.filter(slice=current_slice)
+            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+            if len(ordered_existed_steps) == len(retry_action[slice_number]):
+                new_slice = current_slice.values()[0]
+                new_slice['slice'] = new_slice_number
+                new_slice_number += 1
+                del new_slice['id']
+                new_input_data = InputRequestList(**new_slice)
+                new_input_data.cloned_from = InputRequestList.objects.get(request=production_request,slice=int(slice_number))
+                new_input_data.save()
+                if request_source.request_type == 'MC':
+                    STEPS = StepExecution.STEPS
+                else:
+                    STEPS = ['']*len(StepExecution.STEPS)
+                step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+                real_step_index = -1
+                first_changed = False
+                for index,step in enumerate(step_as_in_page):
+                    if step:
+                        real_step_index += 1
+                        if retry_action[slice_number][real_step_index] or first_changed:
+                            self_looped = step.id == step.step_parent.id
+                            old_step_id = step.id
+                            step.id = None
+                            step.step_appr_time = None
+                            step.step_def_time = None
+                            step.step_exe_time = None
+                            step.step_done_time = None
+                            step.slice = new_input_data
+                            step.set_task_config({'previous_task_list':map(int,retry_action[slice_number][real_step_index])})
+                            if step.status == 'Skipped':
+                                step.status = 'NotCheckedSkipped'
+                            elif step.status == 'Approved':
+                                step.status = 'NotChecked'
+                            if first_changed and (step.step_parent.id in old_new_step):
+                                step.step_parent = old_new_step[int(step.step_parent.id)]
+                            step.save_with_current_time()
+                            if self_looped:
+                                step.step_parent = step
+                            first_changed = True
+                            step.save()
+                            old_new_step[old_step_id] = step
+
+
+@csrf_protect
+def retry_slices(request, reqid):
+    """
+    :param request:
+    :param reqid:
+    :return:
+    """
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Retry slices: %s' % str(ordered_slices)))
+            ordered_slices.sort()
+            retry_action = prepare_slices_to_retry(reqid, ordered_slices)
+            apply_retry_action(reqid, retry_action)
+            results = {'success':True}
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 def split_slice(reqid, slice_number, divider):

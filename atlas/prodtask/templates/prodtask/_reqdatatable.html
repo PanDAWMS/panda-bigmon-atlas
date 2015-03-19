@@ -1152,6 +1152,32 @@ $(".showSmallSpan").css({"cursor":"pointer"});
               return false;
         };
 
+        function retrySlicesClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            var sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:retry_slices',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                            location.reload();
+                        }
+                    }
+                );
+              return false;
+        };
+
         function splitSlicesClick(event, splitNumber){
             event.preventDefault();
             var sliceList=[];
@@ -1786,7 +1812,7 @@ var lastChecked = true;
 
     </div>
     <div class="row">
-                <div class="large-5 columns">
+                <div class="large-4 columns">
                     <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
                 </div>
 
@@ -1800,6 +1826,9 @@ var lastChecked = true;
                     </select>
                 </div>
                 <div class="large-1 columns">&nbsp;</div>
+     <div class="large-1 columns">
+         <button id="retrySlice" class="btn_is_authenticated" title="Very smart algorithm to retry slices" onclick="retrySlicesClick(event);">Retry</button>
+    </div>
     <div class="large-3 columns">
         {% if show_split %}
             <button class="btn_is_authenticated"  title="Split slices" href="#" data-dropdown="dropSplitMenu">Split </button>
@@ -1815,8 +1844,7 @@ var lastChecked = true;
             </div>
         {% endif %}
     </div>
-    <div class="large-1 columns">
-    </div>
+
     </div>
 
  </form>
@@ -1895,7 +1923,7 @@ var lastChecked = true;
             </div>
        </div>
     </div>
-       <div class="row">
+    <div class="row">
        <div class="large-8 columns">
             <div class="row collapse">
                 <div class="large-10 columns">
@@ -1906,6 +1934,7 @@ var lastChecked = true;
             </div>
        </div>
     </div>
+
      <div class="row">
        <div class="large-2 columns">
             <a href="#" class="button postfix btn_is_authenticated" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
@@ -2087,6 +2116,13 @@ var lastChecked = true;
                                     <input type="number" class="nMaxFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                   </div>
+                              </div>
+                              <div class="row">
+                                <div class="large-12 columns">
+                                  <label>Previous tasks
+                                    <input type="text" class="previousTasks storeOutput{{forloop.counter0}}"  placeholder=" " readonly/>
+                                  </label>
+                                </div>
                               </div>
                             </fieldset>
                     </div>
