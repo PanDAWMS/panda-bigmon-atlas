@@ -89,6 +89,9 @@ urlpatterns = patterns('',
     url(r'^retry_slices/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.retry_slices', name='retry_slices'),
     url(r'^split_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_in_req', name='split_slices_in_req'),
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
+    url(r'^test_auth_for_api/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api', name='test_auth_for_api'),
+    url(r'^test_auth_for_api2/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api2', name='test_auth_for_api2'),
+
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
     url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', 'atlas.prodtask.report_view.make_report', name='make_report'),

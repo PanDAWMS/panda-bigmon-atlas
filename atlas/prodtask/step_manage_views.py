@@ -261,6 +261,18 @@ def step_params_from_tag(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def test_auth_for_api(request, param):
+    if request.method == 'POST':
+        return HttpResponse(json.dumps({'user':request.user.username,'arg':param}), content_type='application/json')
+    if request.method == 'GET':
+        return HttpResponse(json.dumps({'user':request.user.username,'arg':param}), content_type='application/json')
+
+
+def test_auth_for_api2(request, param):
+    if request.method == 'POST':
+        return HttpResponse(json.dumps({'user':request.user.username,'arg':param}), content_type='application/json')
+
 
 @csrf_protect
 def update_project_mode(request, reqid):
