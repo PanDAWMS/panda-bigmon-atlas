@@ -7,10 +7,11 @@ from django.views.decorators.csrf import csrf_protect
 from time import sleep
 from copy import deepcopy
 from atlas.prodtask.models import RequestStatus
+from ..prodtask.spdstodb import fill_template
 from ..prodtask.request_views import clone_slices
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
-from .views import form_existed_step_list, form_step_in_page
+from .views import form_existed_step_list, form_step_in_page, fill_dataset
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset
 
@@ -565,6 +566,66 @@ def retry_slices(request, reqid):
         except Exception,e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def create_tier0_split_slice(slice_dict, steps_list):
+    """
+    Create slice in last tier0 request.
+    :param slice_dict: Dict, possible keys ['dataset','comment','priority']
+    :param steps_list: Dict, possinle keys ['ctag','output_formats','memory','priority'] + StepExecution.TASK_CONFIG_PARAMS
+    :return: request number if succeed
+    """
+    last_request = (TRequest.objects.filter(request_type='TIER0').order_by('-reqid'))[0]
+    new_slice_number = (InputRequestList.objects.filter(request=last_request).order_by('-slice')[0]).slice + 1
+    new_slice = InputRequestList()
+    if slice_dict.get('dataset',''):
+        new_slice.dataset = fill_dataset(slice_dict['dataset'])
+    else:
+        raise ValueError('Dataset has to be defined')
+    new_slice.input_events = -1
+    new_slice.slice = new_slice_number
+    new_slice.request = last_request
+    new_slice.comment = slice_dict.get('comment','')
+    new_slice.priority = slice_dict.get('priority',950)
+    new_slice.save()
+    #create_steps({new_slice_number:step_list}, last_request.reqid, len(StepExecution.STEP)S*[''], 99)
+    parent = None
+    for step_dict in steps_list:
+        new_step = StepExecution()
+        new_step.request = last_request
+        new_step.slice = new_slice
+        new_step.input_events = -1
+        if step_dict.get('ctag',''):
+            ctag = step_dict.get('ctag','')
+        else:
+            raise ValueError('Ctag has to be defined for step')
+        if step_dict.get('output_formats',''):
+            output_formats = step_dict.get('output_formats','')
+        else:
+            raise ValueError('output_formats has to be defined for step')
+        new_step.priority = step_dict.get('priority', 950)
+        memory = step_dict.get('memory', 0)
+        new_step.step_template = fill_template('Reco',ctag, new_step.priority, output_formats, memory)
+        if ('nFilesPerJob' not in step_dict) and ('nGBPerJob' not in step_dict):
+            raise ValueError('nFilesPerJob or nGBPerJob have to be defined')
+        for parameter in StepExecution.TASK_CONFIG_PARAMS:
+            if parameter in step_dict:
+                new_step.set_task_config({parameter:step_dict[parameter]})
+        if parent:
+            new_step.step_parent = parent
+        new_step.status = 'Approved'
+        new_step.save_with_current_time()
+        if not parent:
+            new_step.step_parent = new_step
+            new_step.save()
+        parent = new_step
+    last_request.cstatus = 'approved'
+    last_request.save()
+    request_status = RequestStatus(request=last_request,comment='Request approved by Tier0',owner='tier0',
+                                   status=last_request.cstatus)
+    request_status.save_with_current_time()
+    return last_request.reqid
+
 
 
 def split_slice(reqid, slice_number, divider):

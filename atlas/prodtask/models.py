@@ -104,7 +104,7 @@ class TRequest(models.Model):
                                  'VALI',
                                  'UPGR']]
 
-    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT']]
+    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT','TIER0']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
 
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
@@ -293,6 +293,9 @@ class StepExecution(models.Model):
              'Atlf TAG']
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
+    TASK_CONFIG_PARAMS = ['input_format','nEventsPerJob','token','merging_tag',
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
+                                      'nFilesPerJob','nGBPerJob','maxAttempt']
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')
