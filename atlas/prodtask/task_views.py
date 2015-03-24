@@ -5,9 +5,6 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse
-from django.contrib.auth.decorators import user_passes_test#Ruslan
-from core.common.models import JediDatasets
-
 
 from ..settings import defaultDatetimeFormat
 
