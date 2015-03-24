@@ -317,6 +317,8 @@ def update_project_mode(request, reqid):
                                 step_exec.set_task_config({'nEventsPerJob':new_nEventsPerJob})
                                 if new_destination:
                                     step_exec.set_task_config({'token':'dst:'+new_destination.replace('dst:','')})
+                                if step_exec.get_task_config('token') and (not new_destination):
+                                    step_exec.set_task_config({'token':''})
                                 step_exec.input_events = new_input_events
                                 step_exec.priority = new_priority
                                 step_exec.save()
