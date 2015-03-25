@@ -325,7 +325,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.save_with_current_time()
                             parent_step = step_in_db
                     else:
-                            task_config = {'maxAttempt':15}
+                            task_config = {'maxAttempt':10}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'')})

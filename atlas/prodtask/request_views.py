@@ -1160,7 +1160,7 @@ def dpd_request_create(request):
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
+                                   {'nEventsPerJob':'1000','priority':'960','maxAttempt':'15'})
 
 
 @login_required(login_url='/prodtask/login/')
