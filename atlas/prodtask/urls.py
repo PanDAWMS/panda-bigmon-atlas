@@ -51,6 +51,9 @@ urlpatterns = patterns('',
     url(r'^mcpriority_create/$',                    'atlas.prodtask.request_views.mcpriority_create',  name='mcpriority_create'),
     url(r'^mcpriority_update/(?P<pattern_id>\d+)/$','atlas.prodtask.request_views.mcpriority_update',  name='mcpriority_update'),
 
+    url(r'^status_history/(?P<reqid>\d+)/$','atlas.prodtask.request_views.status_history',  name='status_history'),
+
+    url(r'^do_mc_management_approve/(?P<reqid>\d+)/$','atlas.prodtask.request_views.do_mc_management_approve',  name='do_mc_management_approve'),
     url(r'^close_deft_ref/(?P<reqid>\d+)/$','atlas.prodtask.request_views.close_deft_ref',  name='close_deft_ref'),
     url(r'^task_table/$',               'atlas.prodtask.task_views.task_table',         name='task_table'),
     url(r'^task/(?P<rid>\d+)/$',        'atlas.prodtask.task_views.task_details',       name='task'),

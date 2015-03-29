@@ -487,7 +487,8 @@ def find_input_datasets(request, reqid):
 
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta','boeriu']
+MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta','boeriu',
+                  'onofrio','jmonk','kado']
 
 def request_approve_status(production_request, request):
     if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
@@ -1045,6 +1046,8 @@ def request_table_view(request, rid=None, show_hidden=False):
             comment_author = ' '
             last_comment = ' '
             autorized_change_request = True
+            needed_management_approve = False
+            first_approval_message = ''
             show_is_fast = False
             show_split = False
             if (cur_request.request_type in ['HLT','REPROCESSING']) or (cur_request.phys_group == 'VALI'):
@@ -1053,6 +1056,17 @@ def request_table_view(request, rid=None, show_hidden=False):
                 try:
                     if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS):
                         autorized_change_request = False
+                    if cur_request.cstatus == 'waiting':
+                        needed_management_approve = True
+                    else:
+                        request_registration = RequestStatus.objects.filter(request=cur_request,status='registered')
+                        if request_registration:
+                            first_approval_message = 'Request was approved for processing by %s at %s'%(request_registration[0].owner,
+                                                                                                        request_registration[0].timestamp.ctime() )
+                        else:
+                            approved_by = RequestStatus.objects.filter(request=cur_request,status='approved')
+                            if approved_by:
+                                first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
@@ -1361,7 +1375,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                'comment_author':comment_author,
                'autorized_change_request':autorized_change_request,
                'show_is_fast':show_is_fast,
-               'show_split':show_split
+               'show_split':show_split,
+               'needed_management_approve':needed_management_approve,
+               'first_approval_message':first_approval_message
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

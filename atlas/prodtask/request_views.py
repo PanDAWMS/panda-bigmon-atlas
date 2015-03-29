@@ -238,6 +238,20 @@ def request_clone2(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+@csrf_protect
+def status_history(request, reqid):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            _logger.debug(form_request_log(reqid,request,'Get status history'))
+            request_status = RequestStatus.objects.filter(request=reqid).order_by('-timestamp')
+            result_data = [{'status': x.status,'user': x.owner,'date': str(x.timestamp),'comment': x.comment} for x in request_status]
+            results = {'success': True,'data': result_data}
+        except Exception, e:
+            _logger.error("Problem with getting status #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
 def create_tarball_input(production_request_id):
     result = ''
     try:
@@ -1168,6 +1182,25 @@ def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
                                    reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
+
+@csrf_protect
+def do_mc_management_approve(request, reqid):
+    results = {}
+    if request.method == 'POST':
+        try:
+            _logger.debug(form_request_log(reqid,request,'Make management approve'))
+
+            cur_request = TRequest.objects.get(reqid=reqid)
+            request_status = RequestStatus(request=cur_request,comment='Request registered by WebUI',owner=request.user.username,
+                                           status='registered')
+            request_status.save_with_current_time()
+            cur_request.cstatus = 'registered'
+            cur_request.save()
+            message = 'Request was approved for processing by %s' %request.user.username
+            results = {'newStatus': 'registered','registrationMessage':message }
+        except Exception,e:
+            _logger.error("Problem during request registering: %s" % str(e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:

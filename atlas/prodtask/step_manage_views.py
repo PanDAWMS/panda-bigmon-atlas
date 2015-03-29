@@ -590,7 +590,10 @@ def create_tier0_split_slice(slice_dict, steps_list):
     :return: request number if succeed
     """
     last_request = (TRequest.objects.filter(request_type='TIER0').order_by('-reqid'))[0]
-    new_slice_number = (InputRequestList.objects.filter(request=last_request).order_by('-slice')[0]).slice + 1
+    if InputRequestList.objects.filter(request=last_request).count() == 0:
+        new_slice_number = 0
+    else:
+        new_slice_number = (InputRequestList.objects.filter(request=last_request).order_by('-slice')[0]).slice + 1
     new_slice = InputRequestList()
     if slice_dict.get('dataset',''):
         new_slice.dataset = fill_dataset(slice_dict['dataset'])
@@ -601,6 +604,7 @@ def create_tier0_split_slice(slice_dict, steps_list):
     new_slice.request = last_request
     new_slice.comment = slice_dict.get('comment','')
     new_slice.priority = slice_dict.get('priority',950)
+    new_slice.brief = ' '
     new_slice.save()
     #create_steps({new_slice_number:step_list}, last_request.reqid, len(StepExecution.STEP)S*[''], 99)
     parent = None
