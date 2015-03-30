@@ -1185,22 +1185,33 @@ def reprocessing_request_create(request):
 
 @csrf_protect
 def do_mc_management_approve(request, reqid):
+    return change_request_status(request, reqid,'registered',
+                             'Request was approved for processing by %s' %request.user.username,'Request registered by WebUI')
+
+
+@csrf_protect
+def do_mc_management_cancel(request, reqid):
+    return change_request_status(request, reqid,'cancelled',
+                                 'Request was cancelled  by %s' %request.user.username, 'Request cancelled by WebUI')
+
+
+def change_request_status(request, reqid, status, message, comment):
     results = {}
     if request.method == 'POST':
         try:
-            _logger.debug(form_request_log(reqid,request,'Make management approve'))
+            _logger.debug(form_request_log(reqid,request,'Make management %s'%status))
 
             cur_request = TRequest.objects.get(reqid=reqid)
-            request_status = RequestStatus(request=cur_request,comment='Request registered by WebUI',owner=request.user.username,
-                                           status='registered')
+            request_status = RequestStatus(request=cur_request,comment=comment,owner=request.user.username,
+                                           status=status)
             request_status.save_with_current_time()
-            cur_request.cstatus = 'registered'
+            cur_request.cstatus = status
             cur_request.save()
-            message = 'Request was approved for processing by %s' %request.user.username
-            results = {'newStatus': 'registered','registrationMessage':message }
+            results = {'newStatus': status,'message':message }
         except Exception,e:
-            _logger.error("Problem during request registering: %s" % str(e))
+            _logger.error("Problem during request status change: %s" % str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:

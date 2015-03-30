@@ -700,7 +700,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                     else:
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
-            if (req.cstatus.lower() != 'test') and (approve_level>=0):
+            if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
                 req.cstatus = request_approve_status(req,request)
                 req.save()
                 owner='default'
@@ -1060,9 +1060,13 @@ def request_table_view(request, rid=None, show_hidden=False):
                         needed_management_approve = True
                     else:
                         request_registration = RequestStatus.objects.filter(request=cur_request,status='registered')
+                        request_cancellation = RequestStatus.objects.filter(request=cur_request,status='cancelled')
                         if request_registration:
                             first_approval_message = 'Request was approved for processing by %s at %s'%(request_registration[0].owner,
                                                                                                         request_registration[0].timestamp.ctime() )
+                        elif request_cancellation:
+                            first_approval_message = 'Request was cancelled by %s at %s'%(request_cancellation[0].owner,
+                                                                                                        request_cancellation[0].timestamp.ctime() )
                         else:
                             approved_by = RequestStatus.objects.filter(request=cur_request,status='approved')
                             if approved_by:

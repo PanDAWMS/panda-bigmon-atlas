@@ -106,7 +106,7 @@ class TRequest(models.Model):
 
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT','TIER0']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
-
+    TERMINATE_STATE = ['test','cancelled']
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True, blank=True)

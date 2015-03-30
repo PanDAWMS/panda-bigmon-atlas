@@ -715,7 +715,32 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                         if (newStatus != $('#requestStatus').html()) {
                             $('#requestStatus').html(newStatus);
                             $('#requestRegistButton').hide();
+                            $('#requestCancelButton').hide();
                             $('#registrationMessgae').html(registrationMessage);
+                        }
+                    }
+                });
+              return false;
+        }
+        function cancelRequest(event){
+            event.preventDefault();
+            sendData = {};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:do_mc_management_cancel' pr_id%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        var newStatus =  $.evalJSON(data).newStatus;
+                        var cancelationMessage = $.evalJSON(data).message;
+                        if (newStatus != $('#requestStatus').html()) {
+                            $('#requestStatus').html(newStatus);
+                            $('#requestRegistButton').hide();
+                            $('#requestCancelButton').hide();
+                            $('#cancelationMessgae').html(cancelationMessage);
                         }
                     }
                 });
@@ -1553,10 +1578,14 @@ var lastChecked = true;
             </div>
         {% endif %}
         <div class="large-3 column">
-            <a id='requestRegistButton' class=" button success postfix btn_is_authenticated" onclick="registerRequest(event);">PMG approval</a>
+            <a id='requestRegistButton' class=" button success radius btn_is_authenticated" onclick="registerRequest(event);">PMG approval</a>
              <span id="registrationMessgae"></span>
         </div>
-        <div class="large-8 column">
+        <div class="large-2 column">
+            <a id='requestCancelButton' class=" button radius alert  btn_is_authenticated" onclick="cancelRequest(event);">Cancel</a>
+             <span id="cancelationMessgae"></span>
+        </div>
+        <div class="large-6 column">
         </div>
     {% else %}
          <div class="large-12 column">
