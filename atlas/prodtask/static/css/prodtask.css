@@ -19,7 +19,11 @@ span.rstat.registered {
 }
 
 span.rstat.waiting {
-    color: blue;
+    color: orange;
+}
+
+span.rstat.cancelled {
+    color: red;
 }
 
 span.rstat.approved {
