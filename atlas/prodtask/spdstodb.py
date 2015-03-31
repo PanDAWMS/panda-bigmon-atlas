@@ -141,6 +141,37 @@ def format_check(format):
         raise ValueError('Wrong format: %s'%format)
 
 
+def format_splitting(format_string, events_number):
+    if events_number==-1:
+        return [(-1,format_string)]
+    formats_percentage = format_string.split('.')
+    formats_dict = []
+    percentages = set()
+    result = []
+    for format_percentage in formats_percentage:
+        if '-' in format_percentage:
+            if int(format_percentage.split('-')[1]) > 100:
+                raise ValueError('Wrong format %s'%format_string)
+            formats_dict.append((format_percentage.split('-')[0],int(format_percentage.split('-')[1])))
+            percentages.add(int(format_percentage.split('-')[1]))
+        else:
+            formats_dict.append((format_percentage.split('-')[0],100))
+            percentages.add(100)
+    percentages_list = list(percentages)
+    percentages_list.sort()
+    processed_events = 0
+    for percentage in percentages_list:
+        section_events = (int(events_number) * percentage) / 100
+        section_formats = []
+        for format in formats_dict:
+            if format[1] >= percentage:
+                section_formats.append(format[0])
+        result.append((section_events - processed_events,'.'.join(section_formats)))
+        processed_events = section_events
+    if 100 not in percentages_list:
+        result.append((int(events_number)-processed_events,''))
+    return result
+
 
 def translate_excl_to_dict(excel_dict):
         return_list = []
@@ -148,85 +179,90 @@ def translate_excl_to_dict(excel_dict):
         checked_rows = []
         _logger.debug('Converting to input-step dict: %s' % excel_dict)
         for row in excel_dict:
-            irl = {}
-            st_sexec_list = []
+
             translated_row = {}
             for key in excel_dict[row]:
                 if key < len(TRANSLATE_EXCEL_LIST):
                     translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
-            st = ''
-            sexec = {}
+
             if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row)) and ('ds' in translated_row):
                 if translated_row in checked_rows:
                     continue
                 else:
-                    checked_rows.append(translated_row)
-                    input_events = translated_row.get('evfs', 0)
+                    total_input_events = translated_row.get('evfs', 0)
                     is_fullsym = True
-                    if input_events == 0:
-                        input_events = translated_row.get('eva2', 0)
+                    if total_input_events == 0:
+                        total_input_events = translated_row.get('eva2', 0)
                         is_fullsym = False
-                    if is_fullsym:
-                        comment = '(Fullsim)'+translated_row.get('comment', '')
-                    else:
-                        comment = '(Atlfast)'+translated_row.get('comment', '')
-                    if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
-                        if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
-                            raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
-                    if translated_row.get('priority', 0) == '0+':
-                        priority = -2
-                    else:
-                        priority = translated_row.get('priority', 0)
-                    irl = dict(slice=index, brief=translated_row.get('brief', ' '),
-                               comment=comment,
-                               input_data=translated_row.get('joboptions', ''),
-                               priority=int(priority),
-                               input_events=int(input_events))
+                    input_events_format = format_splitting(translated_row.get('format', ''),total_input_events)
 
-                    index += 1
-                    reduce_input_format = False
-                    step_index = 0
-                    for currentstep in StepExecution.STEPS:
-                        if translated_row.get('format', '') and (currentstep == 'Reco') and (not translated_row.get(currentstep)) and (is_fullsym):
-                            translated_row[currentstep]='r9999'
-                        if translated_row.get('format', '') and reduce_input_format and (not translated_row.get(currentstep)):
-                            translated_row[currentstep]='p9999'
-                        if translated_row.get('format', '') and (currentstep == 'Atlfast') and (not translated_row.get(currentstep)) and (not is_fullsym):
-                            translated_row[currentstep]='a9999'
-                        if translated_row.get(currentstep):
-                            st = currentstep
-                            tag = translated_row[currentstep]
+                    for input_events, format in input_events_format:
+                        irl = {}
+                        st_sexec_list = []
+                        sexec = {}
+                        checked_rows.append(translated_row)
+
+                        if is_fullsym:
+                            comment = '(Fullsim)'+translated_row.get('comment', '')
+                        else:
+                            comment = '(Atlfast)'+translated_row.get('comment', '')
+                        if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
+                            if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
+                                raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
+                        if translated_row.get('priority', 0) == '0+':
+                            priority = -2
+                        else:
+                            priority = translated_row.get('priority', 0)
+                        irl = dict(slice=index, brief=translated_row.get('brief', ' '),
+                                   comment=comment,
+                                   input_data=translated_row.get('joboptions', ''),
+                                   priority=int(priority),
+                                   input_events=int(input_events))
+
+                        index += 1
+                        reduce_input_format = False
+                        step_index = 0
+                        for currentstep in StepExecution.STEPS:
+                            if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
+                                translated_row[currentstep]='r9999'
+                            if format and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
+                                translated_row[currentstep]='p9999'
+                            if format and (currentstep == 'Atlfast') and (not translated_row.get(currentstep,'').strip()) and (not is_fullsym):
+                                translated_row[currentstep]='a9999'
+                            if translated_row.get(currentstep):
+                                st = currentstep
+                                tag = translated_row[currentstep]
 
 
-                            # Store input events only for evgen
-                            if StepExecution.STEPS.index(currentstep)==0:
-                                sexec = dict(status='NotChecked', input_events=int(input_events))
-                            else:
-                                sexec = dict(status='NotChecked', input_events=-1)
-                            formats = None
-                            task_config = {'maxAttempt':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
-                                                                 'project_mode':get_default_project_mode_dict().get(st,'')}
-
-                            if reduce_input_format:
-                                task_config.update({'input_format':'AOD'})
-                                reduce_input_format = False
-                            if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
-                                if translated_row.get('format', ''):
-                                    format_check(translated_row.get('format', ''))
-                                    formats = 'AOD'+'.'+translated_row.get('format', '')
-                                    reduce_input_format = True
+                                # Store input events only for evgen
+                                if StepExecution.STEPS.index(currentstep)==0:
+                                    sexec = dict(status='NotChecked', input_events=int(input_events))
                                 else:
-                                    formats = 'AOD'
-                            if step_index != 0:
-                                step_index_parent = step_index - 1
-                            else:
-                                step_index_parent = 0
-                            if re.match('\w\d+',tag):
-                                st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
-                                                      'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
-                                                      'step_parent':str(index)+'_'+str(step_index_parent)})
-                                step_index += 1
-                    return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
+                                    sexec = dict(status='NotChecked', input_events=-1)
+                                formats = None
+                                task_config = {'maxAttempt':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                     'project_mode':get_default_project_mode_dict().get(st,'')}
+
+                                if reduce_input_format:
+                                    task_config.update({'input_format':'AOD'})
+                                    reduce_input_format = False
+                                if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
+                                    if format:
+                                        format_check(format)
+                                        formats = 'AOD'+'.'+format
+                                        reduce_input_format = True
+                                    else:
+                                        formats = 'AOD'
+                                if step_index != 0:
+                                    step_index_parent = step_index - 1
+                                else:
+                                    step_index_parent = 0
+                                if re.match('\w\d+',tag):
+                                    st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
+                                                          'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
+                                                          'step_parent':str(index)+'_'+str(step_index_parent)})
+                                    step_index += 1
+                        return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
 
 
