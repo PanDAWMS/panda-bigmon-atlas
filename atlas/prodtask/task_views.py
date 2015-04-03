@@ -206,7 +206,7 @@ class ProductionTaskTable(datatables.DataTable):
         label='Failure rate %',
         sClass='numbers',
         bSortable=False,
-        bVisible='false',
+        #bVisible='false',
         )
 
     total_events = datatables.Column(
@@ -467,16 +467,30 @@ def get_permissions(request,tasks):
     is_permitted=False
     denied_tasks=[]
 
+    allowed_groups = []
+    for gp in group_permissions:
+            if "has_" in gp.name and "_permittions" in gp.name:
+            #        phg=code[(code.find("has_"))+4:code.find("_rights")]
+                     allowed_groups.append(gp.codename)
+    #print "allowed_groups:", allowed_groups
+
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            physgroup = ProductionTask.objects.values('phys_group').filter(id=task).filter(phys_group="THLT")
-           
+            physgroup_thlt = ProductionTask.objects.values('phys_group').filter(id=task).filter(phys_group="THLT")
+            physgroup = ProductionTask.objects.values('phys_group').get(id=task).get('phys_group')
+
+            #print "phys_group:", physgroup
+   
             if is_superuser is True or user==task_owner:
                     is_permitted=True
-            elif target_group_THLT and physgroup:
+            elif physgroup in allowed_groups:
+                    is_permitted=True 
+            elif target_group_THLT and physgroup_thlt:#tobe removed
                     is_permitted=True
             else:
                     denied_tasks.append(task)
 
+    if len(denied_tasks)>0: 
+           is_permitted=False          
 
     return (is_permitted,denied_tasks)
