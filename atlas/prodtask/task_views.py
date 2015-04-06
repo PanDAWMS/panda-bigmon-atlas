@@ -299,6 +299,8 @@ class ProductionTaskTable(datatables.DataTable):
         bPaginate = True
         bJQueryUI = True
 
+        bProcessing = True
+
         sDom = '<"top-toolbar"lf><"table-content"rt><"bot-toolbar"ip>'
 
         bAutoWidth = False
