@@ -206,7 +206,7 @@ class ProductionTaskTable(datatables.DataTable):
         label='Failure rate %',
         sClass='numbers',
         bSortable=False,
-        #bVisible='false',
+        bVisible='false',
         )
 
     total_events = datatables.Column(
