@@ -465,7 +465,6 @@ def get_permissions(request,tasks):
     except:
             pass
 
-    target_group_THLT = user_groups.filter(name='atlas-trigger-offline-monitoring-expert') 
     is_permitted=False
     denied_tasks=[]
 
@@ -478,7 +477,6 @@ def get_permissions(request,tasks):
 
     for task in tasks:
             task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            physgroup_thlt = ProductionTask.objects.values('phys_group').filter(id=task).filter(phys_group="THLT")
             physgroup = ProductionTask.objects.values('phys_group').get(id=task).get('phys_group')
 
             #print "phys_group:", physgroup
@@ -487,7 +485,7 @@ def get_permissions(request,tasks):
                     is_permitted=True
             elif physgroup in allowed_groups:
                     is_permitted=True 
-            elif target_group_THLT and physgroup_thlt:#tobe removed
+            elif "DPD" in allowed_groups:
                     is_permitted=True
             else:
                     denied_tasks.append(task)
