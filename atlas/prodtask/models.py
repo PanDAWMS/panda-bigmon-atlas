@@ -58,7 +58,7 @@ class TProject(models.Model):
     begin_time = models.DecimalField(decimal_places=0, max_digits=10, db_column='BEGIN_TIME')
     end_time = models.DecimalField(decimal_places=0, max_digits=10, db_column='END_TIME')
     status = models.CharField(max_length=8, db_column='STATUS')
-    status = models.CharField(max_length=500, db_column='DESCRIPTION')
+    description = models.CharField(max_length=500, db_column='DESCRIPTION')
     time_stamp = models.DecimalField(decimal_places=0, max_digits=10, db_column='TIMESTAMP')
 
     def save(self):
