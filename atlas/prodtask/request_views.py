@@ -100,6 +100,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
         else:
             request_destination = TRequest.objects.get(reqid=reqid_destination)
         new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
+        first_new_slice = new_slice_number
         old_new_step = {}
         for slice_number in ordered_slices:
             current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
@@ -150,6 +151,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                         first_changed = True
                         step.save()
                         old_new_step[old_step_id] = step
+        return first_new_slice
 
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination = TRequest.objects.get(reqid=reqid)
@@ -1195,18 +1197,28 @@ def do_mc_management_cancel(request, reqid):
                                  'Request was cancelled  by %s' %request.user.username, 'Request cancelled by WebUI')
 
 
+def set_request_status(username, reqid, status, message, comment, request=None):
+    STATUS_ORDER = ['registered','approved','canceled']
+
+    _logger.debug(form_request_log(reqid,request,message))
+
+    cur_request = TRequest.objects.get(reqid=reqid)
+    request_status = RequestStatus(request=cur_request,comment=comment,owner=username,
+                                   status=status)
+    request_status.save_with_current_time()
+    if (status in STATUS_ORDER) and (cur_request.cstatus in STATUS_ORDER):
+        if STATUS_ORDER.index(status) >= STATUS_ORDER.index(cur_request.cstatus):
+            cur_request.cstatus = status
+    else:
+        cur_request.cstatus = status
+    cur_request.save()
+
+
 def change_request_status(request, reqid, status, message, comment):
     results = {}
     if request.method == 'POST':
         try:
-            _logger.debug(form_request_log(reqid,request,'Make management %s'%status))
-
-            cur_request = TRequest.objects.get(reqid=reqid)
-            request_status = RequestStatus(request=cur_request,comment=comment,owner=request.user.username,
-                                           status=status)
-            request_status.save_with_current_time()
-            cur_request.cstatus = status
-            cur_request.save()
+            set_request_status(request.user.username, reqid, status, message, comment,request)
             results = {'newStatus': status,'message':message }
         except Exception,e:
             _logger.error("Problem during request status change: %s" % str(e))
