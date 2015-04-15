@@ -95,6 +95,9 @@ urlpatterns = patterns('',
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
     url(r'^test_auth_for_api/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api', name='test_auth_for_api'),
     url(r'^test_auth_for_api2/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api2', name='test_auth_for_api2'),
+    url(r'^get_ami_tag_list/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_ami_tag_list', name='get_ami_tag_list'),
+    url(r'^get_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_steps_bulk_info', name='get_steps_bulk_info'),
+    url(r'^set_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.set_steps_bulk_info', name='set_steps_bulk_info'),
 
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 

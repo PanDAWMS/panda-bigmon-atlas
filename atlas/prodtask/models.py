@@ -301,9 +301,10 @@ class StepExecution(models.Model):
              'Atlf TAG']
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
-    TASK_CONFIG_PARAMS = ['input_format','nEventsPerJob','token','merging_tag',
-                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
-                                      'nFilesPerJob','nGBPerJob','maxAttempt']
+    INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
+                              'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile']
+    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode']
+
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')

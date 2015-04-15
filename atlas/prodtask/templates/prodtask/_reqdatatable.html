@@ -154,6 +154,9 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 
  {% endfor %}
 
+$('#chooseStepBulk').change(function(){changeStepBulk();});
+$('#amitagBulkSelect').change(function(){clickAmiStepBulk();});
+$('#radioSetStepBulk').change(function(){changeStepBulk();});
  $("#selectPattern").change(function(){
     {% for pattern, steps  in pattern_list %}
         if ($("#selectPattern").val() == "{{ pattern }}"){
@@ -256,6 +259,10 @@ $(".showSmallSpan").css({"cursor":"pointer"});
     (function(){
             $('.storeInput').bind('change',function(){changeSliceChanges(this);});
         })();
+    (function(){
+            $('.storeBulk').bind('change',function(){saveBulkStepChanges(this);});
+        })();
+
     $("#approveDialog").dialog({
         autoOpen: false,
         buttons : {
@@ -477,6 +484,7 @@ $(".showSmallSpan").css({"cursor":"pointer"});
                             }
 
                         } else {
+                            $('#errorDialogMessage').html('');
                             $( "#problemDialog" ).dialog("open");
                         }
 
@@ -1037,6 +1045,189 @@ $(".showSmallSpan").css({"cursor":"pointer"});
           prepareSliceInfo(check_steps,sliceID);
         }
 
+        function getCheckedSlices(){
+             var sliceList=[];
+                $(".checkboxSlice:checked").each(function(){
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            return sliceList;
+        }
+
+
+        function  fillTagsForStep(slices, stepName){
+
+            var sendData = {slices:slices, step:stepName };
+            $.ajaxSetup({async: false});
+              $.ajax({
+                    url: Django.url('prodtask:get_ami_tag_list',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                            AMITags = $.evalJSON(data).AMITags;
+                        $('#amitagBulkSelect').html('');
+                            $('#amitagBulkSelect').append($('<option>', {
+                                value: 'none',
+                                text: 'none'
+                            }));
+                        if (AMITags.length>1) {
+                            $('#amitagBulkSelect').append($('<option>', {
+                                value: '',
+                                text: 'all'
+                            }));
+                        }
+                        for (i=0;i<AMITags.length;i++){
+
+                                $('#amitagBulkSelect').append($('<option>', {
+                                    value: AMITags[i],
+                                    text: AMITags[i]
+                                }));
+                        }
+                        }
+                    }
+                );
+            $.ajaxSetup({async: true});
+        }
+
+
+        function showBulkStepModal(event){
+            event.preventDefault();
+            $(".bulkSelect").prop('disabled', false);
+            var sliceCheckedList = getCheckedSlices();
+            $('#allSlicesBulk').html('All'+'('+$('.checkboxSlice').length+')');
+            $('#selectedSliceBulk').html('Only selected'+'('+sliceCheckedList.length+')');
+
+{#            $('#radioSetStepSelect').removeAttr('checked');#}
+
+
+            changeStepBulk();
+            $('#stepsBulkChangeModal').foundation('reveal', 'open')
+        }
+        function fillStepBulkChange(input_dict){
+            for (multiValueElement in input_dict['multivalues']){
+
+                $('.storeBulk.'+multiValueElement).val('');
+                $('.storeBulk.'+multiValueElement).attr('placeholder','(Multiple values)');
+                $('.storeBulk.'+multiValueElement).parent().css({'color': 'initial'});
+            }
+            for (singleValueElement in input_dict['singlevalue']){
+                $('.storeBulk.'+singleValueElement).val(input_dict['singlevalue'][singleValueElement]);
+                $('.storeBulk.'+singleValueElement).attr('placeholder','');
+                $('.storeBulk.'+singleValueElement).parent().css({'color': 'initial'});
+            }
+            bulkStepChanges = {}
+        }
+        function  getStepBulkChange(slices, stepName, amiTag){
+            var sendData = {slices:slices, step:stepName, amiTag:amiTag };
+            $.ajaxSetup({async: false});
+              $.ajax({
+                  url: Django.url('prodtask:get_steps_bulk_info', "{{ pr_id }}"),
+                  type: 'POST',
+                  contentType: 'application/json; charset=utf-8',
+                  data: $.toJSON(sendData),
+                  dataType: 'text',
+                  success: function (data, status) {
+                      fillStepBulkChange($.evalJSON(data).result);
+                      $('#stepsApprovedBulk').html($.evalJSON(data).stepsApproved);
+                      $('#stepsToChangeBulk').html($.evalJSON(data).stepsToChange);
+                  }
+              });
+            $.ajaxSetup({async: true});
+        }
+        function saveStepsBulk(event){
+            event.preventDefault();
+            if ($('#amitagBulkSelect').val()!='none') {
+                var sliceList = [];
+                if ($('#radioSetStepBulk').val()=='all') {
+                    $(".checkboxSlice").each(function () {
+                        {#                   8 = "checkbox".length#}
+                        var sliceID = $(this).attr("id").slice(8);
+                        sliceList.push(sliceID);
+                    });
+                }
+                else {
+                    sliceList = getCheckedSlices();
+                }
+                var amiTag = $('#amitagBulkSelect').val();
+                setStepBulkChange(sliceList, $('#chooseStepBulk').val(), amiTag);
+            }
+        }
+
+        function discardChangesBulk(event){
+            event.preventDefault();
+            $(".bulkSelect").prop('disabled', false);
+            clickAmiStepBulk();
+        }
+
+        function  setStepBulkChange(slices, stepName, amiTag){
+            var sendData = {slices:slices, step:stepName, amiTag:amiTag, newValues:bulkStepChanges };
+                 $( "#waitingDialog" ).dialog();
+              $.ajax({
+                  url: Django.url('prodtask:set_steps_bulk_info', "{{ pr_id }}"),
+                  type: 'POST',
+                  contentType: 'application/json; charset=utf-8',
+                  data: $.toJSON(sendData),
+                  dataType: 'text',
+                  success: function (data, status) {
+                      $( "#waitingDialog" ).dialog('close');
+
+                      if ($.evalJSON(data).status == 'success'){
+                          clickAmiStepBulk();
+                          $(".bulkSelect").prop('disabled', false);
+                      } else {
+                          $('#errorDialogMessage').html($.evalJSON(data).error);
+                           $( "#problemDialog" ).dialog("open");
+                      }
+                  }
+              });
+
+        }
+        function changeStepBulk(){
+
+            var sliceList =[];
+
+            $('#amitagBulkSelect').html('');
+            if ($('#radioSetStepBulk').val()=='all'){
+                $(".checkboxSlice").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+            }
+            else{
+                sliceList = getCheckedSlices();
+            }
+            fillTagsForStep(sliceList,$('#chooseStepBulk').val());
+            clickAmiStepBulk();
+        }
+        function clickAmiStepBulk(){
+            if ($('#amitagBulkSelect').val()!='none') {
+                var sliceList = [];
+                if ($('#radioSetStepBulk').val()=='all') {
+                    $(".checkboxSlice").each(function () {
+                        {#                   8 = "checkbox".length#}
+                        var sliceID = $(this).attr("id").slice(8);
+                        sliceList.push(sliceID);
+                    });
+                }
+                else {
+                    sliceList = getCheckedSlices();
+                }
+                var amiTag = $('#amitagBulkSelect').val();
+                getStepBulkChange(sliceList, $('#chooseStepBulk').val(), amiTag);
+            } else {
+                $('.storeBulk').val('');
+                $('.storeBulk').attr('placeholder','');
+              $('#stepsApprovedBulk').html('0');
+              $('#stepsToChangeBulk').html('0');
+                bulkStepChanges = {};
+            }
+
+        }
+
+
         function saveOneSlice(event){
             event.preventDefault();
             var slices = [];
@@ -1150,7 +1341,14 @@ $(".showSmallSpan").css({"cursor":"pointer"});
             }
             return no_changes;
         }
-
+        function saveBulkStepChanges(that){
+            if(changeMode) {
+                $(".bulkSelect").prop('disabled', 'disabled');
+                var currentClass = $(that).attr("class").replace("storeBulk", '').replace(' ','');
+                $(that).parent().css({'color': 'red'});
+                bulkStepChanges[currentClass.replace(",",'')] = $(that).val();
+            }
+        }
         function changeSliceSaveStatus(sliceNumber){
             sliceDBInfo = checkSliceIsSaved(sliceNumber);
             if (! sliceDBInfo.is_equal){
@@ -1491,7 +1689,7 @@ RequestSlice.prototype.getStepByNumber = function(stepNumber){
       throw 'Wrong step number';
   }
 };
-
+var bulkStepChanges = {};
 var changesList = {};
 var patternDict = [];
 var changeMode = true;
@@ -1503,7 +1701,7 @@ var lastChecked = true;
     <span></span>
 </div>
  <div id="problemDialog" title='Error' style="display: none">
-    <span>Something has gone wrong!</span>
+    <span>Something has gone wrong!</span><span id="errorDialogMessage"></span>
 </div>
 <div id="waitingDialog" title="Run" style="display: none">
   <p>Please wait...</p>
@@ -1960,7 +2158,12 @@ var lastChecked = true;
     </div>
 
     </div>
+    <div class="row">
+        <div class="large-3 columns">
+            <a class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</a>
 
+        </div>
+    </div>
  </form>
 {#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
 
@@ -2267,6 +2470,155 @@ var lastChecked = true;
    <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
+
+<div id="stepsBulkChangeModal" class="reveal-modal" data-reveal>
+<p><span style="color: green">Steps approved: <span id="stepsApprovedBulk"></span></span>
+    <span>Steps to change (not approved): <span id="stepsToChangeBulk"></span></span><br/>
+    <div>
+    <div class="row">
+        <div class="column large-3">
+            <label> AMI Tag: <select id='amitagBulkSelect' class="bulkSelect" ></select></label>
+        </div>
+        <div class="column large-3">
+                    <label> Step:
+                    <select id="chooseStepBulk" class="bulkSelect" >
+                    <option value=""selected >all</option>
+                    {% for step in step_list %}
+                            <option value="{{ step.name }}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                    </label>
+        </div>
+        <div class="column large-6">
+            <label> Slices:
+                    <select id="radioSetStepBulk" class="bulkSelect" >
+                    <option id='allSlicesBulk' value="all" selected >all</option>
+                    <option id='selectedSliceBulk' value="selected" >selected</option>
+                </select>
+            </label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="column large-12">
+
+        </div>
+
+    </div>
+
+    </div>
+
+
+                        <fieldset>
+                        <div class="row">
+                                <div class="large-3 columns">
+                                  <label> AMI tag
+                                    <input type="text" class="ctag storeBulk" placeholder="" readonly />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events per Input file
+                                    <input type="number" class="nEventsPerInputFile storeBulk"  placeholder=""  />
+                                  </label>
+
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Events per job
+                                    <input type="number" class="nEventsPerJob storeBulk"  placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>Total events
+                                    <input type="number" class="input_events storeBulk" placeholder=""  />
+                                  </label>
+                                </div>
+                               </div>
+                               <div class="row">
+                                <div class="large-2 columns">
+                                  <label>Files per job
+                                    <input type="number" class="nFilesPerJob storeBulk" placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>nGB per job
+                                    <input type="number" class="nGBPerJob storeBulk" placeholder=""  />
+                                  </label>
+                                </div>
+                                <div class="large-2 columns">
+                                  <label>max attempt
+                                    <input type="number" class="maxAttempt storeBulk" placeholder=""  />
+                                  </label>
+                                </div>
+                                </div>
+                                <div class="row">
+                                <div class="large-5 columns">
+                                  <label>Output formats
+                                    <input type="text" class="output_formats storeBulk" placeholder=" "  />
+                                  </label>
+                                </div>
+
+                                 <div class="large-5 columns">
+                                  <label>Input format
+                                    <input type="text" class="input_format storeBulk" placeholder=" "  />
+                                  </label>
+                                </div>
+                                 </div>
+                                <div class="row">
+                                <div class="large-9 columns">
+                                  <label>project mode
+                                    <input type="text" class="project_mode storeBulk" placeholder="" />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Priority
+                                    <input type="number" class="priority storeBulk" placeholder="" />
+                                  </label>
+                                </div>
+                              </div>
+                              <div class="row">
+                                <div class="large-12 columns">
+                                  <label>Destination
+                                    <input type="text" class="token storeBulk" placeholder="" />
+                                  </label>
+                                </div>
+                              </div>
+                                <div class="row">
+                                <div class="large-12 columns">
+                                  <strong>JEDI internal merging:
+                                  </strong>
+                                </div>
+                              </div>
+                              <div class="row">
+                                <div class="large-3 columns">
+                                  <label>merging tag
+                                    <input type="text" class="merging_tag storeBulk"  />
+                                  </label>
+                                </div>
+                                 <div class="large-3 columns">
+                                  <label>nFilesPerMergeJob
+                                    <input type="number" class="nFilesPerMergeJob storeBulk"  />
+                                  </label>
+                                </div>
+                                  <div class="large-3 columns">
+                                  <label>nGBPerMergeJob
+                                    <input type="number" class="nGBPerMergeJob storeBulk"  />
+                                  </label>
+                                </div>
+                                 <div class="large-3 columns">
+                                  <label>nMaxFilesPerMergeJob
+                                    <input type="number" class="nMaxFilesPerMergeJob storeBulk"  />
+                                  </label>
+                                  </div>
+                              </div>
+
+                            </fieldset>
+
+
+<button id="saveBulkButton" class="btn_is_authenticated" title="Save selected steps without approval" onclick="saveStepsBulk(event);">Save</button>
+<button id="discardChange" class="btn_is_authenticated" title="Discard changes" onclick="discardChangesBulk(event);">Discard changes</button>
+  <a class="close-reveal-modal">&#215;</a>
+</div>
+
+
 
 <div id="commentModalWindow" class="reveal-modal" data-reveal>
     <h3>Comments:</h3>

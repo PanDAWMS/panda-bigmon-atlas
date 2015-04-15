@@ -507,15 +507,6 @@ def request_approve_status(production_request, request):
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
         if (user_name in MC_COORDINATORS) or is_superuser:
             return 'approved'
-        else:
-            current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(production_request.reqid,)))
-            mess = '''
-Request %i has been registered by %s and is waiting approval:
-%s
-            '''%(production_request.reqid,user_name,current_uri)
-            send_mail("Request %i was registered"%production_request.reqid,mess,APP_SETTINGS['prodtask.email.from'],['atlas-phys-mcprod-team@cern.ch','mborodin@cern.ch'],
-                      fail_silently=True)
-            return 'registered'
 
     else:
         return 'approved'

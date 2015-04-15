@@ -71,6 +71,168 @@ def reject_steps_in_slice(current_slice):
                 step.status = 'NotChecked'
             step.save()
 
+
+def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
+        if step_to_check:
+            if step_to_check in StepExecution.STEPS:
+                step_to_check_index = StepExecution.STEPS.index(step_to_check)
+                STEPS = StepExecution.STEPS
+            else:
+                STEPS = [None]*len(StepExecution.STEPS)
+                step_to_check_index = int(step_to_check)
+        else:
+            step_to_check_index = -1
+        filtered_steps = []
+        for slice in slices:
+            steps = StepExecution.objects.filter(request=reqid,slice=slice)
+            if not step_to_check:
+                for step in steps:
+                    if (not ami_tag) or (ami_tag == step.step_template.ctag):
+                        filtered_steps.append(step)
+            else:
+                ordered_existed_steps, parent_step = form_existed_step_list(steps)
+                steps_as_shown = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+                if steps_as_shown[step_to_check_index]:
+                   if (not ami_tag) or (steps_as_shown[step_to_check_index].step_template.ctag == ami_tag):
+                    filtered_steps.append(steps_as_shown[step_to_check_index])
+        return filtered_steps
+
+
+@csrf_protect
+def get_steps_bulk_info(request, reqid):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slice_numbers = input_dict['slices']
+            step_to_check = input_dict['step']
+            ami_tag = input_dict['amiTag']
+            all_slices = list(InputRequestList.objects.filter(request=reqid))
+            slices = all_slices
+            if '-1' not in slice_numbers:
+                slices = [x.id for x in all_slices if str(x.slice) in slice_numbers]
+            _logger.debug(form_request_log(reqid,request,'Take steps info: %s' % str(slice_numbers)))
+            steps = get_steps_for_update(reqid,slices,step_to_check,ami_tag)
+            result_dict = {'multivalues':{},'singlevalue':{}}
+            steps_approved = 0
+            for step in steps:
+                if step.status in StepExecution.STEPS_APPROVED_STATUS:
+                    steps_approved +=1
+
+                current_step_dict = {'ctag':step.step_template.ctag}
+                current_step_dict['output_formats'] = step.step_template.output_formats
+                if step.step_template.memory:
+                    current_step_dict['memory'] = int(step.step_template.memory)
+                else:
+                    current_step_dict['memory'] = ''
+                current_step_dict['priority'] = int(step.priority)
+                if step.input_events:
+                    current_step_dict['input_events'] = int(step.input_events)
+                else:
+                    current_step_dict['input_events'] = ''
+                task_config = step.get_task_config()
+                for x in StepExecution.TASK_CONFIG_PARAMS:
+                    if x in task_config:
+                        current_step_dict[x]=task_config[x]
+                    else:
+                        current_step_dict[x]=''
+                for key in current_step_dict:
+                    if key in result_dict['multivalues']:
+                        if current_step_dict[key] not in result_dict['multivalues'][key]:
+                            result_dict['multivalues'][key].append(current_step_dict[key])
+                    else:
+                        if key in result_dict['singlevalue']:
+                            if current_step_dict[key] != result_dict['singlevalue'][key]:
+                                result_dict['multivalues'][key] = [result_dict['singlevalue'][key],current_step_dict[key]]
+                                del result_dict['singlevalue'][key]
+                        else:
+                            result_dict['singlevalue'][key] = current_step_dict[key]
+
+            return HttpResponse(json.dumps({'result':result_dict,'stepsApproved':steps_approved,'stepsToChange':len(steps)-steps_approved}), content_type='application/json')
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
+
+
+@csrf_protect
+def set_steps_bulk_info(request, reqid):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slice_numbers = input_dict['slices']
+            step_to_check = input_dict['step']
+            ami_tag = input_dict['amiTag']
+            new_values = input_dict['newValues']
+            all_slices = list(InputRequestList.objects.filter(request=reqid))
+            slices = all_slices
+            if '-1' not in slice_numbers:
+                slices = [x.id for x in all_slices if str(x.slice) in slice_numbers]
+            _logger.debug(form_request_log(reqid,request,'Change steps info: %s %s' % (str(slice_numbers),str(new_values))))
+            steps = get_steps_for_update(reqid,slices,step_to_check,ami_tag)
+            new_step_template = None
+            if new_values:
+                for step in steps:
+                    step_modified = False
+                    template_modified = False
+                    if step.status not in StepExecution.STEPS_APPROVED_STATUS:
+                        output_formats = step.step_template.output_formats
+                        if 'output_formats' in new_values:
+                            if new_values['output_formats'] != step.step_template.output_formats:
+                                output_formats = new_values['output_formats']
+                                template_modified = True
+                        memory = step.step_template.memory
+                        if 'memory' in new_values:
+                            if new_values['memory'] != step.step_template.memory:
+                                memory = new_values['memory']
+                                template_modified = True
+                        if template_modified:
+                            if not new_step_template:
+                                new_step_template = fill_template(step.step_template.step,step.step_template.ctag,
+                                                                  step.step_template.priority,output_formats,memory)
+                            step.step_template = new_step_template
+                            step_modified = True
+                        if 'priority' in new_values:
+                            step_modified = True
+                            step.priority = new_values['priority']
+                        if 'input_events' in new_values:
+                            step_modified = True
+                            step.input_events = new_values['input_events']
+                        for x in StepExecution.TASK_CONFIG_PARAMS:
+                            if x in new_values:
+                                step_modified = True
+                                if x in StepExecution.INT_TASK_CONFIG_PARAMS:
+                                    step.set_task_config({x:int(new_values[x])})
+                                else:
+                                    step.set_task_config({x:new_values[x].strip()})
+                        if step_modified:
+                            step.save()
+                return HttpResponse(json.dumps({'status':'success'}), content_type='application/json')
+        except Exception,e:
+            return HttpResponse(json.dumps({'status':'failed','error':str(e)}), content_type='application/json')
+    return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
+
+@csrf_protect
+def get_ami_tag_list(request, reqid):
+    if request.method == 'POST':
+        data = request.body
+        input_dict = json.loads(data)
+        slice_numbers = input_dict['slices']
+        step_to_check = input_dict['step']
+        all_slices = list(InputRequestList.objects.filter(request=reqid))
+        slices = all_slices
+        if '-1' not in slice_numbers:
+            slices = [x.id for x in all_slices if str(x.slice) in slice_numbers]
+        _logger.debug(form_request_log(reqid,request,'Take tags list: %s' % str(slice_numbers)))
+        steps = get_steps_for_update(reqid,slices,step_to_check,'')
+        ami_tags = set()
+        for step in steps:
+            ami_tags.add(step.step_template.ctag)
+        return HttpResponse(json.dumps({'AMITags':list(ami_tags)}), content_type='application/json')
+    return HttpResponse(json.dumps({'AMITags':[],'status':'failed'}), content_type='application/json')
+
+
+
 @csrf_protect
 def reject_slices_in_req(request, reqid):
     if request.method == 'POST':
@@ -328,6 +490,9 @@ def update_project_mode(request, reqid):
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+
 
 @csrf_protect
 def get_tag_formats(request, reqid):
