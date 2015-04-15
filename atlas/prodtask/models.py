@@ -123,6 +123,14 @@ class TRequest(models.Model):
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
     is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
+ 
+    @property
+    def request_date(self):
+        try:
+            date = RequestStatus.objects.get(id=self.reqid).timestamp
+        except:
+            return ""
+        return date.strftime('%Y-%m-%d %H:%M:%S')
 
     def info_field(self,field):
         if self.info_fields:

@@ -1442,6 +1442,11 @@ class RequestTable(datatables.DataTable):
         bVisible='false',
     )
 
+    request_date = datatables.Column(
+        label='Timestamp',
+        bSortable=False,
+        sClass='centered',
+    )
 
     class Meta:
         model = TRequest
