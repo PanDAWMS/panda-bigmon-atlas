@@ -559,11 +559,16 @@ def parse_json_slice_dict(json_string):
                             task_config.update({'project_mode':slice['projectmode']})
                         if slice['token']:
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
-
+                        if slice['inputFormat']:
+                            task_config.update({'input_format':slice['inputFormat']})
                         for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
                             if slice[parameter]:
                                     task_config.update({parameter:slice[parameter]})
-
+                        if slice['jediTag']:
+                                    task_config.update({'merging_tag':slice['jediTag']})
+                                    for merge_option in merge_options:
+                                        if slice[merge_option]:
+                                            task_config.update({merge_option:slice[merge_option]})
 
                         step_name = step_from_tag(slice['ctag'])
                         sexec = dict(status='NotChecked', priority=int(slice['priority']),
