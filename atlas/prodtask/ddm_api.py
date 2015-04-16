@@ -74,7 +74,7 @@ class DDM(object):
     """
 
 
-    def __init__(self, certificate_path, account, system_name = 'dq2'):
+    def __init__(self, certificate_path=dq2_settings.PROXY_CERT, account=dq2_settings.RUCIO_ACCOUNT, system_name = 'dq2'):
         self.__ddm = None
         if system_name.lower() == 'dq2':
             self.__init_dq2(certificate_path, account)
