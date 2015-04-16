@@ -128,7 +128,6 @@ class TRequest(models.Model):
     def request_date(self):
         try:
             date = RequestStatus.objects.values('timestamp').filter(id=self.reqid).filter(status='registered')
-            print date[0].get('timestamp')
         except:
             return ""
         return date[0].get('timestamp').strftime('%Y-%m-%d')
