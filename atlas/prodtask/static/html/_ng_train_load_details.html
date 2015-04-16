@@ -1,0 +1,49 @@
+
+    <form name="trainLoadForm">
+      <div class="row">
+        <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
+        <label>Group
+         <select name="group" ng-model="editTrainLoad.trainLoad.group" required ng-options="group for group in groups ">
+          <option value="">-- choose group --</option>
+        </select>
+            <span ng-show="trainLoadForm.group.$error.required && !trainLoadForm.group.$pristine" >
+            Required </span>
+        </label>
+      </div>
+
+      <div class="columns large-3" ng-class="{error: trainLoadForm.output_formats.$invalid && !trainLoadForm.output_formats.$pristine}">
+        <label>Output formats:
+        <input type="text" name="output_formats" ng-model="editTrainLoad.trainLoad.output_formats" required>
+        <span ng-show="trainLoadForm.output_formats.$error.required && !trainLoadForm.output_formats.$pristine" >
+            Required </span>
+        </label>
+      </div>
+      <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
+        <label>Skim
+         <select name="skim" ng-model="editTrainLoad.trainLoad.skim" required>
+          <option value="skim">skim</option>
+         <option value="no-skim">noskim</option>
+        </select>
+            <span ng-show="trainLoadForm.skim.$error.required && !trainLoadForm.skim.$pristine" >
+            Required </span>
+        </label>
+          <div class="columns large-3"></div>
+      </div>
+      </div>
+        <div class="row">
+              <div class="columns large-12">
+          <label>Datasets:
+            <textarea name="datasets" ng-model="editTrainLoad.trainLoad.datasets" required></textarea>
+          <span ng-show="trainLoadForm.datasets.$error.required && !trainLoadForm.datasets.$pristine" >
+            Required </span>
+        </label>
+        </div>
+      </div>
+        <br>
+          <a href="#/" class="btn">Cancel</a>
+      <button ng-click="editTrainLoad.save()" ng-disabled="trainLoadForm.$invalid"
+              class="btn btn-primary">Save</button>
+
+
+    </form>
+

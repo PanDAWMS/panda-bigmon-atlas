@@ -1,0 +1,180 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+
+<script>
+
+    var groupList = [];
+    var currentUser = '{{ request.user.username }}';
+    var train_id = '{{ train.id }}';
+    {% for group  in groups %}
+
+        groupList.push('{{ group }}');
+    {% endfor %}
+
+    {% verbatim %}
+
+
+
+
+
+    var trainServices = angular.module('trainServices', ['ngResource']);
+    trainServices.run(run);
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+    trainServices.factory('TrainLoads', ['$resource',
+      function($resource){
+        return $resource(Django.url('prodtask:trainloads'), {}, {
+          query: {method:'GET',  isArray:true},
+            save: {method:'POST'}
+        });
+      }]);
+        trainServices.factory('TrainCreateLoads', ['$resource',
+      function($resource){
+        return $resource(Django.url('prodtask:traincreateloads'), {}, {
+            save: {method:'POST'}
+        });
+      }]);
+
+    trainServices.factory('TrainLoad', ['$resource',
+      function($resource){
+        return $resource(Django.url('prodtask:trainloads')+':id', {}, {
+          get: {method:'GET'},
+          save:   {method:'POST'},
+          update: { method:'PUT' }
+        });
+      }]);
+
+    var trainApp = angular.module('trainApp',['ngRoute','trainServices']);
+    trainApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+    trainApp.controller('TrainCtrl',['$scope','$http','TrainLoads', function (scope, http, trainLoads){
+        scope.trainLoads = trainLoads.query();
+        scope.train_id = train_id;
+    }]);
+    trainApp.controller('TrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoad', '$location',
+        function (scope, http, routeParams, trainLoad, location ){
+        var currentTrainLoad =  trainLoad.get({id:routeParams.loadID});
+        $id = currentTrainLoad.id;
+        var editTrainLoad = this;
+
+            scope.groups = groupList;
+
+
+            editTrainLoad.trainLoad = currentTrainLoad;
+
+          editTrainLoad.save = function() {
+                editTrainLoad.trainLoad.manager = currentUser;
+                trainLoad.update({id:currentTrainLoad.id},editTrainLoad.trainLoad,function(data) {
+                location.path('/');
+        });
+    };
+    }]);
+
+     trainApp.controller('NewTrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoads', '$location',
+        function (scope, http, routeParams, trainLoads, location ){
+
+        var editTrainLoad = this;
+
+            scope.groups = groupList;
+
+
+    editTrainLoad.save = function() {
+        editTrainLoad.trainLoad.manager = currentUser;
+        editTrainLoad.trainLoad.train = train_id;
+        console.log(editTrainLoad.trainLoad);
+
+
+        trainLoads.save(editTrainLoad.trainLoad,function(data) {
+           location.path('/');
+        });
+    };
+    }]);
+    trainApp.controller('AssemblerTrainCtrl',['$scope','$http', function (scope, http){
+            http.get(Django.url('prodtask:assembled_train',train_id)).
+              success(function(data, status, headers, config) {
+                scope.assembled_train = data;
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+    }]);
+    trainApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_train_carrige.html',
+              controller: 'TrainCtrl'
+            }).
+          when('/new', {
+              templateUrl: '/static/html/_ng_train_load_details.html',
+              controller: 'NewTrainLoadCtrl as editTrainLoad'
+            }).
+          when('/assembler', {
+              templateUrl: '/static/html/_ng_train_assembler.html',
+              controller: 'AssemblerTrainCtrl'
+            }).
+          when('/:loadID', {
+              templateUrl: '/static/html/_ng_train_load_details.html',
+              controller: 'TrainLoadCtrl as editTrainLoad'
+            }).
+            otherwise({
+              redirectTo: '/'
+            });
+    });
+</script>
+{% endverbatim %}
+
+<div class="row">
+<div class="columns large-3" style="border: solid">Train: {{ train.description }}</div>
+<div class="columns large-3" style="border: solid">Status: {{ train.status }}</div>
+<div class="columns large-6" style="border: solid">Departure: {{ depart_date }}</div>
+</div>
+    <p/>
+<div ng-app="trainApp">
+    <div ng-view></div>
+
+</div>
+
+{% endblock %}

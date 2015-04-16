@@ -469,6 +469,58 @@ class ProductionTask(models.Model):
         db_table = u'T_PRODUCTION_TASK'
 
 
+class TrainProduction(models.Model):
+
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='GPT_ID', primary_key=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+    departure_time =  models.DateTimeField(db_column='DEPARTURE_TIME')
+    approval_time = models.DateTimeField(db_column='APPROVAL_TIME')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
+    description = models.CharField(max_length=256, db_column='COMMENT')
+    request  = models.ForeignKey(TRequest, db_column='PR_ID', null=True)
+    #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_PRODUCTION_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
+        super(TrainProduction, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_GROUP_TRAIN"'
+
+class TrainProductionLoad(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TRAINCARRIAGE_ID', primary_key=True)
+    train = models.ForeignKey(TrainProduction,db_column='TRAIN_NUMBER', null=False)
+    group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS)
+    datasets = models.TextField( db_column='DATASETS')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
+    manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
+    skim = models.CharField(max_length=10, db_column='SKIM', null=False)
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        input_datasets = self.datasets.replace('\n',',').replace('\r',',').replace('\t',',').replace(' ',',').split(',')
+        cleared_datasets = []
+        for dataset in input_datasets:
+            if dataset:
+                if ':' not in dataset:
+                    if dataset.find('.')>-1:
+                        cleared_datasets.append(dataset[:dataset.find('.')]+':'+dataset)
+                else:
+                  cleared_datasets.append(dataset)
+        self.datasets = '\n'.join([x for x in cleared_datasets if x])
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_PRODUCTION_TRAIN_L_ID_SEQ',"T_TRAIN_CARRIAGE",'TRAINCARRIAGE_ID')
+        super(TrainProductionLoad, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_TRAIN_CARRIAGE"'
 
 class MCPattern(models.Model):
     STEPS = ['Evgen',

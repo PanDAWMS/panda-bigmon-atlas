@@ -37,29 +37,9 @@
 {% endcomment %}
 
 
-{% block top_menu_all_1 %}
-<li class="has-dropdown">
-	<a href="#">Dashboard</a>
-	<ul class="dropdown">
-		<li><a href="{% url 'dashboard' %}">All</a></li>
-		<li><a href="{% url 'dashAnalysis' %}">Analysis</a></li>
-		<li><a href="{% url 'dashProduction' %}">Production</a></li>
-	</ul>
-</li>
-{% endblock %}
-{% block top_menu_all_2 %}
-<li class="has-dropdown">
-          <a href="#">Jobs</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'jobList' %}">All</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=analysis">Analysis</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=production">Production</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=test">Test</a></li>
-          </ul>
-</li>
-{% endblock %}
 
-{% block top_menu_all_3 %}
+
+{% block top_menu_all_1 %}
 <li class="has-dropdown">
           <a href="#">Requests</a>
           <ul class="dropdown">
@@ -81,7 +61,7 @@
 {% endblock %}
 
 
-{% block top_menu_all_4 %}
+{% block top_menu_all_2 %}
 <li class="has-dropdown">
           <a href="#">Tasks</a>
           <ul class="dropdown">
@@ -92,6 +72,13 @@
             <li><a href="{% url 'taskList' %}">All</a></li>
             <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
             <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
+          </ul>
+</li>
+    <li class="has-dropdown">
+          <a href="#">Train</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodtask:train_create' %}">Create Train</a></li>
+            <li><a href="{% url 'prodtask:trains_list' %}">List</a></li>
           </ul>
 </li>
 <li class="has-dropdown">

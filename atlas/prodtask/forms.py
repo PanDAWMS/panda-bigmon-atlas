@@ -1,5 +1,7 @@
 from django import forms
-from django.forms import ModelForm, ModelChoiceField, MultiValueField, NullBooleanField, BooleanField
+from django.contrib.admin.widgets import AdminSplitDateTime
+from django.forms import ModelForm, ModelChoiceField, MultiValueField, NullBooleanField, BooleanField, DateField, \
+    DateTimeInput, DateTimeField
 from django.forms import CharField
 from django.forms import EmailField
 from django.forms import Textarea
@@ -7,8 +9,9 @@ from django.forms import FileField
 from django.forms import DecimalField
 from django.forms import Form
 import json
-from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject
-from django.forms.widgets import TextInput
+from django.forms.extras.widgets import SelectDateWidget
+from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction
+from django.forms.widgets import TextInput, SplitDateTimeWidget
 from django.forms import widgets
 
 class RequestForm(ModelForm):
@@ -278,6 +281,19 @@ class ProductionTaskCreateCloneForm(ModelForm):
     class Meta:
         model = ProductionTask
 
+
+class ProductionTrainForm(ModelForm):
+    manager = CharField(required=True)
+    status = CharField(widget=forms.HiddenInput, required=False)
+    departure_time = DateTimeField(widget = TextInput(attrs=
+                                {
+                                    'class':'datepicker'
+                                }),required=True)
+    description = CharField( widget=Textarea, required=True)
+
+    class Meta:
+        model = TrainProduction
+        exclude = ['id','approval_time','timestamp','request']
 
 class ProductionTaskUpdateForm(ModelForm):
     class Meta:

@@ -1,0 +1,31 @@
+
+<a class='button disabled' href="" >Make request</a>
+<h5>Carriages:</h5>
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Dataset</th>
+            <th>Skim</th>
+            <th>Groups</th>
+
+        </tr>
+    </thead>
+    <tbody>
+
+     <tr ng-repeat="carriage in assembled_train ">
+
+            <td>{{ carriage.carriage_number }}</td>
+            <td>{{ carriage.dataset }}</td>
+            <td>{{ carriage.skim }}</td>
+            <td>
+                <div  ng-repeat="item in carriage.group">
+                    {{item}}
+                </div>
+
+            </td>
+     </tr>
+
+</tbody>
+    </table>
+<a href="#/" class="btn">Cancel</a>

@@ -3,6 +3,7 @@ from django.conf.urls import patterns, include, url
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
+from ..prodtask.train_views import TrainLoad, TrainLoads
 
 urlpatterns = patterns('',
     # Examples:
@@ -105,8 +106,16 @@ urlpatterns = patterns('',
     url(r'^make_default_report/$', 'atlas.prodtask.report_view.make_default_report', name='make_default_report'),
     url(r'^find_input_datasets/(?P<reqid>\d+)/$', 'atlas.prodtask.views.find_input_datasets', name='find_input_datasets'),
     url(r'^task_about/$', 'atlas.prodtask.views.about', name='about'),
-    url(r'^$', 'atlas.prodtask.views.home', name='home'),
 
+
+    url(r'^$', 'atlas.prodtask.views.home', name='home'),
+    url(r'^train_create/$', 'atlas.prodtask.train_views.train_create', name='train_create'),
+
+    url(r'^trains_list/$', 'atlas.prodtask.train_views.trains_list', name='trains_list'),
+    url(r'^train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.train_edit', name='train_edit'),
+    url(r'^trainloads/$', TrainLoads.as_view(), name='trainloads'),
+    url(r'^trainloads/(?P<pk>[0-9]+)/$', TrainLoad.as_view(),name='trainload'),
+    url(r'^assembled_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.assembled_train', name='assembled_train'),
 
     url(r'^login/$', 'atlas.auth.views.login', name='login'),
     url(r'^logout/$', 'atlas.auth.views.logout', name='logout'),

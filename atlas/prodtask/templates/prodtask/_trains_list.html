@@ -1,0 +1,60 @@
+{% extends "prodtask/_index.html" %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+{% block subtitle %}
+{% if title %}{{ title }}{% else %}Datatable{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
+	</style>
+    
+    <style type="text/css">
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+
+
+{% django_js %}
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+{% endblock %}
+
+
+{% block body %}
+<table>
+<thead>
+<tr><th>Train ID</th><th></th><th>Description</th><th>Status</th><th>Departure time</th></tr>
+</thead>
+<tbody>
+    {% for train in trains %}
+<tr>
+<td>{{ train.id }}</td>
+<td><a href=" {% url "prodtask:train_edit" train.id %}">view</a></td>
+<td>{{ train.description }}</td>
+<td>{{ train.status }}</td>
+<td>{{ train.departure_time|date:"Y m d"}}</td>
+</tr>
+
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}
