@@ -127,10 +127,11 @@ class TRequest(models.Model):
     @property
     def request_date(self):
         try:
-            date = RequestStatus.objects.get(id=self.reqid).timestamp
+            date = RequestStatus.objects.values('timestamp').filter(id=self.reqid).filter(status='registered')
+            print date[0].get('timestamp')
         except:
             return ""
-        return date.strftime('%Y-%m-%d %H:%M:%S')
+        return date[0].get('timestamp').strftime('%Y-%m-%d')
 
     def info_field(self,field):
         if self.info_fields:
@@ -301,10 +302,9 @@ class StepExecution(models.Model):
              'Atlf TAG']
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
-    INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
-                              'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile']
-    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode']
-
+    TASK_CONFIG_PARAMS = ['input_format','nEventsPerJob','token','merging_tag',
+                                      'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
+                                      'nFilesPerJob','nGBPerJob','maxAttempt']
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')

@@ -1181,7 +1181,7 @@ def hlt_request_create(request):
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill,{'ram':'3800','nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
+                                   reprocessing_form_prefill,{'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
 
 @csrf_protect
 def do_mc_management_approve(request, reqid):
@@ -1443,7 +1443,7 @@ class RequestTable(datatables.DataTable):
     )
 
     request_date = datatables.Column(
-        label='Timestamp',
+        label='Approved',
         bSortable=False,
         sClass='centered',
     )
