@@ -58,7 +58,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
             energy = cleaned_data.get('energy_gev')
             if project:
                 if 'eV' in str(project):
-                    if energy_to_str(energy) not in str(project):
+                    if (energy_to_str(energy) not in str(project)) and (energy_to_str(energy).replace('2p76TeV','2TeV') not in  str(project)):
                         msg = "Energy doesn't correspond project"
                         self._errors['project'] = self.error_class([msg])
                         self._errors['energy_gev'] = self.error_class([msg])
