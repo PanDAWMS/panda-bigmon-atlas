@@ -470,7 +470,7 @@ def get_permissions(request,tasks):
 
     allowed_groups = []
     for gp in group_permissions:
-            if "has_" in gp.name and "_permittions" in gp.name:
+            if "has_" in gp.name and "_permissions" in gp.name:
             #        phg=code[(code.find("has_"))+4:code.find("_rights")]
                      allowed_groups.append(gp.codename)
     #print "allowed_groups:", allowed_groups
