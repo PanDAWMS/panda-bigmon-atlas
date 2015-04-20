@@ -32,6 +32,44 @@ from .xls_parser_new import open_tempfile_from_url
 _logger = logging.getLogger('prodtaskwebui')
 
 
+def request_status_update():
+        requests = TRequest.objects.filter(reqid__gte=820)
+        result_dict = {'executing':[],'in progress':[],'done':[],'finished':[]}
+        for req in requests:
+            tasks = ProductionTask.objects.filter(request=req)
+            is_done_exist = False
+            is_finished_exist = False
+            is_fail_exist = False
+            is_run_exist = False
+            for task in tasks:
+                if task.status in ['running','submitting','registered','assigning']:
+                    is_run_exist = True
+                if task.status in ['failed','broken','aborted']:
+                    is_fail_exist = True
+                if task.status in ['finished']:
+                    is_finished_exist = True
+                if task.status in ['done']:
+                    is_done_exist = True
+            if is_run_exist and not(is_fail_exist or is_finished_exist or is_done_exist):
+                result_dict['executing'].append(req)
+            elif is_run_exist and (is_fail_exist or is_finished_exist or is_done_exist):
+                result_dict['in progress'].append(req)
+            elif (not is_run_exist) and (is_fail_exist or is_finished_exist):
+                result_dict['finished'].append(req)
+            elif is_done_exist and not(is_run_exist or is_fail_exist or is_finished_exist):
+                result_dict['done'].append(req)
+        for status,requests in result_dict.items():
+            for req in requests:
+                    print req.reqid,status
+                    if req.cstatus != status and req.cstatus != 'test':
+                        print req.reqid,status
+                        # req.cstatus = status
+                        # req.save()
+                        # request_status = RequestStatus(request=req,comment='automatic update',owner='default',
+                        #                                 status=status)
+                        # request_status.save_with_current_time()
+
+
 def clean_old_request(do_action=False):
     all_requests = TRequest.objects.filter(cstatus='test')
     total_request = 0
