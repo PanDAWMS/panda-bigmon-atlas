@@ -1459,7 +1459,13 @@ class RequestTable(datatables.DataTable):
         bVisible='false',
     )
 
-    request_date = datatables.Column(
+    request_created = datatables.Column(
+        label='Created',
+        iDataSort=0,
+        sClass='centered',
+    )
+
+    request_approved = datatables.Column(
         label='Approved',
         bSortable=False,
         sClass='centered',

@@ -125,7 +125,15 @@ class TRequest(models.Model):
     is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
  
     @property
-    def request_date(self):
+    def request_created(self):
+        try:
+            date = RequestStatus.objects.filter(request=self.reqid,status='waiting').values('timestamp')
+        except:
+            return ""
+        return date[0].get('timestamp').strftime('%Y-%m-%d')
+
+    @property
+    def request_approved(self):
         try:
             date = RequestStatus.objects.filter(request=self.reqid,status='registered').values('timestamp')
         except:
