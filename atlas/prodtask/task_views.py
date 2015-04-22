@@ -8,8 +8,8 @@ from django.core.urlresolvers import reverse
 
 from ..settings import defaultDatetimeFormat
 
-import core.datatables as datatables
-from core.resource.models import Schedconfig
+import atlas.datatables as datatables
+from .models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest, TTask, ProductionDataset

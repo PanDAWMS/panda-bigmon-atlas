@@ -1,0 +1,44 @@
+var {% if var %}{{ var }}{% else %}parameters_list{% endif %} = [
+    {% for p in params %}
+        { 'name': '{{ p.name }}', 'id': '{{ p.id }}', 'label': '{{ p.label }}' },
+    {% endfor %}
+];
+
+{% if SetParametersToURL %}
+{% else %}
+function SetParametersToURL()
+{
+    for(var i in parameters_list)
+    {
+        var val = $( "#"+parameters_list[i].id ).val();
+        $.address.parameter( parameters_list[i].name , val );
+    }
+}
+{% endif %}
+
+{% if ParseParametersFromURL %}
+{% else %}
+var __changed_params = {};
+function ParseParametersFromURL()
+{
+    var extern_parameter = 0;
+
+    for(var i in parameters_list)
+    {
+        var value = $.address.parameter( parameters_list[i].name );
+        if( value )
+        {
+            extern_parameter = 1;
+            $( "#"+parameters_list[i].id ).val( value );
+            __changed_params[ parameters_list[i].name ] = parameters_list[i];
+        }
+        else
+            $("#" + parameters_list[i].name).val('');
+    }
+
+}
+
+{% endif %}
+
+
+

@@ -41,9 +41,7 @@
 <li class="has-dropdown">
 	<a href="#">Dashboard</a>
 	<ul class="dropdown">
-		<li><a href="{% url 'dashboard' %}">All</a></li>
-		<li><a href="{% url 'dashAnalysis' %}">Analysis</a></li>
-		<li><a href="{% url 'dashProduction' %}">Production</a></li>
+
 	</ul>
 </li>
 {% endblock %}
@@ -51,10 +49,7 @@
 <li class="has-dropdown">
           <a href="#">Jobs</a>
           <ul class="dropdown">
-            <li><a href="{% url 'jobList' %}">All</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=analysis">Analysis</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=production">Production</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=test">Test</a></li>
+
           </ul>
 </li>
 {% endblock %}
@@ -89,9 +84,7 @@
             <li class="divider"></li>
             <li><a href="{% url 'prodtask:task_create' %}">Create Task</a></li>
             <li class="divider"></li>
-            <li><a href="{% url 'taskList' %}">All</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
+
           </ul>
 </li>
 <li class="has-dropdown">
@@ -105,13 +98,12 @@
 <li class="has-dropdown">
           <a href="#">Users</a>
           <ul class="dropdown">
-            <li><a href="{% url 'userList' %}?sortby=date&view=database">Usage stats view</a></li>
-            <li><a href="{% url 'userList' %}?sortby=date&view=dynamic">Dynamic view</a></li>
+
           </ul>
 </li>
 
 <li>
-          <a href="{% url 'siteList' %}">Sites</a>
+
 </li>
 
 <li>

@@ -7,7 +7,7 @@ import logging
 import sys, traceback
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from core.common.utils import getPrefix, getContextVariables
+from atlas.common.utils import getPrefix, getContextVariables
 from django.core.urlresolvers import reverse
 
 #_logger = logging.getLogger(__name__)

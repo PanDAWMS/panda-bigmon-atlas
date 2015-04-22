@@ -6,7 +6,7 @@ views
 import logging
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from core.common.utils import getContextVariables
+from atlas.common.utils import getContextVariables
 
 _logger = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ from django.db.models import Q
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
 from ..prodtask.ddm_api import find_dataset_events
-import core.datatables as datatables
+import atlas.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm

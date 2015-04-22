@@ -1,9 +1,9 @@
 
 from os.path import dirname, join
 
-import core
-import atlas
 
+import atlas
+import atlas.common
 from .local import MY_SECRET_KEY, dbaccess
 
 ALLOWED_HOSTS = [
@@ -16,8 +16,10 @@ ALLOWED_HOSTS = [
     ### pandawms.org
     '.pandawms.org',  # Allow domain and subdomains
     '.pandawms.org.',  # Also allow FQDN and subdomains
-]
 
+    '127.0.0.1', '.localhost'
+]
+defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
 
 ### VIRTUALENV
 #VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__jedimon'
@@ -32,7 +34,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    join(dirname(core.common.__file__), 'static'),
+    join(dirname(atlas.common.__file__), 'static'),
 #    join(join(dirname(core.__file__),'datatables'), 'static'),
 #    join(dirname(atlas.__file__), 'static'),
 )
@@ -41,11 +43,11 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    join(dirname(core.common.__file__), 'templates'),
+    join(dirname(atlas.common.__file__), 'templates'),
     join(dirname(atlas.__file__), 'templates'),
 )
 
-STATIC_ROOT = join(dirname(atlas.__file__), 'static')
+STATIC_ROOT = join(dirname(atlas.common.__file__), 'static')
 #STATIC_ROOT = None
 MEDIA_ROOT = join(dirname(atlas.__file__), 'media')
 STATIC_URL_BASE = '/static/'
@@ -69,7 +71,41 @@ URL_PATH_PREFIX = ''
 #URL_PATH_PREFIX = ''
 MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
+ENV = {
+    ### Application name
+#    'APP_NAME': "ProdSys2", \
+    'APP_NAME': "BigPanDA", \
+    ### Page title default
+    'PAGE_TITLE': "BigPanDA Monitor", \
+    ### Menu item separator
+    'SEPARATOR_MENU_ITEM': "&nbsp;&nbsp;&nbsp;", \
+    ### Navigation chain item separator
+    'SEPARATOR_NAVIGATION_ITEM': "&nbsp;&#187;&nbsp;" , \
+}
 
+FILTER_UI_ENV = {
+    ### default number of days of shown jobs active in last N days
+    'DAYS': 30, \
+    ### default number of days for user activity of shown jobs active in last N days
+    'USERDAYS': 3, \
+    ### max number of days of shown jobs active in last N days
+    'MAXDAYS': 300, \
+    ### max number of days for user activity of shown jobs active in last N days
+    'USERMAXDAYS': 60, \
+    ### default number of hours of shown jobs active in last N hours
+    'HOURS': 2, \
+    ### wildcard for string pattern in filter form
+    'WILDCARDS': ['*'], \
+    ### wildcard for integer interval in filter form
+    'INTERVALWILDCARDS': [':'], \
+    ###
+    'EXPAND_BUTTON': { "mDataProp": None, "sTitle": "Details", \
+                       "sClass": "control center", "bVisible": True, \
+                       "bSortable": False, \
+                       "sDefaultContent": '<img src="' + STATIC_URL + \
+                                '/images/details_open.png' + '">' \
+            }, \
+}
 
 ## init logger
 ## A sample logging configuration. The only tangible logging
@@ -91,9 +127,9 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
-#    'atlas.auth.fake.backends.LoginAsBackend',
-    'atlas.auth.voms.backends.VomsBackend',
-    'shibsso.backends.ShibSSOBackend',
+    'atlas.auth.fake.backends.LoginAsBackend',
+#    'atlas.auth.voms.backends.VomsBackend',
+#    'shibsso.backends.ShibSSOBackend',
 )
 
 

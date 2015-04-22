@@ -8,7 +8,7 @@ from django.utils import timezone
 import re
 from atlas.prodtask.models import get_default_project_mode_dict
 
-import core.gspread as gspread
+import atlas.gspread as gspread
 from datetime import datetime
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttrfconfig, RequestStatus
 #from django.core.exceptions import ObjectDoesNotExist
