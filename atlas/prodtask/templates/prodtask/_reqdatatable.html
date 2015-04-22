@@ -280,10 +280,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             }
         });
     makeJobOptionURL();
-    $("#tagFormatSelect").change(function(){return tagFormatChange()});
-    {% if not show_as_huge %}
-        refreshTagFormats(null);
-    {% endif %}
+{#    $("#tagFormatSelect").change(function(){return tagFormatChange()});#}
+{#    {% if not show_as_huge %}#}
+{#        refreshTagFormats(null);#}
+{#    {% endif %}#}
     {% if needed_management_approve %}
         $('#longDescription').show();
 
@@ -2165,116 +2165,6 @@ var lastChecked = true;
         </div>
     </div>
  </form>
-{#<button id="approveEvgenButton" title="Approve evgen in selected slices" onclick="approveClick(event,true,true);">Approve Evgen</button>#}
-
-{% if not show_as_huge %}
-<form>
-    <div class="row">
-        <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>AMITag:formats
-                        <select id="tagFormatSelect">
-
-                        </select>
-                    </label>
-                </div>
-                <div class="large-2 columns">
-                  <a href="#" class="button postfix" onclick="refreshTagFormats(event)">Refresh</a>
-                </div>
-            </div>
-        </div>
-    </div>
-     <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>Input events number
-                        <input type="number" placeholder="input_events" id="input_events_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-     <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>Priority
-                        <input type="number" placeholder="priority" id="priority_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-    <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>Project mode
-                        <input type="text" placeholder="project_mode" id="project_mode_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-    <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>nEventsPerJob
-                        <input type="number" placeholder="nEventsPerJob" id="nEventsPerJob_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-    <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>nEventsPerInputFile
-                        <input type="number" placeholder="nEventsPerInputFile" id="nEventsPerInputFile_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-    <div class="row">
-       <div class="large-8 columns">
-            <div class="row collapse">
-                <div class="large-10 columns">
-                    <label>Destination token
-                        <input type="text" placeholder="Destination token" id="destination_input">
-                    </label>
-                </div>
-            </div>
-       </div>
-    </div>
-
-     <div class="row">
-       <div class="large-2 columns">
-            <a href="#" class="button postfix btn_is_authenticated" id="updateStepParams" onclick="updateStepParametrs(event)">Update</a>
-       </div>
-    </div>
-</form>
-{% endif %}
-{#<div id="sliceModal" class="reveal-modal" data-reveal>#}
-{#  <h2 id="sliceNumberModal"></h2>#}
-{#  <dl class="tabs" data-tab>#}
-{#        {% for step in step_list %}#}
-{#            <dd><a href="#panel{{forloop.counter0}}">{{step.name}}</a></dd>#}
-{#        {% endfor %}#}
-{#  </dl>#}
-{#    <div class="tabs-content">#}
-{#         {% for step in step_list %}#}
-{#             <div class="content" id="panel{{forloop.counter0}}">#}
-{#                <p>This is the {{forloop.counter0}} panel of the basic tab example.</p>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-{#  <a class="close-reveal-modal">&#215;</a>#}
-{#</div>#}
 
 <div id="patternModal" class="reveal-modal" data-reveal>
   <ul id="patternModalBody">
