@@ -935,6 +935,23 @@ def input_list_approve_full(request, rid=None):
 
 NUMBER_EVENTS_TO_SPLIT = 2000000
 
+
+def egroup_permissions(request):
+    return_list = []
+    try:
+        user_groups = request.user.groups.all()
+        group_permissions = []
+        for group in user_groups:
+             group_permissions = list(group.permissions.all())
+        for group_permission in group_permissions:
+              if "has_" in group_permission.name and "_permissions" in group_permission.name:
+                return_list.append(group_permission.codename)
+    except:
+        return []
+    return return_list
+
+
+
 def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
 
@@ -1045,7 +1062,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
-                    if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS):
+                    if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS) and \
+                            ('MCCOORD' not in egroup_permissions(request)):
                         autorized_change_request = False
                     if cur_request.cstatus == 'waiting':
                         needed_management_approve = True
