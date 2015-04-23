@@ -128,6 +128,8 @@ class TRequest(models.Model):
     def request_created(self):
         try:
             date = RequestStatus.objects.filter(request=self.reqid,status='waiting').values('timestamp')
+            if len(date)==0:
+                return ""
         except:
             return ""
         return date[0].get('timestamp').strftime('%Y-%m-%d')
@@ -136,6 +138,8 @@ class TRequest(models.Model):
     def request_approved(self):
         try:
             date = RequestStatus.objects.filter(request=self.reqid,status='registered').values('timestamp')
+            if len(date)==0:
+                return ""
         except:
             return ""
         return date[0].get('timestamp').strftime('%Y-%m-%d')
