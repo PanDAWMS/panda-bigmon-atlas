@@ -942,7 +942,7 @@ def egroup_permissions(request):
         user_groups = request.user.groups.all()
         group_permissions = []
         for group in user_groups:
-             group_permissions = list(group.permissions.all())
+             group_permissions += list(group.permissions.all())
         for group_permission in group_permissions:
               if "has_" in group_permission.name and "_permissions" in group_permission.name:
                 return_list.append(group_permission.codename)
