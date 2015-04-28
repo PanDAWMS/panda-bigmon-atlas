@@ -1,0 +1,40 @@
+{% load lookupattr %}{{ table.media }}
+<table id="{{ table.id }}" class="{{ table.classes }}" width="{{ table.width }}"
+       border="{{ table.border }}" cellpadding="{{ table.cellpadding }}"
+       cellspacing="{{ table.cellspacing }}">
+    <thead>
+        <tr>
+        {% for bound_column in table.bound_columns.values %}
+            <th>{{ bound_column.render_label }}</th>
+        {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in table.rows %}
+        <tr{% if row|lookupattr:'id' %} class="datatable_row-{{ row|lookupattr:'id' }}"{% endif %}>
+            {% for bound_column in table.bound_columns.values %}
+            <td class="datatable_column_{{ bound_column.name }}">{{ row|lookupattr:bound_column.name }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script type="text/javascript">
+{% if table.var %}var {{ table.var }};{% endif %}
+$(document).ready(function() {
+    {% if table.var %}{{ table.var }} = {% endif %}$('#{{ table.id }}').dataTable({{ table.js_options }});
+
+    $("div.dataTables_length label").replaceWith( $("div.dataTables_length label select") );
+
+    $(".dataTables_filter input").css("display","inline-block");
+    $(".dataTables_filter input").css("width","auto");
+    $(".top-toolbar").addClass("ui-widget ui-widget-header ui-corner-top").children().css("height", "2.0em");
+    $(".bot-toolbar").addClass("ui-widget ui-widget-header ui-corner-bottom");
+});
+
+{% if table.extra_js %}
+    {{ table.extra_js }}
+{% endif %}
+</script>
+
