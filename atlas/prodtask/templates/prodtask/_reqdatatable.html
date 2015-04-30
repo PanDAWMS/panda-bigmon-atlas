@@ -2087,10 +2087,13 @@ var lastChecked = true;
 	{% endfor %}
     </div>
 
- <strong class="hiddenNonEdit">Work with selected slices:</strong>
+
  <form>
     <div class="row collapse hiddenNonEdit">
-
+    <button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button>
+    </div>
+        <div class="row collapse hiddenNonEdit">
+        <strong class="hiddenNonEdit">Work with selected slices:</strong><p/>
                 {% if not user.is_authenticated %}
                     <a class="small radio button success"
                        href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"

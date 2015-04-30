@@ -1120,7 +1120,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     total_task_dict['running'] = 0
                     total_task_dict['total'] = ProductionTask.objects.filter(request=rid).count()
                     if total_task_dict['total'] != 0:
-                        failed_task_list = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted']),Q(request=cur_request))
+                        failed_task_list = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','obsolete']),Q(request=cur_request))
                         total_task_dict['red'] = len(failed_task_list)
                         total_task_dict['done'] = ProductionTask.objects.filter(Q(status='done'),Q(request=cur_request)).count()
                         total_task_dict['finished'] = ProductionTask.objects.filter(Q(status='finished'),Q(request=cur_request)).count()
