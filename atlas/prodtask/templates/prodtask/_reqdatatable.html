@@ -411,6 +411,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             var doubleTrf = $.evalJSON(data).double_trf;
                             var newStatus = $.evalJSON(data).new_status;
                             var removeDataset =  $.evalJSON(data).removed_input;
+                            var approveProblem = $.evalJSON(data).error_approve_message;
+                            var additionalComment = '';
+                            if (approveProblem){
+                                additionalComment = '\n You should be request manager to approve it.'
+                            }
                             if ((newStatus != undefined) && (newStatus != '')){
                                 $('#requestStatus').html(newStatus);
                             }
@@ -453,7 +458,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                         location.reload();
                                     }
                                    if(isApprove){
-                                       $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()));
+                                       $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()+additionalComment));
                                        $("#approveDialog").attr("title","Steps approved");
                                        for (i=0;i<slices.length;i++){
                                            $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");

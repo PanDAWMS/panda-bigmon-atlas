@@ -505,7 +505,7 @@ def request_approve_status(production_request, request):
             pass
         # change to VOMS
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
-        if (user_name in MC_COORDINATORS) or is_superuser:
+        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(request)) or is_superuser:
             return 'approved'
 
     else:
@@ -652,8 +652,10 @@ def request_steps_approve_or_save(request, reqid, approve_level):
 
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
+        error_approve_message = False
         results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
-                   'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save}
+                   'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
+                   'error_approve_message': error_approve_message}
         if not missing_tags:
 
             _logger.debug("Start steps save/approval")
@@ -692,18 +694,17 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
-                req.cstatus = request_approve_status(req,request)
-                req.save()
-                owner='default'
-                try:
-                    owner = request.user.username
-                except:
-                    pass
-                if not owner:
-                    owner='default'
-                request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
-                                               status=req.cstatus)
-                request_status.save_with_current_time()
+                owner = request.user.username
+
+                if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
+                    error_approve_message = True
+                else:
+                    req.cstatus = request_approve_status(req,request)
+                    req.save()
+
+                    request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
+                                                   status=req.cstatus)
+                    request_status.save_with_current_time()
             if req.request_type == 'MC':
 
                 for slice, new_dataset in slice_new_input.items():
@@ -715,7 +716,8 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                        'wrong_slices':wrong_skipping_slices,
                        'double_trf':old_double_trf, 'error_slices':error_slices,
                        'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
-                       'removed_input':removed_input, 'fail_slice_save':''}
+                       'removed_input':removed_input, 'fail_slice_save':'',
+                       'error_approve_message': error_approve_message}
         else:
                 _logger.debug("Some tags are missing: %s" % missing_tags)
     except Exception, e:

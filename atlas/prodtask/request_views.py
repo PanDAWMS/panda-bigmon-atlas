@@ -232,20 +232,20 @@ def make_user_as_owner(request, reqid):
         try:
             production_request = TRequest.objects.get(reqid=reqid)
             current_manager = production_request.manager
-            if production_request.cstatus in ['waiting','registered','test']:
-                owner=''
-                try:
-                    owner = request.user.username
-                except:
-                    pass
-                _logger.debug(form_request_log(reqid,request,'Change manager %s'%owner ))
-                try:
-                    if owner and (owner != current_manager):
-                        production_request.manager = owner
-                        production_request.save()
-                        current_manager = owner
-                except:
-                    pass
+            # if production_request.cstatus in ['waiting','registered','test']:
+            owner=''
+            try:
+                owner = request.user.username
+            except:
+                pass
+            _logger.debug(form_request_log(reqid,request,'Change manager %s'%owner ))
+            try:
+                if owner and (owner != current_manager):
+                    production_request.manager = owner
+                    production_request.save()
+                    current_manager = owner
+            except:
+                pass
             results = {'success':True,'ownerName':current_manager}
         except Exception, e:
             _logger.error("Problem with changing manager #%i: %s"%(reqid,e))
