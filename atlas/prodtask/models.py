@@ -477,14 +477,14 @@ class TrainProduction(models.Model):
     approval_time = models.DateTimeField(db_column='APPROVAL_TIME')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
-    description = models.CharField(max_length=256, db_column='COMMENT')
+    description = models.CharField(max_length=256, db_column='DESCRIPTION')
     request  = models.ForeignKey(TRequest, db_column='PR_ID', null=True)
     #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_PRODUCTION_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
+            self.id = prefetch_id('dev_db',u'T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
         super(TrainProduction, self).save(*args, **kwargs)
 
     class Meta:
@@ -493,7 +493,7 @@ class TrainProduction(models.Model):
 
 class TrainProductionLoad(models.Model):
 
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TRAINCARRIAGE_ID', primary_key=True)
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TC_ID', primary_key=True)
     train = models.ForeignKey(TrainProduction,db_column='TRAIN_NUMBER', null=False)
     group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS)
     datasets = models.TextField( db_column='DATASETS')
@@ -515,12 +515,12 @@ class TrainProductionLoad(models.Model):
                   cleared_datasets.append(dataset)
         self.datasets = '\n'.join([x for x in cleared_datasets if x])
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_PRODUCTION_TRAIN_L_ID_SEQ',"T_TRAIN_CARRIAGE",'TRAINCARRIAGE_ID')
+            self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TRAINCARRIAGE_ID')
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_TRAIN_CARRIAGE"'
+        db_table = u'"ATLAS_DEFT"."T_TRAIN_CARRIAGE"'
 
 class MCPattern(models.Model):
     STEPS = ['Evgen',
