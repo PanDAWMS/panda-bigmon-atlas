@@ -961,7 +961,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         if slice:
             if slice.is_hide:
                 return 'hidden'
-        return_status = 'not_approved'
+        return_status = 'not_submitted'
         exist_approved = False
         exist_not_approved = False
         for step_task in ste_task_list:
@@ -1158,7 +1158,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,input_lists_pre_pattern),
                                             False,'',approve_level(slice_steps_ordered),'no'))
                     else:
-                        input_lists.append((slice_dict, slice_steps_ordered, 'not_approved',
+                        input_lists.append((slice_dict, slice_steps_ordered, 'not_submitted',
                                             False,'',-1,'no'))
                 if do_all or do_cloned_and_failed:
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
