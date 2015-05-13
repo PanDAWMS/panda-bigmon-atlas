@@ -445,8 +445,19 @@ class ProductionTask(models.Model):
     reference = models.CharField(max_length=150, db_column='REFERENCE', null=False)
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
     jedi_info = models.CharField(max_length=256, db_column='JEDI_INFO', null=False, blank=True)
+    total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
+    total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
+    total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
     def save(self):
         raise NotImplementedError
+
+    @property
+    def failure_rate(self):
+        try:
+            rate = int(round(self.total_files_failed/self.total_files_tobeused*100))
+        except:
+            return None
+        return rate
 
     @property
     def input_dataset(self):
