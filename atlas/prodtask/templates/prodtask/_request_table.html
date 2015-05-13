@@ -247,6 +247,32 @@
     {% load lookupattr %}
     {% parametrized parametrized %}
 
+    function SetParametersToURL()
+    {
+        var time_period_all = 0;
+        for(var i in parameters_list)
+        {
+            var val = $( "#"+parameters_list[i].id ).val();
+            $.address.parameter( parameters_list[i].name , val );
+                time_period_all = 1;
+        }
+    }
+
+    function ParseParametersFromURL()
+    {
+        for(var i in parameters_list)
+        {
+            var value = $.address.parameter( parameters_list[i].name );
+            if( value && value != $( "#"+parameters_list[i].id ).val() )
+            {
+                extern_parameter = 1;
+                $( "#"+parameters_list[i].id ).val( value );
+            }
+        }
+    }
+
+
+
     function requestServerParams ( aoData )
     {
         for(var i in parameters_list)

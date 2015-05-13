@@ -222,13 +222,19 @@ class DataTable(object):
             if not bSortable:
                 continue
             sort_field = bcol.sort_field
-            if sort_field == 'request_approved':
+            if sort_field in ['request_approved','failure_rate']:
                 sdir=False
                 if sSortDir == 'desc':
-                	sdir=True
-                 
-                qs=sorted(qs, key = lambda x: x.request_approved,reverse=sdir )
+                        sdir=True
+
+                if sort_field == 'request_approved':
+                        qs=sorted(qs, key = lambda x: x.request_approved,reverse=sdir )
+                if sort_field == 'failure_rate':
+                        iTotalRecords = qs.count()
+                        if iTotalRecords < 25000:
+                        	qs=sorted(qs, key = lambda x: x.failure_rate,reverse=sdir )
                 return qs
+
             if sSortDir == 'desc':
                 sort_field = '-%s' % sort_field
             sort_fields.append(sort_field)
@@ -323,8 +329,9 @@ class DataTable(object):
 
         qs = self.apply_sort(qs, params)
 
+        iTotalDisplayRecords = iTotalRecords
         #iTotalDisplayRecords = qs.count()
-        iTotalDisplayRecords = len(qs)
+        #iTotalDisplayRecords = len(qs)
         iDisplayStart = params.get('iDisplayStart', 0)
         iDisplayLength = params.get('iDisplayLength', -1)
         if iDisplayLength < 0:

@@ -8,7 +8,8 @@ from django.core.urlresolvers import reverse
 
 from ..settings import defaultDatetimeFormat
 
-import core.datatables as datatables
+#import core.datatables as datatables
+import atlas.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
@@ -202,11 +203,13 @@ class ProductionTaskTable(datatables.DataTable):
         sClass='numbers',
         )
 
-    total_failure_rate = datatables.Column(
-        label='Failure rate %',
+    failure_rate = datatables.Column(
+        label='Failure %',
         sClass='numbers',
-        bSortable=False,
-        bVisible='false',
+        #bSortable=False,
+        #model_field='total_files_failed'
+        #model_field='total_files_tobeused'
+        model_field='failure_rate'
         )
 
     total_events = datatables.Column(
