@@ -207,8 +207,6 @@ class ProductionTaskTable(datatables.DataTable):
         label='Failure %',
         sClass='numbers',
         #bSortable=False,
-        #model_field='total_files_failed'
-        #model_field='total_files_tobeused'
         model_field='failure_rate'
         )
 

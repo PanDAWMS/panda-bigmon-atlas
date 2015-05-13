@@ -455,13 +455,8 @@ class ProductionTask(models.Model):
     def failure_rate(self):
         try:
             rate = int(round(self.total_files_failed/self.total_files_tobeused*100))
-            #rate = ProductionTask.objects.get(id=self.id).total_files_tobeused
-            #rate = int(round(self.total_files_tobeused))
-            #if rate==0 or rate == None :
-            #    return '0'
         except:
             return None
-            #return '0'
         return rate
 
     @property
