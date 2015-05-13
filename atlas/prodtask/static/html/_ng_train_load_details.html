@@ -2,7 +2,7 @@
     <form name="trainLoadForm">
       <div class="row">
         <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
-        <label>Group
+        <label>Requester group
          <select name="group" ng-model="editTrainLoad.trainLoad.group" required ng-options="group for group in groups ">
           <option value="">-- choose group --</option>
         </select>
@@ -19,14 +19,6 @@
         </label>
       </div>
       <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
-        <label>Skim
-         <select name="skim" ng-model="editTrainLoad.trainLoad.skim" required>
-          <option value="skim">skim</option>
-         <option value="no-skim">noskim</option>
-        </select>
-            <span ng-show="trainLoadForm.skim.$error.required && !trainLoadForm.skim.$pristine" >
-            Required </span>
-        </label>
           <div class="columns large-3"></div>
       </div>
       </div>

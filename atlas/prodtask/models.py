@@ -479,6 +479,7 @@ class TrainProduction(models.Model):
     manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION')
     request  = models.ForeignKey(TRequest, db_column='PR_ID', null=True)
+    ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
     #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
 
     def save(self, *args, **kwargs):
@@ -500,7 +501,7 @@ class TrainProductionLoad(models.Model):
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
-    skim = models.CharField(max_length=10, db_column='SKIM', null=False)
+
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()

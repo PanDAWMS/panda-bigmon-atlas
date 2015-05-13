@@ -28,24 +28,39 @@ def prepare_train_carriages(train_id):
     """
 
     loads = list(TrainProductionLoad.objects.filter(train=train_id))
-    train_carriages = {'skim':{},'noskim':{}}
+    train_carriages = {}
     for load in loads:
-        skim = 'skim'
-        if load.skim != 'skim':
-            skim = 'noskim'
+
         datasets = load.datasets.split('\n')
         outputs = load.output_formats.split('.')
         for dataset in datasets:
-            if dataset in train_carriages[skim]:
-                train_carriages[skim][dataset]['outputs'] += [x for x in outputs if x not in train_carriages[skim][dataset]['outputs']]
-                train_carriages[skim][dataset]['loads_id'].append(load.id)
-                train_carriages[skim][dataset]['groups'].add(load.group)
+            if dataset in train_carriages:
+                train_carriages[dataset]['outputs'] += [x for x in outputs if x not in train_carriages[dataset]['outputs']]
+                train_carriages[dataset]['loads_id'].append(load.id)
+                train_carriages[dataset]['groups'].add(load.group)
             else:
                 group = set()
                 group.add(load.group)
-                train_carriages[skim][dataset] = {'outputs':outputs,'loads_id':[load.id], 'groups': group}
+                train_carriages[dataset] = {'outputs':outputs,'loads_id':[load.id], 'groups': group}
+    return_value =[]
+    for dataset in train_carriages.keys():
+        train_carriage = train_carriages[dataset]
+        train_carriage.update({'dataset':dataset})
+        return_value.append(train_carriage)
     return train_carriages
 
+
+def prepare_simple_train_carriages(train_id):
+    loads = list(TrainProductionLoad.objects.filter(train=train_id))
+    train_carriages = []
+    for load in loads:
+        datasets = load.datasets.split('\n')
+        outputs = load.output_formats.split('.')
+        for dataset in datasets:
+                group = set()
+                group.add(load.group)
+                train_carriages.append({'dataset':dataset,'outputs':outputs,'loads_id':[load.id], 'groups': group})
+    return train_carriages
 
 def assembled_train(request,train_id):
     if request.method == 'GET':
@@ -53,11 +68,10 @@ def assembled_train(request,train_id):
             train_carriage = prepare_train_carriages(train_id)
             results = []
             carriage_number = 0
-            for x in ['skim','noskim']:
-                for dataset in sorted(train_carriage[x].keys()):
-                    results.append({'dataset':dataset,'carriage_number':carriage_number,'skim':x,
-                                       'group':list(train_carriage[x][dataset]['groups'])})
-                    carriage_number += 1
+            for dataset in sorted(train_carriage.keys()):
+                results.append({'dataset':dataset,'carriage_number':carriage_number,
+                                   'group':list(train_carriage[dataset]['groups'])})
+                carriage_number += 1
             return HttpResponse(json.dumps(results), content_type='application/json')
         except Exception,e:
             _logger.error("Problem with carriage forming  %s" % e)
@@ -79,7 +93,7 @@ class TrainCarriageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrainProductionLoad
-        fields = ('id', 'group', 'train', 'datasets', 'output_formats', 'manager', 'skim')
+        fields = ('id', 'group', 'train', 'datasets', 'output_formats', 'manager')
         read_only_fields = ('id',)
 
 

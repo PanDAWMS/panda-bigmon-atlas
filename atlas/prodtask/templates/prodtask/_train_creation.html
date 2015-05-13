@@ -167,9 +167,10 @@
 {% endverbatim %}
 
 <div class="row">
-<div class="columns large-3" style="border: solid">Train: {{ train.description }}</div>
-<div class="columns large-3" style="border: solid">Status: {{ train.status }}</div>
-<div class="columns large-6" style="border: solid">Departure: {{ depart_date }}</div>
+<div class="columns large-4" style="border: solid">Train: {{ train.description }}</div>
+<div class="columns large-2" style="border: solid">Status: {{ train.status }}</div>
+<div class="columns large-2" style="border: solid">ptag: {{ train.ptag }}</div>
+<div class="columns large-4" style="border: solid">Departure: {{ depart_date }}</div>
 </div>
     <p/>
 <div ng-app="trainApp">
