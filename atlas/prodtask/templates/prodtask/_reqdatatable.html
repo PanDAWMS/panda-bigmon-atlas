@@ -1065,7 +1065,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
         $(document).foundation();
         function formSliceInfo(event, id){
-          event.preventDefault();
+          if(event != undefined){
+              event.preventDefault();
+          }
+
           var sliceID = id.slice(10);
           $("#sliceInfo").attr({'class':'small content f-dropdown'});
           $("#sliceInfo").html('');
@@ -1076,6 +1079,40 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
           prepareSliceInfo(check_steps,sliceID);
         }
 
+        function openPrevSlice(event, id, isPrev){
+            event.preventDefault();
+            var previous = undefined;
+            var newSlice = undefined;
+            var getNext = false;
+            $(".checkboxSlice").each(function () {
+                        {#                   8 = "checkbox".length#}
+                        var sliceID = $(this).attr("id").slice(8);
+                        if (getNext){
+                            getNext = false;
+                            newSlice = sliceID;
+                        }
+                        if (sliceID == id){
+                            if (isPrev){
+                                if  (previous != undefined){
+                                    newSlice = previous;
+                                }
+                            }
+                            else{
+                                getNext = true;
+                            }
+                        }
+                        previous = sliceID;
+                    });
+            if (newSlice !=  undefined){
+                $('#closeReveal').click();
+
+                console.log(newSlice);
+                setTimeout(function(){
+                    formSliceInfo(undefined,'0123456789'+newSlice);
+                 }, 1000);
+
+            }
+        }
         function getCheckedSlices(){
              var sliceList=[];
                 $(".checkboxSlice:checked").each(function(){
@@ -2242,7 +2279,10 @@ var lastChecked = true;
 </div>
 
 <div id="sliceModal" class="reveal-modal" data-reveal>
-<p>Slice: <span id="sliceModalSlice"></span><br/>
+
+    <a style="cursor: pointer;" onclick="openPrevSlice(event, $('#sliceModalSlice').html(), true);" >Prev</a>
+    Slice: <span id="sliceModalSlice"></span>
+    <a style="cursor: pointer;" onclick="openPrevSlice(event,$('#sliceModalSlice').html(), false);">Next</a><br/>
     <div>
     <div class="row">
         <div class="column large-12">
