@@ -32,6 +32,30 @@ from .xls_parser_new import open_tempfile_from_url
 
 _logger = logging.getLogger('prodtaskwebui')
 
+@csrf_protect
+def short_hlt_form(request):
+    if request.method == 'GET':
+            return render(request, 'prodtask/_short_hlt_form.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Create hlt request',
+                'parent_template': 'prodtask/_index.html',
+            })
+    if request.method == 'POST':
+            print request.body
+            request.session['file_dict']={'test':'testfiledict'}
+            return HttpResponse({}, content_type='application/json')
+
+
+@csrf_protect
+def hlt_form_prepare_request(request):
+    if request.method == 'GET':
+
+            if request.session['file_dict']:
+                print request.session['file_dict']
+                return HttpResponseRedirect(reverse('prodtask:request_table'))
+            else:
+                return short_hlt_form(request)
+
 
 def request_status_update():
         requests = TRequest.objects.filter(reqid__gte=820)

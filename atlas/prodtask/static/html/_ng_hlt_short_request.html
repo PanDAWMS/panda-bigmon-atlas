@@ -1,0 +1,31 @@
+<form name="hltShortForm">
+        <div class="row">
+        <div class="large-12 columns">
+          <label> Dataset:
+            <input type="text" name="dataset" ng-model="hltShortModel.request.dataset" required >
+
+          </label>
+        </div>
+        </div>
+        <div class="row">
+        <div class="large-6 columns">
+            <span>Outputs:</span><br>
+            <label ng-repeat="(output,enabled) in hltShortModel.outputs">
+                <input type="checkbox" ng-model="hltShortModel.outputs[output]" /> {{output}}
+            </label>
+
+        </div>
+            <div class="large-6 columns">
+               <label> Reco tag:
+                    <input type="text" name="recoTag" ng-model="hltShortModel.request.recoTag" amitag required >
+                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+              </label>
+               <label> HIST* merge tag:
+                    <input type="text" name="mergeTag" ng-model="hltShortModel.request.mergeTag" required >
+                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+              </label>
+            </div>
+        </div>
+</form>
+
+<button ng-click="hltShortModel.proceed()" class="btn btn-primary">Proceed</button>
