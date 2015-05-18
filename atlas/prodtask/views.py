@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
 from django.utils import timezone
 import time
 from ..prodtask.helper import form_request_log
@@ -505,7 +506,7 @@ def request_approve_status(production_request, request):
             pass
         # change to VOMS
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
-        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(request)) or is_superuser:
+        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(request.user.username)) or is_superuser:
             return 'approved'
 
     else:
@@ -653,13 +654,18 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         error_approve_message = False
-        results = {'missing_tags': missing_tags,'slices': slices,'wrong_slices':wrong_skipping_slices,
+        req = TRequest.objects.get(reqid=reqid)
+        owner = request.user.username
+        if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
+            if (not request.user.is_superuser) or ('MCCOORD' not in egroup_permissions(req.manager)):
+                error_approve_message = True
+        results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message}
-        if not missing_tags:
+        if (not missing_tags) and (not error_approve_message):
 
             _logger.debug("Start steps save/approval")
-            req = TRequest.objects.get(reqid=reqid)
+
             if req.request_type == 'MC':
                 for steps_status in slice_steps.values():
                     for index,steps in enumerate(steps_status[:-2]):
@@ -694,11 +700,9 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
-                owner = request.user.username
 
-                if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
-                    error_approve_message = True
-                else:
+
+
                     req.cstatus = request_approve_status(req,request)
                     req.save()
 
@@ -938,10 +942,11 @@ def input_list_approve_full(request, rid=None):
 NUMBER_EVENTS_TO_SPLIT = 2000000
 
 
-def egroup_permissions(request):
+def egroup_permissions(username):
     return_list = []
     try:
-        user_groups = request.user.groups.all()
+        current_user = User.objects.get(username = username )
+        user_groups = current_user.groups.all()
         group_permissions = []
         for group in user_groups:
              group_permissions += list(group.permissions.all())
@@ -971,9 +976,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                 else:
                     exist_not_approved = True
         if exist_approved and exist_not_approved:
-            return_status = 'partially_approved'
+            return_status = 'partially_submitted'
         if exist_approved and not(exist_not_approved):
-            return_status = 'approved'
+            return_status = 'submitted'
         return return_status
 
     def approve_level(step_task_list):
@@ -1065,7 +1070,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
                     if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS) and \
-                            ('MCCOORD' not in egroup_permissions(request)):
+                            ('MCCOORD' not in egroup_permissions(request.user.username)):
                         autorized_change_request = False
                     if cur_request.cstatus == 'waiting':
                         needed_management_approve = True

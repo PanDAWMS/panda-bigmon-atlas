@@ -46,7 +46,7 @@
 	td.waiting	{ background-color : blue;	}
 	td.submitting	{ background-color : blue;	}
 	td.archived 	{ background-color : magenta;	}
- 	td.submitted	{ background-color : green;	}
+
 
 	td.running 	{ background-color : LightGreen;	}
 
@@ -68,9 +68,9 @@
    </style>
 
     <style>
-    td.approved { color : green;	}
+    td.submitted { color : green;	}
     td.not_submitted { color : red;}
-    td.partially_approved { color : orange;	}
+    td.partially_submitted { color : orange;	}
     td.hidden { color : #463cff;	}
 
    </style>
@@ -408,10 +408,33 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             var slices = $.evalJSON(data).slices;
                             var wrongSLices = $.evalJSON(data).wrong_slices;
 {#                            console.log(wrongSLices);#}
+
                             var doubleTrf = $.evalJSON(data).double_trf;
                             var newStatus = $.evalJSON(data).new_status;
                             var removeDataset =  $.evalJSON(data).removed_input;
                             var approveProblem = $.evalJSON(data).error_approve_message;
+                            if (missedList == undefined){
+                                missedList = [];
+                            }
+
+                            if (doubleTrf == undefined){
+                                doubleTrf = [];
+                            }
+                            if (wrongSLices == undefined){
+                                wrongSLices = [];
+                            }
+                            if (slices == undefined){
+                                slices = [];
+                            }
+                            if (errorSlices == undefined){
+                                errorSlices = [];
+                            }
+                            if (notChangedSlices == undefined){
+                                notChangedSlices = [];
+                            }
+                            if (removeDataset == undefined){
+                                removeDataset = [];
+                            }
                             var additionalComment = '';
                             if (approveProblem){
                                 additionalComment = '\n You should be request manager to approve it.'
@@ -435,42 +458,45 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                 } else {
                                     $("#wrongSlice").hide();
                                 }
-                                if((slices.length >0)||(errorSlices.length>0)||(notChangedSlices.length>0)){
-                                   var datasets = $.evalJSON(data).datasets_dict;
-                                   $("#missing_tags").hide();
-                                   $("#doubleTags").hide();
+                                if((slices.length >0)||(errorSlices.length>0)||(notChangedSlices.length>0)) {
+                                    var datasets = $.evalJSON(data).datasets_dict;
+                                    $("#missing_tags").hide();
+                                    $("#doubleTags").hide();
                                     $("#approveDialog").html('');
-                                   if (errorSlices.length==1){
-                                       $("#approveDialog").append($('<p/>').html('Slice has problem: '+errorSlices[0]));
-                                   } else{
-                                       if (errorSlices.length>1){
-                                           $("#approveDialog").append($('<p/>').html(errorSlices.length+'Slices have problem: '+errorSlices.toString()));
-                                       }
-                                   }
-                                   if (notChangedSlices.length==1){
-                                       $("#approveDialog").append($('<p/>').html('Slice was not changed: '+notChangedSlices[0]));
-                                   } else{
-                                       if (notChangedSlices.length>1){
-                                           $("#approveDialog").append($('<p/>').html(notChangedSlices.length+'Slices were not changed: '+notChangedSlices.toString()));
-                                       }
-                                   }
-                                    if(doReload){
+                                    if (errorSlices.length == 1) {
+                                        $("#approveDialog").append($('<p/>').html('Slice has problem: ' + errorSlices[0]));
+                                    } else {
+                                        if (errorSlices.length > 1) {
+                                            $("#approveDialog").append($('<p/>').html(errorSlices.length + 'Slices have problem: ' + errorSlices.toString()));
+                                        }
+                                    }
+                                    if (notChangedSlices.length == 1) {
+                                        $("#approveDialog").append($('<p/>').html('Slice was not changed: ' + notChangedSlices[0]));
+                                    } else {
+                                        if (notChangedSlices.length > 1) {
+                                            $("#approveDialog").append($('<p/>').html(notChangedSlices.length + 'Slices were not changed: ' + notChangedSlices.toString()));
+                                        }
+                                    }
+                                    if (doReload) {
                                         location.reload();
                                     }
-                                   if(isApprove){
-                                       $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: "+slices.toString()+additionalComment));
-                                       $("#approveDialog").attr("title","Steps approved");
-                                       for (i=0;i<slices.length;i++){
-                                           $("#aprroveLabel".concat(slices[i])).css({'color':'greenyellow'}).html("Approved");
-                                           $("#aprroveLabelLong".concat(slices[i])).css({'color':'greenyellow'}).html("Approved")
-                                       }
-
-                                   } else {
-                                       $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: "+slices.toString()));
-                                       $("#approveDialog").attr("title","Steps saved");
-                                   }
-                                   $("#approveDialog").dialog("open");
                                 }
+                                console.log(additionalComment);
+                                    if (isApprove) {
+                                        $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
+                                        $("#approveDialog").attr("title", "Steps approved");
+                                        for (i = 0; i < slices.length; i++) {
+                                            $("#aprroveLabel".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted");
+                                            $("#aprroveLabelLong".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted")
+                                        }
+
+                                    } else {
+                                        $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: " + slices.toString()));
+                                        $("#approveDialog").attr("title", "Steps saved");
+                                    }
+
+                                   $("#approveDialog").dialog("open");
+
                             }
                             if (startFindig){
                                 findInputForSlices(slices);
