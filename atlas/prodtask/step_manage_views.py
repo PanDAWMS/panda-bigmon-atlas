@@ -551,14 +551,14 @@ def slice_steps(request, reqid, slice_number):
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':''}
                         foreign_step_dict_index = 0
                     else:
                         foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':''}
                         foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
 
             for index,step in enumerate(step_as_in_page):
@@ -580,7 +580,7 @@ def slice_steps(request, reqid, slice_number):
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
                                         'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
-                                        'maxAttempt':task_config.get('maxAttempt',''),
+                                        'maxFailure':task_config.get('maxFailure',''),
                                         'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''

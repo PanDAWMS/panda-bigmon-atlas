@@ -240,7 +240,7 @@ def translate_excl_to_dict(excel_dict):
                                 else:
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None
-                                task_config = {'maxAttempt':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                task_config = {'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                      'project_mode':get_default_project_mode_dict().get(st,'')}
 
                                 if reduce_input_format:

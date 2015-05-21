@@ -453,8 +453,9 @@ $(document).ready(function(){
           </label>
         </div>
           <div class="large-3 columns">
-          <label>Max attempt
-            <input type="number" class="maxAttempt storeInput" value="{{ default_step_values.maxAttempt }}" />
+          <label>Max failure attempt
+            <input type="number" class="maxFailure storeInput" value="{{ default_step_values.maxFailure }}" />
+              <input type="hidden" class="maxAttempt storeInput" value="{{ default_step_values.maxAttempt }}">
           </label>
         </div>
       </div>

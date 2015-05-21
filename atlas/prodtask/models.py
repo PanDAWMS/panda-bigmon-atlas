@@ -314,7 +314,7 @@ class StepExecution(models.Model):
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
     INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
-                              'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile']
+                              'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile','maxFailure']
     TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode']
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
@@ -447,7 +447,7 @@ class ProductionTask(models.Model):
     jedi_info = models.CharField(max_length=256, db_column='JEDI_INFO', null=False, blank=True)
     total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
     total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
-    total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
+
     def save(self):
         raise NotImplementedError
 
@@ -502,6 +502,24 @@ class TrainProduction(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = u'"T_GROUP_TRAIN"'
+
+class OpenEndedRequest(models.Model):
+
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='OE_ID', primary_key=True)
+    status = models.CharField(max_length=20, db_column='STATUS', null=True)
+    request  = models.ForeignKey(TRequest, db_column='PR_ID')
+    container = models.ForeignKey(ProductionDataset, null=False)
+    last_update = models.DateTimeField(db_column='LAST_UPDATE')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
+        super(OpenEndedRequest, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_OPRN_ENDED"'
 
 class TrainProductionLoad(models.Model):
 

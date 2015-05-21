@@ -56,12 +56,17 @@ def hlt_form_prepare_request(request):
             else:
                 return short_hlt_form(request)
 
+def make_open_ended(request,reqid):
+    pass
 
-def request_status_update():
-        requests = TRequest.objects.filter(reqid__gte=820)
+def request_status_update(request_from,request_to):
+        requests = TRequest.objects.filter(reqid__gte=request_from,reqid__lte=request_to)
         result_dict = {'executing':[],'in progress':[],'done':[],'finished':[]}
+
         for req in requests:
+            steps_with_tasks = []
             tasks = ProductionTask.objects.filter(request=req)
+
             is_done_exist = False
             is_finished_exist = False
             is_fail_exist = False
@@ -75,6 +80,13 @@ def request_status_update():
                     is_finished_exist = True
                 if task.status in ['done']:
                     is_done_exist = True
+                steps_with_tasks.append(task.step_id)
+            steps = StepExecution.objects.filter(request=req)
+            for step in steps:
+                if step.id not in steps_with_tasks:
+                    if not step.slice.is_hide:
+                        is_run_exist = True
+                        break
             if is_run_exist and not(is_fail_exist or is_finished_exist or is_done_exist):
                 result_dict['executing'].append(req)
             elif is_run_exist and (is_fail_exist or is_finished_exist or is_done_exist):
@@ -82,7 +94,7 @@ def request_status_update():
             elif (not is_run_exist) and (is_fail_exist or is_finished_exist):
                 result_dict['finished'].append(req)
             elif is_done_exist and not(is_run_exist or is_fail_exist or is_finished_exist):
-                result_dict['done'].append(req)
+                result_dict['finished'].append(req)
         for status,requests in result_dict.items():
             for req in requests:
                     print req.reqid,status
@@ -529,7 +541,7 @@ def hlt_form_prefill(form_data, request):
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'THLT'
 
-    task_config = {'maxAttempt':15}
+    task_config = {'maxAttempt':30,'maxFailure':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -624,7 +636,7 @@ def parse_json_slice_dict(json_string):
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
                         if slice['inputFormat']:
                             task_config.update({'input_format':slice['inputFormat']})
-                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
                             if slice[parameter]:
                                     task_config.update({parameter:slice[parameter]})
                         if slice['jediTag']:
@@ -660,7 +672,7 @@ def parse_json_slice_dict(json_string):
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
-                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt']:
+                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
                                     if step[parameter]:
                                         task_config.update({parameter:step[parameter]})
                                 step_name = step_from_tag(step['ctag'])
@@ -725,7 +737,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('provenance'):
         form_data['provenance'] = 'GP'
     if not spreadsheet_dict:
-        task_config = {'maxAttempt':15}
+        task_config = {'maxAttempt':30,'maxFailure':15}
         if 'events_per_job' in output_dict:
             nEventsPerJob = output_dict['events_per_job'][0]
             task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -813,7 +825,7 @@ def reprocessing_form_prefill(form_data, request):
         form_data['provenance'] = 'AP'
     if not form_data.get('phys_group'):
         form_data['phys_group'] = 'REPR'
-    task_config = {'maxAttempt':15}
+    task_config = {'maxAttempt':30,'maxFailure':15}
     if 'events_per_job' in output_dict:
         nEventsPerJob = output_dict['events_per_job'][0]
         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
@@ -1147,7 +1159,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                                           'nGBPerJob','maxAttempt']
+                                                           'nGBPerJob','maxAttempt','maxFailure']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
@@ -1230,28 +1242,28 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'})
 
 
 @login_required(login_url='/prodtask/login/')
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
-                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'15'})
+                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'25','maxFailure':'15'})
 
 
 @login_required(login_url='/prodtask/login/')
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'970','maxAttempt':'15'})
+                                   {'nEventsPerJob':'1000','priority':'970','maxAttempt':'25','maxFailure':'15'})
 
 
 @login_required(login_url='/prodtask/login/')
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill,{'ram':'3800','nEventsPerJob':'1000','priority':'880','maxAttempt':'15'})
+                                   reprocessing_form_prefill,{'ram':'3800','nEventsPerJob':'1000','maxAttempt':'25','priority':'880','maxFailure':'15'})
 
 @csrf_protect
 def do_mc_management_approve(request, reqid):

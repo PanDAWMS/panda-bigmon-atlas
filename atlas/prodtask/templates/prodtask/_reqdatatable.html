@@ -1592,6 +1592,27 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 );
               return false;
         };
+        function makeOpenEnded(event){
+            event.preventDefault();
+            var sliceList=[];
+
+            sendData = [];
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:make_open_ended' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+        }
 
          function hideClick(event){
             event.preventDefault();
@@ -1797,6 +1818,7 @@ var lastChecked = true;
           <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
           <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
           <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
+             <li><a href="#" onclick="makeOpenEnded(event);">Make Open Ended</a></li>
         {% else %}
           <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
         {% endif %}
@@ -2352,8 +2374,8 @@ var lastChecked = true;
                                   </label>
                                 </div>
                                 <div class="large-2 columns">
-                                  <label>max attempt
-                                    <input type="number" class="maxAttempt storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
+                                  <label>max failure attempt
+                                    <input type="number" class="maxFailure storeOutput{{forloop.counter0}} storeInput" placeholder=""  />
                                   </label>
                                 </div>
                                 </div>
@@ -2508,8 +2530,8 @@ var lastChecked = true;
                                   </label>
                                 </div>
                                 <div class="large-2 columns">
-                                  <label>max attempt
-                                    <input type="number" class="maxAttempt storeBulk" placeholder=""  />
+                                  <label>max failure attempt
+                                    <input type="number" class="maxFailure storeBulk" placeholder=""  />
                                   </label>
                                 </div>
                                 </div>

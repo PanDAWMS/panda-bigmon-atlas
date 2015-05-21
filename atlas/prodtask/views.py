@@ -274,7 +274,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config = {}
                             for x in ['input_format','nEventsPerJob','token','merging_tag',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
-                                      'nFilesPerJob','nGBPerJob','maxAttempt']:
+                                      'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
@@ -283,6 +283,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                         task_config[x] = int(step_value['changes'][x])
                                     else:
                                         task_config[x] = ''
+                            if 'maxFailure' in task_config:
+                                if task_config['maxFailure']:
+                                    task_config['maxAttempt'] = int(task_config['maxFailure']) + 10
                             change_template = False
                             ctag = step_value['value']
                             if ctag != step_in_db.step_template.ctag:
@@ -326,7 +329,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.save_with_current_time()
                             parent_step = step_in_db
                     else:
-                            task_config = {'maxAttempt':10}
+                            task_config = {'maxFailure':10,'maxAttempt':30}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
@@ -335,7 +338,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config.update({'project_mode':input_list.project_mode})
                             for x in ['input_format','nEventsPerJob','token','merging_tag',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
-                                      'nGBPerJob','maxAttempt']:
+                                      'nGBPerJob','maxAttempt','maxFailure']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
