@@ -703,9 +703,8 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
 
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
-
-
-
+                    if not owner:
+                        owner = req.manager
                     req.cstatus = request_approve_status(req,request)
                     req.save()
 
