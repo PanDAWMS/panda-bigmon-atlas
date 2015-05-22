@@ -1278,9 +1278,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                             #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
                             approved = get_approve_status(slice_steps_ordered)
 
-                            if (approved == 'approved')or(approved == 'partially_approved'):
+                            if (approved == 'submitted')or(approved == 'partially_submitted'):
                                     approved_count += 1
-                            if (approved == 'approved'):
+                            if (approved == 'submitted'):
                                 fully_approved +=1
                             slice_dict = model_to_dict(slice)
                             if not slice_dict['dataset']:
@@ -1342,7 +1342,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                             edit_mode = True
                             slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
                             approved = get_approve_status(slice_steps[:len(slice_steps_list)])
-                            if (approved == 'approved')or(approved == 'partially_approved'):
+                            if (approved == 'submitted')or(approved == 'partially_submitted'):
                                     approved_count += 1
                             slice_dict =  model_to_dict(slice)
                             if not slice_dict['dataset']:
