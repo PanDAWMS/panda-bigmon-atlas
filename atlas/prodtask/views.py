@@ -227,7 +227,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             # if foreign_step !=0 :
             #     step_as_in_page = [None] + step_as_in_page
             first_not_approved_index = 0
-            total_events = input_list.input_events
+            total_events = -1
+            if not parent_step:
+                total_events = input_list.input_events
             still_skipped = True
             new_step = False
             for index,step in enumerate(step_as_in_page):
