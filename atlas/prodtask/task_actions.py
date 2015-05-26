@@ -22,6 +22,7 @@ _deft_actions = {
     'change_wall_time': 'change_task_wall_time',
     'increase_attempt_number': 'increase_attempt_number',
     'abort_unfinished_jobs': 'abort_unfinished_jobs',
+    'delete_output' : 'clean_task_carriages',
 }
 
 supported_actions = _deft_actions.keys()
@@ -36,8 +37,8 @@ allowed_task_actions = {
     'submitting': [],
     'ready': [],
     'running': [],
-    'done': ['obsolete'],
-    'finished': ['retry', 'change_parameters', 'obsolete'],
+    'done': ['obsolete', 'delete_output'],
+    'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
     'broken': [],
     'failed': [],
 }
