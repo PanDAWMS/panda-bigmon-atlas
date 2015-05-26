@@ -111,6 +111,14 @@ class Client(object):
         body = {'task_id': task_id, 'code': code}
         return self._create_request('abort_unfinished_jobs', owner, body)
 
+    def obsolete_task(self, owner, task_id):
+        body = {'task_id': task_id}
+        return self._create_request('obsolete_task', owner, body)
+
+    def clean_task_carriages(self, owner, task_id, output_formats):
+        body = {'task_id': task_id, 'output_formats': '.'.join(output_formats)}
+        return self._create_request('clean_task_carriages', owner, body)
+
     def _search_task(self, filter_dict):
         if len(filter_dict.keys()):
             filter_dict.update({'limit': 0})
@@ -145,3 +153,15 @@ class Client(object):
         if not taskname is None:
             filter_dict.update({'name__icontains': taskname})
         return self._search_task(filter_dict)
+
+    def create_slice_tier0(self, owner, slice_dict, steps_list):
+        """
+        Create slice in last tier0 request
+        :param slice_dict: dict, possible keys: ['dataset', 'comment', 'priority']
+        :param steps_list: list of dicts, possible keys ['ctag', 'output_formats', 'memory', 'priority'] +
+        ['input_format', 'nEventsPerJob', 'token', 'merging_tag', 'nFilesPerMergeJob', 'nGBPerMergeJob'] +
+        ['nMaxFilesPerMergeJob', 'project_mode', 'nFilesPerJob', 'nGBPerJob', 'maxAttempt']
+        :return: API request ID if succeed
+        """
+        body = {'slice_dict': slice_dict, 'steps_list': steps_list}
+        return self._create_request('create_slice_tier0', owner, body)
