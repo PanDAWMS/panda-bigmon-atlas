@@ -508,18 +508,24 @@ class OpenEndedRequest(models.Model):
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='OE_ID', primary_key=True)
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
     request  = models.ForeignKey(TRequest, db_column='PR_ID')
-    container = models.ForeignKey(ProductionDataset, null=False)
+    container = models.CharField(max_length=150, db_column='CONTAINER',null=False)
     last_update = models.DateTimeField(db_column='LAST_UPDATE')
 
 
     def save(self, *args, **kwargs):
+        if not self.last_update:
+            self.last_update = timezone.now()
         if not self.id:
             self.id = prefetch_id('dev_db',u'T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
         super(OpenEndedRequest, self).save(*args, **kwargs)
 
+    def save_last_update(self, *args, **kwargs):
+        self.last_update = timezone.now()
+        super(OpenEndedRequest, self).save(*args, **kwargs)
+
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_OPRN_ENDED"'
+        db_table = u'"T_OPEN_ENDED"'
 
 class TrainProductionLoad(models.Model):
 
@@ -550,7 +556,7 @@ class TrainProductionLoad(models.Model):
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"ATLAS_DEFT"."T_TRAIN_CARRIAGE"'
+        db_table = u"T_TRAIN_CARRIAGE"
 
 class MCPattern(models.Model):
     STEPS = ['Evgen',

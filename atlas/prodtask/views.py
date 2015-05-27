@@ -25,7 +25,8 @@ from ..prodtask.ddm_api import find_dataset_events
 import core.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
-    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict
+    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
+    OpenEndedRequest
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -1069,6 +1070,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             first_approval_message = ''
             show_is_fast = False
             show_split = False
+            is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
             if (cur_request.request_type in ['HLT','REPROCESSING']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
@@ -1401,7 +1403,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'show_is_fast':show_is_fast,
                'show_split':show_split,
                'needed_management_approve':needed_management_approve,
-               'first_approval_message':first_approval_message
+               'first_approval_message':first_approval_message,
+               'is_open_ended':is_open_ended
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

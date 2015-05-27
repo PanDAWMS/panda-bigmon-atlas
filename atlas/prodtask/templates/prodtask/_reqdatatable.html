@@ -1592,6 +1592,28 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 );
               return false;
         };
+
+        function closeOpenEnded(event){
+            event.preventDefault();
+            var sliceList=[];
+
+            sendData = [];
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:close_open_ended' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+        }
         function makeOpenEnded(event){
             event.preventDefault();
             var sliceList=[];
@@ -1818,7 +1840,11 @@ var lastChecked = true;
           <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
           <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
           <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
-             <li><a href="#" onclick="makeOpenEnded(event);">Make Open Ended</a></li>
+            {% if not is_open_ended %}
+                <li><a href="#" onclick="makeOpenEnded(event);">Make Open Ended</a></li>
+            {% else %}
+                <li><a href="#" onclick="closeOpenEnded(event);">Close Open Ended</a></li>
+            {% endif  %}
         {% else %}
           <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
         {% endif %}
@@ -1884,6 +1910,13 @@ var lastChecked = true;
 
 </div>
 
+{% if is_open_ended %}
+    <div class="row">
+<div class="large-12">
+    <h6>Request is open eneded</h6>
+    </div>
+    </div>
+{% endif %}
 <div class="row">
 <div class="large-12">
 {% if hidden_slices > 0 %}

@@ -52,7 +52,9 @@ urlpatterns = patterns('',
     url(r'^mcpriority_create/$',                    'atlas.prodtask.request_views.mcpriority_create',  name='mcpriority_create'),
     url(r'^mcpriority_update/(?P<pattern_id>\d+)/$','atlas.prodtask.request_views.mcpriority_update',  name='mcpriority_update'),
 
-    url(r'^make_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.request_views.make_open_ended',  name='make_open_ended'),
+    url(r'^make_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.make_open_ended',  name='make_open_ended'),
+    url(r'^close_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.close_open_ended',  name='close_open_ended'),
+
     url(r'^short_hlt_form/$','atlas.prodtask.request_views.short_hlt_form',  name='short_hlt_form'),
     url(r'^hlt_form_prepare_request/$','atlas.prodtask.request_views.hlt_form_prepare_request',  name='hlt_form_prepare_request'),
 

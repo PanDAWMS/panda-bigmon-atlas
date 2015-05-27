@@ -56,8 +56,7 @@ def hlt_form_prepare_request(request):
             else:
                 return short_hlt_form(request)
 
-def make_open_ended(request,reqid):
-    pass
+
 
 def request_status_update(request_from,request_to):
         requests = TRequest.objects.filter(reqid__gte=request_from,reqid__lte=request_to)
