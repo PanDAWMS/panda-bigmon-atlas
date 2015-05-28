@@ -34,7 +34,7 @@ def task_details(request, rid=None):
             task = ProductionTask.objects.get(id=rid)
             ttask = TTask.objects.get(id=rid)
             output_datasets = ProductionDataset.objects.filter(task_id=rid)
-            # form = ProductionTaskForm(instance=req)
+	    output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
         except:
             return HttpResponseRedirect('/')
     else:
@@ -62,7 +62,7 @@ def task_details(request, rid=None):
         'output_datasets': output_datasets,
         'clouds': get_clouds(),
         'sites': get_sites(),
-        'outputs': get_outputs(rid),
+        'outputs': output_formats,
         'parent_template' : 'prodtask/_index.html',
         }
 
@@ -441,20 +441,6 @@ def get_sites():
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
-
-def get_outputs(rid=None):
-    """
-    Get list of output formats
-    :return: list of output formats
-    """
-    output = []
-    if rid:
-    #for rid in rids:
-        output = [x.get('name').split('.')[4] for x in ProductionDataset.objects.filter(task_id=rid).values('name')]
-
-
-
-    return output
 
 def get_permissions(request,tasks):
     """

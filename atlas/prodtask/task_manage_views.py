@@ -11,7 +11,7 @@ import core.datatables as datatables
 
 from .models import ProductionTask, TRequest, StepExecution
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_outputs
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
 from .task_views import get_permissions
 from .task_actions import do_action
 
@@ -158,7 +158,6 @@ def task_manage(request):
                              'last_task_submit_time': last_task_submit_time,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'outputs': get_outputs(),
                              'edit_mode': True,
                             })
 
