@@ -40,8 +40,12 @@
 
 
 {% block body %}
-    <a class="button" href=" {% url "prodtask:retry_errors_create" %}">Create</a>
-
+    <div class="row">
+    <div class="large-2 column">
+        <a class="button" href=" {% url "prodtask:retry_errors_create" %}">Create</a>
+    </div>
+    <div class="large-10 column"></div>
+    </div>
 {% for error_retry in retry_errors %}
 <div>
     <div class="row">

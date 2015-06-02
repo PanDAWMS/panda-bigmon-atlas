@@ -27,6 +27,7 @@ def retry_errors_list(request):
         return render(request, 'prodtask/_error_retry_table.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Retry errors',
+                'title': 'Retry errors management',
                 'retry_errors': retry_errors,
                 'submit_url': 'prodtask:retry_errors_list',
                 'parent_template': 'prodtask/_index.html',

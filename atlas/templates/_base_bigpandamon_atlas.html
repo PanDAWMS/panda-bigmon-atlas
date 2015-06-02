@@ -90,10 +90,10 @@
 </li>
 
 <li class="has-dropdown">
-          <a href="#">Users</a>
+          <a href="#">Error retry</a>
           <ul class="dropdown">
-            <li><a href="{% url 'userList' %}?sortby=date&view=database">Usage stats view</a></li>
-            <li><a href="{% url 'userList' %}?sortby=date&view=dynamic">Dynamic view</a></li>
+            <li><a href="{% url 'prodtask:retry_errors_list' %}">Retry errors list</a></li>
+            <li><a href="{% url 'prodtask:retry_errors_create' %}">Create error</a></li>
           </ul>
 </li>
 
