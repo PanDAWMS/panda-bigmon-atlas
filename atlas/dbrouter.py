@@ -10,9 +10,13 @@ class ProdMonDBRouter(object):
             return "deft_adcr"
         if model._meta.app_label == 'dev':
             return 'dev_db'
+        if model._meta.app_label == 'panda_dev':
+            return 'panda_dev'
         return None
 
     def db_for_write(self, model, **hints):
+        if model._meta.app_label == 'panda_dev':
+            return 'panda_dev'
         if model._meta.app_label == 'prodtask':
             return 'deft'
         if model._meta.app_label == 'dev':

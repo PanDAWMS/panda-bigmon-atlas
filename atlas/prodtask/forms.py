@@ -10,7 +10,8 @@ from django.forms import DecimalField
 from django.forms import Form
 import json
 from django.forms.extras.widgets import SelectDateWidget
-from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction
+from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
+    RetryErrors, RetryAction
 from django.forms.widgets import TextInput, SplitDateTimeWidget
 from django.forms import widgets
 
@@ -190,8 +191,22 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
 
 
 
-
-
+class RetryErrorsForm(ModelForm):
+    id = DecimalField(widget=forms.HiddenInput,required=False)
+    error_source = CharField(widget=Textarea, required=True)
+    error_code = DecimalField(required=False)
+    retry_action = ModelChoiceField(queryset=RetryAction.objects.all(),required=True)
+    parameters = CharField(widget=Textarea, required=False)
+    release = CharField(required=False)
+    work_queue = DecimalField(required=False)
+    description = CharField(widget=Textarea, required=False)
+    expiration_date = DateTimeField(widget = TextInput(attrs=
+                                {
+                                    'class':'datepicker'
+                                }),required=False)
+    active = CharField(required=True, widget=forms.Select(choices=[(x,x) for x in ['Y','N']]))
+    class Meta:
+        model = RetryErrors
 
 class MCPatternForm(ModelForm):
 
@@ -275,6 +290,9 @@ class StepExecutionForm(ModelForm):
 class ProductionTaskForm(ModelForm):
     class Meta:
         model = ProductionTask
+
+
+
 
 
 class ProductionTaskCreateCloneForm(ModelForm):

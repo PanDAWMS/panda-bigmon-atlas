@@ -300,6 +300,67 @@ class InputRequestList(models.Model):
         #db_table = u'T_INPUT_DATASET'
         db_table = u'T_INPUT_DATASET'
 
+
+class RetryAction(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='ID', primary_key=True)
+    action_name = models.CharField(max_length=50, db_column='NAME')
+    description = models.CharField(max_length=250, db_column='DESCRIPTION')
+    active = models.CharField(max_length=1, db_column='ACTIVE')
+
+    @property
+    def is_active(self):
+        return self.active == 'Y'
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    def __str__(self):
+        return "%i" % (self.id)
+    class Meta:
+        app_label = 'panda_dev'
+        #db_table = u'T_INPUT_DATASET'
+        db_table = u"RETRYACTIONS"
+
+#   ID NUMBER(10, 0) NOT NULL
+# , ERRORSOURCE VARCHAR2(256 BYTE) NOT NULL
+# , ERRORCODE NUMBER(10, 0) NOT NULL
+# , RETRYACTION_FK NUMBER(10, 0) NOT NULL
+# , PARAMETERS VARCHAR2(256 BYTE)
+# , ARCHITECTURE VARCHAR2(256 BYTE)
+# , RELEASE VARCHAR2(64 BYTE)
+# , WORKQUEUE_ID NUMBER(5, 0)
+# , DESCRIPTION VARCHAR2(250 BYTE)
+# , EXPIRATION_DATE TIMESTAMP(6)
+# , ACTIVE CHAR(1 BYTE) DEFAULT 'Y' NOT NULL
+
+
+class RetryErrors(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='ID', primary_key=True)
+    error_source = models.CharField(max_length=256, db_column='ERRORSOURCE',null=False)
+    error_code = models.DecimalField(decimal_places=0, max_digits=10, db_column='ERRORCODE', null=True)
+    retry_action = models.ForeignKey(RetryAction,db_column='RETRYACTION_FK')
+    parameters = models.CharField(max_length=256, db_column='PARAMETERS')
+    release = models.CharField(max_length=64, db_column='RELEASE')
+    work_queue = models.DecimalField(decimal_places=0, max_digits=5, db_column='WORKQUEUE_ID')
+    description = models.CharField(max_length=250, db_column='DESCRIPTION')
+    expiration_date = models.DateTimeField(db_column='EXPIRATION_DATE', null=True)
+    active = models.CharField(max_length=1, db_column='ACTIVE', null=True)
+
+    @property
+    def is_active(self):
+        return self.active == 'Y'
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('panda_dev',u'ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
+
+        super(RetryErrors, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'panda_dev'
+        #db_table = u'T_INPUT_DATASET'
+        db_table = u"RETRYERRORS"
+
 class StepExecution(models.Model):
     STEPS = ['Evgen',
              'Simul',

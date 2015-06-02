@@ -88,6 +88,10 @@ urlpatterns = patterns('',
 
     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
 
+    url(r'^retry_errors_list/', 'atlas.prodtask.retryerros.retry_errors_list', name='retry_errors_list'),
+    url(r'^retry_errors_edit/(?P<retry_errors_id>\d+)/$', 'atlas.prodtask.retryerros.retry_errors_edit', name='retry_errors_edit'),
+    url(r'^retry_errors_clone/(?P<retry_errors_id>\d+)/$', 'atlas.prodtask.retryerros.retry_errors_clone', name='retry_errors_clone'),
+    url(r'^retry_errors_create/$', 'atlas.prodtask.retryerros.retry_errors_create', name='retry_errors_create'),
     url(r'^tag_info/(?P<tag_name>\w+)/$', 'atlas.prodtask.step_manage_views.tag_info', name='tag_info'),
     url(r'^get_tag_formats/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_tag_formats', name='get_tag_formats'),
     url(r'^project_mode_from_tag/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.step_params_from_tag', name='project_mode_from_tag'),

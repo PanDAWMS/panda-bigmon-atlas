@@ -60,7 +60,7 @@ def hlt_form_prepare_request(request):
 
 def request_status_update(request_from,request_to):
         requests = TRequest.objects.filter(reqid__gte=request_from,reqid__lte=request_to)
-        result_dict = {'executing':[],'in progress':[],'done':[],'finished':[]}
+        result_dict = {'executing':[],'processed':[],'done':[],'finished':[]}
 
         for req in requests:
             steps_with_tasks = []
@@ -80,30 +80,30 @@ def request_status_update(request_from,request_to):
                 if task.status in ['done']:
                     is_done_exist = True
                 steps_with_tasks.append(task.step_id)
-            steps = StepExecution.objects.filter(request=req)
-            for step in steps:
-                if step.id not in steps_with_tasks:
-                    if not step.slice.is_hide:
-                        is_run_exist = True
-                        break
+            # steps = StepExecution.objects.filter(request=req)
+            # for step in steps:
+            #      if step.id not in steps_with_tasks:
+            #          if not step.slice.is_hide:
+            #              is_run_exist = True
+            #              break
             if is_run_exist and not(is_fail_exist or is_finished_exist or is_done_exist):
-                result_dict['executing'].append(req)
+                result_dict['processed'].append(req)
             elif is_run_exist and (is_fail_exist or is_finished_exist or is_done_exist):
-                result_dict['in progress'].append(req)
+                result_dict['processed'].append(req)
             elif (not is_run_exist) and (is_fail_exist or is_finished_exist):
                 result_dict['finished'].append(req)
             elif is_done_exist and not(is_run_exist or is_fail_exist or is_finished_exist):
                 result_dict['finished'].append(req)
         for status,requests in result_dict.items():
             for req in requests:
-                    print req.reqid,status
-                    if req.cstatus != status and req.cstatus != 'test':
+                    #print req.reqid,status
+                    if req.cstatus != status and req.cstatus == 'processed':
                         print req.reqid,status
-                        # req.cstatus = status
-                        # req.save()
-                        # request_status = RequestStatus(request=req,comment='automatic update',owner='default',
-                        #                                 status=status)
-                        # request_status.save_with_current_time()
+                        req.cstatus = status
+                        req.save()
+                        request_status = RequestStatus(request=req,comment='automatic update',owner='default',
+                                                         status=status)
+                        request_status.save_with_current_time()
 
 
 def clean_old_request(do_action=False):
