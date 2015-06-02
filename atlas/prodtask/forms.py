@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.admin.widgets import AdminSplitDateTime
+from django.db.models import Q
 from django.forms import ModelForm, ModelChoiceField, MultiValueField, NullBooleanField, BooleanField, DateField, \
     DateTimeInput, DateTimeField
 from django.forms import CharField
@@ -43,7 +44,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
     cc = CharField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=True)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
-    project = ModelChoiceField(queryset=TProject.objects.all(),required=True)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=True)
     provenance = CharField(required=True)
     phys_group = CharField(required=True, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=True)
@@ -77,7 +78,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="Spreadsheet Link")
     #excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
-    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
     provenance = CharField(widget=forms.HiddenInput, required=False)
@@ -97,7 +98,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
     campaign = CharField(required=False)
@@ -116,7 +117,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS), initial='THLT')
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
@@ -178,7 +179,7 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
     provenance = CharField(widget=forms.HiddenInput, required=False)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
-    project = ModelChoiceField(queryset=TProject.objects.all(),required=False)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS), initial='REPR')
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
