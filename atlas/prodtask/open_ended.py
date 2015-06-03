@@ -109,7 +109,8 @@ def extend_open_ended_request(reqid):
             for step in steps:
                 step.status = 'Approved'
                 step.save()
-    set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
+    if is_extended:
+        set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
     return is_extended
 
 
