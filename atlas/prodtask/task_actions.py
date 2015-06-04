@@ -23,6 +23,7 @@ _deft_actions = {
     'increase_attempt_number': 'increase_attempt_number',
     'abort_unfinished_jobs': 'abort_unfinished_jobs',
     'delete_output' : 'clean_task_carriages',
+    'kill_job' : 'kill_job',
 }
 
 supported_actions = _deft_actions.keys()
@@ -36,7 +37,7 @@ allowed_task_actions = {
     'assigning': [],
     'submitting': [],
     'ready': [],
-    'running': [],
+    'running': ['kill_job'],
     'done': ['obsolete', 'delete_output'],
     'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
     'broken': [],

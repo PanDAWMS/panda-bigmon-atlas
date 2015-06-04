@@ -84,6 +84,17 @@
                     {% endif %}
                     >Outputs</a>
                 </li>
+                {% if task.id %}
+                 <li><a data-options="is_hover:true" id="btn_delete_output"
+                    {% if can_kill_job_task %}
+                        class="small radio button"
+                        data-dropdown="task_kill_job_menu"
+                    {% else %}
+                        class="small radio button disabled"
+                    {% endif %}
+                    >Kill job</a>
+                </li>
+                {% endif %}
         {% if edit_mode %}
                 <li><a class="small radio button secondary" id="_btn_switch_to_view">View&nbsp;mode</a></li>
         {% endif %}
@@ -382,6 +393,33 @@
 
         </div>
 
+        <div id="task_kill_job_menu" class="medium content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+
+
+
+                <div class="row">
+
+                    <div class="small-3 large-3 columns">
+                        <p> <label class="inline"> Kill job №</label> </p>
+                    </div>
+                    <div class="small-6 large-6 columns">
+                        <input type="text" id="kill_job">
+                    </div>
+
+                    <div class="small-3 large-3 columns">
+                        <a class="button postfix" id="btn_do_kill_job">Go</a>
+                    </div>
+                </div>
+
+
+            </div>
+
+         </div>
+
+        </div>
 
     </div>
 
@@ -520,6 +558,8 @@ function doTasksActionSelected(action) {
                 parameters.push(checkboxes[i].value);
             }
           }
+    } else if (action == "kill_job") {
+        parameters = [$("#kill_job").val()];
     }
 
     tasks.sort();
@@ -556,7 +596,8 @@ $(document).ready(function () {
         "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time",
         "increase_attempt": "increase_attempt_number",
         "kill_jobs": "abort_unfinished_jobs",
-        "delete_output": "delete_output"
+        "delete_output": "delete_output",
+        "kill_job": "kill_job",
     };
 
     $.each(button_action_map, function(name, action) {
