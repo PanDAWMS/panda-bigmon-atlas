@@ -10,8 +10,7 @@ DJANGO_SETTINGS_MODULE = '%s.%s' % (split(abspath(dirname(__file__)))[1], 'setti
 # pythonpath dirs
 PYTHONPATH = [
     join(dirname(__file__), pardir),
-    "/data/monitor"
-    #"..//..//bigpandamon-core",
+    "..//..//bigpandamon-core",
 ]
 
 # inject few paths to pythonpath
