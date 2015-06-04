@@ -104,7 +104,7 @@ class TRequest(models.Model):
                                  'VALI',
                                  'UPGR']]
 
-    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT','TIER0']]
+    REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT','TIER0','EVENTINDEX']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
     TERMINATE_STATE = ['test','cancelled']
     reqid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', primary_key=True)
