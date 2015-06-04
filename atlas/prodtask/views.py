@@ -336,7 +336,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
-                                events_per_input_file(index,STEPS,task_config,parent_step)
+                                if still_skipped:
+                                    events_per_input_file(index,STEPS,task_config,parent_step)
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
                             for x in ['input_format','nEventsPerJob','token','merging_tag',
