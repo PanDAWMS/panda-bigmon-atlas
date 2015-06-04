@@ -34,6 +34,8 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
                          'Atlf TAG',
                          "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"]
 
+STRIPPED_FIELDS  = [ "format", "joboptions"]
+
 def get_key_by_url(url):
         response = urllib2.urlopen(url)
         r = response.url
@@ -183,7 +185,10 @@ def translate_excl_to_dict(excel_dict):
             translated_row = {}
             for key in excel_dict[row]:
                 if key < len(TRANSLATE_EXCEL_LIST):
-                    translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
+                    if TRANSLATE_EXCEL_LIST[key] in STRIPPED_FIELDS:
+                        translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key].strip()
+                    else:
+                        translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
 
             if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row)) and ('ds' in translated_row):
                 if translated_row in checked_rows:
