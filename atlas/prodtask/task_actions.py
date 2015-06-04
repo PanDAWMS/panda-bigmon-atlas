@@ -32,11 +32,11 @@ supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 
 # Allowed task actions per status
 allowed_task_actions = {
-    'waiting': ['abort', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number'],
-    'registered': [],
-    'assigning': [],
-    'submitting': [],
-    'ready': [],
+    'waiting': ['abort', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job'],
+    'registered': ['kill_job'],
+    'assigning': ['kill_job'],
+    'submitting': ['kill_job'],
+    'ready': ['kill_job'],
     'running': ['kill_job'],
     'done': ['obsolete', 'delete_output'],
     'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
