@@ -93,22 +93,28 @@ def extend_open_ended_request(reqid):
     slices = list(InputRequestList.objects.filter(request=reqid))
     container_name = slices[0].dataset.name
     datasets = []
-    for slice in slices[1:]:
-        datasets.append(slice.dataset.name)
+    slices_to_extend = [0]
+    for index, slice in enumerate(slices[1:]):
+        if slice.dataset.name == container_name:
+            slices_to_extend.append(index)
+        else:
+            datasets.append(slice.dataset.name)
+
     ddm = DDM()
     datasets_in_container = ddm.dataset_in_container(container_name)
     is_extended = False
     for dataset in datasets_in_container:
         if (dataset not in datasets) and (dataset[dataset.find(':')+1:] not in datasets):
             is_extended = True
-            new_slice_number = clone_slices(reqid,reqid,[0],-1,False)
-            new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
-            new_slice.dataset = fill_dataset(dataset)
-            new_slice.save()
-            steps = StepExecution.objects.filter(request=reqid,slice=new_slice)
-            for step in steps:
-                step.status = 'Approved'
-                step.save()
+            for slice_number in slices_to_extend:
+                new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)
+                new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
+                new_slice.dataset = fill_dataset(dataset)
+                new_slice.save()
+                steps = StepExecution.objects.filter(request=reqid,slice=new_slice)
+                for step in steps:
+                    step.status = 'Approved'
+                    step.save()
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
     return is_extended
