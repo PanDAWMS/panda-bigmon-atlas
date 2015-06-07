@@ -90,13 +90,13 @@ def extend_open_ended_request(reqid):
     True if request is extended
     """
 
-    slices = list(InputRequestList.objects.filter(request=reqid))
+    slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
     container_name = slices[0].dataset.name
     datasets = []
     slices_to_extend = [0]
     for index, slice in enumerate(slices[1:]):
         if slice.dataset.name == container_name:
-            slices_to_extend.append(index)
+            slices_to_extend.append(int(slice.slice))
         else:
             datasets.append(slice.dataset.name)
 
