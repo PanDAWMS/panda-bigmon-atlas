@@ -1352,7 +1352,7 @@ def reprocessing_request_create(request):
 def eventindex_request_create(request):
     return request_clone_or_create(request, None, 'Create EventIndex Request', 'prodtask:eventindex_request_create',
                                    TRequestEventIndexCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   eventindex_form_prefill,{'nEventsPerJob':'1000','maxAttempt':'15','priority':'880','maxFailure':'5'})
+                                   eventindex_form_prefill,{'nFilesPerJob':'50','maxAttempt':'15','priority':'880','maxFailure':'5'})
 
 @csrf_protect
 def do_mc_management_approve(request, reqid):
