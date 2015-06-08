@@ -20,7 +20,7 @@ from ..prodtask.ddm_api import find_dataset_events
 import atlas.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
-    TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm
+    TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
     ProductionTask
 from .models import MCPriority
@@ -864,6 +864,90 @@ def reprocessing_form_prefill(form_data, request):
     return spreadsheet_dict, eroor_message
 
 
+def eventindex_form_prefill(form_data, request):
+    spreadsheet_dict = []
+    output_dict = {}
+    error_message = ''
+
+    try:
+        if form_data.get('excellink'):
+            _logger.debug('Try to read data from %s' % form_data.get('excellink'))
+            file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
+            with open(file_name) as open_file:
+                file_obj = open_file.read().split('\n')
+        elif form_data.get('excelfile'):
+            file_obj = request.FILES['excelfile'].read().split('\n')
+            _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
+        elif form_data.get('hidden_json_slices'):
+            spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
+        if not spreadsheet_dict:
+            conf_parser = ConfigParser()
+            output_dict = conf_parser.parse_config(file_obj,['formats'])
+
+
+    except Exception, e:
+        _logger.error('Problem with data gathering %s' % e)
+        eroor_message = str(e)
+        return {},eroor_message
+    # Fill default values
+    form_data['request_type'] = 'EVENTINDEX'
+    if 'group' in output_dict:
+        form_data['phys_group'] = output_dict['group'][0].replace('AP_', '')
+    if 'comment' in output_dict:
+        form_data['description'] = output_dict['comment'][0]
+    if 'owner' in output_dict:
+        form_data['manager'] = output_dict['owner'][0].split("@")[0]
+    else:
+        try:
+            form_data['manager'] = request.user.username
+        except:
+            pass
+    if 'project' in output_dict:
+        if not form_data['campaign']:
+            form_data['campaign'] = output_dict['project'][0]
+    if 'project' in output_dict:
+        form_data['project'] = output_dict['project'][0]
+    if not form_data.get('cstatus'):
+        form_data['cstatus'] = 'waiting'
+    if not form_data.get('energy_gev'):
+        form_data['energy_gev'] = 8000
+    if not form_data.get('provenance'):
+        form_data['provenance'] = 'AP'
+    if not form_data.get('phys_group'):
+        form_data['phys_group'] = 'VALI'
+    task_config = {'maxAttempt':20,'maxFailure':5}
+    if 'events_per_job' in output_dict:
+        nEventsPerJob = output_dict['events_per_job'][0]
+        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+    if 'project_mode' in output_dict:
+        project_mode = output_dict['project_mode'][0]
+        task_config.update({'project_mode':project_mode})
+    tag_tree = []
+
+    if 'ds' in output_dict:
+        for slice_index, ds in enumerate(output_dict['ds']):
+            st_sexec_list = []
+            irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
+                       input_data=output_dict.get('joboptions', [''])[0],
+                       project_mode=output_dict.get('project_mode', [''])[0],
+                       priority=int(output_dict.get('priority', [0])[0]),
+                       input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+            for tag_order, (tag_name, formats, tag_parent) in tag_tree:
+                step_name = 'Reco'
+                sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                             input_events=int(output_dict.get('total_num_genev', [-1])[0]))
+                st_sexec_list.append({'step_name': step_name, 'tag': tag_name, 'step_exec': sexec,
+                                      'memory': output_dict.get('ram', [None])[0],
+                                      'formats': formats,
+                                      'task_config':task_config,'step_order':tag_order,'step_parent':tag_parent})
+            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    eroor_message = ''
+    if not spreadsheet_dict:
+        eroor_message = 'No "ds" data founnd in file.'
+    _logger.debug('Gathered data: %s' % spreadsheet_dict)
+    return spreadsheet_dict, eroor_message
+
+
 def string_to_tag_tree(input_string):
         tag_tree_list = []
         input_string = input_string.replace('\n','')
@@ -1263,6 +1347,12 @@ def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
                                    reprocessing_form_prefill,{'ram':'3800','nEventsPerJob':'1000','maxAttempt':'25','priority':'880','maxFailure':'15'})
+
+@login_required(login_url='/prodtask/login/')
+def eventindex_request_create(request):
+    return request_clone_or_create(request, None, 'Create EventIndex Request', 'prodtask:eventindex_request_create',
+                                   TRequestEventIndexCreateCloneForm, TRequestCreateCloneConfirmation,
+                                   eventindex_form_prefill,{'nEventsPerJob':'1000','maxAttempt':'15','priority':'880','maxFailure':'5'})
 
 @csrf_protect
 def do_mc_management_approve(request, reqid):

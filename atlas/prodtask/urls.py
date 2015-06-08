@@ -39,6 +39,8 @@ urlpatterns = patterns('',
     url(r'^find_datasets_by_pattern/$',     'atlas.prodtask.request_views.find_datasets_by_pattern',  name='find_datasets_by_pattern'),
 
     url(r'^dpd_request_create/$',               'atlas.prodtask.request_views.dpd_request_create',  name='dpd_request_create'),
+
+    url(r'^eventindex_request_create/$',               'atlas.prodtask.request_views.eventindex_request_create',  name='eventindex_request_create'),
     url(r'^reprocessing_request_create/$',               'atlas.prodtask.request_views.reprocessing_request_create',
         name='reprocessing_request_create'),
     url(r'^hlt_request_create/$',               'atlas.prodtask.request_views.hlt_request_create',

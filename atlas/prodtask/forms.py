@@ -190,6 +190,22 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
         model = TRequest
         exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
 
+class TRequestEventIndexCreateCloneForm(TRequestCreateCloneConfirmation):
+    excellink = CharField(required=False, label="First step LIST link",widget=forms.HiddenInput)
+    excelfile = FileField(required=False, label="First step LIST file",widget=forms.HiddenInput)
+    provenance = CharField(widget=forms.HiddenInput, required=False)
+    cstatus = CharField(widget=forms.HiddenInput, required=False)
+    request_type = CharField(widget=forms.HiddenInput, required=False)
+    project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS), initial='VALI')
+    campaign = CharField(required=False)
+    hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
+    description = CharField(label='Short description', widget=Textarea, required=False)
+    need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
+
+    class Meta:
+        model = TRequest
+        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
 
 
 class RetryErrorsForm(ModelForm):

@@ -36,26 +36,42 @@ def make_open_ended(request,reqid):
         # check that production request is not open ended
         try:
             if OpenEndedRequest.objects.filter(request=reqid).exists():
-                return  HttpResponse(json.dumps({'success': False,'message':'Already open ended'}), content_type='application/json')
+                if OpenEndedRequest.objects.get(request=reqid).status == 'open':
+                    return  HttpResponse(json.dumps({'success': False,'message':'Already open ended'}), content_type='application/json')
             #Make open ended from slice 0
             slices = list(InputRequestList.objects.filter(request=reqid))
             if not slices:
                 HttpResponse(json.dumps({'success': False,'message':'No input'}), content_type='application/json')
 
             first_slice = slices[0]
-
-            # Skip all steps in zero slice
-            steps = StepExecution.objects.filter(request=reqid,slice=first_slice)
-            for step in steps:
-                step.status = 'Skipped'
-                step.save()
-
+            old_name =  slices[0].dataset.name
+            new_name = old_name
+            if old_name.find(':') == -1:
+                new_name = old_name[:old_name.find('.')]+':'+old_name
+            if new_name[-1:] != '/':
+                new_name = new_name + '/'
+            new_dataset = None
+            if old_name != new_name:
+                new_dataset = fill_dataset(new_name)
             #Register open ended request
+
+            for slice in slices:
+                if slice.dataset.name == old_name:
+                    if new_dataset:
+                        slice.dataset = new_dataset
+                        slice.save()
+                    # Skip all steps in zero slice
+                    steps = StepExecution.objects.filter(request=reqid,slice=slice)
+                    for step in steps:
+                        step.status = 'Skipped'
+                        step.save()
             open_ended_request = OpenEndedRequest()
             open_ended_request.request = TRequest.objects.get(reqid=reqid)
-            open_ended_request.container = slices[0].dataset.name
+            open_ended_request.container = new_name
             open_ended_request.status = 'open'
             open_ended_request.save()
+
+
         except Exception,e:
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
         return  HttpResponse(json.dumps({'success':True}), content_type='application/json')
