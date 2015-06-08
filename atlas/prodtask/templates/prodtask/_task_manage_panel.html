@@ -30,6 +30,7 @@
                     {% endif %}
                     >Finish</a>
                 </li>
+                {% comment %}
                 <li><a data-options="is_hover:true" id="btn_kill_jobs"
                     {% if can_finish_task or not task.id %}
                         data-dropdown="task_kill_jobs_menu"
@@ -39,6 +40,7 @@
                     {% endif %}
                     >Kill jobs</a>
                 </li>
+                {% endcomment %}
                 <li><a data-options="is_hover:true" id="btn_retry"
                     {% if can_retry_task or not task.id %}
                         data-dropdown="task_retry_menu"
@@ -57,6 +59,7 @@
                     {% endif %}
                     >Reassign</a>
                 </li>
+                {% comment %}
                 <li><a data-options="is_hover:true" id="btn_obsolete"
                     {% if can_obsolete_task or not task.id %}
                         data-dropdown="task_obsolete_menu"
@@ -66,6 +69,7 @@
                     {% endif %}
                     >Obsolete</a>
                 </li>
+                {% endcomment %}
                 <li><a data-options="is_hover:true" id="btn_change_parameters"
                     {% if can_change_priority_task or can_change_parameters_task or not task.id %}
                         class="small radio button"
@@ -76,25 +80,24 @@
                     >Parameters</a>
                 </li>
                 <li><a data-options="is_hover:true" id="btn_delete_output"
-                    {% if can_delete_output_task or not task.id %}
+                    {% if can_delete_output_task or can_obsolete_task or not task.id %}
                         class="small radio button"
-                        data-dropdown="task_delete_output_menu"
+                        data-dropdown="task_obsolete_menu"
                     {% else %}
                         class="small radio button disabled"
                     {% endif %}
-                    >Outputs</a>
+                    >Obsolete</a>
                 </li>
-                {% if task.id %}
-                 <li><a data-options="is_hover:true" id="btn_delete_output"
-                    {% if can_kill_job_task %}
+                <li><a data-options="is_hover:true" id="btn_kill_job"
+                    {% if can_finish_task or not task.id %}
                         class="small radio button"
-                        data-dropdown="task_kill_job_menu"
+                        data-dropdown="task_kill_jobs_menu"
                     {% else %}
                         class="small radio button disabled"
                     {% endif %}
-                    >Kill job</a>
+                    >Kill jobs</a>
                 </li>
-                {% endif %}
+
         {% if edit_mode %}
                 <li><a class="small radio button secondary" id="_btn_switch_to_view">View&nbsp;mode</a></li>
         {% endif %}
@@ -156,7 +159,7 @@
                 </div>
             </div>
         </div>
-
+        {% comment %}
         <div id="task_kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
@@ -172,7 +175,7 @@
                 </div>
             </div>
         </div>
-
+        {% endcomment %}
         <div id="task_retry_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
@@ -188,7 +191,7 @@
                 </div>
             </div>
         </div>
-
+        {% comment %}
         <div id="task_obsolete_menu" class="small content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns">
                 <div class="row">
@@ -210,7 +213,7 @@
                 </div>
             </div>
         </div>
-
+        {% endcomment %}
         <div id="task_change_parameters_menu" class="medium content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns panel" id="priority_panel">
                 <div class="row">
@@ -343,19 +346,31 @@
 
         </div>
 
-        <div id="task_delete_output_menu" class="medium content f-dropdown" data-dropdown-content>
+        <div id="task_obsolete_menu" class="medium content f-dropdown" data-dropdown-content>
          <div class="small-12 large-12 columns bodyfont-color">
 
+            <div class="small-12 large-12 columns panel" id="all_outputs_panel">
+
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Obsoletion of done/finished tasks</label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_obsolete">Go</a>
+                            </div>
+                </div>
+            </div>
+
             <div class="small-12 large-12 columns panel" id="outputs_panel">
-
-
 
                 <div class="row">
 
 
+
                       {% if  not outputs %}
                             <div class="small-3 large-3 columns">
-                                <p> <label class="inline"> Output format</label> </p>
+
+                                <p> <label class="inline"> Obsolete output formats</label> </p>
                             </div>
                             <div class="small-6 large-6 columns">
                                 <input type="text" id="output">
@@ -364,6 +379,7 @@
                       {% else %}
                             <div class="small-6 large-6 columns">
                       <ul class="list-group checked-list-box" >
+
                             {% for entry in outputs %}
                             <div class="checkbox">
                                 <label><input type="checkbox" name="outputs" value="{{ entry }}">{{ entry }}</label>
@@ -385,7 +401,7 @@
                     <div class="small-12 large-12 columns text-center bodyfont-color">
                         <label>
                             Tasks selected:&nbsp;
-                            <span id="selected_count_delete_output">0</span>
+                            <span id="selected_count_obsolete">0</span>
                         </label>
                     </div>
                 </div>
@@ -393,8 +409,20 @@
 
         </div>
 
-        <div id="task_kill_job_menu" class="medium content f-dropdown" data-dropdown-content>
+        <div id="task_kill_jobs_menu" class="medium content f-dropdown" data-dropdown-content>
          <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Kill jobs</label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_kill_jobs">Go</a>
+                            </div>
+                </div>
+
+            </div>
 
             <div class="small-12 large-12 columns panel" id="kill_job_panel">
 
@@ -418,6 +446,15 @@
             </div>
 
          </div>
+
+               <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                </div>
 
         </div>
 
