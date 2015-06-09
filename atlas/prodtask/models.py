@@ -93,6 +93,7 @@ class TRequest(models.Model):
                                  'PHYS',
                                  'REPR',
                                  'SIMU',
+                                 'SOFT',
                                  'STDM',
                                  'SUSY',
                                  'TAUP',
