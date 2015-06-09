@@ -197,7 +197,7 @@ class TRequestEventIndexCreateCloneForm(TRequestCreateCloneConfirmation):
     cstatus = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
-    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS), initial='VALI')
+    phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS), initial='SOFT')
     campaign = CharField(required=False)
     hidden_json_slices = CharField(widget=forms.HiddenInput, required=False, label="Will be hidden")
     description = CharField(label='Short description', widget=Textarea, required=False)
