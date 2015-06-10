@@ -70,7 +70,7 @@ def make_open_ended(request,reqid):
             open_ended_request.container = new_name
             open_ended_request.status = 'open'
             open_ended_request.save()
-
+            extend_open_ended_request(int(reqid))
 
         except Exception,e:
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
