@@ -76,7 +76,6 @@ def do_action(owner, task_id, action, *args):
         #_deft_client.clean_task_carriages(owner,task_id,args)
         result.update(_do_deft_action(owner, task_id, action, args))
         return result
-
     if action in _deft_actions:
         result.update(_do_deft_action(owner, task_id, action, *args))
     elif action == 'increase_priority':
