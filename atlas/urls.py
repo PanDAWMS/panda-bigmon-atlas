@@ -18,33 +18,34 @@ common_patterns = patterns('',
     url('^robots\.txt$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 
     ### the front page
-#obsoleted.2014-05-01.jschovan#    url(r'^$', atlas_common_views.index, name='index'),
-    url(r'^$', include('core.pandajob.urls_pandajob_mainpage')),
+#obsoleted.2014-05-01.jschovan
+    url(r'^$', atlas_common_views.index, name='index'),
+    #url(r'^$',  include('atlas.prodtask.urls', namespace='prodtask'),name='index'),
 
     ### Applications
-    url(r'^htcondorjobs', include('core.htcondor.urls')),
+    #url(r'^htcondorjobs', include('core.htcondor.urls')),
 #obsoleted.2014-05-01.jschovan#    url(r'^job', include('core.pandajob.urls')),
-    url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
-    url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
-    url(r'^dash/', include('core.pandajob.urls_pandajob_dash')),
+    #url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
+    #url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
+    #url(r'^dash/', include('core.pandajob.urls_pandajob_dash')),
 #    url(r'^support/', include('core.pandajob.urls_pandajob_support')),
 
 #obsoleted.2014-05-01.jschovan#    url(r'^u', include('core.pandajob.urls_users', namespace='user')),
-    url(r'^users/', include('core.pandajob.urls_pandajob_users')),
-    url(r'^user/', include('core.pandajob.urls_pandajob_singleuser')),
+    #url(r'^users/', include('core.pandajob.urls_pandajob_users')),
+    #url(r'^user/', include('core.pandajob.urls_pandajob_singleuser')),
 
-    url(r'^tasks/', include('core.pandajob.urls_pandajob_tasks')),
-    url(r'^task/', include('core.pandajob.urls_pandajob_singletask')),
+    #url(r'^tasks/', include('core.pandajob.urls_pandajob_tasks')),
+    #url(r'^task/', include('core.pandajob.urls_pandajob_singletask')),
 
-    url(r'^sites/', include('core.pandajob.urls_pandajob_sites')),
-    url(r'^site/', include('core.pandajob.urls_pandajob_singlesite')),
+    #url(r'^sites/', include('core.pandajob.urls_pandajob_sites')),
+    #url(r'^site/', include('core.pandajob.urls_pandajob_singlesite')),
 
-    url(r'^resource', include('core.resource.urls')),
+    #url(r'^resource', include('core.resource.urls')),
 ###     url(r'^api-auth', include('core.api.urls')),
 
 
     ### UI elements
-    url(r'^api/datatables', include('core.table.urls')),
+    #url(r'^api/datatables', include('core.table.urls')),
 #    url(r'^graphics/', include('core.graphics.urls')),
     url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),

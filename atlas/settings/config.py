@@ -1,4 +1,3 @@
-
 from os.path import dirname, join
 
 import core
@@ -16,6 +15,7 @@ ALLOWED_HOSTS = [
     ### pandawms.org
     '.pandawms.org',  # Allow domain and subdomains
     '.pandawms.org.',  # Also allow FQDN and subdomains
+    '127.0.0.1'
 ]
 
 

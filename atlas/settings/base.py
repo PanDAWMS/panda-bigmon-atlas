@@ -1,9 +1,8 @@
-
 from os.path import dirname, join
 
 import core
 from core import common
-from core.common.settings.base import COMMON_INSTALLED_APPS
+from core.settings.base import COMMON_INSTALLED_APPS
 import atlas
 import atlas.todoview as atlas_todoview
 
@@ -34,22 +33,20 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
 
     ### BigPanDAmon core
     'core.common',
-    'core.table',
 #    'core.graphics', #NOT-IMPLEMENTED
     'core.pandajob',
     'core.resource',
 #    'core.htcondor', #NOT-NEEDED-IN-ATLAS
-    'core.datatables',
+    'atlas.datatables',
 #    'core.gspread', #NOT-NEEDED-IN-ATLAS?
     'atlas.prodtask',
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',
-    'atlas.getdatasets', 
+    'atlas.getdatasets',
     'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS
-JS_I18N_APPS_EXCLUDE = common.settings.base.JS_I18N_APPS_EXCLUDE + ('django_tables2',)
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
@@ -64,5 +61,4 @@ SITE_ID = 2
 
 # email
 EMAIL_SUBJECT_PREFIX = 'bigpandamon-atlas: '
-
 

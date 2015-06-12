@@ -3,7 +3,7 @@
 """
 
 from .local import LOG_ROOT
-from core.common.settings.logconfig import LOGGING, LOG_SIZE, appendLogger
+from core.settings.logconfig import LOGGING, LOG_SIZE, appendLogger
 
 # init logger
 # A sample logging configuration. The only tangible logging
@@ -33,5 +33,3 @@ appendLogger('postproduction')
 ### ATLAS BigPanDAmon logging
 ### todoview
 appendLogger('todoview')
-
-

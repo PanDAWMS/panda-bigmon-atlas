@@ -8,21 +8,19 @@
 """
 
 # Load base configuration for the whole application
-from core.common.settings.base import *
+from core.settings.base import *
 from atlas.settings.base import *
 
 # Load dev env config
-from core.common.settings.config import *
+from core.settings.config import *
 from atlas.settings.config import *
 
 # Load any settings for local development
 try:
-    from core.common.settings.local import *
+    from core.settings.local import *
 except ImportError:
     pass
 try:
     from atlas.settings.local import *
 except ImportError:
     pass
-
-
