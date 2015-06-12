@@ -24,11 +24,13 @@ _deft_actions = {
     'abort_unfinished_jobs': 'abort_unfinished_jobs',
     'delete_output' : 'clean_task_carriages',
     'kill_job' : 'kill_job',
+    'obsolete' : 'obsolete_task',
 }
 
 supported_actions = _deft_actions.keys()
 # Non-DEFT actions here
-supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
+#supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
+supported_actions.extend(['increase_priority', 'decrease_priority'])
 
 # Allowed task actions per status
 allowed_task_actions = {
@@ -74,14 +76,14 @@ def do_action(owner, task_id, action, *args):
         #_deft_client.clean_task_carriages(owner,task_id,args)
         result.update(_do_deft_action(owner, task_id, action, args))
         return result
-    elif action in _deft_actions:
+    if action in _deft_actions:
         result.update(_do_deft_action(owner, task_id, action, *args))
     elif action == 'increase_priority':
         result.update(increase_task_priority(owner, task_id, *args))
     elif action == 'decrease_priority':
         result.update(decrease_task_priority(owner, task_id, *args))
-    elif action == 'obsolete':
-        result.update(obsolete_task(owner, task_id))
+    #elif action == 'obsolete':
+    #    result.update(obsolete_task(owner, task_id))
 
     return result
 
