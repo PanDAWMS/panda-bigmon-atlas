@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 
@@ -6,6 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
 from copy import deepcopy
+import pytz
 from atlas.prodtask.ddm_api import DDM
 from ..prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
@@ -76,6 +78,19 @@ def make_open_ended(request,reqid):
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
         return  HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
+
+@csrf_protect
+def push_check(request,reqid):
+    if request.method == 'GET':
+        try:
+            if OpenEndedRequest.objects.filter(request=reqid).exists():
+                open_ended_request = OpenEndedRequest.objects.get(request=reqid)
+                if open_ended_request.status=='open':
+                    if (datetime.utcnow().replace(tzinfo=pytz.utc) - open_ended_request.last_update).seconds > 600:
+                        extend_open_ended_request(reqid)
+                        open_ended_request.save_last_update()
+        except Exception,e:
+            return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
 
 
 def check_open_ended():
