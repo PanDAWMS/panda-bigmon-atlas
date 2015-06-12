@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
-import core.datatables as datatables
+import atlas.datatables as datatables
 
 from .models import ProductionTask, TRequest, StepExecution
 

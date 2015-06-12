@@ -69,11 +69,6 @@
           <ul class="dropdown">
             <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
             <li class="divider"></li>
-            <li><a href="{% url 'prodtask:task_create' %}">Create Task</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'taskList' %}">All</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
           </ul>
 </li>
     <li class="has-dropdown">
@@ -99,9 +94,7 @@
           </ul>
 </li>
 
-<li>
-          <a href="{% url 'siteList' %}">Sites</a>
-</li>
+
 
 <li>
           <a href="http://dashb-atlas-data.cern.ch/ddm2/" target="_blank">DDMDash</a>

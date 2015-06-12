@@ -5,7 +5,7 @@ from django.template.loader import select_template
 
 
 # Django-DataTables
-from core.datatables.utils import lookupattr
+from atlas.datatables.utils import lookupattr
 
 register = template.Library()
 register.filter('lookupattr', lookupattr)

@@ -22,7 +22,7 @@ from ..prodtask.ddm_api import find_dataset_events
 
 
 
-import core.datatables as datatables
+import atlas.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
