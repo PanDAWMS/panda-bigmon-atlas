@@ -22,7 +22,7 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm
 from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
-    ProductionTask
+    ProductionTask, OpenEndedRequest
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
@@ -1709,6 +1709,20 @@ class Parameters(datatables.Parametrized):
     status = datatables.Parameter(label='Status', model_field='cstatus', get_Q=_status_Q)
     description = datatables.Parameter(label='Description')
     provenance = datatables.Parameter(label='Provenance')
+
+    def _openended_Q(value):
+        if value == 'Open ended':
+
+            req_ids=[]
+            open_ended_requests = OpenEndedRequest.objects.filter(status='open')
+
+            for x in open_ended_requests:
+                req_ids.append(int(x.request.reqid))
+
+            return Q(reqid__in = req_ids)
+        return Q()
+
+    open_ended = datatables.Parameter(label='Open ended', model_field='reqid' ,get_Q=_openended_Q)
 
 
 @datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
