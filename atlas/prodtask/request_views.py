@@ -1346,7 +1346,8 @@ def hlt_request_create(request):
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
-                                   reprocessing_form_prefill,{'ram':'3800','nEventsPerJob':'1000','maxAttempt':'25','priority':'880','maxFailure':'15'})
+                                   reprocessing_form_prefill,{'ram':'3800', 'projectmode':'lumiblock=yes;',
+                                                              'nEventsPerJob':'1000','maxAttempt':'25','priority':'880','maxFailure':'15'})
 
 @login_required(login_url='/prodtask/login/')
 def eventindex_request_create(request):
