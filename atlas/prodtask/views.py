@@ -1282,10 +1282,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                             another_chain_step_dict = model_to_dict(another_chain_step)
                                             another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
                                             another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
-                                            if another_chain_step['request'] != int(rid):
+                                            if another_chain_step_dict['request'] != int(rid):
                                                 slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
                                                                                                          ,{}, another_chain_step.slice.slice,
-                                                                                                      True,another_chain_step['request'])
+                                                                                                      True,another_chain_step_dict['request'])
                                             else:
                                                 slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
                                                          ,{}, another_chain_step.slice.slice,
