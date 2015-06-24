@@ -2085,8 +2085,14 @@ var lastChecked = true;
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'foreign' %}
-                        <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
-                            style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a href="#inputList{{ step.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
+                            {% if step.is_another_request %}
+                                <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
+                                style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a target="_blank" href="{% url 'prodtask:input_list_approve' step.slice.request%}#inputList{{ step.slice.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
+
+                            {% else %}
+                                <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
+                                style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a href="#inputList{{ step.slice.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
+                            {% endif %}
                         {% else %}
                         <td class="showFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>

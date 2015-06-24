@@ -996,14 +996,18 @@ def request_table_view(request, rid=None, show_hidden=False):
         return max_level+1
 
 
-    def form_step_obj(step,tasks,input_slice,foreign=False):
+    def form_step_obj(step,tasks,input_slice,foreign=False,another_request=None):
         skipped = 'skipped'
         tag = ''
         slice = ''
+        is_another_request = False
         if step:
             if foreign:
+                if another_request:
+                    is_another_request = True
+                slice={'slice':str(input_slice),'request':another_request}
                 skipped = 'foreign'
-                slice=str(input_slice)
+
             elif (step['status'] =='Skipped')or(step['status']=='NotCheckedSkipped'):
                 skipped = 'skipped'
             else:
@@ -1013,7 +1017,8 @@ def request_table_view(request, rid=None, show_hidden=False):
         if tasks:
             for task in tasks:
                 task['short'] = task['status'][0:8]
-        return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks':tasks, 'slice':slice}
+        return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks':tasks, 'slice':slice,
+                'is_another_request':is_another_request}
 
     def unwrap(pattern_dict):
         return_list = []
@@ -1277,9 +1282,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                             another_chain_step_dict = model_to_dict(another_chain_step)
                                             another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
                                             another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
-                                            slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
-                                                                                                     ,{}, another_chain_step.slice.slice,
-                                                                                                  True)
+                                            if another_chain_step['request'] != rid:
+                                                slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
+                                                                                                         ,{}, another_chain_step.slice.slice,
+                                                                                                      True,another_chain_step['request'])
+                                            else:
+                                                slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
+                                                         ,{}, another_chain_step.slice.slice,
+                                                      True)
                             #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
                             approved = get_approve_status(slice_steps_ordered)
 
@@ -1314,9 +1324,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
                                     another_chain_step = model_to_dict(another_chain_step_obj)
                                     another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
-                                    slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
-                                                                                                  another_chain_step_obj.slice.slice,
-                                                                                                  True)))
+                                    if another_chain_step['request'] != rid:
+                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                                                                                      another_chain_step_obj.slice.slice,
+                                                                                                      True,another_chain_step['request'])))
+                                    else:
+                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                                                                                          another_chain_step_obj.slice.slice,
+                                                                                                          True)))
                                 slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],slice.slice)))
                                 temp_step_list.pop(0)
                             if not slice_steps_list:
@@ -1328,9 +1343,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                         another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[index][0]['step_parent_id'])
                                         another_chain_step = model_to_dict(another_chain_step_obj)
                                         another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
-                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
-                                                                                                      another_chain_step_obj.slice.slice,
-                                                                                                      True)))
+                                        if another_chain_step['request'] != rid:
+                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                                                                                          another_chain_step_obj.slice.slice,
+                                                                                                          True,another_chain_step['request'])))
+                                        else:
+                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                                                                                          another_chain_step_obj.slice.slice,
+                                                                                                          True)))
                                         slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],slice.slice)))
                                         temp_step_list.pop(index)
 

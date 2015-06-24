@@ -59,6 +59,55 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+
+
+def fill_dataset_names(reqid):
+    slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
+    for slice in slices:
+        if not slice.dataset:
+            steps = StepExecution.objects.filter(request=reqid,slice=slice)
+            if steps[0].step_parent.slice.dataset:
+                slice.dataset = steps[0].step_parent.slice.dataset
+                slice.save()
+
+
+def extend_request_by_train(reqid,request_donor,slices):
+            slices_donor = list(InputRequestList.objects.filter(request=request_donor).order_by('slice'))
+            container_name = slices_donor[0].dataset.name
+            slices_to_get_info = [slices_donor[0]]
+            for index, slice_donor in enumerate(slices_donor[1:]):
+                if (slice_donor.dataset.name == container_name) and (not slice_donor.is_hide):
+                    slices_to_get_info.append(slice_donor)
+            for slice in slices:
+                for slice_donor in slices_to_get_info:
+                    new_slice_number = clone_slices(reqid,reqid,[slice],-1,False)
+                    new_slice = InputRequestList.objects.get(request=reqid, slice=new_slice_number)
+                    step = StepExecution.objects.get(request=reqid,slice=new_slice)
+                    step_donor = StepExecution.objects.get(request=request_donor,slice=slice_donor)
+                    step.priority = step_donor.priority
+                    step.step_template = step_donor.step_template
+                    step.task_config = step_donor.task_config
+                    step.save_with_current_time()
+
+@csrf_protect
+def extend_by_train_pattern_slices_in_req(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            request_donor = input_dict['requestDonor']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Extend slices by train: %s' % str(slices)))
+            extend_request_by_train(reqid, request_donor, slices)
+        except Exception,e:
+            pass
+
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
 def reject_steps_in_slice(current_slice):
     step_execs = StepExecution.objects.filter(slice=current_slice)
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
