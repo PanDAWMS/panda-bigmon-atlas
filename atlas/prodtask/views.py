@@ -1282,7 +1282,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                             another_chain_step_dict = model_to_dict(another_chain_step)
                                             another_chain_step_dict.update({'ctag':another_chain_step.step_template.ctag})
                                             another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
-                                            if another_chain_step['request'] != rid:
+                                            if another_chain_step['request'] != int(rid):
                                                 slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
                                                                                                          ,{}, another_chain_step.slice.slice,
                                                                                                       True,another_chain_step['request'])
@@ -1324,7 +1324,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[0][0]['step_parent_id'])
                                     another_chain_step = model_to_dict(another_chain_step_obj)
                                     another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
-                                    if another_chain_step['request'] != rid:
+                                    if another_chain_step['request'] != int(rid):
                                         slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
                                                                                                       another_chain_step_obj.slice.slice,
                                                                                                       True,another_chain_step['request'])))
@@ -1343,7 +1343,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                         another_chain_step_obj = StepExecution.objects.get(id=temp_step_list[index][0]['step_parent_id'])
                                         another_chain_step = model_to_dict(another_chain_step_obj)
                                         another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
-                                        if another_chain_step['request'] != rid:
+                                        if another_chain_step['request'] != int(rid):
                                             slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
                                                                                                           another_chain_step_obj.slice.slice,
                                                                                                           True,another_chain_step['request'])))
