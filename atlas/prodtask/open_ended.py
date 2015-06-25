@@ -126,10 +126,11 @@ def extend_open_ended_request(reqid):
     datasets = []
     slices_to_extend = [0]
     for index, slice in enumerate(slices[1:]):
-        if slice.dataset.name == container_name:
-            slices_to_extend.append(int(slice.slice))
-        else:
-            datasets.append(slice.dataset.name)
+        if not slice.is_hide:
+            if slice.dataset.name == container_name:
+                slices_to_extend.append(int(slice.slice))
+            else:
+                datasets.append(slice.dataset.name)
 
     ddm = DDM()
     datasets_in_container = ddm.dataset_in_container(container_name)
