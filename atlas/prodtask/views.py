@@ -682,16 +682,20 @@ def request_steps_approve_or_save(request, reqid, approve_level):
             removed_input = []
             if ['-1'] == slice_steps.keys():
                 slice_0 = deepcopy(slice_steps['-1'])
-                error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level)
-                approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
-                if (0 not in error_slices) and (approved_steps == 0):
-                    fill_all_slices_from_0_slice(reqid)
+                if req.request_type == 'MC':
+                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level)
                 else:
-                    slice_count = InputRequestList.objects.filter(request=reqid).count()
-                    extended_slice_steps = {}
-                    for i in range(1,slice_count):
-                        extended_slice_steps.update({str(i):deepcopy(slice_0)})
-                    error_slices, no_action_slices = create_steps(extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
+                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level)
+                if req.request_type == 'MC':
+                    approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
+                    if (0 not in error_slices) and (approved_steps == 0):
+                        fill_all_slices_from_0_slice(reqid)
+                    else:
+                        slice_count = InputRequestList.objects.filter(request=reqid).count()
+                        extended_slice_steps = {}
+                        for i in range(1,slice_count):
+                            extended_slice_steps.update({str(i):deepcopy(slice_0)})
+                        error_slices, no_action_slices = create_steps(extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
             else:
                 if '-1' in  slice_steps.keys():
                     del slice_steps['-1']
@@ -1127,7 +1131,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 cloned_slices = []
                 do_all = True
                 do_cloned_and_failed = False
-                if (input_list_count>800) and (cur_request.request_type == 'MC'):
+                if (input_list_count>800) and ((cur_request.request_type == 'MC')or(cur_request.request_type == 'EVENTINDEX')):
 
                     show_as_huge = True
                     do_all = False
@@ -1159,18 +1163,29 @@ def request_table_view(request, rid=None, show_hidden=False):
                     slice_steps_ordered = []
                     input_lists_pre_pattern.input_data = '=> %i slices <=' % input_list_count
                     input_lists_pre_pattern.slice = '-1'
-                    for step_name in StepExecution.STEPS:
-                        if step_name not in steps:
-                            slice_steps_ordered.append(form_step_obj({},{},-1))
-                        else:
-                            step_dict = model_to_dict(steps[step_name])
-                            step_dict.update({'ctag':steps[step_name].step_template.ctag})
-                            step_dict.update({'slice':input_lists_pre_pattern})
-                            slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
-                    approved = (total_steps_count >= input_list_count) and ((approve_level(slice_steps_ordered)*input_list_count)==(approved_steps_count))
-
+                    if (cur_request.request_type == 'MC'):
+                        for step_name in StepExecution.STEPS:
+                            if step_name not in steps:
+                                slice_steps_ordered.append(form_step_obj({},{},-1))
+                            else:
+                                step_dict = model_to_dict(steps[step_name])
+                                step_dict.update({'ctag':steps[step_name].step_template.ctag})
+                                step_dict.update({'slice':input_lists_pre_pattern})
+                                slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
+                    else:
+                        for step in pattern_steps:
+                                step_dict = model_to_dict(step)
+                                step_dict.update({'ctag':step.step_template.ctag})
+                                step_dict.update({'slice':input_lists_pre_pattern})
+                                slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
+                        slice_steps_ordered += [form_step_obj({},{},-1)] * (len(StepExecution.STEPS) - len(pattern_steps))
+                    if (cur_request.request_type == 'MC'):
+                        approved = (total_steps_count >= input_list_count) and ((approve_level(slice_steps_ordered)*input_list_count)==(approved_steps_count))
+                    else:
+                        approved = True
                     slice_dict = model_to_dict(input_lists_pre_pattern)
-                    slice_dict['dataset'] = ''
+                    if (cur_request.request_type == 'MC'):
+                        slice_dict['dataset'] = ''
                     if approved:
                         input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,input_lists_pre_pattern),
                                             False,'',approve_level(slice_steps_ordered),'no'))

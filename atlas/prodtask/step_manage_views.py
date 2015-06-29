@@ -290,6 +290,8 @@ def reject_slices_in_req(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict
+            if slices == ['-1']:
+                slices = ['0']
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))

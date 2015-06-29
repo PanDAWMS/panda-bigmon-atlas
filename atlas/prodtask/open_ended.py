@@ -1,4 +1,5 @@
 import datetime
+from django.db.models import Q
 import json
 import logging
 
@@ -9,7 +10,7 @@ from time import sleep
 from copy import deepcopy
 import pytz
 from atlas.prodtask.ddm_api import DDM
-from ..prodtask.models import RequestStatus
+from ..prodtask.models import RequestStatus, ProductionTask
 from ..prodtask.spdstodb import fill_template
 from ..prodtask.request_views import clone_slices, set_request_status
 from ..prodtask.helper import form_request_log
@@ -109,6 +110,25 @@ def check_open_ended():
             _logger.error('Container extension failed: request:%s %s'%(str(open_production_request.request_id),str(e)))
     return extended_requests
 
+SIMULTANEOUS_TASKS_NUMBER = 300
+
+def do_task_start(reqid):
+    not_approved_steps = list(StepExecution.objects.filter(request=reqid,status='NotChecked'))
+    if len(not_approved_steps) > 0:
+        approved_steps_number = StepExecution.objects.filter(request=reqid,status='Approved').count()
+        finished_tasks = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','obsolete','done','finished']),Q(request=reqid)).count()
+        if (approved_steps_number - finished_tasks) < SIMULTANEOUS_TASKS_NUMBER:
+            task_to_start =  SIMULTANEOUS_TASKS_NUMBER - (approved_steps_number - finished_tasks)
+            if task_to_start > len(not_approved_steps):
+                task_to_start = len(not_approved_steps)
+            for step in not_approved_steps[:task_to_start]:
+                if step.step_parent == step:
+                    step.status = 'Approved'
+                    step.save()
+                else:
+                    if step.step_parent.status ==  'Approved':
+                        step.status = 'Approved'
+                        step.save()
 
 
 
@@ -133,6 +153,10 @@ def extend_open_ended_request(reqid):
                 datasets.append(slice.dataset.name)
 
     ddm = DDM()
+    request = TRequest.objects.get(reqid=reqid)
+    tasks_count_control = False
+    if request.request_type == 'EVENTINDEX':
+        tasks_count_control = True
     datasets_in_container = ddm.dataset_in_container(container_name)
     is_extended = False
     for dataset in datasets_in_container:
@@ -141,12 +165,24 @@ def extend_open_ended_request(reqid):
             for slice_number in slices_to_extend:
                 new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)
                 new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
-                new_slice.dataset = fill_dataset(dataset)
-                new_slice.save()
-                steps = StepExecution.objects.filter(request=reqid,slice=new_slice)
-                for step in steps:
-                    step.status = 'Approved'
-                    step.save()
+                try:
+                    if len(dataset)>150:
+                        dataset = dataset[dataset.find(':')+1:]
+                    new_slice.dataset = fill_dataset(dataset)
+                    new_slice.save()
+                    steps = StepExecution.objects.filter(request=reqid,slice=new_slice)
+                    for step in steps:
+                        if not tasks_count_control:
+                            step.status = 'Approved'
+                        else:
+                            step.status = 'NotChecked'
+                        step.save()
+                except Exception,e:
+                    new_slice.dataset = None
+                    new_slice.is_hide = True
+                    new_slice.save()
+    if tasks_count_control:
+        do_task_start(reqid)
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
     return is_extended
