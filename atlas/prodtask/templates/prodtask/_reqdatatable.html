@@ -1919,16 +1919,23 @@ var lastChecked = true;
 {% endif %}
 <div class="row">
 <div class="large-12">
+{% if not show_as_huge  %}
 {% if hidden_slices > 0 %}
     <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }} and hidden: {{ hidden_slices }}</h6>
 {% else %}
     <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 {% endif %}
+
 {% if approvedCount > 0 %}
 {#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
 {% endif %}
 <h6> With pattern: {{ pattern }}</h6>
-<table style="padding: 0px;margin-bottom:0px;border: hidden">
+{% endif %}
+{% if show_as_huge  %}
+<u><a href="{% url "prodtask:task_table" %}#/?time_period=all&task_type=production&request={{ trequest.reqid}}">All task</a></u>
+
+{% endif %}
+    <table style="padding: 0px;margin-bottom:0px;border: hidden">
 <tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
     <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
 </table>
