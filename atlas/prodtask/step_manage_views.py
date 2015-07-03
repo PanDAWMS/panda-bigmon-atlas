@@ -806,34 +806,56 @@ def create_tier0_split_slice(slice_dict, steps_list):
     :param steps_list: Dict, possinle keys ['ctag','output_formats','memory','priority'] + StepExecution.TASK_CONFIG_PARAMS
     :return: request number if succeed
     """
-    last_request = (TRequest.objects.filter(request_type='TIER0').order_by('-reqid'))[0]
-    if InputRequestList.objects.filter(request=last_request).count() == 0:
-        new_slice_number = 0
-    else:
-        new_slice_number = (InputRequestList.objects.filter(request=last_request).order_by('-slice')[0]).slice + 1
-    new_slice = InputRequestList()
-    if slice_dict.get('dataset',''):
-        new_slice.dataset = fill_dataset(slice_dict['dataset'])
-    else:
-        raise ValueError('Dataset has to be defined')
-    new_slice.input_events = -1
-    new_slice.slice = new_slice_number
-    new_slice.request = last_request
-    new_slice.comment = slice_dict.get('comment','')
-    new_slice.priority = slice_dict.get('priority',950)
-    new_slice.brief = ' '
-    new_slice.save()
+
+    def make_new_slice(slice_dict, last_request):
+
+        if InputRequestList.objects.filter(request=last_request).count() == 0:
+            new_slice_number = 0
+        else:
+            new_slice_number = (InputRequestList.objects.filter(request=last_request).order_by('-slice')[0]).slice + 1
+        new_slice = InputRequestList()
+        if slice_dict.get('dataset',''):
+            new_slice.dataset = fill_dataset(slice_dict['dataset'])
+        else:
+            raise ValueError('Dataset has to be defined')
+        new_slice.input_events = -1
+        new_slice.slice = new_slice_number
+        new_slice.request = last_request
+        new_slice.comment = slice_dict.get('comment','')
+        new_slice.priority = slice_dict.get('priority',950)
+        new_slice.brief = ' '
+        new_slice.save()
+        return new_slice
     #create_steps({new_slice_number:step_list}, last_request.reqid, len(StepExecution.STEP)S*[''], 99)
+    last_request = (TRequest.objects.filter(request_type='TIER0').order_by('-reqid'))[0]
+
     parent = None
+    # dict of slice and step which are correspond to output
+    output_slice_step = {}
+    current_slice = make_new_slice(slice_dict, last_request)
+    # dict of last step for each slice
+    slice_last_step = {}
     for step_dict in steps_list:
         new_step = StepExecution()
         new_step.request = last_request
-        new_step.slice = new_slice
+
         new_step.input_events = -1
         if step_dict.get('ctag',''):
             ctag = step_dict.get('ctag','')
         else:
             raise ValueError('Ctag has to be defined for step')
+        if step_dict.get('input_format',''):
+            if step_dict['input_format'] not in output_slice_step:
+                raise ValueError('no parent step found for %s' % step_dict['input_format'])
+            else:
+                # Check that last step on parent slice is the parent step for this output
+                if slice_last_step[output_slice_step[step_dict['input_format']][0].slice] != output_slice_step[step_dict['input_format']][1]:
+                    # create a new slice and set a parent step
+                    current_slice = make_new_slice(slice_dict,last_request)
+                else:
+                    current_slice = output_slice_step[step_dict['input_format']][0]
+                parent = output_slice_step[step_dict['input_format']][1]
+        new_step.slice = current_slice
         if step_dict.get('output_formats',''):
             output_formats = step_dict.get('output_formats','')
         else:
@@ -853,7 +875,12 @@ def create_tier0_split_slice(slice_dict, steps_list):
         if not parent:
             new_step.step_parent = new_step
             new_step.save()
+        #fill dict of output-slice dict
+        for output_format in output_formats.split('.'):
+                output_slice_step[output_format] = (current_slice,new_step)
         parent = new_step
+
+        slice_last_step[current_slice.slice] = new_step
     last_request.cstatus = 'approved'
     last_request.save()
     request_status = RequestStatus(request=last_request,comment='Request approved by Tier0',owner='tier0',
