@@ -1146,14 +1146,16 @@ def request_table_view(request, rid=None, show_hidden=False):
                         failed_task_list = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','obsolete']),Q(request=cur_request))
                         total_task_dict['red'] = len(failed_task_list)
                         total_task_dict['done'] = ProductionTask.objects.filter(Q(status='done'),Q(request=cur_request)).count()
-                        total_task_dict['finished'] = ProductionTask.objects.filter(Q(status='finished'),Q(request=cur_request)).count()
+                        finished_task_list = ProductionTask.objects.filter(Q(status='finished'),Q(request=cur_request))
+                        total_task_dict['finished'] = len(finished_task_list)
                         total_task_dict['running'] = ProductionTask.objects.filter(Q(status='running'),Q(request=cur_request)).count()
                         total_task_dict['blue'] = total_task_dict['total'] - (total_task_dict['red'] +  total_task_dict['done'] + total_task_dict['finished'] + total_task_dict['running'])
-                    #Find slices with broken slices
-                    if (total_task_dict['red']>0)and(total_task_dict['red']<600):
-                        map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list)
-                        cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
-                        do_cloned_and_failed = True
+                        #Find slices with broken slices
+                        if ((total_task_dict['red']+total_task_dict['finished'])>0)and(total_task_dict['red']<600):
+                            map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list)
+                            map(lambda x: failed_slices.add(x.step.slice.id),finished_task_list)
+                            cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
+                            do_cloned_and_failed = True
                     input_lists_pre_pattern = deepcopy(input_lists_pre[0])
                     total_steps_count = StepExecution.objects.filter(request=rid).count()
                     approved_steps_count = StepExecution.objects.filter(request=rid, status='Approved').count()
