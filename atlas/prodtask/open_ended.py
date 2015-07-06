@@ -114,10 +114,12 @@ SIMULTANEOUS_TASKS_NUMBER = 300
 
 def do_task_start(reqid):
     not_approved_steps = list(StepExecution.objects.filter(request=reqid,status='NotChecked'))
+    is_extended = False
     if len(not_approved_steps) > 0:
         approved_steps_number = StepExecution.objects.filter(request=reqid,status='Approved').count()
         finished_tasks = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','obsolete','done','finished']),Q(request=reqid)).count()
         if (approved_steps_number - finished_tasks) < SIMULTANEOUS_TASKS_NUMBER:
+            is_extended = True
             task_to_start =  SIMULTANEOUS_TASKS_NUMBER - (approved_steps_number - finished_tasks)
             if task_to_start > len(not_approved_steps):
                 task_to_start = len(not_approved_steps)
@@ -129,7 +131,7 @@ def do_task_start(reqid):
                     if step.step_parent.status ==  'Approved':
                         step.status = 'Approved'
                         step.save()
-
+    return is_extended
 
 
 def extend_open_ended_request(reqid):
@@ -182,7 +184,7 @@ def extend_open_ended_request(reqid):
                     new_slice.is_hide = True
                     new_slice.save()
     if tasks_count_control:
-        do_task_start(reqid)
+        is_extended = is_extended or do_task_start(reqid)
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
     return is_extended
