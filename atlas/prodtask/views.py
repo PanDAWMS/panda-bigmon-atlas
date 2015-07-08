@@ -219,6 +219,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
             parent_step = None
             no_action = True
+            status_changed = False
             foreign_step = 0
             if int(steps_status[-1]['foreign_id']) !=0:
                 foreign_step = int(steps_status[-1]['foreign_id'])
@@ -309,13 +310,17 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.step_parent = parent_step
                             else:
                                 step_in_db.step_parent = step_in_db
+                            old_status = step_in_db.status
                             step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+                            if (old_status!=step_in_db.status):
+                                status_changed = True
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
                                 total_events = step_in_db.input_events
                             else:
-                                if step_in_db.input_events==-1:
-                                    step_in_db.input_events = total_events
+                                if (step_in_db.input_events == -1):
+                                    if status_changed:
+                                        step_in_db.input_events = total_events
                                 else:
                                     if not still_skipped:
                                         step_in_db.input_events = -1
