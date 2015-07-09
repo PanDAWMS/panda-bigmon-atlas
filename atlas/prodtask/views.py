@@ -310,10 +310,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.step_parent = parent_step
                             else:
                                 step_in_db.step_parent = step_in_db
-                            old_status = step_in_db.status
-                            step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
-                            if (old_status!=step_in_db.status):
+                            if not similar_status(step_in_db.status,step_value['is_skipped']):
                                 status_changed = True
+                            step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
                                 total_events = step_in_db.input_events
@@ -337,6 +337,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.save_with_current_time()
                             parent_step = step_in_db
                     else:
+                            status_changed = True
                             task_config = {'maxFailure':10,'maxAttempt':30}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
