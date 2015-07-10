@@ -173,6 +173,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
             request_destination = request_source
         else:
             request_destination = TRequest.objects.get(reqid=reqid_destination)
+        #TODO: fix race condition
         new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
         first_new_slice = new_slice_number
         old_new_step = {}
@@ -729,6 +730,8 @@ def dpd_form_prefill(form_data, request):
             form_data['campaign'] = output_dict['project'][0]
     if 'project' in output_dict:
         form_data['project'] = output_dict['project'][0]
+    if 'energy' in output_dict:
+        form_data['energy_gev'] = output_dict['energy'][0]
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
