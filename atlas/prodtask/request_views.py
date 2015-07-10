@@ -735,7 +735,7 @@ def dpd_form_prefill(form_data, request):
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
-        form_data['energy_gev'] = 8000
+        form_data['energy_gev'] = 13000
     if not form_data.get('provenance'):
         form_data['provenance'] = 'GP'
     if not spreadsheet_dict:
