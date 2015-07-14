@@ -670,7 +670,7 @@ def request_steps_approve_or_save(request, reqid, approve_level):
         req = TRequest.objects.get(reqid=reqid)
         owner = request.user.username
         if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
-            if (not request.user.is_superuser) or ('MCCOORD' not in egroup_permissions(req.manager)):
+            if (not request.user.is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
                 error_approve_message = True
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,

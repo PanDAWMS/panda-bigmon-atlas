@@ -1,6 +1,8 @@
 
     <form name="trainLoadForm">
-      <div class="row">
+
+        <div class="row">
+
         <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
         <label>Requester group
          <select name="group" ng-model="editTrainLoad.trainLoad.group" required ng-options="group for group in groups ">
@@ -12,15 +14,22 @@
       </div>
 
       <div class="columns large-3" ng-class="{error: trainLoadForm.output_formats.$invalid && !trainLoadForm.output_formats.$pristine}">
-        <label>Output formats:
-        <input type="text" name="output_formats" ng-model="editTrainLoad.trainLoad.output_formats" required>
-        <span ng-show="trainLoadForm.output_formats.$error.required && !trainLoadForm.output_formats.$pristine" >
-            Required </span>
-        </label>
       </div>
       <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
           <div class="columns large-3"></div>
       </div>
+      </div>
+       <div class="row">
+          <div class="columns large-12">
+          <label>outputs:
+              <div class="row" ng-repeat="slice in parsed_pattern">
+                <div class="columns large-1"><label>{{ slice.slice }}<input type="checkbox" ng-change="change_slice(slice.slice,slice.selected)" ng-model="slice.selected"></label></div>
+                <div class="columns large-1" ng-repeat="output in slice.outputs"><label style="font-size:x-small">{{ output.name }}<input type="checkbox" ng-model="output.selected"></label></div>
+                  <div class="columns large-1">
+              </div>
+
+        </label>
+        </div>
       </div>
         <div class="row">
               <div class="columns large-12">

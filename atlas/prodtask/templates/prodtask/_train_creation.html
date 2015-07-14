@@ -37,23 +37,45 @@
 
 
 <script>
-
+    function prepare_pattern(pattern){
+        var result_pattern = [];
+        //console.log(pattern);
+        for(var i=0;i<pattern.length;i++){
+            var current_slice = {};
+            current_slice['slice']=pattern[i][0];
+            current_slice['selected']=false;
+            current_slice['outputs']=[];
+            for(var j=0;j<pattern[i][1].length;j++){
+                var current_output = {};
+                current_output['name'] =  pattern[i][1][j];
+                current_output['selected']=false;
+                current_slice['outputs'].push(current_output);
+            }
+            result_pattern.push(current_slice);
+        }
+        return result_pattern
+    }
     var groupList = [];
     var currentUser = '{{ request.user.username }}';
     var train_id = '{{ train.id }}';
+    //var pattern_request = prepare_pattern($.evalJSON('{{ train.pattern_output }}'));
     {% for group  in groups %}
-
         groupList.push('{{ group }}');
     {% endfor %}
+    {% autoescape off %}
+    var parsed_pattern_origin = prepare_pattern($.evalJSON('{{ train.outputs }}'));
+    {% endautoescape %}
 
     {% verbatim %}
 
 
 
 
-
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
     var trainServices = angular.module('trainServices', ['ngResource']);
     trainServices.run(run);
+
     run.$inject = ['$http'];
 /**
 * @name run
@@ -86,28 +108,84 @@
         });
       }]);
 
+    function change_pattern(pattern,selected_slices_text){
+        var result_pattern = $.evalJSON($.toJSON(pattern));
+
+        if ((selected_slices_text != undefined)&&(selected_slices_text != '')){
+            var selected_slices = $.evalJSON(selected_slices_text);
+            for(var i=0;i<selected_slices.length;i++){
+                for(var j=0;j<result_pattern.length;j++){
+
+                    if (result_pattern[j].slice == selected_slices[i][0]){
+                        console.log(result_pattern[j].outputs,selected_slices[i][1]);
+                        for(var k=0;k<result_pattern[j].outputs.length;k++){
+                            if($.inArray(result_pattern[j].outputs[k].name,selected_slices[i][1]) != -1){
+                                result_pattern[j].outputs[k].selected = true;
+                                result_pattern[j].selected = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return result_pattern
+    }
+
+
+
+
+
     var trainApp = angular.module('trainApp',['ngRoute','trainServices']);
     trainApp.config(function($resourceProvider) {
         $resourceProvider.defaults.stripTrailingSlashes = false;
     });
     trainApp.controller('TrainCtrl',['$scope','$http','TrainLoads', function (scope, http, trainLoads){
         scope.trainLoads = trainLoads.query();
-        scope.train_id = train_id;
+            scope.train_id = train_id;
     }]);
     trainApp.controller('TrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoad', '$location',
-        function (scope, http, routeParams, trainLoad, location ){
-        var currentTrainLoad =  trainLoad.get({id:routeParams.loadID});
-        $id = currentTrainLoad.id;
+        function (scope, http, routeParams, trainLoad,  location ){
         var editTrainLoad = this;
+            var currentTrainLoad =  trainLoad.get({id:routeParams.loadID}).$promise.then(function(load) {
+            console.log(load.outputs);
+            scope.parsed_pattern = change_pattern(parsed_pattern_origin,load.outputs);
+            $id = load.id;
 
             scope.groups = groupList;
+            editTrainLoad.trainLoad = load;
+        });
 
 
-            editTrainLoad.trainLoad = currentTrainLoad;
-
+        scope.change_slice = function(slice_number,is_selected){
+          for(var j=0;j<scope.parsed_pattern.length;j++){
+              if (scope.parsed_pattern[j].slice==slice_number){
+                  for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++){
+                      scope.parsed_pattern[j].outputs[i].selected = is_selected;
+                  }
+                  break;
+              }
+          }
+        };
           editTrainLoad.save = function() {
                 editTrainLoad.trainLoad.manager = currentUser;
-                trainLoad.update({id:currentTrainLoad.id},editTrainLoad.trainLoad,function(data) {
+                var result_outputs = [];
+                for(var j=0;j<scope.parsed_pattern.length;j++){
+                         var slice_outputs = [];
+                          for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++) {
+                              if (scope.parsed_pattern[j].outputs[i].selected) {
+                                  slice_outputs.push(scope.parsed_pattern[j].outputs[i].name);
+                              }
+                          }
+                          if (slice_outputs.length>0){
+                               result_outputs.push([scope.parsed_pattern[j].slice,slice_outputs]);
+
+                          }
+
+                      }
+
+                    editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
+                trainLoad.update({id:editTrainLoad.trainLoad.id},editTrainLoad.trainLoad,function(data) {
                 location.path('/');
         });
     };
@@ -120,11 +198,38 @@
 
             scope.groups = groupList;
 
-
+        scope.parsed_pattern = $.evalJSON($.toJSON(parsed_pattern_origin));
+        console.log(scope.parsed_pattern);
+        scope.change_slice = function(slice_number,is_selected){
+          for(var j=0;j<scope.parsed_pattern.length;j++){
+              if (scope.parsed_pattern[j].slice==slice_number){
+                  for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++){
+                      scope.parsed_pattern[j].outputs[i].selected = is_selected;
+                  }
+                  break;
+              }
+          }
+        };
     editTrainLoad.save = function() {
         editTrainLoad.trainLoad.manager = currentUser;
         editTrainLoad.trainLoad.train = train_id;
-        console.log(editTrainLoad.trainLoad);
+        var result_outputs = [];
+        for(var j=0;j<scope.parsed_pattern.length;j++){
+                 var slice_outputs = [];
+                  for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++) {
+                      if (scope.parsed_pattern[j].outputs[i].selected) {
+                          slice_outputs.push(scope.parsed_pattern[j].outputs[i].name);
+                      }
+                  }
+                  if (slice_outputs.length>0){
+                       result_outputs.push([scope.parsed_pattern[j].slice,slice_outputs]);
+
+                  }
+
+              }
+
+            editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
+        console.log(editTrainLoad.trainLoad.outputs);
 
 
         trainLoads.save(editTrainLoad.trainLoad,function(data) {
@@ -169,8 +274,12 @@
 <div class="row">
 <div class="columns large-4" style="border: solid">Train: {{ train.description }}</div>
 <div class="columns large-2" style="border: solid">Status: {{ train.status }}</div>
-<div class="columns large-2" style="border: solid">ptag: {{ train.ptag }}</div>
-<div class="columns large-4" style="border: solid">Departure: {{ depart_date }}</div>
+<div class="columns large-3" style="border: solid">pattern request: <u><a href='{% url 'prodtask:input_list_approve' train.pattern_request.reqid %}'>{{ train.pattern_request.reqid  }}</a><u/></div>
+<div class="columns large-3" style="border: solid">Departure: {{ depart_date }}</div>
+{% if allow_assemble %}
+    <a class='button' href="{%  url 'prodtask:create_request_from_train' train.id %}">Assemble</a>
+
+{% endif %}
 </div>
     <p/>
 <div ng-app="trainApp">

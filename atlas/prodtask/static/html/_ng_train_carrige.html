@@ -1,4 +1,4 @@
-<a class='button' href="#/new">New load</a> <a class='button' href="#/assembler">Show train</a>
+<a class='button' href="#/new">New load</a> <a class='button' href="#/assembler">Show trains</a>
 <div ng-repeat="trainOneLoad in trainLoads | filter:{ train: train_id }">
      <fieldset>
       <legend>Load #{{ $index  }}</legend>
@@ -10,11 +10,7 @@
            </div>
 
 
-       <div class="columns large-3">
-           <span>Outputs type
-                {{ trainOneLoad.output_formats }}
-           </span>
-       </div>
+
 
 
             <div class="columns large-3">
@@ -25,8 +21,15 @@
             <div class="columns large-3">
                  Modify: <a ng-href="#/{{trainOneLoad.id}}">edit</a>
             </div>
-
+            <div class="columns large-3"></div>
          </div>
+     <div class="row">
+       <div class="columns large-12">
+           <span>
+                Outputs: {{ trainOneLoad.outputs }}
+           </span>
+
+       </div>
       <div class="row">
        <div class="columns large-12">
            <span>

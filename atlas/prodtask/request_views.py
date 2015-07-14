@@ -20,9 +20,10 @@ from ..prodtask.ddm_api import find_dataset_events
 import atlas.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
-    TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm
+    TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm, \
+    form_input_list_for_preview
 from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
-    ProductionTask, OpenEndedRequest
+    ProductionTask, OpenEndedRequest, TrainProduction
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
@@ -1071,6 +1072,8 @@ Details:
       fail_silently=True)
 
 
+
+
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}):
     """
@@ -1086,16 +1089,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     :param form_prefill: function for prefilling data from inpu files and setting default fields
 
     """
-    def form_input_list_for_preview(file_dict):
-        input_lists = []
-        for slices in file_dict:
-            slice = slices['input_dict']
-            tags = []
-            for step in slices.get('step_exec_dict'):
-                tags.append(step.get('tag'))
-            input_lists.append(copy.deepcopy(slice))
-            input_lists[-1].update({'tags':','.join(tags)})
-        return input_lists
+
 
     if request.method == 'POST':
         # Check prefill form
@@ -1278,6 +1272,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                     else:
                                         st_exec.step_parent = step_parent_dict[0]
                                     st_exec.save()
+                        if 'close_train' in request.session:
+                            train_id = request.session['close_train']
+                            del request.session['close_train']
+                            train = TrainProduction.objects.get(id=train_id)
+                            train.status = 'Started'
+                            train.request = req
+                            train.save()
 
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))

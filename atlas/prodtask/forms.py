@@ -1,3 +1,4 @@
+import copy
 from django import forms
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.db.models import Q
@@ -11,8 +12,9 @@ from django.forms import DecimalField
 from django.forms import Form
 import json
 from django.forms.extras.widgets import SelectDateWidget
+
 from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
-    RetryErrors, RetryAction
+    RetryErrors, RetryAction, InputRequestList
 from django.forms.widgets import TextInput, SplitDateTimeWidget
 from django.forms import widgets
 
@@ -38,6 +40,17 @@ def energy_to_str(energy):
     else:
         return str(energy)+'GeV'
 
+
+def form_input_list_for_preview(file_dict):
+    input_lists = []
+    for slices in file_dict:
+        slice = slices['input_dict']
+        tags = []
+        for step in slices.get('step_exec_dict'):
+            tags.append(step.get('tag'))
+        input_lists.append(copy.deepcopy(slice))
+        input_lists[-1].update({'tags':','.join(tags)})
+    return input_lists
 
 class TRequestCreateCloneConfirmation(ModelForm):
     long_description = CharField(widget=Textarea, required=False)
@@ -317,6 +330,23 @@ class ProductionTaskCreateCloneForm(ModelForm):
         model = ProductionTask
 
 
+def pattern_from_request(reqid):
+    """
+    Search for a pattern in pattern request. Pattern is the not hided slice with the dataset
+    equal to dataset name in 0 slice
+    :param reqid: request with pattern
+    :return: [slice_number,outputs]
+    """
+    slices_donor = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
+    container_name = slices_donor[0].dataset.name
+    step_for_pattern = StepExecution.objects.filter(slice=slices_donor[0])[0]
+    slices_to_get_info = [(int(slices_donor[0].slice),step_for_pattern.step_template.output_formats.split('.'))]
+    for index, slice_donor in enumerate(slices_donor[1:]):
+        if (slice_donor.dataset.name == container_name) and (not slice_donor.is_hide):
+            step_for_pattern = StepExecution.objects.filter(slice=slice_donor)[0]
+            slices_to_get_info.append((int(slice_donor.slice),step_for_pattern.step_template.output_formats.split('.')))
+    return slices_to_get_info
+
 class ProductionTrainForm(ModelForm):
     manager = CharField(required=True)
     status = CharField(widget=forms.HiddenInput, required=False)
@@ -325,10 +355,24 @@ class ProductionTrainForm(ModelForm):
                                     'class':'datepicker'
                                 }),required=True)
     description = CharField( widget=Textarea, required=True)
+    pattern_request_id = DecimalField(required=True)
+    outputs = CharField(widget=forms.HiddenInput,required=False)
+
+
+    def clean(self):
+        cleaned_data = super(ProductionTrainForm, self).clean()
+        if cleaned_data.get('pattern_request_id'):
+            try:
+                cleaned_data['pattern_request'] = TRequest.objects.get(reqid=cleaned_data['pattern_request_id'])
+                cleaned_data['outputs'] = json.dumps(pattern_from_request(cleaned_data.get('pattern_request')))
+            except Exception,e:
+                del cleaned_data['pattern_request_id']
+                self._errors['pattern_request_id'] = self.error_class([str(e)])
+        return cleaned_data
 
     class Meta:
         model = TrainProduction
-        exclude = ['id','approval_time','timestamp','request']
+        exclude = ['id','approval_time','timestamp','request','pattern_request']
 
 class ProductionTaskUpdateForm(ModelForm):
     class Meta:

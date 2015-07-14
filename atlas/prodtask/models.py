@@ -554,13 +554,15 @@ class TrainProduction(models.Model):
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='GPT_ID', primary_key=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     departure_time =  models.DateTimeField(db_column='DEPARTURE_TIME')
-    approval_time = models.DateTimeField(db_column='APPROVAL_TIME')
+    approval_time = models.DateTimeField(db_column='APPROVAL_TIME', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
     description = models.CharField(max_length=256, db_column='DESCRIPTION')
-    request  = models.ForeignKey(TRequest, db_column='PR_ID', null=True)
-    ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
+    request  = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
+    #ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
     #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
+    outputs = models.TextField( db_column='OUTPUTS_PATTERN', null=True)
+    pattern_request = models.ForeignKey(TRequest, db_column='PATTERN_REQUEST')
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
@@ -603,9 +605,9 @@ class TrainProductionLoad(models.Model):
     group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS)
     datasets = models.TextField( db_column='DATASETS')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
-    output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
+    #output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
     manager = models.CharField(max_length=32, db_column='MANAGER', null=False, blank=True)
-
+    outputs = models.TextField( db_column='OUTPUTS')
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
@@ -620,7 +622,7 @@ class TrainProductionLoad(models.Model):
                   cleared_datasets.append(dataset)
         self.datasets = '\n'.join([x for x in cleared_datasets if x])
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TRAINCARRIAGE_ID')
+            self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:
