@@ -6,7 +6,7 @@ import logging
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
-from time import sleep
+from time import sleep, time
 from copy import deepcopy
 import pytz
 from atlas.prodtask.ddm_api import DDM
@@ -142,17 +142,19 @@ def extend_open_ended_request(reqid):
     :return:
     True if request is extended
     """
-
+    start_time = time()
     slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
-    container_name = slices[0].dataset.name
+
+    container_name = slices[0].dataset_id
     datasets = []
     slices_to_extend = [0]
     for index, slice in enumerate(slices[1:]):
         if not slice.is_hide:
-            if slice.dataset.name == container_name:
+            if slice.dataset_id == container_name:
                 slices_to_extend.append(int(slice.slice))
             else:
-                datasets.append(slice.dataset.name)
+                datasets.append(slice.dataset_id)
+
 
     ddm = DDM()
     request = TRequest.objects.get(reqid=reqid)
@@ -160,6 +162,8 @@ def extend_open_ended_request(reqid):
     if request.request_type == 'EVENTINDEX':
         tasks_count_control = True
     datasets_in_container = ddm.dataset_in_container(container_name)
+
+
     is_extended = False
     for dataset in datasets_in_container:
         if (dataset not in datasets) and (dataset[dataset.find(':')+1:] not in datasets):
@@ -187,6 +191,7 @@ def extend_open_ended_request(reqid):
         is_extended = is_extended or do_task_start(reqid)
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
+
     return is_extended
 
 
