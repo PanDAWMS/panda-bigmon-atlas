@@ -144,7 +144,7 @@ def extend_open_ended_request(reqid):
     """
     start_time = time()
     slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
-
+    _logger.debug(form_request_log(reqid,None,'Start request extending'))
     container_name = slices[0].dataset_id
     datasets = []
     slices_to_extend = [0]
@@ -162,12 +162,13 @@ def extend_open_ended_request(reqid):
     if request.request_type == 'EVENTINDEX':
         tasks_count_control = True
     datasets_in_container = ddm.dataset_in_container(container_name)
-
+    _logger.debug(form_request_log(reqid,None,'Datasets in container: %i'%len(datasets_in_container)))
 
     is_extended = False
     for dataset in datasets_in_container:
         if (dataset not in datasets) and (dataset[dataset.find(':')+1:] not in datasets):
             is_extended = True
+            _logger.debug(form_request_log(reqid,None,'New dataset %s'%dataset))
             for slice_number in slices_to_extend:
                 new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)
                 new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
