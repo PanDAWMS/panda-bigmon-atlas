@@ -91,6 +91,7 @@
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
 <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/slice.js' %}"></script>
+<script  src="http://fgnass.github.io/spin.js/spin.min.js"></script>
 
 {% endblock %}
 
@@ -1680,7 +1681,49 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
               });
               return false;
         };
+    ;(function(factory) {
 
+  if (typeof exports == 'object') {
+    // CommonJS
+    factory(require('jquery'), require('spin.js'))
+  } else if (typeof define == 'function' && define.amd) {
+    // AMD, register as anonymous module
+    define(['jquery', 'spin'], factory)
+  } else {
+    // Browser globals
+    if (!window.Spinner) throw new Error('Spin.js not present')
+    factory(window.jQuery, window.Spinner)
+  }
+
+}(function($, Spinner) {
+
+  $.fn.spin = function(opts, color) {
+
+    return this.each(function() {
+      var $this = $(this)
+        , data = $this.data()
+
+      if (data.spinner) {
+        data.spinner.stop()
+        delete data.spinner
+      }
+      if (opts !== false) {
+        opts = $.extend(
+          { color: color || $this.css('color') }
+        , $.fn.spin.presets[opts] || opts
+        )
+        data.spinner = new Spinner(opts).spin(this)
+      }
+    })
+  }
+
+  $.fn.spin.presets = {
+    tiny:  { lines:  8, length: 2, width: 2, radius: 3 }
+  , small: { lines:  8, length: 4, width: 3, radius: 5 }
+  , large: { lines: 10, length: 8, width: 4, radius: 8 }
+  }
+
+}));
 function spreadAMI(that){
     currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
     currentSlice = $('#sliceModalSlice').html();
@@ -1690,6 +1733,59 @@ function spreadAMI(that){
     $("#step"+currentSlice+"s"+currentStep+".stepchoose").css({"background-color":$("#doColor").css("background-color")});
 
 }
+        function extendRequest(event){
+            event.preventDefault();
+            $('#extendModalWindow').foundation('reveal', 'open');
+
+        }
+        function changeExtendtoCheck(){
+            $('#sliceExtend').html('');
+            $('#stepsExtend').html('');
+            $('#checkExtend').html('Check');
+        }
+        function checkExtendRequest(event, that){
+            event.preventDefault();
+            $('#loadExtend').spin('small');
+            var sendData = $('#extendSpreadsheet').val();
+            if ($(that).html() == 'Check'){
+                  $.ajax({
+                        url: "{% url 'prodtask:check_extend_request' pr_id %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $('#loadExtend').spin(false);
+                            var return_status =  $.evalJSON(data).success;
+                            if(return_status){
+                                $('#sliceExtend').html('New slices: '+$.evalJSON(data).slices_number);
+                                $('#stepsExtend').html('New steps: '+$.evalJSON(data).steps_number);
+                                $('#checkExtend').html('Extend');
+                            } else {
+                                alert($.evalJSON(data).message);
+                            }
+                        }
+                  });
+            }else {
+                  $.ajax({
+                        url: "{% url 'prodtask:extend_request' pr_id %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $('#loadExtend').spin(false);
+                            var return_status =  $.evalJSON(data).success;
+                            if(return_status){
+                                 location.reload();
+                            } else{
+                                alert($.evalJSON(data).message);
+                            }
+                        }
+                  });
+            }
+
+        }
 
 
         function showModalComment(event){
@@ -1839,6 +1935,7 @@ var lastChecked = true;
         {% if user.is_authenticated %}
           <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
           <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
+            <li><a href="#" onclick="extendRequest(event);">Extend</a></li>
           <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
             {% if not is_open_ended %}
                 <li><a href="#" onclick="makeOpenEnded(event);">Make Open Ended</a></li>
@@ -2668,6 +2765,30 @@ var lastChecked = true;
     <ul id="commentList">
 
     </ul>
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
+
+<div id="extendModalWindow" class="reveal-modal" data-reveal>
+    <h3>Extend request using google spreadsheet</h3>
+    <div class="row">
+
+            <div class="large-12 column">
+                <label> link to spreadsheet:
+                <input  id="extendSpreadsheet" type="url" onchange="changeExtendtoCheck();" ></label>
+            </div>
+        </div>
+        <div class="row">
+
+            <div class="large-2 column"><span id="sliceExtend"></span></div>
+            <div class="large-2 column"><span id="stepsExtend"></span></div>
+            <div class="large-2 column">
+                <a href='#' id="checkExtend" class="button btn_is_authorized postfix" onclick="checkExtendRequest(event,this);">Check</a>
+            </div>
+            <div class="large-1 column"><span id="loadExtend"></span></div>
+            <div class="large-5 column"></div>
+        </div>
+
   <a  class="close-reveal-modal">&#215;</a>
 </div>
 

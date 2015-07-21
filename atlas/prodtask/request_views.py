@@ -1730,6 +1730,108 @@ class Parameters(datatables.Parametrized):
     open_ended = datatables.Parameter(label='Open ended', model_field='reqid' ,get_Q=_openended_Q)
 
 
+def make_slices_from_dict(req, file_dict):
+        step_parent_dict = {}
+        for current_slice in file_dict:
+            input_data = current_slice["input_dict"]
+            input_data['request'] = req
+            priority_obj = get_priority_object(input_data['priority'])
+            if input_data.get('dataset'):
+                    input_data['dataset'] = fill_dataset(input_data['dataset'])
+            _logger.debug("Filling input data: %s" % input_data)
+            input_data['slice'] = req.get_next_slice()
+            irl = InputRequestList(**input_data)
+            irl.save()
+            for step in current_slice.get('step_exec_dict'):
+                st = fill_template(step['step_name'], step['tag'], input_data['priority'],
+                                   step.get('formats', None), step.get('memory', None))
+                task_config= {}
+                upadte_after = False
+                if 'task_config' in step:
+                    if 'nEventsPerJob' in step['task_config']:
+                        if step['task_config']['nEventsPerJob'].get(step['step_name'],''):
+                            task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name']))})
+
+                            if step['step_name']=='Evgen':
+                                task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
+                        else:
+                            task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
+                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
+                                           'nGBPerJob','maxAttempt','maxFailure']
+                    for task_config_option in task_config_options:
+                        if task_config_option in step['task_config']:
+                            task_config.update({task_config_option:step['task_config'][task_config_option]})
+                step['step_exec']['request'] = req
+                step['step_exec']['slice'] = irl
+                step['step_exec']['step_template'] = st
+                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                _logger.debug("Filling step execution data: %s" % step['step_exec'])
+                st_exec = StepExecution(**step['step_exec'])
+                if step_parent_dict:
+                    if ('step_parent' in step) and ('step_order' in step):
+                        if (step['step_parent']==step['step_order']):
+                            upadte_after = True
+                        else:
+                            st_exec.step_parent = step_parent_dict[step['step_parent']]
+                    else:
+                        upadte_after = True
+                else:
+                    upadte_after = True
+                if task_config:
+                    st_exec.set_task_config(task_config)
+                st_exec.save_with_current_time()
+                if ('step_parent' in step) and ('step_order' in step):
+                    step_parent_dict.update({step['step_order']:st_exec})
+                else:
+                    step_parent_dict.update({0:st_exec})
+                if upadte_after:
+                    if ('step_parent' in step) and ('step_order' in step):
+                        st_exec.step_parent = step_parent_dict[step['step_parent']]
+                    else:
+                        st_exec.step_parent = step_parent_dict[0]
+                    st_exec.save()
+        return True
+
+
+@csrf_protect
+def check_extend_request(request, reqid):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            excel_link = json.loads(data)
+            _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            slices_number = len(spreadsheet_dict)
+            steps_number = 0
+            for current_slice in spreadsheet_dict:
+                steps_number += len(current_slice.get('step_exec_dict'))
+            results = {'success':True, 'slices_number':slices_number,'steps_number':steps_number, 'message': ''}
+        except Exception,e:
+            results = {'success':False, 'message': str(e)}
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@csrf_protect
+def extend_request(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False, 'message': 'Not started'}
+        try:
+            data = request.body
+            excel_link = json.loads(data)
+            production_request = TRequest.objects.get(reqid=reqid)
+            _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            if make_slices_from_dict(production_request,spreadsheet_dict):
+                results = {'success':True, 'message': ''}
+        except Exception,e:
+            results = {'success':False, 'message': str(e)}
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+
+
+
 @datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
 def request_table(request):
     """

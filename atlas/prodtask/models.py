@@ -124,7 +124,15 @@ class TRequest(models.Model):
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
     is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
- 
+
+
+    def get_next_slice(self):
+        if InputRequestList.objects.filter(request=self).count() == 0:
+            new_slice_number = 0
+        else:
+            new_slice_number = (InputRequestList.objects.filter(request=self).order_by('-slice')[0]).slice + 1
+        return new_slice_number
+
     @property
     def request_created(self):
         try:

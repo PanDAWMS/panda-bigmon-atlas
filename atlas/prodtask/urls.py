@@ -62,7 +62,8 @@ urlpatterns = patterns('',
     url(r'^hlt_form_prepare_request/$','atlas.prodtask.request_views.hlt_form_prepare_request',  name='hlt_form_prepare_request'),
 
     url(r'^status_history/(?P<reqid>\d+)/$','atlas.prodtask.request_views.status_history',  name='status_history'),
-
+    url(r'^check_extend_request/(?P<reqid>\d+)/$','atlas.prodtask.request_views.check_extend_request',  name='check_extend_request'),
+    url(r'^extend_request/(?P<reqid>\d+)/$','atlas.prodtask.request_views.extend_request',  name='extend_request'),
     url(r'^do_mc_management_approve/(?P<reqid>\d+)/$','atlas.prodtask.request_views.do_mc_management_approve',  name='do_mc_management_approve'),
     url(r'^do_mc_management_cancel/(?P<reqid>\d+)/$','atlas.prodtask.request_views.do_mc_management_cancel',  name='do_mc_management_cancel'),
     url(r'^close_deft_ref/(?P<reqid>\d+)/$','atlas.prodtask.request_views.close_deft_ref',  name='close_deft_ref'),
