@@ -1803,6 +1803,40 @@ function spreadAMI(that){
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
 
+        function showTrainExtendModal(event){
+            event.preventDefault();
+            var sliceList = [];
+             $('#errorTrainMessage').html('');
+             $('#makeTrainsButton').hide();
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            $('#loadTrain').spin('small');
+            var sendData = {slices:sliceList,step_number:5,production_request:'{{ pr_id }}'};
+            $('#trainSlices').html(sliceList.toString());
+
+                  $.ajax({
+                        url: "{% url 'prodtask:check_slices_for_trains'  %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $('#loadTrain').spin(false);
+                            var return_status =  $.evalJSON(data).success;
+                            if(return_status){
+                                $('#makeTrainsButton').show();
+                            } else{
+                                $('#errorTrainMessage').html($.evalJSON(data).message);
+                            }
+                        }
+                  });
+
+                $('#trainModalWindow').foundation('reveal', 'open');
+        }
+
 function changeSliceChanges(that){
     if(changeMode) {
         currentClass = $(that).attr("class").replace("storeInput", '').split(' ');
@@ -2378,6 +2412,11 @@ var lastChecked = true;
      <div class="large-1 columns">
          <button id="retrySlice" class="btn_is_authenticated" title="Very smart algorithm to retry slices" onclick="retrySlicesClick(event);">Retry</button>
     </div>
+         <div class="large-1 columns">
+         {% ifequal trequest.request_type 'MC' %}
+             <button id="trainsSlices" class="btn_is_authenticated" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
+         {% endifequal %}
+    </div>
     <div class="large-3 columns">
         {% if show_split %}
             <button class="btn_is_authenticated"  title="Split slices" href="#" data-dropdown="dropSplitMenu">Split </button>
@@ -2788,6 +2827,26 @@ var lastChecked = true;
             </div>
             <div class="large-1 column"><span id="loadExtend"></span></div>
             <div class="large-5 column"></div>
+        </div>
+
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
+    <div id="trainModalWindow" class="reveal-modal" data-reveal>
+    <h3>Create trains:</h3>
+    <div class="row">
+
+            <div class="large-12 column">
+                <span> Slices:</span><span id='trainSlices'></span>
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="large-2 column">
+                <a href='{% url 'prodtask:train_as_child' pr_id %}' id="makeTrainsButton" style="display: none" class="button btn_is_authorized postfix" >Make trains</a>
+            </div>
+            <div class="large-1 column"><span id="loadTrain"></span></div>
+            <div class="large-5 column"><span id="errorTrainMessage"></span></div>
         </div>
 
   <a  class="close-reveal-modal">&#215;</a>

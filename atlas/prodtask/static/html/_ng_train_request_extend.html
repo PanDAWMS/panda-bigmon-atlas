@@ -1,0 +1,52 @@
+
+    <form name="trainLoadForm">
+
+          <div class="row">
+
+        <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
+        <label>Short new request description:
+         <input name="shortDescription" ng-model="shortDescription" required>
+
+            <span ng-show="trainLoadForm.shortDescription.$error.required && !trainLoadForm.shortDescription.$pristine" >
+            Required </span>
+        </label>
+      </div>
+      </div>
+        <div class="row">
+
+        <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
+        <label>Requester group
+         <select name="group" ng-model="phys_group" required ng-options="group for group in groups ">
+          <option value="">-- choose group --</option>
+        </select>
+            <span ng-show="trainLoadForm.group.$error.required && !trainLoadForm.group.$pristine" >
+            Required </span>
+        </label>
+      </div>
+
+      <div class="columns large-3" ng-class="{error: trainLoadForm.output_formats.$invalid && !trainLoadForm.output_formats.$pristine}">
+      </div>
+      <div class="columns large-3" ng-class="{error: trainLoadForm.group.$invalid }">
+          <div class="columns large-3"></div>
+      </div>
+      </div>
+       <div class="row">
+          <div class="columns large-12">
+          <span>outputs:</span>
+       </div>
+       </div>
+              <div class="row" ng-repeat="slice in parsed_pattern">
+                <div class="columns large-1"><label>{{ slice.slice }}<input type="checkbox" ng-change="change_slice(slice.slice,slice.selected)" ng-model="slice.selected"></label></div>
+                <div class="columns large-1" ng-repeat="output in slice.outputs"><label style="font-size:x-small">{{ output.name }}<input type="checkbox" ng-model="output.selected"></label></div>
+                  <div class="columns large-1"></div>
+
+
+                </div>
+
+
+
+      <button ng-click="save()" ng-disabled="trainLoadForm.$invalid"
+              class="btn btn-primary">Create request</button>
+
+
+    </form>

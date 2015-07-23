@@ -1768,16 +1768,19 @@ def make_slices_from_dict(req, file_dict):
                 step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
                 _logger.debug("Filling step execution data: %s" % step['step_exec'])
                 st_exec = StepExecution(**step['step_exec'])
-                if step_parent_dict:
-                    if ('step_parent' in step) and ('step_order' in step):
-                        if (step['step_parent']==step['step_order']):
-                            upadte_after = True
+                if ('parent_step_id' in step):
+                    st_exec.step_parent = StepExecution.objects.get(id=step['parent_step_id'])
+                else:
+                    if step_parent_dict:
+                        if ('step_parent' in step) and ('step_order' in step):
+                            if (step['step_parent']==step['step_order']):
+                                upadte_after = True
+                            else:
+                                st_exec.step_parent = step_parent_dict[step['step_parent']]
                         else:
-                            st_exec.step_parent = step_parent_dict[step['step_parent']]
+                            upadte_after = True
                     else:
                         upadte_after = True
-                else:
-                    upadte_after = True
                 if task_config:
                     st_exec.set_task_config(task_config)
                 st_exec.save_with_current_time()

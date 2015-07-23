@@ -124,11 +124,15 @@ urlpatterns = patterns('',
 
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
     url(r'^train_create/$', 'atlas.prodtask.train_views.train_create', name='train_create'),
-
+    url(r'^create_request_as_child/$', 'atlas.prodtask.train_views.create_request_as_child', name='create_request_as_child'),
     url(r'^create_request_from_train/(?P<train_id>\d+)/$', 'atlas.prodtask.train_views.create_request_from_train', name='create_request_from_train'),
     url(r'^get_pattern_from_request/(?P<reqid>\d+)/$', 'atlas.prodtask.train_views.get_pattern_from_request', name='get_pattern_from_request'),
     url(r'^trains_list/$', 'atlas.prodtask.train_views.trains_list', name='trains_list'),
     url(r'^train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.train_edit', name='train_edit'),
+    url(r'^check_slices_for_trains/$', 'atlas.prodtask.train_views.check_slices_for_trains', name='check_slices_for_trains'),
+    url(r'^train_as_child/(?P<reqid>\d+)/$', 'atlas.prodtask.train_views.train_as_child', name='train_as_child'),
+
+
     url(r'^trainloads/$', TrainLoads.as_view(), name='trainloads'),
     url(r'^trainloads/(?P<pk>[0-9]+)/$', TrainLoad.as_view(),name='trainload'),
     url(r'^assembled_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.assembled_train', name='assembled_train'),

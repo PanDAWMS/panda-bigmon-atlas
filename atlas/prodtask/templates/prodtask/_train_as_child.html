@@ -1,0 +1,215 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+
+<script>
+    function prepare_pattern(pattern){
+        var result_pattern = [];
+        //console.log(pattern);
+        for(var i=0;i<pattern.length;i++){
+            var current_slice = {};
+            current_slice['slice']=pattern[i][0];
+            current_slice['selected']=false;
+            current_slice['outputs']=[];
+            for(var j=0;j<pattern[i][1].length;j++){
+                var current_output = {};
+                current_output['name'] =  pattern[i][1][j];
+                current_output['selected']=false;
+                current_slice['outputs'].push(current_output);
+            }
+            result_pattern.push(current_slice);
+        }
+        return result_pattern
+    }
+    var groupList = [];
+    var currentUser = '{{ request.user.username }}';
+    var train_id = '{{ train.id }}';
+    //var pattern_request = prepare_pattern($.evalJSON('{{ train.pattern_output }}'));
+    {% for group  in groups %}
+        groupList.push('{{ group }}');
+    {% endfor %}
+    {% autoescape off %}
+    var parsed_pattern_origin = prepare_pattern($.evalJSON('{{ train.outputs }}'));
+    var parent_request = '{{ parent_request }}';
+    var parent_steps = $.evalJSON('{{ parent_steps }}');
+    var pattern_request= '{{ pattern_request }}';
+    {% endautoescape %}
+
+    {% verbatim %}
+
+
+
+
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
+    var trainServices = angular.module('trainServices', ['ngResource']);
+    trainServices.run(run);
+
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+
+
+    function change_pattern(pattern,selected_slices_text){
+        var result_pattern = $.evalJSON($.toJSON(pattern));
+
+        if ((selected_slices_text != undefined)&&(selected_slices_text != '')){
+            var selected_slices = $.evalJSON(selected_slices_text);
+            for(var i=0;i<selected_slices.length;i++){
+                for(var j=0;j<result_pattern.length;j++){
+
+                    if (result_pattern[j].slice == selected_slices[i][0]){
+                        console.log(result_pattern[j].outputs,selected_slices[i][1]);
+                        for(var k=0;k<result_pattern[j].outputs.length;k++){
+                            if($.inArray(result_pattern[j].outputs[k].name,selected_slices[i][1]) != -1){
+                                result_pattern[j].outputs[k].selected = true;
+                                result_pattern[j].selected = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return result_pattern
+    }
+
+
+
+
+
+    var trainExtendApp = angular.module('trainExtendApp',['ngRoute','trainServices']);
+    trainExtendApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+
+
+     trainExtendApp.controller('TrainExtendCtrl',['$scope','$http', '$routeParams', '$location',
+        function (scope, http, routeParams, location ){
+
+        var editTrainLoad = this;
+
+            scope.groups = groupList;
+        editTrainLoad.trainLoad = {};
+        scope.parsed_pattern = $.evalJSON($.toJSON(parsed_pattern_origin));
+        console.log(scope.parsed_pattern);
+        scope.change_slice = function(slice_number,is_selected){
+          for(var j=0;j<scope.parsed_pattern.length;j++){
+              if (scope.parsed_pattern[j].slice==slice_number){
+                  for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++){
+                      scope.parsed_pattern[j].outputs[i].selected = is_selected;
+                  }
+                  break;
+              }
+          }
+        };
+    scope.save = function() {
+        console.log(scope);
+        editTrainLoad.trainLoad.manager = currentUser;
+        editTrainLoad.trainLoad.parent_request = parent_request;
+        editTrainLoad.trainLoad.parent_steps = parent_steps;
+        editTrainLoad.trainLoad.short_description = scope.shortDescription;
+        editTrainLoad.trainLoad.phys_group = scope.phys_group;
+        editTrainLoad.trainLoad.pattern_request = pattern_request;
+        var result_outputs = [];
+        for(var j=0;j<scope.parsed_pattern.length;j++){
+                 var slice_outputs = [];
+                  for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++) {
+                      if (scope.parsed_pattern[j].outputs[i].selected) {
+                          slice_outputs.push(scope.parsed_pattern[j].outputs[i].name);
+                      }
+                  }
+                  if (slice_outputs.length>0){
+                       result_outputs.push([scope.parsed_pattern[j].slice,slice_outputs]);
+
+                  }
+
+              }
+
+            editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
+        http.post(Django.url('prodtask:create_request_as_child'), editTrainLoad.trainLoad).
+         success(function(data, status, headers, config) {
+
+                    window.location.href = Django.url('prodtask:input_list_approve',data.request);
+     }).
+    error(function(data, status, headers, config) {
+         alert(data);
+    });
+
+
+        console.log(editTrainLoad.trainLoad);
+
+
+        //trainLoads.save(editTrainLoad.trainLoad,function(data) {
+        //   location.path('/');
+        //});
+    };
+    }]);
+
+    trainExtendApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_train_request_extend.html',
+              controller: 'TrainExtendCtrl'
+            }).
+            otherwise({
+              redirectTo: '/'
+            });
+    });
+</script>
+{% endverbatim %}
+
+<div class="row">
+<div class="columns large-3" style="border: solid">Parent request: <u><a href='{% url 'prodtask:input_list_approve' parent_request %}'>{{ parent_request  }}</a></u></div>
+<div class="columns large-2" style="border: solid">Slices: {{ parent_request_slices }}</div>
+
+
+
+</div>
+    <p/>
+<div ng-app="trainExtendApp">
+    <div ng-view></div>
+
+</div>
+
+{% endblock %}
