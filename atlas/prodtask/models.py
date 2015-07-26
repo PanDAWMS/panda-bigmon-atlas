@@ -5,7 +5,9 @@ from django.db import connection
 from django.db import connections
 from django.utils import timezone
 from ..prodtask.helper import Singleton
+import logging
 
+_logger = logging.getLogger('prodtaskwebui')
 
 class sqliteID(Singleton):
     def get_id(self,cursor,id_field_name,table_name):
@@ -619,16 +621,20 @@ class TrainProductionLoad(models.Model):
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
-        input_datasets = self.datasets.replace('\n',',').replace('\r',',').replace('\t',',').replace(' ',',').split(',')
-        cleared_datasets = []
-        for dataset in input_datasets:
-            if dataset:
-                if ':' not in dataset:
-                    if dataset.find('.')>-1:
-                        cleared_datasets.append(dataset[:dataset.find('.')]+':'+dataset)
-                else:
-                  cleared_datasets.append(dataset)
-        self.datasets = '\n'.join([x for x in cleared_datasets if x])
+        try:
+            input_datasets = self.datasets.replace('\n',',').replace('\r',',').replace('\t',',').replace(' ',',').split(',')
+            cleared_datasets = []
+            for dataset in input_datasets:
+                if dataset:
+                    if ':' not in dataset:
+                        if dataset.find('.')>-1:
+                            cleared_datasets.append(dataset[:dataset.find('.')]+':'+dataset)
+                    else:
+                      cleared_datasets.append(dataset)
+            self.datasets = '\n'.join([x for x in cleared_datasets if x])
+        except Exception,e:
+            self.datasets=''
+            _logger.debug('Problem this loads datastes: %s',str(e))
         if not self.id:
             self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
         super(TrainProductionLoad, self).save(*args, **kwargs)
