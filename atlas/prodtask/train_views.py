@@ -315,6 +315,8 @@ def create_request_from_train(request,train_id):
             spreadsheet_dict = []
             for load in loads:
                 datasets = load.datasets.split('\n')
+                if 'bad_value' in datasets:
+                    datasets = []
                 outputs_slices = json.loads(load.outputs)
                 for dataset in datasets:
                     for output_slice in outputs_slices:

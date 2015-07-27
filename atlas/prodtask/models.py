@@ -624,11 +624,14 @@ class TrainProductionLoad(models.Model):
         try:
             input_datasets = self.datasets.replace('\n',',').replace('\r',',').replace('\t',',').replace(' ',',').split(',')
             cleared_datasets = []
+            if input_datasets == ['ongoing_transaction']:
+                cleared_datasets = ['bad_value']
             for dataset in input_datasets:
                 if dataset:
                     if ':' not in dataset:
                         if dataset.find('.')>-1:
                             cleared_datasets.append(dataset[:dataset.find('.')]+':'+dataset)
+
                     else:
                       cleared_datasets.append(dataset)
             self.datasets = '\n'.join([x for x in cleared_datasets if x])
@@ -637,6 +640,7 @@ class TrainProductionLoad(models.Model):
             _logger.debug('Problem this loads datastes: %s',str(e))
         if not self.id:
             self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
+
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:

@@ -191,8 +191,8 @@
     };
     }]);
 
-     trainApp.controller('NewTrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoads', '$location',
-        function (scope, http, routeParams, trainLoads, location ){
+     trainApp.controller('NewTrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoads', 'TrainLoad','$location',
+        function (scope, http, routeParams, trainLoads, trainLoad, location ){
 
         var editTrainLoad = this;
 
@@ -231,10 +231,24 @@
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
         console.log(editTrainLoad.trainLoad.outputs);
 
+        if (editTrainLoad.trainLoad.datasets.length<2000){
+            trainLoads.save(editTrainLoad.trainLoad,function(data) {
+                console.log(data);
+               location.path('/');
+            });
+        } else {
+            var temp_datasets = editTrainLoad.trainLoad.datasets;
+            editTrainLoad.trainLoad.datasets = 'ongoing_transaction';
+            trainLoads.save(editTrainLoad.trainLoad,function(data) {
+                 editTrainLoad.trainLoad.datasets=temp_datasets;
 
-        trainLoads.save(editTrainLoad.trainLoad,function(data) {
-           location.path('/');
-        });
+                console.log('check',data.id);
+
+               trainLoad.update({id:data.id},editTrainLoad.trainLoad,function(data2) {
+                location.path('/');
+                });
+            });
+        }
     };
     }]);
     trainApp.controller('AssemblerTrainCtrl',['$scope','$http', function (scope, http){
