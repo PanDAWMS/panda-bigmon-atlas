@@ -73,7 +73,12 @@ class TRequestCreateCloneConfirmation(ModelForm):
         cleaned_data = super(TRequestCreateCloneConfirmation, self).clean()
         if type(self) == TRequestCreateCloneConfirmation:
             project = cleaned_data.get('project')
+            project_name = ''
+            if project:
+                project_name = project.project
             energy = cleaned_data.get('energy_gev')
+            campaign = cleaned_data.get('campaign')
+
             if project:
                 if 'eV' in str(project):
                     if (energy_to_str(energy) not in str(project)) and (energy_to_str(energy).replace('2p76TeV','2TeV') not in  str(project)):
@@ -82,6 +87,18 @@ class TRequestCreateCloneConfirmation(ModelForm):
                         self._errors['energy_gev'] = self.error_class([msg])
                         del cleaned_data['project']
                         del cleaned_data['energy_gev']
+                if (cleaned_data.get('request_type') == 'MC')and(cleaned_data.get('project')):
+                    if 'data' in project_name:
+                        msg = "project can't be data for MC request"
+                        self._errors['project'] = self.error_class([msg])
+                        del cleaned_data['project']
+                    elif ('valid' not in project_name) and (campaign.lower()!=project_name.split('_')[0]):
+                        msg = "Campaign doesn't correspond project"
+                        self._errors['project'] = self.error_class([msg])
+                        self._errors['campaign'] = self.error_class([msg])
+                        del cleaned_data['project']
+                        del cleaned_data['campaign']
+
 
         return cleaned_data
 
