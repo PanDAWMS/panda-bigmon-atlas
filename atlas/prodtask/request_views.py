@@ -135,38 +135,41 @@ def short_hlt_form(request):
             request.session['hlt_short_description'] = input_dict['short_description']
 
         except Exception,e:
-            return HttpResponse(json.dumps({'success':False,'message':str(e)}),status_code=500, content_type='application/json')
+            return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
 
 @csrf_protect
 def hlt_form_prepare_request(request):
     if request.method == 'GET':
-            if 'file_dict' in request.session:
-                spreadsheet_dict = request.session['file_dict']
-                form_data = {}
-                dataset = request.session['hlt_dataset']
-                form_data['request_type'] = 'HLT'
-                form_data['phys_group'] = 'THLT'
-                form_data['manager'] = request.user.username
-                form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
-                form_data['campaign'] = dataset[:dataset.find('.')]
-                form_data['project'] = dataset[:dataset.find('.')]
-                form_data['provenance'] = 'AP'
-                form_data['description'] = request.session['hlt_short_description']
-                form = TRequestCreateCloneConfirmation(form_data)
-                inputlists = form_input_list_for_preview(spreadsheet_dict)
-                # store data from prefill form to http request
-                return render(request, 'prodtask/_previewreq.html', {
-                    'active_app': 'mcprod',
-                    'pre_form_text': 'Create HLT Request',
-                    'form': form,
-                    'submit_url': 'prodtask:hlt_request_create',
-                    'url_args': None,
-                    'parent_template': 'prodtask/_index.html',
-                    'inputLists': inputlists,
-                    'bigSliceNumber': False
-                })
+        try:
+            spreadsheet_dict = request.session['file_dict']
+            form_data = {}
+            dataset = request.session['hlt_dataset']
+            form_data['request_type'] = 'HLT'
+            form_data['phys_group'] = 'THLT'
+            form_data['manager'] = request.user.username
+            form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+            form_data['campaign'] = dataset[:dataset.find('.')]
+            form_data['project'] = dataset[:dataset.find('.')]
+            form_data['provenance'] = 'AP'
+            form_data['description'] = request.session['hlt_short_description']
+            form = TRequestCreateCloneConfirmation(form_data)
+            inputlists = form_input_list_for_preview(spreadsheet_dict)
+            # store data from prefill form to http request
+            return render(request, 'prodtask/_previewreq.html', {
+                'active_app': 'mcprod',
+                'pre_form_text': 'Create HLT Request',
+                'form': form,
+                'submit_url': 'prodtask:hlt_request_create',
+                'url_args': None,
+                'parent_template': 'prodtask/_index.html',
+                'inputLists': inputlists,
+                'bigSliceNumber': False
+            })
+        except Exception,e:
+            return short_hlt_form(request)
+
 
 
 

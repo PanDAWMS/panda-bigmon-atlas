@@ -86,7 +86,7 @@
         function (scope, http, location){
         var hltShortModel = this;
         hltShortModel.request = {};
-        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false,NTUP_TRIGRATE:false};
+        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false,NTUP_TRIGRATE:false,RAW:false};
 
         hltShortModel.proceed = function() {
             var checkedOutput = [];
@@ -106,7 +106,10 @@
          }).
         error(function(data, status, headers, config) {
              console.log('fail');
-                    alert(data);
+                    if (data.message != undefined){
+                        alert(data.message);
+                    }
+
         });
 
 
