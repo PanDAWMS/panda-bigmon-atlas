@@ -67,7 +67,7 @@ def short_hlt_form(request):
                 raise ValueError('No files in dataset %s'%dataset)
             spreadsheet_dict = []
             slice_index = 0
-            irl = dict(slice=slice_index, brief='', comment='Reco', dataset=dataset,
+            irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
                        input_data='',
                        project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO,
                        priority=970,
@@ -86,7 +86,7 @@ def short_hlt_form(request):
             for hist_output in ['HIST_HLTMON','HIST','NTUP_TRIGRATE']:
                 if (hist_output in outputs) and (hist_output in tags):
 
-                    irl = dict(slice=slice_index, brief='', comment=hist_output, dataset=dataset,
+                    irl = dict(slice=slice_index, brief=hist_output, comment=hist_output, dataset=dataset,
                                input_data='',
                                project_mode=PROJECT_MODE_COMMON,
                                priority=970,
@@ -111,7 +111,7 @@ def short_hlt_form(request):
                     slice_index += 1
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             if ('AOD' in outputs) and ('AOD' in tags):
-                    irl = dict(slice=slice_index, brief='', comment='AOD', dataset=dataset,
+                    irl = dict(slice=slice_index, brief='AOD', comment='AOD', dataset=dataset,
                                input_data='',
                                project_mode=PROJECT_MODE_COMMON,
                                priority=970,
