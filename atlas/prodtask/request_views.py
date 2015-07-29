@@ -35,6 +35,7 @@ from .xls_parser_new import open_tempfile_from_url
 
 _logger = logging.getLogger('prodtaskwebui')
 
+@login_required(login_url='/prodtask/login/')
 @csrf_protect
 def short_hlt_form(request):
     if request.method == 'GET':
