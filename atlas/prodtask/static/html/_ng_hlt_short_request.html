@@ -3,7 +3,17 @@
         <div class="large-12 columns">
           <label> Dataset:
             <input type="text" name="dataset" ng-model="hltShortModel.request.dataset" required >
-
+               <span ng-show="hltShortForm.dataset.$error.required && !hltShortForm.dataset.$pristine" >
+                Required </span>
+          </label>
+        </div>
+        </div>
+        <div class="row">
+        <div class="large-12 columns">
+          <label> Short description(request title):
+            <input type="text" name="short_description" ng-model="hltShortModel.request.short_description" required >
+               <span ng-show="hltShortForm.short_description.$error.required && !hltShortForm.short_description.$pristine" >
+                Required </span>
           </label>
         </div>
         </div>
@@ -19,13 +29,23 @@
                <label> Reco tag:
                     <input type="text" name="recoTag" ng-model="hltShortModel.request.recoTag" amitag required >
                    <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+                   <span ng-show="hltShortForm.recoTag.$error.required && !hltShortForm.recoTag.$pristine" >
+                    Required </span>
               </label>
                <label> HIST* merge tag:
-                    <input type="text" name="mergeTag" ng-model="hltShortModel.request.mergeTag" required >
+               <input type="text" name="mergeTag" ngRequired="false" ng-model="hltShortModel.request.mergeTag"  >
+                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+              </label>
+                <label> AOD merge tag:
+                    <input type="text" name="aodTag" ngRequired="false" ng-model="hltShortModel.request.aodTag"   >
+                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+              </label>
+               <label> NTUP_TRIGRATE merge tag:
+                    <input type="text" name="ntupTag" ngRequired="false" ng-model="hltShortModel.request.ntupTag"  >
                    <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
               </label>
             </div>
         </div>
 </form>
 
-<button ng-click="hltShortModel.proceed()" class="btn btn-primary">Proceed</button>
+<button ng-click="hltShortModel.proceed()" ng-disabled="hltShortForm.$invalid" class="btn btn-primary">Proceed</button>

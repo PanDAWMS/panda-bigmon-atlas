@@ -110,7 +110,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     manager = CharField(widget=forms.HiddenInput, required=False)
     project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)
     phys_group = CharField(required=False, widget=forms.Select(choices=TRequest.PHYS_GROUPS))
-    campaign = CharField(required=False)
+    campaign = CharField( required=False)
     provenance = CharField(widget=forms.HiddenInput, required=False)
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)

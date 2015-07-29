@@ -7,6 +7,9 @@ from ..settings import dq2client as dq2_settings
 
 _logger = logging.getLogger('ddm_prodtask')
 
+def number_of_files_in_dataset(dsn):
+    ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+    return len(ddm.list_files(dsn)[0])
 
 def find_dataset_events(dataset_pattern):
         return_list = []
@@ -91,6 +94,10 @@ class DDM(object):
         _logger.debug('Try to auth with account %s and certificate %s'%(certificate_path, account))
         self.__ddm =  DQ2(force_backend='rucio')
 
+
+    def list_files(self, dsn):
+        output_list = self.__ddm.listFilesInDataset(dsn)
+        return output_list
 
     def find_dataset(self, pattern):
         """

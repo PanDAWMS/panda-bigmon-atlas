@@ -86,7 +86,8 @@
         function (scope, http, location){
         var hltShortModel = this;
         hltShortModel.request = {};
-        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false};
+        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false,NTUP_TRIGRATE:false};
+
         hltShortModel.proceed = function() {
             var checkedOutput = [];
             for (var output in  hltShortModel.outputs){
@@ -96,11 +97,19 @@
             }
             hltShortModel.request.outputs = checkedOutput.join('.');
             console.log(hltShortModel.request);
- //            http.post(Django.url('prodtask:short_hlt_form'),data).success(function(data, status, headers, config) {
-  //                  console.log(data);
- //                   console.log(status);
-      //              window.location.href =  Django.url('prodtask:hlt_form_prepare_request');
- //             });
+        http.post(Django.url('prodtask:short_hlt_form'), hltShortModel.request).
+         success(function(data, status, headers, config) {
+                    console.log('success');
+                    console.log(Django.url('prodtask:hlt_form_prepare_request'));
+                        window.location.href = Django.url('prodtask:hlt_form_prepare_request');
+
+         }).
+        error(function(data, status, headers, config) {
+             console.log('fail');
+                    alert(data);
+        });
+
+
         }
 
     }]);

@@ -12,6 +12,8 @@ from django.db import transaction
 import json
 import logging
 from django.db.models import Q
+from math import sqrt
+from atlas.prodtask.ddm_api import number_of_files_in_dataset
 
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
@@ -42,20 +44,128 @@ def short_hlt_form(request):
                 'parent_template': 'prodtask/_index.html',
             })
     if request.method == 'POST':
-            print request.body
-            request.session['file_dict']={'test':'testfiledict'}
-            return HttpResponse({}, content_type='application/json')
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            dataset = input_dict['dataset']
+            PROJECT_MODE_COMMON = 'cmtconfig=x86_64-slc6-gcc48-opt;cloud=CERN;skipscout=yes;site=CERN-PROD_SHORT,FZK-LCG2_HIMEM,IN2P3-CC_HIMEM,BNL_ATLAS_2;'
+            PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=4900;'
+            outputs = input_dict['outputs'].split('.')
+            TAG_CONVERSION = {'recoTag':['Reco'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],'ntupTag':['NTUP_TRIGRATE']}
+            tags = {}
+            for tag in TAG_CONVERSION:
+                if input_dict.get(tag):
+                    for tag_name in TAG_CONVERSION[tag]:
+                        tags[tag_name] = input_dict[tag]
+            number_of_files = number_of_files_in_dataset(dataset)
+            if number_of_files < 2500:
+                merge_files_number = 50
+            else:
+                merge_files_number = int(sqrt(number_of_files))+10
+            if number_of_files == 0:
+                raise ValueError('No files in dataset %s'%dataset)
+            spreadsheet_dict = []
+            slice_index = 0
+            irl = dict(slice=slice_index, brief='', comment='Reco', dataset=dataset,
+                       input_data='',
+                       project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO,
+                       priority=970,
+                       input_events=-1)
+            slice_index += 1
+            sexec = dict(status='NotChecked', priority=970,
+                         input_events=-1)
+            task_config =  {'maxAttempt':15,'maxFailure':5}
+            st_sexec_list = []
+            task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO,'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
+            st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
+                              'memory': 4900,
+                              'formats': '.'.join(outputs),
+                              'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
+            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            for hist_output in ['HIST_HLTMON','HIST','NTUP_TRIGRATE']:
+                if (hist_output in outputs) and (hist_output in tags):
+
+                    irl = dict(slice=slice_index, brief='', comment=hist_output, dataset=dataset,
+                               input_data='',
+                               project_mode=PROJECT_MODE_COMMON,
+                               priority=970,
+                               input_events=-1)
+
+                    sexec = dict(status='NotChecked', priority=970,
+                                 input_events=-1)
+
+                    st_sexec_list = []
+                    task_config =  {'maxAttempt':20,'maxFailure':15}
+                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                    task_config.update(({'project_mode':PROJECT_MODE_COMMON,'nFilesPerJob':merge_files_number,'input_format':hist_output}))
+                    st_sexec_list.append({'step_name': step_from_tag(tags[hist_output]), 'tag': tags[hist_output], 'step_exec': sexec,
+                                      'formats':hist_output,
+                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
+                    task_config =  {'maxAttempt':20,'maxFailure':15}
+                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                    task_config.update(({'nFilesPerJob':merge_files_number,'project_mode':PROJECT_MODE_COMMON,'input_format':hist_output, 'token':'dst:CERN-PROD_DATADISK'}))
+                    st_sexec_list.append({'step_name': step_from_tag(tags[hist_output]), 'tag': tags[hist_output], 'step_exec': sexec,
+                                        'formats':hist_output,
+                                      'task_config':task_config,'step_order':str(slice_index)+'_1','step_parent':str(slice_index)+'_0'})
+                    slice_index += 1
+                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            if ('AOD' in outputs) and ('AOD' in tags):
+                    irl = dict(slice=slice_index, brief='', comment='AOD', dataset=dataset,
+                               input_data='',
+                               project_mode=PROJECT_MODE_COMMON,
+                               priority=970,
+                               input_events=-1)
+
+                    sexec = dict(status='NotChecked', priority=970,
+                                 input_events=-1)
+
+                    st_sexec_list = []
+                    task_config =  {'maxAttempt':20,'maxFailure':15}
+                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                    task_config.update(({'nFilesPerJob':10,'input_format':'AOD','project_mode':PROJECT_MODE_COMMON}))
+                    st_sexec_list.append({'step_name': step_from_tag(tags['AOD']), 'tag': tags['AOD'], 'step_exec': sexec,
+
+                                      'formats':'AOD',
+                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
+                    slice_index += 1
+                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            request.session['file_dict'] = spreadsheet_dict
+            request.session['hlt_dataset'] = dataset
+            request.session['hlt_short_description'] = input_dict['short_description']
+
+        except Exception,e:
+            return HttpResponse(json.dumps({'success':False,'message':str(e)}),status_code=500, content_type='application/json')
+        return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
 
 @csrf_protect
 def hlt_form_prepare_request(request):
     if request.method == 'GET':
-
-            if request.session['file_dict']:
-                print request.session['file_dict']
-                return HttpResponseRedirect(reverse('prodtask:request_table'))
-            else:
-                return short_hlt_form(request)
+            if 'file_dict' in request.session:
+                spreadsheet_dict = request.session['file_dict']
+                form_data = {}
+                dataset = request.session['hlt_dataset']
+                form_data['request_type'] = 'HLT'
+                form_data['phys_group'] = 'THLT'
+                form_data['manager'] = request.user.username
+                form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+                form_data['campaign'] = dataset[:dataset.find('.')]
+                form_data['project'] = dataset[:dataset.find('.')]
+                form_data['provenance'] = 'AP'
+                form_data['description'] = request.session['hlt_short_description']
+                form = TRequestCreateCloneConfirmation(form_data)
+                inputlists = form_input_list_for_preview(spreadsheet_dict)
+                # store data from prefill form to http request
+                return render(request, 'prodtask/_previewreq.html', {
+                    'active_app': 'mcprod',
+                    'pre_form_text': 'Create HLT Request',
+                    'form': form,
+                    'submit_url': 'prodtask:hlt_request_create',
+                    'url_args': None,
+                    'parent_template': 'prodtask/_index.html',
+                    'inputLists': inputlists,
+                    'bigSliceNumber': False
+                })
 
 
 
