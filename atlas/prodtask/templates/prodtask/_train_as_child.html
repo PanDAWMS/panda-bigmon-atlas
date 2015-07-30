@@ -169,11 +169,12 @@
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
         http.post(Django.url('prodtask:create_request_as_child'), editTrainLoad.trainLoad).
          success(function(data, status, headers, config) {
-
-                    window.location.href = Django.url('prodtask:input_list_approve',data.request);
+                    if(data.success) {
+                        window.location.href = Django.url('prodtask:input_list_approve', data.request);
+                    }
      }).
     error(function(data, status, headers, config) {
-         alert(data);
+         alert(data.message);
     });
 
 

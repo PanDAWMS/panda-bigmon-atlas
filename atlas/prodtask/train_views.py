@@ -215,6 +215,7 @@ def create_request_as_child(request):
             new_request.request_type = 'GROUP'
             new_request.energy_gev = parent_request.energy_gev
             new_request.manager = input_dict['manager']
+            new_request.cstatus = 'waiting'
             new_request.save()
             request_status = RequestStatus(request=new_request,comment='Request created as child train WebUI',owner=input_dict['manager'],
                                                        status='waiting')
@@ -265,6 +266,7 @@ def create_request_as_child(request):
 
         except Exception,e:
             results = {'success':False, 'message':str(e)}
+            return HttpResponse(json.dumps(results), status=500, content_type='application/json')
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @login_required(login_url='/prodtask/login/')
