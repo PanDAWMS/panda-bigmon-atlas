@@ -20,6 +20,7 @@ TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),
     join(dirname(atlas_todoview.__file__), 'templates'),
     join(dirname(common.__file__), 'templates'),
+    join(dirname(core.__file__), 'templates'),
 )
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
@@ -33,6 +34,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
 
     ### BigPanDAmon core
     'core.common',
+    'core.admin',
 #    'core.graphics', #NOT-IMPLEMENTED
     'core.pandajob',
     'core.resource',

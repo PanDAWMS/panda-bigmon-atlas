@@ -2,7 +2,7 @@ from os.path import dirname, join
 
 import core
 import atlas
-
+import core.common
 from .local import MY_SECRET_KEY, dbaccess
 
 ALLOWED_HOSTS = [
@@ -42,10 +42,11 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     join(dirname(core.common.__file__), 'templates'),
+    join(dirname(core.__file__), 'templates'),
     join(dirname(atlas.__file__), 'templates'),
 )
 
-STATIC_ROOT = join(dirname(atlas.__file__), 'static')
+STATIC_ROOT = join(dirname(core.common.__file__), 'static')
 #STATIC_ROOT = None
 MEDIA_ROOT = join(dirname(atlas.__file__), 'media')
 STATIC_URL_BASE = '/static/'

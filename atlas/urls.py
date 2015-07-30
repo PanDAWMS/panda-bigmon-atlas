@@ -4,6 +4,7 @@ from django.views.generic import TemplateView
 from django.conf.urls import *
 
 import atlas.settings
+import core.urls
 
 #import core.pandajob.views as pandajob_views
 import atlas.common.views as atlas_common_views
@@ -69,7 +70,7 @@ common_patterns = patterns('',
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     ### Uncomment the next line to enable the admin:
-    url(r'^admin/', include(admin.site.urls),),
+    #url(r'^admin/', include(admin.site.urls),),
 
     ### Django.js
     url(r'^djangojs/', include('djangojs.urls')),
@@ -79,7 +80,7 @@ common_patterns = patterns('',
 
 urlpatterns = patterns('',)
 urlpatterns += common_patterns
-
+urlpatterns += core.urls.urlpatterns
 #### django-debug-toolbar
 #if settings.DEBUG:
 #    import debug_toolbar
