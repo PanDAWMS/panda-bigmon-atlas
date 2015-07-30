@@ -201,6 +201,9 @@ setup(
         'atlas.deftcore',
         'atlas.deftcore.api',
         'atlas.deftcore.api.client',
+        'atlas.gspread',
+        'atlas.datatables',
+        'atlas.datatables.templatetags',
     ],
     data_files=[ #FIXME
                 # config files 
@@ -217,8 +220,8 @@ setup(
                      "atlas/prodtask/templates",
                      "atlas/todoview/templates",
                      "atlas/getdatasets/templates",
-                                  "atlas/getdatasets/templates",
-				  
+                     "atlas/datatables/static",
+                     "atlas/datatables/templates",
                 )
     ,         
     cmdclass={'install': install_panda,
