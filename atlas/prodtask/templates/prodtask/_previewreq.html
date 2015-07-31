@@ -71,11 +71,29 @@
 
         }
     }
+        function addHelpText(){
+        for(var help in helpText){
+            if (field_id[help]!=""){
+                current_filed_id = field_id[help];
+                if (!($('#'+current_filed_id+'_help').length )){
+                    $('#'+current_filed_id).parent().parent().append('<td style="width: 300px"><span class="HelpColumn" id="'+current_filed_id+'_help" >'+ helpText[help] +'</span></td>');
+                }
+                else{
+                    $('#'+current_filed_id+'_help').show();
+                }
+            }
+
+        }
+    }
+    function hideHelpText(){
+        $('.HelpColumn').hide();
+    }
+
     function  MCCampaignHandling(){
         var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15'];
         var SUB_CAMPAIGN = ['a','b','c','d','e','f'];
         if ($("#{{ form.request_type.auto_id }}").val()=='MC'){
-            $("#{{ form.need_approve.auto_id }}").parent().parent().show();
+            addHelpText();
             var campaign_name = changeInputOnSelect("{{ form.campaign.auto_id }}","campaign",'none_mc_campaign',MC_CAMPAIGN_LIST);
             var sub_campaign_list = [];
             for (var i=0; i<SUB_CAMPAIGN.length;i++){
@@ -84,13 +102,42 @@
             var sub_campaign_name = changeInputOnSelect("{{ form.subcampaign.auto_id }}","subcampaign",'none_mc_subcampaign',sub_campaign_list);
             $("#{{ form.campaign.auto_id }}").change(function(){changeSelector("#{{ form.campaign.auto_id }}",SUB_CAMPAIGN,"#{{ form.subcampaign.auto_id }}")});
         } else{
-            $("#{{ form.need_approve.auto_id }}").parent().parent().hide();
+            hideHelpText();
             if ($('#none_mc_campaign').val()!=undefined){
                 changeSelectOnInput("{{ form.campaign.auto_id }}",'none_mc_campaign');
                 changeSelectOnInput("{{ form.subcampaign.auto_id }}",'none_mc_subcampaign');
             }
         }
     }
+
+var field_id =   {description_id:"{{ form.description.auto_id }}",long_description_id:"{{ form.long_description.auto_id }}",
+    excellink:"{{ form.excellink.auto_id }}",ref_link:"{{ form.ref_link.auto_id }}",phys_group:"{{ form.phys_group.auto_id }}",
+energy_gev:"{{ form.energy_gev.auto_id }}",project:"{{ form.project.auto_id }}",cc:"{{ form.cc.auto_id }}",
+    request_type:"{{ form.request_type.auto_id }}", campaign:"{{ form.campaign.auto_id }}", subcampaign:"{{ form.subcampaign.auto_id }}",
+manager:"{{ form.manager.auto_id }}",provenance:"{{ form.provenance.auto_id }}",need_approve:"{{ form.need_approve.auto_id }}"};
+
+var helpText = {description_id:"Short description of request (will become request title)",
+long_description_id:"This will be the body of the mail that will\n" +
+" be sent for the approval of the request (and read my production managers).\n" +
+" It should contain a summary and technical details of the request.\n" +
+" As a minimum it should contain the <b>justification,\n" +
+" requested events and priorities.</b> Additional technical information should also be provided e.g.\n" +
+" if the samples require 25 ns and/or 50 ns reconstruction, \n" +
+"if a specific release is required for evgen, if RDOs should be kept for reconstruction",
+   excellink:'Enter the "shareable" link to the google doc spreadsheet',
+    ref_link:'Link to JIRA ticket for request',
+    phys_group:'Physics Analysis/Combined Performance group',
+    energy_gev:'Collision centre-of-mass energy in GeV',
+    project: 'Dataset project name, e.g mc15_13TeV',
+    cc:'Include email address(es) of relevant people, e.g. Group convenors',
+    request_type:' ',
+    campaign:' ',
+    subcampaign:' ',
+    manager:' ',
+    provenance:' ',
+    need_approve:' '
+
+};
     function splitSlices(event,doSplit){
             if(doSplit){
                 $("#{{ form.split_divider.auto_id }}").val($('#splitNumber').val());

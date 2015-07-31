@@ -210,7 +210,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         for slice, steps_status in slice_steps.items():
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
             existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
-            priority_obj = get_priority_object(input_list.priority)
+            if input_list.priority:
+                priority_obj = get_priority_object(input_list.priority)
+            else:
+                priority_obj = get_priority_object(850)
             # Check steps which already exist in slice, and change them if needed
             try:
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
