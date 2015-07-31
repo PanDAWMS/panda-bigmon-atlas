@@ -50,9 +50,15 @@ def short_hlt_form(request):
             input_dict = json.loads(data)
             dataset = input_dict['dataset']
             PROJECT_MODE_COMMON = 'cmtconfig=x86_64-slc6-gcc48-opt;cloud=CERN;skipscout=yes;site=CERN-PROD_SHORT,FZK-LCG2_HIMEM,IN2P3-CC_HIMEM,BNL_ATLAS_2;'
-            PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=4900;'
+            priority = input_dict['priority']
             outputs = input_dict['outputs'].split('.')
-            TAG_CONVERSION = {'recoTag':['Reco'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],'ntupTag':['NTUP_TRIGRATE']}
+            if outputs == ['HIST_HLTMON']:
+                PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=3900;'
+            else:
+                PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=4900;'
+            outputs.append('RAW')
+            TAG_CONVERSION = {'recoTag':['Reco'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],
+                              'ntupTag':['NTUP_TRIGRATE','NTUP_TRIGCOST']}
             tags = {}
             for tag in TAG_CONVERSION:
                 if input_dict.get(tag):
@@ -70,16 +76,15 @@ def short_hlt_form(request):
             irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
                        input_data='',
                        project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO,
-                       priority=970,
+                       priority=priority,
                        input_events=-1)
             slice_index += 1
-            sexec = dict(status='NotChecked', priority=970,
+            sexec = dict(status='NotChecked', priority=priority,
                          input_events=-1)
             task_config =  {'maxAttempt':15,'maxFailure':5}
             st_sexec_list = []
             task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO,'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
             st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
-                              'memory': 4900,
                               'formats': '.'.join(outputs),
                               'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
@@ -89,10 +94,10 @@ def short_hlt_form(request):
                     irl = dict(slice=slice_index, brief=hist_output, comment=hist_output, dataset=dataset,
                                input_data='',
                                project_mode=PROJECT_MODE_COMMON,
-                               priority=970,
+                               priority=priority,
                                input_events=-1)
 
-                    sexec = dict(status='NotChecked', priority=970,
+                    sexec = dict(status='NotChecked', priority=priority,
                                  input_events=-1)
 
                     st_sexec_list = []
@@ -110,11 +115,31 @@ def short_hlt_form(request):
                                       'task_config':task_config,'step_order':str(slice_index)+'_1','step_parent':str(slice_index)+'_0'})
                     slice_index += 1
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            if ('NTUP_TRIGCOST' in outputs) and ('NTUP_TRIGCOST' in tags):
+                    irl = dict(slice=slice_index, brief='NTUP_TRIGCOST', comment='NTUP_TRIGCOST', dataset=dataset,
+                               input_data='',
+                               project_mode=PROJECT_MODE_COMMON,
+                               priority=priority,
+                               input_events=-1)
+
+                    sexec = dict(status='NotChecked', priority=priority,
+                                 input_events=-1)
+
+                    st_sexec_list = []
+                    task_config =  {'maxAttempt':20,'maxFailure':15}
+                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                    task_config.update(({'nFilesPerJob':50,'input_format':'NTUP_TRIGCOST','project_mode':PROJECT_MODE_COMMON}))
+                    st_sexec_list.append({'step_name': step_from_tag(tags['NTUP_TRIGCOST']), 'tag': tags['NTUP_TRIGCOST'], 'step_exec': sexec,
+
+                                      'formats':'NTUP_TRIGCOST',
+                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
+                    slice_index += 1
+                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             if ('AOD' in outputs) and ('AOD' in tags):
                     irl = dict(slice=slice_index, brief='AOD', comment='AOD', dataset=dataset,
                                input_data='',
                                project_mode=PROJECT_MODE_COMMON,
-                               priority=970,
+                               priority=priority,
                                input_events=-1)
 
                     sexec = dict(status='NotChecked', priority=970,

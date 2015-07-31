@@ -34,15 +34,24 @@
               </label>
                <label> HIST* merge tag:
                <input type="text" name="mergeTag" ngRequired="false" ng-model="hltShortModel.request.mergeTag"  >
-                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+                   <span ng-show="hltShortForm.mergeTag.$error.amitag">The value is not a valid amitag!</span>
               </label>
                 <label> AOD merge tag:
                     <input type="text" name="aodTag" ngRequired="false" ng-model="hltShortModel.request.aodTag"   >
-                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+                   <span ng-show="hltShortForm.aodTag.$error.amitag">The value is not a valid amitag!</span>
               </label>
-               <label> NTUP_TRIGRATE merge tag:
+               <label> NTUP_* merge tag:
                     <input type="text" name="ntupTag" ngRequired="false" ng-model="hltShortModel.request.ntupTag"  >
-                   <span ng-show="hltShortForm.recoTag.$error.amitag">The value is not a valid amitag!</span>
+                   <span ng-show="hltShortForm.ntupTag.$error.amitag">The value is not a valid amitag!</span>
+              </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="large-3 columns">
+              <label> Priority:
+                <input type="number" name="priority" ng-model="hltShortModel.request.priority" required >
+                   <span ng-show="hltShortForm.priority.$error.required && !hltShortForm.priority.$pristine" >
+                    Required </span>
               </label>
             </div>
         </div>

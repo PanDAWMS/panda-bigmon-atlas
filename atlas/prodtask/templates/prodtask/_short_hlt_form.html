@@ -86,8 +86,8 @@
         function (scope, http, location){
         var hltShortModel = this;
         hltShortModel.request = {};
-        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false,NTUP_TRIGRATE:false,RAW:false};
-
+        hltShortModel.outputs = {HIST_HLTMON:true,HIST:false,ESD:false,AOD:false,NTUP_TRIGRATE:false,NTUP_TRIGCOST:false};
+        hltShortModel.request.priority = 970;
         hltShortModel.proceed = function() {
             var checkedOutput = [];
             for (var output in  hltShortModel.outputs){
