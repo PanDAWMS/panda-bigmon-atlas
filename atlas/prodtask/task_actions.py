@@ -40,6 +40,7 @@ allowed_task_actions = {
     'submitting': ['kill_job'],
     'ready': ['kill_job'],
     'running': ['kill_job'],
+    'exhausted': ['kill_job'],
     'done': ['obsolete', 'delete_output'],
     'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
     'broken': [],
@@ -47,7 +48,7 @@ allowed_task_actions = {
 }
 
 # Actions for tasks in "active" states
-for _status in ['registered', 'assigning', 'submitting', 'ready', 'running']:
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs'])
