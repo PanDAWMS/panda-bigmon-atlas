@@ -16,7 +16,7 @@ from math import sqrt
 from atlas.prodtask.ddm_api import number_of_files_in_dataset
 
 from ..prodtask.helper import form_request_log
-from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset
+from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset, egroup_permissions
 from ..prodtask.ddm_api import find_dataset_events
 #import core.datatables as datatables
 import atlas.datatables as datatables
@@ -618,6 +618,13 @@ def mcfile_form_prefill(form_data, request):
     form_data['need_split'] = (check_need_split(spreadsheet_dict) > 0)
     # if form_data['need_split']:
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
+    if len(spreadsheet_dict)>220:
+        if (not request.user.is_superuser) and \
+                            ('MCCOORD' not in egroup_permissions(request.user.username)):
+            eroor_message = "Too many samples selected for a single request - please factorise request into " \
+                            "multiple smaller requests. For example, split up Full and Fast simulation and " \
+                            "25 ns and 50 ns reconstruction and put them in separate requests. For special cases " \
+                            "exceptions can be made, please contact the MC production coordinators if this is required."
     _logger.debug('Gathered data: %s' % spreadsheet_dict)
     return spreadsheet_dict, eroor_message
 
