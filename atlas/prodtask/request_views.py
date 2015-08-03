@@ -158,6 +158,7 @@ def short_hlt_form(request):
             request.session['file_dict'] = spreadsheet_dict
             request.session['hlt_dataset'] = dataset
             request.session['hlt_short_description'] = input_dict['short_description']
+            request.session['hlt_ref_link'] = input_dict['ref_link']
 
         except Exception,e:
             return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
@@ -179,6 +180,7 @@ def hlt_form_prepare_request(request):
             form_data['project'] = dataset[:dataset.find('.')]
             form_data['provenance'] = 'AP'
             form_data['description'] = request.session['hlt_short_description']
+            form_data['ref_link'] = request.session['hlt_ref_link']
             form = TRequestCreateCloneConfirmation(form_data)
             inputlists = form_input_list_for_preview(spreadsheet_dict)
             # store data from prefill form to http request

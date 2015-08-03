@@ -18,6 +18,13 @@
         </div>
         </div>
         <div class="row">
+        <div class="large-12 columns">
+          <label> Link to JIRA ticket:
+            <input type="text" name="ref_link" ng-model="hltShortModel.request.ref_link"  >
+          </label>
+        </div>
+        </div>
+        <div class="row">
         <div class="large-6 columns">
             <span>Outputs:</span><br>
             <label ng-repeat="(output,enabled) in hltShortModel.outputs">
