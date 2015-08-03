@@ -86,7 +86,7 @@ def assembled_train(request,train_id):
 
 def trains_list(request):
     if request.method == 'GET':
-        trains = TrainProduction.objects.all().order_by('departure_time')
+        trains = TrainProduction.objects.filter(status='loading').order_by('-id')
         return render(request, 'prodtask/_trains_list.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Trains',
@@ -95,6 +95,17 @@ def trains_list(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
+
+def trains_list_full(request):
+    if request.method == 'GET':
+        trains = TrainProduction.objects.all().order_by('-id')
+        return render(request, 'prodtask/_trains_list.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Trains',
+                'trains': [model_to_dict(x) for x in trains],
+                'submit_url': 'prodtask:trains_list',
+                'parent_template': 'prodtask/_index.html',
+            })
 
 class TrainCarriageSerializer(serializers.ModelSerializer):
 
@@ -393,6 +404,17 @@ def train_edit(request, train_id):
 
     })
 
+
+@login_required(login_url='/prodtask/login/')
+def close_train(request, train_id):
+    try:
+        train = TrainProduction.objects.get(id=train_id)
+        train.status = 'Closed'
+        train.save()
+        return train_edit(request, train_id)
+    except:
+        pass
+    return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
 
