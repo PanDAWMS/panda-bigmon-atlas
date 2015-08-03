@@ -1803,8 +1803,7 @@ function spreadAMI(that){
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
 
-        function showTrainExtendModal(event){
-            event.preventDefault();
+        function checkParentTrain(){
             var sliceList = [];
              $('#errorTrainMessage').html('');
              $('#makeTrainsButton').hide();
@@ -1814,7 +1813,12 @@ function spreadAMI(that){
                 sliceList.push(sliceID);
             });
             $('#loadTrain').spin('small');
-            var sendData = {slices:sliceList,step_number:5,production_request:'{{ pr_id }}'};
+            if($('#trainParentStep').length){
+                var sendData = {slices:sliceList,step_number:$('#trainParentStep').val(),production_request:'{{ pr_id }}'};
+            }else{
+                var sendData = {slices:sliceList,step_number:5,production_request:'{{ pr_id }}'};
+            }
+
             $('#trainSlices').html(sliceList.toString());
 
                   $.ajax({
@@ -1833,8 +1837,15 @@ function spreadAMI(that){
                             }
                         }
                   });
+        }
+        function changeParentTrainStep(){
+            checkParentTrain();
+        }
+        function showTrainExtendModal(event){
+            event.preventDefault();
+            checkParentTrain();
 
-                $('#trainModalWindow').foundation('reveal', 'open');
+            $('#trainModalWindow').foundation('reveal', 'open');
         }
 
 function changeSliceChanges(that){
@@ -2413,9 +2424,9 @@ var lastChecked = true;
          <button id="retrySlice" class="btn_is_authenticated" title="Very smart algorithm to retry slices" onclick="retrySlicesClick(event);">Retry</button>
     </div>
          <div class="large-1 columns">
-         {% ifequal trequest.request_type 'MC' %}
+
              <button id="trainsSlices" class="btn_is_authenticated" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
-         {% endifequal %}
+
     </div>
     <div class="large-3 columns">
         {% if show_split %}
@@ -2841,6 +2852,19 @@ var lastChecked = true;
 
             </div>
         </div>
+    {% ifnotequal trequest.request_type 'MC' %}
+     <div class="row">
+     <div class="large-4 column">
+         <label> Parent step:
+                    <select id="trainParentStep" onchange="changeParentTrainStep();" >
+                    {% for step in step_list %}
+                            <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                    </label>
+      </div>
+     </div>
+    {% endifnotequal %}
         <div class="row">
             <div class="large-2 column">
                 <a href='{% url 'prodtask:train_as_child' pr_id %}' id="makeTrainsButton" style="display: none" class="button btn_is_authorized postfix" >Make trains</a>

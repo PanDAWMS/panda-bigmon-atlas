@@ -244,7 +244,7 @@ def create_request_as_child(request):
                             current_output_formats.append(output)
                     if current_output_formats:
                         st_sexec_list = []
-                        irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset,
+                        irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset_id,
                                    input_data=parent_step.slice.input_data,
                                    project_mode=current_step_pattern.slice.project_mode,
                                    priority=int(current_step_pattern.slice.priority),
