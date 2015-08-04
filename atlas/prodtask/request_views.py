@@ -109,7 +109,7 @@ def short_hlt_form(request):
                                       'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
                     task_config =  {'maxAttempt':20,'maxFailure':15}
                     task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
-                    task_config.update(({'nFilesPerJob':merge_files_number,'project_mode':PROJECT_MODE_COMMON,'input_format':hist_output, 'token':'dst:CERN-PROD_DATADISK'}))
+                    task_config.update(({'nFilesPerJob':merge_files_number,'project_mode':PROJECT_MODE_COMMON,'input_format':hist_output, 'token':'dst:CERN-PROD_TRIG-HLT'}))
                     st_sexec_list.append({'step_name': step_from_tag(tags[hist_output]), 'tag': tags[hist_output], 'step_exec': sexec,
                                         'formats':hist_output,
                                       'task_config':task_config,'step_order':str(slice_index)+'_1','step_parent':str(slice_index)+'_0'})
