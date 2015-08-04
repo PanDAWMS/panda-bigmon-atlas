@@ -519,6 +519,7 @@ class ProductionTask(models.Model):
     jedi_info = models.CharField(max_length=256, db_column='JEDI_INFO', null=False, blank=True)
     total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
     total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
+    is_extension = models.NullBooleanField(db_column='IS_EXTENSION', null=True, blank=False)
 
     def save(self):
         raise NotImplementedError
