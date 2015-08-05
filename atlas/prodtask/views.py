@@ -256,6 +256,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                     if not step_value['value'] and step_in_db:
                         to_delete.append(step_in_db)
                         continue
+                    if step_value['value'] and (not step_in_db) and existed_foreign_step and no_action:
+                         raise ValueError("Part of child chain before linked step can't be overridden")
                     no_action = False
                     if step_value['changes']:
                         for key in step_value['changes'].keys():
@@ -1029,7 +1031,10 @@ def request_table_view(request, rid=None, show_hidden=False):
         task_short = ''
         if tasks:
             for task in tasks:
-                task['short'] = task['status'][0:8]
+                if task['is_extension']:
+                    task['short'] =('>'+ task['status']+'>')[0:8]
+                else:
+                    task['short'] = task['status'][0:8]
         return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks':tasks, 'slice':slice,
                 'is_another_request':is_another_request}
 
