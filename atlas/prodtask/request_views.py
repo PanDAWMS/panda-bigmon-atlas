@@ -747,10 +747,8 @@ def parse_json_slice_dict(json_string):
     for slice_number in slice_numbers:
             slice = slices_dict[slice_number]
             if  (slice['step_order'] != slice['parentstepshort']):
-                datasets = ['foreign'] * len(slices_dict[int(slice['parentstepshort'].split('_')[0])]['datasets'].split(','))
-                slice['datasets'] = ','.join(datasets)
-            else:
-                datasets = [x.strip() for x in slice['datasets'].split(',') if x]
+                slice['datasets'] = slices_dict[int(slice['parentstepshort'].split('_')[0])]['datasets']
+            datasets = [x.strip() for x in slice['datasets'].split(',') if x]
             for prefix,dataset in enumerate(datasets):
                 if dataset:
                     if  dataset == 'foreign':
