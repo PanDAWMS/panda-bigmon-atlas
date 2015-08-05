@@ -110,6 +110,7 @@ var step_bc=["#FFB734","#FFFFFF","#ffff00"]
 $("#doColor").css({'background-color':step_bc[0]});
 $("#skippedColor").css({'background-color':step_bc[1]});
 $("#foreignColor").css({'background-color':step_bc[2]});
+
 $(document).ready(function(){
 var temp_ref_link = '{{ trequest.ref_link}}';
 $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,temp_ref_link.length));
@@ -121,7 +122,7 @@ $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,tem
     $(".hiddenNonEdit").hide();
     $("#updateStepParams").hide();
 {% endif %}
-
+ $("#filter").keyup(function(){changeStatusFilter()});
 var slices_changes = {};
 
     {% if not user.is_authenticated %}
@@ -204,24 +205,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
          return false;
     });
 
-    $("#filter").keyup(function(){
-       var valThis = $(this).val().toLowerCase();
-       if(valThis == ""){
-           $(".inputListDivs").show();
-       } else{
-           $(".inputListDivs").hide();
-           $(".filterField").each(function(){
-              if($(this).text().toLowerCase().indexOf(valThis)>=0){
-                  $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
-              }
-           });
-       }
-    });
-{#    $("#newComment").keyup(function(event){#}
-{#    if(event.keyCode == 13){#}
-{#        addComment(event);#}
-{#    };#}
-{#    });#}
+
+
     {#Fill pattern table#}
     (function(){
        {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
@@ -1847,7 +1832,48 @@ function spreadAMI(that){
 
             $('#trainModalWindow').foundation('reveal', 'open');
         }
+function changeStatusFilter(){
 
+       var valThis = $('#filter').val().toLowerCase();
+
+    if(valThis == ""){
+           $(".inputListDivs").show();
+       } else{
+           $(".inputListDivs").hide();
+           $(".filterField").each(function(){
+              if($(this).text().toLowerCase().indexOf(valThis)>=0){
+                  $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
+              }
+           });
+       }
+       var statusFilterValue = $('#statusFilter').val();
+        switch (statusFilterValue) {
+            case  '!submitted':
+                $('.StatusFilter').each(function(){
+                  if($(this).html()=='submitted'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
+                break;
+            case  'partially_submitted':
+                $('.StatusFilter').each(function(){
+                  if($(this).html()!='partially_submitted'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
+                break;
+            case  'not_submitted':
+                $('.StatusFilter').each(function(){
+                  if($(this).html()!='not_submitted'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
+                break;
+        }
+
+
+
+}
 function changeSliceChanges(that){
     if(changeMode) {
         currentClass = $(that).attr("class").replace("storeInput", '').split(' ');
@@ -2078,10 +2104,24 @@ var lastChecked = true;
 <u><a href="{% url "prodtask:task_table" %}#/?time_period=all&task_type=production&request={{ trequest.reqid}}">All task</a></u>
 
 {% endif %}
-    <table style="padding: 0px;margin-bottom:0px;border: hidden">
-<tr><td><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></td>
-    <td>Filter:</td><td><form><input type="text" id="filter" style="width: 500px"></form></td></tr>
-</table>
+
+    <div class="row" >
+        <div class="large-2 column"><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></div>
+        <div class="large-6 column">
+            <label>
+                Filter:
+                <input type="text" id="filter" style="width: 500px">
+            </label>
+        </div>
+        <div class="large-4 column">
+            <select id="statusFilter" onchange="changeStatusFilter();">
+                <option value="all">all</option>
+                <option value="!submitted">hide submitted</option>
+                <option value="partially_submitted">partially submitted</option>
+                <option value="not_submitted">not submitted</option>
+            </select>
+        </div>
+    </div>
 {% if has_deft_problem %}
     <table>
     <tr>
@@ -2249,7 +2289,7 @@ var lastChecked = true;
                         {% endifequal %}
                 {% endfor %}
 
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }}" style="width: 8em;text-align:center">{{ approved }}</td><td>
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }} StatusFilter" style="width: 8em;text-align:center">{{ approved }}</td><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
                             edit (saved)
                         </a></u></td>
