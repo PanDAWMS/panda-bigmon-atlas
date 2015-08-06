@@ -124,7 +124,7 @@ $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,tem
 {% endif %}
  $("#filter").keyup(function(){changeStatusFilter()});
 var slices_changes = {};
-
+changeSliceOrder();
     {% if not user.is_authenticated %}
       $(".btn_is_authenticated").each(function(){
           this.disabled=true;
@@ -638,7 +638,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     };
      function checkSlice(event) {
 
-             currentSlice = ($(event.target).attr('id')).slice('checkbox'.length);
+             var currentSlice = sliceOrder.indexOf(($(event.target).attr('id')).slice('checkbox'.length));
+                console.log(currentSlice);
              if (event.shiftKey) {
                  if (lastCheckedSlice > -1) {
 
@@ -650,8 +651,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                          toSlice = currentSlice;
                      }
                      for(var i=fromSlice;i<=toSlice;i++){
-                        if ($("#inputList_div".concat(i)).is(":visible")){
-                            $('#checkbox'+i).prop("checked",lastChecked);
+                        if ($("#inputList_div".concat(sliceOrder[i])).is(":visible")){
+                            $('#checkbox'+sliceOrder[i]).prop("checked",lastChecked);
                         }
                      }
 
@@ -1874,6 +1875,62 @@ function changeStatusFilter(){
 
 
 }
+function changeSortSelect(sortType){
+  switch (sortType) {
+             case  'sliceID':
+                 sortBySliceID();
+                break;
+            case  'dataset':
+                sortByJobOption('DatasetSort','inputDatasetName');
+                break;
+            case  'JO':
+                sortByJobOption('JOSort','sliceInputJobOptions');
+                break;
+  }
+}
+function sortBySliceID(){
+    var sliceIDs = $.extend([],sliceOrder);
+    sliceIDs.sort(function(a,b){return parseInt(a)-parseInt(b)});
+    moveSlices(sliceIDs);
+}
+
+function sortByJobOption(sortClassName,sortElementName){
+    var JOTuple = [];
+{#    JOSort#}
+    $('.'+sortClassName).each(function(){
+{#        sliceInputJobOptions#}
+        var sliceID = $(this).attr("id").slice(sortElementName.length);
+        JOTuple.push([sliceID,$(this).attr('title')]);
+    });
+
+    JOTuple.sort(function(a,b){return a[1].localeCompare(b[1])});
+
+    var JOSorted=[];
+    for(var i=0;i<JOTuple.length;i++){
+        JOSorted.push(JOTuple[i][0]);
+    }
+
+    moveSlices(JOSorted);
+}
+
+
+
+function moveSlices(newOrder){
+    for(var i=0;i<newOrder.length;i++){
+        $('#baseInput').append($('#inputList_div'+newOrder[i]));
+    }
+    changeSliceOrder();
+
+}
+function changeSliceOrder(){
+     sliceOrder = [];
+    $(".checkboxSlice").each(function () {
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                        sliceOrder.push(sliceID);
+                });
+}
+var sliceOrder = [];
 function changeSliceChanges(that){
     if(changeMode) {
         currentClass = $(that).attr("class").replace("storeInput", '').split(' ');
@@ -1907,6 +1964,7 @@ function changeSliceChanges(that){
         if (isSliceData) {
             changesList[currentSlice][currentField] = $(that).val();
             $('.change' + currentField + currentSlice.toString()).html(changesList[currentSlice][currentField]);
+            $('.change' + currentField + currentSlice.toString()).attr('title',changesList[currentSlice][currentField]);
             if (currentField=='jobOption'){
                 makeJobOptionURL();
             }
@@ -2110,16 +2168,29 @@ var lastChecked = true;
         <div class="large-6 column">
             <label>
                 Filter:
-                <input type="text" id="filter" style="width: 500px">
+                <input type="text" id="filter" >
             </label>
         </div>
-        <div class="large-4 column">
+        <div class="large-2 column">
+            <label>
+                Filter:
             <select id="statusFilter" onchange="changeStatusFilter();">
                 <option value="all">all</option>
                 <option value="!submitted">hide submitted</option>
                 <option value="partially_submitted">partially submitted</option>
                 <option value="not_submitted">not submitted</option>
             </select>
+           </label>
+        </div>
+        <div class="large-2 column">
+            <label>
+                Sort:
+            <select id="sortSelect" onchange="changeSortSelect($(this).val());">
+                <option value="sliceID">slice ID</option>
+                <option value="dataset">dataset name</option>
+                <option value="JO">job options</option>
+            </select>
+            </label>
         </div>
     </div>
 {% if has_deft_problem %}
@@ -2212,6 +2283,7 @@ var lastChecked = true;
 </div>
 
     <div >
+    <div  id="baseInput"></div>
     {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
@@ -2223,11 +2295,11 @@ var lastChecked = true;
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
+                        <span class="showFullSpan changedatasetName{{ inputList.slice }} DatasetSort" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl "  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
+                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl JOSort"  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
                     {% if cloned != 'no' %}
                         <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
@@ -2236,7 +2308,7 @@ var lastChecked = true;
                     {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class="showFullSpan">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl JOSort' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
                         </a>
                     </td>
