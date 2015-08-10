@@ -26,8 +26,6 @@ import locale
 import time
 import json
 
-import re
-
 
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
@@ -72,8 +70,8 @@ def task_details(request, rid=None):
         'task': task,
         'ttask': ttask,
         'output_datasets': output_datasets,
-        #'clouds': get_clouds(),
-        #'sites': get_sites(),
+        'clouds': get_clouds(),
+        'sites': get_sites(),
         'outputs': output_formats,
         'parent_template' : 'prodtask/_index.html',
         }
