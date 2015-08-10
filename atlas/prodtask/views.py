@@ -1456,7 +1456,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'show_split':show_split,
                'needed_management_approve':needed_management_approve,
                'first_approval_message':first_approval_message,
-               'is_open_ended':is_open_ended
+               'is_open_ended':is_open_ended,
+                'page_title':'%s - Request'%str(rid)
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
