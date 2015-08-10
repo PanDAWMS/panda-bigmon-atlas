@@ -204,6 +204,40 @@ def get_steps_bulk_info(request, reqid):
 
 
 @csrf_protect
+def get_slices_bulk_info(request, reqid):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slice_numbers = input_dict['slices']
+            all_slices = list(InputRequestList.objects.filter(request=reqid))
+            slices = all_slices
+            if '-1' not in slice_numbers:
+                slices = [x for x in all_slices if str(x.slice) in slice_numbers]
+            _logger.debug(form_request_log(reqid,request,'Take slices info: %s' % str(slice_numbers)))
+            result_dict = {'multivalues':{},'singlevalue':{}}
+            for slice in slices:
+                current_slice_dict = {'datasetName':slice.dataset_id,'comment':slice.comment,'jobOption':slice.input_data,
+                                      'eventsNumber':int(slice.input_events)}
+
+                for key in current_slice_dict:
+                    if key in result_dict['multivalues']:
+                        if current_slice_dict[key] not in result_dict['multivalues'][key]:
+                            result_dict['multivalues'][key].append(current_slice_dict[key])
+                    else:
+                        if key in result_dict['singlevalue']:
+                            if current_slice_dict[key] != result_dict['singlevalue'][key]:
+                                result_dict['multivalues'][key] = [result_dict['singlevalue'][key],current_slice_dict[key]]
+                                del result_dict['singlevalue'][key]
+                        else:
+                            result_dict['singlevalue'][key] = current_slice_dict[key]
+
+            return HttpResponse(json.dumps({'result':result_dict}), content_type='application/json')
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
+
+@csrf_protect
 def set_steps_bulk_info(request, reqid):
     if request.method == 'POST':
         try:

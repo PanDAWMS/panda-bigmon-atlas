@@ -249,6 +249,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     (function(){
             $('.storeBulk').bind('change',function(){saveBulkStepChanges(this);});
         })();
+    (function(){
+            $('.storeSliceBulk').bind('change',function(){saveBulkSliceChanges(this);});
+        })();
 
     $("#approveDialog").dialog({
         autoOpen: false,
@@ -468,7 +471,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                         location.reload();
                                     }
                                 }
-                                console.log(additionalComment);
+{#                                console.log(additionalComment);#}
                                     if (isApprove) {
                                         $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
                                         $("#approveDialog").attr("title", "Steps approved");
@@ -639,7 +642,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
      function checkSlice(event) {
 
              var currentSlice = sliceOrder.indexOf(($(event.target).attr('id')).slice('checkbox'.length));
-                console.log(currentSlice);
+{#                console.log(currentSlice);#}
              if (event.shiftKey) {
                  if (lastCheckedSlice > -1) {
 
@@ -1026,7 +1029,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
                 }
-            console.log(check_steps);
+{#            console.log(check_steps);#}
             check_steps['is_eaqual'] = undefined;
             check_steps['db_step_type'] = undefined;
             for (sliceField in check_steps){
@@ -1094,7 +1097,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             if (newSlice !=  undefined){
                 $('#closeReveal').click();
 
-                console.log(newSlice);
+{#                console.log(newSlice);#}
                 setTimeout(function(){
                     formSliceInfo(undefined,'0123456789'+newSlice);
                  }, 1000);
@@ -1147,6 +1150,30 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $.ajaxSetup({async: true});
         }
 
+        function showBulkSliceModal(event){
+            event.preventDefault();
+            bulkSliceChanges = {};
+            changeMode = true;
+            var sliceCheckedList = getCheckedSlices();
+            $('#slicesBulkModalSize').html(sliceCheckedList.length);
+            var sendData = {slices:sliceCheckedList };
+            $.ajaxSetup({async: false});
+              $.ajax({
+                  url: Django.url('prodtask:get_slices_bulk_info', "{{ pr_id }}"),
+                  type: 'POST',
+                  contentType: 'application/json; charset=utf-8',
+                  data: $.toJSON(sendData),
+                  dataType: 'text',
+                  success: function (data, status) {
+                      fillStepBulkChange($.evalJSON(data).result,'storeSliceBulk');
+                  }
+              });
+            $.ajaxSetup({async: true});
+
+
+
+            $('#slicesBulkChangeModal').foundation('reveal', 'open')
+        }
 
         function showBulkStepModal(event){
             event.preventDefault();
@@ -1161,17 +1188,17 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             changeStepBulk();
             $('#stepsBulkChangeModal').foundation('reveal', 'open')
         }
-        function fillStepBulkChange(input_dict){
+        function fillStepBulkChange(input_dict, className){
             for (multiValueElement in input_dict['multivalues']){
 
-                $('.storeBulk.'+multiValueElement).val('');
-                $('.storeBulk.'+multiValueElement).attr('placeholder','(Multiple values)');
-                $('.storeBulk.'+multiValueElement).parent().css({'color': 'initial'});
+                $('.'+className+'.'+multiValueElement).val('');
+                $('.'+className+'.'+multiValueElement).attr('placeholder','(Multiple values)');
+                $('.'+className+'.'+multiValueElement).parent().css({'color': 'initial'});
             }
             for (singleValueElement in input_dict['singlevalue']){
-                $('.storeBulk.'+singleValueElement).val(input_dict['singlevalue'][singleValueElement]);
-                $('.storeBulk.'+singleValueElement).attr('placeholder','');
-                $('.storeBulk.'+singleValueElement).parent().css({'color': 'initial'});
+                $('.'+className+'.'+singleValueElement).val(input_dict['singlevalue'][singleValueElement]);
+                $('.'+className+'.'+singleValueElement).attr('placeholder','');
+                $('.'+className+'.'+singleValueElement).parent().css({'color': 'initial'});
             }
             bulkStepChanges = {}
         }
@@ -1185,7 +1212,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                   data: $.toJSON(sendData),
                   dataType: 'text',
                   success: function (data, status) {
-                      fillStepBulkChange($.evalJSON(data).result);
+                      fillStepBulkChange($.evalJSON(data).result,'storeBulk');
                       $('#stepsApprovedBulk').html($.evalJSON(data).stepsApproved);
                       $('#stepsToChangeBulk').html($.evalJSON(data).stepsToChange);
                   }
@@ -1328,9 +1355,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
                 }
 
-{#                if (step_types.length != current_step_tag.length){#}
-{#                    is_equal = false;#}
-{#                }#}
                 for (var i=0;(i<step_types.length) ;i++){
                         no_changes = clearChanges(parseInt(sliceNumber),i,step_types[i]);
 
@@ -1348,7 +1372,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
-            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });
+{#            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });#}
             return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
         }
 
@@ -1362,8 +1386,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     if (field in changesList[sliceNumber]){
                         if (changesList[sliceNumber][field] != undefined){
                             if (changesList[sliceNumber][field] != sliceData[field]){
-                                                        console.log(changesList[sliceNumber][field]);
-                                console.log(sliceData[field]);
+
                                 no_changes = false;
                             }else{
                                    changesList[sliceNumber][field] = undefined;
@@ -1405,6 +1428,32 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 bulkStepChanges[currentClass.replace(",",'')] = $(that).val();
             }
         }
+
+        function saveBulkSliceChanges(that){
+            if(changeMode) {
+                var currentClass = $(that).attr("class").replace("storeSliceBulk", '').replace(' ','');
+                $(that).parent().css({'color': 'red'});
+                bulkSliceChanges[currentClass.replace(",",'')] = $(that).val();
+            }
+        }
+        function saveSlicedBulk(event){
+            event.preventDefault();
+            var slices = getCheckedSlices();
+            for(key in bulkSliceChanges){
+                $('.storeOutputSlice.'+key).val(bulkSliceChanges[key]);
+            }
+            for(var i=0;i<slices.length;i++){
+                 $('#sliceModalSlice').html(slices[i]);
+                 for(key in bulkSliceChanges){
+                     changeSliceChanges($('.storeOutputSlice.'+key));
+                 }
+            }
+            approveSlices(false,99,slices);
+            changeMode = false;
+            $('#slicesBulkChangeModal').foundation('reveal', 'close');
+
+        }
+
         function changeSliceSaveStatus(sliceNumber){
             sliceDBInfo = checkSliceIsSaved(sliceNumber);
             if (! sliceDBInfo.is_equal){
@@ -1434,7 +1483,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             description = $('#newDescription').val();
             newRef = $('#newLink').val();
               var sendData = {slices:sliceList,description:description,ref:newRef};
-             console.log(sendData);
+{#             console.log(sendData);#}
               $( "#reloadDialog" ).dialog();
               $.ajax({
                     url: Django.url('prodtask:request_clone2',"{{ pr_id }}"),
@@ -2026,6 +2075,7 @@ RequestSlice.prototype.getStepByNumber = function(stepNumber){
       throw 'Wrong step number';
   }
 };
+var bulkSliceChanges = {};
 var bulkStepChanges = {};
 var changesList = {};
 var patternDict = [];
@@ -2562,6 +2612,11 @@ var lastChecked = true;
             <a class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</a>
 
         </div>
+        <div class="large-3 columns">
+            <a class="button btn_is_authenticated" onclick="showBulkSliceModal(event);">Bulk slice modification</a>
+
+        </div>
+        <div class="large-6 columns"></div>
     </div>
  </form>
 
@@ -2762,6 +2817,33 @@ var lastChecked = true;
    <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
+
+    <div id="slicesBulkChangeModal" class="reveal-modal" data-reveal>
+
+    Slices: <span id="slicesBulkModalSize"></span>
+
+        <div class="row">
+            <div class="column large-12">
+                <label> Dataset: <input id='datasetNameModal' type="text" class="datasetName storeSliceBulk " placeholder=" "  /></label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="column large-9">
+                <label> job options: <input id="jobOptionModal" type="text" class="jobOption storeSliceBulk" placeholder=" "  /></label>
+            </div>
+            <div class="column large-3">
+                <label> Input events: <input id='eventsNumberModal' type="number" class="eventsNumber storeSliceBulk"   /></label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="column large-12">
+                <label> Comment: <input id="commentModal" type="text" class="comment storeSliceBulk" placeholder=" "  /></label>
+            </div>
+        </div>
+    <button id="saveSliceBulkButton" class="btn_is_authenticated" title="Save selected slices" onclick="saveSlicedBulk(event);">Save</button>
+
+     <a class="close-reveal-modal">&#215;</a>
+    </div>
 
 <div id="stepsBulkChangeModal" class="reveal-modal" data-reveal>
 <p><span style="color: green">Steps approved: <span id="stepsApprovedBulk"></span></span>

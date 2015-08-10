@@ -113,6 +113,7 @@ urlpatterns = patterns('',
     url(r'^get_ami_tag_list/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_ami_tag_list', name='get_ami_tag_list'),
     url(r'^get_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_steps_bulk_info', name='get_steps_bulk_info'),
     url(r'^set_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.set_steps_bulk_info', name='set_steps_bulk_info'),
+    url(r'^get_slices_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_slices_bulk_info', name='get_slices_bulk_info'),
 
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
