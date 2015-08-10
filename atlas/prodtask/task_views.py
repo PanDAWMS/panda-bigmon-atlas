@@ -26,6 +26,9 @@ import locale
 import time
 import json
 
+import re
+
+
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
 def task_details(request, rid=None):
@@ -34,7 +37,16 @@ def task_details(request, rid=None):
             task = ProductionTask.objects.get(id=rid)
             ttask = TTask.objects.get(id=rid)
             output_datasets = ProductionDataset.objects.filter(task_id=rid)
-	    output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
+            output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
+
+            #TODO
+            #if task.is_extension:
+                #for dataset in output_datasets:
+                    #print dataset.name
+                    #ds_pattern=re.search('/.+?(?=tid)/',dataset.name)
+                    #ds_pat=dataset.name.split("tid")[0]
+                    #print ds_pat
+                    #print ProductionDataset.objects.filter(name_icontains=ds_pat)
         except:
             return HttpResponseRedirect('/')
     else:
@@ -60,8 +72,8 @@ def task_details(request, rid=None):
         'task': task,
         'ttask': ttask,
         'output_datasets': output_datasets,
-        'clouds': get_clouds(),
-        'sites': get_sites(),
+        #'clouds': get_clouds(),
+        #'sites': get_sites(),
         'outputs': output_formats,
         'parent_template' : 'prodtask/_index.html',
         }
