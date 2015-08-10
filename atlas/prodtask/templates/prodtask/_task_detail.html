@@ -6,7 +6,9 @@
 {% block extra_css %}
 {{ block.super }}
 	<style type="text/css" title="currentStyle">
-	</style>
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
 {% endblock %}
 
 {% block base_js %}
@@ -45,8 +47,9 @@
 <tr><th><label for="username">Owner:</label></th><td>{{ task.username }}</td></tr>
 <tr><th><label for="campaign">Campaign:</label></th><td>{{ task.campaign }}</td></tr>
 <tr><th><label for="provenance">Provenance:</label></th><td>{{ task.provenance }}</td></tr>
-<tr><th><label for="status">Status:</label></th><td>{{ task.status }}</td></tr>
+<tr><th><label for="status">Status:</label></th><td><span class="tstat {{ task.status }}">{{ task.status }}</span></td></tr>
 <tr><th><label for="priority">Priority:</label></th><td>{{ task.priority }}</td></tr>
+<tr><th><label for="frate">Failure rate:</label></th><td>{{ task.failure_rate }} {% if task.failure_rate != None %} % ( <a style="color: red"/> {{ task.total_files_failed}} <a style="color: black"/>| <a style="color: green"/> {{ task.total_files_tobeused}} <a style="color: black"/>){% endif %}</td></tr>
 <tr><th><label for="current_priority">Current priority:</label></th><td>{{ task.current_priority }}</td></tr>
 <tr><th><label for="dsn">Dsn:</label></th><td>{{ task.dsn }}</td></tr>
 <tr><th><label for="phys_short">Phys short:</label></th><td>{{ task.phys_short }}</td></tr>
