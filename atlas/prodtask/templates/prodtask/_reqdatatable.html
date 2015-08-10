@@ -1889,14 +1889,25 @@ function changeStatusFilter(){
     if(valThis == ""){
            $(".inputListDivs").show();
        } else{
-           $(".inputListDivs").hide();
+        if ($("#filterType").val()!='tag'){
+             $(".inputListDivs").hide();
            $(".filterField").each(function(){
               if($(this).text().toLowerCase().indexOf(valThis)>=0){
                   $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
               }
            });
+        } else {
+            $(".inputListDivs").hide();
+           $(".filterTag").each(function(){
+              if($(this).text().toLowerCase().indexOf(valThis)>=0){
+                  $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
+              }
+           });
+        }
+
        }
        var statusFilterValue = $('#statusFilter').val();
+
         switch (statusFilterValue) {
             case  '!submitted':
                 $('.StatusFilter').each(function(){
@@ -2215,7 +2226,16 @@ var lastChecked = true;
 
     <div class="row" >
         <div class="large-2 column"><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></div>
-        <div class="large-6 column">
+        <div class="large-2 column">
+            <label>
+                Filter by:
+                <select id="filterType" onchange="changeStatusFilter();">
+                    <option value="fields">slice data</option>
+                    <option value="tag">ami tag</option>
+                </select>
+            </label>
+        </div>
+        <div class="large-4 column">
             <label>
                 Filter:
                 <input type="text" id="filter" >
@@ -2223,7 +2243,7 @@ var lastChecked = true;
         </div>
         <div class="large-2 column">
             <label>
-                Filter:
+                Filter by status:
             <select id="statusFilter" onchange="changeStatusFilter();">
                 <option value="all">all</option>
                 <option value="!submitted">hide submitted</option>
@@ -2398,15 +2418,15 @@ var lastChecked = true;
                 {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'foreign' %}
                             {% if step.is_another_request %}
-                                <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
+                                <td class="notShowFullSpan filterTag" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                                 style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a target="_blank" href="{% url 'prodtask:input_list_approve' step.slice.request%}#inputList{{ step.slice.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
 
                             {% else %}
-                                <td class="notShowFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
+                                <td class="notShowFullSpan filterTag" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                                 style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a href="#inputList{{ step.slice.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
                             {% endif %}
                         {% else %}
-                        <td class="showFullSpan" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
+                        <td class="showFullSpan filterTag" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                         {% endifequal %}
                 {% endfor %}
