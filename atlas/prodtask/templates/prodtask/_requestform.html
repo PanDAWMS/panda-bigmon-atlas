@@ -34,7 +34,63 @@
 
 {#    TODO: Make a class#}
 
+    function fillData(currentID,currentStep){
+        for(var key in currentStep){
+            if(key=='jediTag'){
+                if (currentStep[key]!=''){
+                    $('#jediMerging'+currentID).attr('checked',true);
+                    switchJediMerging('jediMerging'+currentID);
+                }
+            }
+            $('#form'+currentID).find(".storeInput"+'.'+key).val(currentStep[key]);
+        }
 
+    }
+
+
+    function makeFormFromDict(inputDict){
+        var sortedSliceNumbers = [];
+        var baseSliceNumbers = [];
+        var sliceHistory = {};
+        for (slice in inputDict){
+            sortedSliceNumbers.push(slice);
+        }
+        sortedSliceNumbers.sort(function(a,b){
+            var sliceA = parseInt(a.split('_')[0]);
+            var stepA = parseInt(a.split('_')[1]);
+            var sliceB = parseInt(b.split('_')[0]);
+            var stepB = parseInt(b.split('_')[1]);
+            if(sliceA == sliceB){
+                return stepA - stepB
+            } else {
+                return sliceA - sliceB
+            }
+        });
+        var currentID = '0_0';
+        var parentID = '';
+        console.log(sortedSliceNumbers);
+        for(var i=0;i<sortedSliceNumbers.length;i++){
+            var currentStep = inputDict[sortedSliceNumbers[i]];
+            console.log(currentStep);
+            if (currentStep.parentstepshort == sortedSliceNumbers[i]){
+                if (sortedSliceNumbers[i]!='0_0'){
+                    currentID = __addMoreSlices();
+                }
+            } else if (currentStep.parentstepshort.split('_')[0]==sortedSliceNumbers[i].split('_')[0]){
+                parentID = sliceHistory[currentStep.parentstepshort];
+                console.log('addStepButton'+parentID);
+                currentID = __addStep('addStepButton'+parentID);
+            } else {
+                parentID = sliceHistory[currentStep.parentstepshort];
+                console.log('addSliceStepButton'+parentID);
+                currentID = __addNewSliceStep('addSliceStepButton'+parentID);
+            }
+            sliceHistory[sortedSliceNumbers[i]] = currentID;
+             console.log(currentID);
+            fillData(currentID,currentStep);
+        }
+
+    }
     function prepareStep(currentSlice,currentStep,parentSlice,parentStep){
         var idForm = "form"+currentSlice+'_'+currentStep;
         $("#"+idForm+" #searchDatasetButton0").prop({'id':"searchDatasetButton"+currentSlice});
@@ -51,8 +107,7 @@
         $("#" +idForm+ " .parentStep").val("Slice #"+ parentSlice +' step #' + parentStep);
     }
 
-    function addMoreSlices(event){
-        event.preventDefault();
+    function __addMoreSlices(){
         var nextNumber = parseInt($('#sliceNumber').html());
         var cloneForm = $('#form0_0').clone().prop({'id':"form"+nextNumber.toString()+'_0'});
         var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
@@ -62,32 +117,42 @@
         $('#sliceNumber').html((nextNumber+1).toString());
         prepareStep(nextNumber.toString(),'0','0','0');
         $("#form"+nextNumber.toString()+'_0'+ " .parentstepshort").val(nextNumber.toString() +'_0');
+        return nextNumber.toString()+'_'+'0'
+    }
+
+    function addMoreSlices(event){
+        event.preventDefault();
+        __addMoreSlices();
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
+
+        function __addStep(buttonID){
+            var currentSlice = parseInt(buttonID.replace('addStepButton','').split('_')[0]);
+            var currentStep = parseInt(buttonID.replace('addStepButton','').split('_')[1])+1;
+            var currentID = currentSlice.toString() + '_' + currentStep.toString();
+            var cloneForm = $('#form'+(currentSlice).toString()+'_' + (currentStep-1).toString()).clone().prop({'id':"form"+currentID});
+            var idForm = "form"+currentID;
+            cloneForm.children("legend").html("Slice #"+(currentSlice).toString()+' step #' + currentStep.toString()) ;
+            $('#sliceSteps'+currentSlice.toString()).append(cloneForm);
+            prepareStep(currentSlice.toString(),currentStep.toString(),currentSlice.toString(),(currentStep-1).toString());
+            $('#'+buttonID).attr('disabled','disabled').attr('onclick','').click(undefined);
+            $("#" +idForm+ " .hideNotFirst").css({display:'none'});
+            $("#" +idForm+ " .showNotFirst").show();
+            $("#" +idForm+ " .parentStep").val("Slice #"+(currentSlice).toString()+' step #' + (currentStep-1).toString());
+            return currentID
+        }
      function addStep(event, buttonID){
         event.preventDefault();
 
-        var currentSlice = parseInt(buttonID.replace('addStepButton','').split('_')[0]);
-        var currentStep = parseInt(buttonID.replace('addStepButton','').split('_')[1])+1;
-        var currentID = currentSlice.toString() + '_' + currentStep.toString();
-        var cloneForm = $('#form'+(currentSlice).toString()+'_' + (currentStep-1).toString()).clone().prop({'id':"form"+currentID});
-        var idForm = "form"+currentID;
-        cloneForm.children("legend").html("Slice #"+(currentSlice).toString()+' step #' + currentStep.toString()) ;
-        $('#sliceSteps'+currentSlice.toString()).append(cloneForm);
-        prepareStep(currentSlice.toString(),currentStep.toString(),currentSlice.toString(),(currentStep-1).toString());
-        $('#'+buttonID).attr('disabled','disabled').attr('onclick','').click(undefined);
-        $("#" +idForm+ " .hideNotFirst").css({display:'none'});
-        $("#" +idForm+ " .showNotFirst").show();
-        $("#" +idForm+ " .parentStep").val("Slice #"+(currentSlice).toString()+' step #' + (currentStep-1).toString());
-
+        __addStep(buttonID);
 
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
 
-    function addNewSliceStep(event, buttonID){
-        event.preventDefault();
+    function __addNewSliceStep(buttonID){
+
         var nextNumber = parseInt($('#sliceNumber').html());
         var cloneForm = $('#form'+buttonID.replace('addSliceStepButton','').split('_')[0]+'_'+buttonID.replace('addSliceStepButton','').split('_')[1]).clone().prop({'id':"form"+nextNumber.toString()+'_0'});
         var sliceDiv = $('<div/>').prop({'id':"sliceSteps"+nextNumber.toString()});
@@ -101,6 +166,12 @@
         $("#" +idForm+ " .hideNotFirst").css({display:'none'});
         $("#" +idForm+ " .showNotFirst").show();
         $('#'+buttonID.replace('addSliceStepButton','addStepButton')).attr('disabled','disabled').attr('onclick','').click(undefined);
+        return nextNumber.toString()+'_'+0
+    }
+
+    function addNewSliceStep(event, buttonID){
+        event.preventDefault();
+        __addNewSliceStep(buttonID);
         bindOnChangeToFieldSet();
         fillSlicesField();
     }
@@ -291,10 +362,19 @@ $(document).ready(function(){
             MCCampaignHandling();
         });
         bindOnChangeToFieldSet();
+            {% if do_initialize  %}
+            (function()
+            {
+                 {% autoescape off %}
+
+                makeFormFromDict($.evalJSON('{{ default_object }}'));})();
+            {% endautoescape %}
+        {% endif  %}
 });
         function bindOnChangeToFieldSet(){
             $('.storeInput').bind('change',function(){fillSlicesField();});
         }
+
 
 
         function fillSlicesField(){
@@ -350,6 +430,8 @@ $(document).ready(function(){
                 });
               return false;
         }
+
+
 
 
 </script>

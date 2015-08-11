@@ -1837,7 +1837,25 @@ function spreadAMI(that){
             $.ajaxSetup({async: true});
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
-
+        function createReprocessing(event){
+            event.preventDefault();
+            var sendData = {slices:getCheckedSlices()};
+            $.ajax({
+                        url: "{% url 'prodtask:reprocessing_object_form' pr_id %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            var return_status =  $.evalJSON(data).success;
+                            if(return_status){
+                                window.location.href = Django.url('prodtask:reprocessing_request_create');
+                            } else{
+                                alert($.evalJSON(data).message);
+                            }
+                        }
+                  });
+        }
         function checkParentTrain(){
             var sliceList = [];
              $('#errorTrainMessage').html('');
@@ -2139,6 +2157,9 @@ var lastChecked = true;
             {% else %}
                 <li><a href="#" onclick="closeOpenEnded(event);">Close Open Ended</a></li>
             {% endif  %}
+            {% ifequal trequest.request_type "REPROCESSING" %}
+                <li><a href="#" onclick="createReprocessing(event);">Create base on this</a></li>
+            {% endifequal %}
         {% else %}
           <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
         {% endif %}

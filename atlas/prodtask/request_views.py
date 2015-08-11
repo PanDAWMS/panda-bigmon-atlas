@@ -35,6 +35,95 @@ from .xls_parser_new import open_tempfile_from_url
 
 _logger = logging.getLogger('prodtaskwebui')
 
+def get_object_form_step(step):
+    result_object = {"datasetList":"","parentstepshort":"","inputFormat":"","ctag":"","formats":"","eventsperjob":"","totalevents":"",
+               "ram":"","cmtconfig":"","projectmode":"","priority":"","nFilesPerJob":"","nGBPerJob":"","maxFailure":"",
+               "maxAttempt":"","token":"","jediTag":"","nFilesPerMergeJob":"","nGBPerMergeJob":"","nMaxFilesPerMergeJob":"",
+               "datasets":""}
+    result_object["inputFormat"] = step.get_task_config('input_format')
+    result_object["ctag"] = step.step_template.ctag
+    result_object["formats"] = step.step_template.output_formats
+    result_object["eventsperjob"] = str(step.get_task_config('nEventsPerJob'))
+    result_object["totalevents"] = str(step.input_events)
+    result_object["ram"] = str(step.step_template.memory)
+    result_object["priority"] = str(step.priority)
+    project_without_cmt = []
+    for token in step.get_task_config('project_mode').split(';'):
+        if 'cmtconfig' in token:
+            result_object["cmtconfig"] = token[len('cmtconfig')+1:]
+        else:
+            project_without_cmt.append(token)
+    result_object["projectmode"] = ';'.join(project_without_cmt)
+    for x in ["nFilesPerJob","nGBPerJob","maxFailure","maxAttempt","token","nFilesPerMergeJob","nGBPerMergeJob",
+              "nMaxFilesPerMergeJob"]:
+        result_object[x] = str(step.get_task_config(x))
+    result_object["jediTag"] = str(step.get_task_config('merging_tag'))
+    for key in result_object:
+        if (result_object[key] == 'None') or not (result_object[key]):
+            result_object[key] = ''
+    sorted(result_object)
+    compare_str = reduce(lambda x, y: x+y, result_object.itervalues())
+    return result_object,compare_str
+
+
+def gather_form_dict(reqid, ordered_slices):
+    step_history = {}
+    slice_hashes = {}
+    slice_number = 0
+    result_dict = {}
+    for current_slice_number in ordered_slices:
+        slice = InputRequestList.objects.get(slice=current_slice_number,request=reqid)
+        steps = StepExecution.objects.filter(request=reqid,slice=slice)
+        ordered_existed_steps, parent_step = form_existed_step_list(steps)
+        current_slice_objects = []
+        slice_hash = ''
+        for step in ordered_existed_steps:
+            current_slice_object,step_hash = get_object_form_step(step)
+            current_slice_objects.append(current_slice_object)
+            slice_hash += step_hash
+        is_doublicate = False
+        for x in slice_hashes:
+            if slice_hashes[x][0] == slice_hash:
+                is_doublicate = True
+                for index,step_id in enumerate(slice_hashes[x][1]):
+                    step_history[ordered_existed_steps[index]]=step_id
+                break
+        if not is_doublicate:
+            if not parent_step:
+                current_slice_objects[0]["parentstepshort"] = str(slice_number)+'_'+'0'
+            else:
+                current_slice_objects[0]["parentstepshort"] = step_history[parent_step.id]
+            result_dict[str(slice_number)+'_'+'0'] = current_slice_objects[0]
+            for index,current_slice_object in enumerate(current_slice_objects[1:],1):
+                current_slice_object["parentstepshort"] =str(slice_number)+'_'+str(index-1)
+                result_dict[str(slice_number)+'_'+str(index)] = current_slice_object
+            slice_steps = []
+            for index,step in enumerate(ordered_existed_steps):
+                step_history[step.id] = str(slice_number)+'_'+str(index)
+                slice_steps.append(str(slice_number)+'_'+str(index))
+            slice_hashes[slice_number] = (slice_hash,slice_steps)
+            slice_number+=1
+    return result_dict
+
+
+@csrf_protect
+def reprocessing_object_form(request, reqid):
+    if request.method == 'POST':
+       try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Make new reprocessing request from slices: %s' % str(ordered_slices)))
+            ordered_slices.sort()
+            result_dict = gather_form_dict(reqid,ordered_slices)
+            request.session['reprocessing_objects'] = result_dict
+            return HttpResponse(json.dumps({'success':True}), content_type='application/json')
+       except Exception,e:
+            return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
+    return HttpResponse(json.dumps({'success':False,'message':''}),status=500, content_type='application/json')
+
+
 @login_required(login_url='/prodtask/login/')
 @csrf_protect
 def short_hlt_form(request):
@@ -1236,7 +1325,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
     """
 
-
+    default_object = {}
+    do_initialize = False
     if request.method == 'POST':
         # Check prefill form
         form = TRequestCreateCloneForm(request.POST, request.FILES)
@@ -1458,6 +1548,12 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         else:
             _logger.debug("Start request creation ")
             form = TRequestCreateCloneForm()
+
+            if ('reprocessing_objects') in request.session:
+                default_object = json.dumps(request.session['reprocessing_objects'])
+                del request.session['reprocessing_objects']
+                do_initialize = True
+
     # Create prefill form
     return render(request, 'prodtask/_requestform.html', {
         'active_app': 'mcprod',
@@ -1466,7 +1562,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         'submit_url': submit_url,
         'url_args': rid,
         'parent_template': 'prodtask/_index.html',
-        'default_step_values': default_step_values
+        'default_step_values': default_step_values,
+        'default_object':default_object,
+        'do_initialize':do_initialize
+
     })
 
 
