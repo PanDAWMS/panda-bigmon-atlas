@@ -1015,6 +1015,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                     max_level=index
         return max_level+1
 
+    BIG_PANDA_TASK_BASE = 'http://bigpanda.cern.ch/task/'
+    FAKE_TASK_NUMBER = '123456'
+    PRODTASK_TASK_BASE = ''
 
     def form_step_obj(step,tasks,input_slice,foreign=False,another_request=None):
         skipped = 'skipped'
@@ -1034,13 +1037,21 @@ def request_table_view(request, rid=None, show_hidden=False):
                 skipped = 'run'
             tag = step['ctag']
         task_short = ''
+        return_tasks = []
         if tasks:
+
             for task in tasks:
+                task['short'] = task['status'][0:8]
+                task['href'] = BIG_PANDA_TASK_BASE + str(task['id'])
+                task['href_local'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(task['id']))
+                return_tasks.append(task)
                 if task['is_extension']:
-                    task['short'] =('>'+ task['status']+'>')[0:8]
-                else:
-                    task['short'] = task['status'][0:8]
-        return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks':tasks, 'slice':slice,
+                    ext_task = deepcopy(task)
+                    ext_task['short'] =(' ^'+ 'ext.' + '^ ')
+                    ext_task['href'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(ext_task['id']))
+
+                    return_tasks.append(ext_task)
+        return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks_real':tasks, 'tasks':return_tasks, 'slice':slice,
                 'is_another_request':is_another_request}
 
     def unwrap(pattern_dict):
@@ -1055,6 +1066,7 @@ def request_table_view(request, rid=None, show_hidden=False):
 
     if request.method == 'GET':
         try:
+            PRODTASK_TASK_BASE = request.build_absolute_uri(reverse('prodtask:task',args=[FAKE_TASK_NUMBER,]))
             cur_request = TRequest.objects.get(reqid=rid)
             #steps_db =
             _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
