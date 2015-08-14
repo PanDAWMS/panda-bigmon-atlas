@@ -138,15 +138,13 @@ def short_hlt_form(request):
             data = request.body
             input_dict = json.loads(data)
             dataset = input_dict['dataset']
-            PROJECT_MODE_COMMON = 'cmtconfig=x86_64-slc6-gcc48-opt;cloud=CERN;skipscout=yes;site=CERN-PROD_SHORT,FZK-LCG2_HIMEM,IN2P3-CC_HIMEM,BNL_ATLAS_2;'
+            PROJECT_MODE_COMMON = input_dict['commonProjectMode']+'site='+input_dict['sites']+';'
+
             priority = input_dict['priority']
             outputs = input_dict['outputs'].split('.')
-            if outputs == ['HIST_HLTMON']:
-                PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=3900;'
-            else:
-                PROJECT_MODE_RECO = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;ramcount=4900;'
+            PROJECT_MODE_RECO = input_dict['recoProjectMode']
             outputs.append('RAW')
-            TAG_CONVERSION = {'recoTag':['Reco'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],
+            TAG_CONVERSION = {'recoTag':['Reco'],'reco2Tag':['Reco2'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],
                               'ntupTag':['NTUP_TRIGRATE','NTUP_TRIGCOST']}
             tags = {}
             for tag in TAG_CONVERSION:
@@ -162,27 +160,71 @@ def short_hlt_form(request):
                 raise ValueError('No files in dataset %s'%dataset)
             spreadsheet_dict = []
             slice_index = 0
-            irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
-                       input_data='',
-                       project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO,
-                       priority=priority,
-                       input_events=-1)
-            slice_index += 1
-            sexec = dict(status='NotChecked', priority=priority,
-                         input_events=-1)
-            task_config =  {'maxAttempt':15,'maxFailure':5}
-            st_sexec_list = []
-            task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO,'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
-            st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
-                              'formats': '.'.join(outputs),
-                              'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
-            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            for x in input_dict['ram']:
+                input_dict['ram'][x] = str(input_dict['ram'][x])
+            if not input_dict['twoStep']:
+                irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
+                           input_data='',
+                           project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
+                           priority=priority,
+                           input_events=-1)
+                slice_index += 1
+                sexec = dict(status='NotChecked', priority=priority,
+                             input_events=-1)
+                task_config =  {'maxAttempt':15,'maxFailure':5}
+                st_sexec_list = []
+                task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
+                                    'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
+                st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
+                                  'formats': '.'.join(outputs),
+                                  'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+            else:
+                irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
+                           input_data='',
+                           project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
+                           priority=priority,
+                           input_events=-1)
+                slice_index += 1
+                sexec = dict(status='NotChecked', priority=priority,
+                             input_events=-1)
+                task_config =  {'maxAttempt':15,'maxFailure':5}
+                st_sexec_list = []
+                task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
+                                    'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
+                st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
+                                  'formats': 'HIST_HLTMON.RAW',
+                                  'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
+                task_config =  {'maxAttempt':15,'maxFailure':5}
+                task_config.update({'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['recoRam'],
+                    'nFilesPerJob':1,'input_format':'RAW'})
+
+                st_sexec_list.append({'step_name': step_from_tag(tags['Reco2']), 'tag': tags['Reco2'], 'step_exec': sexec,
+                  'formats': 'ESD.HIST',
+                  'task_config':task_config,'step_order':'0_1','step_parent':'0_0'})
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+                irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
+                           input_data='',
+                           project_mode=PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
+                           priority=priority,
+                           input_events=-1)
+                slice_index += 1
+                sexec = dict(status='NotChecked', priority=priority,
+                             input_events=-1)
+                st_sexec_list = []
+                task_config =  {'maxAttempt':15,'maxFailure':5}
+                task_config.update({'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['recoRam'],
+                    'nFilesPerJob':1,'input_format':'RAW'})
+                st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
+                                  'formats': 'NTUP_TRIGCOST.NTUP_TRIGRATE.NTUP_TRIGEBWGHT',
+                                  'task_config':task_config,'step_order':'1_0','step_parent':'0_0'})
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             for hist_output in ['HIST_HLTMON','HIST','NTUP_TRIGRATE']:
                 if (hist_output in outputs) and (hist_output in tags):
 
                     irl = dict(slice=slice_index, brief=hist_output, comment=hist_output, dataset=dataset,
                                input_data='',
-                               project_mode=PROJECT_MODE_COMMON,
+                               project_mode=PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['mergeRam'],
                                priority=priority,
                                input_events=-1)
 
@@ -190,60 +232,74 @@ def short_hlt_form(request):
                                  input_events=-1)
 
                     st_sexec_list = []
+                    step_parent = '0_0'
+                    if hist_output=='HIST' and input_dict['twoStep']:
+                        step_parent = '0_1'
+                    if hist_output=='NTUP_TRIGRATE' and input_dict['twoStep']:
+                        step_parent = '1_0'
                     task_config =  {'maxAttempt':20,'maxFailure':15}
                     task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
-                    task_config.update(({'project_mode':PROJECT_MODE_COMMON,'nFilesPerJob':merge_files_number,'input_format':hist_output}))
+                    task_config.update(({'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['mergeRam'],
+                                         'nFilesPerJob':merge_files_number,'input_format':hist_output}))
                     st_sexec_list.append({'step_name': step_from_tag(tags[hist_output]), 'tag': tags[hist_output], 'step_exec': sexec,
-                                      'formats':hist_output,'memory':3900,
-                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
+                                      'formats':hist_output,
+                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':step_parent})
                     task_config =  {'maxAttempt':20,'maxFailure':15}
                     task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
-                    task_config.update(({'nFilesPerJob':merge_files_number,'project_mode':PROJECT_MODE_COMMON,'input_format':hist_output, 'token':'dst:CERN-PROD_TRIG-HLT'}))
+                    task_config.update(({'nFilesPerJob':80,
+                                         'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['mergeRam'],
+                                         'input_format':hist_output, 'token':'dst:CERN-PROD_TRIG-HLT'}))
                     st_sexec_list.append({'step_name': step_from_tag(tags[hist_output]), 'tag': tags[hist_output], 'step_exec': sexec,
-                                        'formats':hist_output,'memory':3900,
+                                        'formats':hist_output,
                                       'task_config':task_config,'step_order':str(slice_index)+'_1','step_parent':str(slice_index)+'_0'})
                     slice_index += 1
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             if ('NTUP_TRIGCOST' in outputs) and ('NTUP_TRIGCOST' in tags):
-                    irl = dict(slice=slice_index, brief='NTUP_TRIGCOST', comment='NTUP_TRIGCOST', dataset=dataset,
-                               input_data='',
-                               project_mode=PROJECT_MODE_COMMON,
-                               priority=priority,
-                               input_events=-1)
+                irl = dict(slice=slice_index, brief='NTUP_TRIGCOST', comment='NTUP_TRIGCOST', dataset=dataset,
+                           input_data='',
+                           project_mode=PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['ntupRam'],
+                           priority=priority,
+                           input_events=-1)
+                step_parent = '0_0'
+                if input_dict['twoStep']:
+                    step_parent = '1_0'
+                sexec = dict(status='NotChecked', priority=priority,
+                             input_events=-1)
 
-                    sexec = dict(status='NotChecked', priority=priority,
-                                 input_events=-1)
+                st_sexec_list = []
+                task_config =  {'maxAttempt':20,'maxFailure':15}
+                task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                task_config.update(({'nFilesPerJob':50,'input_format':'NTUP_TRIGCOST',
+                                     'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['ntupRam']}))
+                st_sexec_list.append({'step_name': step_from_tag(tags['NTUP_TRIGCOST']), 'tag': tags['NTUP_TRIGCOST'], 'step_exec': sexec,
 
-                    st_sexec_list = []
-                    task_config =  {'maxAttempt':20,'maxFailure':15}
-                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
-                    task_config.update(({'nFilesPerJob':50,'input_format':'NTUP_TRIGCOST','project_mode':PROJECT_MODE_COMMON}))
-                    st_sexec_list.append({'step_name': step_from_tag(tags['NTUP_TRIGCOST']), 'tag': tags['NTUP_TRIGCOST'], 'step_exec': sexec,
-
-                                      'formats':'NTUP_TRIGCOST','memory':3900,
-                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
-                    slice_index += 1
-                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+                                  'formats':'NTUP_TRIGCOST',
+                                  'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':step_parent})
+                slice_index += 1
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             if ('AOD' in outputs) and ('AOD' in tags):
-                    irl = dict(slice=slice_index, brief='AOD', comment='AOD', dataset=dataset,
-                               input_data='',
-                               project_mode=PROJECT_MODE_COMMON,
-                               priority=priority,
-                               input_events=-1)
+                irl = dict(slice=slice_index, brief='AOD', comment='AOD', dataset=dataset,
+                           input_data='',
+                           project_mode=PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['aodRam'],
+                           priority=priority,
+                           input_events=-1)
 
-                    sexec = dict(status='NotChecked', priority=970,
-                                 input_events=-1)
+                sexec = dict(status='NotChecked', priority=970,
+                             input_events=-1)
+                step_parent = '0_0'
+                if input_dict['twoStep']:
+                    step_parent = '0_1'
+                st_sexec_list = []
+                task_config =  {'maxAttempt':20,'maxFailure':15}
+                task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
+                task_config.update(({'nFilesPerJob':10,'input_format':'ESD',
+                                     'project_mode':PROJECT_MODE_COMMON+'ramcount='+input_dict['ram']['aodRam']}))
+                st_sexec_list.append({'step_name': step_from_tag(tags['AOD']), 'tag': tags['AOD'], 'step_exec': sexec,
 
-                    st_sexec_list = []
-                    task_config =  {'maxAttempt':20,'maxFailure':15}
-                    task_config.update({'nEventsPerJob':dict((step,'') for step in StepExecution.STEPS)})
-                    task_config.update(({'nFilesPerJob':10,'input_format':'AOD','project_mode':PROJECT_MODE_COMMON}))
-                    st_sexec_list.append({'step_name': step_from_tag(tags['AOD']), 'tag': tags['AOD'], 'step_exec': sexec,
-
-                                      'formats':'AOD','memory':3900,
-                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':'0_0'})
-                    slice_index += 1
-                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+                                  'formats':'AOD',
+                                  'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':step_parent})
+                slice_index += 1
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
             request.session['file_dict'] = spreadsheet_dict
             request.session['hlt_dataset'] = dataset
             request.session['hlt_short_description'] = input_dict['short_description']
