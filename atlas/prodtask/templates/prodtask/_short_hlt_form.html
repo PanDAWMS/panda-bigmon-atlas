@@ -90,6 +90,7 @@
         hltShortModel.request.priority = 970;
         hltShortModel.request.ram = {recoRam:4900,mergeRam:3900,aodRam:3900,ntupRam:3900};
         hltShortModel.request.sites = 'CERN-PROD_SHORT,FZK-LCG2_HIMEM,IN2P3-CC_HIMEM,BNL_ATLAS_2';
+            hltShortModel.request.twoStep=false;
         hltShortModel.request.recoProjectMode = 'useRealNumEvents=yes;tgtNumEventsPerJob=500;';
         hltShortModel.request.commonProjectMode = 'cmtconfig=x86_64-slc6-gcc48-opt;cloud=CERN;skipscout=yes;';
         hltShortModel.proceed = function() {
