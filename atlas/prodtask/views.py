@@ -26,7 +26,7 @@ import atlas.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
-    OpenEndedRequest
+    OpenEndedRequest, TrainProduction
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -1444,6 +1444,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             else:
                 has_deft_problem = False
             _logger.debug(form_request_log(rid,request,'Finish prepare data fro request page'))
+            train_pattern_list = []
+            try:
+                for train_id in [87,88]:
+                    train = TrainProduction.objects.get(id=train_id)
+                    train_pattern_list.append({'train_id':train.id,'request_name':train.pattern_request.description})
+            except:
+                pass
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -1474,7 +1481,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'needed_management_approve':needed_management_approve,
                'first_approval_message':first_approval_message,
                'is_open_ended':is_open_ended,
-                'page_title':'%s - Request'%str(rid)
+                'page_title':'%s - Request'%str(rid),
+                'train_pattern_list':train_pattern_list
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

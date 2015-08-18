@@ -169,6 +169,7 @@ def check_slices_for_trains(request):
             slices = input_dict['slices']
             step_number = int(input_dict['step_number'])
             production_request = input_dict['production_request']
+            train_id = input_dict['train_id']
             if '-1' in slices:
                 del slices[slices.index('-1')]
             ordered_slices = map(int,slices)
@@ -197,7 +198,7 @@ def check_slices_for_trains(request):
                 else:
                     not_approved.append(slice_number)
             if not not_approved:
-                train_extension={'parent_request_slices':ordered_slices,'parent_steps':parent_steps}
+                train_extension={'parent_request_slices':ordered_slices,'parent_steps':parent_steps,'train_id':int(train_id)}
                 request.session['train_extension'] = train_extension
 
                 results = {'success':True}
@@ -286,7 +287,7 @@ def train_as_child(request, reqid):
         return HttpResponseRedirect(reverse('prodtask:input_list_approve_full', args=[reqid]))
     else:
         try:
-            train_id = 5
+            train_id = request.session['train_extension']['train_id']
             train = TrainProduction.objects.get(id=train_id)
             parent_request_slices = request.session['train_extension']['parent_request_slices']
             parent_steps = request.session['train_extension']['parent_steps']

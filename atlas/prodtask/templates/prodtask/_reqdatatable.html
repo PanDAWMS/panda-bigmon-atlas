@@ -1867,9 +1867,10 @@ function spreadAMI(that){
             });
             $('#loadTrain').spin('small');
             if($('#trainParentStep').length){
-                var sendData = {slices:sliceList,step_number:$('#trainParentStep').val(),production_request:'{{ pr_id }}'};
+                var sendData = {slices:sliceList,step_number:$('#trainParentStep').val(),production_request:'{{ pr_id }}',
+                train_id:$('#trainPatternRequest').val()};
             }else{
-                var sendData = {slices:sliceList,step_number:5,production_request:'{{ pr_id }}'};
+                var sendData = {slices:sliceList,train_id:5,step_number:5,production_request:'{{ pr_id }}'};
             }
 
             $('#trainSlices').html(sliceList.toString());
@@ -3100,6 +3101,15 @@ var lastChecked = true;
                     <select id="trainParentStep" onchange="changeParentTrainStep();" >
                     {% for step in step_list %}
                             <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                    {% endfor %}
+                    </select>
+                    </label>
+      </div>
+          <div class="large-8 column">
+         <label> Pattern:
+                    <select id="trainPatternRequest" onchange="changeParentTrainStep();" >
+                    {% for train_pattern in train_pattern_list %}
+                            <option value="{{train_pattern.train_id}}">{{ train_pattern.request_name }}</option>
                     {% endfor %}
                     </select>
                     </label>
