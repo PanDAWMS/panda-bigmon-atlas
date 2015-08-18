@@ -143,8 +143,10 @@
               }
           }
         };
+            scope.ongoing = false;
     scope.save = function() {
         console.log(scope);
+        scope.ongoing = true;
         editTrainLoad.trainLoad.manager = currentUser;
         editTrainLoad.trainLoad.parent_request = parent_request;
         editTrainLoad.trainLoad.parent_steps = parent_steps;
@@ -174,7 +176,8 @@
                     }
      }).
     error(function(data, status, headers, config) {
-         alert(data.message);
+         scope.ongoing = false;
+                    alert(data.message);
     });
 
 
