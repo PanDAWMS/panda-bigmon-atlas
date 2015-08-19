@@ -2245,7 +2245,7 @@ var lastChecked = true;
 {% if approvedCount > 0 %}
 {#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
 {% endif %}
-<h6> With pattern: {{ pattern }}</h6>
+
 {% endif %}
 {% if show_as_huge  %}
 <u><a href="{% url "prodtask:task_table" %}#/?time_period=all&task_type=production&request={{ trequest.reqid}}">All task</a></u>

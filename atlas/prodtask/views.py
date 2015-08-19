@@ -899,7 +899,6 @@ def request_reprocessing_steps_create(request, reqid=None):
                             new_step_exec.save()
                             real_steps_hierarchy[-1].append(new_step_exec)
         except Exception,e:
-            print e
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
@@ -1238,7 +1237,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                         steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
                         step_templates_set.add(current_step['step_template_id'])
                     tasks = {}
-
                     for current_task in tasks_db:
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
                     step_templates = {}
@@ -1265,26 +1263,26 @@ def request_table_view(request, rid=None, show_hidden=False):
                         total_slice += 1
                         show_task = False
                         # creating a pattern
-                        if input_list_count < 50:
-                            if use_input_date_for_pattern:
-                                if slice.input_data:
-                                    current_slice_pattern = slice.input_data.split('.')
-                                else:
-                                    current_slice_pattern=''
-                            else:
-                                if slice.dataset:
-                                    current_slice_pattern = slice.dataset.name.split('.')
-                                else:
-                                    current_slice_pattern=''
-
-                            if current_slice_pattern:
-                                for index,token in enumerate(current_slice_pattern):
-                                    if index >= len(slice_pattern):
-                                        slice_pattern.append(token)
-                                    else:
-                                        if token!=slice_pattern[index]:
-                                            slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
-                                            slice_pattern[index] += '*'
+                        # if input_list_count < 50:
+                        #     if use_input_date_for_pattern:
+                        #         if slice.input_data:
+                        #             current_slice_pattern = slice.input_data.split('.')
+                        #         else:
+                        #             current_slice_pattern=''
+                        #     else:
+                        #         if slice.dataset:
+                        #             current_slice_pattern = slice.dataset.name.split('.')
+                        #         else:
+                        #             current_slice_pattern=''
+                        #
+                        #     if current_slice_pattern:
+                        #         for index,token in enumerate(current_slice_pattern):
+                        #             if index >= len(slice_pattern):
+                        #                 slice_pattern.append(token)
+                        #             else:
+                        #                 if token!=slice_pattern[index]:
+                        #                     slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
+                        #                     slice_pattern[index] += '*'
                         # Creating step dict
                         slice_steps_list = []
                         temp_step_list = []
