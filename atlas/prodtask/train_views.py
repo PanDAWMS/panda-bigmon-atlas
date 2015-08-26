@@ -313,7 +313,8 @@ def train_as_child(request, reqid):
 @csrf_protect
 def create_request_from_train(request,train_id):
     if request.method == 'GET':
-        if request.user.is_superuser or (request.user.username == 'nozturk') or (request.user.username == 'egramsta'):
+        #if request.user.is_superuser or (request.user.username == 'nozturk') or (request.user.username == 'egramsta'):
+        if True:
             train = TrainProduction.objects.get(id=train_id)
             loads = list(TrainProductionLoad.objects.filter(train=train_id))
             pattern_slices = set()
@@ -388,7 +389,7 @@ def train_edit(request, train_id):
     try:
         train = TrainProduction.objects.get(id=train_id)
         depart_date = train.departure_time.strftime('%Y-%m-%d')
-        allow_assemble = (request.user.is_superuser or (request.user.username == 'nozturk') or (request.user.username == 'egramsta'))
+        allow_assemble = True
     except:
         return HttpResponseRedirect(reverse('prodtask:request_table'))
 
