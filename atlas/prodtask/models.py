@@ -624,17 +624,18 @@ class TrainProductionLoad(models.Model):
         self.timestamp = timezone.now()
         try:
             input_datasets = self.datasets.replace('\n',',').replace('\r',',').replace('\t',',').replace(' ',',').split(',')
-            cleared_datasets = []
+            cleared_datasets_set = set()
             if input_datasets == ['ongoing_transaction']:
-                cleared_datasets = ['bad_value']
+                cleared_datasets_set.add('bad_value')
             for dataset in input_datasets:
                 if dataset:
                     if ':' not in dataset:
                         if dataset.find('.')>-1:
-                            cleared_datasets.append(dataset[:dataset.find('.')]+':'+dataset)
+                            cleared_datasets_set.add(dataset[:dataset.find('.')]+':'+dataset)
 
                     else:
-                      cleared_datasets.append(dataset)
+                      cleared_datasets_set.add(dataset)
+            cleared_datasets = list(cleared_datasets_set)
             self.datasets = '\n'.join([x for x in cleared_datasets if x])
         except Exception,e:
             self.datasets=''
