@@ -37,17 +37,12 @@ def task_details(request, rid=None):
             output_datasets = ProductionDataset.objects.filter(task_id=rid)
             output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
 
-            #exttask = ProductionTask.objects.all().filter(is_extension=True)
-
-            same_tasks_str = ""
+            same_tasks = []
             if task.is_extension:
                 dataset_pat=output_datasets[0].name.split("tid")[0]
                 datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
                 same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
-                same_tasks_str = ', '.join(str(x) for x in same_tasks)
-
-                #    ds_pattern=re.search('/.+?(?=tid)/',dataset.name)
-
+            #    ds_pattern=re.search('/.+?(?=tid)/',dataset.name)
         except:
             return HttpResponseRedirect('/')
     else:
@@ -76,7 +71,7 @@ def task_details(request, rid=None):
         'clouds': get_clouds(),
         'sites': get_sites(),
         'outputs': output_formats,
-        'extasks': same_tasks_str,
+        'extasks': same_tasks,
         'parent_template' : 'prodtask/_index.html',
         }
 
