@@ -40,7 +40,7 @@ allowed_task_actions = {
     'submitting': ['kill_job'],
     'ready': ['kill_job'],
     'running': ['kill_job'],
-    'exhausted': ['kill_job'],
+    'exhausted': ['kill_job','retry'],
     'done': ['obsolete', 'delete_output'],
     'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
     'broken': [],
