@@ -133,6 +133,7 @@ urlpatterns = patterns('',
     url(r'^trains_list_full/$', 'atlas.prodtask.train_views.trains_list_full', name='trains_list_full'),
     url(r'^train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.train_edit', name='train_edit'),
     url(r'^close_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.close_train', name='close_train'),
+    url(r'^reopen_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.reopen_train', name='reopen_train'),
 
     url(r'^check_slices_for_trains/$', 'atlas.prodtask.train_views.check_slices_for_trains', name='check_slices_for_trains'),
     url(r'^train_as_child/(?P<reqid>\d+)/$', 'atlas.prodtask.train_views.train_as_child', name='train_as_child'),

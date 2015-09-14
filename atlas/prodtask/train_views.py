@@ -53,6 +53,39 @@ def prepare_train_carriages(train_id):
         return_value.append(train_carriage)
     return train_carriages
 
+def prepare_merged_train_carriages(train_id):
+    loads = list(TrainProductionLoad.objects.filter(train=train_id))
+    train = TrainProduction.objects.get(id=train_id)
+    train_carriages = []
+    pattern_slices = set()
+    for load in loads:
+        outputs_slices = json.loads(load.outputs)
+        for output_slices in outputs_slices:
+            pattern_slices.add(output_slices[0])
+    step_pattern_formats = {}
+    for pattern_slice_number in pattern_slices:
+        pattern_slice = InputRequestList.objects.get(request=train.pattern_request,slice=int(pattern_slice_number))
+        step_pattern_formats[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0].step_template.output_formats.split('.')
+    merged_dict = {}
+    for load in loads:
+        datasets = load.datasets.split('\n')
+        if 'bad_value' in datasets:
+            datasets = []
+        outputs_slices = json.loads(load.outputs)
+        for dataset in datasets:
+            for output_slice in outputs_slices:
+                current_output_formats = []
+                slice_number = output_slice[0]
+                for output in output_slice[1]:
+                    if output in step_pattern_formats[slice_number]:
+                        current_output_formats.append(output)
+                if (dataset,slice_number) not in merged_dict:
+                    merged_dict.update({(dataset,slice_number):current_output_formats})
+                else:
+                    previous_formats = merged_dict[(dataset,slice_number)]
+                    merged_dict.update({(dataset,slice_number):list(set(previous_formats+current_output_formats))})
+    return merged_dict
+
 
 def prepare_simple_train_carriages(train_id):
 
@@ -328,19 +361,12 @@ def create_request_from_train(request,train_id):
                 step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0]
             slice_index = 0
             spreadsheet_dict = []
-            for load in loads:
-                datasets = load.datasets.split('\n')
-                if 'bad_value' in datasets:
-                    datasets = []
-                outputs_slices = json.loads(load.outputs)
-                for dataset in datasets:
-                    for output_slice in outputs_slices:
-                        current_parent_step = step_pattern[output_slice[0]]
-                        current_output_formats = []
-                        for output in output_slice[1]:
-                            if output in current_parent_step.step_template.output_formats.split('.'):
-                                current_output_formats.append(output)
-                        if current_output_formats:
+            merged_trains = prepare_merged_train_carriages(train_id)
+            for dataset_slice in merged_trains:
+                dataset = dataset_slice[0]
+                current_parent_step = step_pattern[dataset_slice[1]]
+                current_output_formats = merged_trains[dataset_slice]
+                if current_output_formats:
                             st_sexec_list = []
                             irl = dict(slice=slice_index, brief=current_parent_step.slice.brief, comment=current_parent_step.slice.comment, dataset=dataset,
                                        input_data='',
@@ -390,6 +416,9 @@ def train_edit(request, train_id):
         train = TrainProduction.objects.get(id=train_id)
         depart_date = train.departure_time.strftime('%Y-%m-%d')
         allow_assemble = True
+        allow_close = False
+        if (request.user.username in ['nozturk','egramsta']) or request.user.is_superuser:
+            allow_close = True
     except:
         return HttpResponseRedirect(reverse('prodtask:request_table'))
 
@@ -401,7 +430,8 @@ def train_edit(request, train_id):
         'parent_template': 'prodtask/_index.html',
         'depart_date':depart_date,
         'groups':[x[0] for x in TRequest.PHYS_GROUPS],
-        'allow_assemble':allow_assemble
+        'allow_assemble':allow_assemble,
+        'allow_close':allow_close
 
 
     })
@@ -418,7 +448,16 @@ def close_train(request, train_id):
         pass
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
-
+@login_required(login_url='/prodtask/login/')
+def reopen_train(request, train_id):
+    try:
+        train = TrainProduction.objects.get(id=train_id)
+        train.status = 'loading'
+        train.save()
+        return train_edit(request, train_id)
+    except:
+        pass
+    return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
 
