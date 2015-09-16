@@ -1456,6 +1456,13 @@ def request_table_view(request, rid=None, show_hidden=False):
                         train_pattern_list.append({'train_id':train.id,'request_name':train.pattern_request.description})
             except:
                 pass
+            selected_slices = json.dumps([])
+            try:
+                if 'selected_slices' in request.session:
+                    selected_slices = json.dumps(map(int,request.session['selected_slices']))
+                    del request.session['selected_slices']
+            except:
+                pass
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -1487,7 +1494,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'first_approval_message':first_approval_message,
                'is_open_ended':is_open_ended,
                 'page_title':'%s - Request'%str(rid),
-                'train_pattern_list':train_pattern_list
+                'train_pattern_list':train_pattern_list,
+                'selected_slices':selected_slices
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

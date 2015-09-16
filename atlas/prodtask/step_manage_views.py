@@ -332,6 +332,7 @@ def reject_slices_in_req(request, reqid):
             for slice_number in slices:
                 current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
                 reject_steps_in_slice(current_slice)
+            request.session['selected_slices'] = map(int,slices)
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

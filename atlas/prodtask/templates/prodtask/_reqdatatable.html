@@ -253,6 +253,22 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $('.storeSliceBulk').bind('change',function(){saveBulkSliceChanges(this);});
         })();
 
+    (function(){
+                {% autoescape off %}
+                    var selected_slices = $.evalJSON('{{ selected_slices }}');
+                {% endautoescape %}
+                console.log(selected_slices);
+                if (selected_slices!=undefined){
+                    if ((selected_slices.length != 0)){
+                        $(".checkboxSlice").prop('checked', false);
+                        for(var i=0;i<selected_slices.length;i++){
+                            $("#checkbox"+selected_slices[i]).prop('checked', true);
+                    }
+                }
+                }
+
+
+    })();
     $("#approveDialog").dialog({
         autoOpen: false,
         buttons : {
