@@ -470,13 +470,14 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
         else:
             request_destination = TRequest.objects.get(reqid=reqid_destination)
         #TODO: fix race condition
+        new_slice_numbers = []
         new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
-        first_new_slice = new_slice_number
         old_new_step = {}
         for slice_number in ordered_slices:
             current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
             new_slice = current_slice.values()[0]
             new_slice['slice'] = new_slice_number
+            new_slice_numbers.append(new_slice_number)
             new_slice_number += 1
             del new_slice['id']
             del new_slice['request_id']
@@ -522,7 +523,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                         first_changed = True
                         step.save()
                         old_new_step[old_step_id] = step
-        return first_new_slice
+        return new_slice_numbers
 
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination = TRequest.objects.get(reqid=reqid)

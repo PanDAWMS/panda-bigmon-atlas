@@ -59,15 +59,16 @@ def make_open_ended(request,reqid):
             #Register open ended request
 
             for slice in slices:
-                if slice.dataset.name == old_name:
-                    if new_dataset:
-                        slice.dataset = new_dataset
-                        slice.save()
-                    # Skip all steps in zero slice
-                    steps = StepExecution.objects.filter(request=reqid,slice=slice)
-                    for step in steps:
-                        step.status = 'Skipped'
-                        step.save()
+                if not slice.is_hide:
+                    if slice.dataset.name == old_name:
+                        if new_dataset:
+                            slice.dataset = new_dataset
+                            slice.save()
+                        # Skip all steps in zero slice
+                        steps = StepExecution.objects.filter(request=reqid,slice=slice)
+                        for step in steps:
+                            step.status = 'Skipped'
+                            step.save()
             open_ended_request = OpenEndedRequest()
             open_ended_request.request = TRequest.objects.get(reqid=reqid)
             open_ended_request.container = new_name
@@ -170,7 +171,7 @@ def extend_open_ended_request(reqid):
             is_extended = True
             _logger.debug(form_request_log(reqid,None,'New dataset %s'%dataset))
             for slice_number in slices_to_extend:
-                new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)
+                new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)[0]
                 new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
                 try:
                     if len(dataset)>150:

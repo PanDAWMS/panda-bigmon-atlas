@@ -53,8 +53,9 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             else:
                 make_link = False
             step_from = int(step_from)
-            clone_slices(reqid,reqid,ordered_slices,step_from,make_link,True)
+            cloned_slices = clone_slices(reqid,reqid,ordered_slices,step_from,make_link,True)
             results = {'success':True}
+            request.session['selected_slices'] = map(int,cloned_slices)
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -80,7 +81,7 @@ def extend_request_by_train(reqid,request_donor,slices):
                     slices_to_get_info.append(slice_donor)
             for slice in slices:
                 for slice_donor in slices_to_get_info:
-                    new_slice_number = clone_slices(reqid,reqid,[slice],-1,False)
+                    new_slice_number = clone_slices(reqid,reqid,[slice],-1,False)[0]
                     new_slice = InputRequestList.objects.get(request=reqid, slice=new_slice_number)
                     step = StepExecution.objects.get(request=reqid,slice=new_slice)
                     step_donor = StepExecution.objects.get(request=request_donor,slice=slice_donor)
