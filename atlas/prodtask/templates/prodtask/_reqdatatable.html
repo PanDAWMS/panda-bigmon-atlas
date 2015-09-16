@@ -2635,7 +2635,7 @@ var lastChecked = true;
     </div>
          <div class="large-1 columns">
 
-             <button id="trainsSlices" class="btn_is_authenticated" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
+             <button id="trainsSlices" class="btn_is_authorized" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
 
     </div>
     <div class="large-3 columns">
@@ -3094,17 +3094,19 @@ var lastChecked = true;
 
             </div>
         </div>
-    {% ifnotequal trequest.request_type 'MC' %}
+
      <div class="row">
-     <div class="large-4 column">
-         <label> Parent step:
-                    <select id="trainParentStep" onchange="changeParentTrainStep();" >
-                    {% for step in step_list %}
-                            <option value="{{forloop.counter0}}">{{ step.name }}</option>
-                    {% endfor %}
-                    </select>
-                    </label>
-      </div>
+     {% ifnotequal trequest.request_type 'MC' %}
+         <div class="large-4 column">
+             <label> Parent step:
+                        <select id="trainParentStep" onchange="changeParentTrainStep();" >
+                        {% for step in step_list %}
+                                <option value="{{forloop.counter0}}">{{ step.name }}</option>
+                        {% endfor %}
+                        </select>
+                        </label>
+          </div>
+     {% endifnotequal %}
           <div class="large-8 column">
          <label> Pattern:
                     <select id="trainPatternRequest" onchange="changeParentTrainStep();" >
@@ -3115,7 +3117,7 @@ var lastChecked = true;
                     </label>
       </div>
      </div>
-    {% endifnotequal %}
+
         <div class="row">
             <div class="large-2 column">
                 <a href='{% url 'prodtask:train_as_child' pr_id %}' id="makeTrainsButton" style="display: none" class="button btn_is_authorized postfix" >Make trains</a>

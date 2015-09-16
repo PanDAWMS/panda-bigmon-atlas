@@ -205,9 +205,13 @@
 
 <div class="row">
 <div class="columns large-3" style="border: solid">Parent request: <u><a href='{% url 'prodtask:input_list_approve' parent_request %}'>{{ parent_request  }}</a></u></div>
-<div class="columns large-2" style="border: solid">Slices: {{ parent_request_slices }}</div>
+<div class="columns large-9" style="border: solid">Slices: {{ parent_request_slices }}</div>
 
 
+
+</div>
+    <div class="row">
+<div class="columns large-5" style="border: solid">Pattern request: {{ pattern_description  }}</div>
 
 </div>
     <p/>

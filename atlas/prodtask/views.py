@@ -1444,9 +1444,16 @@ def request_table_view(request, rid=None, show_hidden=False):
             _logger.debug(form_request_log(rid,request,'Finish prepare data fro request page'))
             train_pattern_list = []
             try:
-                for train_id in [87,88]:
-                    train = TrainProduction.objects.get(id=train_id)
-                    train_pattern_list.append({'train_id':train.id,'request_name':train.pattern_request.description})
+                if cur_request.request_type == 'MC':
+                    trains = TrainProduction.objects.filter(status='mc_pattern').order_by('id')
+                    for train in trains:
+                        train_pattern_list.append({'train_id':train.id,'request_name':'('+str(train.pattern_request.reqid)+
+                                                                                      ')'+
+                                                                                      train.pattern_request.description})
+                else:
+                    for train_id in [87,88]:
+                        train = TrainProduction.objects.get(id=train_id)
+                        train_pattern_list.append({'train_id':train.id,'request_name':train.pattern_request.description})
             except:
                 pass
             return   render(request, 'prodtask/_reqdatatable.html', {

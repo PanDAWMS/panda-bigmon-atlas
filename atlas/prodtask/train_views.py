@@ -1,4 +1,5 @@
 import copy
+from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -191,6 +192,17 @@ def train_create(request):
     })
 
 
+def create_pattern_train(pattern_request_id, pattern_type='MC'):
+    PATTERN_STATUS = {'MC':'mc_pattern','DATA':'data_pattern'}
+    pattern_train = TrainProduction()
+    pattern_train.pattern_request = TRequest.objects.get(reqid=pattern_request_id)
+    pattern_train.outputs = json.dumps(pattern_from_request(pattern_train.pattern_request))
+    pattern_train.status = PATTERN_STATUS[pattern_type]
+    pattern_train.departure_time = timezone.now()
+    pattern_train.description = pattern_train.pattern_request.description
+    pattern_train.manager = 'mborodin'
+    pattern_train.save()
+
 
 @csrf_protect
 def check_slices_for_trains(request):
@@ -259,7 +271,7 @@ def create_request_as_child(request):
             new_request.provenance = 'GP'
             new_request.request_type = 'GROUP'
             new_request.energy_gev = parent_request.energy_gev
-            new_request.manager = input_dict['manager']
+            new_request.manager =  'atlas-dpd-production'
             new_request.cstatus = 'waiting'
             new_request.save()
             request_status = RequestStatus(request=new_request,comment='Request created as child train WebUI',owner=input_dict['manager'],
@@ -338,6 +350,7 @@ def train_as_child(request, reqid):
             'parent_request_slices': parent_request_slices,
             'parent_steps':parent_steps,
             'pattern_request':train.pattern_request_id,
+            'pattern_description':train.pattern_request.description,
             'groups':[x[0] for x in TRequest.PHYS_GROUPS]
 
 
