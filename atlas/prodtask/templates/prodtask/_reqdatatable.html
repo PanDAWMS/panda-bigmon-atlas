@@ -487,6 +487,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                     }
                                 }
 {#                                console.log(additionalComment);#}
+
                                     if (isApprove) {
                                         $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
                                         $("#approveDialog").attr("title", "Steps approved");
@@ -504,7 +505,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                             }
                             if (startFindig){
-                                findInputForSlices(slices);
+{#                                 findInputForSlices(slices);#}
                             } else{
                                 for (var i=0;i<toChangeDatasets.length;i++){
                                     $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
