@@ -1886,7 +1886,7 @@ function spreadAMI(that){
                 var sendData = {slices:sliceList,step_number:$('#trainParentStep').val(),production_request:'{{ pr_id }}',
                 train_id:$('#trainPatternRequest').val()};
             }else{
-                var sendData = {slices:sliceList,train_id:5,step_number:5,production_request:'{{ pr_id }}'};
+                var sendData = {slices:sliceList,train_id:$('#trainPatternRequest').val(),step_number:5,production_request:'{{ pr_id }}'};
             }
 
             $('#trainSlices').html(sliceList.toString());
