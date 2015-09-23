@@ -267,7 +267,7 @@ def create_request_as_child(request):
             new_request.campaign = parent_request.project
             new_request.project = parent_request.project
             new_request.description = input_dict['short_description']
-            new_request.phys_group = input_dict['phys_group']
+            new_request.phys_group = 'PHYS'
             new_request.provenance = 'GP'
             new_request.request_type = 'GROUP'
             new_request.energy_gev = parent_request.energy_gev
@@ -355,6 +355,21 @@ def train_as_child(request, reqid):
 
 
         })
+
+
+def change_ram_request(production_request_id,new_ram_value):
+    steps  = StepExecution.objects.filter(request=production_request_id)
+    for step in steps:
+        if step.get_task_config('project_mode'):
+            new_project_modes = []
+            new_project_modes.append('ramcount=%i'%new_ram_value)
+            for token in step.get_task_config('project_mode').split(';'):
+                if 'ramcount' not in token:
+                   new_project_modes.append(token)
+            step.set_task_config({'project_mode':';'.join(new_project_modes)})
+        step.save()
+
+
 
 @csrf_protect
 def create_request_from_train(request,train_id):
