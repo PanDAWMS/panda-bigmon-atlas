@@ -1356,7 +1356,7 @@ Details:
                energy=production_request.energy_gev,campaign=production_request.campaign,
                sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name )
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
-        mail_body = "Dear Monica, James and Marumi,\n"+mail_body
+        mail_body = "Dear Marjorie, Monica and Dan,\n"+mail_body
         mail_from = "atlas.mc-production@cern.ch"
         if need_approve:
             owner_mails += ["atlas-csc-prodman@cern.ch"]
