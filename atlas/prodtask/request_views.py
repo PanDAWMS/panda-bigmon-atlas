@@ -143,7 +143,7 @@ def short_hlt_form(request):
             priority = input_dict['priority']
             outputs = input_dict['outputs'].split('.')
             PROJECT_MODE_RECO = input_dict['recoProjectMode']
-            outputs.append('RAW')
+            #outputs.append('RAW')
             TAG_CONVERSION = {'recoTag':['Reco'],'reco2Tag':['Reco2'],'mergeTag':['HIST_HLTMON','HIST'],'aodTag':['AOD'],
                               'ntupTag':['NTUP_TRIGRATE','NTUP_TRIGCOST']}
             tags = {}
