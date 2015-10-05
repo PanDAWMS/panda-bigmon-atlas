@@ -504,6 +504,8 @@ def get_permissions(request,tasks):
                     is_permitted=True 
             elif "DPD" in allowed_groups:
                     is_permitted=True
+            elif "MCCOORD" in  allowed_groups:
+                    is_permitted=True
             else:
                     denied_tasks.append(task)
 
