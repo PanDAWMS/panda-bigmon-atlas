@@ -32,6 +32,50 @@ def tag_info(request, tag_name):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+def check_waiting_steps():
+
+    def remove_waiting(steps,new_status='NotChecked'):
+        for step in  steps:
+            step.status = new_status
+            step.save()
+
+
+    APPROVE_LEVEL = 0.5
+    all_waiting_steps = list(StepExecution.objects.filter(status='Waiting'))
+    slices = set()
+    steps_by_slices = {}
+
+    for step in all_waiting_steps:
+        slices.add(step.slice_id)
+        steps_by_slices[step.slice_id] = steps_by_slices.get(step.slice_id,[])+[step]
+
+
+    for slice in slices:
+        approved_steps = list(StepExecution.objects.filter(status='Approved',slice=slice))
+        if len(approved_steps) == 0:
+            # No approved steps -> remove waiting
+            remove_waiting(steps_by_slices[slice])
+
+        else:
+            # Check only first task of the first step
+
+            tasks_to_check = ProductionTask.objects.filter(step=approved_steps[0])
+            if tasks_to_check:
+                task_to_check = tasks_to_check[0]
+                if task_to_check.status in ProductionTask.RED_STATUS:
+                    # Parent failed -> remove waiting
+                    remove_waiting(steps_by_slices[slice])
+                else:
+                    if task_to_check.total_files_tobeused != 0:
+                        if ((float(task_to_check.total_files_finished)/float(task_to_check.total_files_tobeused))>APPROVE_LEVEL):
+                            remove_waiting(steps_by_slices[slice],'Approved')
+                            _logger.debug("Slice %s has been approved after evgen"%str(slice))
+
+
+
+
+
+
 
 
 
@@ -117,7 +161,7 @@ def reject_steps_in_slice(current_slice):
             step.step_appr_time = None
             if step.status == 'Skipped':
                 step.status = 'NotCheckedSkipped'
-            elif step.status == 'Approved':
+            elif (step.status == 'Approved') or (step.status == 'Waiting'):
                 step.status = 'NotChecked'
             step.save()
 
@@ -797,7 +841,7 @@ def apply_retry_action(production_request, retry_action):
                             step.set_task_config({'previous_task_list':map(int,retry_action[slice_number][real_step_index])})
                             if step.status == 'Skipped':
                                 step.status = 'NotCheckedSkipped'
-                            elif step.status == 'Approved':
+                            elif (step.status == 'Approved') or (step.status == 'Waiting'):
                                 step.status = 'NotChecked'
                             if first_changed and (step.step_parent.id in old_new_step):
                                 step.step_parent = old_new_step[int(step.step_parent.id)]

@@ -5,6 +5,7 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse
+from atlas.prodtask.models import StepExecution
 
 from ..settings import defaultDatetimeFormat
 
@@ -17,7 +18,7 @@ from .models import ProductionTask, TRequest, TTask, ProductionDataset
 from .task_actions import allowed_task_actions
 
 from django.db.models import Count, Q
-
+from django.utils import timezone
 
 from django.utils.timezone import utc
 from datetime import datetime
@@ -513,3 +514,19 @@ def get_permissions(request,tasks):
            is_permitted=False          
 
     return (is_permitted,denied_tasks)
+
+
+def create_fake_task(step_id,task_id):
+    new_fake_task = ProductionTask()
+    step = StepExecution.objects.get(id=step_id)
+    new_fake_task.id = task_id
+    new_fake_task.step = step
+    new_fake_task.request = step.request
+    new_fake_task.parent_id = task_id
+    new_fake_task.chain_tid = task_id
+    new_fake_task.submit_time = timezone.now()
+    new_fake_task.reference = ''
+    new_fake_task.campaign = ''
+    new_fake_task.jedi_info = ''
+    new_fake_task.save()
+    return new_fake_task

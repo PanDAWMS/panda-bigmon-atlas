@@ -513,7 +513,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                                 step.set_task_config({'previous_task_list':problematic_tasks})
                         if (step.status == 'Skipped') or (index < step_from):
                             step.status = 'NotCheckedSkipped'
-                        elif step.status == 'Approved':
+                        elif step.status in ['Approved','Waiting']:
                             step.status = 'NotChecked'
                         if first_changed and (step.step_parent.id in old_new_step):
                             step.step_parent = old_new_step[int(step.step_parent.id)]

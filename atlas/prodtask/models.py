@@ -485,6 +485,9 @@ class TTask(models.Model):
 
 
 class ProductionTask(models.Model):
+
+    RED_STATUS = ['failed','aborted','broken']
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     step = models.ForeignKey(StepExecution, db_column='STEP_ID')
     request = models.ForeignKey(TRequest, db_column='PR_ID')
@@ -520,9 +523,11 @@ class ProductionTask(models.Model):
     total_files_failed = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFAILED', null=True)
     total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
     is_extension = models.NullBooleanField(db_column='IS_EXTENSION', null=True, blank=False)
+    total_files_finished = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFINISHED', null=True)
 
-    def save(self):
-        raise NotImplementedError
+
+    # def save(self):
+    #     raise NotImplementedError
 
     @property
     def failure_rate(self):
