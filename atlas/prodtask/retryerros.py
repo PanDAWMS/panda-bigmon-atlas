@@ -48,7 +48,7 @@ def retry_errors_edit(request, retry_errors_id):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            if (request.user.is_superuser) or (request.user.username in ['barreiro']):
+            if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
                 values = RetryErrors.objects.get(id=retry_errors_id)
                 form = RetryErrorsForm(instance=values)
             else:
@@ -91,7 +91,7 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            if (request.user.is_superuser) or (request.user.username in ['barreiro']):
+            if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
                 if retry_errors_id:
                     values = RetryErrors.objects.get(id=retry_errors_id)
                     values.id=None
