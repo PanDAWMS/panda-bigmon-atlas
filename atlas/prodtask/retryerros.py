@@ -20,10 +20,10 @@ from ..prodtask.helper import form_request_log
 from .forms import RetryErrorsForm
 from .models import RetryErrors
 
-
+@login_required(login_url='/prodtask/login/')
 def retry_errors_list(request):
     if request.method == 'GET':
-        retry_errors = RetryErrors.objects.all()
+        retry_errors = RetryErrors.objects.all().order_by('id')
         return render(request, 'prodtask/_error_retry_table.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Retry errors',
@@ -33,7 +33,7 @@ def retry_errors_list(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
-
+@login_required(login_url='/prodtask/login/')
 def retry_errors_edit(request, retry_errors_id):
     if request.method == 'POST':
         try:
@@ -48,10 +48,15 @@ def retry_errors_edit(request, retry_errors_id):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            values = RetryErrors.objects.get(id=retry_errors_id)
-            form = RetryErrorsForm(instance=values)
+            if (request.user.is_superuser) or (request.user.username in ['barreiro']):
+                values = RetryErrors.objects.get(id=retry_errors_id)
+                form = RetryErrorsForm(instance=values)
+            else:
+                return HttpResponseRedirect('/prodtask/retry_errors_list')
         except:
             return HttpResponseRedirect('/prodtask/retry_errors_list')
+
+
 
     return render(request, 'prodtask/_train_form.html', {
         'active_app' : 'prodtask',
@@ -62,11 +67,11 @@ def retry_errors_edit(request, retry_errors_id):
         'parent_template' : 'prodtask/_index.html',
         })
 
-
+@login_required(login_url='/prodtask/login/')
 def retry_errors_clone(request, retry_errors_id):
     return retry_errors_clone_create(request, retry_errors_id,'prodtask:retry_errors_clone')
 
-
+@login_required(login_url='/prodtask/login/')
 def retry_errors_create(request):
     return retry_errors_clone_create(request, None,'prodtask:retry_errors_create')
 
@@ -86,12 +91,15 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            if retry_errors_id:
-                values = RetryErrors.objects.get(id=retry_errors_id)
-                values.id=None
-                form = RetryErrorsForm(instance=values)
+            if (request.user.is_superuser) or (request.user.username in ['barreiro']):
+                if retry_errors_id:
+                    values = RetryErrors.objects.get(id=retry_errors_id)
+                    values.id=None
+                    form = RetryErrorsForm(instance=values)
+                else:
+                    form = RetryErrorsForm()
             else:
-                form = RetryErrorsForm()
+                return HttpResponseRedirect('/prodtask/retry_errors_list')
 
         except:
             return HttpResponseRedirect('/prodtask/retry_errors_list')

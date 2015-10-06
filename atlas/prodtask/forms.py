@@ -12,6 +12,7 @@ from django.forms import DecimalField
 from django.forms import Form
 import json
 from django.forms.extras.widgets import SelectDateWidget
+from atlas.prodtask.models import JediWorkQueue
 
 from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
     RetryErrors, RetryAction, InputRequestList
@@ -241,19 +242,33 @@ class TRequestEventIndexCreateCloneForm(TRequestCreateCloneConfirmation):
 class RetryErrorsForm(ModelForm):
     id = DecimalField(widget=forms.HiddenInput,required=False)
     error_source = CharField(widget=Textarea, required=True)
-    error_code = DecimalField(required=False)
-    retry_action = ModelChoiceField(queryset=RetryAction.objects.all(),required=True)
+    error_code = DecimalField()
+    active = CharField(required=True, widget=forms.Select(choices=[(x,x) for x in ['Y','N']]))
+    error_diag = CharField(widget=Textarea, required=False)
     parameters = CharField(widget=Textarea, required=False)
+    retry_action = ModelChoiceField(queryset=RetryAction.objects.all(),required=True)
+    architecture = CharField(widget=Textarea, required=False)
     release = CharField(required=False)
-    work_queue = DecimalField(required=False)
+    work_queue =  ModelChoiceField(queryset=JediWorkQueue.objects.all(),required=False)
     description = CharField(widget=Textarea, required=False)
     expiration_date = DateTimeField(widget = TextInput(attrs=
                                 {
                                     'class':'datepicker'
                                 }),required=False)
-    active = CharField(required=True, widget=forms.Select(choices=[(x,x) for x in ['Y','N']]))
+
+
+
     class Meta:
         model = RetryErrors
+
+
+    def clean(self):
+        cleaned_data = super(RetryErrorsForm, self).clean()
+        new_work_queue = cleaned_data.get('work_queue')
+        if new_work_queue:
+            cleaned_data['work_queue'] = new_work_queue.id
+        return cleaned_data
+
 
 class MCPatternForm(ModelForm):
 

@@ -313,9 +313,9 @@ class InputRequestList(models.Model):
 
 
 class RetryAction(models.Model):
-    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='ID', primary_key=True)
-    action_name = models.CharField(max_length=50, db_column='NAME')
-    description = models.CharField(max_length=250, db_column='DESCRIPTION')
+    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='RETRYACTION_ID', primary_key=True)
+    action_name = models.CharField(max_length=50, db_column='RETRY_ACTION')
+    description = models.CharField(max_length=250, db_column='RETRY_DESCRIPTION')
     active = models.CharField(max_length=1, db_column='ACTIVE')
 
     @property
@@ -326,11 +326,29 @@ class RetryAction(models.Model):
         raise NotImplementedError('Only manual creation')
 
     def __str__(self):
-        return "%i" % (self.id)
+        return "%i - %s" % (int(self.id), self.action_name)
     class Meta:
         app_label = 'panda_dev'
         #db_table = u'T_INPUT_DATASET'
         db_table = u"RETRYACTIONS"
+
+
+class JediWorkQueue(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='QUEUE_ID', primary_key=True)
+    queue_name = models.CharField(max_length=50, db_column='QUEUE_NAME')
+
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    def __str__(self):
+        return "%i - %s" % (int(self.id), self.queue_name)
+
+    class Meta:
+        app_label = 'panda_dev'
+        #db_table = u'T_INPUT_DATASET'
+        db_table = u"JEDI_WORK_QUEUE"
+
 
 #   ID NUMBER(10, 0) NOT NULL
 # , ERRORSOURCE VARCHAR2(256 BYTE) NOT NULL
@@ -346,16 +364,21 @@ class RetryAction(models.Model):
 
 
 class RetryErrors(models.Model):
-    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='ID', primary_key=True)
-    error_source = models.CharField(max_length=256, db_column='ERRORSOURCE',null=False)
-    error_code = models.DecimalField(decimal_places=0, max_digits=10, db_column='ERRORCODE', null=True)
-    retry_action = models.ForeignKey(RetryAction,db_column='RETRYACTION_FK')
+    id = models.DecimalField(decimal_places=0, max_digits=10, db_column='Retryerror_id', primary_key=True)
+    error_source = models.CharField(max_length=256, db_column='ErrorSource',null=False)
+    error_code = models.DecimalField(decimal_places=0, max_digits=10, db_column='ErrorCode')
+    active = models.CharField(max_length=1, db_column='ACTIVE', null=True)
+    retry_action = models.ForeignKey(RetryAction,db_column='RetryAction')
+    error_diag =  models.CharField(max_length=256, db_column='ErrorDiag')
     parameters = models.CharField(max_length=256, db_column='PARAMETERS')
+    architecture = models.CharField(max_length=256, db_column='Architecture')
     release = models.CharField(max_length=64, db_column='RELEASE')
     work_queue = models.DecimalField(decimal_places=0, max_digits=5, db_column='WORKQUEUE_ID')
     description = models.CharField(max_length=250, db_column='DESCRIPTION')
     expiration_date = models.DateTimeField(db_column='EXPIRATION_DATE', null=True)
-    active = models.CharField(max_length=1, db_column='ACTIVE', null=True)
+
+
+
 
     @property
     def is_active(self):
