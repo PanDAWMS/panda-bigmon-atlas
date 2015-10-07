@@ -1,4 +1,5 @@
 import copy
+import string
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -1338,8 +1339,10 @@ def resend_email(request,reqid):
 
 
 def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
+    long_description = filter(lambda x: x in string.printable, long_description)
+    short_description = filter(lambda x: x in string.printable, production_request.description).replace('\n','').replace('\r','')
     subject = 'Request {group_name} {description} {energy} GeV'.format(group_name=production_request.phys_group,
-                                                          description=production_request.description.replace('\n','').replace('\r',''),
+                                                          description=short_description,
                                                           energy=str(production_request.energy_gev))
     mail_body = """
 {long_description}
