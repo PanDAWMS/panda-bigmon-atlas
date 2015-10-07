@@ -79,7 +79,9 @@ def find_missing_tags(tags):
     return return_list
 
 
-def step_status_definition(is_skipped, is_approve=True):
+def step_status_definition(is_skipped, is_approve=True, is_waiting=False):
+    if is_waiting:
+        return 'Waiting'
     if is_skipped and is_approve:
         return 'Skipped'
     if not(is_skipped) and is_approve:
@@ -185,7 +187,7 @@ def form_step_in_page(ordered_existed_steps,STEPS, is_foreign):
 
 
 #TODO: FIX it. Make one commit
-def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99):
+def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99, waiting_level=99):
     """
     Creating/saving steps
 
@@ -250,11 +252,14 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                         if step.status not in SKIPPED_STATUS:
                             total_events = -1
                             still_skipped = False
+                            if (index>=waiting_level):
+                               waiting_level = 99
                         else:
                             total_events = step.input_events
             try:
                 to_delete = []
                 for index,step_value in enumerate(steps_status[first_not_approved_index:],first_not_approved_index):
+
                     step_in_db = step_as_in_page[index]
                     if not step_value['value'] and not step_in_db:
                         continue
@@ -275,7 +280,11 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                         if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
                                 (not step_value['changes']) and (total_events==step_in_db.input_events) and \
                                 similar_status(step_in_db.status,step_value['is_skipped']) and (not new_step):
-                            approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'], index<=approve_level))
+                            if still_skipped and (index>=waiting_level):
+                                 waiting_level = 99
+                            approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'],
+                                                                                   index<=approve_level,
+                                                                                   index>=waiting_level))
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
                                 still_skipped = False
@@ -322,7 +331,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.step_parent = step_in_db
                             if not similar_status(step_in_db.status,step_value['is_skipped']):
                                 status_changed = True
-                            step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+                            if still_skipped and (index>=waiting_level):
+                                 waiting_level = 99
+                            step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level,
+                                                                       index>=waiting_level)
 
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
@@ -389,7 +401,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if parent_step:
                                 st_exec.step_parent = parent_step
                                 no_parent = False
-                            st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level)
+                            if still_skipped and (index>=waiting_level):
+                                 waiting_level = 99
+                            st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level,
+                                                                    index>=waiting_level)
                             if 'input_events' in step_value['changes']:
                                 st_exec.input_events = step_value['changes']['input_events']
                             else:
@@ -655,7 +670,7 @@ def change_dataset_in_slice(req, slice, new_dataset_name):
 
 
 
-def request_steps_approve_or_save(request, reqid, approve_level):
+def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99):
     results = {'success':False}
     try:
         data = request.body
@@ -699,9 +714,9 @@ def request_steps_approve_or_save(request, reqid, approve_level):
             if ['-1'] == slice_steps.keys():
                 slice_0 = deepcopy(slice_steps['-1'])
                 if req.request_type == 'MC':
-                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level)
+                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level,waiting_level)
                 else:
-                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level)
+                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level,waiting_level)
                 if req.request_type == 'MC':
                     approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
                     if (0 not in error_slices) and (approved_steps == 0):
@@ -720,11 +735,11 @@ def request_steps_approve_or_save(request, reqid, approve_level):
                 else:
                     removed_input = []
                     if req.request_type == 'MC':
-                        error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level)
+                        error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
                     else:
-                        error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level)
+                        error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
 
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
                     if not owner:
@@ -821,9 +836,9 @@ def request_steps_save(request, reqid):
 
 
 @csrf_protect
-def request_steps_approve(request, reqid, approve_level):
+def request_steps_approve(request, reqid, approve_level, waiting_level):
     if request.method == 'POST':
-        return request_steps_approve_or_save(request, reqid, int(approve_level)-1)
+        return request_steps_approve_or_save(request, reqid, int(approve_level)-1, int(waiting_level))
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 
@@ -1013,6 +1028,13 @@ def request_table_view(request, rid=None, show_hidden=False):
                 if (step_task['step']['status'] == 'Approved')or(step_task['step']['status'] == 'Skipped'):
                     max_level=index
         return max_level+1
+
+    def has_waiting(step_task_list):
+        for step_task in step_task_list:
+            if step_task['step']:
+                if (step_task['step']['status'] == 'Waiting'):
+                    return  True
+        return False
 
     BIG_PANDA_TASK_BASE = 'http://bigpanda.cern.ch/task/'
     FAKE_TASK_NUMBER = '123456'
@@ -1220,10 +1242,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                         slice_dict['dataset'] = ''
                     if approved:
                         input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,input_lists_pre_pattern),
-                                            False,'',approve_level(slice_steps_ordered),'no'))
+                                            False,'',approve_level(slice_steps_ordered),'no',has_waiting(slice_steps_ordered)))
                     else:
                         input_lists.append((slice_dict, slice_steps_ordered, 'not_submitted',
-                                            False,'',-1,'no'))
+                                            False,'',-1,'no',False))
                 if do_all or do_cloned_and_failed:
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
@@ -1355,10 +1377,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                    input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                             if another_chain_step_dict:
                                 input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                    show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned))
+                                                    show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
                             else:
                                 input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                    show_task,'',approve_level(slice_steps_ordered),cloned))
+                                                    show_task,'',approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
 
                             if (not show_task)or(fully_approved<total_slice):
                                 edit_mode = True
@@ -1427,10 +1449,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                    input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                             if another_chain_step:
                                 input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
-                                                    another_chain_step['id'], approve_level(slice_steps),cloned))
+                                                    another_chain_step['id'], approve_level(slice_steps),cloned,has_waiting(slice_steps)))
                             else:
                                 input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
-                                                    approve_level(slice_steps),cloned))
+                                                    approve_level(slice_steps),cloned,has_waiting(slice_steps)))
 
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]

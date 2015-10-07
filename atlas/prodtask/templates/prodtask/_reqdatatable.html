@@ -209,7 +209,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
     {#Fill pattern table#}
     (function(){
-       {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level  in inputLists %}
+       {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level, cloned, is_waiting  in inputLists %}
            {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");
@@ -223,7 +223,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         {% if  forloop.counter0 < approve_level %}
                             var borderColor = 'green';
                         {%  else  %}
-                            var borderColor = 'grey';
+                            {% if  is_waiting %}
+                                var borderColor = 'blue';
+                            {%  else  %}
+                                var borderColor = 'grey';
+                            {% endif  %}
                         {% endif  %}
                         $("#short{{ inputList.slice }}s{{ forloop.counter0 }}.showFullSpan").css({"background-color":stepColor,
                             "border":'solid',
@@ -321,8 +325,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         });
     }
 
-    function approveSlices(isApprove, approveLevel, slices){
-        var toChangeDatasets = [];
+    function approveSlices(isApprove, approveLevel, waitingLevel, slices){
+
         var toChangeDatasets = [];
         var startFindig = false;
         var sendData = Object();
@@ -393,7 +397,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                 var ajaxURL = '';
                 if (isApprove){
-                    ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/';
+                    ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
@@ -533,9 +537,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     }
 
 
-    function approveClick(event,isApprove, approveLevel){
+    function approveClick(event,isApprove, approveLevel, isWaiting){
         event.preventDefault();
         var slices = [];
+        var waitingLevel=99;
+        if (isWaiting){
+            waitingLevel=1;
+        }
         $(".checkboxSlice:checked").each(function() {
             {#                   8 = "checkbox".length#}
             var sliceID = $(this).attr("id").slice(8);
@@ -544,12 +552,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 slices.push(sliceID);
             }
         });
-        approveSlices(isApprove,approveLevel, slices);
+        approveSlices(isApprove,approveLevel,waitingLevel, slices );
     };
     function approveEmpty(event){
         event.preventDefault();
         var slices = [];
-        approveSlices(true,99, slices);
+        approveSlices(true,99, 99, slices);
     };
 
     function emptyPattern(){
@@ -1332,7 +1340,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var slices = [];
             var sliceID=$('#sliceModalSlice').html();
             slices.push(sliceID);
-            approveSlices(false,99,slices);
+            approveSlices(false,99,99,slices);
         }
         function checkSliceIsSaved(sliceNumber){
             var is_equal = undefined;
@@ -1464,7 +1472,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                      changeSliceChanges($('.storeOutputSlice.'+key));
                  }
             }
-            approveSlices(false,99,slices);
+            approveSlices(false,99,99,slices);
             changeMode = false;
             $('#slicesBulkChangeModal').foundation('reveal', 'close');
 
@@ -2398,7 +2406,7 @@ var lastChecked = true;
 
     <div >
     <div  id="baseInput"></div>
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -2605,8 +2613,13 @@ var lastChecked = true;
                     >Login</a>
                 {% endif %}
 
-            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1');">Save</button>
-            <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99');">Approve</button>
+            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false);">Save</button>
+            {% ifequal trequest.request_type "MC" %}
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Approve</button>
+            {% else  %}
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
+
+            {% endifequal %}
             <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
             <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
             <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
@@ -2633,7 +2646,7 @@ var lastChecked = true;
     </div>
     <div class="row">
                 <div class="large-4 columns">
-                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val());">Approve only steps before:</a>
+                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
                 </div>
 
                 <div class="large-1 columns">

@@ -82,7 +82,7 @@ urlpatterns = patterns('',
 
     url(r'^step_approve/(?P<stepexid>\d+)/(?P<reqid>\d+)/(?P<sliceid>\d+)/$', 'atlas.prodtask.views.step_approve', name='step_approve'),
 
-    url(r'^request_steps_approve/(?P<reqid>\d+)/(?P<approve_level>\d+)/$', 'atlas.prodtask.views.request_steps_approve',
+    url(r'^request_steps_approve/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/$', 'atlas.prodtask.views.request_steps_approve',
         name='request_steps_approve'),
     url(r'^request_reprocessing_steps_create/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_reprocessing_steps_create',
         name='request_reprocessing_steps_create'),
