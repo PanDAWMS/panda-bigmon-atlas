@@ -2763,6 +2763,11 @@ var lastChecked = true;
             <label> Comment: <input id="commentModal" type="text" class="comment storeOutputSlice storeInput" placeholder=" "  /></label>
         </div>
     </div>
+        <div class="row" style="display: none">
+        <div class="column large-12">
+            <label> Slice priority: <input id="priorityModal" type="number" class="priority storeOutputSlice storeInput" placeholder=" "  /></label>
+        </div>
+    </div>
     </div>
 <div>
 
@@ -2918,6 +2923,11 @@ var lastChecked = true;
                 <label> Comment: <input id="commentModal" type="text" class="comment storeSliceBulk" placeholder=" "  /></label>
             </div>
         </div>
+        <div class="row">
+                    <div class="column large-3">
+                <label> Priority: <input id='priorityModal' type="number" class="priority storeSliceBulk"   /></label>
+            </div>
+             </div>
     <button id="saveSliceBulkButton" class="btn_is_authenticated" title="Save selected slices" onclick="saveSlicedBulk(event);">Save</button>
 
      <a class="close-reveal-modal">&#215;</a>

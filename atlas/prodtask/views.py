@@ -601,7 +601,7 @@ def save_slice_changes(reqid, slice_steps):
         if slice_number != '-1':
             if steps_status['changes']:
                 do_action = False
-                for field in ['jobOption','datasetName','eventsNumber','comment']:
+                for field in ['jobOption','datasetName','eventsNumber','comment','priority']:
                     if steps_status['changes'].get(field):
                         do_action = True
                 if do_action:
@@ -635,6 +635,13 @@ def save_slice_changes(reqid, slice_steps):
                                         new_comment = '(Atlfast)' + new_comment
                                 current_slice.comment = new_comment
                                 current_slice.save()
+                            if steps_status['changes'].get('priority'):
+                                current_slice.priority = steps_status['changes'].get('priority')
+                                current_slice.save()
+                                priority_dict = get_priority_object(current_slice.priority)
+                                for step in StepExecution.objects.filter(slice=current_slice):
+                                        step.priority = priority_dict.priority(step.step_template.step, step.step_template.ctag)
+                                        step.save()
                     except Exception,e:
                         not_changed.append(slice)
     return []

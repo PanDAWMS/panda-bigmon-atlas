@@ -263,7 +263,7 @@ def get_slices_bulk_info(request, reqid):
             result_dict = {'multivalues':{},'singlevalue':{}}
             for slice in slices:
                 current_slice_dict = {'datasetName':slice.dataset_id,'comment':slice.comment,'jobOption':slice.input_data,
-                                      'eventsNumber':int(slice.input_events)}
+                                      'eventsNumber':int(slice.input_events),'priority':int(slice.priority)}
 
                 for key in current_slice_dict:
                     if key in result_dict['multivalues']:
