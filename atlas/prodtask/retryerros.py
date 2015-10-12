@@ -13,17 +13,27 @@ from django.db import transaction
 import json
 import logging
 from django.db.models import Q
+from atlas.prodtask.models import RetryAction
 
 from ..prodtask.helper import form_request_log
 
 
 from .forms import RetryErrorsForm
-from .models import RetryErrors
+from .models import RetryErrors, JediWorkQueue
+
 
 @login_required(login_url='/prodtask/login/')
 def retry_errors_list(request):
     if request.method == 'GET':
-        retry_errors = RetryErrors.objects.all().order_by('id')
+        retry_errors = RetryErrors.objects.all().order_by('id').values()
+        for retry_error in retry_errors:
+            try:
+                if retry_error['work_queue']:
+                    working_queue = JediWorkQueue.objects.get(id=retry_error['work_queue'])
+                    retry_error['work_queue'] = str(working_queue)
+                retry_error['retry_action'] = str(RetryAction.objects.get(id=retry_error['retry_action_id']))
+            except:
+             pass
         return render(request, 'prodtask/_error_retry_table.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Retry errors',

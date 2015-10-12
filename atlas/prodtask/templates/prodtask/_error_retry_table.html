@@ -53,22 +53,26 @@
                 <u><a  href=" {% url "prodtask:retry_errors_edit" error_retry.id %}">Edit</a></u>
         |<u><a  href=" {% url "prodtask:retry_errors_clone" error_retry.id %}">Clone</a></u>
         </div>
-        <div class="large-2 column">Error code: {{ error_retry.error_code }}</div>
-        <div class="large-4 column">Retry Action: {{ error_retry.retry_action.id }}-{{ error_retry.retry_action.action_name }}</div>
-        <div class="large-2 column">Work queue: {{ error_retry.work_queue }} </div>
-        <div class="large-2 column">Expire: {{ error_retry.expiration_date }} </div>
+        <div class="large-2 column"><b>Error code:</b> {{ error_retry.error_code }}</div>
+        <div class="large-4 column"><b>Retry Action:</b> {{ error_retry.retry_action }}</div>
+        <div class="large-2 column"><b>Work queue:</b> {{ error_retry.work_queue }} </div>
+        <div class="large-2 column"><b>Expire:</b> {{ error_retry.expiration_date }} </div>
     </div>
     <div class="row">
-        <div class="large-12 column">Error source: {{ error_retry.error_source }}</div>
+        <div class="large-12 column"><b>Error source: </b>{{ error_retry.error_source }}</div>
     </div>
     <div class="row">
-        <div class="large-12 column">Parameters: {{ error_retry.parameters }}</div>
+        <div class="large-12 column"><b>Parameters: </b>{{ error_retry.parameters }}</div>
     </div>
     <div class="row">
-        <div class="large-12 column">Description: {{ error_retry.description }}</div>
+        <div class="large-12 column"><b>Description: </b>{{ error_retry.description }}</div>
     </div>
     <div class="row">
-        <div class="large-12 column">Error diag: {{ error_retry.error_diag }}</div>
+        <div class="large-12 column"><b>Error diag: </b>{{ error_retry.error_diag }}</div>
+    </div>
+    <div class="row">
+        <div class="large-6 column"><b>Architecture: </b>{{ error_retry.architecture }}</div>
+        <div class="large-6 column"><b>Release: </b>{{ error_retry.release }}</div>
     </div>
 <br>
 </div>
