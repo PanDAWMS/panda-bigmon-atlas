@@ -39,7 +39,7 @@
 
 <tr><th><label for="id">ID:</label></th><td>{% if task.id %}<a href="http://bigpanda.cern.ch/task/{{task.id}}">{{task.id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="step">Step execution:</label></th><td>{% if task.step.id %}<a href="{% url 'prodtask:step_execution' task.step.id %}">{{task.step.id}}</a>{% else %}None{% endif %}</td></tr>
-<tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:input_list_approve' task.request.reqid %}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="request">Request:</label></th><td>{% if task.request.reqid %}<a href="{% url 'prodtask:input_list_approve' task.request.reqid %}#inputList{{ task.step.slice.slice }}">{{task.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="parent_id">Parent ID:</label></th><td>{% if task.parent_id %}<a href="{% url 'prodtask:task' task.parent_id  %}">{{task.parent_id}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="chain_tid">Chain ID:</label></th><td>{% if task.chain_tid %}<a href="{% url 'prodtask:task' task.chain_tid  %}">{{task.chain_tid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="name">Name:</label></th><td>{% if task.id %}<a href="{% url 'prodtask:task' task.id %}">{{task.name}}</a>{% else %}None{% endif %}</td></tr>
