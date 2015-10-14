@@ -8,7 +8,7 @@ from time import sleep
 from copy import deepcopy
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
-from ..prodtask.request_views import clone_slices
+from ..prodtask.request_views import clone_slices, set_request_status
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset
@@ -44,6 +44,7 @@ def check_waiting_steps():
     all_waiting_steps = list(StepExecution.objects.filter(status='Waiting'))
     slices = set()
     steps_by_slices = {}
+    requests = set()
 
     for step in all_waiting_steps:
         slices.add(step.slice_id)
@@ -69,9 +70,11 @@ def check_waiting_steps():
                     if task_to_check.total_files_tobeused != 0:
                         if ((float(task_to_check.total_files_finished)/float(task_to_check.total_files_tobeused))>APPROVE_LEVEL):
                             remove_waiting(steps_by_slices[slice],'Approved')
+                            requests.add(approved_steps[0].request_id)
                             _logger.debug("Slice %s has been approved after evgen"%str(slice))
 
-
+    for request_id in requests:
+        set_request_status('cron',request_id,'approved','Automatic waiting approve', 'Request was automatically approved')
 
 
 
