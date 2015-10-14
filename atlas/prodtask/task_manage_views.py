@@ -156,8 +156,8 @@ def task_manage(request):
                              'parametrized': request.parametrized,
                              'parent_template': 'prodtask/_index.html',
                              'last_task_submit_time': last_task_submit_time,
-                             'clouds': get_clouds(),
-                             'sites': get_sites(),
+                             #'clouds': get_clouds(),
+                             #'sites': get_sites(),
                              'edit_mode': True,
                             })
 

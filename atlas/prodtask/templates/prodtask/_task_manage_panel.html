@@ -445,6 +445,18 @@
 
             </div>
 
+             <div class="small-12 large-12 columns panel" id="kill_job_file">
+                <div class="row">
+
+
+                                <input type="file" id="file" name="file" style="color: black"/>
+                                <output id="list" style="color: black"></output>
+
+
+                </div>
+
+            </div>
+
          </div>
 
                <div class="row">
@@ -604,6 +616,35 @@ function doTasksActionSelected(action) {
     doTasksAction(action, tasks, parameters);
 
 } // doTasksActionSelected
+
+
+
+  function handleFileSelect(evt) {
+    var f = evt.target.files[0]; // File object
+    var reader = new FileReader();
+
+    var output = [];
+    //for (var i = 0, f; f = files[i]; i++) {
+    output.push('<li><strong>', f.name, '</strong> (', f.type || 'n/a', ') - ',
+                  'last modified: ',
+                  f.lastModifiedDate.toLocaleDateString(), '</li>');
+
+    //}
+
+    reader.onload = function(e) {
+            var contents = e.target.result;
+
+            alert(contents);
+    };
+
+    reader.readAsText(f);
+
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+document.getElementById('file').addEventListener('change', handleFileSelect, false);
+
+
 
 
 $(document).ready(function () {
