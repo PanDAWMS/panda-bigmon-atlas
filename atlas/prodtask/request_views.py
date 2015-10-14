@@ -330,7 +330,10 @@ def hlt_form_prepare_request(request):
             form_data['request_type'] = 'HLT'
             form_data['phys_group'] = 'THLT'
             form_data['manager'] = request.user.username
-            form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+            try:
+                form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+            except:
+                pass
             form_data['campaign'] = dataset[:dataset.find('.')]
             form_data['project'] = dataset[:dataset.find('.')]
             form_data['provenance'] = 'AP'
