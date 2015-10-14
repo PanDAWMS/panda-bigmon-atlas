@@ -422,7 +422,7 @@ def create_request_from_train(request,train_id):
             form_data['campaign'] = train.pattern_request.campaign
             form_data['project'] = train.pattern_request.project
             form_data['provenance'] = 'GP'
-            form_data['cc'] = 'atlas-dpd-production@cern.ch'
+            form_data['cc'] = 'egramsta@cern.ch'
             form = TRequestCreateCloneConfirmation(form_data)
             inputlists = form_input_list_for_preview(spreadsheet_dict)
             # store data from prefill form to http request
