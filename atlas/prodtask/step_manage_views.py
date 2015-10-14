@@ -333,7 +333,10 @@ def set_steps_bulk_info(request, reqid):
                             if x in new_values:
                                 step_modified = True
                                 if x in StepExecution.INT_TASK_CONFIG_PARAMS:
-                                    step.set_task_config({x:int(new_values[x])})
+                                    if new_values[x]:
+                                        step.set_task_config({x:int(new_values[x])})
+                                    else:
+                                        step.set_task_config({x:new_values[x]})
                                 else:
                                     step.set_task_config({x:new_values[x].strip()})
                         if step_modified:
