@@ -45,7 +45,8 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',
-    'atlas.getdatasets', 
+    'atlas.getdatasets',
+    'atlas.prodjob',
     'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS = COMMON_INSTALLED_APPS + INSTALLED_APPS_BIGPANDAMON_ATLAS

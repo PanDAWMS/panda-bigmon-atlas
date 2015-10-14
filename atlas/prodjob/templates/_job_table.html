@@ -1,0 +1,25 @@
+{% extends "prodtask/_index.html" %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
+	</style>
+
+    <style type="text/css">
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+
+  <style type="text/css">
+    .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
+    .taskid         { min-width: 6em; }
+    .datetime       { min-width: 7em; }
+    .numbers        { max-width: 80px; }
+  </style>
+
+{% endblock %}

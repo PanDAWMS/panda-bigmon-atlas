@@ -48,6 +48,7 @@ common_patterns = patterns('',
 #    url(r'^graphics/', include('core.graphics.urls')),
     url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
+    url(r'^prodjob/', include('atlas.prodjob.urls', namespace='prodjob')),
 
     url(r'^todo', include('atlas.todoview.urls', namespace='todoview')),
 
