@@ -54,7 +54,7 @@ def form_input_list_for_preview(file_dict):
     return input_lists
 
 class TRequestCreateCloneConfirmation(ModelForm):
-    long_description = CharField(widget=Textarea, required=False)
+    long_description = CharField(widget=Textarea(attrs={'cols':70,'style': 'height:300px'}), required=False)
     cc = CharField(required=False)
     description = CharField(label='Short description', widget=Textarea, required=True)
     cstatus = CharField(widget=forms.HiddenInput, required=False)
