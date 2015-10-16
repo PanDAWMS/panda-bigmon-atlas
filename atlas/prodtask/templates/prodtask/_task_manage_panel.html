@@ -574,7 +574,7 @@ function doTasksActionSelected(action) {
         parameters = [$("#site_select").val()];
     } else if (action == "reassign_to_cloud") {
         parameters = [$("#cloud_select").val()];
-    } else if ((action == 'increase_priority') && (action=='decrease_priority')) {
+    } else if ((action == 'increase_priority') || (action=='decrease_priority')) {
         parameters = [20];
     } else if (action == "change_ram_count") {
         parameters = [$("#new_ramcount").val()];
