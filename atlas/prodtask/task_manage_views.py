@@ -56,7 +56,7 @@ def tasks_action(request, action):
 
     if request.method != 'POST':
         response["exception"] = \
-            "Request method % is not supported" % request.method
+            "Request method %s is not supported" % request.method
         return _http_json_response(response)
 
     # TODO: rewrite with django auth system
