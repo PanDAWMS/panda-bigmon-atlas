@@ -207,15 +207,21 @@ def get_task_priority_levels(task_id):
         result.update(reason="Task not found")
         return result
 
+    current_priority = int(task.current_priority or task.priority)
+    result["current_priority"] = current_priority
+
     step = task.step
     slice_priority = step.slice.priority
 
-    result["current_priority"] = int(task.current_priority or task.priority)
-
     if slice_priority < 100:  # having a priority level here
         step_name = step.step_template.step
+        result["step_name"] = step_name
         levels = get_priority_levels()
-        result["levels"] = levels.get(step_name, {})
+        step_levels = levels.get(step_name, {})
+        result["levels"] = step_levels
+        for level, prio in step_levels.items():
+            if prio == current_priority:
+                result["current_level"] = level
 
     result["successful"] = True
     return result
@@ -226,7 +232,7 @@ def shift_task_priority(owner, task_id, level_shift, priority_shift=None):
     Shifting task priority up or down
     :param owner: username form which task action will be performed
     :param task_id: task ID
-    :param level_shift: if > 0, increasing the priority, otherwise decreasing.
+    :param level_shift: if < 0, increasing the priority, otherwise decreasing.
     Has precedence over priority_shift.
     :param priority_shift: value of priority shift to apply
     :return:
@@ -244,12 +250,14 @@ def shift_task_priority(owner, task_id, level_shift, priority_shift=None):
     if not levels and (priority_shift is not None):
         return change_task_priority(owner, task_id, current_prio+priority_shift)
 
-    if level_shift > 0:
-        next_priorities = sorted([x for x in levels if x > current_prio])
+    # Assuming that lower level always has higher priority (as set in the DB)
+    if level_shift<0:
+        next_priorities = sorted([x for x in levels if x>current_prio], reverse=True)
     else:
-        next_priorities = sorted([x for x in levels if x < current_prio])
+        next_priorities = sorted([x for x in levels if x<current_prio], reverse=True)
 
-    if not next_priorities:  # limit value is reached
+    if not next_priorities:  # limit value is reached, nothing to do
+        result["Outer value of priority level already, nothing to do"]
         return result
 
     new_priority = next_priorities[0]
@@ -258,7 +266,7 @@ def shift_task_priority(owner, task_id, level_shift, priority_shift=None):
 
 def increase_task_priority(owner, task_id, delta=None):
     """
-    Increase task priority for one level or specified value
+    Increase task priority to next level or on specified value
     :param owner: username form which task action will be performed
     :param task_id: task ID
     :param delta: value to change priority on
@@ -272,7 +280,7 @@ def increase_task_priority(owner, task_id, delta=None):
 
 def decrease_task_priority(owner, task_id, delta=None):
     """
-    Decrease task priority for one level or specified value
+    Decrease task priority to next level or on specified value
     :param owner: username form which task action will be performed
     :param task_id: task ID
     :param delta: value to change priority on
