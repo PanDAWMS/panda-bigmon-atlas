@@ -330,7 +330,10 @@ def hlt_form_prepare_request(request):
             form_data['request_type'] = 'HLT'
             form_data['phys_group'] = 'THLT'
             form_data['manager'] = request.user.username
-            form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+            try:
+                form_data['energy_gev'] = int(dataset[dataset.find('_')+1:dataset.find('Te')])*1000
+            except:
+                pass
             form_data['campaign'] = dataset[:dataset.find('.')]
             form_data['project'] = dataset[:dataset.find('.')]
             form_data['provenance'] = 'AP'
@@ -1471,6 +1474,11 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
+                close_train = None
+                if 'close_train' in request.session:
+                    close_train = request.session['close_train']
+                    _logger.debug("Close train %s" % str(close_train))
+                    del request.session['close_train']
                 need_approve = form2.cleaned_data['need_approve']
                 for x in ['excelfile','need_split','split_divider']:
                     if form.cleaned_data.has_key(x):
@@ -1577,9 +1585,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                     else:
                                         st_exec.step_parent = step_parent_dict[0]
                                     st_exec.save()
-                        if 'close_train' in request.session:
-                            train_id = request.session['close_train']
-                            del request.session['close_train']
+                        if close_train:
+                            train_id = close_train
                             train = TrainProduction.objects.get(id=train_id)
                             train.status = 'Started'
                             train.request = req
