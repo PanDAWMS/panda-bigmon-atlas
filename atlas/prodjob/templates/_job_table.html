@@ -5,10 +5,12 @@
 
 {% block extra_css %}
 {{ block.super }}
+    <!--
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
         @import "{% static "css/prodtask.css" %}";
+
 	</style>
 
     <style type="text/css">
@@ -21,5 +23,64 @@
     .datetime       { min-width: 7em; }
     .numbers        { max-width: 80px; }
   </style>
+
+
+-->
+
+{% endblock %}
+{% block body %}
+
+    <link href="http://cdn.datatables.net/1.10.6/css/jquery.dataTables.css" rel="stylesheet">
+      <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+      <script src="http://cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
+
+
+
+         <div class="small-6 large-6 columns">
+            <input type="text" id="find_job">
+         </div>
+
+         <div class="small-3 large-3 columns">
+            <a class="button postfix" id="btn_find_jobs">Go</a>
+         </div>
+
+
+
+        <table id="example" class="display">
+           <thead>
+              <tr>
+                 <th>JobID</th>
+
+              </tr>
+           </thead>
+           <tbody>
+           {% for job in jlist %}
+              <tr class="active">
+
+                 <td>{{ job.id }}</td>
+
+              </tr>
+           {% endfor %}
+           </tbody>
+        </table>
+
+
+    <script type="text/javascript" class="init">
+        $(document).ready(function() {
+	        $('#example').DataTable();
+        } );
+
+        $("#btn_find_jobs").click(function(){
+
+          var parameters = [$("#find_jobs").val()];
+
+          alert("test");
+
+
+        } );
+    </script>
+
+
+
 
 {% endblock %}
