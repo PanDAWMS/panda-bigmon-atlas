@@ -1049,9 +1049,12 @@ def dpd_form_prefill(form_data, request):
         if 'events_per_job' in output_dict:
             nEventsPerJob = output_dict['events_per_job'][0]
             task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-        if 'project_mode' in output_dict:
-            project_mode = output_dict['project_mode'][0]
-            task_config.update({'project_mode':project_mode})
+        TASK_CONFIG_FIELDS =   ['project_mode','nGBPerJob','nFilesPerJob']
+        for x in TASK_CONFIG_FIELDS:
+            if x in output_dict:
+                field_value = output_dict[x][0]
+                task_config.update({x:field_value})
+
         if 'ds' in output_dict:
             formats = []
             for index,formats_count in enumerate(output_dict.get('formats_count_list', [None])):
