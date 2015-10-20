@@ -5,6 +5,9 @@
 
 {% block extra_css %}
 {{ block.super }}
+
+{%  django_js %}
+
     <!--
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
@@ -31,8 +34,10 @@
 {% block body %}
 
     <link href="http://cdn.datatables.net/1.10.6/css/jquery.dataTables.css" rel="stylesheet">
-      <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-      <script src="http://cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="http://cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+    <script src="http://lab.alexcican.com/set_cookies/cookie.js" type="text/javascript"></script>
 
 
 
@@ -65,16 +70,52 @@
         </table>
 
 
+{% csrf_token %}
+
+
     <script type="text/javascript" class="init">
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+                }
+            }
+        });
+
         $(document).ready(function() {
 	        $('#example').DataTable();
         } );
 
         $("#btn_find_jobs").click(function(){
+            var parameters = [$("#find_job").val()];
 
-          var parameters = [$("#find_jobs").val()];
+            if (parameters.length == 0) return;
+            //alert(parameters);
+//            var postData['parameters'] = parameters;
 
-          alert("test");
+            var ajaxUrl =  Django.url('prodjob:jobs_action');
+
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(parameters),
+                dataType: "json",
+
+                complete: function (jqXHR, textStatus) {
+                    alert(textStatus);
+                } // 'complete' event handler
+
+            });
+
+            var dt = $('#example').DataTable();
+            dt.clear();
 
 
         } );
