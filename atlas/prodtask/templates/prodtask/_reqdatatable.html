@@ -2616,7 +2616,7 @@ var lastChecked = true;
             <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false);">Save</button>
             {% ifequal trequest.request_type "MC" %}
 {#                true#}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Approve</button>
             {% else  %}
                 <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
 
