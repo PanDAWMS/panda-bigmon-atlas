@@ -227,7 +227,7 @@ def check_slices_for_trains(request):
                 existed_steps = StepExecution.objects.filter(request=req, slice=input_list)
                 # Check steps which already exist in slice, and change them if needed
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-                if req.request_type == 'MC':
+                if step_number == -1:
                     step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
                     if 'Fullsim' not in input_list.comment:
                         step_number = 8
@@ -489,6 +489,44 @@ def reopen_train(request, train_id):
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
+@login_required(login_url='/prodtask/login/')
+def pattern_train_list(request):
+    if request.method == 'GET':
+        PATTEN_TYPES = ['mc_pattern','data_pattern']
+        patterns = {}
+        for pattern_type in PATTEN_TYPES:
+            patterns_trains = TrainProduction.objects.filter(status=pattern_type).order_by('-id')
+            patterns[pattern_type] = []
+            for pattern_train in patterns_trains:
+                patterns[pattern_type].append({'request_id':pattern_train.pattern_request.reqid,
+                                               'request_name':pattern_train.pattern_request.description,
+                                               'train_id':pattern_train.id})
+
+        return render(request, 'prodtask/_pattern_list_creation.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Pattern for trains',
+                'mc_patterns':patterns['mc_pattern'] ,
+                'data_patterns':patterns['data_pattern'] ,
+                'parent_template': 'prodtask/_index.html',
+            })
+#
+@csrf_protect
+def add_pattern_to_list(request):
+    results = {'success':False}
+    if request.method == 'POST':
+
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            pattern_request_id = input_dict['request_id']
+            pattern_type = {'MCPatterns':'MC','DataPatterns':'DATA'}[input_dict['pattern_type']]
+            create_pattern_train(pattern_request_id,pattern_type)
+
+            results = {'success':True}
+
+        except Exception,e:
+            results = {'success':False,'message': str(e)}
+    return HttpResponse(json.dumps(results), content_type='application/json')
 
 def get_pattern_from_request(request,reqid):
     results = {}

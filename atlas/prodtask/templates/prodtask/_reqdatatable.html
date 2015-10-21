@@ -1894,7 +1894,7 @@ function spreadAMI(that){
                 var sendData = {slices:sliceList,step_number:$('#trainParentStep').val(),production_request:'{{ pr_id }}',
                 train_id:$('#trainPatternRequest').val()};
             }else{
-                var sendData = {slices:sliceList,train_id:$('#trainPatternRequest').val(),step_number:5,production_request:'{{ pr_id }}'};
+                var sendData = {slices:sliceList,train_id:$('#trainPatternRequest').val(),step_number:-1,production_request:'{{ pr_id }}'};
             }
 
             $('#trainSlices').html(sliceList.toString());
@@ -3143,6 +3143,16 @@ var lastChecked = true;
                         {% for step in step_list %}
                                 <option value="{{forloop.counter0}}">{{ step.name }}</option>
                         {% endfor %}
+                        </select>
+                        </label>
+          </div>
+     {% else %}
+         <div class="large-4 column">
+             <label> Parent step:
+                        <select id="trainParentStep" onchange="changeParentTrainStep();" >
+
+                                <option value="0">EVNT</option>
+                                <option value="-1">Reco Merge</option>
                         </select>
                         </label>
           </div>

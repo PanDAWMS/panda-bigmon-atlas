@@ -1094,3 +1094,12 @@ def fix_dima_error():
                     step.step_parent = step
                     step.save()
     print counter
+
+def console_bulk_requst_steps_update(requests, new_task_config):
+    for request_id in requests:
+
+        steps = StepExecution.objects.filter(request=request_id)
+        print steps
+        for step in steps:
+                step.set_task_config(new_task_config)
+                step.save()
