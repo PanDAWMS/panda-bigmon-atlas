@@ -52,12 +52,14 @@
 
 
         <table id="example" class="display">
+
            <thead>
               <tr>
                  <th>JobID</th>
 
               </tr>
            </thead>
+<!--
            <tbody>
            {% for job in jlist %}
               <tr class="active">
@@ -67,6 +69,7 @@
               </tr>
            {% endfor %}
            </tbody>
+-->
         </table>
 
 
@@ -108,15 +111,34 @@
                 data: $.toJSON(parameters),
                 dataType: "json",
 
+             //   success: function(){
+
+
+
+//                } // 'success' event handler
                 complete: function (jqXHR, textStatus) {
-                    alert(textStatus);
+                    alert(jqXHR.responseText);
+                    //var data = jqXHR.responseText;
+                    var data =  $.parseJSON(jqXHR.responseText);
+
+                    $('#example').DataTable().destroy();
+                    var oTable = $('#example').dataTable({
+                        data : data,
+                        columns : [
+                            {"sTitle" : "JobID" }
+                        ]
+                    });
+
                 } // 'complete' event handler
 
             });
 
-            var dt = $('#example').DataTable();
-            dt.clear();
-
+            //var dt = $('#example').DataTable();
+            //dt.clear();
+            //var list;
+            //list.load()
+            //dt.ajax.url('http://localhost:8000/prodjob/get_jobs').load();
+            //dt.draw();
 
         } );
     </script>

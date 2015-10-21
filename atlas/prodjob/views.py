@@ -1,4 +1,4 @@
-# import json
+import json
 # import logging
 # import os
 
@@ -20,4 +20,11 @@ def request_jobs(request):
 
 def jobs_action(request):
     print(request.body)
-    return render(request, '_job_table.html', {'jlist':[{"id":1},{"id":4}]})
+    jlist = [[111],[222]];
+    x = json.dumps(jlist);
+    return HttpResponse(x)
+
+def get_jobs(request):
+    print("TEST")
+    jlist = [{"id":3},{"id":4}]
+    return HttpResponse(json.dumps(jlist))
