@@ -1,4 +1,5 @@
 import json
+import requests
 # import logging
 # import os
 
@@ -19,10 +20,20 @@ def request_jobs(request):
         return render(request, '_job_table.html', {'jlist':jlist})
 
 def jobs_action(request):
-    print(request.body)
-    jlist = [[111],[222]];
-    x = json.dumps(jlist);
-    return HttpResponse(x)
+#    print(request.body);
+#    curl -H 'Accept: application/json' -H 'Content-Type: application/json' "http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861";
+    url = 'http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861';
+    headers = {'content-type': 'application/json','accept': 'application/json'};
+    resp = requests.get(url, headers=headers)
+    data = json.loads(resp.text);
+    print data;
+    jlist = [];
+    for job in data:
+        jlist.append([job['pandaid'],job['jobstatus']]);
+
+
+
+    return HttpResponse(json.dumps(jlist))
 
 def get_jobs(request):
     print("TEST")

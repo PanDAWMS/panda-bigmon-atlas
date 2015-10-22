@@ -56,6 +56,7 @@
            <thead>
               <tr>
                  <th>JobID</th>
+                 <th>Job Status</th>
 
               </tr>
            </thead>
@@ -72,6 +73,9 @@
 -->
         </table>
 
+         <div class="small-3 large-3 columns">
+            <a class="button postfix" id="btn_handle_jobs">Go</a>
+         </div>
 
 {% csrf_token %}
 
@@ -117,7 +121,7 @@
 
 //                } // 'success' event handler
                 complete: function (jqXHR, textStatus) {
-                    alert(jqXHR.responseText);
+                    //alert(jqXHR.responseText);
                     //var data = jqXHR.responseText;
                     var data =  $.parseJSON(jqXHR.responseText);
 
@@ -125,7 +129,8 @@
                     var oTable = $('#example').dataTable({
                         data : data,
                         columns : [
-                            {"sTitle" : "JobID" }
+                                {"sTitle" : "JobID" },
+                                {"sTitle" : "Job Status" }
                         ]
                     });
 
@@ -141,6 +146,17 @@
             //dt.draw();
 
         } );
+
+        $("#btn_handle_jobs").click(function(){
+
+              var data = $('#example').DataTable().data();
+              //alert(data[0]);
+
+
+        }  );
+
+
+
     </script>
 
 
