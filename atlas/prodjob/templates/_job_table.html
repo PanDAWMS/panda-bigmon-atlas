@@ -107,7 +107,7 @@
             //alert(parameters);
 //            var postData['parameters'] = parameters;
 
-            var ajaxUrl =  Django.url('prodjob:jobs_action');
+            var ajaxUrl =  Django.url('prodjob:get_jobs');
 
             $.ajax({
                 url: ajaxUrl,
@@ -149,9 +149,17 @@
 
         $("#btn_handle_jobs").click(function(){
 
-              var data = $('#example').DataTable().data();
+            var data = $('#example').DataTable().data();
               //alert(data[0]);
+            var ajaxUrl =  Django.url('prodjob:jobs_action');
 
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(data),
+                dataType: "json"
+
+            });
 
         }  );
 
