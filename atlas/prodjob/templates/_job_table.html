@@ -8,7 +8,7 @@
 
 {%  django_js %}
 
-    <!--
+<!--
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
@@ -26,9 +26,9 @@
     .datetime       { min-width: 7em; }
     .numbers        { max-width: 80px; }
   </style>
-
-
 -->
+
+
 
 {% endblock %}
 {% block body %}
@@ -98,6 +98,12 @@
 
         $(document).ready(function() {
 	        $('#example').DataTable();
+
+            $('#example tbody').on( 'click', 'tr', function () {
+                $(this).toggleClass('selected');
+            } );
+
+
         } );
 
         $("#btn_find_jobs").click(function(){
@@ -138,19 +144,15 @@
 
             });
 
-            //var dt = $('#example').DataTable();
-            //dt.clear();
-            //var list;
-            //list.load()
-            //dt.ajax.url('http://localhost:8000/prodjob/get_jobs').load();
-            //dt.draw();
 
         } );
 
         $("#btn_handle_jobs").click(function(){
 
-            var data = $('#example').DataTable().data();
-              //alert(data[0]);
+
+            var table = $('#example').DataTable();
+            var data = table.rows('.selected').data().toArray();
+            alert( table.rows('.selected').data().length +' row(s) selected' );
             var ajaxUrl =  Django.url('prodjob:jobs_action');
 
             $.ajax({
