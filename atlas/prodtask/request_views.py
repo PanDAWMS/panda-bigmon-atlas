@@ -175,7 +175,7 @@ def short_hlt_form(request):
                 task_config =  {'maxAttempt':15,'maxFailure':5}
                 st_sexec_list = []
                 task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
-                                    'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
+                                    'nEventsPerJob':dict((step,250) for step in StepExecution.STEPS)})
                 st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
                                   'formats': '.'.join(outputs),
                                   'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
@@ -192,7 +192,7 @@ def short_hlt_form(request):
                 task_config =  {'maxAttempt':15,'maxFailure':5}
                 st_sexec_list = []
                 task_config.update({'project_mode':PROJECT_MODE_COMMON+PROJECT_MODE_RECO+'ramcount='+input_dict['ram']['recoRam'],
-                                    'nEventsPerJob':dict((step,500) for step in StepExecution.STEPS)})
+                                    'nEventsPerJob':dict((step,250) for step in StepExecution.STEPS)})
                 st_sexec_list.append({'step_name': step_from_tag(tags['Reco']), 'tag': tags['Reco'], 'step_exec': sexec,
                                   'formats': 'HIST_HLTMON.RAW',
                                   'task_config':task_config,'step_order':'0_0','step_parent':'0_0'})
