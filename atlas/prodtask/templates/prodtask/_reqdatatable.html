@@ -2249,7 +2249,14 @@ var lastChecked = true;
 
 
 </div>
+{% ifequal trequest.request_type "MC" %}
+    <div class="row">
+        <div class="large-12 column">
+            <u><a href="{{ original_spreadsheet }}" target="_blank">Original spreadsheet</a></u>
+        </div>
+    </div>
 
+{% endifequal %}
 {% if is_open_ended %}
     <div class="row">
 <div class="large-12">

@@ -1099,6 +1099,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             #steps_db =
             _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
             long_description = cur_request.info_field('long_description')
+            original_spreadsheet = cur_request.info_field('data_source')
             if cur_request.request_type != 'MC':
                 STEPS_LIST = [str(x) for x in range(10)]
                 pattern_list_name = [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in STEPS_LIST])]
@@ -1523,7 +1524,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                'is_open_ended':is_open_ended,
                 'page_title':'%s - Request'%str(rid),
                 'train_pattern_list':train_pattern_list,
-                'selected_slices':selected_slices
+                'selected_slices':selected_slices,
+                'original_spreadsheet':original_spreadsheet
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
