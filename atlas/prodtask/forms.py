@@ -12,6 +12,7 @@ from django.forms import DecimalField
 from django.forms import Form
 import json
 from django.forms.extras.widgets import SelectDateWidget
+import re
 from atlas.prodtask.models import JediWorkQueue
 
 from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
@@ -244,7 +245,8 @@ class RetryErrorsForm(ModelForm):
     error_source = CharField(widget=Textarea, required=True)
     error_code = DecimalField()
     active = CharField(required=True, widget=forms.Select(choices=[(x,x) for x in ['Y','N']]))
-    error_diag = CharField(widget=Textarea, required=False)
+    error_diag = CharField(widget=Textarea, required=False, help_text="Error diag follows the python regular \n"
+                                                                      "expression syntax (<a href=https://docs.python.org/2/library/re.html>https://docs.python.org/2/library/re.html</a>).")
     parameters = CharField(widget=Textarea, required=False)
     retry_action = ModelChoiceField(queryset=RetryAction.objects.all(),required=True)
     architecture = CharField(widget=Textarea, required=False)
@@ -261,9 +263,18 @@ class RetryErrorsForm(ModelForm):
     class Meta:
         model = RetryErrors
 
-
     def clean(self):
         cleaned_data = super(RetryErrorsForm, self).clean()
+        if cleaned_data['error_diag']:
+            try:
+                re.compile(cleaned_data['error_diag'])
+                is_valid = True
+            except re.error:
+                is_valid = False
+            if not is_valid:
+                msg = "Error diag isn't a valid re"
+                self._errors['error_diag'] = self.error_class([msg])
+                del cleaned_data['error_diag']
         new_work_queue = cleaned_data.get('work_queue')
         if new_work_queue:
             cleaned_data['work_queue'] = new_work_queue.id

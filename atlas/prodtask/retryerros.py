@@ -17,6 +17,7 @@ from atlas.prodtask.models import RetryAction
 
 from ..prodtask.helper import form_request_log
 
+_logger = logging.getLogger('prodtaskwebui')
 
 from .forms import RetryErrorsForm
 from .models import RetryErrors, JediWorkQueue
@@ -51,8 +52,12 @@ def retry_errors_edit(request, retry_errors_id):
             form = RetryErrorsForm(request.POST,instance=values)
             if form.is_valid():
                 # Process the data in form.cleaned_data
+                _logger.info("update user:{user} old data:{old_data}".format(user=request.user.username,
+                                                                                         old_data=model_to_dict(values)))
                 retry_errors = RetryErrors(**form.cleaned_data)
                 retry_errors.save()
+                _logger.info("update user:{user} new data:{old_data}".format(user=request.user.username,
+                                                                                         old_data=model_to_dict(retry_errors)))
                 return HttpResponseRedirect('/prodtask/retry_errors_list')
         except:
             return HttpResponseRedirect('/prodtask/retry_errors_list')
@@ -98,6 +103,8 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
             retry_errors = RetryErrors(**form.cleaned_data)
             retry_errors.id = None
             retry_errors.save()
+            _logger.info("created user:{user} data:{old_data}".format(user=request.user.username,
+                                                                         old_data=model_to_dict(retry_errors)))
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
