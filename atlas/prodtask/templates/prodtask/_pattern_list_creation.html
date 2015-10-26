@@ -37,6 +37,7 @@
     <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+    <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
 {% endblock %}
 
 
@@ -50,6 +51,50 @@
 }
 </style>
     <script>
+    (function(factory) {
+
+  if (typeof exports == 'object') {
+    // CommonJS
+    factory(require('jquery'), require('spin.js'))
+  } else if (typeof define == 'function' && define.amd) {
+    // AMD, register as anonymous module
+    define(['jquery', 'spin'], factory)
+  } else {
+    // Browser globals
+    if (!window.Spinner) throw new Error('Spin.js not present')
+    factory(window.jQuery, window.Spinner)
+  }
+
+}(function($, Spinner) {
+
+  $.fn.spin = function(opts, color) {
+
+    return this.each(function() {
+      var $this = $(this)
+        , data = $this.data()
+
+      if (data.spinner) {
+        data.spinner.stop()
+        delete data.spinner
+      }
+      if (opts !== false) {
+        opts = $.extend(
+          { color: color || $this.css('color') }
+        , $.fn.spin.presets[opts] || opts
+        )
+        data.spinner = new Spinner(opts).spin(this)
+      }
+    })
+  }
+
+  $.fn.spin.presets = {
+    tiny:  { lines:  8, length: 2, width: 2, radius: 3 }
+  , small: { lines:  8, length: 4, width: 3, radius: 5 }
+  , large: { lines: 10, length: 8, width: 4, radius: 8 }
+  }
+
+}));
+
 $(document).ready(function(){
         (function(){changePatternType('MCPatterns')})();
 
@@ -63,12 +108,33 @@ $(document).ready(function(){
         function removePattern(event, trainID){
         {#            send remove command and remove pattern from the list if succesful#}
             event.preventDefault();
+            var sendData = {trainID:trainID};
 
+            $.ajax({
+                        url: "{% url 'prodtask:remove_pattern_in_list'  %}",
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            var return_status =  $.evalJSON(data).success;
+
+                            if(return_status){
+                                $('#train'+trainID).removeClass($('#patternType').val());
+                                $('#train'+trainID).hide();
+
+                            } else{
+
+                                alert($.evalJSON(data).message);
+                            }
+                        }
+                  });
         }
 
         function addPattern(event, requestID){
             event.preventDefault();
-
+            $('#addSpin').spin('small');
+            $('#addPatternButton').addClass('disabled');
             var sendData = {request_id:requestID,pattern_type:$('#patternType').val()};
             $.ajax({
                         url: "{% url 'prodtask:add_pattern_to_list'  %}",
@@ -77,10 +143,27 @@ $(document).ready(function(){
                         data: $.toJSON(sendData),
                         dataType: 'text',
                         success: function(data,status) {
+                            $('#addSpin').spin(false);
+                            $('#addPatternButton').removeClass('disabled');
                             var return_status =  $.evalJSON(data).success;
                             if(return_status){
                                 alert('Added');
+                                var requestName =  $.evalJSON(data).requestName;
+                                var trainID =  $.evalJSON(data).trainID;
+                                $("#patternTableBody").append(' <div id=train' +trainID+
+                                                                        ' class="row ' + $('#patternType').val()  + ' Pattern"> \
+        <div class="large-2 column"> \
+            '+requestID+' \
+        </div> \
+        <div class="large-8 column"> \
+             '+requestName+' \
+        </div> \
+        <div class="large-2 column"> \
+            <a style="cursor: pointer;" id="removeButton'+requestName+'" onclick="removePattern(event,'+trainID+')">remove</a> \
+        </div> \
+    </div>');
                             } else{
+
                                 alert($.evalJSON(data).message);
                             }
                         }
@@ -104,9 +187,10 @@ $(document).ready(function(){
         </label>
               </div>
         <div class="large-1 column">
-        <a class='button postfix' onclick="addPattern(event,$('#patternRequest').val())">Add</a>
+        <a class='button postfix' id="addPatternButton" onclick="addPattern(event,$('#patternRequest').val())">Add</a>
             </div>
-        <div class="large-9 column"></div>
+        <div id="addSpin" class="large-1 column"></div>
+        <div class="large-8 column"></div>
 
 
     </div>
@@ -115,7 +199,7 @@ $(document).ready(function(){
     <div class="large-10 column"></div>
     </div>
 
-    <div class="row PatternHeader">
+    <div id="headPattern" class="row PatternHeader">
         <div class="large-2 column">
             <span>ID</span>
         </div>
@@ -126,30 +210,22 @@ $(document).ready(function(){
             <span>Action</span>
         </div>
     </div>
-{% for pattern in mc_patterns %}
-    <div class="row MCPatterns Pattern">
+    <div id = 'patternTableBody'>
+    {% for patternType,patternName,patternList in patterns %}
+{% for pattern in patternList %}
+    <div id='train{{ pattern.train_id }}' class="row {{ patternType }} Pattern">
         <div class="large-2 column">
-            {{ pattern.request_id  }}
+            <a href="{% url 'prodtask:input_list_approve' pattern.request_id%}">{{ pattern.request_id }}</a>
         </div>
         <div class="large-8 column">
             {{ pattern.request_name  }}
         </div>
         <div class="large-2 column">
-            <a id="removeButton{{ pattern.request_name  }}">remove</a>
+            <a id="removeButton{{ pattern.request_name  }}" style="cursor: pointer;" onclick="removePattern(event,'{{ pattern.train_id }}')">remove</a>
         </div>
     </div>
 {% endfor %}
-    {% for pattern in data_patterns %}
-    <div class="row DataPatterns Pattern">
-        <div class="large-2 column">
-            {{ pattern.request_id  }}
-        </div>
-        <div class="large-8 column">
-            {{ pattern.request_name  }}
-        </div>
-        <div class="large-2 column">
-            <a class="button" id="removeButton{{ pattern.request_name  }}" onclick="removePattern(event,'{{ pattern.train_id }}')">remove</a>
-        </div>
+    {% endfor %}
+
     </div>
-{% endfor %}
 {% endblock %}

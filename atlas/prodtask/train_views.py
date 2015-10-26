@@ -193,16 +193,16 @@ def train_create(request):
 
 
 def create_pattern_train(pattern_request_id, pattern_type='MC'):
-    PATTERN_STATUS = {'MC':'mc_pattern','DATA':'data_pattern'}
+
     pattern_train = TrainProduction()
     pattern_train.pattern_request = TRequest.objects.get(reqid=pattern_request_id)
     pattern_train.outputs = json.dumps(pattern_from_request(pattern_train.pattern_request))
-    pattern_train.status = PATTERN_STATUS[pattern_type]
+    pattern_train.status = pattern_type
     pattern_train.departure_time = timezone.now()
     pattern_train.description = pattern_train.pattern_request.description
     pattern_train.manager = 'mborodin'
     pattern_train.save()
-
+    return pattern_train.id
 
 @csrf_protect
 def check_slices_for_trains(request):
@@ -505,25 +505,45 @@ def pattern_train_list(request):
         return render(request, 'prodtask/_pattern_list_creation.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Pattern for trains',
-                'mc_patterns':patterns['mc_pattern'] ,
-                'data_patterns':patterns['data_pattern'] ,
+                 'patterns':[('MCPatterns','MC',patterns['mc_pattern']) ,
+                             ('DataPatterns','Real data',patterns['data_pattern'])] ,
                 'parent_template': 'prodtask/_index.html',
             })
-#
+
+
 @csrf_protect
 def add_pattern_to_list(request):
+    results = {'success':False}
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            pattern_request_id = input_dict['request_id']
+            pattern_type = {'MCPatterns':'mc_pattern','DataPatterns':'data_pattern'}[input_dict['pattern_type']]
+            if TrainProduction.objects.filter(status=pattern_type,pattern_request=int(pattern_request_id)).exists():
+                results = {'success':False,'message': "This pattern already exist"}
+            else:
+                train_id = create_pattern_train(pattern_request_id,pattern_type)
+                production_request = TRequest.objects.get(reqid=pattern_request_id)
+                results = {'success':True,'requestName':production_request.description,'trainID':train_id}
+        except Exception,e:
+            results = {'success':False,'message': str(e)}
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@csrf_protect
+def remove_pattern_in_list(request):
     results = {'success':False}
     if request.method == 'POST':
 
         try:
             data = request.body
             input_dict = json.loads(data)
-            pattern_request_id = input_dict['request_id']
-            pattern_type = {'MCPatterns':'MC','DataPatterns':'DATA'}[input_dict['pattern_type']]
-            create_pattern_train(pattern_request_id,pattern_type)
-
+            train_id = input_dict['trainID']
+            train = TrainProduction.objects.get(id=train_id)
+            train.status = 'Cancelled'
+            train.save()
             results = {'success':True}
-
         except Exception,e:
             results = {'success':False,'message': str(e)}
     return HttpResponse(json.dumps(results), content_type='application/json')

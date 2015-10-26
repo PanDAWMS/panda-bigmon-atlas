@@ -129,6 +129,7 @@ urlpatterns = patterns('',
     url(r'^pattern_train_list/$', 'atlas.prodtask.train_views.pattern_train_list', name='pattern_train_list'),
     url(r'^create_request_as_child/$', 'atlas.prodtask.train_views.create_request_as_child', name='create_request_as_child'),
     url(r'^add_pattern_to_list/$', 'atlas.prodtask.train_views.add_pattern_to_list', name='add_pattern_to_list'),
+    url(r'^remove_pattern_in_list/$', 'atlas.prodtask.train_views.remove_pattern_in_list', name='remove_pattern_in_list'),
 
     url(r'^create_request_from_train/(?P<train_id>\d+)/$', 'atlas.prodtask.train_views.create_request_from_train', name='create_request_from_train'),
     url(r'^get_pattern_from_request/(?P<reqid>\d+)/$', 'atlas.prodtask.train_views.get_pattern_from_request', name='get_pattern_from_request'),
