@@ -1141,7 +1141,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             show_is_fast = False
             show_split = False
             is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
-            if (cur_request.request_type in ['HLT','REPROCESSING']) or (cur_request.phys_group == 'VALI'):
+            if (cur_request.request_type in ['HLT','REPROCESSING', 'GROUP']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
