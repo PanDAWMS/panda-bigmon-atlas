@@ -1514,7 +1514,11 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             owner_mails = [owner_mail]
                         manager_name = request.user.first_name + ' ' + request.user.last_name
                         req = TRequest(**form.cleaned_data)
-                        req.info_fields = json.dumps({'long_description':longdesc,'cc':cc,'data_source':excel_link})
+                        info_fields = json.dumps({'long_description':longdesc,'cc':cc,'data_source':excel_link})
+                        if len(info_fields)>2000:
+                            req.info_fields = info_fields[:1999]
+                            req.save()
+                        req.info_fields = info_fields
                         req.save()
 
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
