@@ -266,7 +266,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                     if not step_value['value'] and step_in_db:
                         to_delete.append(step_in_db)
                         continue
-                    if step_value['value'] and (not step_in_db) and existed_foreign_step and no_action:
+                    if step_value['value'] and (not step_in_db) and (index == 0):
                          raise ValueError("Part of child chain before linked step can't be overridden")
                     no_action = False
                     if step_value['changes']:
