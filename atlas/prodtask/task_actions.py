@@ -20,6 +20,7 @@ _deft_actions = {
     'retry': 'retry_task',
     'change_ram_count': 'change_task_ram_count',
     'change_wall_time': 'change_task_wall_time',
+    'change_cpu_time': 'change_task_cpu_time',
     'increase_attempt_number': 'increase_attempt_number',
     'abort_unfinished_jobs': 'abort_unfinished_jobs',
     'delete_output' : 'clean_task_carriages',
@@ -57,7 +58,7 @@ for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['increase_priority', 'decrease_priority'])
     if 'change_parameters' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time'])
+        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time'])
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud'])
 
