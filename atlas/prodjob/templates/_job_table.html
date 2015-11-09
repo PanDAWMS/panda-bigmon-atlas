@@ -8,34 +8,36 @@
 
 {%  django_js %}
 
-<!--
-	<style type="text/css" title="currentStyle">
-	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
-        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
-        @import "{% static "css/prodtask.css" %}";
-
-	</style>
-
-    <style type="text/css">
-        {% include 'prodtask/_prodtask_css.html' %}
-    </style>
-
-  <style type="text/css">
-    .breaked_word   { word-wrap: break-word; min-width: 40%; font-size: 0.9em; }
-    .taskid         { min-width: 6em; }
-    .datetime       { min-width: 7em; }
-    .numbers        { max-width: 80px; }
-  </style>
--->
-
-
-
 {% endblock %}
 {% block body %}
 
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/dataTables.foundation.min.css">
+<link rel="stylesheet" type="text/css" href="http://datatables.net/release-datatables/extensions/TableTools/css/dataTables.tableTools.css">
+
+<style type="text/css" class="init">
+
+</style>
+<!--
     <link href="http://cdn.datatables.net/1.10.6/css/jquery.dataTables.css" rel="stylesheet">
+
     <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
     <script src="http://cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
+-->
+    <script src="http://datatables.net/release-datatables/media/js/jquery.js"></script>
+    <script src="http://datatables.net/release-datatables/media/js/jquery.dataTables.js"></script>
+    <script src="https://cdn.datatables.net/1.10.10/js/dataTables.foundation.min.js"></script>
+    <script src="http://datatables.net/release-datatables/extensions/TableTools/js/dataTables.tableTools.js"></script>
+
+
+<!--
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
+
+    <script src="http://datatables.net/release-datatables/extensions/TableTools/js/dataTables.tableTools.js"></script>
+    <script src="http://datatables.net/release-datatables/media/js/jquery.js"></script>
+-->
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script src="http://lab.alexcican.com/set_cookies/cookie.js" type="text/javascript"></script>
 
@@ -49,9 +51,14 @@
             <a class="button postfix" id="btn_find_jobs">Go</a>
          </div>
 
-
-
-        <table id="example" class="display">
+      <br>
+      <br>
+      <br>
+<!--
+<input type="text" id="find_job">
+<a class="button postfix" id="btn_find_jobs">Go</a>
+-->
+        <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
               <tr>
@@ -60,18 +67,8 @@
 
               </tr>
            </thead>
-<!--
-           <tbody>
-           {% for job in jlist %}
-              <tr class="active">
-
-                 <td>{{ job.id }}</td>
-
-              </tr>
-           {% endfor %}
-           </tbody>
--->
         </table>
+
 
          <div class="small-3 large-3 columns">
             <a class="button postfix" id="btn_handle_jobs">Go</a>
@@ -137,7 +134,12 @@
                         columns : [
                                 {"sTitle" : "JobID" },
                                 {"sTitle" : "Job Status" }
-                        ]
+                        ],
+                        dom: 'T<"clear">lfrtip',
+                        tableTools: {
+                            "sRowSelect": "multi",
+                            "aButtons": [ "select_all", "select_none" ]
+                        }
                     });
 
                 } // 'complete' event handler
