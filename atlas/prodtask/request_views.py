@@ -1,24 +1,27 @@
 import copy
+import json
+import logging
 import string
+from math import sqrt
+
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
+from django.db import transaction
+from django.db.models import Count
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template.response import TemplateResponse
-from django.db.models import Count
 from django.views.decorators.csrf import csrf_protect
-from django.contrib.auth.decorators import login_required
-from django.db import transaction
-import json
-import logging
-from django.db.models import Q
-from math import sqrt
-from atlas.prodtask.ddm_api import number_of_files_in_dataset
 
+from atlas.prodtask.ddm_api import number_of_files_in_dataset
+from atlas.prodtask.views import make_slices_from_dict
+from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset, egroup_permissions
-from ..prodtask.ddm_api import find_dataset_events
+from ..prodtask.views import set_request_status
 #import core.datatables as datatables
 import atlas.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
@@ -26,7 +29,7 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm, \
     form_input_list_for_preview
 from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
-    ProductionTask, OpenEndedRequest, TrainProduction
+    ProductionTask, OpenEndedRequest, TrainProduction, ParentToChildRequest
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
@@ -463,7 +466,19 @@ def get_problematic_task_list(step_id):
     return return_list
 
 
-def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False):
+def clone_child_slices(parent_request, parent_steps):
+    child_requests = list(ParentToChildRequest.objects.filter(status='active',parent_request=parent_request).values_list('child_request',flat=True))
+    for child_request in child_requests:
+        if child_requests:
+            current_child_slice_set = set()
+            child_steps =  list(StepExecution.objects.filter(request=child_request))
+            for child_step in child_steps:
+                if child_step.step_parent_id in parent_steps.keys():
+                    current_child_slice_set.add(child_step.slice.slice)
+            clone_slices(child_request,child_request,list(current_child_slice_set),-1,False,False,False,parent_steps)
+
+
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}):
         ordered_slices = map(int,slices)
         ordered_slices.sort()
         #form levels from input text lines
@@ -519,14 +534,18 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                             step.status = 'NotCheckedSkipped'
                         elif step.status in ['Approved','Waiting']:
                             step.status = 'NotChecked'
-                        if first_changed and (step.step_parent.id in old_new_step):
-                            step.step_parent = old_new_step[int(step.step_parent.id)]
+                        if first_changed and ((step.step_parent.id in old_new_step)or(step.step_parent.id in predefined_parrent)):
+                            if (step.step_parent.id in predefined_parrent):
+                                step.step_parent = predefined_parrent[int(step.step_parent.id)]
+                            else:
+                                step.step_parent = old_new_step[int(step.step_parent.id)]
                         step.save_with_current_time()
                         if self_looped:
                             step.step_parent = step
                         first_changed = True
                         step.save()
                         old_new_step[old_step_id] = step
+            clone_child_slices(reqid_source,old_new_step)
         return new_slice_numbers
 
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
@@ -1477,13 +1496,14 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
+                train = form.cleaned_data.get('train',None)
                 close_train = None
                 if 'close_train' in request.session:
                     close_train = request.session['close_train']
                     _logger.debug("Close train %s" % str(close_train))
                     del request.session['close_train']
                 need_approve = form2.cleaned_data['need_approve']
-                for x in ['excelfile','need_split','split_divider']:
+                for x in ['excelfile','need_split','split_divider','train']:
                     if form.cleaned_data.has_key(x):
                         del form.cleaned_data[x]
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
@@ -1598,7 +1618,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             train.status = 'Started'
                             train.request = req
                             train.save()
-
+                        if train:
+                            new_relation = ParentToChildRequest()
+                            new_relation.train = train
+                            new_relation.parent_request = req
+                            new_relation.relation_type = 'BC'
+                            new_relation.status = 'active'
+                            new_relation.save()
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
@@ -1697,23 +1723,6 @@ def do_mc_management_approve(request, reqid):
 def do_mc_management_cancel(request, reqid):
     return change_request_status(request, reqid,'cancelled',
                                  'Request was cancelled  by %s' %request.user.username, 'Request cancelled by WebUI')
-
-
-def set_request_status(username, reqid, status, message, comment, request=None):
-    STATUS_ORDER = ['registered','approved','canceled']
-
-    _logger.debug(form_request_log(reqid,request,message))
-
-    cur_request = TRequest.objects.get(reqid=reqid)
-    request_status = RequestStatus(request=cur_request,comment=comment,owner=username,
-                                   status=status)
-    request_status.save_with_current_time()
-    if (status in STATUS_ORDER) and (cur_request.cstatus in STATUS_ORDER):
-        if STATUS_ORDER.index(status) >= STATUS_ORDER.index(cur_request.cstatus):
-            cur_request.cstatus = status
-    else:
-        cur_request.cstatus = status
-    cur_request.save()
 
 
 def change_request_status(request, reqid, status, message, comment):
@@ -2058,73 +2067,6 @@ class Parameters(datatables.Parametrized):
     open_ended = datatables.Parameter(label='Open ended', model_field='reqid' ,get_Q=_openended_Q)
 
 
-def make_slices_from_dict(req, file_dict):
-        step_parent_dict = {}
-        for current_slice in file_dict:
-            input_data = current_slice["input_dict"]
-            input_data['request'] = req
-            priority_obj = get_priority_object(input_data['priority'])
-            if input_data.get('dataset'):
-                    input_data['dataset'] = fill_dataset(input_data['dataset'])
-            _logger.debug("Filling input data: %s" % input_data)
-            input_data['slice'] = req.get_next_slice()
-            irl = InputRequestList(**input_data)
-            irl.save()
-            for step in current_slice.get('step_exec_dict'):
-                st = fill_template(step['step_name'], step['tag'], input_data['priority'],
-                                   step.get('formats', None), step.get('memory', None))
-                task_config= {}
-                upadte_after = False
-                if 'task_config' in step:
-                    if 'nEventsPerJob' in step['task_config']:
-                        if step['task_config']['nEventsPerJob'].get(step['step_name'],''):
-                            task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name']))})
-
-                            if step['step_name']=='Evgen':
-                                task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
-                        else:
-                            task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
-                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
-                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                           'nGBPerJob','maxAttempt','maxFailure']
-                    for task_config_option in task_config_options:
-                        if task_config_option in step['task_config']:
-                            task_config.update({task_config_option:step['task_config'][task_config_option]})
-                step['step_exec']['request'] = req
-                step['step_exec']['slice'] = irl
-                step['step_exec']['step_template'] = st
-                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
-                _logger.debug("Filling step execution data: %s" % step['step_exec'])
-                st_exec = StepExecution(**step['step_exec'])
-                if ('parent_step_id' in step):
-                    st_exec.step_parent = StepExecution.objects.get(id=step['parent_step_id'])
-                else:
-                    if step_parent_dict:
-                        if ('step_parent' in step) and ('step_order' in step):
-                            if (step['step_parent']==step['step_order']):
-                                upadte_after = True
-                            else:
-                                st_exec.step_parent = step_parent_dict[step['step_parent']]
-                        else:
-                            upadte_after = True
-                    else:
-                        upadte_after = True
-                if task_config:
-                    st_exec.set_task_config(task_config)
-                st_exec.save_with_current_time()
-                if ('step_parent' in step) and ('step_order' in step):
-                    step_parent_dict.update({step['step_order']:st_exec})
-                else:
-                    step_parent_dict.update({0:st_exec})
-                if upadte_after:
-                    if ('step_parent' in step) and ('step_order' in step):
-                        st_exec.step_parent = step_parent_dict[step['step_parent']]
-                    else:
-                        st_exec.step_parent = step_parent_dict[0]
-                    st_exec.save()
-        return True
-
-
 @csrf_protect
 def check_extend_request(request, reqid):
     if request.method == 'POST':
@@ -2153,7 +2095,7 @@ def extend_request(request, reqid):
             production_request = TRequest.objects.get(reqid=reqid)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
             spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
-            if make_slices_from_dict(production_request,spreadsheet_dict):
+            if make_slices_from_dict(production_request, spreadsheet_dict):
                 results = {'success':True, 'message': ''}
         except Exception,e:
             results = {'success':False, 'message': str(e)}

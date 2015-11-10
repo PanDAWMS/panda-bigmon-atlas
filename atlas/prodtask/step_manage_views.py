@@ -5,15 +5,19 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
+from django.utils import timezone
 from copy import deepcopy
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
-from ..prodtask.request_views import clone_slices, set_request_status
+from ..prodtask.request_views import clone_slices
+from atlas.prodtask.views import set_request_status
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
-from .views import form_existed_step_list, form_step_in_page, fill_dataset
+from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
+from django.db.models import Count, Q
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset
+from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
+    ParentToChildRequest, TTask
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -45,12 +49,10 @@ def check_waiting_steps():
     slices = set()
     steps_by_slices = {}
     requests = set()
-
+    slices_by_request = {}
     for step in all_waiting_steps:
         slices.add(step.slice_id)
         steps_by_slices[step.slice_id] = steps_by_slices.get(step.slice_id,[])+[step]
-
-
     for slice in slices:
         approved_steps = list(StepExecution.objects.filter(status='Approved',slice=slice))
         if len(approved_steps) == 0:
@@ -71,11 +73,15 @@ def check_waiting_steps():
                         if ((float(task_to_check.total_files_finished)/float(task_to_check.total_files_tobeused))>APPROVE_LEVEL):
                             remove_waiting(steps_by_slices[slice],'Approved')
                             requests.add(approved_steps[0].request_id)
+                            slices_by_request[approved_steps[0].request_id] = slices_by_request.get(approved_steps[0].request_id,[]) + [slice]
                             _logger.debug("Slice %s has been approved after evgen"%str(slice))
 
     for request_id in requests:
         set_request_status('cron',request_id,'approved','Automatic waiting approve', 'Request was automatically approved')
-
+        slice_numbers = []
+        for slice_id in slices_by_request[request_id]:
+              slice_numbers.append(int(InputRequestList.objects.get(id=slice_id).slice))
+        make_child_update(request_id,'cron',slice_numbers)
 
 
 
@@ -366,6 +372,34 @@ def get_ami_tag_list(request, reqid):
     return HttpResponse(json.dumps({'AMITags':[],'status':'failed'}), content_type='application/json')
 
 
+def find_child_request_slices(production_request_id,parent_slices):
+    """
+    Find all slices which related to the parent parent_slices in production_request_id
+    :param production_request_id: parent production request id
+    :param parent_slices: list of the slice numbers in parent production request
+    :return: list of the slice id in child requests
+    """
+
+    # find child requests
+    requests_relations = ParentToChildRequest.objects.filter(status='active',parent_request=production_request_id)
+    child_requests = [item.child_request for item in requests_relations if item.child_request]
+    child_slices = []
+    if child_requests:
+        # find all parent steps
+        parent_steps = []
+        for slice_number in parent_slices:
+            current_slice = InputRequestList.objects.filter(request=production_request_id,slice=int(slice_number))
+            parent_steps += StepExecution.objects.filter(slice=current_slice).values_list('id',flat=True)
+        # for each child request find linked slices
+        for child_request in child_requests:
+            current_child_slice_set = set()
+            child_steps =  list(StepExecution.objects.filter(request=child_request).values('id','slice_id','step_parent_id'))
+            for child_step in child_steps:
+                if child_step['step_parent_id'] in parent_steps:
+                    current_child_slice_set.add(child_step['slice_id'])
+            child_slices += list(current_child_slice_set)
+    return child_slices
+
 
 @csrf_protect
 def reject_slices_in_req(request, reqid):
@@ -380,9 +414,14 @@ def reject_slices_in_req(request, reqid):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))
-            for slice_number in slices:
-                current_slice = InputRequestList.objects.filter(request=reqid,slice=int(slice_number))
+            slices_numbers = map(int, slices)
+            for slice_number in slices_numbers:
+                current_slice = InputRequestList.objects.filter(request=reqid,slice=slice_number)
                 reject_steps_in_slice(current_slice)
+            for slice_id in find_child_request_slices(reqid, slices_numbers):
+                current_slice = InputRequestList.objects.get(id=slice_id)
+                reject_steps_in_slice(current_slice)
+
             request.session['selected_slices'] = map(int,slices)
         except Exception,e:
             pass
@@ -390,6 +429,15 @@ def reject_slices_in_req(request, reqid):
 
 @csrf_protect
 def hide_slices_in_req(request, reqid):
+
+    def hide_slice(slice):
+        if not slice.is_hide:
+            slice.is_hide = True
+            reject_steps_in_slice(slice)
+        else:
+            slice.is_hide = False
+        slice.save()
+
     if request.method == 'POST':
         results = {'success':False}
         try:
@@ -399,14 +447,14 @@ def hide_slices_in_req(request, reqid):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
-            for slice_number in slices:
-                current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
-                if not current_slice.is_hide:
-                    current_slice.is_hide = True
-                    reject_steps_in_slice(current_slice)
-                else:
-                    current_slice.is_hide = False
-                current_slice.save()
+            slices_numbers = map(int, slices)
+            for slice_number in slices_numbers:
+                current_slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
+                hide_slice(current_slice)
+            #reject child slices
+            for slice_id in find_child_request_slices(reqid, slices_numbers):
+                current_slice = InputRequestList.objects.get(id=slice_id)
+                hide_slice(current_slice)
             results = {'success':True}
         except Exception,e:
             pass
@@ -1095,11 +1143,243 @@ def fix_dima_error():
                     step.save()
     print counter
 
-def console_bulk_requst_steps_update(requests, new_task_config):
+def console_bulk_requst_steps_update(requests, new_task_config, add_project_mode=None, remove_project_mode=None):
     for request_id in requests:
 
         steps = StepExecution.objects.filter(request=request_id)
         print steps
         for step in steps:
-                step.set_task_config(new_task_config)
+                if new_task_config:
+                    step.set_task_config(new_task_config)
+                if add_project_mode:
+                    new_project_modes = []
+                    new_project_modes.append(add_project_mode)
+                    for token in step.get_task_config('project_mode').split(';'):
+                        if add_project_mode not in token:
+                            new_project_modes.append(token)
+                    step.set_task_config({'project_mode':';'.join(new_project_modes)})
+                if remove_project_mode:
+                    new_project_modes = []
+                    for token in step.get_task_config('project_mode').split(';'):
+                        if remove_project_mode != token:
+                            new_project_modes.append(token)
+                    step.set_task_config({'project_mode':';'.join(new_project_modes)})
                 step.save()
+
+
+def get_offset_from_jedi(id):
+    jedi_task = TTask.objects.get(id=id)
+    offset = None
+    for value  in jedi_task.jedi_task_parameters['jobParameters']:
+        if (value.get('value') == '--randomSeed=${SEQNUMBER}')or(value.get('value') =='randomSeed=${SEQNUMBER}'):
+          offset =  value.get('offset')
+    return offset
+
+def find_simul_duplicates():
+    simul_tasks = list(ProductionTask.objects.filter(Q( status__in=['done','finished'] )&Q(name__startswith='mc')&Q(name__contains='simul')).values('name','id','total_events','inputdataset', 'request_id'))
+    sorted_simul_tasks = sorted(simul_tasks, key=lambda x: x['name'])
+    first=sorted_simul_tasks[0]
+    result_list=[]
+    current_list=[]
+    for simul_task in sorted_simul_tasks[1:]:
+        if simul_task['name']==first['name']:
+            if current_list:
+                current_list+=[simul_task]
+            else:
+                current_list=[first,simul_task]
+        else:
+            if current_list:
+               result_list+=[current_list]
+               current_list=[]
+        first=simul_task
+    bad_list = []
+    task_id_list = []
+    for simul_same_tasks in result_list:
+        is_container = False
+        is_dataset = False
+        requests_set = set()
+        for simul_same_task in simul_same_tasks:
+            requests_set.add(int(simul_same_task['request_id']))
+            if '/' in simul_same_task['inputdataset']:
+                is_container = True
+            else:
+                is_dataset = True
+            if (is_container and is_dataset) and (len(requests_set)>1) and (max(requests_set)>1000):
+                bad_list.append(simul_same_tasks)
+                break
+    #print bad_list
+    total_events = 0
+    requests = set()
+    for tasks in bad_list:
+        print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])
+        total_events += sum([x['total_events'] for x in tasks])
+        for task in tasks:
+            requests.add(task['request_id'])
+    print total_events
+    print len(bad_list)
+    print requests
+
+
+def find_evgen_duplicates():
+    evgen_tasks = list(ProductionTask.objects.filter(Q( status__in=['done','finished'] )&Q(name__startswith='mc')&Q(name__contains='evgen')).values('name','id','total_events', 'request_id'))
+    sorted_evgen_tasks = sorted(evgen_tasks, key=lambda x: x['name'])
+    first=sorted_evgen_tasks[0]
+    result_list=[]
+    current_list=[]
+    for evgen_task in sorted_evgen_tasks[1:]:
+        if evgen_task['name']==first['name']:
+            if current_list:
+                current_list+=[evgen_task]
+            else:
+                current_list=[first,evgen_task]
+        else:
+            if current_list:
+               result_list+=[current_list]
+               current_list=[]
+        first=evgen_task
+    bad_list = []
+    task_id_list = []
+    for evgen_same_tasks in result_list:
+        offset = [get_offset_from_jedi(evgen_same_tasks[0]['id'])]
+
+        evgen_same_tasks[0]['offset'] = offset[0]
+        bad = False
+        for evgen_same_task in evgen_same_tasks[1:]:
+            current_offset = get_offset_from_jedi(evgen_same_task['id'])
+            evgen_same_task['offset'] = current_offset
+            if (current_offset!=None) and (current_offset in offset) and (not bad):
+                bad_list.append(evgen_same_tasks)
+                task_id_list.append(evgen_same_task['id'])
+                bad = True
+    #print bad_list
+    total_events = 0
+    requests = set()
+    for_group = {}
+    reuqest_by_name = {}
+    for tasks in bad_list:
+        #print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])+' - '+','.join([str(x['offset']) for x in tasks])
+        total_events += sum([x['total_events'] for x in tasks])
+        task_id_list += [x['id'] for x in tasks if x['offset']==0]
+        reuqest_by_name[tasks[0]['name']]=tasks[0]['request_id']
+        if tasks[0]['name'].find('Sherpa')>-1:
+            for_group[tasks[0]['name']]=[]
+        for task in tasks:
+            requests.add(task['request_id'])
+            if task['offset'] == 0:
+                if task['name'] in for_group:
+                    for_group[task['name']]+=[task['id']]
+    #print for_group
+
+    #task_id_list.sort()
+    #print len(bad_list)
+    #print requests
+    file_for_result_AP=open('/tmp/duplicationDescendAP.txt','w')
+    file_for_result_GP=open('/tmp/duplicationDescendGP.txt','w')
+    GP_requests = set()
+    AP_requests = set()
+    for task_group in for_group:
+        duplicates, strange = find_task_by_input(for_group[task_group],task_group,reuqest_by_name[task_group])
+        for duplicate in duplicates:
+            if duplicates[duplicate][1] == 'AP':
+                file_for_result_AP.write(str(duplicate)+','+str(duplicates[duplicate][2])+'\n')
+                AP_requests.add(duplicates[duplicate][2])
+            else:
+                file_for_result_GP.write(str(duplicate)+','+str(duplicates[duplicate][2])+'\n')
+                GP_requests.add(duplicates[duplicate][2])
+        if strange:
+            print strange
+    print GP_requests
+    print AP_requests
+    file_for_result_AP.close()
+    file_for_result_GP.close()
+
+def find_task_by_input(task_ids, task_name, request_id):
+    result_duplicate = []
+    print task_ids
+    for task_id in task_ids:
+        task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
+        similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).filter(Q( status__in=['done','finished'] )).values('id','name','inputdataset','provenance','request_id').order_by('id'))
+        task_chains = [int(task_id)]
+        current_duplicates={int(task_id):(task_name,'AP',request_id)}
+        for task in similare_tasks:
+            task_input = task['inputdataset']
+            #print task_input,'-',task['id']
+            if 'py' not in task_input:
+                if '/' in task_input:
+                    task_chains.append(int(task['id']))
+                else:
+                    if 'tid' in task_input:
+                        task_input_id = int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])
+                        if (task_input_id in task_chains) :
+                            task_chains.append(int(task['id']))
+                            current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
+                    else:
+                        print 'NOn tid:',task_input,task_name
+        result_duplicate.append(current_duplicates)
+    first_tasks = result_duplicate[0]
+    second_tasks = result_duplicate[1]
+    name_set = set()
+    not_duplicate = []
+    for task_id in first_tasks:
+        name_set.add(first_tasks[task_id][0])
+    for task_id in second_tasks.keys():
+        if second_tasks[task_id][0] not in name_set:
+            not_duplicate.append({task_id:second_tasks[task_id]})
+    return second_tasks,not_duplicate
+
+def find_downstreams_by_task(task_id):
+    result_duplicate = []
+    original_task = ProductionTask.objects.get(id=task_id)
+    task_name = original_task.name
+    task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
+    similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).
+                          filter(Q( status__in=['done','finished'] )).values('id','name','inputdataset','provenance','request_id').
+                          order_by('id'))
+    task_chains = [int(task_id)]
+    current_duplicates={int(task_id):(task_name,original_task.provenance,original_task.request_id)}
+    for task in similare_tasks:
+        task_input = task['inputdataset']
+        #print task_input,'-',task['id']
+        if 'py' not in task_input:
+            if ('/' in task_input) and (int(task['id'])>int(task_id)):
+                task_chains.append(int(task['id']))
+                current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
+                if (task['request_id'] != original_task.request_id) and (task['provenance']=='AP'):
+                    print 'Simul problem' +'-'+ task_name + '-' + task['name']
+                #print task_input,int(task['id'])
+            else:
+                if 'tid' in task_input:
+                    task_input_id = int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])
+                    #print task_input_id,task['id'], len(task_chains)
+
+                    if (task_input_id in task_chains) :
+                        task_chains.append(int(task['id']))
+                        current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
+                else:
+                    print 'NOn tid:',task_input,task_name
+
+    return current_duplicates
+
+
+def bulk_obsolete_from_file(file_name):
+    with open(file_name,'r') as input_file:
+        tasks = (int(line.split(',')[0]) for line in input_file if line)
+        print timezone.now()
+        for task_id in tasks:
+            task = ProductionTask.objects.get(id=task_id)
+            task.status='obsolete'
+            task.timestamp=timezone.now()
+            task.save()
+            print task.name, task.status
+
+def bulk_find_downstream_from_file(file_name, output_file_name):
+    with open(file_name,'r') as input_file:
+        tasks = (int(line.split(',')[0]) for line in input_file if line)
+        output_file = open(output_file_name,'w')
+        for task_id in tasks:
+            downstream_tasks  = find_downstreams_by_task(task_id)
+            for duplicate in sorted(downstream_tasks):
+                if downstream_tasks[duplicate][1] == 'AP':
+                    output_file.write(str(task_id)+','+str(downstream_tasks[duplicate][0])+','
+                                      +str(duplicate)+','+str(downstream_tasks[duplicate][2])+'\n')
+        output_file.close()

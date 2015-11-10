@@ -147,6 +147,7 @@
     scope.save = function() {
         console.log(scope);
         scope.ongoing = true;
+        editTrainLoad.trainLoad.train_id = train_id;
         editTrainLoad.trainLoad.manager = currentUser;
         editTrainLoad.trainLoad.parent_request = parent_request;
         editTrainLoad.trainLoad.parent_steps = parent_steps;

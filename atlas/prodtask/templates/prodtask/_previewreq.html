@@ -93,6 +93,7 @@
         var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15'];
         var SUB_CAMPAIGN = ['a','b','c','d','e','f'];
         if ($("#{{ form.request_type.auto_id }}").val()=='MC'){
+            $("#{{ form.train.auto_id }}").parent().parent().show();
             addHelpText();
             var campaign_name = changeInputOnSelect("{{ form.campaign.auto_id }}","campaign",'none_mc_campaign',MC_CAMPAIGN_LIST);
             var sub_campaign_list = [];
@@ -102,6 +103,7 @@
             var sub_campaign_name = changeInputOnSelect("{{ form.subcampaign.auto_id }}","subcampaign",'none_mc_subcampaign',sub_campaign_list);
             $("#{{ form.campaign.auto_id }}").change(function(){changeSelector("#{{ form.campaign.auto_id }}",SUB_CAMPAIGN,"#{{ form.subcampaign.auto_id }}")});
         } else{
+            $("#{{ form.train.auto_id }}").parent().parent().hide();
             hideHelpText();
             if ($('#none_mc_campaign').val()!=undefined){
                 changeSelectOnInput("{{ form.campaign.auto_id }}",'none_mc_campaign');
@@ -114,7 +116,8 @@ var field_id =   {description_id:"{{ form.description.auto_id }}",long_descripti
     excellink:"{{ form.excellink.auto_id }}",ref_link:"{{ form.ref_link.auto_id }}",phys_group:"{{ form.phys_group.auto_id }}",
 energy_gev:"{{ form.energy_gev.auto_id }}",project:"{{ form.project.auto_id }}",cc:"{{ form.cc.auto_id }}",
     request_type:"{{ form.request_type.auto_id }}", campaign:"{{ form.campaign.auto_id }}", subcampaign:"{{ form.subcampaign.auto_id }}",
-manager:"{{ form.manager.auto_id }}",provenance:"{{ form.provenance.auto_id }}",need_approve:"{{ form.need_approve.auto_id }}"};
+manager:"{{ form.manager.auto_id }}",provenance:"{{ form.provenance.auto_id }}",need_approve:"{{ form.need_approve.auto_id }}",
+train:"{{ form.train.auto_id }}"};
 
 var helpText = {description_id:"Short description of request (will become request title)",
 long_description_id:"This will be the body of the mail that will\n" +
@@ -135,7 +138,8 @@ long_description_id:"This will be the body of the mail that will\n" +
     subcampaign:' ',
     manager:' ',
     provenance:' ',
-    need_approve:' '
+    need_approve:' ',
+    train:'Pattern request for automatic derivation creation'
 
 };
     function splitSlices(event,doSplit){

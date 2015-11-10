@@ -13,8 +13,7 @@ from django.forms import Form
 import json
 from django.forms.extras.widgets import SelectDateWidget
 import re
-from atlas.prodtask.models import JediWorkQueue
-
+from atlas.prodtask.models import JediWorkQueue, ParentToChildRequest
 from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
     RetryErrors, RetryAction, InputRequestList
 from django.forms.widgets import TextInput, SplitDateTimeWidget
@@ -66,6 +65,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
     need_approve = NullBooleanField(required=False,initial=True)
     need_split = NullBooleanField(widget=forms.HiddenInput, required=False,initial=False)
     split_divider = DecimalField(widget=forms.HiddenInput, required=False, initial=-1)
+    train = ModelChoiceField(queryset=TrainProduction.objects.filter(Q(status='mc_pattern')),required=False)
 
     class Meta:
         model = TRequest
@@ -117,6 +117,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
     need_split = NullBooleanField(widget=forms.HiddenInput,required=False,initial=False)
+    train = ModelChoiceField(queryset=TrainProduction.objects.filter(Q(status='mc_pattern')),required=False)
 
     class Meta:
         model = TRequest

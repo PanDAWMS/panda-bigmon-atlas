@@ -1,26 +1,20 @@
-import copy
+import json
+import logging
+
 from django.utils import timezone
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
-from django.template.response import TemplateResponse
-from django.db.models import Count
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
-import json
-import logging
-from django.db.models import Q
 from rest_framework import serializers,generics
 from django.forms.models import model_to_dict
-from ..prodtask.views import form_existed_step_list, form_step_in_page
-from ..prodtask.request_views import make_slices_from_dict
-from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestDPDCreateCloneForm, \
-    TRequestCreateCloneConfirmation, form_input_list_for_preview
+
+from atlas.prodtask.views import create_steps_in_child_pattern
+from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
+from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
-    RequestStatus
+    ParentToChildRequest
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -204,6 +198,7 @@ def create_pattern_train(pattern_request_id, pattern_type='MC'):
     pattern_train.save()
     return pattern_train.id
 
+
 @csrf_protect
 def check_slices_for_trains(request):
     if request.method == 'POST':
@@ -263,62 +258,18 @@ def create_request_as_child(request):
             data = request.body
             input_dict = json.loads(data)
             parent_request = TRequest.objects.get(reqid=input_dict['parent_request'])
-            new_request = TRequest()
-            new_request.campaign = parent_request.project
-            new_request.project = parent_request.project
-            new_request.description = input_dict['short_description']
-            new_request.phys_group = 'PHYS'
-            new_request.provenance = 'GP'
-            new_request.request_type = 'GROUP'
-            new_request.energy_gev = parent_request.energy_gev
-            new_request.manager =  'atlas-dpd-production'
-            new_request.cstatus = 'waiting'
-            new_request.save()
-            request_status = RequestStatus(request=new_request,comment='Request created as child train WebUI',owner=input_dict['manager'],
-                                                       status='waiting')
-
-            request_status.save_with_current_time()
-            parent_steps = input_dict['parent_steps']
-            pattern_request = int(input_dict['pattern_request'])
-            spreadsheet_dict = []
-            outputs = input_dict['outputs']
-            outputs_slices = json.loads(outputs)
-            pattern_slices = set()
-            for output_slices in outputs_slices:
-                pattern_slices.add(output_slices[0])
-            step_pattern = {}
-            for pattern_slice_number in pattern_slices:
-                pattern_slice = InputRequestList.objects.get(request=pattern_request,slice=int(pattern_slice_number))
-                step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0]
-            slice_index = 0
-            for parent_step_id in parent_steps:
-                parent_step = StepExecution.objects.get(id=int(parent_step_id))
-                for output_slice in outputs_slices:
-                    current_step_pattern = step_pattern[output_slice[0]]
-                    current_output_formats = []
-                    for output in output_slice[1]:
-                        if output in current_step_pattern.step_template.output_formats.split('.'):
-                            current_output_formats.append(output)
-                    if current_output_formats:
-                        st_sexec_list = []
-                        irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset_id,
-                                   input_data=parent_step.slice.input_data,
-                                   project_mode=current_step_pattern.slice.project_mode,
-                                   priority=int(current_step_pattern.slice.priority),
-                                   input_events=-1)
-                        slice_index += 1
-                        sexec = dict(status='NotChecked', priority=int(current_step_pattern.priority),
-                                     input_events=-1)
-                        task_config =  current_step_pattern.get_task_config()
-                        nEventsPerJob = task_config.get('nEventsPerJob','')
-                        task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-                        st_sexec_list.append({'step_name': current_step_pattern.step_template.step, 'tag': current_step_pattern.step_template.ctag
-                                                 , 'step_exec': sexec,
-                                          'memory': int(current_step_pattern.step_template.memory),
-                                          'formats': '.'.join(current_output_formats),
-                                          'task_config':task_config,'parent_step_id':parent_step_id})
-                        spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-            make_slices_from_dict(new_request,spreadsheet_dict)
+            new_request = create_request_for_pattern(parent_request.reqid, input_dict['short_description'], input_dict['manager'])
+            parent_steps = []
+            for step_id in  input_dict['parent_steps']:
+                parent_steps.append(StepExecution.objects.get(id=step_id))
+            create_steps_in_child_pattern(new_request, parent_steps, int(input_dict['pattern_request']), json.loads(input_dict['outputs']))
+            relationship = ParentToChildRequest()
+            relationship.status = 'active'
+            relationship.parent_request = parent_request
+            relationship.child_request = new_request
+            relationship.train = TrainProduction.objects.get(id=int(input_dict['train_id']))
+            relationship.relation_type = 'MA'
+            relationship.save()
             results = {'success':True, 'request':new_request.reqid}
 
         except Exception,e:

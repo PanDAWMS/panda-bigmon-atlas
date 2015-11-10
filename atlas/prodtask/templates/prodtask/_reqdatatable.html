@@ -2211,12 +2211,34 @@ var lastChecked = true;
 </div>
 <div class="row">
 <div class="large-12">
-    <div>
     <a onclick="$('#longDescription').toggle('slow')" style="cursor: pointer;"><u>Show/hide long description</u></a>
     <div id="longDescription" style="display: none">{{ long_description|linebreaks}}</div>
+</div>
+</div>
+{% if child_requests %}
+    <div class="row">
+    <div class="large-12">
+        <a onclick="$('#childRequests').toggle('slow')" style="cursor: pointer;"><u>Child requests: {{ child_requests|length }}</u></a>
     </div>
-</div>
-</div>
+    </div>
+        <div id="childRequests" style="display: none">
+            {% for child_request in child_requests %}
+                <div class="row">
+                    {% if child_request.request %}
+                        <div class="large-2 column"><a href= "{% url 'prodtask:input_list_approve' child_request.request %}">{{ child_request.request }}</a></div>
+                    {% else %}
+                        <div class="large-2 column" >None</div>
+                    {% endif %}
+                    <div class="large-8 column"><a href= "{%  url 'prodtask:input_list_approve' child_request.pattern_id %}">{{ child_request.pattern_name }}</a></div>
+                    <div class="large-2 column">{{ child_request.type }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+
+{% endif %}
+
+
 
 <div class="row">
 

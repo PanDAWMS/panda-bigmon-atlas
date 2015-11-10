@@ -16,6 +16,10 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 import time
+from atlas.prodtask.helper import form_request_log
+from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object
+
+from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
 from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
@@ -26,7 +30,7 @@ import atlas.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
-    OpenEndedRequest, TrainProduction
+    OpenEndedRequest, TrainProduction, ParentToChildRequest
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -676,6 +680,139 @@ def change_dataset_in_slice(req, slice, new_dataset_name):
             approved_step.save()
 
 
+def find_child_steps(parent_request_id, slice_steps):
+    requests_relations = ParentToChildRequest.objects.filter(status='active',parent_request=parent_request_id)
+    child_requests = [item.child_request for item in requests_relations if item.child_request]
+    parent_position = {}
+    if child_requests:
+        steps = list(StepExecution.objects.filter(request=parent_request_id))
+        parent_steps_id = [step.id for step in steps]
+        step_relation = {}
+        for child_request in child_requests:
+            child_steps = list(StepExecution.objects.filter(request=child_request).values('id','slice_id',
+                                                                                           'step_parent_id'))
+            for child_step in child_steps:
+                if child_step['step_parent_id'] in parent_steps_id:
+                    step_relation[child_step['step_parent_id']] = step_relation.get(parent_steps_id,[]) + [child_step['id']]
+        for step in steps:
+            if step.id in step_relation:
+                #take position in chain
+                parent_position[step.id] = {'slice':step.slice.slice,'child_steps':step_relation[step.id]}
+
+
+def create_request_for_pattern(parent_request_id, short_description, manager):
+            parent_request = TRequest.objects.get(reqid=parent_request_id)
+            new_request = TRequest()
+            new_request.campaign = parent_request.project
+            new_request.project = parent_request.project
+            new_request.description = short_description
+            new_request.phys_group = 'PHYS'
+            new_request.provenance = 'GP'
+            new_request.request_type = 'GROUP'
+            new_request.energy_gev = parent_request.energy_gev
+            new_request.manager =  'atlas-dpd-production'
+            new_request.cstatus = 'waiting'
+            new_request.save()
+            request_status = RequestStatus(request=new_request,comment='Request created as child train WebUI',owner=manager,
+                                                       status='waiting')
+
+            request_status.save_with_current_time()
+
+            return new_request
+
+
+def find_parent_for_train_steps(ordered_slices, parent_request, step_number = -1):
+    not_approved = []
+    parent_steps = []
+    is_mc = False
+    if step_number == -1:
+        is_mc = True
+    for slice_number in ordered_slices:
+        input_list = InputRequestList.objects.get(request=parent_request,slice=int(slice_number))
+        existed_steps = StepExecution.objects.filter(request=parent_request, slice=input_list)
+        # Check steps which already exist in slice, and change them if needed
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+        if is_mc:
+            step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
+            if 'Fullsim' not in input_list.comment:
+                step_number = 8
+            else:
+                step_number = 5
+        else:
+            step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS),existed_foreign_step)
+        if step_as_in_page[step_number]:
+            if step_as_in_page[step_number].status != 'Approved':
+                not_approved.append(slice_number)
+            else:
+                parent_steps.append(step_as_in_page[step_number])
+        else:
+            not_approved.append(slice_number)
+    return parent_steps,not_approved
+
+
+def form_output_pattern(phys_group, train):
+    #take trains:
+    train_outputs = json.loads(train.outputs)
+    result_outut = []
+    for slice_outputs in train_outputs:
+        for output in slice_outputs[1]:
+            if phys_group in output:
+                result_outut.append(slice_outputs)
+                break
+    return result_outut
+
+
+def make_child_update(parent_request_id, manager, slices):
+    child_requests = list(ParentToChildRequest.objects.filter(status='active',parent_request=parent_request_id))
+    parent_request = TRequest.objects.get(reqid=parent_request_id)
+    if child_requests:
+        steps = list(StepExecution.objects.filter(request=parent_request_id))
+        steps_by_slice = {}
+        output_pattern = {}
+        for current_step in steps:
+            steps_by_slice[current_step.slice_id] = steps_by_slice.get(current_step.slice_id,[])+[current_step]
+        for child_request in child_requests:
+            # if child request is not exist yet
+            step_relation = {}
+            if child_request.child_request:
+                # find steps which already exist and which should be created
+                parent_steps_id = [step.id for step in steps]
+
+                child_steps = list(StepExecution.objects.filter(request=child_request.child_request))
+                for child_step in child_steps:
+                    if child_step.step_parent_id in parent_steps_id:
+                        step_relation[child_step.step_parent_id] = step_relation.get(child_step.step_parent_id,[]) + [child_step]
+
+            used_slices = set()
+            do_request_approve = False
+            if step_relation:
+                for slice_number in slices:
+                    slice = InputRequestList.objects.get(request=parent_request,slice=slice_number)
+                    for step in steps_by_slice[slice.id]:
+                        if step.id in step_relation:
+                            used_slices.add(slice.slice)
+                            if step.status == 'Approved':
+                                for child_step in step_relation[step.id]:
+                                    if child_step.status != 'Approved':
+                                        child_step.status = 'Approved'
+                                        child_step.save()
+                                        do_request_approve = True
+            if child_request.relation_type == 'BC':
+                slices_to_proceed = [slice_number for slice_number in slices if int(slice_number) not in used_slices]
+                parent_steps, slices_not_approved = find_parent_for_train_steps(slices_to_proceed, parent_request)
+                if parent_steps and (not output_pattern):
+                    output_pattern = form_output_pattern(parent_request.phys_group, child_request.train)
+                if parent_steps and output_pattern:
+                    if  not child_request.child_request:
+                        child_request.child_request = create_request_for_pattern(parent_request_id, manager, "Automatic derivation for request #%s"%str(parent_request_id))
+                        child_request.save()
+                    create_steps_in_child_pattern(child_request.child_request,parent_steps,child_request.train.pattern_request,output_pattern,'Approved')
+                    do_request_approve = True
+            if do_request_approve:
+                 set_request_status(manager,child_request.child_request_id,'approved','Automatic child approve', 'Request was automatically approved')
+                            # parent_position[step.id] = {'slice':step.slice.slice,'child_steps':step_relation[step.id]}
+                # find steps which already exist
+
 
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99):
     results = {'success':False}
@@ -741,13 +878,14 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                     missing_tags.append('No manager name!')
                 else:
                     removed_input = []
+                    #child_steps_before_update = find_child_steps(reqid,slice_steps)
                     if req.request_type == 'MC':
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
                     else:
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
-
+                    make_child_update(reqid,owner,slice_steps)
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
                     if not owner:
                         owner = req.manager
@@ -1485,6 +1623,21 @@ def request_table_view(request, rid=None, show_hidden=False):
                                                                                   train.pattern_request.description})
             except:
                 pass
+            child_requests = []
+            try:
+                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,status='active')
+                for related_request in related_requests:
+                    if related_request.child_request:
+                        child_requests.append({'request':int(related_request.child_request_id),'pattern_id':int(related_request.train.pattern_request_id),
+                                           'pattern_name':related_request.train.pattern_request.description,
+                                           'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
+                    else:
+                        child_requests.append({'request':None,'pattern_id':int(related_request.train.pattern_request_id),
+                                           'pattern_name':related_request.train.pattern_request.description,
+                                           'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
+
+            except:
+                pass
             selected_slices = json.dumps([])
             try:
                 if 'selected_slices' in request.session:
@@ -1525,7 +1678,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'page_title':'%s - Request'%str(rid),
                 'train_pattern_list':train_pattern_list,
                 'selected_slices':selected_slices,
-                'original_spreadsheet':original_spreadsheet
+                'original_spreadsheet':original_spreadsheet,
+                'child_requests':child_requests
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
@@ -1816,3 +1970,126 @@ def userinfo(request):
                  'parent_template': 'prodtask/_index.html',
             })
 
+
+def set_request_status(username, reqid, status, message, comment, request=None):
+    STATUS_ORDER = ['registered','approved','canceled']
+
+    _logger.debug(form_request_log(reqid,request,message))
+
+    cur_request = TRequest.objects.get(reqid=reqid)
+    request_status = RequestStatus(request=cur_request,comment=comment,owner=username,
+                                   status=status)
+    request_status.save_with_current_time()
+    if (status in STATUS_ORDER) and (cur_request.cstatus in STATUS_ORDER):
+        if STATUS_ORDER.index(status) >= STATUS_ORDER.index(cur_request.cstatus):
+            cur_request.cstatus = status
+    else:
+        cur_request.cstatus = status
+    cur_request.save()
+
+
+def create_steps_in_child_pattern(new_request, parent_steps, pattern_request, outputs_slices, status='NotChecked'):
+    spreadsheet_dict = []
+    pattern_slices = set()
+    for output_slices in outputs_slices:
+        pattern_slices.add(output_slices[0])
+    step_pattern = {}
+    for pattern_slice_number in pattern_slices:
+        pattern_slice = InputRequestList.objects.get(request=pattern_request,slice=int(pattern_slice_number))
+        step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0]
+    slice_index = 0
+    for parent_step in parent_steps:
+        #parent_step = StepExecution.objects.get(id=int(parent_step_id))
+        for output_slice in outputs_slices:
+            current_step_pattern = step_pattern[output_slice[0]]
+            current_output_formats = []
+            for output in output_slice[1]:
+                if output in current_step_pattern.step_template.output_formats.split('.'):
+                    current_output_formats.append(output)
+            if current_output_formats:
+                st_sexec_list = []
+                irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset_id,
+                           input_data=parent_step.slice.input_data,
+                           project_mode=current_step_pattern.slice.project_mode,
+                           priority=int(current_step_pattern.slice.priority),
+                           input_events=-1)
+                slice_index += 1
+                sexec = dict(status=status, priority=int(current_step_pattern.priority),
+                             input_events=-1)
+                task_config =  current_step_pattern.get_task_config()
+                nEventsPerJob = task_config.get('nEventsPerJob','')
+                task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+                st_sexec_list.append({'step_name': current_step_pattern.step_template.step, 'tag': current_step_pattern.step_template.ctag
+                                         , 'step_exec': sexec,
+                                  'memory': int(current_step_pattern.step_template.memory),
+                                  'formats': '.'.join(current_output_formats),
+                                  'task_config':task_config,'parent_step_id':parent_step.id})
+                spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+    make_slices_from_dict(new_request,spreadsheet_dict)
+
+
+def make_slices_from_dict(req, file_dict):
+        step_parent_dict = {}
+        for current_slice in file_dict:
+            input_data = current_slice["input_dict"]
+            input_data['request'] = req
+            priority_obj = get_priority_object(input_data['priority'])
+            if input_data.get('dataset'):
+                    input_data['dataset'] = fill_dataset(input_data['dataset'])
+            _logger.debug("Filling input data: %s" % input_data)
+            input_data['slice'] = req.get_next_slice()
+            irl = InputRequestList(**input_data)
+            irl.save()
+            for step in current_slice.get('step_exec_dict'):
+                st = fill_template(step['step_name'], step['tag'], input_data['priority'],
+                                   step.get('formats', None), step.get('memory', None))
+                task_config= {}
+                upadte_after = False
+                if 'task_config' in step:
+                    if 'nEventsPerJob' in step['task_config']:
+                        if step['task_config']['nEventsPerJob'].get(step['step_name'],''):
+                            task_config.update({'nEventsPerJob':int(step['task_config']['nEventsPerJob'].get(step['step_name']))})
+
+                            if step['step_name']=='Evgen':
+                                task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
+                        else:
+                            task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
+                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                                           'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
+                                           'nGBPerJob','maxAttempt','maxFailure']
+                    for task_config_option in task_config_options:
+                        if task_config_option in step['task_config']:
+                            task_config.update({task_config_option:step['task_config'][task_config_option]})
+                step['step_exec']['request'] = req
+                step['step_exec']['slice'] = irl
+                step['step_exec']['step_template'] = st
+                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                _logger.debug("Filling step execution data: %s" % step['step_exec'])
+                st_exec = StepExecution(**step['step_exec'])
+                if ('parent_step_id' in step):
+                    st_exec.step_parent = StepExecution.objects.get(id=step['parent_step_id'])
+                else:
+                    if step_parent_dict:
+                        if ('step_parent' in step) and ('step_order' in step):
+                            if (step['step_parent']==step['step_order']):
+                                upadte_after = True
+                            else:
+                                st_exec.step_parent = step_parent_dict[step['step_parent']]
+                        else:
+                            upadte_after = True
+                    else:
+                        upadte_after = True
+                if task_config:
+                    st_exec.set_task_config(task_config)
+                st_exec.save_with_current_time()
+                if ('step_parent' in step) and ('step_order' in step):
+                    step_parent_dict.update({step['step_order']:st_exec})
+                else:
+                    step_parent_dict.update({0:st_exec})
+                if upadte_after:
+                    if ('step_parent' in step) and ('step_order' in step):
+                        st_exec.step_parent = step_parent_dict[step['step_parent']]
+                    else:
+                        st_exec.step_parent = step_parent_dict[0]
+                    st_exec.save()
+        return True

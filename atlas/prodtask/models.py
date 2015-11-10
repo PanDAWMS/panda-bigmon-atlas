@@ -395,6 +395,60 @@ class RetryErrors(models.Model):
         #db_table = u'T_INPUT_DATASET'
         db_table = u"RETRYERRORS"
 
+
+class TrainProduction(models.Model):
+
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='GPT_ID', primary_key=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+    departure_time =  models.DateTimeField(db_column='DEPARTURE_TIME')
+    approval_time = models.DateTimeField(db_column='APPROVAL_TIME', null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION')
+    request  = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
+    #ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
+    #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
+    outputs = models.TextField( db_column='OUTPUTS_PATTERN', null=True)
+    pattern_request = models.ForeignKey(TRequest, db_column='PATTERN_REQUEST')
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
+        super(TrainProduction, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "%i - %s"%(self.pattern_request.reqid,self.pattern_request.description)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_GROUP_TRAIN"'
+
+class ParentToChildRequest(models.Model):
+    RELATION_TYPE = (
+                    ('BC', 'By creation'),
+                    ('MA', 'Manually'),
+                    )
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
+    parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID')
+    child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True)
+    relation_type = models.CharField(max_length=2, db_column='RELATION_TYPE', choices=RELATION_TYPE, null=False)
+    train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID')
+    status = models.CharField(max_length=12, db_column='STATUS', null=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'PARENT_CHILD_REQUEST_ID_SEQ','T_PARENT_CHILD_REQUEST','PTC_ID')
+        super(ParentToChildRequest, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+
+        db_table = u"T_PARENT_CHILD_REQUEST"
+
+
+
 class StepExecution(models.Model):
     STEPS = ['Evgen',
              'Simul',
@@ -588,30 +642,7 @@ class ProductionTask(models.Model):
         db_table = u'T_PRODUCTION_TASK'
 
 
-class TrainProduction(models.Model):
 
-    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='GPT_ID', primary_key=True)
-    status = models.CharField(max_length=12, db_column='STATUS', null=True)
-    departure_time =  models.DateTimeField(db_column='DEPARTURE_TIME')
-    approval_time = models.DateTimeField(db_column='APPROVAL_TIME', null=True)
-    timestamp = models.DateTimeField(db_column='TIMESTAMP')
-    manager = models.CharField(max_length=32, db_column='OWNER', null=False, blank=True)
-    description = models.CharField(max_length=256, db_column='DESCRIPTION')
-    request  = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
-    #ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
-    #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
-    outputs = models.TextField( db_column='OUTPUTS_PATTERN', null=True)
-    pattern_request = models.ForeignKey(TRequest, db_column='PATTERN_REQUEST')
-
-    def save(self, *args, **kwargs):
-        self.timestamp = timezone.now()
-        if not self.id:
-            self.id = prefetch_id('dev_db',u'T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
-        super(TrainProduction, self).save(*args, **kwargs)
-
-    class Meta:
-        app_label = 'dev'
-        db_table = u'"T_GROUP_TRAIN"'
 
 class OpenEndedRequest(models.Model):
 

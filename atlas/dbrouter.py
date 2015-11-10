@@ -24,6 +24,9 @@ class ProdMonDBRouter(object):
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
+        if ((obj1._meta.app_label == 'prodtask') and (obj2._meta.app_label == 'dev')) or\
+                ((obj1._meta.app_label == 'dev') and (obj2._meta.app_label == 'dev')):
+            return True
         return None
 
     def allow_migrate(self, db, model):
