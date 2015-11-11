@@ -69,8 +69,14 @@ def check_waiting_steps():
                     # Parent failed -> remove waiting
                     remove_waiting(steps_by_slices[slice])
                 else:
-                    if task_to_check.total_files_tobeused != 0:
-                        if ((float(task_to_check.total_files_finished)/float(task_to_check.total_files_tobeused))>APPROVE_LEVEL):
+                    total_files_tobeused = 0
+                    total_files_finished = 0
+                    if task_to_check.total_files_tobeused:
+                        total_files_tobeused = task_to_check.total_files_tobeused
+                    if task_to_check.total_files_finished:
+                        total_files_finished = task_to_check.total_files_finished
+                    if total_files_tobeused != 0:
+                        if ((float(total_files_finished)/float(total_files_tobeused))>APPROVE_LEVEL):
                             remove_waiting(steps_by_slices[slice],'Approved')
                             requests.add(approved_steps[0].request_id)
                             slices_by_request[approved_steps[0].request_id] = slices_by_request.get(approved_steps[0].request_id,[]) + [slice]
