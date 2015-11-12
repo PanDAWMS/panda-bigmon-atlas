@@ -42,6 +42,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'core.datatables',
 #    'core.gspread', #NOT-NEEDED-IN-ATLAS?
     'atlas.prodtask',
+    'atlas.prodjob',
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',
