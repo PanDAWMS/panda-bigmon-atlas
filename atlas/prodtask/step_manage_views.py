@@ -1039,7 +1039,7 @@ def split_slice(reqid, slice_number, divider):
 
     """
 
-    def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number):
+    def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number, output_dataset):
             new_slice = slice_to_split.values()[0]
             new_slice['slice'] = new_slice_number
             del new_slice['id']
@@ -1047,6 +1047,8 @@ def split_slice(reqid, slice_number, divider):
             comment = new_slice['comment']
             new_slice['comment'] = comment[:comment.find(')')+1] + '('+str(index)+')' + comment[comment.find(')')+1:]
             new_input_data = InputRequestList(**new_slice)
+            if output_dataset:
+                new_input_data.dataset = fill_dataset(output_dataset)
             new_input_data.save()
             parent = None
             for step_dict in ordered_existed_steps:
@@ -1068,6 +1070,13 @@ def split_slice(reqid, slice_number, divider):
     new_slice_number = (InputRequestList.objects.filter(request=production_request).order_by('-slice')[0]).slice + 1
     step_execs = StepExecution.objects.filter(slice=slice_to_split[0])
     ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
+    output_dataset = ''
+    if existed_foreign_step:
+        # get dataset from parent step
+        task = ProductionTask.objects.get(step=existed_foreign_step)
+        if task.status not in ['finished','done']:
+            raise ValueError("Can't split slice - parent task should be finished" )
+        output_dataset = task.output_dataset
     for step in ordered_existed_steps:
             step.id = None
             step.step_parent = step
@@ -1079,7 +1088,7 @@ def split_slice(reqid, slice_number, divider):
             if step_dict.status in StepExecution.STEPS_APPROVED_STATUS:
                 raise ValueError("Can't split slice step %s is approved" % str(step_dict.status))
         for i in range(int(slice_to_split[0].input_events) / int(divider)):
-            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider)
+            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset)
             new_slice_number += 1
         if (slice_to_split[0].input_events % divider) != 0:
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
@@ -1339,17 +1348,17 @@ def find_downstreams_by_task(task_id):
     task_name = original_task.name
     task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
     similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).
-                          filter(Q( status__in=['done','finished'] )).values('id','name','inputdataset','provenance','request_id').
+                          filter(Q( status__in=['done','finished','obsolete'] )).values('id','name','inputdataset','provenance','request_id','status').
                           order_by('id'))
     task_chains = [int(task_id)]
-    current_duplicates={int(task_id):(task_name,original_task.provenance,original_task.request_id)}
+    current_duplicates={int(task_id):(task_name,original_task.provenance,original_task.request_id,'done')}
     for task in similare_tasks:
         task_input = task['inputdataset']
         #print task_input,'-',task['id']
         if 'py' not in task_input:
             if ('/' in task_input) and (int(task['id'])>int(task_id)):
                 task_chains.append(int(task['id']))
-                current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
+                current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 if (task['request_id'] != original_task.request_id) and (task['provenance']=='AP'):
                     print 'Simul problem' +'-'+ task_name + '-' + task['name']
                 #print task_input,int(task['id'])
@@ -1360,7 +1369,7 @@ def find_downstreams_by_task(task_id):
 
                     if (task_input_id in task_chains) :
                         task_chains.append(int(task['id']))
-                        current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
+                        current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 else:
                     print 'NOn tid:',task_input,task_name
 
@@ -1378,14 +1387,15 @@ def bulk_obsolete_from_file(file_name):
             task.save()
             print task.name, task.status
 
-def bulk_find_downstream_from_file(file_name, output_file_name):
+def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP'):
     with open(file_name,'r') as input_file:
         tasks = (int(line.split(',')[0]) for line in input_file if line)
         output_file = open(output_file_name,'w')
         for task_id in tasks:
             downstream_tasks  = find_downstreams_by_task(task_id)
             for duplicate in sorted(downstream_tasks):
-                if downstream_tasks[duplicate][1] == 'AP':
+                if (downstream_tasks[duplicate][1] == provenance) and (downstream_tasks[duplicate][3] != 'obsolete'):
                     output_file.write(str(task_id)+','+str(downstream_tasks[duplicate][0])+','
                                       +str(duplicate)+','+str(downstream_tasks[duplicate][2])+'\n')
         output_file.close()
+
