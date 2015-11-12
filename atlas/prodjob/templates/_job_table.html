@@ -29,16 +29,9 @@
     <script src="http://datatables.net/release-datatables/media/js/jquery.dataTables.js"></script>
     <script src="https://cdn.datatables.net/1.10.10/js/dataTables.foundation.min.js"></script>
     <script src="http://datatables.net/release-datatables/extensions/TableTools/js/dataTables.tableTools.js"></script>
+    <script src="http://cdn.datatables.net/plug-ins/1.10.10/api/fnProcessingIndicator.js"></script>
 
 
-<!--
-    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
-
-    <script src="http://datatables.net/release-datatables/extensions/TableTools/js/dataTables.tableTools.js"></script>
-    <script src="http://datatables.net/release-datatables/media/js/jquery.js"></script>
--->
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script src="http://lab.alexcican.com/set_cookies/cookie.js" type="text/javascript"></script>
 
@@ -52,9 +45,7 @@
             <a class="button postfix" id="btn_find_jobs">Go</a>
          </div>
 
-      <br>
-      <br>
-      <br>
+
 <!--
 <input type="text" id="find_job">
 <a class="button postfix" id="btn_find_jobs">Go</a>
@@ -62,18 +53,14 @@
         <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
-              <tr>
-                 <th>JobID</th>
-                 <th>TaskID</th>
-                 <th>Job Status</th>
 
-              </tr>
+
            </thead>
         </table>
 
 
          <div class="small-3 large-3 columns">
-            <a class="button postfix" id="btn_handle_jobs">Go</a>
+            <a class="button postfix" id="btn_handle_jobs">Action</a>
          </div>
 
 {% csrf_token %}
@@ -97,21 +84,21 @@
 
         $(document).ready(function() {
 	        $('#example').dataTable({
-                        //"bDestroy" : true,
+                        "bProcessing" : true,
                         columns : [
                                 {"sTitle" : "JobID" },
                                 {"sTitle" : "TaskID" },
                                 {"sTitle" : "Job Status" }
                         ],
-                        dom: 'T<"clear">lfrtip',
+                        dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "os",
                             "aButtons": [ "select_all", "select_none" ]
                         }
                     });
 
-
-
+            //$('#example').dataTable().fnProcessingIndicator();
+            //$(".dataTables_processing").css('visibility','visible');
 
         } );
 
@@ -120,14 +107,14 @@
             } );
 
         $("#btn_find_jobs").click(function(){
+
+
             var parameters = [$("#find_job").val()];
 
             if (parameters.length == 0) return;
-            //alert(parameters);
-//            var postData['parameters'] = parameters;
 
             var ajaxUrl =  Django.url('prodjob:get_jobs');
-
+            $('#example').dataTable().fnProcessingIndicator();
             $.ajax({
                 url: ajaxUrl,
                 type: "POST",
@@ -144,15 +131,16 @@
                     //var data = jqXHR.responseText;
                     var data =  $.parseJSON(jqXHR.responseText);
 
-                    var dt = $('#example').dataTable();
-                    dt.fnClearTable();
-                    dt.fnAddData(data);
-                    dt.fnDraw();
+                    var oTable = $('#example').dataTable();
+                    oTable.fnClearTable();
+                    oTable.fnAddData(data);
+                    oTable.fnDraw();
 
+                    $('#example').dataTable().fnProcessingIndicator(false);
                 } // 'complete' event handler
 
             });
-
+            //$(".dataTables_processing").css('visibility','hidden');
 
         } );
 
@@ -161,7 +149,7 @@
 
             var table = $('#example').DataTable();
             var data = table.rows('.selected').data().toArray();
-            alert( table.rows('.selected').data().length +' row(s) selected' );
+            alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
             var ajaxUrl =  Django.url('prodjob:jobs_action');
 
             $.ajax({
