@@ -11,11 +11,12 @@
 {% endblock %}
 {% block body %}
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/dataTables.foundation.min.css">
 <link rel="stylesheet" type="text/css" href="http://datatables.net/release-datatables/extensions/TableTools/css/dataTables.tableTools.css">
 
-<style type="text/css" class="init">
+<style type="text/css">
+    .dataTables_wrapper .dataTables_paginate .paginate_button {padding: 0em 0em;}
 
 </style>
 <!--
@@ -104,7 +105,7 @@
                         ],
                         dom: 'T<"clear">lfrtip',
                         tableTools: {
-                            "sRowSelect": "multi",
+                            "sRowSelect": "os",
                             "aButtons": [ "select_all", "select_none" ]
                         }
                     });
