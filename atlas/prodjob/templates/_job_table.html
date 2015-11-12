@@ -63,6 +63,7 @@
            <thead>
               <tr>
                  <th>JobID</th>
+                 <th>TaskID</th>
                  <th>Job Status</th>
 
               </tr>
@@ -94,14 +95,28 @@
         });
 
         $(document).ready(function() {
-	        $('#example').DataTable();
+	        $('#example').dataTable({
+                        //"bDestroy" : true,
+                        columns : [
+                                {"sTitle" : "JobID" },
+                                {"sTitle" : "TaskID" },
+                                {"sTitle" : "Job Status" }
+                        ],
+                        dom: 'T<"clear">lfrtip',
+                        tableTools: {
+                            "sRowSelect": "multi",
+                            "aButtons": [ "select_all", "select_none" ]
+                        }
+                    });
 
-            $('#example tbody').on( 'click', 'tr', function () {
-                $(this).toggleClass('selected');
-            } );
+
 
 
         } );
+
+        $('#example tbody').on( 'click', 'tr', function () {
+                $(this).toggleClass('selected');
+            } );
 
         $("#btn_find_jobs").click(function(){
             var parameters = [$("#find_job").val()];
@@ -128,19 +143,10 @@
                     //var data = jqXHR.responseText;
                     var data =  $.parseJSON(jqXHR.responseText);
 
-                    $('#example').DataTable().destroy();
-                    var oTable = $('#example').dataTable({
-                        data : data,
-                        columns : [
-                                {"sTitle" : "JobID" },
-                                {"sTitle" : "Job Status" }
-                        ],
-                        dom: 'T<"clear">lfrtip',
-                        tableTools: {
-                            "sRowSelect": "multi",
-                            "aButtons": [ "select_all", "select_none" ]
-                        }
-                    });
+                    var dt = $('#example').dataTable();
+                    dt.fnClearTable();
+                    dt.fnAddData(data);
+                    dt.fnDraw();
 
                 } // 'complete' event handler
 
