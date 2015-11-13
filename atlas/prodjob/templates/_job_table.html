@@ -53,8 +53,18 @@
         <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
+           <tr>
+           <th>JobID</th>
+           <th>TaskID</th>
+           <th>Status</th>
+           </tr>
            </thead>
            <tfoot>
+           <tr>
+           <th>JobID</th>
+           <th>TaskID</th>
+           <th>Status</th>
+           </tr>
            </tfoot>
         </table>
 
@@ -84,19 +94,19 @@
 
         $(document).ready(function() {
 
-            //$('#example tfoot th').each( function () {
-            //        var title = $(this).text();
-            //        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
-            //    } );
+            $('#example tfoot th').each( function () {
+                    var title = $(this).text();
+                    $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+                } );
 
 
 	        var table = $('#example').DataTable({
                         "bProcessing" : true,
-                        columns : [
-                                {"sTitle" : "JobID" },
-                                {"sTitle" : "TaskID" },
-                                {"sTitle" : "Job Status" }
-                        ],
+                        //columns : [
+                        //        {"sTitle" : "JobID" },
+                        //        {"sTitle" : "TaskID" },
+                        //        {"sTitle" : "Job Status" }
+                        //],
                         dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "os",
@@ -108,15 +118,13 @@
                     });
 
 
-        $('#example thead th').each( function () {
-                    var title = $('#example thead th').eq( $(this).index() ).text();
-                    $(this).html( title + '<input type="text" placeholder="Search '+title+'" />' );
-        } );
+
 
         table.columns().every( function () {
+
                         var column = this;
 
-                        $( 'input', this.header() ).on( 'keyup change', function () {
+                        $( 'input', this.footer() ).on( 'keyup change', function () {
                                 //console.log(column.data());
                                 column.search( this.value ).draw();
 
