@@ -53,9 +53,9 @@
         <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
-
-
            </thead>
+           <tfoot>
+           </tfoot>
         </table>
 
 
@@ -83,7 +83,14 @@
         });
 
         $(document).ready(function() {
-	        $('#example').dataTable({
+
+            //$('#example tfoot th').each( function () {
+            //        var title = $(this).text();
+            //        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+            //    } );
+
+
+	        var table = $('#example').DataTable({
                         "bProcessing" : true,
                         columns : [
                                 {"sTitle" : "JobID" },
@@ -95,15 +102,31 @@
                             "sRowSelect": "os",
                             "aButtons": [ "select_all", "select_none" ]
                         }
+                        //fnInitComplete : function() {
+                        //    $("thead tr").clone().appendTo($("tfoot")) ;
+                        //}
                     });
 
-            //$('#example').dataTable().fnProcessingIndicator();
-            //$(".dataTables_processing").css('visibility','visible');
 
+        $('#example thead th').each( function () {
+                    var title = $('#example thead th').eq( $(this).index() ).text();
+                    $(this).html( title + '<input type="text" placeholder="Search '+title+'" />' );
         } );
 
+        table.columns().every( function () {
+                        var column = this;
+
+                        $( 'input', this.header() ).on( 'keyup change', function () {
+                                //console.log(column.data());
+                                column.search( this.value ).draw();
+
+                        } );
+        } );
+
+
         $('#example tbody').on( 'click', 'tr', function () {
-                $(this).toggleClass('selected');
+                //$(this).toggleClass('selected');
+                $(this).toggleClass('active');
             } );
 
         $("#btn_find_jobs").click(function(){
@@ -136,13 +159,33 @@
                     oTable.fnAddData(data);
                     oTable.fnDraw();
 
+
                     $('#example').dataTable().fnProcessingIndicator(false);
+
+
+
+                    //console.log(oTable.api().columns(2).search( 'failed' ).data()[0]);
+
+
+
+                    //oTable.api().columns(2).search( columns(2).footer().value ).draw();
+
+
                 } // 'complete' event handler
 
             });
+
+                    // Apply the search
+
+            //$('#example').dataTable().fnProcessingIndicator();
+            //$(".dataTables_processing").css('visibility','visible');
+
+        } );
             //$(".dataTables_processing").css('visibility','hidden');
 
         } );
+
+
 
         $("#btn_handle_jobs").click(function(){
 
