@@ -110,7 +110,19 @@
                         dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "os",
-                            "aButtons": [ "select_all", "select_none" ]
+                            "aButtons": [
+                                            "select_all",
+                                            {
+                                                "sExtends":    "select",
+                                                "sButtonText": "Select Filtered",
+                                                "fnClick": function (nButton, oConfig, oFlash) {
+                                                                        var oTT = TableTools.fnGetInstance('example');
+                                                                        oTT.fnSelectAll(true); //True = Select only filtered rows (true). Optional - default false.
+                                                                        }
+                                            },
+                                            "select_none"
+                                        ]
+ //                           "aButtons": [ "select_all", "select_none" ]
                         }
                         //fnInitComplete : function() {
                         //    $("thead tr").clone().appendTo($("tfoot")) ;
