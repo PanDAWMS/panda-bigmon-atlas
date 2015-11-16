@@ -31,7 +31,7 @@ def get_jobs(request):
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
     #data = json.loads(resp.text);
-    data = resp.json();
+    data = resp.json()['jobs'];
 
     jlist = [];
     for job in data:
