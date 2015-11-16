@@ -30,13 +30,11 @@ def get_jobs(request):
 
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
-
     #data = json.loads(resp.text);
-    data = resp.json()['jobs'];
+    data = resp.json();
 
     jlist = [];
     for job in data:
-
         jlist.append([job['pandaid'],job['taskid'],job['jobstatus']])
 
     return HttpResponse(json.dumps(jlist))

@@ -3,65 +3,37 @@
 {% load static from staticfiles %}
 {% load js %}
 
-
 {% block extra_css %}
 {{ block.super }}
 
 {%  django_js %}
 
-
 {% endblock %}
 {% block body %}
 
-<!--
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/dataTables.foundation.min.css">
 <link rel="stylesheet" type="text/css" href="http://datatables.net/release-datatables/extensions/TableTools/css/dataTables.tableTools.css">
--->
 
 <style type="text/css">
-
-    @import "{% static "css/dataTables.tableTools.css" %}";
-    @import "{% static "css/dataTables.foundation.min.css" %}";
-    @import "{% static "css/jquery.dataTables.min.css" %}";
-
     .dataTables_wrapper .dataTables_paginate .paginate_button {padding: 0em 0em;}
 
-
 </style>
-
-
 <!--
     <link href="http://cdn.datatables.net/1.10.6/css/jquery.dataTables.css" rel="stylesheet">
 
     <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
     <script src="http://cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
 -->
-<!--
     <script src="http://datatables.net/release-datatables/media/js/jquery.js"></script>
     <script src="http://datatables.net/release-datatables/media/js/jquery.dataTables.js"></script>
     <script src="https://cdn.datatables.net/1.10.10/js/dataTables.foundation.min.js"></script>
     <script src="http://datatables.net/release-datatables/extensions/TableTools/js/dataTables.tableTools.js"></script>
     <script src="http://cdn.datatables.net/plug-ins/1.10.10/api/fnProcessingIndicator.js"></script>
 
+
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script src="http://lab.alexcican.com/set_cookies/cookie.js" type="text/javascript"></script>
--->
-
-    <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/cookie-1.4.0.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
-
-
-
-
-
-
-
 
 
 
@@ -186,7 +158,6 @@
 
             var ajaxUrl =  Django.url('prodjob:get_jobs');
             $('#example').dataTable().fnProcessingIndicator();
-
             $.ajax({
                 url: ajaxUrl,
                 type: "POST",
