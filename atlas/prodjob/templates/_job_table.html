@@ -51,6 +51,8 @@
            <thead>
            <tr>
            <th>JobID</th>
+           <th>Attempt#</th>
+           <th>Owner</th>
            <th>TaskID</th>
            <th>Status</th>
            </tr>
@@ -58,6 +60,8 @@
            <tfoot>
            <tr>
            <th>JobID</th>
+           <th>Attempt#</th>
+           <th>Owner</th>
            <th>TaskID</th>
            <th>Status</th>
            </tr>
@@ -97,7 +101,7 @@
 
 
 	        var table = $('#example').DataTable({
-                        "bProcessing" : true,
+	                    "bProcessing" : true,
                         //columns : [
                         //        {"sTitle" : "JobID" },
                         //        {"sTitle" : "TaskID" },
@@ -119,7 +123,20 @@
                                             "select_none"
                                         ]
  //                           "aButtons": [ "select_all", "select_none" ]
-                        }
+                        },
+                        "aoColumnDefs": [ {
+                                            "aTargets": [4],
+                                            "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                                                if ( sData == "finished" ) {
+                                                    $(nTd).css('background-color', 'green')
+                                                } else if ( sData == "failed" ) {
+                                                    $(nTd).css('background-color', 'red')
+                                                } else if ( sData == "canceled" ) {
+                                                    $(nTd).css('background-color', 'orange')
+                                                }
+                                            }
+                        } ]
+
                         //fnInitComplete : function() {
                         //    $("thead tr").clone().appendTo($("tfoot")) ;
                         //}
@@ -215,7 +232,12 @@
                 url: ajaxUrl,
                 type: "POST",
                 data: $.toJSON(data),
-                dataType: "json"
+                dataType: "json",
+                complete: function (jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+
+
+                }
 
             });
 

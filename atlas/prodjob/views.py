@@ -18,7 +18,17 @@ def request_jobs(request):
 
 
 def jobs_action(request):
-    print request.body;
+    """
+
+    :type request: object
+    """
+    user = request.user.username
+
+    is_superuser = request.user.is_superuser
+    #print request.body
+    if not is_superuser:
+        return HttpResponse('Permission denied')
+
     return HttpResponse('OK')
 
 
@@ -35,6 +45,6 @@ def get_jobs(request):
 
     jlist = [];
     for job in data:
-        jlist.append([job['pandaid'],job['taskid'],job['jobstatus']])
+        jlist.append([job['pandaid'], job['attemptnr'], job['produsername'],job['taskid'],job['jobstatus']])
 
     return HttpResponse(json.dumps(jlist))
