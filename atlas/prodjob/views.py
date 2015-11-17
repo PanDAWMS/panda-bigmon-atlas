@@ -42,9 +42,12 @@ def get_jobs(request):
     resp = requests.get(url, headers=headers)
     #data = json.loads(resp.text);
     data = resp.json()['jobs'];
+    #print data;
+    #jdict = {data};
+    #jlist = [];
+    #for job in data:
+    #    jlist.append([ '', job['pandaid'], job['attemptnr'], job['produsername'], job["reqid"],
+    #                  job['taskid'], job['transformation'], job['jobstatus']])
 
-    jlist = [];
-    for job in data:
-        jlist.append([job['pandaid'], job['attemptnr'], job['produsername'],job['taskid'],job['jobstatus']])
-
-    return HttpResponse(json.dumps(jlist))
+    #return HttpResponse(json.dumps(jlist))
+    return HttpResponse(json.dumps(data))

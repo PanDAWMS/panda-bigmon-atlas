@@ -20,6 +20,14 @@
 
     .dataTables_wrapper .dataTables_paginate .paginate_button {padding: 0em 0em;}
 
+    td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_open.png') no-repeat center center;
+    cursor: pointer;
+    }
+    tr.shown td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_close.png') no-repeat center center;
+    }
+
 </style>
 
     <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>
@@ -50,19 +58,25 @@
 
            <thead>
            <tr>
+           <th></th>
            <th>JobID</th>
            <th>Attempt#</th>
            <th>Owner</th>
+           <th>RequestID</th>
            <th>TaskID</th>
+           <th>Transformation</th>
            <th>Status</th>
            </tr>
            </thead>
            <tfoot>
            <tr>
+           <th></th>
            <th>JobID</th>
            <th>Attempt#</th>
            <th>Owner</th>
+           <th>RequestID</th>
            <th>TaskID</th>
+           <th>Transformation</th>
            <th>Status</th>
            </tr>
            </tfoot>
@@ -92,21 +106,55 @@
             }
         });
 
+        /* Formatting function for row details - modify as you need */
+        function format ( d ) {
+        // `d` is the original data object for the row
+            return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
+            '<tr>'+
+                '<td>Job name:</td>'+
+                '<td>'+d.jobname+'</td>'+
+            '</tr>'+
+            '<tr>'+
+                '<td>Input Dataset :</td>'+
+                '<td>'+d.proddblock+'</td>'+
+            '</tr>'+
+            '<tr>'+
+                '<td>Output Dataset :</td>'+
+                '<td>'+d.destinationdblock+'</td>'+
+            '</tr>'+
+
+            '</table>';
+        }
+
+
+
         $(document).ready(function() {
 
             $('#example tfoot th').each( function () {
                     var title = $(this).text();
-                    $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+                    if( title !== '')
+                        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
                 } );
 
 
 	        var table = $('#example').DataTable({
 	                    "bProcessing" : true,
-                        //columns : [
-                        //        {"sTitle" : "JobID" },
-                        //        {"sTitle" : "TaskID" },
-                        //        {"sTitle" : "Job Status" }
-                        //],
+                        dataType : "json",
+                        columns : [
+                                {
+                                "className":      'details-control',
+                                "orderable":      false,
+                                "data":           null,
+                                "defaultContent": ''
+                                },
+                                {"data" : "pandaid" },
+                                {"data" : "attemptnr" },
+                                {"data" : "produsername" },
+                                {"data" : "reqid" },
+                                {"data" : "taskid" },
+                                {"data" : "transformation" },
+                                {"data" : "jobstatus" }
+                        ],
                         dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "os",
@@ -125,17 +173,22 @@
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
                         "aoColumnDefs": [ {
-                                            "aTargets": [4],
+                                            "aTargets": [7],
                                             "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
                                                 if ( sData == "finished" ) {
-                                                    $(nTd).css('background-color', 'green')
+                                                    $(nTd).css('color', 'green')
                                                 } else if ( sData == "failed" ) {
-                                                    $(nTd).css('background-color', 'red')
-                                                } else if ( sData == "canceled" ) {
-                                                    $(nTd).css('background-color', 'orange')
+                                                    $(nTd).css('color', 'red')
+                                                } else if ( $.inArray(sData , ["cancelled","throttled","sent","holding"]) !== -1) {
+                                                    $(nTd).css('color', 'orange')
+                                                } else if ( $.inArray(sData , ["starting","transferring","running"]) !== -1) {
+                                                    $(nTd).css('color', 'lightgreen')
+                                                } else if ( sData == "activated" ) {
+                                                    $(nTd).css('color', 'blue')
                                                 }
                                             }
-                        } ]
+                        } ],
+                        "order": [[1, 'asc']]
 
                         //fnInitComplete : function() {
                         //    $("thead tr").clone().appendTo($("tfoot")) ;
@@ -185,7 +238,10 @@
                 complete: function (jqXHR, textStatus) {
                     //alert(jqXHR.responseText);
                     //var data = jqXHR.responseText;
+
                     var data =  $.parseJSON(jqXHR.responseText);
+
+
 
                     var oTable = $('#example').dataTable();
                     oTable.fnClearTable();
@@ -216,6 +272,26 @@
         } );
             //$(".dataTables_processing").css('visibility','hidden');
 
+            // Add event listener for opening and closing details
+        $('#example tbody').on('click', 'td.details-control', function () {
+            var tr = $(this).closest('tr');
+            var row = table.row( tr );
+
+            if ( row.child.isShown() ) {
+            // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+            }
+            else {
+            // Open this row
+            row.child( format(row.data()) ).show();
+            tr.addClass('shown');
+            }
+            } );
+
+
+
+
         } );
 
 
@@ -242,6 +318,10 @@
             });
 
         }  );
+
+
+
+
 
 
 
