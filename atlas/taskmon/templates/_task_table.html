@@ -80,6 +80,7 @@
            <thead>
            <tr>
            <th></th>
+           <th>Task Name</th>
            <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
@@ -89,6 +90,7 @@
            <tfoot>
            <tr>
            <th></th>
+           <th>Task Name</th>
            <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
@@ -159,6 +161,10 @@
                                 "data":           null,
                                 "defaultContent": ''
                                 },
+                                {
+                                "data" : "name",
+                                "visible" : false
+                                },
                                 {"data" : "id" },
                                 {"data" : "username"},
                                 {"data" : "request_id" },
@@ -182,7 +188,7 @@
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
                         "aoColumnDefs": [ {
-                                            "aTargets": [4],
+                                            "aTargets": [5],
                                             "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
                                                 if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
                                                     $(nTd).css('color', 'green')
