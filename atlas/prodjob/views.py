@@ -14,7 +14,7 @@ from django.shortcuts import render
 
 
 def request_jobs(request):
-    return render(request, '_task_table.html')
+    return render(request, '_job_table.html')
 
 
 def jobs_action(request):
