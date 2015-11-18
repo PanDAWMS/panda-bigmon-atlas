@@ -40,16 +40,37 @@
 
 
 
-
+<!--
          <div class="small-6 large-6 columns">
             <input type="text" id="find_job">
          </div>
+-->
+        <table>
+
+            <tr>
+                <td>Request ID <= </td>
+                <td>
+                <input id="high_reqid" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>Request ID >= </td>
+                <td>
+                <input id="low_reqid" />
+            </td>
+            </tr>
+        <!--
+            <input type="text" id="low_reqid" aria-label="request">
+            <input type="text" id="high_reqid" aria-label="request">
+         -->
+
+
+        </table>
 
          <div class="small-3 large-3 columns">
-            <a class="button postfix" id="btn_find_jobs">Go</a>
+            <a class="button postfix" id="btn_find_tasks">Load</a>
          </div>
-
-
 <!--
 <input type="text" id="find_job">
 <a class="button postfix" id="btn_find_jobs">Go</a>
@@ -59,24 +80,18 @@
            <thead>
            <tr>
            <th></th>
-           <th>JobID</th>
-           <th>Attempt#</th>
+           <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
-           <th>TaskID</th>
-           <th>Transformation</th>
            <th>Status</th>
            </tr>
            </thead>
            <tfoot>
            <tr>
            <th></th>
-           <th>JobID</th>
-           <th>Attempt#</th>
+           <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
-           <th>TaskID</th>
-           <th>Transformation</th>
            <th>Status</th>
            </tr>
            </tfoot>
@@ -111,17 +126,14 @@
         // `d` is the original data object for the row
             return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
             '<tr>'+
-                '<td>Job name:</td>'+
-                '<td>'+d.jobname+'</td>'+
+                '<td>Task name:</td>'+
+                '<td>'+d.name+'</td>'+
             '</tr>'+
             '<tr>'+
                 '<td>Input Dataset :</td>'+
-                '<td>'+d.proddblock+'</td>'+
+                '<td>'+d.inputdataset+'</td>'+
             '</tr>'+
-            '<tr>'+
-                '<td>Output Dataset :</td>'+
-                '<td>'+d.destinationdblock+'</td>'+
-            '</tr>'+
+
 
             '</table>';
         }
@@ -148,11 +160,8 @@
                                 "defaultContent": ''
                                 },
                                 {"data" : "id" },
-                                {"data" : "attemptnr" },
-                                {"data" : "produsername" },
-                                {"data" : "reqid" },
-                                {"data" : "taskid" },
-                                {"data" : "transformation" },
+                                {"data" : "username"},
+                                {"data" : "request_id" },
                                 {"data" : "status" }
                         ],
                         dom: 'T<"clear">lftirp',
@@ -173,15 +182,15 @@
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
                         "aoColumnDefs": [ {
-                                            "aTargets": [7],
+                                            "aTargets": [4],
                                             "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
-                                                if ( sData == "finished" ) {
+                                                if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
                                                     $(nTd).css('color', 'green')
-                                                } else if ( sData == "failed" ) {
+                                                } else if ( $.inArray(sData , ["failed","broken","aborted"]) !== -1 ) {
                                                     $(nTd).css('color', 'red')
                                                 } else if ( $.inArray(sData , ["cancelled","throttled","sent","holding"]) !== -1) {
                                                     $(nTd).css('color', 'orange')
-                                                } else if ( $.inArray(sData , ["starting","transferring","running"]) !== -1) {
+                                                } else if ( $.inArray(sData , ["submitted","running"]) !== -1) {
                                                     $(nTd).css('color', 'lightgreen')
                                                 } else if ( sData == "activated" ) {
                                                     $(nTd).css('color', 'blue')
@@ -215,10 +224,14 @@
                 $(this).toggleClass('active');
             } );
 
-        $("#btn_find_jobs").click(function(){
+        $("#btn_find_tasks").click(function(){
 
 
-            var parameters = [$("#find_job").val()];
+            var low_reqid = [$("#low_reqid").val()];
+            var high_reqid = [$("#high_reqid").val()];
+
+            var parameters = {"low_reqid" : low_reqid[0], "high_reqid" : high_reqid[0]};
+
 
             if (parameters.length == 0) return;
 
@@ -303,7 +316,7 @@
             var table = $('#example').DataTable();
             var data = table.rows('.selected').data().toArray();
             alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('taskmon:jobs_action');
+            var ajaxUrl =  Django.url('taskmon:tasks_action');
 
             $.ajax({
                 url: ajaxUrl,

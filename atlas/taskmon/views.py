@@ -18,11 +18,12 @@ from django.shortcuts import render
 
 
 
-def request_jobs(request):
-    return render(request, '_job_table.html')
+def request_tasks(request):
+
+    return render(request, '_task_table.html')
 
 
-def jobs_action(request):
+def tasks_action(request):
     """
 
     :type request: object
@@ -38,8 +39,12 @@ def jobs_action(request):
 
 
 def get_tasks(request):
-    qs = ProductionTask.objects.filter(request__reqid=4296).values()
 
+    low_reqid = json.loads(request.body)["low_reqid"]
+    high_reqid = json.loads(request.body)["high_reqid"]
+    #reqid = json.loads(request.body)[0];
+    #qs = ProductionTask.objects.filter(request__reqid=reqid).values()
+    qs = ProductionTask.objects.filter(request__reqid__range=(low_reqid,high_reqid)).values()
     #data = serializers.serialize('json', qs)
 
     def decimal_default(obj):
@@ -53,19 +58,8 @@ def get_tasks(request):
         raise TypeError
 
     data = json.dumps(list(qs),default = decimal_default)
-    print "Here"
+
 
     #
-    #return HttpResponse(data)
-    return HttpResponse(json.dumps(data))
-    #    curl -H 'Accept: application/json' -H 'Content-Type: application/json' "http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861";
-    #url = 'http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861';
-
-    #url = json.loads(request.body)[0];
-
-    #headers = {'content-type': 'application/json', 'accept': 'application/json'};
-    #resp = requests.get(url, headers=headers)
-
-    #data = resp.json()['jobs'];
-
-    #return HttpResponse(json.dumps(data))
+    #
+    return HttpResponse(data)
