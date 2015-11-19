@@ -476,6 +476,7 @@
     function SetParametersToURL()
     {
         var time_period_all = 0;
+
         for(var i in parameters_list)
         {
             if ( time_period_all && ( parameters_list[i].name == 'time_to' || parameters_list[i].name == 'time_from' ) )
@@ -554,6 +555,7 @@
 
     function UpdateParametersFromURL()
     {
+    /*
         for(var i in parameters_list)
         {
             var value = $.address.parameter( parameters_list[i].name );
@@ -580,6 +582,7 @@
                 }
             }
         }
+    */
     }
 
     $( "#time_from" ).datepicker({
@@ -670,10 +673,10 @@ $(document).ready(function() {
     $("#update_task_table").click(function(){ taskTable.fnDraw(); });
 
     taskTable.one("draw", function(){ $.address.change(function(){ UpdateParametersFromURL(); taskTable.fnDraw(); }) });
-    
+
     for(var i in parameters_list)
         $('#'+parameters_list[i].id).click(function(){ $("#update_task_table").button( "enable" ); });
-    
+
     $(document).on('keyup', function(e) {
         //if (e.which == 13) {
         if (e.which == 14) {
