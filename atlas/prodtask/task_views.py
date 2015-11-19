@@ -402,11 +402,11 @@ class Parameters(datatables.Parametrized):
 
     def _task_status_Q(value):
         if value == 'active':
-            return Q( status__in=['done','finished','failed','broken','aborted'] ).__invert__()
+            return Q( status__in=['done','finished','failed','broken','aborted','obsolete'] ).__invert__()
         elif value == 'ended':
             return Q( status__in=['done','finished'] )
         elif value == 'regular':
-            return Q( status__in=['failed','broken','aborted'] ).__invert__()
+            return Q( status__in=['failed','broken','aborted','obsolete'] ).__invert__()
         elif value == 'irregular':
             return Q( status__in=['failed','broken','aborted'] )
         elif value:
