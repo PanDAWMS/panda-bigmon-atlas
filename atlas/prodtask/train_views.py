@@ -208,6 +208,9 @@ def check_slices_for_trains(request):
             input_dict = json.loads(data)
             slices = input_dict['slices']
             step_number = int(input_dict['step_number'])
+            is_mc = False
+            if step_number == -1:
+                is_mc = True
             production_request = input_dict['production_request']
             train_id = input_dict['train_id']
             if '-1' in slices:
@@ -222,7 +225,7 @@ def check_slices_for_trains(request):
                 existed_steps = StepExecution.objects.filter(request=req, slice=input_list)
                 # Check steps which already exist in slice, and change them if needed
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-                if step_number == -1:
+                if is_mc:
                     step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
                     if 'Fullsim' not in input_list.comment:
                         step_number = 8
