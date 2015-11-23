@@ -1399,3 +1399,11 @@ def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP')
                                       +str(duplicate)+','+str(downstream_tasks[duplicate][2])+'\n')
         output_file.close()
 
+
+def fix_wrong_parent(reqid):
+    steps = StepExecution.objects.filter(request=reqid)
+    for step in steps:
+        if step.step_parent.step_template.ctag[0] == 't':
+            new_step_parent = step.step_parent.step_parent
+            step.step_parent = new_step_parent
+            step.save()

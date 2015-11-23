@@ -573,7 +573,7 @@ def remove_input(good_slices, reqid):
 
 
 def fill_all_slices_from_0_slice(reqid):
-    slices = InputRequestList.objects.filter(request=reqid).order_by('slice')
+    slices = InputRequestList.objects.filter(request=reqid,is_hide=False).order_by('slice')
     steps_slice_0 = list(StepExecution.objects.filter(request = reqid,slice=slices[0]))
     steps_total_count = StepExecution.objects.filter(request = reqid).count()
     if len(steps_slice_0) == steps_total_count:
@@ -1329,7 +1329,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 cloned_slices = []
                 do_all = True
                 do_cloned_and_failed = False
-                if (input_list_count>800) and (not show_hidden) and ((cur_request.request_type == 'MC')or(cur_request.request_type == 'EVENTINDEX')):
+                if ((input_list_count>800) and (not show_hidden) and ((cur_request.request_type == 'MC')or(cur_request.request_type == 'EVENTINDEX'))) or \
+                        ((input_list_count>200)and(cur_request.request_type == 'MC')and('pMSSM' in cur_request.description)):
 
                     show_as_huge = True
                     do_all = False
