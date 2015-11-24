@@ -14,7 +14,7 @@ from django.shortcuts import render
 
 
 def request_jobs(request):
-    return render(request, '_job_table.html')
+    return render(request, 'prodjob/_job_table.html')
 
 
 def jobs_action(request):
@@ -25,7 +25,11 @@ def jobs_action(request):
     user = request.user.username
 
     is_superuser = request.user.is_superuser
-    #print request.body
+    jobs= json.loads(request.body);
+    #
+    for job in jobs:
+        print job['pandaid'];
+    #print jobs
     if not is_superuser:
         return HttpResponse('Permission denied')
 
