@@ -20,7 +20,7 @@ from django.shortcuts import render
 
 def request_tasks(request):
     #get_tasks(request);
-    return render(request, 'taskmon/_task_table.html')
+    return render(request, 'reqtask/_task_table.html')
 
 
 def tasks_action(request):

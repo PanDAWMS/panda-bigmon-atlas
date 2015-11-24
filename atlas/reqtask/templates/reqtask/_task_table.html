@@ -251,7 +251,7 @@
 
             //if (parameters.length == 0) return;
 
-            var ajaxUrl =  Django.url('taskmon:get_tasks');
+            var ajaxUrl =  Django.url('reqtask:get_tasks');
             $('#example').dataTable().fnProcessingIndicator();
             $.ajax({
                 url: ajaxUrl,
@@ -332,7 +332,7 @@
             var table = $('#example').DataTable();
             var data = table.rows('.selected').data().toArray();
             alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('taskmon:tasks_action');
+            var ajaxUrl =  Django.url('reqtask:tasks_action');
 
             $.ajax({
                 url: ajaxUrl,

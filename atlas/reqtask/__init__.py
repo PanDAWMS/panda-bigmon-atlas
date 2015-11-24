@@ -1,4 +1,4 @@
 """
-job ... here goes ProdSys2 UI core functionality, oriented around a job.
+task ... here goes ProdSys2 UI core functionality, oriented around a task.
 
 """
