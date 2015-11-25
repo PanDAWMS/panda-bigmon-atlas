@@ -109,10 +109,22 @@
            </tfoot>
         </table>
 
-
+<!--
          <div class="small-3 large-3 columns">
             <a class="button postfix" id="btn_handle_jobs">Action</a>
          </div>
+-->
+
+
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
+
+    <div class="left">
+
+        {% include "reqtask/_task_manage_panel.html" %}
+
+    </div>
 
 {% csrf_token %}
 

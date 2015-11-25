@@ -1,0 +1,187 @@
+
+<div id="management_panel">
+
+    <div class="button-group">
+
+
+        <div id="manage_buttons_group" class="button-bar">
+
+            <ul class="button-group radius">
+
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+
+                        class="small radio button"
+                        data-dropdown="kill_jobs_menu"
+
+                    >Kill jobs</a>
+                </li>
+
+
+        {% if not user.is_authenticated %}
+                <li><a class="small radio button success" id="_btn_login"
+                       href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+                    >Login</a></li>
+        {% endif %}
+
+            </ul>
+        </div>
+
+
+
+        <div id="kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <label> Kill jobs &nbsp;
+                                <span id="selected_data_kill_jobs"></span>
+                                </label>
+                            </div>
+                            <div class="small-6 large-6 columns">
+                                <a class="button postfix" id="btn_do_kill_jobs">Go</a>
+                            </div>
+                </div>
+
+            </div>
+
+
+
+         </div>
+
+               <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Jobs selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                </div>
+
+        </div>
+
+    </div>
+
+    <div class="bottom" id="request_status_container"></div>
+
+</div>
+
+
+
+
+
+<script type="text/javascript">
+
+
+
+
+$(document).ready(function () {
+    // Make management buttons the same size
+    {
+        var max_width = "0";
+        $("#manage_buttons_group").find('.button').each(function () {
+            max_width = Math.max($(this).width(), max_width);
+        });
+        $("#manage_buttons_group").find('.button').each(function () {
+            $(this).width(max_width);
+        });
+
+    }
+
+
+
+
+
+
+
+
+
+    {% if not user.is_authenticated %}
+        $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        // disable "disabled" buttons
+        $("a.button.disabled").click(function(event) {
+            event.stopImmediatePropagation();
+            return(false);
+        });
+    {% endif %}
+
+
+});
+
+    // Setting buttons handlers
+    var button_action_map = {
+        "kill_jobs": "kill_jobs"
+    };
+
+
+    $.each(button_action_map, function(name, action) {
+        $("#btn_do_" +name).click(function(){
+            $('[id$="_menu"]').hide(); // hide actions menus
+            doTasksActionSelected(button_action_map[name]);
+            //doTasksActionSelected( button_action_map[name] );
+            //$("#select_all_tasks").prop("checked", false); // un-check tasks after action
+            //$("#select_all_tasks").change();
+        }); // on click
+    }); // $.each
+
+
+    //$("#btn_do_kill_jobs").click(function(){
+
+    function doTasksActionSelected(action){
+
+
+            //console.log(action);
+            var table = $('#example').DataTable();
+            var data = table.rows('.selected').data().toArray();
+            //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
+            var ajaxUrl =  Django.url('prodjob:jobs_action');
+
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(data),
+                dataType: "json",
+                complete: function (jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+
+
+                }
+
+            });
+
+    };
+
+
+
+
+    $.each(button_action_map, function(name, action) {
+        $("#btn_" +name).click(function(){
+
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
+        var tasks_count = rowData.length;
+        $("[id^=selected_count_]").html( tasks_count);
+
+
+        }); // on click
+    }); // $.each
+
+
+    //    }  );
+    /*
+    $("#btn_kill_job").click(function(){
+
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
+        var jobs_count = rowData.length;
+        $("[id^=selected_count_]").html( jobs_count);
+        //var dataArr = [];
+        //$.each($(rowData),function(key,value){
+        //    dataArr.push(value["pandaid"]);
+        //});
+        //$("[id^=selected_data_]").html(dataArr.toString());
+    });
+    */
+
+</script>
+
