@@ -4,7 +4,8 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
-from .models import ProductionTask, MCPriority
+from .models import ProductionTask, MCPriority, ProductionDataset
+
 import atlas.deftcore.api.client as deft
 
 
@@ -75,8 +76,15 @@ def do_action(owner, task_id, action, *args):
     # TODO: add a check whether action is allowed for task in this state
 
     if action == 'delete_output':
+        output_datasets = ProductionDataset.objects.filter(task_id=task_id)
+        output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
+        if set(args).issubset(output_formats):
+        #OK
+            result.update(_do_deft_action(owner, task_id, action, args))
+        else:
+        #Exception
+            result['exception'] = "Task '%s' doesn't have %s" % (task_id, args)
         #_deft_client.clean_task_carriages(owner,task_id,args)
-        result.update(_do_deft_action(owner, task_id, action, args))
         return result
     if action in _deft_actions:
         result.update(_do_deft_action(owner, task_id, action, *args))
@@ -99,6 +107,7 @@ def _do_deft_action(owner, task_id, action, *args):
     :param args: additional arguments for the action (if needed)
     :return: dictionary with action execution details
     """
+    return
 
     result = dict(owner=owner, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
