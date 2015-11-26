@@ -504,6 +504,21 @@ class StepExecution(models.Model):
                 self.step_appr_time = timezone.now()
         self.save(*args, **kwargs)
 
+    def update_project_mode(self,token,value=None):
+        current_project_mode = ''
+        if self.get_task_config('project_mode'):
+            current_project_mode = self.get_task_config('project_mode')
+        tokens = []
+        for current_token in current_project_mode.split(';'):
+            if not current_token.startswith(token):
+                tokens.append(current_token)
+        if value:
+            tokens.append(token+'='+str(value))
+        else:
+            tokens.append(token)
+        new_project_mode = ';'.join(tokens)
+        self.set_task_config({'project_mode':new_project_mode})
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')

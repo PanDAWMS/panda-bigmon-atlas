@@ -1376,6 +1376,50 @@ def find_downstreams_by_task(task_id):
     return current_duplicates
 
 
+def create_skip_used_tag(task_id):
+    """
+    Create a new slice with step from task_id and skipFilesUsedBy set on it
+    :param task_id:
+    :return: new step id if success, exception otherwise
+    """
+    task = ProductionTask.objects.get(id=task_id)
+    slice = task.step.slice
+    if task.status != 'finished':
+        raise ValueError("only finished task can be restarted using skipFilesUsedBy")
+    if StepExecution.objects.filter(slice=slice).count() != 1:
+        raise ValueError("should be single step in a slice")
+    # Clone slice with step with original task
+    new_slice = clone_slices(task.request_id,task.request_id,[slice.slice],-1,False)[0]
+    # Change step skipFilesUsedBy in project mode
+    new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=task.request,slice=new_slice))
+    new_step.update_project_mode('skipFilesUsedBy',task_id)
+    new_step.save()
+    return new_step.id
+
+
+def task_clone_with_skip_used(task_id, user_name):
+    """
+    Clone step with finished task_id to a new slice and approve step and request.
+    :param task_id: task id
+    :param user_name: user name
+    :return: step id of the new step
+    """
+
+    step_id = create_skip_used_tag(task_id)
+    # Approve step
+    step = StepExecution.objects.get(id=step_id)
+    step.status = 'Approved'
+    step.save()
+    if step.request.cstatus not in ['approved']+ TRequest.TERMINATE_STATE:
+        set_request_status(user_name,step.request_id,'approved','Approve for ', 'Request was automatically extended')
+    return step_id
+
+
+
+def find_identical_step(step):
+    pass
+
+
 def bulk_obsolete_from_file(file_name):
     with open(file_name,'r') as input_file:
         tasks = (int(line.split(',')[0]) for line in input_file if line)
