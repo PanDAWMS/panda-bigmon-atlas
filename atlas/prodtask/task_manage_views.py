@@ -28,12 +28,18 @@ def do_tasks_action(owner, tasks, action, *args):
     if not tasks:
         return
 
-    result = []
+    result = {}
+
     for task in tasks:
         req_info = do_action(owner, task, action, *args)
-        result.append(req_info)
+        if req_info['exception']:
+            return req_info
+        result =req_info
+        #result.append(req_info)
+
 
     return result
+
 
 
 def _http_json_response(data):

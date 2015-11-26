@@ -83,7 +83,7 @@ def do_action(owner, task_id, action, *args):
             result.update(_do_deft_action(owner, task_id, action, args))
         else:
         #Exception
-            result['exception'] = "Task {0} doesn't have {1} formats:".format(task_id,args)
+            result['exception'] = "Task {0} doesn't have formats: {1}".format(task_id,args)
         #_deft_client.clean_task_carriages(owner,task_id,args)
         return result
     if action in _deft_actions:
