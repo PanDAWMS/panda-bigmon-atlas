@@ -446,7 +446,7 @@ def reopen_train(request, train_id):
 @login_required(login_url='/prodtask/login/')
 def pattern_train_list(request):
     if request.method == 'GET':
-        PATTEN_TYPES = ['mc_pattern','data_pattern']
+        PATTEN_TYPES = ['mc_pattern','data_pattern','mc_default_pattern']
         patterns = {}
         for pattern_type in PATTEN_TYPES:
             patterns_trains = TrainProduction.objects.filter(status=pattern_type).order_by('-id')
@@ -460,7 +460,8 @@ def pattern_train_list(request):
                 'active_app': 'prodtask',
                 'pre_form_text': 'Pattern for trains',
                  'patterns':[('MCPatterns','MC',patterns['mc_pattern']) ,
-                             ('DataPatterns','Real data',patterns['data_pattern'])] ,
+                             ('DataPatterns','Real data',patterns['data_pattern']),
+                             ('MCDefaultPatterns','Default for auto MC creation',patterns['mc_default_pattern'])] ,
                 'parent_template': 'prodtask/_index.html',
             })
 
@@ -473,7 +474,7 @@ def add_pattern_to_list(request):
             data = request.body
             input_dict = json.loads(data)
             pattern_request_id = input_dict['request_id']
-            pattern_type = {'MCPatterns':'mc_pattern','DataPatterns':'data_pattern'}[input_dict['pattern_type']]
+            pattern_type = {'MCPatterns':'mc_pattern','DataPatterns':'data_pattern','MCDefaultPatterns':'mc_default_pattern'}[input_dict['pattern_type']]
             if TrainProduction.objects.filter(status=pattern_type,pattern_request=int(pattern_request_id)).exists():
                 results = {'success':False,'message': "This pattern already exist"}
             else:
