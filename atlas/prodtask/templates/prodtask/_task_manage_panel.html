@@ -550,11 +550,27 @@ function doTasksAction(action, tasks, parameters) {
             var response = JSON.parse(jqXHR.responseText);
             request_done = true;
             if (textStatus == 'success') {
-                if (!response.exception || response.exception === "") {
-                    $("#req_status_text").html("Request status: Done");
-                } else {
-                    $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                if ($.isArray(response)){
+                    response.forEach(function(res) {
+                    //console.log(entry)
+                    if (!res.exception || res.exception === "") {
+                        $("#req_status_text").html("Request status: Done");
+                    } else {
+                        $('#req_status_text').append($('<li/>').html("Request status: Denied, reason: " + res.exception));
+                    }
+
+                    })
+
+
+                }else{
+
+                    if (!response.exception || response.exception === "") {
+                        $("#req_status_text").html("Request status: Done");
+                    } else {
+                        $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                    }
                 }
+
             } else {
                 request_error = true;
                 $("#req_status_text").html("Request status: '" + textStatus + "', details: '" + jqXHR.statusText + "'");
