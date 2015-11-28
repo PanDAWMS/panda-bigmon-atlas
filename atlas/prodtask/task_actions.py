@@ -107,7 +107,6 @@ def _do_deft_action(owner, task_id, action, *args):
     :param args: additional arguments for the action (if needed)
     :return: dictionary with action execution details
     """
-    return
 
     result = dict(owner=owner, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
