@@ -12,7 +12,7 @@ from ..prodtask.spdstodb import fill_template
 from ..prodtask.request_views import clone_slices
 from atlas.prodtask.views import set_request_status
 from ..prodtask.helper import form_request_log
-from ..prodtask.task_actions import do_action
+#from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
 
@@ -486,90 +486,90 @@ def add_request_comment(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,obsoleteOnly=True):
-    total = 0
-    total_steps = 0
-    total_tasks = 0
-    nothing = 0
-    alreadyObsolete = 0
-    obsolets = []
-    aborts = []
-    status_list = ['obsolete','aborted','broken','failed','submitting','submitted','assigning','registered','ready','running','finished','done']
-    for request_id in range(request_from,request_to):
-        try:
-            total1 = total
-            total_steps1 = total_steps
-            steps = StepExecution.objects.filter(request=request_id)
-            tasks = list(ProductionTask.objects.filter(request=request_id))
-            total_tasks +=  len(tasks)
-            tasks_by_step = {}
-            for task in tasks:
-                tasks_by_step[task.step_id] = tasks_by_step.get(task.step_id,[])+[task]
-
-            for current_step in steps:
-                input_dict = {}
-                if tasks_by_step.get(current_step.id,None):
-
-                    for current_task in tasks_by_step[current_step.id]:
-                        real_name = current_task.input_dataset[current_task.input_dataset.find(':')+1:]
-                        input_dict[real_name]=input_dict.get(real_name,[])+[current_task]
-                    # if len(input_dict.keys())>1:
-                    #     long_step += 1
-                    #     print 'check - ', current_step.id,input_dict[input_dict.keys()[0]][0].inputdataset
-                    for input_dataset in input_dict.keys():
-                        if len(input_dict[input_dataset])>1:
-                            total_steps += 1
-                            total += len(input_dict[input_dataset])
-                            dataset_to_stay = 0
-                            max_status_index = status_list.index(input_dict[input_dataset][0].status)
-                            #print '-'
-                            for index,ds in enumerate(input_dict[input_dataset][1:]):
-                                if status_list.index(ds.status) > max_status_index:
-                                    dataset_to_stay = index+1
-                                    max_status_index = status_list.index(ds.status)
-                            if input_dict[input_dataset][dataset_to_stay].status != 'done':
-                                print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id,input_dataset
-                            for index,ds in enumerate(input_dict[input_dataset]):
-
-                                if ds.status == 'obsolete':
-                                    if showObsolete:
-                                        print ds.output_dataset
-                                    alreadyObsolete += 1
-                                if index != dataset_to_stay:
-                                    if ds.status in ['obsolete','broken','failed','aborted']:
-                                        #print 'Do nothing:',ds.status,ds.id
-                                        nothing += 1
-                                        pass
-                                    elif ds.status in ['finished','done']:
-                                        print 'Obsolete:',ds.status,ds.id
-                                        obsolets.append(ds.id)
-                                        print dataset_to_stay,'-',[(x.status,x.id) for x in input_dict[input_dataset]]
-                                    else:
-                                        print 'Abort:',ds.status,ds.id
-                                        aborts.append(ds.id)
-
-                            #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
-#            print request_id, '-',len(tasks), (total-total1),(total_steps-total_steps1)
-
-        except Exception,e:
-            print e
-            pass
-    if (not checkMode):
-        #pass
-        for task_id in obsolets:
-            res = do_action('mborodin',task_id,'obsolete')
-        if not obsoleteOnly:
-            for task_id in aborts:
-                res = do_action('mborodin',str(task_id),'abort')
-                try:
-                    if res['status']['jedi_info']['status_code']!=0:
-                        print res
-                except:
-                    pass
-                print res
-                sleep(1)
-    print total_tasks,total_steps,total
-    print 'obsoletes:',len(obsolets),'abort:',len(aborts),'Already obsolete:',alreadyObsolete
+# def find_double_task(request_from,request_to,showObsolete=True,checkMode=True,obsoleteOnly=True):
+#     total = 0
+#     total_steps = 0
+#     total_tasks = 0
+#     nothing = 0
+#     alreadyObsolete = 0
+#     obsolets = []
+#     aborts = []
+#     status_list = ['obsolete','aborted','broken','failed','submitting','submitted','assigning','registered','ready','running','finished','done']
+#     for request_id in range(request_from,request_to):
+#         try:
+#             total1 = total
+#             total_steps1 = total_steps
+#             steps = StepExecution.objects.filter(request=request_id)
+#             tasks = list(ProductionTask.objects.filter(request=request_id))
+#             total_tasks +=  len(tasks)
+#             tasks_by_step = {}
+#             for task in tasks:
+#                 tasks_by_step[task.step_id] = tasks_by_step.get(task.step_id,[])+[task]
+#
+#             for current_step in steps:
+#                 input_dict = {}
+#                 if tasks_by_step.get(current_step.id,None):
+#
+#                     for current_task in tasks_by_step[current_step.id]:
+#                         real_name = current_task.input_dataset[current_task.input_dataset.find(':')+1:]
+#                         input_dict[real_name]=input_dict.get(real_name,[])+[current_task]
+#                     # if len(input_dict.keys())>1:
+#                     #     long_step += 1
+#                     #     print 'check - ', current_step.id,input_dict[input_dict.keys()[0]][0].inputdataset
+#                     for input_dataset in input_dict.keys():
+#                         if len(input_dict[input_dataset])>1:
+#                             total_steps += 1
+#                             total += len(input_dict[input_dataset])
+#                             dataset_to_stay = 0
+#                             max_status_index = status_list.index(input_dict[input_dataset][0].status)
+#                             #print '-'
+#                             for index,ds in enumerate(input_dict[input_dataset][1:]):
+#                                 if status_list.index(ds.status) > max_status_index:
+#                                     dataset_to_stay = index+1
+#                                     max_status_index = status_list.index(ds.status)
+#                             if input_dict[input_dataset][dataset_to_stay].status != 'done':
+#                                 print 'To stay:', input_dict[input_dataset][dataset_to_stay].status,input_dict[input_dataset][dataset_to_stay].id,input_dataset
+#                             for index,ds in enumerate(input_dict[input_dataset]):
+#
+#                                 if ds.status == 'obsolete':
+#                                     if showObsolete:
+#                                         print ds.output_dataset
+#                                     alreadyObsolete += 1
+#                                 if index != dataset_to_stay:
+#                                     if ds.status in ['obsolete','broken','failed','aborted']:
+#                                         #print 'Do nothing:',ds.status,ds.id
+#                                         nothing += 1
+#                                         pass
+#                                     elif ds.status in ['finished','done']:
+#                                         print 'Obsolete:',ds.status,ds.id
+#                                         obsolets.append(ds.id)
+#                                         print dataset_to_stay,'-',[(x.status,x.id) for x in input_dict[input_dataset]]
+#                                     else:
+#                                         print 'Abort:',ds.status,ds.id
+#                                         aborts.append(ds.id)
+#
+#                             #print current_step.id,'-',input_dataset,'-',len(input_dict[input_dataset]),[x.status for x in input_dict[input_dataset]]
+# #            print request_id, '-',len(tasks), (total-total1),(total_steps-total_steps1)
+#
+#         except Exception,e:
+#             print e
+#             pass
+#     if (not checkMode):
+#         #pass
+#         for task_id in obsolets:
+#             res = do_action('mborodin',task_id,'obsolete')
+#         if not obsoleteOnly:
+#             for task_id in aborts:
+#                 res = do_action('mborodin',str(task_id),'abort')
+#                 try:
+#                     if res['status']['jedi_info']['status_code']!=0:
+#                         print res
+#                 except:
+#                     pass
+#                 print res
+#                 sleep(1)
+#     print total_tasks,total_steps,total
+#     print 'obsoletes:',len(obsolets),'abort:',len(aborts),'Already obsolete:',alreadyObsolete
 
 
 

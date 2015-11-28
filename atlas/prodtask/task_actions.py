@@ -8,6 +8,8 @@ from .models import ProductionTask, MCPriority, ProductionDataset
 
 import atlas.deftcore.api.client as deft
 
+from ..prodtask.step_manage_views import task_clone_with_skip_used
+
 
 _deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
 
@@ -24,15 +26,16 @@ _deft_actions = {
     'change_cpu_time': 'change_task_cpu_time',
     'increase_attempt_number': 'increase_attempt_number',
     'abort_unfinished_jobs': 'abort_unfinished_jobs',
-    'delete_output' : 'clean_task_carriages',
-    'kill_job' : 'kill_job',
-    'obsolete' : 'obsolete_task',
+    'delete_output': 'clean_task_carriages',
+    'kill_job': 'kill_job',
+    'obsolete': 'obsolete_task',
 }
 
 supported_actions = _deft_actions.keys()
 # Non-DEFT actions here
 #supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 supported_actions.extend(['increase_priority', 'decrease_priority'])
+supported_actions.extend(['retry_new'])
 
 # Allowed task actions per status
 allowed_task_actions = {
@@ -42,9 +45,9 @@ allowed_task_actions = {
     'submitting': ['kill_job'],
     'ready': ['kill_job'],
     'running': ['kill_job'],
-    'exhausted': ['kill_job','retry'],
+    'exhausted': ['kill_job','retry','retry_new'],
     'done': ['obsolete', 'delete_output'],
-    'finished': ['retry', 'change_parameters', 'obsolete', 'delete_output'],
+    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output'],
     'broken': [],
     'failed': [],
 }
@@ -65,6 +68,7 @@ for _status in allowed_task_actions:
 
 
 def do_action(owner, task_id, action, *args):
+
     result = dict(owner=owner, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
@@ -94,6 +98,12 @@ def do_action(owner, task_id, action, *args):
         result.update(decrease_task_priority(owner, task_id, *args))
     #elif action == 'obsolete':
     #    result.update(obsolete_task(owner, task_id))
+    elif action == 'retry_new':
+        try:
+            step_id = task_clone_with_skip_used(task_id, owner)
+            result.update(dict(step_id=step_id))
+        except:
+            result['exception'] = "Can't retry task {0}".format(task_id)
 
     return result
 

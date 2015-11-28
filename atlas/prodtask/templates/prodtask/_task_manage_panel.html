@@ -177,19 +177,39 @@
         </div>
         {% endcomment %}
         <div id="task_retry_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns panel" id="retry_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Retry in the current tid dataset</label> </p>
+                            </div>
+                            <div class="small-3 columns">
+                                <a class="button postfix secondary" id="btn_do_retry">Go</a>
+                            </div>
+                </div>
+            </div>
+            <div class="small-12 large-12 columns panel" id="retry_panel_new">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Retry into a new tid dataset</label> </p>
+                            </div>
+                            <div class="small-3 columns">
+                                <a class="button postfix secondary" id="btn_do_retry_new">Go</a>
+                            </div>
+                </div>
+            </div>
+
             <div class="small-12 large-12 columns">
                 <div class="row">
                     <div class="small-9 large-9 columns">
-                        <label for="btn_do_retry" class="right inline bodyfont-color">
+                        <label>
                             Tasks selected:&nbsp;
                             <span id="selected_count_retry">0</span>
                         </label>
                     </div>
-                    <div class="small-3 columns">
-                        <a class="button postfix secondary" id="btn_do_retry">Go</a>
-                    </div>
+
                 </div>
             </div>
+
         </div>
         {% comment %}
         <div id="task_obsolete_menu" class="small content f-dropdown" data-dropdown-content>
@@ -661,12 +681,12 @@ $(document).ready(function () {
         "decrease_priority": "decrease_priority",
         "reassign_cloud": "reassign_to_cloud",
         "reassign_site": "reassign_to_site",
-        "retry": "retry",
+        "retry": "retry","retry_new": "retry_new",
         "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time", "set_cputime": "change_cpu_time",
         "increase_attempt": "increase_attempt_number",
         "kill_jobs": "abort_unfinished_jobs",
         "delete_output": "delete_output",
-        "kill_job": "kill_job",
+        "kill_job": "kill_job"
     };
 
     $.each(button_action_map, function(name, action) {
