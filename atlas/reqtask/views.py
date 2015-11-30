@@ -16,7 +16,7 @@ from django.shortcuts import render
 
 
 def request_tasks(request):
-    #get_tasks(request);
+
     return render(request, 'reqtask/_task_table.html')
 
 
@@ -35,23 +35,17 @@ def tasks_action(request):
     return HttpResponse('OK')
 
 
-def get_task_array():
-    task_array = [7090637,7090622,7090621,7090620,7090619]
+def get_task_array(request):
+
+    task_array=request.session['selected_tasks']
     return task_array
 
 
 def get_tasks(request):
 
-
-    #low_reqid = json.loads(request.body)["low_reqid"]
-    #high_reqid = json.loads(request.body)["high_reqid"]
-    #reqid = json.loads(request.body)[0];
-    #qs = ProductionTask.objects.filter(request__reqid=reqid).values()
-    task_array = get_task_array()
+    task_array = get_task_array(request)
 
     qs = ProductionTask.objects.filter(id__in=task_array).values()
-    #qs = ProductionTask.objects.filter(request__reqid__range=(low_reqid,high_reqid)).values()
-    #data = serializers.serialize('json', qs)
 
     def decimal_default(obj):
         if isinstance(obj, Decimal):
@@ -65,7 +59,4 @@ def get_tasks(request):
 
     data = json.dumps(list(qs),default = decimal_default)
 
-
-    #
-    #
     return HttpResponse(data)
