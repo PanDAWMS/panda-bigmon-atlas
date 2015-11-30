@@ -47,19 +47,22 @@ def retry_errors_list(request):
 @login_required(login_url='/prodtask/login/')
 def retry_errors_edit(request, retry_errors_id):
     if request.method == 'POST':
-        try:
-            values = RetryErrors.objects.get(id=retry_errors_id)
-            form = RetryErrorsForm(request.POST,instance=values)
-            if form.is_valid():
-                # Process the data in form.cleaned_data
-                _logger.info("update user:{user} old data:{old_data}".format(user=request.user.username,
-                                                                                         old_data=model_to_dict(values)))
-                retry_errors = RetryErrors(**form.cleaned_data)
-                retry_errors.save()
-                _logger.info("update user:{user} new data:{old_data}".format(user=request.user.username,
-                                                                                         old_data=model_to_dict(retry_errors)))
+        if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
+            try:
+                values = RetryErrors.objects.get(id=retry_errors_id)
+                form = RetryErrorsForm(request.POST,instance=values)
+                if form.is_valid():
+                    # Process the data in form.cleaned_data
+                    _logger.info("update user:{user} old data:{old_data}".format(user=request.user.username,
+                                                                                             old_data=model_to_dict(values)))
+                    retry_errors = RetryErrors(**form.cleaned_data)
+                    retry_errors.save()
+                    _logger.info("update user:{user} new data:{old_data}".format(user=request.user.username,
+                                                                                             old_data=model_to_dict(retry_errors)))
+                    return HttpResponseRedirect('/prodtask/retry_errors_list')
+            except:
                 return HttpResponseRedirect('/prodtask/retry_errors_list')
-        except:
+        else:
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
