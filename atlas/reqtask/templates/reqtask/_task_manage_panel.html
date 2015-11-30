@@ -515,6 +515,7 @@ $(document).ready(function () {
 
             $('[id$="_menu"]').hide(); // hide actions menus
             doTasksActionSelected(button_action_map[name]);
+            //$('#example').DataTable().rows().each.fnDeselect();
             //doTasksActionSelected( button_action_map[name] );
             //$("#select_all_tasks").prop("checked", false); // un-check tasks after action
             //$("#select_all_tasks").change();
@@ -559,6 +560,14 @@ $(document).ready(function () {
         $.each($(rowData),function(key,value){
             dataArr.push(value["id"]);
         });
+
+
+        //var oTT = TableTools.fnGetInstance( 'example' );
+        //var rows = table.rows('.selected').removeClass('active');
+        var oTT = TableTools.fnGetInstance( 'example' );
+        oTT.fnSelectNone();
+        //table.$('tr.active').removeClass('active');
+
 
         return dataArr;
 
@@ -619,7 +628,7 @@ $(document).ready(function () {
     // Perform specified action with given parameters on the list of tasks
     function doTasksAction(action, tasks, parameters) {
 
-        console.log(action,tasks.toString(),parameters.toString());
+        //console.log(action,tasks.toString(),parameters.toString());
 
     }
 
