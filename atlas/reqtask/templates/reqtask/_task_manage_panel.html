@@ -1,0 +1,665 @@
+
+<div id="management_panel">
+
+    <div class="button-group">
+
+                <li><a data-options="is_hover:true" id="btn_abort"
+
+                        data-dropdown="task_abort_menu"
+                        class="small radio button alert"
+
+                    >Abort</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_finish"
+
+                        data-dropdown="task_finish_menu"
+                        class="small radio button "
+
+                    >Finish</a>
+                </li>
+                {% comment %}
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+
+                        data-dropdown="task_kill_jobs_menu"
+                        class="small radio button"
+
+                    >Kill jobs</a>
+                </li>
+                {% endcomment %}
+                <li><a data-options="is_hover:true" id="btn_retry"
+
+                        data-dropdown="task_retry_menu"
+                        class="small radio button"
+
+                    >Retry</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_reassign"
+
+                        data-dropdown="task_reassign_menu"
+                        class="small radio button"
+
+                    >Reassign</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_change_parameters"
+
+                        class="small radio button"
+                        data-dropdown="task_change_parameters_menu"
+
+                    >Parameters</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_delete_output"
+
+                        class="small radio button"
+                        data-dropdown="task_obsolete_menu"
+
+                    >Obsolete</a>
+                </li>
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+
+                        class="small radio button"
+                        data-dropdown="task_kill_jobs_menu"
+
+                    >Kill jobs</a>
+                </li>
+
+        {% if edit_mode %}
+                <li><a class="small radio button secondary" id="_btn_switch_to_view">View&nbsp;mode</a></li>
+        {% endif %}
+
+
+        <div id="manage_buttons_group" class="button-bar">
+
+            <ul class="button-group radius">
+<!--
+                <li><a data-options="is_hover:true" id="btn_kill_jobs"
+
+                        class="small radio button"
+                        data-dropdown="kill_jobs_menu"
+
+                    >Kill jobs</a>
+                </li>
+-->
+
+        {% if not user.is_authenticated %}
+                <li><a class="small radio button success" id="_btn_login"
+                       href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+                    >Login</a></li>
+        {% endif %}
+
+            </ul>
+        </div>
+
+        <div id="task_abort_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_abort" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_abort">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_abort">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_finish_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row" title="Wait for running jobs">
+                    <div class="small-9 large-9 columns">
+                        <label class="right inline bodyfont-color">
+                            Soft finish
+                        </label>
+                        <p></p>
+                    </div>
+                    <div class="small-3 columns">
+                        <label class="left inline">
+                            <input type="checkbox" id="cbx_soft_finish" value="1">
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_finish" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_finish">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_finish">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_retry_menu" class="small content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns">
+                <div class="row">
+                    <div class="small-9 large-9 columns">
+                        <label for="btn_do_retry" class="right inline bodyfont-color">
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_retry">0</span>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <a class="button postfix secondary" id="btn_do_retry">Go</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_change_parameters_menu" class="medium content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns panel" id="priority_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <label for="new_priority" class="inline"> JEDI task priority </label>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_priority"placeholder="100-900">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_priority">Set</a>
+                    </div>
+
+                    <p> &nbsp; </p>
+                </div>
+
+                <div class="row">
+                    <div class="small-6 large-6 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_increase_priority">Increase priority level</a>
+                    </div>
+                    <div class="small-6 large-6 columns text-center bodyfont-color">
+                        <a class="button postfix" id="btn_do_decrease_priority">Decrease priority level</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-12 columns text-center bodyfont-color">
+                        <p> <label> If no level configured for the step, priority change delta is <i>20</i>. </label> </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="ramcount_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="new_ramcount" class="inline"> RAM count </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_ramcount" placeholder="RAM count">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_ramcount">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="walltime_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="new_walltime" class="inline"> Walltime </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_walltime" placeholder="Walltime">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_walltime">Set</a>
+                    </div>
+                </div>
+            </div>
+            <!-- CPU time -->
+            <div class="small-12 large-12 columns panel" id="cputime_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="new_cputime" class="inline"> CPUtime </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="new_cputime" placeholder="CPUtime">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_set_cputime">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="attempts_panel">
+                <div class="row">
+                    <div class="small-4 large-4 columns">
+                        <p> <label for="increase_attempt_num" class="inline"> Increase attempts </label> </p>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <input type="text" id="increase_attempt_num" placeholder="Increase by">
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <a class="button postfix" id="btn_do_increase_attempt">Set</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="small-12 columns text-center bodyfont-color">
+                    <label> Tasks selected:&nbsp; <span id="selected_count_params">0</span> </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="task_reassign_menu" class="medium content f-dropdown" data-dropdown-content>
+            <div class="small-12 large-12 columns bodyfont-color">
+                <div class="row">
+                    <div class="small-10 large-10 columns">
+                        <select name="cloud_select" id="cloud_select">
+                            <option value="" selected>Select cloud</option>
+                        {% for entry in clouds %}
+                            <option value="{{ entry }}">{{ entry }}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-2 large-2 columns">
+                        <a class="button postfix" id="btn_do_reassign_cloud">Go</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-10 large-10 columns text-center">
+                        <label> or </label>
+                    </div>
+                    <div class="small-10 large-10 columns">
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-10 large-10 columns">
+                        <select name="site_select" id="site_select" class="medium">
+                            <option value="" selected>Select site</option>
+                        {% for entry in sites %}
+                            <option value="{{ entry }}">{{ entry }}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-2 large-2 columns">
+                        <a class="button postfix" id="btn_do_reassign_site">Go</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_reassign">0</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="task_obsolete_menu" class="medium content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="all_outputs_panel">
+
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Obsoletion of done/finished tasks</label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_obsolete">Go</a>
+                            </div>
+                </div>
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="outputs_panel">
+
+                <div class="row">
+
+
+
+                      {% if  not outputs %}
+                            <div class="small-3 large-3 columns">
+
+                                <p> <label class="inline"> Obsolete output formats</label> </p>
+                            </div>
+                            <div class="small-6 large-6 columns">
+                                <input type="text" id="output">
+                            </div>
+
+                      {% else %}
+                            <div class="small-6 large-6 columns">
+                      <ul class="list-group checked-list-box" >
+
+                            {% for entry in outputs %}
+                            <div class="checkbox">
+                                <label><input type="checkbox" name="outputs" value="{{ entry }}">{{ entry }}</label>
+                            </div>
+                            {% endfor %}
+                      </ul>
+                            </div>
+                      {% endif %}
+
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_delete_output">Go</a>
+                            </div>
+                </div>
+
+
+            </div>
+
+                <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_obsolete">0</span>
+                        </label>
+                    </div>
+                </div>
+         </div>
+
+        </div>
+
+        <div id="task_kill_jobs_menu" class="medium content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Kill jobs</label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_kill_jobs">Go</a>
+                            </div>
+                </div>
+
+            </div>
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+
+
+
+                <div class="row">
+
+                    <div class="small-3 large-3 columns">
+                        <p> <label class="inline"> Kill job ID</label> </p>
+                    </div>
+                    <div class="small-6 large-6 columns">
+                        <input type="text" id="kill_job">
+                    </div>
+
+                    <div class="small-3 large-3 columns">
+                        <a class="button postfix" id="btn_do_kill_job">Go</a>
+                    </div>
+                </div>
+
+
+            </div>
+
+         </div>
+
+               <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Tasks selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                </div>
+
+        </div>
+<!--
+        <div id="task_kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <label> Kill jobs &nbsp;
+                                <span id="selected_data_kill_jobs"></span>
+                                </label>
+                            </div>
+                            <div class="small-6 large-6 columns">
+                                <a class="button postfix" id="btn_do_kill_jobs">Go</a>
+                            </div>
+                </div>
+
+            </div>
+
+
+
+         </div>
+
+               <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Jobs selected:&nbsp;
+                            <span id="selected_count_kill_jobs">0</span>
+                        </label>
+                    </div>
+                </div>
+
+        </div>
+-->
+    </div>
+
+    <div class="bottom" id="request_status_container"></div>
+
+</div>
+
+
+
+
+
+<script type="text/javascript">
+
+
+
+
+$(document).ready(function () {
+    // Make management buttons the same size
+    {
+        var max_width = "0";
+        $("#manage_buttons_group").find('.button').each(function () {
+            max_width = Math.max($(this).width(), max_width);
+        });
+        $("#manage_buttons_group").find('.button').each(function () {
+            $(this).width(max_width);
+        });
+
+    }
+
+
+
+
+
+
+
+
+
+    {% if not user.is_authenticated %}
+        $("#management_panel").find("[id^=btn_]").addClass("disabled");
+        // disable "disabled" buttons
+        $("a.button.disabled").click(function(event) {
+            event.stopImmediatePropagation();
+            return(false);
+        });
+    {% endif %}
+
+
+});
+
+    // Setting buttons handlers
+    var button_action_map = {
+
+        "reassign": "reassign",
+        "change_parameters": "change_parameters",
+        "abort": "abort",
+        "finish": "finish",
+        "obsolete": "obsolete",
+        "set_priority": "change_priority",
+        "increase_priority": "increase_priority",
+        "decrease_priority": "decrease_priority",
+        "reassign_cloud": "reassign_to_cloud",
+        "reassign_site": "reassign_to_site",
+        "retry": "retry",
+        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time", "set_cputime": "change_cpu_time",
+        "increase_attempt": "increase_attempt_number",
+        "kill_jobs": "abort_unfinished_jobs",
+        "delete_output": "delete_output",
+        "kill_job": "kill_job"
+    };
+
+
+    $.each(button_action_map, function(name, action) {
+        $("#btn_do_" +name).click(function(){
+
+            $('[id$="_menu"]').hide(); // hide actions menus
+            doTasksActionSelected(button_action_map[name]);
+            //$('#example').DataTable().rows().each.fnDeselect();
+            //doTasksActionSelected( button_action_map[name] );
+            //$("#select_all_tasks").prop("checked", false); // un-check tasks after action
+            //$("#select_all_tasks").change();
+        }); // on click
+    }); // $.each
+
+
+    //$("#btn_do_kill_jobs").click(function(){
+
+/*
+    function doTasksActionSelected(action){
+
+
+            //console.log(action);
+            var table = $('#example').DataTable();
+            var data = table.rows('.selected').data().toArray();
+            //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
+            var ajaxUrl =  Django.url('prodjob:jobs_action');
+
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(data),
+                dataType: "json",
+                complete: function (jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+
+
+                }
+
+            });
+
+    };
+
+*/
+    function getSelectedTasksList(){
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
+
+
+        var dataArr = [];
+        $.each($(rowData),function(key,value){
+            dataArr.push(value["id"]);
+        });
+
+
+        //var oTT = TableTools.fnGetInstance( 'example' );
+        //var rows = table.rows('.selected').removeClass('active');
+        var oTT = TableTools.fnGetInstance( 'example' );
+        oTT.fnSelectNone();
+        //table.$('tr.active').removeClass('active');
+
+
+        return dataArr;
+
+    }
+
+    // Perform action on the selected tasks
+    function doTasksActionSelected(action) {
+        var tasks = getSelectedTasksList();
+
+        if (tasks.length == 0) {
+            return;
+        }
+
+        var parameters = [];
+
+        // fill action parameters from inputs
+        if (action == "finish") {
+            parameters = [$("#cbx_soft_finish").attr("checked") ? 1 : 0];
+        } else if (action == "change_priority") {
+            parameters = [$("#new_priority").val()];
+        } else if (action == "reassign_to_site") {
+            parameters = [$("#site_select").val()];
+        } else if (action == "reassign_to_cloud") {
+            parameters = [$("#cloud_select").val()];
+        } else if ((action == 'increase_priority') || (action=='decrease_priority')) {
+            parameters = [20];
+        } else if (action == "change_ram_count") {
+            parameters = [$("#new_ramcount").val()];
+        } else if (action == "change_wall_time") {
+            parameters = [$("#new_walltime").val()];
+        } else if (action == "change_cpu_time") {
+            parameters = [$("#new_cputime").val()];
+        } else if (action == "increase_attempt_number") {
+            parameters = [$("#increase_attempt_num").val()];
+        } else if (action == "delete_output") {
+            var checkboxes = document.getElementsByName("outputs");
+            if (checkboxes.length==0){
+
+                parameters = $("#output").val().split(" ");
+            }
+            //console.log(checkboxes.length);
+            for (var i=0; i<checkboxes.length; i++) {
+                // And stick the checked ones onto an array...
+                if (checkboxes[i].checked) {
+                    parameters.push(checkboxes[i].value);
+                }
+            }
+        } else if (action == "kill_job") {
+            parameters = [$("#kill_job").val()];
+        }
+
+        tasks.sort();
+
+        doTasksAction(action, tasks, parameters);
+
+    } // doTasksActionSelected
+
+    // Perform specified action with given parameters on the list of tasks
+    function doTasksAction(action, tasks, parameters) {
+
+        //console.log(action,tasks.toString(),parameters.toString());
+
+    }
+
+    $.each(button_action_map, function(name, action) {
+        $("#btn_" +name).click(function(){
+
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
+        var tasks_count = rowData.length;
+        $("[id^=selected_count_]").html(tasks_count);
+
+
+        }); // on click
+    }); // $.each
+
+
+    //    }  );
+    /*
+    $("#btn_kill_job").click(function(){
+
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
+        var jobs_count = rowData.length;
+        $("[id^=selected_count_]").html( jobs_count);
+        //var dataArr = [];
+        //$.each($(rowData),function(key,value){
+        //    dataArr.push(value["pandaid"]);
+        //});
+        //$("[id^=selected_data_]").html(dataArr.toString());
+    });
+    */
+
+</script>
+

@@ -1,0 +1,376 @@
+{% extends "prodtask/_index.html" %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+
+{%  django_js %}
+
+{% endblock %}
+{% block body %}
+
+
+<style type="text/css">
+
+    @import "{% static "css/dataTables.tableTools.css" %}";
+    @import "{% static "css/dataTables.foundation.min.css" %}";
+    @import "{% static "css/jquery.dataTables.min.css" %}";
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {padding: 0em 0em;}
+
+    td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_open.png') no-repeat center center;
+    cursor: pointer;
+    }
+    tr.shown td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_close.png') no-repeat center center;
+    }
+
+</style>
+
+    <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/cookie-1.4.0.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+
+
+
+<!--
+         <div class="small-6 large-6 columns">
+            <input type="text" id="find_job">
+         </div>
+
+        <table>
+
+            <tr>
+                <td>Request ID <= </td>
+                <td>
+                <input id="high_reqid" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>Request ID >= </td>
+                <td>
+                <input id="low_reqid" />
+            </td>
+            </tr>
+
+
+
+
+            <input type="text" id="low_reqid" aria-label="request">
+            <input type="text" id="high_reqid" aria-label="request">
+
+
+
+        </table>
+-->
+
+<!--
+
+
+
+         <div class="small-3 large-3 columns">
+            <a class="button postfix" id="btn_find_tasks">Load</a>
+         </div>
+-->
+
+<!--
+<input type="text" id="find_job">
+<a class="button postfix" id="btn_find_jobs">Go</a>
+-->
+        <table id="example" class="display" cellspacing="0" width="100%">
+
+           <thead>
+           <tr>
+           <th></th>
+           <th>Task Name</th>
+           <th>TaskID</th>
+           <th>Owner</th>
+           <th>RequestID</th>
+           <th>Status</th>
+           </tr>
+           </thead>
+           <tfoot>
+           <tr>
+           <th></th>
+           <th>Task Name</th>
+           <th>TaskID</th>
+           <th>Owner</th>
+           <th>RequestID</th>
+           <th>Status</th>
+           </tr>
+           </tfoot>
+        </table>
+
+<!--
+         <div class="small-3 large-3 columns">
+            <a class="button postfix" id="btn_handle_jobs">Action</a>
+         </div>
+-->
+
+
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
+
+    <div class="left">
+
+        {% include "reqtask/_task_manage_panel.html" %}
+
+    </div>
+
+{% csrf_token %}
+
+
+    <script type="text/javascript" class="init">
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+                }
+            }
+        });
+
+        /* Formatting function for row details - modify as you need */
+        function format ( d ) {
+        // `d` is the original data object for the row
+            return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
+            '<tr>'+
+                '<td>Task name:</td>'+
+                '<td>'+d.name+'</td>'+
+            '</tr>'+
+            '<tr>'+
+                '<td>Input Dataset :</td>'+
+                '<td>'+d.inputdataset+'</td>'+
+            '</tr>'+
+
+
+            '</table>';
+        }
+
+
+
+        $(document).ready(function() {
+
+            $('#example tfoot th').each( function () {
+                    var title = $(this).text();
+                    if( title !== '')
+                        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+                } );
+
+
+	        var table = $('#example').DataTable({
+	                    "bProcessing" : true,
+                        dataType : "json",
+                        columns : [
+                                {
+                                "className":      'details-control',
+                                "orderable":      false,
+                                "data":           null,
+                                "defaultContent": ''
+                                },
+                                {
+                                "data" : "name",
+                                "visible" : false
+                                },
+                                {"data" : "id" },
+                                {"data" : "username"},
+                                {"data" : "request_id" },
+                                {"data" : "status" }
+                        ],
+                        dom: 'T<"clear">lftirp',
+                        tableTools: {
+                            "sRowSelect": "os",
+                            "aButtons": [
+                                            "select_all",
+                                            {
+                                                "sExtends":    "select",
+                                                "sButtonText": "Select Filtered",
+                                                "fnClick": function (nButton, oConfig, oFlash) {
+                                                                        var oTT = TableTools.fnGetInstance('example');
+                                                                        oTT.fnSelectAll(true); //True = Select only filtered rows (true). Optional - default false.
+                                                                        }
+                                            },
+                                            "select_none"
+                                        ]
+ //                           "aButtons": [ "select_all", "select_none" ]
+                        },
+                        "aoColumnDefs": [ {
+                                            "aTargets": [5],
+                                            "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                                                if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
+                                                    $(nTd).css('color', 'green')
+                                                } else if ( $.inArray(sData , ["failed","broken","aborted"]) !== -1 ) {
+                                                    $(nTd).css('color', 'red')
+                                                } else if ( $.inArray(sData , ["cancelled","throttled","sent","holding"]) !== -1) {
+                                                    $(nTd).css('color', 'orange')
+                                                } else if ( $.inArray(sData , ["submitted","running"]) !== -1) {
+                                                    $(nTd).css('color', 'lightgreen')
+                                                } else if ( sData == "activated" ) {
+                                                    $(nTd).css('color', 'blue')
+                                                }
+                                            }
+                        } ],
+                        "order": [[1, 'asc']]
+
+                        //fnInitComplete : function() {
+                        //    $("thead tr").clone().appendTo($("tfoot")) ;
+                        //}
+                    });
+
+
+
+
+        table.columns().every( function () {
+
+                        var column = this;
+
+                        $( 'input', this.footer() ).on( 'keyup change', function () {
+                                //console.log(column.data());
+                                column.search( this.value ).draw();
+
+                        } );
+        } );
+
+
+        $('#example tbody').on( 'click', 'tr', function () {
+                //$(this).toggleClass('selected');
+                $(this).toggleClass('active');
+            } );
+
+        //$("#btn_find_tasks").click(function(){
+        function find_tasks(){
+
+            //var low_reqid = [$("#low_reqid").val()];
+            //var high_reqid = [$("#high_reqid").val()];
+
+            //var parameters = {"low_reqid" : low_reqid[0], "high_reqid" : high_reqid[0]};
+            var parameters = {}
+
+            //if (parameters.length == 0) return;
+
+            var ajaxUrl =  Django.url('reqtask:get_tasks');
+            $('#example').dataTable().fnProcessingIndicator();
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(parameters),
+                dataType: "json",
+
+             //   success: function(){
+
+
+
+//                } // 'success' event handler
+                complete: function (jqXHR, textStatus) {
+
+                    //alert(jqXHR.responseText);
+                    //var data = jqXHR.responseText;
+
+                    var data =  $.parseJSON(jqXHR.responseText);
+
+
+
+                    var oTable = $('#example').dataTable();
+                    oTable.fnClearTable();
+                    oTable.fnAddData(data);
+                    oTable.fnDraw();
+
+
+                    $('#example').dataTable().fnProcessingIndicator(false);
+
+
+
+                    //console.log(oTable.api().columns(2).search( 'failed' ).data()[0]);
+
+
+
+                    //oTable.api().columns(2).search( columns(2).footer().value ).draw();
+
+
+                } // 'complete' event handler
+
+            });
+
+                    // Apply the search
+
+            //$('#example').dataTable().fnProcessingIndicator();
+            //$(".dataTables_processing").css('visibility','visible');
+        };
+        //} );
+            //$(".dataTables_processing").css('visibility','hidden');
+        find_tasks();
+            // Add event listener for opening and closing details
+        $('#example tbody').on('click', 'td.details-control', function () {
+            var tr = $(this).closest('tr');
+            var row = table.row( tr );
+
+            if ( row.child.isShown() ) {
+            // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+            }
+            else {
+            // Open this row
+            row.child( format(row.data()) ).show();
+            tr.addClass('shown');
+            }
+            } );
+
+
+
+
+        } );
+
+
+
+        $("#btn_handle_jobs").click(function(){
+
+
+            var table = $('#example').DataTable();
+            var data = table.rows('.selected').data().toArray();
+            alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
+            var ajaxUrl =  Django.url('reqtask:tasks_action');
+
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(data),
+                dataType: "json",
+                complete: function (jqXHR, textStatus) {
+                    alert(jqXHR.responseText);
+
+
+                }
+
+            });
+
+        }  );
+
+
+
+
+
+
+
+    </script>
+
+
+
+
+{% endblock %}
