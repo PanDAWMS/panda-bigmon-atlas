@@ -490,13 +490,23 @@ $(document).ready(function () {
 
     // Setting buttons handlers
     var button_action_map = {
-        "kill_jobs": "kill_jobs",
-        "delete_output": "delete_output",
+
         "reassign": "reassign",
-        "retry":"retry",
         "change_parameters": "change_parameters",
+        "abort": "abort",
         "finish": "finish",
-        "abort": "abort"
+        "obsolete": "obsolete",
+        "set_priority": "change_priority",
+        "increase_priority": "increase_priority",
+        "decrease_priority": "decrease_priority",
+        "reassign_cloud": "reassign_to_cloud",
+        "reassign_site": "reassign_to_site",
+        "retry": "retry",
+        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time", "set_cputime": "change_cpu_time",
+        "increase_attempt": "increase_attempt_number",
+        "kill_jobs": "abort_unfinished_jobs",
+        "delete_output": "delete_output",
+        "kill_job": "kill_job"
     };
 
 
@@ -514,6 +524,7 @@ $(document).ready(function () {
 
     //$("#btn_do_kill_jobs").click(function(){
 
+/*
     function doTasksActionSelected(action){
 
 
@@ -538,8 +549,79 @@ $(document).ready(function () {
 
     };
 
+*/
+    function getSelectedTasksList(){
+        var table = $('#example').DataTable();
+        var rowData = table.rows('.selected').data();
 
 
+        var dataArr = [];
+        $.each($(rowData),function(key,value){
+            dataArr.push(value["id"]);
+        });
+
+        return dataArr;
+
+    }
+
+    // Perform action on the selected tasks
+    function doTasksActionSelected(action) {
+        var tasks = getSelectedTasksList();
+
+        if (tasks.length == 0) {
+            return;
+        }
+
+        var parameters = [];
+
+        // fill action parameters from inputs
+        if (action == "finish") {
+            parameters = [$("#cbx_soft_finish").attr("checked") ? 1 : 0];
+        } else if (action == "change_priority") {
+            parameters = [$("#new_priority").val()];
+        } else if (action == "reassign_to_site") {
+            parameters = [$("#site_select").val()];
+        } else if (action == "reassign_to_cloud") {
+            parameters = [$("#cloud_select").val()];
+        } else if ((action == 'increase_priority') || (action=='decrease_priority')) {
+            parameters = [20];
+        } else if (action == "change_ram_count") {
+            parameters = [$("#new_ramcount").val()];
+        } else if (action == "change_wall_time") {
+            parameters = [$("#new_walltime").val()];
+        } else if (action == "change_cpu_time") {
+            parameters = [$("#new_cputime").val()];
+        } else if (action == "increase_attempt_number") {
+            parameters = [$("#increase_attempt_num").val()];
+        } else if (action == "delete_output") {
+            var checkboxes = document.getElementsByName("outputs");
+            if (checkboxes.length==0){
+
+                parameters = $("#output").val().split(" ");
+            }
+            //console.log(checkboxes.length);
+            for (var i=0; i<checkboxes.length; i++) {
+                // And stick the checked ones onto an array...
+                if (checkboxes[i].checked) {
+                    parameters.push(checkboxes[i].value);
+                }
+            }
+        } else if (action == "kill_job") {
+            parameters = [$("#kill_job").val()];
+        }
+
+        tasks.sort();
+
+        doTasksAction(action, tasks, parameters);
+
+    } // doTasksActionSelected
+
+    // Perform specified action with given parameters on the list of tasks
+    function doTasksAction(action, tasks, parameters) {
+
+        console.log(action,tasks.toString(),parameters.toString());
+
+    }
 
     $.each(button_action_map, function(name, action) {
         $("#btn_" +name).click(function(){

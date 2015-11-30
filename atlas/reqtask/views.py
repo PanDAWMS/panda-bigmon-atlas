@@ -15,9 +15,6 @@ from django.shortcuts import render
 # _logger = logging.getLogger('prodtaskwebui')
 
 
-
-
-
 def request_tasks(request):
     #get_tasks(request);
     return render(request, 'reqtask/_task_table.html')
