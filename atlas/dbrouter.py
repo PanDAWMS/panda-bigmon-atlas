@@ -21,6 +21,8 @@ class ProdMonDBRouter(object):
             return 'deft'
         if model._meta.app_label == 'dev':
             return 'dev_db_wr'
+        if model._meta.app_label == 'panda':
+            return 'panda_wr'
         return None
 
     def allow_relation(self, obj1, obj2, **hints):

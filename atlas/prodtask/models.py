@@ -328,9 +328,9 @@ class RetryAction(models.Model):
     def __str__(self):
         return "%i - %s" % (int(self.id), self.action_name)
     class Meta:
-        app_label = 'panda_dev'
+        app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = u"RETRYACTIONS"
+        db_table = u'"ATLAS_PANDA"."RETRYACTIONS"'
 
 
 class JediWorkQueue(models.Model):
@@ -345,9 +345,9 @@ class JediWorkQueue(models.Model):
         return "%i - %s" % (int(self.id), self.queue_name)
 
     class Meta:
-        app_label = 'panda_dev'
+        app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = u"JEDI_WORK_QUEUE"
+        db_table = u'"ATLAS_PANDA"."JEDI_WORK_QUEUE"'
 
 
 #   ID NUMBER(10, 0) NOT NULL
@@ -386,14 +386,13 @@ class RetryErrors(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('panda_dev',u'ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
+            self.id = prefetch_id('panda',u'ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
 
         super(RetryErrors, self).save(*args, **kwargs)
 
     class Meta:
-        app_label = 'panda_dev'
-        #db_table = u'T_INPUT_DATASET'
-        db_table = u"RETRYERRORS"
+        app_label = 'panda'
+        db_table = u'"ATLAS_PANDA"."RETRYERRORS"'
 
 
 class TrainProduction(models.Model):
