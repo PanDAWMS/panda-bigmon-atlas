@@ -551,6 +551,14 @@ $(document).ready(function () {
     };
 
 */
+
+    function makeAlertBox(content, box_id, text_id) {
+        return $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
+        .append( $( "<span/>", { id: text_id, html: content} ) )
+        .append( $( "<a/>", {href: "#", "class": "close", text: '×'} ) );
+    }
+
+
     function getSelectedTasksList(){
         var table = $('#example').DataTable();
         var rowData = table.rows('.selected').data();
