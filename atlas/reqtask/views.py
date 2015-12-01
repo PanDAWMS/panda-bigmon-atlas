@@ -4,7 +4,7 @@ from django.core import serializers
 from atlas.prodtask.models import ProductionTask
 # import logging
 # import os
-import simplejson
+
 from decimal import Decimal
 from datetime import datetime
 
@@ -38,6 +38,8 @@ def tasks_action(request):
 def get_task_array(request):
 
     task_array=request.session['selected_tasks']
+    del request.session['selected_tasks']
+
     return task_array
 
 
