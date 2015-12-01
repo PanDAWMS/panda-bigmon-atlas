@@ -17,18 +17,18 @@ from django.shortcuts import render
 
 def request_tasks(request, rid = None):
 
-    def decimal_default(obj):
-        if isinstance(obj, Decimal):
-            return int(obj)
-        raise TypeError
+    # def decimal_default(obj):
+    #     if isinstance(obj, Decimal):
+    #         return int(obj)
+    #     raise TypeError
+    #
+    # task_array = []
+    #
+    # if rid:
+    #     qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
+    #     task_array = [decimal_default( x.get('id')) for x in qs]
 
-    task_array = []
-
-    if rid:
-        qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
-        task_array = [decimal_default( x.get('id')) for x in qs]
-
-    return render(request, 'reqtask/_task_table.html',{'tasks':task_array})
+    return render(request, 'reqtask/_task_table.html',{'reqid':rid})
 
 
 def tasks_action(request):
@@ -48,25 +48,32 @@ def tasks_action(request):
 
 def get_task_array(request):
 
-    task_array = json.loads(request.body)
+    # task_array = json.loads(request.body)
+    #
+    # if len(task_array)==0:
+    #     try:
+    #         task_array=request.session['selected_tasks']
+    #         del request.session['selected_tasks']
+    #     except:
+    #         task_array=[]
 
-    if len(task_array)==0:
-        try:
-            task_array=request.session['selected_tasks']
-            del request.session['selected_tasks']
-        except:
-            task_array=[]
+    try:
+        task_array=request.session['selected_tasks']
+        del request.session['selected_tasks']
+    except:
+        task_array=[]
 
     return task_array
 
 
 def get_tasks(request):
 
-    task_array = json.loads(request.body)
-    task_array = get_task_array(request)
-
-    qs = ProductionTask.objects.filter(id__in=task_array).values()
-    #qs = ProductionTask.objects.filter(request__reqid = 5132).values()
+    reqid = json.loads(request.body)
+    if not reqid:
+        task_array = get_task_array(request)
+        qs = ProductionTask.objects.filter(id__in=task_array).values()
+    else:
+        qs = ProductionTask.objects.filter(request__reqid = reqid).values()
 
 
     def decimal_default(obj):

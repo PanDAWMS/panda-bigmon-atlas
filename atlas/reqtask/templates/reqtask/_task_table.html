@@ -256,8 +256,10 @@
         //$("#btn_find_tasks").click(function(){
         function find_tasks(){
 
-            var parameters = {{ tasks }}
-
+            var parameters = {}
+            {% if reqid %}
+            parameters = {{ reqid }}
+            {% endif %}
             //if (parameters.length == 0) return;
 
             var ajaxUrl =  Django.url('reqtask:get_tasks');
