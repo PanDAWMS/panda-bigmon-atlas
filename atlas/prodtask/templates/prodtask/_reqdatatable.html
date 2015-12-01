@@ -1584,6 +1584,32 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
               return false;
         };
 
+
+        function  showTasks(event){
+            event.preventDefault();
+            var sliceList=[];
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            $( "#waitingDialog" ).dialog();
+            $.ajax({
+                    url: Django.url('prodtask:form_tasks_from_slices',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sliceList),
+                    dataType: 'text',
+                    success: function(data,status) {
+                         $( "#waitingDialog" ).dialog('close');
+                        window.location.href = Django.url('reqtask:request_tasks');
+
+                    }
+                }
+            );
+        }
+
+
         function splitSlicesClick(event, splitNumber){
             event.preventDefault();
             var sliceList=[];
@@ -2723,7 +2749,10 @@ var lastChecked = true;
             <a class="button btn_is_authenticated" onclick="showBulkSliceModal(event);">Bulk slice modification</a>
 
         </div>
-        <div class="large-6 columns"></div>
+        <div class="large-3 columns">
+            <a class="button btn_is_authenticated" onclick="showTasks(event);">Manage tasks</a>
+        </div>
+        <div class="large-3 columns"></div>
     </div>
  </form>
 

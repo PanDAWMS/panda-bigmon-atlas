@@ -106,6 +106,9 @@ urlpatterns = patterns('',
     url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
 
+
+    url(r'^form_tasks_from_slices/(?P<request_id>\d+)/$', 'atlas.prodtask.step_manage_views.form_tasks_from_slices', name='form_tasks_from_slices'),
+    url(r'^test_tasks_from_slices/$', 'atlas.prodtask.step_manage_views.test_tasks_from_slices', name='test_tasks_from_slices'),
     url(r'^retry_slices/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.retry_slices', name='retry_slices'),
     url(r'^split_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_in_req', name='split_slices_in_req'),
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),

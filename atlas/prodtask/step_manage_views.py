@@ -1411,8 +1411,46 @@ def task_clone_with_skip_used(task_id, user_name):
     step.status = 'Approved'
     step.save()
     if step.request.cstatus not in ['approved']+ TRequest.TERMINATE_STATE:
-        set_request_status(user_name,step.request_id,'approved','Approve for ', 'Request was automatically extended')
+        set_request_status(user_name,step.request_id,'approved','Approve for skipUsed', 'Request was approved for skipUsed')
     return step_id
+
+
+@csrf_protect
+def test_tasks_from_slices(request):
+    results = {'success':False}
+    if request.method == 'POST':
+        try:
+            tasks = request.session['selected_tasks']
+            print tasks
+            results = {'success':True}
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@csrf_protect
+def form_tasks_from_slices(request,request_id):
+    results = {'success':False}
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            ordered_slices = map(int,slices)
+            tasks = []
+            for slice_number in ordered_slices:
+                steps = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request_id,slice=slice_number))
+                for step in steps:
+                    task_ids = list(ProductionTask.objects.filter(step=step).values_list('id',flat=True))
+                    if task_ids:
+                        tasks += map(int,task_ids)
+            request.session['selected_tasks'] = tasks
+            results = {'success':True}
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 
@@ -1431,14 +1469,15 @@ def bulk_obsolete_from_file(file_name):
             task.save()
             print task.name, task.status
 
-def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP'):
+def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP', start_request=0):
     with open(file_name,'r') as input_file:
         tasks = (int(line.split(',')[0]) for line in input_file if line)
         output_file = open(output_file_name,'w')
         for task_id in tasks:
             downstream_tasks  = find_downstreams_by_task(task_id)
             for duplicate in sorted(downstream_tasks):
-                if (downstream_tasks[duplicate][1] == provenance) and (downstream_tasks[duplicate][3] != 'obsolete'):
+                if ((downstream_tasks[duplicate][1] == provenance) and (downstream_tasks[duplicate][3] != 'obsolete')) \
+                        and (int(downstream_tasks[duplicate][2])>start_request):
                     output_file.write(str(task_id)+','+str(downstream_tasks[duplicate][0])+','
                                       +str(duplicate)+','+str(downstream_tasks[duplicate][2])+'\n')
         output_file.close()
