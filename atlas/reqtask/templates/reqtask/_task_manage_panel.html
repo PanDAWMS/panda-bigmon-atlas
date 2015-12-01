@@ -628,8 +628,67 @@ $(document).ready(function () {
     // Perform specified action with given parameters on the list of tasks
     function doTasksAction(action, tasks, parameters) {
 
-        //console.log(action,tasks.toString(),parameters.toString());
+        if (tasks.length == 0) {
+            return;
+        }
 
+        var postData = { 'tasks': tasks };
+
+        if (parameters.length !== 0) {
+            postData['parameters'] = parameters;
+        }
+
+        var ajaxUrl =  Django.url('prodtask:tasks_action', action);
+
+        $("#req_status_box").remove();
+        $("#request_status_container").append(
+            makeAlertBox("Request status: sending", "req_status_box", "req_status_text")
+        );
+
+        var request_error = false;
+        var request_done = false;
+
+        $.ajax({
+            url: ajaxUrl,
+            type: "POST",
+            data: $.toJSON(postData),
+            dataType: "json",
+            complete: function (jqXHR, textStatus) {
+                var response = JSON.parse(jqXHR.responseText);
+                request_done = true;
+                if (textStatus == 'success') {
+                    if ($.isArray(response)){
+                        response.forEach(function(res) {
+                        //console.log(entry)
+                        if (!res.exception || res.exception === "") {
+                            $("#req_status_text").html("Request status: Done");
+                        } else {
+                        $('#req_status_text').append($('<li/>').html("Request status: Denied, reason: " + res.exception));
+                        }
+
+                        })
+
+
+                    }else{
+
+                        if (!response.exception || response.exception === "") {
+                            $("#req_status_text").html("Request status: Done");
+                        } else {
+                            $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                        }
+                    }
+
+                } else {
+                    request_error = true;
+                    $("#req_status_text").html("Request status: '" + textStatus + "', details: '" + jqXHR.statusText + "'");
+                }
+            } // 'complete' event handler
+
+        });
+
+        if ( !(request_error && request_done) ) {
+            $("#req_status_text").html("Request status: accepted and is being processed");
+        }
     }
 
     $.each(button_action_map, function(name, action) {
