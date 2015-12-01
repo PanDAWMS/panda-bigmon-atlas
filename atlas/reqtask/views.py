@@ -15,9 +15,20 @@ from django.shortcuts import render
 # _logger = logging.getLogger('prodtaskwebui')
 
 
-def request_tasks(request):
+def request_tasks(request, rid = None):
 
-    return render(request, 'reqtask/_task_table.html')
+    def decimal_default(obj):
+        if isinstance(obj, Decimal):
+            return int(obj)
+        raise TypeError
+
+    task_array = []
+
+    if rid:
+        qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
+        task_array = [decimal_default( x.get('id')) for x in qs]
+
+    return render(request, 'reqtask/_task_table.html',{'tasks':task_array})
 
 
 def tasks_action(request):
@@ -37,17 +48,26 @@ def tasks_action(request):
 
 def get_task_array(request):
 
-    task_array=request.session['selected_tasks']
-    del request.session['selected_tasks']
+    task_array = json.loads(request.body)
+
+    if len(task_array)==0:
+        try:
+            task_array=request.session['selected_tasks']
+            del request.session['selected_tasks']
+        except:
+            task_array=[]
 
     return task_array
 
 
 def get_tasks(request):
 
+    task_array = json.loads(request.body)
     task_array = get_task_array(request)
 
     qs = ProductionTask.objects.filter(id__in=task_array).values()
+    #qs = ProductionTask.objects.filter(request__reqid = 5132).values()
+
 
     def decimal_default(obj):
         if isinstance(obj, Decimal):
@@ -58,6 +78,7 @@ def get_tasks(request):
             return obj.isoformat()
 
         raise TypeError
+
 
     data = json.dumps(list(qs),default = decimal_default)
 
