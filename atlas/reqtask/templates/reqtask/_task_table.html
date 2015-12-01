@@ -288,7 +288,9 @@
 
                     var oTable = $('#example').dataTable();
                     oTable.fnClearTable();
-                    oTable.fnAddData(data);
+                    if (data.length !== 0) {
+                        oTable.fnAddData(data);
+                    }
                     oTable.fnDraw();
 
 
