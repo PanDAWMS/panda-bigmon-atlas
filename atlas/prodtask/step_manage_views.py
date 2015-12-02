@@ -1439,14 +1439,10 @@ def form_tasks_from_slices(request,request_id):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             ordered_slices = map(int,slices)
-            tasks = []
-            for slice_number in ordered_slices:
-                steps = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request_id,slice=slice_number))
-                for step in steps:
-                    task_ids = list(ProductionTask.objects.filter(step=step).values_list('id',flat=True))
-                    if task_ids:
-                        tasks += map(int,task_ids)
-            request.session['selected_tasks'] = tasks
+            slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=ordered_slices).values_list('id',flat=True))
+            steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
+            task_ids = list(ProductionTask.objects.filter(step__in=steps).values_list('id',flat=True))
+            request.session['selected_tasks'] = map(int,task_ids)
             results = {'success':True}
         except Exception,e:
             pass
@@ -1464,10 +1460,11 @@ def bulk_obsolete_from_file(file_name):
         print timezone.now()
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
-            task.status='obsolete'
-            task.timestamp=timezone.now()
-            task.save()
-            print task.name, task.status
+            if task.status in ['finished','done']:
+                task.status='obsolete'
+                task.timestamp=timezone.now()
+                task.save()
+                print task.name, task.status
 
 def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP', start_request=0):
     with open(file_name,'r') as input_file:
