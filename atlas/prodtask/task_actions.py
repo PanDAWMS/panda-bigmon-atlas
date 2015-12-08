@@ -101,7 +101,7 @@ def do_action(owner, task_id, action, *args):
     elif action == 'retry_new':
         try:
             step_id = task_clone_with_skip_used(task_id, owner)
-            result.update(dict(step_id=step_id))
+            result.update(dict(step_id=int(step_id)))
         except:
             result['exception'] = "Can't retry task {0}".format(task_id)
 
