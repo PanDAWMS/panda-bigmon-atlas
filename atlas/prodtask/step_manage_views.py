@@ -1039,7 +1039,8 @@ def split_slice(reqid, slice_number, divider):
 
     """
 
-    def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number, output_dataset):
+    def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number,
+                               output_dataset, nEventsPerInputFile=None):
             new_slice = slice_to_split.values()[0]
             new_slice['slice'] = new_slice_number
             del new_slice['id']
@@ -1051,16 +1052,21 @@ def split_slice(reqid, slice_number, divider):
                 new_input_data.dataset = fill_dataset(output_dataset)
             new_input_data.save()
             parent = None
+            first_step = True
             for step_dict in ordered_existed_steps:
                 current_step = deepcopy(step_dict)
                 current_step.slice = new_input_data
                 if parent:
                     current_step.step_parent = parent
                 current_step.save()
-                if current_step.input_events == slice_to_split[0].input_events:
+                if first_step:
+                    first_step = False
                     current_step.input_events = new_input_data.input_events
+                    if nEventsPerInputFile:
+                        current_step.set_task_config({'nEventsPerInputFile':nEventsPerInputFile})
                     current_step.save()
                 if not parent:
+
                     current_step.step_parent = current_step
                     current_step.save()
                 parent = current_step
@@ -1071,12 +1077,14 @@ def split_slice(reqid, slice_number, divider):
     step_execs = StepExecution.objects.filter(slice=slice_to_split[0])
     ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
     output_dataset = ''
+    nEventsPerInputFile = None
     if existed_foreign_step:
         # get dataset from parent step
         task = ProductionTask.objects.get(step=existed_foreign_step)
         if task.status not in ['finished','done']:
             raise ValueError("Can't split slice - parent task should be finished" )
         output_dataset = task.output_dataset
+        nEventsPerInputFile = existed_foreign_step.get_task_config('nEventsPerJob')
     for step in ordered_existed_steps:
             step.id = None
             step.step_parent = step
@@ -1088,7 +1096,7 @@ def split_slice(reqid, slice_number, divider):
             if step_dict.status in StepExecution.STEPS_APPROVED_STATUS:
                 raise ValueError("Can't split slice step %s is approved" % str(step_dict.status))
         for i in range(int(slice_to_split[0].input_events) / int(divider)):
-            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset)
+            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset, nEventsPerInputFile)
             new_slice_number += 1
         if (slice_to_split[0].input_events % divider) != 0:
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
@@ -1487,3 +1495,36 @@ def fix_wrong_parent(reqid):
             new_step_parent = step.step_parent.step_parent
             step.step_parent = new_step_parent
             step.save()
+
+
+def find_retried(file_name):
+    with open(file_name,'r') as input_file:
+        tasks = (int(line.split(',')[0]) for line in input_file if line)
+        request_slices = {}
+
+        for task_id in tasks:
+            task = ProductionTask.objects.get(id=task_id)
+            if task.request_id not in request_slices:
+                request_slices[task.request_id] = []
+                current_slices = list(InputRequestList.objects.filter(request=task.request_id ))
+                for slice in current_slices:
+                    try:
+                        step = StepExecution.objects.get(slice=slice)
+                        project_mode = step.get_task_config('project_mode')
+                        if 'skipFilesUsedBy' in project_mode:
+                            request_slices[task.request_id].append({'id':slice.id,
+                                                                    'parent_task':int(project_mode[project_mode.find('skipFilesUsedBy')+len('skipFilesUsedBy='):project_mode.find('skipFilesUsedBy')+len('skipFilesUsedBy=')+7])})
+                    except:
+                        pass
+
+
+
+            print task_id,task.status,
+            slice_ids = [x['id'] for x in request_slices[task.request_id] if x['parent_task']==int(task_id)]
+            for slice_id in slice_ids:
+                try:
+                    child_task = ProductionTask.objects.get(step=StepExecution.objects.get(slice=slice_id))
+                    print int(child_task.id),child_task.status,
+                except:
+                    pass
+            print ''
