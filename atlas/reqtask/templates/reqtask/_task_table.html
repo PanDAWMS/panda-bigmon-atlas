@@ -95,6 +95,8 @@
            <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
+           <th>Step</th>
+           <th>Priority</th>
            <th>Status</th>
            </tr>
            </thead>
@@ -105,6 +107,8 @@
            <th>TaskID</th>
            <th>Owner</th>
            <th>RequestID</th>
+           <th>Step</th>
+           <th>Priority</th>
            <th>Status</th>
            </tr>
            </tfoot>
@@ -191,6 +195,11 @@
                                 {"data" : "id" },
                                 {"data" : "username"},
                                 {"data" : "request_id" },
+                                {
+                                "data" : "step_id",
+                                "visible" : false
+                                },
+                                {"data" : "priority" },
                                 {"data" : "status" }
                         ],
                         dom: 'T<"clear">lftirp',
@@ -210,8 +219,8 @@
                                         ]
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
-                        "aoColumnDefs": [ {
-                                            "aTargets": [5],
+                        "aoColumnDefs": [{
+                                            "aTargets": [7],
                                             "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
                                                 if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
                                                     $(nTd).css('color', 'green')
@@ -225,13 +234,26 @@
                                                     $(nTd).css('color', 'blue')
                                                 }
                                             }
-                        } ],
+                                        },
+                                        {
+                                            "aTargets": [2],
+                                            "mRender": function ( data, type, full ) {
+                                                return '<a href="'+Django.url('prodtask:task', data)+'">'+data+'</a>';
+                                            }
+                                        }
+
+                                        ],
+                        //"createdRow": function ( row, data, index ) {
+                        //            console.log("test");
+                        //            },
+
                         "order": [[1, 'asc']]
 
                         //fnInitComplete : function() {
                         //    $("thead tr").clone().appendTo($("tfoot")) ;
                         //}
                     });
+
 
 
 
@@ -246,6 +268,8 @@
 
                         } );
         } );
+
+
 
 
         $('#example tbody').on( 'click', 'tr', function () {
@@ -264,6 +288,7 @@
 
             var ajaxUrl =  Django.url('reqtask:get_tasks');
             $('#example').dataTable().fnProcessingIndicator();
+
             $.ajax({
                 url: ajaxUrl,
                 type: "POST",
