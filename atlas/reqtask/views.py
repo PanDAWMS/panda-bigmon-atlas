@@ -1,7 +1,7 @@
 import json
 import requests
 from django.core import serializers
-from atlas.prodtask.models import ProductionTask
+from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate
 # import logging
 # import os
 
@@ -76,6 +76,12 @@ def get_tasks(request):
         qs = ProductionTask.objects.filter(request__reqid = reqid).values()
 
 
+    for task in list(qs):
+        #print task["step_id"]
+        step_id = StepExecution.objects.filter(id = task["step_id"]).values("step_template_id").get()['step_template_id']
+        #print StepTemplate.objects.filter(id = step_id).values("step").get()['step']
+        task.update(dict(step_name=StepTemplate.objects.filter(id = step_id).values("step").get()['step'] ))
+
     def decimal_default(obj):
         if isinstance(obj, Decimal):
 
@@ -88,5 +94,7 @@ def get_tasks(request):
 
 
     data = json.dumps(list(qs),default = decimal_default)
+
+    #print list(qs)[0]
 
     return HttpResponse(data)

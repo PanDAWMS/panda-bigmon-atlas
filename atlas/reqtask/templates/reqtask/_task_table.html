@@ -156,12 +156,17 @@
             return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
             '<tr>'+
                 '<td>Task name:</td>'+
-                '<td>'+d.name+'</td>'+
+                '<td>'+ '<a href="'+Django.url('prodtask:task', d.id)+'">'+ d.name+ '</a>'+'</td>'+
             '</tr>'+
             '<tr>'+
                 '<td>Input Dataset :</td>'+
                 '<td>'+d.inputdataset+'</td>'+
             '</tr>'+
+            '<tr>'+
+                '<td>BigPanDA link :</td>'+
+                '<td>'+'<a href="http://bigpanda.cern.ch/task/'+ d.id+'/">'+"http://bigpanda.cern.ch/task/"+ d.id+'</a>'+'</td>'+
+            '</tr>'+
+
 
 
             '</table>';
@@ -196,8 +201,8 @@
                                 {"data" : "username"},
                                 {"data" : "request_id" },
                                 {
-                                "data" : "step_id",
-                                "visible" : false
+                                "data" : "step_name",
+                                "visible" : true
                                 },
                                 {"data" : "priority" },
                                 {"data" : "status" }
@@ -238,14 +243,15 @@
                                         {
                                             "aTargets": [2],
                                             "mRender": function ( data, type, full ) {
-                                                return '<a href="'+Django.url('prodtask:task', data)+'">'+data+'</a>';
+                                                //return '<a href="http://bigpanda.cern.ch/task/'+data+'/">'+data+'</a>'
+                                                return '<a href="'+Django.url('prodtask:task', data)+'">'+ data+ '</a>'
                                             }
                                         }
 
                                         ],
-                        //"createdRow": function ( row, data, index ) {
-                        //            console.log("test");
-                        //            },
+                        "rowCallback": function ( row, data, index ) {
+
+                                    },
 
                         "order": [[1, 'asc']]
 
@@ -268,6 +274,9 @@
 
                         } );
         } );
+
+
+
 
 
 
