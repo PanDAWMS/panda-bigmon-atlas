@@ -246,7 +246,17 @@
                                                 //return '<a href="http://bigpanda.cern.ch/task/'+data+'/">'+data+'</a>'
                                                 return '<a href="'+Django.url('prodtask:task', data)+'">'+ data+ '</a>'
                                             }
+                                        },
+                                        {
+                                            "aTargets": [4],
+                                            "mRender": function ( data, type, full ) {
+                                                return '<a href="'+Django.url('prodtask:input_list_approve', data)+'">'+data+'</a>'
+                                            }
                                         }
+
+
+
+
 
                                         ],
                         "rowCallback": function ( row, data, index ) {
