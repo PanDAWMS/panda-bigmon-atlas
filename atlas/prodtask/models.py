@@ -820,7 +820,7 @@ def get_default_project_mode_dict():
     default_dict = {
          'Evgen':'spacetoken=ATLASDATADISK',
          'Simul':'spacetoken=ATLASDATADISK',
-         'Merge':'spacetoken=ATLASMCTAPE',
+         'Merge':'spacetoken=ATLASDATADISK',
          'Digi':'Npileup=5;spacetoken=ATLASDATADISK',
          'Reco':'Npileup=5;spacetoken=ATLASDATADISK',
          'Rec Merge':'spacetoken=ATLASDATADISK',
