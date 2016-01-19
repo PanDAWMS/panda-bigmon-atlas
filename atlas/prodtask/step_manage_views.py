@@ -1199,7 +1199,8 @@ def get_offset_from_jedi(id):
     return offset
 
 def find_simul_duplicates():
-    simul_tasks = list(ProductionTask.objects.filter(Q( status__in=['done','finished'] )&Q(name__startswith='mc')&Q(name__contains='simul')).values('name','id','total_events','inputdataset', 'request_id'))
+    simul_tasks = list(ProductionTask.objects.filter(Q( status__in=['done','finished'] )&
+                                                     Q(provenance__exact='AP')&Q(name__startswith='mc')).values('name','id','total_events','inputdataset', 'request_id'))
     sorted_simul_tasks = sorted(simul_tasks, key=lambda x: x['name'])
     first=sorted_simul_tasks[0]
     result_list=[]
@@ -1241,6 +1242,76 @@ def find_simul_duplicates():
     print total_events
     print len(bad_list)
     print requests
+
+
+def find_simul_split_dupl():
+    tasks = list(ProductionTask.objects.filter(total_events__gt=1000000).filter(name__startswith='mc').filter(name__contains='simul'))
+    for task in tasks:
+        slice_event = task.step.input_events
+        if slice_event != -1:
+            if task.total_events > slice_event:
+                print task.id
+
+
+def find_all_mc_duplicates():
+    def with_without_scope(dataset_name):
+        if ':' in dataset_name:
+            return [dataset_name,dataset_name.split(':')[1]]
+        else:
+            return [dataset_name.split('.')[0]+":"+dataset_name,dataset_name]
+
+    simul_tasks = list(ProductionTask.objects.filter(Q( status__in=['done','finished'] )&
+                                                     Q(provenance__exact='AP')&~Q(name__contains='evgen')&Q(name__startswith='mc')).values('name','id','total_events','inputdataset', 'request_id'))
+    sorted_simul_tasks = sorted(simul_tasks, key=lambda x: x['name'])
+    first=sorted_simul_tasks[0]
+    same_name_list=[]
+    current_list=[]
+    for simul_task in sorted_simul_tasks[1:]:
+        if simul_task['name']==first['name']:
+            if current_list:
+                current_list+=[simul_task]
+            else:
+                current_list=[first,simul_task]
+        else:
+            if current_list:
+               same_name_list+=[current_list]
+               current_list=[]
+        first=simul_task
+
+    bad_list = []
+    task_id_list = []
+    for same_tasks in same_name_list:
+        is_container = False
+        is_dataset = False
+        input_datasets = []
+        requests_set = set()
+        for same_task in same_tasks:
+            requests_set.add(int(same_task['request_id']))
+            if '/' in same_task['inputdataset']:
+                is_container = True
+            else:
+                ttask = TTask.objects.get(id=same_task['id'])
+                current_input_dataset = ttask.input_dataset
+                current_input_datasets = with_without_scope(current_input_dataset)
+                if current_input_dataset not in input_datasets:
+                    input_datasets += current_input_datasets
+                else:
+                    is_dataset = True
+            if is_dataset and (len(requests_set)>1) and (max(requests_set)>1000):
+                bad_list.append(same_tasks)
+                break
+    #print bad_list
+    total_events = 0
+    requests = set()
+    for tasks in bad_list:
+        print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])
+        total_events += sum([x['total_events'] for x in tasks])
+        for task in tasks:
+            requests.add(task['request_id'])
+    print total_events
+    print len(bad_list)
+    print requests
+
 
 
 def find_evgen_duplicates():
@@ -1364,7 +1435,7 @@ def find_downstreams_by_task(task_id):
         task_input = task['inputdataset']
         #print task_input,'-',task['id']
         if 'py' not in task_input:
-            if ('/' in task_input) and (int(task['id'])>int(task_id)):
+            if ('/' in task_input) and (int(task['id'])>int(task_id)) and (task_name!=task['name']):
                 task_chains.append(int(task['id']))
                 current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 if (task['request_id'] != original_task.request_id) and (task['provenance']=='AP'):

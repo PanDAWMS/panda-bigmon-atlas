@@ -30,6 +30,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.messages',
     'django.contrib.admin',
     'django.contrib.admindocs',
+    'djcelery',
     'atlas.auth.voms',
 
     ### BigPanDAmon core
@@ -44,6 +45,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.prodtask',
     'atlas.prodjob',
     'atlas.reqtask',
+    'atlas.backend',
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.todoview',

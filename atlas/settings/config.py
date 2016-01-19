@@ -91,9 +91,9 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
-#    'atlas.auth.fake.backends.LoginAsBackend',
-    'atlas.auth.voms.backends.VomsBackend',
-    'shibsso.backends.ShibSSOBackend',
+    'atlas.auth.fake.backends.LoginAsBackend',
+#    'atlas.auth.voms.backends.VomsBackend',
+#    'shibsso.backends.ShibSSOBackend',
 )
 
 
@@ -111,5 +111,13 @@ META_GROUP = 'ADFS_GROUP'
 META_LASTNAME = 'ADFS_LASTNAME'
 META_USERNAME = 'ADFS_LOGIN'
 LOGIN_REDIRECT_URL = '/'
-
+SESSION_SAVE_EVERY_REQUEST=True
 #FAKE_LOGIN_AS_USER = 'username'
+
+
+# CELERY STUFF
+BROKER_URL = 'amqp://guest:guest@borodin-dev2.cern.ch//'
+CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
