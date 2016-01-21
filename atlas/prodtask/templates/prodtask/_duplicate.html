@@ -1,0 +1,85 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
+	</style>
+    <style>
+
+</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+
+
+<h4  id="deftProblem"> Scan finished on: {{ exec_time|date:"DATETIME_FORMAT" }}</h4>
+
+    <h5><a href="#APTasks">AP tasks</a></h5>
+    <h5><a href="#GPTasks">GP tasks</a></h5>
+
+
+<h4  id="APTasks">AP tasks:</h4>
+    <table class="ap">
+    <thead>
+    <tr>
+    <th>Name</th>
+    <th>Tasks ID</th>
+    <th>Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for tasks in ap_list %}
+        <tr>
+            <td>{{ tasks.name }}</td>
+            <td>
+                {%  for task in tasks.ids %}
+                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
+                {% endfor %}
+            </td>
+            <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+<h4  id="GPTasks">GP tasks:</h4>
+    <table class="gp">
+    <thead>
+    <tr>
+    <th>Name</th>
+    <th>Tasks ID</th>
+    <th>Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for tasks in gp_list %}
+        <tr>
+            <td>{{ tasks.name }}</td>
+            <td>
+                {%  for task in tasks.ids %}
+                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
+                {% endfor %}
+            </td>
+            <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+{% endblock %}

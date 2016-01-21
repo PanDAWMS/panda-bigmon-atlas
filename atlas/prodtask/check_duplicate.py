@@ -6,6 +6,7 @@ import datetime
 import pickle
 
 from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
 
 from django.views.decorators.csrf import csrf_protect
 from time import sleep
@@ -524,3 +525,26 @@ def check_duplication(days_delta):
 
 
 
+def make_default_duplicate_page(request):
+    #TODO: put to DB
+    if request.method == 'GET':
+        try:
+            ap_date = pickle.load(open('/data/ap_sorted.pkl','rb'))
+            gp_date = pickle.load(open('/data/gp_sorted.pkl','rb'))
+            exec_time = ap_date['execute_time']
+            ap_date['duplicate_list'].reverse()
+            gp_date['duplicate_list'].reverse()
+            ap_list = [{'ids':[y['id'] for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in ap_date['duplicate_list']]
+            gp_list = [{'ids':[y['id'] for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in gp_date['duplicate_list']]
+            return render(request, 'prodtask/_duplicate.html', {
+                        'active_app': 'mcprod',
+                        'parent_template': 'prodtask/_index.html',
+                        'ap_list': ap_list,
+                        'gp_list': gp_list,
+                        'exec_time': exec_time
+
+
+                     })
+        except Exception,e:
+            print e
+            return HttpResponseRedirect('/')
