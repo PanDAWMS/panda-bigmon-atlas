@@ -534,14 +534,16 @@ class StepExecution(models.Model):
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
+    __params = None
 
     @property
     def jedi_task_parameters(self):
-        try:
-            params = json.loads(self._jedi_task_parameters)
-        except:
-            return
-        return params
+        if not self.__params:
+            try:
+                self.__params = json.loads(self._jedi_task_parameters)
+            except:
+                return
+        return  self.__params
 
     @property
     def input_dataset(self):
