@@ -501,6 +501,7 @@ class StepExecution(models.Model):
         if self.status == 'Approved':
             if not self.step_appr_time:
                 self.step_appr_time = timezone.now()
+            self.post_approve_action()
         self.save(*args, **kwargs)
 
     def update_project_mode(self,token,value=None):
@@ -524,6 +525,12 @@ class StepExecution(models.Model):
         if not self.step_parent_id:
             self.step_parent_id = self.id
         super(StepExecution, self).save(*args, **kwargs)
+
+    def post_approve_action(self):
+        STARTING_REQUEST_ID = 5816
+        if (self.request_id > STARTING_REQUEST_ID) and (((self.request_id % 10) == 2) or ((self.request_id % 10) == 8)):
+            if 'cloud' not in self.get_task_config('project_mode'):
+                self.update_project_mode('cloud','WORLD')
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
