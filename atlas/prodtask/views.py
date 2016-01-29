@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from django.core.mail import send_mail
 from django.forms import model_to_dict
 import json
@@ -20,6 +21,7 @@ from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object
 
 from atlas.prodtask.spdstodb import fill_template
+from atlas.prodtask.tasks import test_percentage
 from ..prodtask.helper import form_request_log
 from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
@@ -513,6 +515,22 @@ def get_skipped_steps(production_request, slice):
             break
     return last_step_name, processed_tags, last_step
 
+
+@csrf_protect
+def start_test_status_bar(request):
+    celery_job = test_percentage.delay()
+    return HttpResponse(json.dumps({'job_id':celery_job.id}), content_type='application/json')
+
+
+@csrf_protect
+def test_status_bar(request,celery_job_id):
+    try:
+        print celery_job_id
+        celery_job = AsyncResult(celery_job_id)
+        print celery_job.result,celery_job.state
+    except Exception,e:
+        print e
+    return HttpResponse(json.dumps({'result':celery_job.result,'state':celery_job.state}), content_type='application/json')
 
 @csrf_protect
 def find_input_datasets(request, reqid):

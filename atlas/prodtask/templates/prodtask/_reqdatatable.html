@@ -1906,6 +1906,42 @@ function spreadAMI(that){
                         }
                   });
         }
+
+
+
+        function test_progress(jobID){
+            $.ajax({
+                        url: Django.url('prodtask:test_status_bar',jobID),
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'text',
+                        success: function(data,status) {
+                            var state = $.evalJSON(data).state;
+                            if((state=='PROGRESS')||(state=='PENDING')){
+                                $('#errorDialogMessage').html($.evalJSON(data).result);
+                               console.log($.evalJSON(data).result);
+                                setTimeout(test_progress(jobID),1000);
+
+                            }
+                        }
+                  });
+        }
+        function test_pb(event){
+            event.preventDefault();
+            $.ajax({
+                        url: "{% url 'prodtask:start_test_status_bar'  %}",
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $( "#problemDialog" ).dialog("open");
+                            var jobID =  $.evalJSON(data).job_id;
+                            console.log(jobID);
+                            test_progress(jobID);
+
+                        }
+                  });
+        }
         function checkParentTrain(){
             var sliceList = [];
              $('#errorTrainMessage').html('');
@@ -2721,6 +2757,7 @@ var lastChecked = true;
          <div class="large-1 columns">
 
              <button id="trainsSlices" class="btn_is_authorized" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
+             <button  class="btn_is_authorized" title="Create child trains" onclick="test_pb(event);">Test pb</button>
 
     </div>
     <div class="large-3 columns">

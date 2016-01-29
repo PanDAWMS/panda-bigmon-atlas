@@ -12,10 +12,10 @@ urlpatterns = patterns('',
 
     url(r'^step_template_table/$', 'atlas.prodtask.views.step_template_table', name='step_template_table'),
     url(r'^step_template/(?P<rid>\d+)/$', 'atlas.prodtask.views.step_template_details', name='step_template'),
-    
+
     url(r'^step_execution_table/$', 'atlas.prodtask.views.step_execution_table', name='step_execution_table'),
     url(r'^stepex/(?P<rid>\d+)/$', 'atlas.prodtask.views.stepex_details', name='step_execution'),
-    
+
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
     url(r'^input_list_approve_full/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve_full', name='input_list_approve_full'),
 
@@ -23,7 +23,7 @@ urlpatterns = patterns('',
 
     url(r'^production_dataset_table/$', 'atlas.prodtask.views.production_dataset_table',    name='production_dataset_table'),
     url(r'^production_dataset/(?P<name>.+)/$', 'atlas.prodtask.views.production_dataset_details',  name='production_dataset'),
-    
+
     url(r'^request_table/$',                'atlas.prodtask.request_views.request_table',   name='request_table'),
     url(r'^request/(?P<rid>\d+)/$',         'atlas.prodtask.request_views.request_details', name='request'),
     #url(r'^request_clone/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
@@ -75,7 +75,7 @@ urlpatterns = patterns('',
     url(r'^task_create/$',              'atlas.prodtask.task_views.task_create',        name='task_create'),
     url(r'^task_stat_by_req/(?P<rid>\d+)/$', 'atlas.prodtask.task_views.task_status_stat_by_request',        name='task_status_stat_by_request'),
 
-    
+
     url(r'^task_manage/$',              'atlas.prodtask.task_manage_views.task_manage', name='task_manage'),
     url(r'^task_manage/actions/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.tasks_action', name='tasks_action'),
     url(r'^task_manage/same_slice_tasks/$', 'atlas.prodtask.task_manage_views.get_same_slice_tasks', name='same_slice_tasks'),
@@ -92,6 +92,8 @@ urlpatterns = patterns('',
         name='make_request_fast'),
 
     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
+    url(r'^start_test_status_bar/$', 'atlas.prodtask.views.start_test_status_bar', name='start_test_status_bar'),
+    url(r'^test_status_bar/(?P<celery_job_id>[\w|\-]+)/$', 'atlas.prodtask.views.test_status_bar', name='test_status_bar'),
 
     url(r'^retry_errors_list/', 'atlas.prodtask.retryerros.retry_errors_list', name='retry_errors_list'),
     url(r'^retry_errors_edit/(?P<retry_errors_id>\d+)/$', 'atlas.prodtask.retryerros.retry_errors_edit', name='retry_errors_edit'),
