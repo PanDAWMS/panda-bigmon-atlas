@@ -5,8 +5,12 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse
-from atlas.prodtask.models import StepExecution
 
+from atlas.prodtask.check_duplicate import find_downstreams_by_task
+from atlas.prodtask.models import StepExecution
+import logging
+
+from atlas.reqtask.views import request_tasks
 from ..settings import defaultDatetimeFormat
 
 #import core.datatables as datatables
@@ -28,7 +32,19 @@ import time
 import json
 
 
+_logger = logging.getLogger('prodtaskwebui')
+
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
+
+
+def descent_tasks(request, task_id):
+    try:
+        child_tasks = find_downstreams_by_task(task_id)
+        request.session['selected_tasks'] = [int(task_id)] + [int(x['id']) for x in child_tasks]
+        return render(request, 'reqtask/_task_table.html',{'reqid':None,'title': 'Descent tasks for task %s'%str(task_id)})
+    except Exception,e:
+        _logger.error("Problem with retrieving descends tasks for %s: %s"%(str(task_id),str(e)))
+        return HttpResponseRedirect('/')
 
 def task_details(request, rid=None):
     if rid:

@@ -76,6 +76,7 @@ urlpatterns = patterns('',
     url(r'^task_create/$',              'atlas.prodtask.task_views.task_create',        name='task_create'),
     url(r'^task_stat_by_req/(?P<rid>\d+)/$', 'atlas.prodtask.task_views.task_status_stat_by_request',        name='task_status_stat_by_request'),
 
+    url(r'^descent_tasks/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.descent_tasks', name='descent_tasks'),
     
     url(r'^task_manage/$',              'atlas.prodtask.task_manage_views.task_manage', name='task_manage'),
     url(r'^task_manage/actions/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.tasks_action', name='tasks_action'),

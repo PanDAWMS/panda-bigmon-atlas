@@ -42,6 +42,7 @@
     <tr>
     <th>Name</th>
     <th>Tasks ID</th>
+    <th># Childs</th>
     <th>Date</th>
     </tr>
     </thead>
@@ -50,10 +51,15 @@
         <tr>
             <td>{{ tasks.name }}</td>
             <td>
-                {%  for task in tasks.ids %}
+                {%  for task,downstream in tasks.ids %}
                     <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
                 {% endfor %}
             </td>
+                <td>
+                    {%  for task,downstream in tasks.ids  %}
+                        <a href="{% url 'prodtask:descent_tasks' task%}">{{ downstream }}</a><s></s>
+                    {% endfor %}
+                </td>
             <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
         </tr>
     {% endfor %}
@@ -66,6 +72,8 @@
     <th>Name</th>
     <th>Tasks ID</th>
     <th>Date</th>
+
+
     </tr>
     </thead>
     <tbody>
@@ -77,6 +85,7 @@
                     <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
                 {% endfor %}
             </td>
+
             <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
         </tr>
     {% endfor %}
