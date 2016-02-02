@@ -2671,7 +2671,7 @@ var lastChecked = true;
             <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false);">Save</button>
             {% ifequal trequest.request_type "MC" %}
 {#                true#}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Approve</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Submit</button>
             {% else  %}
                 <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
 
@@ -3002,7 +3002,7 @@ var lastChecked = true;
         <div class="column large-3">
                     <label> Step:
                     <select id="chooseStepBulk" class="bulkSelect" >
-                    <option value=""selected >all</option>
+                    <option value="selected" >all</option>
                     {% for step in step_list %}
                             <option value="{{ step.name }}">{{ step.name }}</option>
                     {% endfor %}
