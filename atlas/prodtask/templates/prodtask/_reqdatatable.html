@@ -2702,7 +2702,11 @@ var lastChecked = true;
     </div>
     <div class="row">
                 <div class="large-4 columns">
-                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
+                    {% ifequal trequest.request_type "MC" %}
+                        <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</a>
+                    {% else  %}
+                         <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
+                    {% endifequal %}
                 </div>
 
                 <div class="large-1 columns">
