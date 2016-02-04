@@ -29,14 +29,40 @@
 
 {% block body %}
 
+<script>
 
-<h4  id="deftProblem"> Scan finished on: {{ exec_time|date:"DATETIME_FORMAT" }}</h4>
+ function changeValidFilter(){
+     if($('#validFilter').val()=='valid'){
+         $('.valid').hide();
+     }else{
+         $('.valid').show();
+     }
+ }
 
+</script>
+     <div class="row">
+        <h4  id="deftProblem"> Scan finished on: {{ exec_time|date:"DATETIME_FORMAT" }}</h4>
+    </div>
+     <div class="row">
     <h5><a href="#APTasks">AP tasks</a></h5>
-    <h5><a href="#GPTasks">GP tasks</a></h5>
-
-
-<h4  id="APTasks">AP tasks:</h4>
+     </div>
+    <div class="row">
+        <h5><a href="#GPTasks">GP tasks</a></h5>
+    </div>
+    <div class="row">
+        <h4  id="APTasks">AP tasks:</h4>
+    </div>
+    <div class="row">
+        <div class="large-2 column">
+            <label>
+                Filter:
+            <select id="validFilter" onchange="changeValidFilter();">
+                <option value="all">all</option>
+                <option value="valid">not valid</option>
+            </select>
+           </label>
+        </div>
+    </div>
     <table class="ap">
     <thead>
     <tr>
@@ -49,7 +75,7 @@
     </thead>
     <tbody>
     {%  for tasks in ap_list %}
-        <tr>
+        <tr class="{{ tasks.is_valid }}">
             <td>{{ tasks.name }}</td>
             <td>
                 {%  for task,downstream,type,total_events in tasks.ids %}

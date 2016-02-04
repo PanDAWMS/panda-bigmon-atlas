@@ -557,6 +557,11 @@ def make_default_duplicate_page(request):
             ap_date['duplicate_list'].reverse()
             gp_date['duplicate_list'].reverse()
             ap_list = [{'ids':[(y['id'],y['downstreams'],y['type'],y['total_events']) for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in ap_date['duplicate_list']]
+            for item in ap_list:
+                if 'valid' in item['name']:
+                    item['is_valid'] = 'valid'
+                else:
+                    item['is_valid'] = 'non_valid'
             gp_list = [{'ids':[y['id'] for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in gp_date['duplicate_list']]
             return render(request, 'prodtask/_duplicate.html', {
                         'active_app': 'mcprod',
