@@ -106,12 +106,14 @@ def  find_duplicates_all_db(same_name_list):
                 container_name2 = current_input_dataset.split('_tid')[0]
                 container_names += with_without_scope(container_name2)
                 dataset_ids.append(same_task['id'])
+                same_task['type'] = 'd'
             else:
                 if '/' in current_input_dataset:
                     current_input_datasets += with_without_scope(current_input_dataset[-1])
                 else:
                     current_input_datasets += with_without_scope(current_input_dataset+'/')
                 container_exist = True
+                same_task['type'] = 'c'
 
             if current_input_dataset not in input_datasets:
                 input_datasets += current_input_datasets
@@ -554,7 +556,7 @@ def make_default_duplicate_page(request):
             exec_time = ap_date['execute_time']
             ap_date['duplicate_list'].reverse()
             gp_date['duplicate_list'].reverse()
-            ap_list = [{'ids':[(y['id'],y['downstreams']) for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in ap_date['duplicate_list']]
+            ap_list = [{'ids':[(y['id'],y['downstreams'],y['type'],y['total_events']) for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in ap_date['duplicate_list']]
             gp_list = [{'ids':[y['id'] for y in x],'name':x[0]['name'],'date':max([y['timestamp'] for y in x])} for x in gp_date['duplicate_list']]
             return render(request, 'prodtask/_duplicate.html', {
                         'active_app': 'mcprod',
