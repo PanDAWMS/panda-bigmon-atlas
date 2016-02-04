@@ -71,16 +71,24 @@ def get_tasks(request):
     reqid = json.loads(request.body)
     if not reqid:
         task_array = get_task_array(request)
-        qs = ProductionTask.objects.filter(id__in=task_array).values()
+        #qs = ProductionTask.objects.filter(id__in=task_array).values()
+        qs = ProductionTask.objects.filter(id__in=task_array)
     else:
-        qs = ProductionTask.objects.filter(request__reqid = reqid).values()
+        #qs = ProductionTask.objects.filter(request__reqid = reqid).values()
+        qs = ProductionTask.objects.filter(request__reqid = reqid)
 
-
+    data_list = []
     for task in list(qs):
-        #print task["step_id"]
-        step_id = StepExecution.objects.filter(id = task["step_id"]).values("step_template_id").get()['step_template_id']
-        #print StepTemplate.objects.filter(id = step_id).values("step").get()['step']
-        task.update(dict(step_name=StepTemplate.objects.filter(id = step_id).values("step").get()['step'] ))
+        task_dict = task.__dict__
+        #step_id = StepExecution.objects.filter(id = task["step_id"]).values("step_template_id").get()['step_template_id']
+        step_id = StepExecution.objects.filter(id = task.step_id).values("step_template_id").get()['step_template_id']
+
+        #task.update(dict(step_name=StepTemplate.objects.filter(id = step_id).values("step").get()['step'] ))
+        task_dict.update(dict(step_name=StepTemplate.objects.filter(id = step_id).values("step").get()['step'] ))
+
+        task_dict.update(dict(failure_rate=task.failure_rate))
+        del task_dict['_state']
+        data_list.append(task_dict)
 
     def decimal_default(obj):
         if isinstance(obj, Decimal):
@@ -92,9 +100,9 @@ def get_tasks(request):
 
         raise TypeError
 
+    data= json.dumps(list(data_list),default = decimal_default)
+    #data = json.dumps(list(qs.values()),default = decimal_default)
+    #data = json.dumps(list(qs),default = decimal_default)
 
-    data = json.dumps(list(qs),default = decimal_default)
-
-    #print list(qs)[0]
 
     return HttpResponse(data)
