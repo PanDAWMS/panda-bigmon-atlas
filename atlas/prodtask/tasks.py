@@ -4,21 +4,21 @@ from celery import shared_task, current_task
 
 from atlas.backend.celery import app
 from atlas.prodtask.models import TRequest
+from atlas.prodtask.slice_manage import form_skipped_slice
 
 
-#
-# @app.task(bind=True)
-# def find_input_datasets_task(self,slices,reqid):
-#     slice_dataset_dict = {}
-#     for i,slice_number in enumerate(slices):
-#         try:
-#             slice_dataset_dict.update(form_skipped_slice(slice_number,reqid))
-#             if not self.request.called_directly:
-#                 self.update_state(state='PROGRESS',
-#                     meta={'current': i, 'total': len(slices)})
-#         except Exception,e:
-#             pass
-#     return slice_dataset_dict
+@shared_task
+def find_input_datasets_task(slices,reqid):
+    slice_dataset_dict = {}
+    for i,slice_number in enumerate(slices):
+        try:
+            slice_dataset_dict.update(form_skipped_slice(slice_number,reqid))
+            current_task.update_state(state='PROGRESS',
+                meta={'current': i, 'total': len(slices)})
+        except Exception,e:
+            pass
+    print slice_dataset_dict
+    return slice_dataset_dict
 
 
 @shared_task

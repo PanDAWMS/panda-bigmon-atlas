@@ -13,7 +13,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'panda_dev':
             return 'panda_dev'
         if model._meta.app_label == 'djcelery':
-            return 'djcelery'
+            return 'dev_db'
         return None
 
     def db_for_write(self, model, **hints):
@@ -26,7 +26,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'panda':
             return 'panda_wr'
         if model._meta.app_label == 'djcelery':
-            return 'djcelery'
+            return 'dev_db_wr'
         return None
 
     def allow_relation(self, obj1, obj2, **hints):

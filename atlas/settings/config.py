@@ -4,7 +4,7 @@ from os.path import dirname, join
 import core
 import atlas
 
-from .local import MY_SECRET_KEY, dbaccess
+from .local import MY_SECRET_KEY, dbaccess, CELERY_CONNECTION
 
 ALLOWED_HOSTS = [
     ### cern.ch
@@ -116,7 +116,7 @@ SESSION_SAVE_EVERY_REQUEST=True
 
 
 # CELERY STUFF
-BROKER_URL = 'amqp://guest:guest@borodin-dev2.cern.ch//'
+BROKER_URL = CELERY_CONNECTION
 CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'

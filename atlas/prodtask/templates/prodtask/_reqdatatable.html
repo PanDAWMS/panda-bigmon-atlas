@@ -288,6 +288,14 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 }
             }
         });
+    $("#progressMonitor").dialog({
+        autoOpen: false,
+        buttons : {
+                OK : function(){
+                    $( this ).dialog( "close" );
+                }
+            }
+        });
     makeJobOptionURL();
 {#    $("#tagFormatSelect").change(function(){return tagFormatChange()});#}
 {#    {% if not show_as_huge %}#}
@@ -955,10 +963,99 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
                 });
         }
+
+
+        function test_progress(jobID){
+            $.ajax({
+                        url: Django.url('prodtask:test_status_bar',jobID),
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'text',
+                        success: function(data,status) {
+                            var state = $.evalJSON(data).state;
+                            if((state=='PROGRESS')||(state=='PENDING')){
+                                var currentValue = $.evalJSON(data).result.current;
+                                var totalValue = $.evalJSON(data).result.total;
+                                $('#progressMeter').css({'width':(Math.round(currentValue*100/totalValue)).toString()+'%'});
+
+                                setTimeout(test_progress(jobID),1000);
+
+                            }
+                        }
+                  });
+        }
+        function test_pb(event){
+            event.preventDefault();
+            $.ajax({
+                        url: "{% url 'prodtask:start_test_status_bar'  %}",
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $('#progressMessage').html("Test progress");
+                             $('#progressMeter').css({'width':0});
+                            $( "#progressMonitor" ).dialog("open");
+                            var jobID =  $.evalJSON(data).jobID;
+                            console.log(jobID);
+                            test_progress(jobID);
+
+                        }
+                  });
+        }
+        function find_input_progress(jobID){
+            $.ajax({
+                        url: Django.url('prodtask:test_status_bar',jobID),
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'text',
+                        success: function(data,status) {
+                            var state = $.evalJSON(data).state;
+                            switch(state){
+                                case 'PROGRESS':
+                                    var currentValue = $.evalJSON(data).result.current;
+                                    var totalValue = $.evalJSON(data).result.total;
+                                    $('#progressMeter').css({'width':(Math.round(currentValue*100/totalValue)).toString()+'%'});
+                                    setTimeout(find_input_progress(jobID),1000);
+                                    break;
+                                case 'SUCCESS':
+                                    var slices = $.evalJSON(data).result;
+                                    console.log($.evalJSON(data).result);
+                                    var slice;
+                                    for (slice in slices) {
+                                        $('#progressMeter').css({'width':'100%'});
+                                        var sliceName = "#inputDatasetSelect" + slice;
+                                        $(sliceName).html("");
+                                        for (var i=0;i<slices[slice].length;i++){
+                                            $(sliceName).append($('<option>', {
+                                                value: slices[slice][i].dataset_name,
+                                                text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
+                                            }));
+                                            $(sliceName).show();
+                                        }
+                                        $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString())
+                                        if(slices[slice].length == 1){
+                                            $("#inputDatasetSelectCount"+slice).css({'color':'green'})
+                                        }else{
+                                             $("#inputDatasetSelectCount"+slice).css({'color':'red'})
+                                        }
+
+                                    }
+                                    $('#progressResult').html('Done');
+                                    break;
+                                case 'FAILURE':
+                                    $('#progressErrorMessage').html($.evalJSON(data).result);
+                                    break;
+                                default:
+                                   setTimeout(find_input_progress(jobID),1000);
+                            }
+                        }
+
+                  });
+        }
         function findInputForSlices(sliceList){
 
             sendData = sliceList;
-              $( "#waitingDialog" ).dialog();
+
               $.ajax({
                     url: "{% url 'prodtask:find_input_datasets' pr_id %}",
                     type: 'POST',
@@ -966,26 +1063,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     data: $.toJSON(sendData),
                     dataType: 'text',
                     success: function(data,status) {
-                        $( "#waitingDialog" ).dialog('close');
-                        var slices = $.evalJSON(data).data;
-                        var slice;
-                        for (slice in slices) {
-                            var sliceName = "#inputDatasetSelect" + slice;
-                            $(sliceName).html("");
-                            for (var i=0;i<slices[slice].length;i++){
-                                $(sliceName).append($('<option>', {
-                                    value: slices[slice][i].dataset_name,
-                                    text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
-                                }));
-                                $(sliceName).show();
-                            }
-                            $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString())
-                            if(slices[slice].length == 1){
-                                $("#inputDatasetSelectCount"+slice).css({'color':'green'})
-                            }else{
-                                 $("#inputDatasetSelectCount"+slice).css({'color':'red'})
-                            }
-                        }
+                        $('#progressMessage').html("Find inputs");
+                             $('#progressMeter').css({'width':0});
+                            $( "#progressMonitor" ).dialog("open");
+                        var jobID =  $.evalJSON(data).jobID;
+                        find_input_progress(jobID)
                     }
                 });
               return false;
@@ -1909,39 +1991,6 @@ function spreadAMI(that){
 
 
 
-        function test_progress(jobID){
-            $.ajax({
-                        url: Django.url('prodtask:test_status_bar',jobID),
-                        type: 'GET',
-                        contentType: 'application/json; charset=utf-8',
-                        dataType: 'text',
-                        success: function(data,status) {
-                            var state = $.evalJSON(data).state;
-                            if((state=='PROGRESS')||(state=='PENDING')){
-                                $('#errorDialogMessage').html($.evalJSON(data).result);
-                               console.log($.evalJSON(data).result);
-                                setTimeout(test_progress(jobID),1000);
-
-                            }
-                        }
-                  });
-        }
-        function test_pb(event){
-            event.preventDefault();
-            $.ajax({
-                        url: "{% url 'prodtask:start_test_status_bar'  %}",
-                        type: 'GET',
-                        contentType: 'application/json; charset=utf-8',
-                        dataType: 'text',
-                        success: function(data,status) {
-                            $( "#problemDialog" ).dialog("open");
-                            var jobID =  $.evalJSON(data).job_id;
-                            console.log(jobID);
-                            test_progress(jobID);
-
-                        }
-                  });
-        }
         function checkParentTrain(){
             var sliceList = [];
              $('#errorTrainMessage').html('');
@@ -2217,6 +2266,11 @@ var lastChecked = true;
 </div>
 <div id="reloadDialog" title="Run" style="display: none">
   <p>Page reloading…</p>
+</div>
+  <div id="progressMonitor" title='Progress' style="display: none">
+    <span id="progressMessage"></span><div class="progress large-6 success round"><span class="meter" id="progressMeter" ></span></div>
+  <span id="progressErrorMessage" style="color: red"></span>
+  <span id="progressResult" style="color: #65ff31"></span>
 </div>
 <div class="row">
 <div class="large-12">
@@ -2757,7 +2811,6 @@ var lastChecked = true;
          <div class="large-1 columns">
 
              <button id="trainsSlices" class="btn_is_authorized" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
-             <button  class="btn_is_authorized" title="Create child trains" onclick="test_pb(event);">Test pb</button>
 
     </div>
     <div class="large-3 columns">

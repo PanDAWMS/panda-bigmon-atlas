@@ -20,7 +20,8 @@ from atlas.prodtask.ddm_api import number_of_files_in_dataset
 from atlas.prodtask.views import make_slices_from_dict
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
-from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset, egroup_permissions
+from ..prodtask.views import form_step_in_page, fill_dataset, egroup_permissions
+from atlas.prodtask.slice_manage import form_existed_step_list
 from ..prodtask.views import set_request_status
 #import core.datatables as datatables
 import atlas.datatables as datatables

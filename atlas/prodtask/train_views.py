@@ -11,7 +11,8 @@ from rest_framework import serializers,generics
 from django.forms.models import model_to_dict
 
 from atlas.prodtask.views import create_steps_in_child_pattern
-from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
+from ..prodtask.views import form_step_in_page, create_request_for_pattern
+from atlas.prodtask.slice_manage import form_existed_step_list
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
     ParentToChildRequest
