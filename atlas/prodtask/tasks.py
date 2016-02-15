@@ -1,11 +1,12 @@
 from __future__ import absolute_import
 from time import sleep
 from celery import shared_task, current_task
-
+import logging
 from atlas.backend.celery import app
 from atlas.prodtask.models import TRequest
 from atlas.prodtask.slice_manage import form_skipped_slice
 
+_logger = logging.getLogger('prodtaskwebui')
 
 @shared_task
 def find_input_datasets_task(slices,reqid):
@@ -16,8 +17,7 @@ def find_input_datasets_task(slices,reqid):
             current_task.update_state(state='PROGRESS',
                 meta={'current': i, 'total': len(slices)})
         except Exception,e:
-            pass
-    print slice_dataset_dict
+            _logger.error("Problem find input %s"%str(e))
     return slice_dataset_dict
 
 
