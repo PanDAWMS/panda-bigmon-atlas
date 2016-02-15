@@ -501,6 +501,7 @@ class StepExecution(models.Model):
         if self.status == 'Approved':
             if not self.step_appr_time:
                 self.step_appr_time = timezone.now()
+            self.post_approve_action()
         self.save(*args, **kwargs)
 
     def update_project_mode(self,token,value=None):
@@ -525,6 +526,12 @@ class StepExecution(models.Model):
             self.step_parent_id = self.id
         super(StepExecution, self).save(*args, **kwargs)
 
+    def post_approve_action(self):
+        STARTING_REQUEST_ID = 5816
+        if (self.request_id > STARTING_REQUEST_ID) and (((self.request_id % 10) == 2) or ((self.request_id % 10) == 8)):
+            if 'cloud' not in self.get_task_config('project_mode'):
+                self.update_project_mode('cloud','WORLD')
+
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'T_PRODUCTION_STEP'
@@ -534,14 +541,16 @@ class StepExecution(models.Model):
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
+    __params = None
 
     @property
     def jedi_task_parameters(self):
-        try:
-            params = json.loads(self._jedi_task_parameters)
-        except:
-            return
-        return params
+        if not self.__params:
+            try:
+                self.__params = json.loads(self._jedi_task_parameters)
+            except:
+                return
+        return  self.__params
 
     @property
     def input_dataset(self):

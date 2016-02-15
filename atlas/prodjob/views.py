@@ -22,18 +22,38 @@ def jobs_action(request):
 
     :type request: object
     """
+
     user = request.user.username
 
     is_superuser = request.user.is_superuser
     jobs= json.loads(request.body);
+
     #
-    for job in jobs:
-        print job['pandaid'];
+
+#    result = dict(owner=owner, task=task_id, action=action, args=args,
+#                  status=None, accepted=False, registered=False,
+#                  exception=None, exception_source=None)
+
+    result = dict(status=None,exception=None)
+
+
+    #for job in jobs:
+    #    print job['pandaid'];
     #print jobs
     if not is_superuser:
-        return HttpResponse('Permission denied')
+        result['exception'] = "Permission denied"
+        return HttpResponse(json.dumps(result))
+        #return HttpResponse('Permission denied')
 
-    return HttpResponse('OK')
+    #do actions here
+
+
+    #return HttpResponse('OK')
+    #result['status']="OK"
+
+    #return json.dumps(result)
+    result['exception'] = "Under development"
+    return HttpResponse(json.dumps(result))
 
 
 def get_jobs(request):

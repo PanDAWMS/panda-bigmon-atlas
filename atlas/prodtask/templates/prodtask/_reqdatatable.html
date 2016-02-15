@@ -2761,7 +2761,7 @@ var lastChecked = true;
             <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false);">Save</button>
             {% ifequal trequest.request_type "MC" %}
 {#                true#}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Approve</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Submit</button>
             {% else  %}
                 <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
 
@@ -2792,7 +2792,11 @@ var lastChecked = true;
     </div>
     <div class="row">
                 <div class="large-4 columns">
-                    <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
+                    {% ifequal trequest.request_type "MC" %}
+                        <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</a>
+                    {% else  %}
+                         <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
+                    {% endifequal %}
                 </div>
 
                 <div class="large-1 columns">
@@ -3092,7 +3096,7 @@ var lastChecked = true;
         <div class="column large-3">
                     <label> Step:
                     <select id="chooseStepBulk" class="bulkSelect" >
-                    <option value=""selected >all</option>
+                    <option value="" >all</option>
                     {% for step in step_list %}
                             <option value="{{ step.name }}">{{ step.name }}</option>
                     {% endfor %}

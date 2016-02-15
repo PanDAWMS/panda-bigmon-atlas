@@ -55,6 +55,7 @@ urlpatterns = patterns('',
     url(r'^mcpriority_create/$',                    'atlas.prodtask.request_views.mcpriority_create',  name='mcpriority_create'),
     url(r'^mcpriority_update/(?P<pattern_id>\d+)/$','atlas.prodtask.request_views.mcpriority_update',  name='mcpriority_update'),
 
+    url(r'^make_default_duplicate_page/$','atlas.prodtask.check_duplicate.make_default_duplicate_page',  name='make_default_duplicate_page'),
     url(r'^make_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.make_open_ended',  name='make_open_ended'),
     url(r'^close_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.close_open_ended',  name='close_open_ended'),
 
@@ -75,6 +76,7 @@ urlpatterns = patterns('',
     url(r'^task_create/$',              'atlas.prodtask.task_views.task_create',        name='task_create'),
     url(r'^task_stat_by_req/(?P<rid>\d+)/$', 'atlas.prodtask.task_views.task_status_stat_by_request',        name='task_status_stat_by_request'),
 
+    url(r'^descent_tasks/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.descent_tasks', name='descent_tasks'),
 
     url(r'^task_manage/$',              'atlas.prodtask.task_manage_views.task_manage', name='task_manage'),
     url(r'^task_manage/actions/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.tasks_action', name='tasks_action'),

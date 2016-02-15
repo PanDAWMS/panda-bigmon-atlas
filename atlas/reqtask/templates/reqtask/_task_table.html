@@ -9,7 +9,11 @@
 {%  django_js %}
 
 {% endblock %}
+{% block subtitle %}
+{% if title %}{{ title }}{% endif %}
+{% endblock %}
 {% block body %}
+
 
 
 <style type="text/css">
@@ -97,6 +101,9 @@
            <th>RequestID</th>
            <th>Step</th>
            <th>Priority</th>
+           <th>Total jobs</th>
+           <th>Done jobs</th>
+           <th>Failure %</th>
            <th>Status</th>
            </tr>
            </thead>
@@ -109,6 +116,9 @@
            <th>RequestID</th>
            <th>Step</th>
            <th>Priority</th>
+           <th>Total jobs</th>
+           <th>Done jobs</th>
+           <th>Failure %</th>
            <th>Status</th>
            </tr>
            </tfoot>
@@ -205,6 +215,9 @@
                                 "visible" : true
                                 },
                                 {"data" : "priority" },
+                                {"data" : "total_req_jobs" },
+                                {"data" : "total_done_jobs" },
+                                {"data" : "failure_rate" },
                                 {"data" : "status" }
                         ],
                         dom: 'T<"clear">lftirp',
@@ -225,7 +238,7 @@
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
                         "aoColumnDefs": [{
-                                            "aTargets": [7],
+                                            "aTargets": [10],
                                             "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
                                                 if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
                                                     $(nTd).css('color', 'green')

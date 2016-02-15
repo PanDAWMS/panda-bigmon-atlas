@@ -1,0 +1,126 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+{% block bl_title %}Core App of Monitoring{% endblock %}
+
+
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/prodtask.css" %}";
+	</style>
+    <style>
+
+</style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+
+
+{% block body %}
+
+<script>
+
+ function changeValidFilter(){
+     if($('#validFilter').val()=='valid'){
+         $('.valid').hide();
+     }else{
+         $('.valid').show();
+     }
+ }
+
+</script>
+     <div class="row">
+        <h4  id="deftProblem"> Scan finished on: {{ exec_time|date:"DATETIME_FORMAT" }}</h4>
+    </div>
+     <div class="row">
+    <h5><a href="#APTasks">AP tasks</a></h5>
+     </div>
+    <div class="row">
+        <h5><a href="#GPTasks">GP tasks</a></h5>
+    </div>
+    <div class="row">
+        <h4  id="APTasks">AP tasks:</h4>
+    </div>
+    <div class="row">
+        <div class="large-2 column">
+            <label>
+                Filter:
+            <select id="validFilter" onchange="changeValidFilter();">
+                <option value="all">all</option>
+                <option value="valid">not valid</option>
+            </select>
+           </label>
+        </div>
+    </div>
+    <table class="ap">
+    <thead>
+    <tr>
+    <th>Name</th>
+    <th>Tasks ID</th>
+    <th># Childs</th>
+    <th># Events</th>
+    <th>Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for tasks in ap_list %}
+        <tr class="{{ tasks.is_valid }}">
+            <td>{{ tasks.name }}</td>
+            <td>
+                {%  for task,downstream,type,total_events in tasks.ids %}
+                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ type }}:{{ task }}</a><s></s>
+                {% endfor %}
+            </td>
+                <td>
+                    {%  for task,downstream,type,total_events in tasks.ids  %}
+                        <a href="{% url 'prodtask:descent_tasks' task%}">{{ downstream }}</a><s></s>
+                    {% endfor %}
+                </td>
+                <td>
+                    {%  for task,downstream,type,total_events in tasks.ids  %}
+                        <span>{{ total_events }}</span><s></s>
+                    {% endfor %}
+                </td>
+            <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+<h4  id="GPTasks">GP tasks:</h4>
+    <table class="gp">
+    <thead>
+    <tr>
+    <th>Name</th>
+    <th>Tasks ID</th>
+    <th>Date</th>
+
+
+    </tr>
+    </thead>
+    <tbody>
+    {%  for tasks in gp_list %}
+        <tr>
+            <td>{{ tasks.name }}</td>
+            <td>
+                {%  for task in tasks.ids %}
+                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
+                {% endfor %}
+            </td>
+
+            <td> {{ tasks.date|date:"DATETIME_FORMAT" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+{% endblock %}
