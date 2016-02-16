@@ -1100,7 +1100,7 @@ def split_slice(reqid, slice_number, divider):
             new_slice_number += 1
         if (slice_to_split[0].input_events % divider) != 0:
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
-                                   int(slice_to_split[0].input_events) / int(divider), slice_to_split[0].input_events % divider)
+                                   int(slice_to_split[0].input_events) / int(divider), slice_to_split[0].input_events % divider, output_dataset, nEventsPerInputFile)
             new_slice_number += 1
 
     else:
