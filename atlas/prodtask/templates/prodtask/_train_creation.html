@@ -230,8 +230,7 @@
 
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
         console.log(editTrainLoad.trainLoad.outputs);
-
-        if (editTrainLoad.trainLoad.datasets.length<2000){
+        if (editTrainLoad.trainLoad.datasets.length<1000){
             trainLoads.save(editTrainLoad.trainLoad,function(data) {
                 console.log(data);
                location.path('/');
@@ -242,7 +241,6 @@
             trainLoads.save(editTrainLoad.trainLoad,function(data) {
                  editTrainLoad.trainLoad.datasets=temp_datasets;
 
-                console.log('check',data.id);
 
                trainLoad.update({id:data.id},editTrainLoad.trainLoad,function(data2) {
                 location.path('/');
