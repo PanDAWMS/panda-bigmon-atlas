@@ -461,7 +461,7 @@ def pattern_train_list(request):
                 'pre_form_text': 'Pattern for trains',
                  'patterns':[('MCPatterns','MC',patterns['mc_pattern']) ,
                              ('DataPatterns','Real data',patterns['data_pattern']),
-                             ('MCDefaultPatterns','Default for auto MC creation',patterns['mc_default_pattern'])] ,
+                             ('MCDefaultPatterns','MC15b patterns for auto creation',patterns['mc_default_pattern'])] ,
                 'parent_template': 'prodtask/_index.html',
             })
 

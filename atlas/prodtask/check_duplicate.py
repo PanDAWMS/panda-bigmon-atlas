@@ -5,6 +5,7 @@ import logging
 import datetime
 import pickle
 
+from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
@@ -73,6 +74,37 @@ def get_outputs_offset(task_param_dict):
             if (value.get('param_type') == 'output'):
                outputs.append(value.get('value').replace(' ','=').split('.')[0])
     return offset,outputs
+
+def get_output_dataset(task_param_dict):
+    outputs = []
+    for value  in task_param_dict['jobParameters']:
+        if type(value)==dict:
+            if (value.get('param_type') == 'output'):
+                if  'log' not in value.get('dataset'):
+                    outputs.append(value.get('dataset'))
+    return outputs
+
+
+
+def event_fraction(task_id):
+    main_task = ProductionTask.objects.get(id=task_id)
+    same_tasks = ProductionTask.objects.filter(name=main_task.name,status__in=['done','finished']).values('total_events')
+    total_events = reduce(lambda x,y: x+y,[x['total_events'] for x in same_tasks],0)
+    return main_task.total_events,total_events
+
+
+def fill_output_fraction(file_name, output_file_name):
+    with open(file_name,'r') as input_file:
+        tasks = (int(line.split(',')[0]) for line in input_file if line)
+        output_file = open(output_file_name,'w')
+        for task in tasks:
+            jedi_task = TTask.objects.get(id=task)
+            events, total_events = event_fraction(task)
+            output_file.write(str(task)+','+get_output_dataset(jedi_task.jedi_task_parameters)[0]+','+str(events)+','+str(total_events)+'\n')
+        output_file.close()
+
+
+
 
 
 def  find_duplicates_all_db(same_name_list):
@@ -406,15 +438,15 @@ def find_task_by_input(task_ids, task_name, request_id):
 
 def find_downstreams_by_task(task_id):
     result_duplicate = []
-    original_task = ProductionTask.objects.get(id=task_id)
-    task_name = original_task.name
+    original_task = ProductionTask.objects.filter(id=task_id).values('id','name','inputdataset','provenance','request_id','status')[0]
+    task_name = original_task['name']
     task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
     similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).
                           filter(Q( status__in=['done','finished','obsolete','running'] )).values('id','name','inputdataset','provenance','request_id','status').
                           order_by('id'))
     task_chains = [int(task_id)]
-    current_duplicates={int(task_id):(task_name,original_task.provenance,original_task.request_id,'done')}
-    current_duplicates = []
+    #current_duplicates={int(task_id):(task_name,original_task.provenance,original_task.request_id,'done')}
+    current_duplicates = [original_task]
     for task in similare_tasks:
         task_input = task['inputdataset']
         #print task_input,'-',task['id']
@@ -462,11 +494,11 @@ def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP',
         output_file = open(output_file_name,'w')
         for task_id in tasks:
             downstream_tasks  = find_downstreams_by_task(task_id)
-            for duplicate in sorted(downstream_tasks):
-                if ((downstream_tasks[duplicate][1] == provenance) and (downstream_tasks[duplicate][3] != 'obsolete')) \
-                        and (int(downstream_tasks[duplicate][2])>start_request):
-                    output_file.write(str(task_id)+','+str(downstream_tasks[duplicate][0])+','
-                                      +str(duplicate)+','+str(downstream_tasks[duplicate][2])+'\n')
+            for duplicate in sorted(downstream_tasks, key=lambda x: x['id'] ):
+                if ((duplicate['provenance'] == provenance) and (duplicate['status'] != 'obsolete')) \
+                        and (int(duplicate['request_id'])>start_request):
+                    output_file.write(str(task_id)+','+str(duplicate['name'])+','
+                                      +str(duplicate['id'])+','+str(duplicate['request_id'])+'\n')
         output_file.close()
 
 
@@ -575,3 +607,29 @@ def make_default_duplicate_page(request):
         except Exception,e:
             print e
             return HttpResponseRedirect('/')
+
+
+
+def get_dataset_from_ei(file_name, old=False):
+    with open(file_name,'r') as input_file:
+        datasets_events_all = (line.split(' : ') for line in input_file if line)
+        datasets_events = [(x[0],x[1]) for x in datasets_events_all if ((int(x[1])!=0) and ('ConsumerData/datasets' not in x[0]))]
+    result_list = []
+    for dataset_events in datasets_events:
+        if not old:
+            result_list.append((dataset_events[0].split('/')[-2],int(dataset_events[1])))
+            #print dataset_events[0].split('/')[-2],',',int(dataset_events[1])
+        else:
+            result_list.append((dataset_events[0],int(dataset_events[1])))
+            #print dataset_events[0],',',int(dataset_events[1])
+    return result_list
+
+
+def get_event_number_by_ds(ds_name):
+    task_name = '.'.join(ds_name.split('.')[:-2]+ds_name.split('.')[-1:])
+    tasks = list(ProductionTask.objects.filter(name=task_name,status__in=['done','finished']).values('id','total_events'))
+    total_events = reduce(lambda x,y: x+y,[task['total_events'] for task in tasks])
+    tasks_id_str = ' '.join([str(task['id']) for task in tasks])
+    print ds_name+','+tasks_id_str+','+str(total_events)
+
+

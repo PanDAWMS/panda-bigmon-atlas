@@ -1102,7 +1102,6 @@ def split_slice(reqid, slice_number, divider):
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
                                    int(slice_to_split[0].input_events) / int(divider), slice_to_split[0].input_events % divider, output_dataset, nEventsPerInputFile)
             new_slice_number += 1
-
     else:
         raise ValueError("Can't split slice total events: %s on %s" % (str(slice_to_split[0].input_events),str(divider)))
 

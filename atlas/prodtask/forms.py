@@ -117,7 +117,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
     description = CharField(label='Short description', widget=Textarea, required=False)
     need_approve = NullBooleanField(widget=forms.HiddenInput,required=False,initial=True)
     need_split = NullBooleanField(widget=forms.HiddenInput,required=False,initial=False)
-    train = ModelChoiceField(queryset=TrainProduction.objects.filter(Q(status='mc_pattern')),required=False)
+    train = ModelChoiceField(queryset=TrainProduction.objects.filter(Q(status='mc_default_pattern')),required=False)
 
     class Meta:
         model = TRequest
