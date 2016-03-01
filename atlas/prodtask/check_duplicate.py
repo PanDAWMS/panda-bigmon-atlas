@@ -574,7 +574,7 @@ def check_duplication(file_name, provenance='AP'):
     ap_duplicates = find_duplicates_all_db(all_gp_same)
     ap_duplicates_reduced = clean_reapeated(ap_duplicates)
     ap_duplicates_sorted = sorted(ap_duplicates_reduced, key=lambda x: max([y['id'] for y in x]))
-    ap_duplicates_sorted_with_dwonstream = ap_add_downstream(ap_duplicates_sorted)
+    #ap_duplicates_sorted_with_dwonstream = ap_add_downstream(ap_duplicates_sorted)
     pickle.dump({'execute_time':datetime.datetime.now(),'duplicate_list':ap_duplicates_sorted},open(file_name,'wb'))
 
 
