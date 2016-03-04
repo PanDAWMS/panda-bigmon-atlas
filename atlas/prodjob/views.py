@@ -6,6 +6,9 @@ import requests
 from django.http import HttpResponse
 from django.shortcuts import render
 
+#import atlas.deftcore.api.client as deft
+
+#from atlas.prodtask.task_actions import _do_deft_action
 
 # _logger = logging.getLogger('prodtaskwebui')
 
@@ -17,7 +20,7 @@ def request_jobs(request):
     return render(request, 'prodjob/_job_table.html')
 
 
-def jobs_action(request):
+def jobs_action(request,action):
     """
 
     :type request: object
@@ -36,7 +39,7 @@ def jobs_action(request):
 
     result = dict(status=None,exception=None)
 
-
+    #print action;
     #for job in jobs:
     #    print job['pandaid'];
     #print jobs
@@ -45,7 +48,17 @@ def jobs_action(request):
         return HttpResponse(json.dumps(result))
         #return HttpResponse('Permission denied')
 
+
+    #if action == 'decrease_priority':
+    #    result.update(decrease_task_priority(owner, task_id, *args))
+    #if action in _deft_actions:
+    #    result.update(_do_deft_action(owner, task_id, action, *args))
+
     #do actions here
+
+    #for job in jobs:
+        #kill_job(self, owner, task_id, job_id)
+        #_do_deft_action(owner, task_id, action, *args)
 
 
     #return HttpResponse('OK')
@@ -75,3 +88,48 @@ def get_jobs(request):
 
     #return HttpResponse(json.dumps(jlist))
     return HttpResponse(json.dumps(data))
+
+
+# def _do_deft_job_action(owner, job_id, task_id, action, *args):
+#     """
+#     Perform task action using DEFT API
+#     :param owner: username form which task action will be performed
+#     :param task_id: task ID
+#     :param action: action name
+#     :param args: additional arguments for the action (if needed)
+#     :return: dictionary with action execution details
+#     """
+#
+#     result = dict(owner=owner, task=task_id, action=action, args=args,
+#                   status=None, accepted=False, registered=False,
+#                   exception=None, exception_source=None)
+#
+#     if not action in _deft_actions:
+#         result['exception'] = "Action '%s' is not supported" % action
+#         return result
+#
+#     try:
+#         func = getattr(_deft_client, _deft_actions[action])
+#     except AttributeError as e:
+#         result.update(exception=str(e))
+#         return result
+#
+#     try:
+#         request_id = func(owner, task_id, *args)
+#     except Exception as e:
+#         result.update(exception=str(e),
+#                       exception_source=_deft_client.__class__.__name__)
+#         return result
+#
+#     result['accepted'] = True
+#
+#     try:
+#         status = _deft_client.get_status(request_id)
+#     except Exception as e:
+#         result.update(exception=str(e),
+#                       exception_source=_deft_client.__class__.__name__)
+#         return result
+#
+#     result.update(registered=True, status=status)
+#
+#     return result
