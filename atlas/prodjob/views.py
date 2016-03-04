@@ -14,7 +14,7 @@ import atlas.deftcore.api.client as deft
 
 _deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
 
-_deft_actions = {
+_deft_job_actions = {
 
     'kill_jobs': 'kill_job',
     'set_debug_jobs': 'set_job_debug_mode',
@@ -101,9 +101,9 @@ def _do_deft_job_action(owner, task_id, job_id, action):
     :return: dictionary with action execution details
     """
     #print owner, task_id, job_id, action
-    result = dict(status=None,exception=None)
-    result['status'] = "OK"
-    return result
+    #result = dict(status=None,exception=None)
+    #result['status'] = "OK"
+    #return result
 
     result = dict(owner=owner, job=job_id, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
@@ -114,7 +114,7 @@ def _do_deft_job_action(owner, task_id, job_id, action):
     #     return result
 
     try:
-        func = getattr(_deft_client, _deft_actions[action])
+        func = getattr(_deft_client, _deft_job_actions[action])
     except AttributeError as e:
         result.update(exception=str(e))
         return result
