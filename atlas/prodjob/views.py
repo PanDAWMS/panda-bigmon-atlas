@@ -36,13 +36,14 @@ def jobs_action(request,action):
     is_superuser = request.user.is_superuser
     jobs= json.loads(request.body);
 
-    #
 
-#    result = dict(owner=owner, task=task_id, action=action, args=args,
-#                  status=None, accepted=False, registered=False,
-#                  exception=None, exception_source=None)
 
-    result = dict(status=None,exception=None)
+    result = dict(owner=user, job=None, task=None, action=action, args=None,
+                  status=None, accepted=False, registered=False,
+                  exception=None, exception_source=None)
+
+
+    #result = dict(status=None,exception=None)
 
 
     if not is_superuser:
@@ -61,12 +62,6 @@ def jobs_action(request,action):
     for job in jobs:
         result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action))
 
-
-    #return HttpResponse('OK')
-    #result['status']="OK"
-
-    #return json.dumps(result)
-    #result['exception'] = "Under development"
     return HttpResponse(json.dumps(result))
 
 
@@ -105,7 +100,7 @@ def _do_deft_job_action(owner, task_id, job_id, action):
     #result['status'] = "OK"
     #return result
 
-    result = dict(owner=owner, job=job_id, task=task_id, action=action, args=args,
+    result = dict(owner=owner, job=job_id, task=task_id, action=action, args=None,
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
@@ -114,13 +109,14 @@ def _do_deft_job_action(owner, task_id, job_id, action):
     #     return result
 
     try:
+
         func = getattr(_deft_client, _deft_job_actions[action])
     except AttributeError as e:
         result.update(exception=str(e))
         return result
 
     try:
-        request_id = func(owner, task_id, job_id,  *args)
+        request_id = func(owner, task_id, job_id)
     except Exception as e:
         result.update(exception=str(e),
                       exception_source=_deft_client.__class__.__name__)
