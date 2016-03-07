@@ -127,6 +127,10 @@ class Client(object):
         body = {'task_id': task_id, 'job_id': job_id}
         return self._create_request('kill_job', owner, body)
 
+    def set_job_debug_mode(self, owner, task_id, job_id, debug_mode=True):
+        body = {'task_id': task_id, 'job_id': job_id, 'debug_mode': debug_mode}
+        return self._create_request('set_job_debug_mode', owner, body)
+
     def _search_task(self, filter_dict):
         if len(filter_dict.keys()):
             filter_dict.update({'limit': 0})
