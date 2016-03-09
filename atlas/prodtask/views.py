@@ -768,10 +768,11 @@ def make_child_update(parent_request_id, manager, slices):
     if child_requests:
         steps = list(StepExecution.objects.filter(request=parent_request_id))
         steps_by_slice = {}
-        output_pattern = {}
+
         for current_step in steps:
             steps_by_slice[current_step.slice_id] = steps_by_slice.get(current_step.slice_id,[])+[current_step]
         for child_request in child_requests:
+            output_pattern = {}
             # if child request is not exist yet
             step_relation = {}
             if child_request.child_request:
