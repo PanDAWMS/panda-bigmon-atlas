@@ -248,12 +248,19 @@
         <div id="task_reassign_menu" class="medium content f-dropdown" data-dropdown-content>
             <div class="small-12 large-12 columns bodyfont-color">
                 <div class="row">
-                    <div class="small-10 large-10 columns">
+                    <div class="small-6 large-6 columns">
                         <select name="cloud_select" id="cloud_select">
                             <option value="" selected>Select cloud</option>
                         {% for entry in clouds %}
                             <option value="{{ entry }}">{{ entry }}</option>
                         {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <select name="cloude_mode_select" id="cloud_mode_select">
+                            <option value="None" selected>None</option>
+                            <option value="nokill">No kill</option>
+                            <option value="soft">Soft</option>
                         </select>
                     </div>
                     <div class="small-2 large-2 columns">
@@ -271,12 +278,19 @@
                 </div>
 
                 <div class="row">
-                    <div class="small-10 large-10 columns">
+                    <div class="small-6 large-6 columns">
                         <select name="site_select" id="site_select" class="medium">
                             <option value="" selected>Select site</option>
                         {% for entry in sites %}
                             <option value="{{ entry }}">{{ entry }}</option>
                         {% endfor %}
+                        </select>
+                    </div>
+                    <div class="small-4 large-4 columns">
+                        <select name="site_mode_select" id="site_mode_select">
+                            <option value="None" selected>None</option>
+                            <option value="nokill">No kill</option>
+                            <option value="soft">Soft</option>
                         </select>
                     </div>
                     <div class="small-2 large-2 columns">
@@ -597,9 +611,9 @@ $(document).ready(function () {
         } else if (action == "change_priority") {
             parameters = [$("#new_priority").val()];
         } else if (action == "reassign_to_site") {
-            parameters = [$("#site_select").val()];
+            parameters = [$("#site_select").val(),$("#site_mode_select").val()];
         } else if (action == "reassign_to_cloud") {
-            parameters = [$("#cloud_select").val()];
+            parameters = [$("#cloud_select").val(),$("#cloud_mode_select").val()];
         } else if ((action == 'increase_priority') || (action=='decrease_priority')) {
             parameters = [20];
         } else if (action == "change_ram_count") {
