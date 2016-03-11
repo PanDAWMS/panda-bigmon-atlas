@@ -75,12 +75,16 @@ class Client(object):
         body = {'task_id': task_id, 'soft': soft}
         return self._create_request('finish_task', owner, body)
 
-    def reassign_task_to_site(self, owner, task_id, site):
-        body = {'task_id': task_id, 'site': site, 'cloud': None}
+    def reassign_task_to_site(self, owner, task_id, site, mode=None):
+        body = {'task_id': task_id, 'site': site, 'mode': mode}
         return self._create_request('reassign_task', owner, body)
 
-    def reassign_task_to_cloud(self, owner, task_id, cloud):
-        body = {'task_id': task_id, 'site': None, 'cloud': cloud}
+    def reassign_task_to_cloud(self, owner, task_id, cloud, mode=None):
+        body = {'task_id': task_id, 'cloud': cloud, 'mode': mode}
+        return self._create_request('reassign_task', owner, body)
+
+    def reassign_task_to_nucleus(self, owner, task_id, nucleus, mode=None):
+        body = {'task_id': task_id, 'nucleus': nucleus, 'mode': mode}
         return self._create_request('reassign_task', owner, body)
 
     def change_task_priority(self, owner, task_id, priority):
