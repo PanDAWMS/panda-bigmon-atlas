@@ -839,3 +839,17 @@ def get_default_project_mode_dict():
          'Atlf TAG':'spacetoken=ATLASDATADISK'
     }
     return default_dict
+
+class Site(models.Model):
+    site_name = models.CharField(max_length=52, db_column='SITE_NAME', primary_key=True)
+    role = models.CharField(max_length=256, db_column='ROLE')
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    def __str__(self):
+        return "%i - %s" % (int(self.id), self.queue_name)
+
+    class Meta:
+        app_label = 'panda'
+        db_table = u'"ATLAS_PANDA"."SITE"'

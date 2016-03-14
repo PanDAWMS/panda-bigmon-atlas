@@ -111,6 +111,14 @@ class Client(object):
         body = {'task_id': task_id, 'cpu_time': cpu_time}
         return self._create_request('change_task_cpu_time', owner, body)
 
+    def change_task_split_rule(self, owner, task_id, rule_name, rule_value):
+        body = {'task_id': task_id, 'rule_name': rule_name, 'rule_value': rule_value}
+        return self._create_request('change_task_split_rule', owner, body)
+
+    def change_task_attribute(self, owner, task_id, attr_name, attr_value):
+        body = {'task_id': task_id, 'attr_name': attr_name, 'attr_value': attr_value}
+        return self._create_request('change_task_attribute', owner, body)
+
     def add_task_comment(self, owner, task_id, comment):
         body = {'task_id': task_id, 'comment_body': comment}
         return self._create_request('add_task_comment', owner, body)
