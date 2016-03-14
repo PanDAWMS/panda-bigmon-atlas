@@ -1212,7 +1212,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 task['finished_rate'] = 'full_finished'
                 if task['status']=='finished':
                     if (task['total_files_failed']!=0) and (task['total_files_finished']!=0):
-                        task_rate = (float(task['total_files_failed'])/float(task['total_files_finished']))
+                        task_rate = (float(task['total_files_failed'])/(float(task['total_files_finished'])+float(task['total_files_failed'])))
                         if task_rate > 0.3:
                             task['finished_rate'] = 'finished60'
                         elif task_rate > 0.1:
