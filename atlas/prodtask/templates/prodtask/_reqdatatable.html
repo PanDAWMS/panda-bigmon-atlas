@@ -51,9 +51,13 @@
 	td.running 	{ background-color : LightGreen;	}
 
 	td.done 		{ background-color : darkgreen;	}
-	td.finished	{ background-color : darkgreen;	}
-
-	td.failures	{ background-color : orange;	}
+	td.finished.full_finished	{ background-color : darkgreen;	}
+    td.finished.finished60  { background-color : darkolivegreen;	}
+    td.finished.finished80  { background-color : olive;	}
+    span.full_finished { color : black;	}
+	span.finished60 { color : red;	}
+    span.finished80 { color : orange;	}
+    td.failures	{ background-color : orange;	}
 
 	td.failed 	{ background-color : red;	}
 	td.aborted 	{ background-color : red;	}
@@ -2642,9 +2646,9 @@ var lastChecked = true;
                         {% for task in step.tasks %}
                         {% if task %}
 
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }} {{ task.finished_rate }}" >
                             <div>
-                               <a  href="{{ task.href }}"><span style="color: #000000">{{ task.short }}</span></a>
+                               <a  href="{{ task.href }}"><span  class="{{ task.finished_rate }}">{{ task.short }}</span></a>
                             </div>
                         </td>
                         {% else %}
@@ -2659,9 +2663,9 @@ var lastChecked = true;
                         {% if task %}
 
                         <tr style="padding:0px;margin:0px;height: 20px">
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }}" >
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }} {{ task.finished_rate }}" >
                             <div>
-                               <a  href="{{ task.href }}"><span style="color: #000000">{{ task.short }}</span></a>
+                               <a  href="{{ task.href }}"><span  class="{{ task.finished_rate }}">{{ task.short }}</span></a>
                             </div>
                         </td>
                         {% else %}

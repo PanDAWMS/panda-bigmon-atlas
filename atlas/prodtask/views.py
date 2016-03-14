@@ -1117,6 +1117,15 @@ def request_table_view(request, rid=None, show_hidden=False):
 
             for task in tasks:
                 task['short'] = task['status'][0:8]
+                task['finished_rate'] = 'full_finished'
+                if task['status']=='finished':
+                    if (task['total_files_failed']!=0) and (task['total_files_finished']!=0):
+                        task_rate = (float(task['total_files_failed'])/float(task['total_files_finished']))
+                        if task_rate > 0.3:
+                            task['finished_rate'] = 'finished60'
+                        elif task_rate > 0.1:
+                            task['finished_rate'] = 'finished80'
+
                 task['href'] = BIG_PANDA_TASK_BASE + str(task['id'])
                 task['href_local'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(task['id']))
                 return_tasks.append(task)
@@ -1303,6 +1312,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         input_lists.append((slice_dict, slice_steps_ordered, 'not_submitted',
                                             False,'',-1,'no',False))
                 if do_all or do_cloned_and_failed:
+
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
 
