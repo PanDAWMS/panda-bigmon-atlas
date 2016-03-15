@@ -353,6 +353,7 @@
                     <div class="small-6 large-6 columns">
                         <select name="cloud_select" id="cloud_select">
                             <option value="" selected>Select cloud</option>
+                            <option value="">Unset cloud</option>
                         {% for entry in clouds %}
                             <option value="{{ entry }}">{{ entry }}</option>
                         {% endfor %}
@@ -360,7 +361,7 @@
                     </div>
                     <div class="small-4 large-4 columns">
                         <select name="cloude_mode_select" id="cloud_mode_select">
-                            <option value="None" selected>None</option>
+                            <option value="None" selected>Kill</option>
                             <option value="nokill">No kill</option>
                             <option value="soft">Soft</option>
                         </select>
@@ -383,6 +384,7 @@
                     <div class="small-6 large-6 columns">
                         <select name="site_select" id="site_select" class="medium">
                             <option value="" selected>Select site</option>
+                            <option value="">Unset site</option>
                         {% for entry in sites %}
                             <option value="{{ entry }}">{{ entry }}</option>
                         {% endfor %}
@@ -390,7 +392,7 @@
                     </div>
                     <div class="small-4 large-4 columns">
                         <select name="site_mode_select" id="site_mode_select">
-                            <option value="None" selected>None</option>
+                            <option value="None" selected>Kill</option>
                             <option value="nokill">No kill</option>
                             <option value="soft">Soft</option>
                         </select>
