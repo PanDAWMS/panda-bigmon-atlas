@@ -30,6 +30,7 @@ _deft_actions = {
     'kill_job': 'kill_job',
     'obsolete': 'obsolete_task',
     'change_core_count': 'change_task_attribute',
+    'change_split_rule': 'change_task_split_rule'
 }
 
 supported_actions = _deft_actions.keys()
@@ -63,7 +64,7 @@ for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['increase_priority', 'decrease_priority'])
     if 'change_parameters' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count'])
+        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud'])
 
@@ -93,7 +94,9 @@ def do_action(owner, task_id, action, *args):
         return result
     if action in _deft_actions:
         if action == 'change_core_count':
-            args = ('coreCount',)+args;
+            args = ('coreCount',)+args
+        elif action == 'change_split_rule':
+            args = ('TW',)+args
         result.update(_do_deft_action(owner, task_id, action, *args))
     elif action == 'increase_priority':
         result.update(increase_task_priority(owner, task_id, *args))
