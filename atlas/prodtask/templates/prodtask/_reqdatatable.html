@@ -197,17 +197,15 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         };
     })  ;
     {#    replace hide/show on dynamic creation#}
-    $(".showFullSpan").click(function(){
-       $(this).parent().parent().parent().hide(0);
-       $(this).parentsUntil(".inputListDivs").children(".inputListTablesLong").show(0);
-        return false;
+    $(".showFullSpan").click(function(event){
+
+       console.log();
+        oldID = $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").attr('id');
+
+        newID = 'saveStatus'+oldID.slice('outsideInputListTables'.length);
+        return formSliceInfo(event,newID);
     });
-    $(".showSmallSpan").click(function(){
-       $(this).parent().parent().parent().siblings(".inputListTables").show(0);
-       $(this).parent().parent().parent().siblings(".inputListTables").children().show(0);
-        $(this).parent().parent().parent().hide(0);
-         return false;
-    });
+
 
 
 
@@ -1000,7 +998,19 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 for(var i=0;i<check_steps.db_step_type.length;i++) {
                     {#                 console.log(i);#}
                     stepHasChanges = false;
-                    currentTag =  $.trim($("#"+sliceID.toString() + 's' + i.toString()).val());
+                    currentTag =  $.trim($("#short"+sliceID.toString() + 's' + i.toString()).html());
+                    step_id = "#short" + sliceID.toString() + 's' + i.toString();
+                    var currentType = 'not_skipped';
+                    if ($(step_id).attr('class').indexOf("notShowFullSpan")>-1 ){
+                                currentTag = 'Child step';
+                        console.log(currentTag);
+                            currentType = 'foreign';
+
+                    } else{
+                            if ($(step_id).css("background-color") == $("#skippedColor").css("background-color")) {
+                                currentType = 'is_skipped';
+                            }
+                    }
 {#                    console.log(currentTag,check_steps.db_step_type[i].step_name);#}
                     if ((check_steps.db_step_type[i].step_name != "") || (currentTag != '')) {
                         if (currentTag != check_steps.db_step_type[i].step){
@@ -1011,6 +1021,18 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         else{
                            $('#sliceModal .storeOutput' + i.toString() + '.' + 'step').val(currentTag);
                            $('#sliceModal .storeOutput' + i.toString() + '.' + 'step').parent().css({'color': 'initial'});
+                        }
+                        if(currentType != (check_steps.db_step_type[i].step_type)){
+                           $('#sliceModal .storeOutput' + i.toString() + '.' + 'skipped').parent().css({'color': 'red'});
+                           stepHasChanges = true;
+                        } else {
+                            $('#sliceModal .storeOutput' + i.toString() + '.' + 'skipped').parent().css({'color': 'initial'});
+                        }
+                        if (currentType != 'not_skipped'){
+                             $('#sliceModal .storeOutput' + i.toString() + '.' + 'skipped').prop('checked', true);
+
+                        } else{
+                             $('#sliceModal .storeOutput' + i.toString() + '.' + 'skipped').prop('checked', false);
                         }
                         for (fieldName in check_steps.db_step_type[i]) {
                             if ((fieldName != 'step_name')&&(fieldName != 'step')) {
@@ -1814,15 +1836,26 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
   }
 
 }));
-function spreadAMI(that){
-    currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
-    currentSlice = $('#sliceModalSlice').html();
-    $("#short"+currentSlice+"s"+currentStep).html($(that).val());
-    $("#short"+currentSlice+"s"+currentStep).css({"background-color":$("#doColor").css("background-color")});
-    $("#"+currentSlice+"s"+currentStep+".slice_form").val($(that).val());
-    $("#step"+currentSlice+"s"+currentStep+".stepchoose").css({"background-color":$("#doColor").css("background-color")});
+        function spreadAMI(that){
+            currentStep = $(that).attr("class").replace("storeInput",'').replace("step",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
+            currentSlice = $('#sliceModalSlice').html();
+            $("#short"+currentSlice+"s"+currentStep).html($(that).val());
+            $("#short"+currentSlice+"s"+currentStep).css({"background-color":$("#doColor").css("background-color")});
+            $("#"+currentSlice+"s"+currentStep+".slice_form").val($(that).val());
+            $("#step"+currentSlice+"s"+currentStep+".stepchoose").css({"background-color":$("#doColor").css("background-color")});
 
-}
+        }
+
+        function spreadSkipped(that){
+            currentStep = $(that).attr("class").replace("storeInput",'').replace("skipped",'').replace(' ','').slice('storeOutput'.length).replace(' ','');
+            currentSlice = $('#sliceModalSlice').html();
+            if($(that).is(':checked')){
+                $("#short"+currentSlice+"s"+currentStep).css({"background-color":$("#skippedColor").css("background-color")});
+            } else{
+                 $("#short"+currentSlice+"s"+currentStep).css({"background-color":$("#doColor").css("background-color")});
+            }
+
+        }
         function extendRequest(event){
             event.preventDefault();
             $('#extendModalWindow').foundation('reveal', 'open');
@@ -2172,6 +2205,22 @@ var patternDict = [];
 var changeMode = true;
 var lastCheckedSlice = -1;
 var lastChecked = true;
+
+
+function ProjectModeForm(parentDiv, inputField){
+    this.parentDiv = parentDiv;
+    this.inputField = inputField;
+    this.possibleParameters = [
+        {name:'cmtconfig',type:'string'},
+        {name:'skipScout',type:'boolean'},
+        {name:'corecount',type:'integer'}
+    ];
+
+}
+
+ProjectModeForm.prototype.createForm = function(inputString){
+ this.parentDiv.append('')
+}
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -2592,67 +2641,7 @@ var lastChecked = true;
             {% endif%}
             </tr>
             </table>
-            <table class="inputListTablesLong" style="display: none">
-                <tr><td style="width: 20px" class='showSmallSpan' >{{ inputList.slice }}</td>
-                 <td colspan="11" class='showSmallSpan'>Dataset: <span class="changedatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td></tr>
-                <tr><td></td><td colspan="11" >JobOption: <a href='' target="_blank" class="changejobOption{{ inputList.slice }} filterField makeJOUrl">{{ inputList.input_data }}</a></td></tr>
-                <tr><td></td><td colspan="11">Brief: <span class="filterField">{{ inputList.brief }}</span></td></tr>
-                <tr><td></td><td colspan="11">Comment: <span class=" changecomment{{ inputList.slice }} filterField">{{ inputList.comment }}</span></td></tr>
-                <tr><td></td><td colspan="3">Priority: {{ inputList.priority }}</td><td colspan="8">Input events: <span class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td></tr>
-                <tr style="display: none"><td></td><td colspan="9">
-                    <select id="selectPattern" >
-                        <option value="" disabled selected>Select pattern</option>
-                        {% for pattern in pattern_list %}
-                            <option value="{{ pattern }}">{{ pattern }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td><button id="bind{{ inputList.slice }}" class="slice_bind btn_is_authenticated" title="Create step execution">Bind</button></td>
-                <td><button class="btn_is_authenticated" id="approveButton{{ inputList.slice }}" title="Approve">Approve</button></td>
-                <tr>
-                {% if show_task %}
-                        <tr><td></td><td colspan="11">Tasks:</td></tr>
-                        {% for step in step_exec_dict %}
-                        {% for task in step.tasks_real %}
-                        {% if task %}
-                            <tr><td></td>
-                            <td colspan="2"><a href="{{ task.href_local }}">{{ task.id }}</a></td>
-                            <td colspan="2" ><span class="{{ task.status }}" >{{ task.status }}</span></td>
-                            <td colspan="7">{{ task.name }}</td>
-                            </tr>
-                            <tr class="bottom_row_task"><td></td><td colspan="4">timestamp:{{ task.timestamp }}
-                                                                </td>
-                            <td colspan="5" >
-                                <a href="http://bigpanda.cern.ch/jobs/?jeditaskid={{task.id }}">
-                                    <u>Jobs: {{ task.total_done_jobs }}/{{ task.total_req_jobs }}</u>
-                                </a>
-                            </td>
-                            <td colspan="4">bug: {{ task.bug_report }}</td>
-                            </tr>
-                        {% endif %}
-                        {% endfor %}
-                        {% endfor %}
 
-                {% else %}
-                    <th rowspan="2"></th>
-                    {% for step in step_list %}
-                            <th class="stepchoose" id="step{{ inputList.slice }}s{{ forloop.counter0 }}" > {{step.name}}</th>
-                    {% endfor %}
-
-                        <th rowspan="2" id="aprroveLabelLong{{ inputList.slice }}" class="{{ approved }}"> {{ approved }} </th>
-
-                    </tr>
-                        <tr style="padding: 0px">
-                        {% for step in step_exec_dict %}
-                            <td  style="padding: 0px;width: 50px" >
-                                <div  >
-                                    <form><input type="text" onchange="longFormChange(event)" class="slice_form" id="{{ inputList.slice }}s{{ forloop.counter0 }}"  value="{{ step.tag }}" style="padding: 0px"></form>
-                                </div>
-                            </td>
-                        {% endfor %}
-                        </tr>
-                {% endif %}
-            </table>
         </td>
         </tr></table>
         </div>
@@ -2854,6 +2843,12 @@ var lastChecked = true;
                                   <label> AMI tag
                                     <input type="text" class="step storeOutput{{forloop.counter0}} storeInput" placeholder=" " onchange="spreadAMI(this);"  />
                                   </label>
+                                </div>
+                                <div class="large-2 columns">
+                                  <label>Step is skipped
+                                    <input type="checkbox" class="skipped storeOutput{{forloop.counter0}} storeInput"  onchange="spreadSkipped(this);" />
+                                  </label>
+
                                 </div>
                                  <div class="large-2 columns">
                                   <label>Events per Input file
