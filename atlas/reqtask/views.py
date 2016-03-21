@@ -4,6 +4,7 @@ from django.core import serializers
 from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate
 # import logging
 # import os
+from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus
 
 from decimal import Decimal
 from datetime import datetime
@@ -28,7 +29,11 @@ def request_tasks(request, rid = None):
     #     qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
     #     task_array = [decimal_default( x.get('id')) for x in qs]
 
-    return render(request, 'reqtask/_task_table.html',{'reqid':rid})
+    return render(request, 'reqtask/_task_table.html',
+                            {'reqid':rid,
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'nucleus': get_nucleus()})
 
 
 def tasks_action(request):

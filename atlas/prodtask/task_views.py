@@ -10,7 +10,6 @@ from atlas.prodtask.check_duplicate import find_downstreams_by_task
 from atlas.prodtask.models import StepExecution
 import logging
 
-from atlas.reqtask.views import request_tasks
 from ..settings import defaultDatetimeFormat
 
 #import core.datatables as datatables
