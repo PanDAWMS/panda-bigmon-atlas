@@ -851,5 +851,5 @@ class Site(models.Model):
         return "%i - %s" % (int(self.id), self.queue_name)
 
     class Meta:
-        app_label = 'panda'
+        app_label = 'panda_dev'
         db_table = u'"ATLAS_PANDA"."SITE"'

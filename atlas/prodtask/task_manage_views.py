@@ -11,7 +11,7 @@ import atlas.datatables as datatables
 
 from .models import ProductionTask, TRequest, StepExecution
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus
 from .task_views import get_permissions
 from .task_actions import do_action
 
@@ -165,6 +165,7 @@ def task_manage(request):
                              'last_task_submit_time': last_task_submit_time,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
+                             'nucleus': get_nucleus(),
                              'edit_mode': True,
                             })
 

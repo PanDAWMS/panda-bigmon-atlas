@@ -18,7 +18,7 @@ import atlas.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask, TRequest, TTask, ProductionDataset
+from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site
 from .task_actions import allowed_task_actions
 
 from django.db.models import Count, Q
@@ -87,6 +87,7 @@ def task_details(request, rid=None):
         'output_datasets': output_datasets,
         'clouds': get_clouds(),
         'sites': get_sites(),
+        'nucleus': get_nucleus(),
         'outputs': output_formats,
         'extasks': same_tasks,
         'parent_template' : 'prodtask/_index.html',
@@ -473,6 +474,18 @@ def get_sites():
     locale.setlocale(locale.LC_ALL, '')
     sites = sorted(sites, key=locale.strxfrm)
     return sites
+
+def get_nucleus():
+    """
+    Get list of nuclei names
+    :return: list of nuclei names
+    """
+    nucleus = [ x.get('site_name') for x in Site.objects.filter(role='nucleus').values('site_name').distinct() ]
+    locale.setlocale(locale.LC_ALL, '')
+    nucleus = sorted(nucleus, key=locale.strxfrm)
+
+
+    return nucleus
 
 def get_permissions(request,tasks):
     """

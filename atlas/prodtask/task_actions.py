@@ -20,6 +20,7 @@ _deft_actions = {
     'change_priority': 'change_task_priority',
     'reassign_to_site': 'reassign_task_to_site',
     'reassign_to_cloud': 'reassign_task_to_cloud',
+    'reassign_to_nucleus': 'reassign_task_to_nucleus',
     'retry': 'retry_task',
     'change_ram_count': 'change_task_ram_count',
     'change_wall_time': 'change_task_wall_time',
@@ -66,7 +67,7 @@ for _status in allowed_task_actions:
     if 'change_parameters' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
     if 'reassign' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud'])
+        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus'])
 
 
 def do_action(owner, task_id, action, *args):
