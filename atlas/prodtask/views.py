@@ -1190,6 +1190,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         skipped = 'skipped'
         tag = ''
         slice = ''
+        output_format = ''
         is_another_request = False
         if step:
             if foreign:
@@ -1203,6 +1204,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             else:
                 skipped = 'run'
             tag = step['ctag']
+            output_format = step.get('output_format','')
         task_short = ''
         return_tasks = []
         if tasks:
@@ -1228,7 +1230,7 @@ def request_table_view(request, rid=None, show_hidden=False):
 
                     return_tasks.append(ext_task)
         return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks_real':tasks, 'tasks':return_tasks, 'slice':slice,
-                'is_another_request':is_another_request}
+                'is_another_request':is_another_request,'output_format':output_format}
 
     def unwrap(pattern_dict):
         return_list = []
@@ -1239,6 +1241,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             return pattern_dict.get('ctag',''), return_list
         else:
             return pattern_dict,[('ctag',pattern_dict)]
+
+    def get_last_step_format(slice_data):
+        return_value = ''
+        for step in slice_data[1]:
+            if step.get('step'):
+                return_value = step['output_format']
+        return return_value
 
     if request.method == 'GET':
         try:
@@ -1478,7 +1487,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 show_task = True
                             ctag = step_templates[step['step_template_id']].ctag
                             step_name = step_templates[step['step_template_id']].step
-                            step.update({'ctag':ctag})
+                            step_format = step_templates[step['step_template_id']].output_formats
+                            step.update({'ctag':ctag,'output_format':step_format})
                             if cur_request.request_type == 'MC':
 
                                 slice_steps.update({step_name:form_step_obj(step,step_task,slice.slice)})
@@ -1614,6 +1624,10 @@ def request_table_view(request, rid=None, show_hidden=False):
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
             jira_problem_link = ''
+            for cur_slice in range(len(input_lists)):
+                temp_list = list(input_lists[cur_slice])
+                temp_list.append(get_last_step_format(temp_list))
+                input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:
                 has_deft_problem = True
                 if cur_request.jira_reference:
