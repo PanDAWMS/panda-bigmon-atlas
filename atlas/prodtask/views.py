@@ -1214,11 +1214,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                 task['finished_rate'] = 'full_finished'
                 if task['status']=='finished':
                     if (task['total_files_failed']!=0) and (task['total_files_finished']!=0):
-                        task_rate = (float(task['total_files_failed'])/(float(task['total_files_finished'])+float(task['total_files_failed'])))
-                        if task_rate > 0.3:
-                            task['finished_rate'] = 'finished60'
-                        elif task_rate > 0.1:
-                            task['finished_rate'] = 'finished80'
+                        try:
+                            task_rate = (float(task['total_files_failed'])/(float(task['total_files_finished'])+float(task['total_files_failed'])))
+                            if task_rate > 0.3:
+                                task['finished_rate'] = 'finished60'
+                            elif task_rate > 0.1:
+                                task['finished_rate'] = 'finished80'
+                        except:
+                            pass
 
                 task['href'] = BIG_PANDA_TASK_BASE + str(task['id'])
                 task['href_local'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(task['id']))
