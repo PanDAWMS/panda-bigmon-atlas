@@ -1626,7 +1626,12 @@ def request_table_view(request, rid=None, show_hidden=False):
             jira_problem_link = ''
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
-                temp_list.append(get_last_step_format(temp_list))
+                slice_output = get_last_step_format(temp_list)
+                if (len(slice_output) > 60) and (cur_request.request_type == 'REPROCESSING'):
+                    temp_list+=[slice_output[:60]+"...",slice_output]
+                else:
+                    temp_list+=[slice_output,slice_output]
+
                 input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:
                 has_deft_problem = True

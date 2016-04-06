@@ -2514,7 +2514,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
     <div >
     <div  id="baseInput"></div>
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting, slice_output  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -2566,7 +2566,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             {%else %}
                  <tr>
                 <td colspan="11" style="width: 500px" >
-                        <span class="showFullSpan" style="padding:0px" title="{{ slice_output }}">Slice outputs:<span class="sliceOutput"><b>
+                        <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput"><b>
                             {{ slice_output}}</b></span>
                         </span>
                     </td>
@@ -2890,13 +2890,13 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                   </label>
                                 </div>
                                    <div class="large-1 columns">
-                                  <label for="TTCDays{{forloop.counter0}}" class="right inline">TTC:</label>
+{#                                  <label for="TTCDays{{forloop.counter0}}" class="right inline">TTC:</label>#}
                                        </div>
                                     <div class="large-1 columns">
-                                    <input id="TTCDays{{forloop.counter0}}" min="0" type="number" class="TTCDays storeOutput{{forloop.counter0}} storeInput" placeholder="D"  />
+{#                                    <input id="TTCDays{{forloop.counter0}}" min="0" type="number" class="TTCDays storeOutput{{forloop.counter0}} storeInput" placeholder="D"  />#}
                                       </div>
                                     <div class="large-1 columns">
-                                        <input type="number" min="0" max="24" class="TTCHours storeOutput{{forloop.counter0}} storeInput inline" placeholder="H"  />
+{#                                        <input type="number" min="0" max="24" class="TTCHours storeOutput{{forloop.counter0}} storeInput inline" placeholder="H"  />#}
                                         </div>
 
                                 <div class="large-2 columns">
