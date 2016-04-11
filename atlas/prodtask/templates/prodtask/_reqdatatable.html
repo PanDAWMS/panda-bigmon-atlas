@@ -153,6 +153,7 @@ $(".inputListRow").children("td").css({"padding":"1px"})
 $(".inputListTables").css({"border": "1px solid black","margin": "1px"})
 $(".outsideInputListTables").css({"border": "hidden","margin": "1px"})
 $(".showFullSpan").css({"cursor":"pointer","user-select":"none"});
+$(".showTasksInSlice").css({"cursor":"pointer","user-select":"none"});
 $(".showSmallSpan").css({"cursor":"pointer"});
 
 {#Color pattern steps#}
@@ -199,14 +200,19 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     {#    replace hide/show on dynamic creation#}
     $(".showFullSpan").click(function(event){
 
-       console.log();
-        oldID = $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").attr('id');
 
-        newID = 'saveStatus'+oldID.slice('outsideInputListTables'.length);
-        return formSliceInfo(event,newID);
+        realID = $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").attr('id');
+
+        preparedID = 'saveStatus'+realID.slice('outsideInputListTables'.length);
+        return formSliceInfo(event,preparedID);
     });
 
-
+    $(".showTasksInSlice").click(function(event){
+        var sliceList=[];
+        var oldID = $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").attr('id');
+        sliceList.push(oldID.slice("outsideInputListTables".length));
+        return showTasksFromSlices(sliceList);
+    });
 
 
     {#Fill pattern table#}
@@ -1610,6 +1616,22 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
               return false;
         };
 
+        function showTasksFromSlices(sliceList) {
+            $("#waitingDialog").dialog();
+            $.ajax({
+                        url: Django.url('prodtask:form_tasks_from_slices', "{{ pr_id }}"),
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sliceList),
+                        dataType: 'text',
+                        success: function (data, status) {
+                            $("#waitingDialog").dialog('close');
+                            window.location.href = Django.url('reqtask:request_tasks');
+
+                        }
+                    }
+            );
+        }
 
         function  showTasks(event){
             event.preventDefault();
@@ -1619,20 +1641,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 var sliceID = $(this).attr("id").slice(8);
                 sliceList.push(sliceID);
             });
-            $( "#waitingDialog" ).dialog();
-            $.ajax({
-                    url: Django.url('prodtask:form_tasks_from_slices',"{{ pr_id }}"),
-                    type: 'POST',
-                    contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(sliceList),
-                    dataType: 'text',
-                    success: function(data,status) {
-                         $( "#waitingDialog" ).dialog('close');
-                        window.location.href = Django.url('reqtask:request_tasks');
-
-                    }
-                }
-            );
+            showTasksFromSlices(sliceList)
         }
 
 
@@ -2525,7 +2534,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan changedatasetName{{ inputList.slice }} DatasetSort" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
+                         <span class="showTasksInSlice">+ </span><span class="showFullSpan changedatasetName{{ inputList.slice }} DatasetSort" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
                             {{ inputList.dataset }}
                         </span>
                     </td>
@@ -2538,7 +2547,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showFullSpan">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl JOSort' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class="showTasksInSlice">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl JOSort' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
                         </a>
                     </td>
