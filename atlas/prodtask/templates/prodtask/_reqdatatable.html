@@ -2559,12 +2559,24 @@ ProjectModeForm.prototype.createForm = function(inputString){
             </tr>
             {% if  not not_use_input_date_for_pattern %}
               <tr>
-                    <td colspan="11" style="width: 500px" >
-                        <span class="showFullSpan changecomment{{ inputList.slice }}" style="padding:0px" title="{{ inputList.comment }}">
-                            {{ inputList.comment }}
-                        </span>
-                    </td>
-                    <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td>
+
+                        {% ifequal trequest.request_type "MC" %}
+                            <td colspan="11" style="width: 500px" >
+                            <span class="showFullSpan changecomment{{ inputList.slice }}" style="padding:0px" title="{{ inputList.comment }}">
+                                {{ inputList.comment }}
+                             </span>
+                            </td>
+                            <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td>
+
+                         {% else %}
+                            <td colspan="13" style="width: 500px" >
+                            <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput"><b>
+                                {{ slice_output}}</b></span>
+                            </span>
+                            </td>
+                        {% endifequal %}
+
+
                    {% if cloned != 'no' %}
                         <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
