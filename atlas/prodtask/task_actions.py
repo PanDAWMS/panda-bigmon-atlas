@@ -31,7 +31,8 @@ _deft_actions = {
     'kill_job': 'kill_job',
     'obsolete': 'obsolete_task',
     'change_core_count': 'change_task_attribute',
-    'change_split_rule': 'change_task_split_rule'
+    'change_split_rule': 'change_task_split_rule',
+    'pause_task': 'pause_task', 'resume_task':'resume_task'
 }
 
 supported_actions = _deft_actions.keys()
@@ -59,7 +60,8 @@ allowed_task_actions = {
 for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
-                                          'increase_attempt_number', 'abort_unfinished_jobs'])
+                                          'increase_attempt_number', 'abort_unfinished_jobs',
+                                          'pause_task', 'resume_task'])
 # Extending actions by groups of them
 for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:

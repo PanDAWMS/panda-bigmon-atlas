@@ -95,6 +95,14 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('retry_task', owner, body)
 
+    def pause_task(self, owner, task_id):
+        body = {'task_id': task_id}
+        return self._create_request('pause_task', owner, body)
+
+    def resume_task(self, owner, task_id):
+        body = {'task_id': task_id}
+        return self._create_request('resume_task', owner, body)
+
     def increase_attempt_number(self, owner, task_id, increment):
         body = {'task_id': task_id, 'increment': increment}
         return self._create_request('increase_attempt_number', owner, body)
