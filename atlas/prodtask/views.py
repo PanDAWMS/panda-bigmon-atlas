@@ -2089,7 +2089,7 @@ def make_slices_from_dict(req, file_dict):
                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                           'nGBPerJob','maxAttempt','maxFailure']
+                                           'nGBPerJob','maxAttempt','maxFailure','split_slice']
                     for task_config_option in task_config_options:
                         if task_config_option in step['task_config']:
                             task_config.update({task_config_option:step['task_config'][task_config_option]})

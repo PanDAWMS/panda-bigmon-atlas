@@ -145,7 +145,7 @@ def format_check(format):
 
 def format_splitting(format_string, events_number):
     if events_number==-1:
-        return [(-1,format_string)]
+        return [(-1,format_string,False)]
     formats_percentage = format_string.split('.')
     formats_dict = []
     percentages = set()
@@ -154,10 +154,10 @@ def format_splitting(format_string, events_number):
         if '-' in format_percentage:
             if int(format_percentage.split('-')[1]) > 100:
                 raise ValueError('Wrong format %s'%format_string)
-            formats_dict.append((format_percentage.split('-')[0],int(format_percentage.split('-')[1])))
+            formats_dict.append((format_percentage.split('-')[0],int(format_percentage.split('-')[1]),True))
             percentages.add(int(format_percentage.split('-')[1]))
         else:
-            formats_dict.append((format_percentage.split('-')[0],100))
+            formats_dict.append((format_percentage.split('-')[0],100,False))
             percentages.add(100)
     percentages_list = list(percentages)
     percentages_list.sort()
@@ -165,13 +165,16 @@ def format_splitting(format_string, events_number):
     for percentage in percentages_list:
         section_events = (int(events_number) * percentage) / 100
         section_formats = []
+        do_split = False
         for format in formats_dict:
             if format[1] >= percentage:
                 section_formats.append(format[0])
-        result.append((section_events - processed_events,'.'.join(section_formats)))
+            if format[2]:
+                do_split = True
+        result.append((section_events - processed_events,'.'.join(section_formats),do_split))
         processed_events = section_events
     if 100 not in percentages_list:
-        result.append((int(events_number)-processed_events,''))
+        result.append((int(events_number)-processed_events,'',True))
     return result
 
 
@@ -201,7 +204,7 @@ def translate_excl_to_dict(excel_dict):
                         is_fullsym = False
                     input_events_format = format_splitting(translated_row.get('format', ''),total_input_events)
 
-                    for input_events, format in input_events_format:
+                    for input_events, format, do_split in input_events_format:
                         irl = {}
                         st_sexec_list = []
                         sexec = {}
@@ -245,8 +248,12 @@ def translate_excl_to_dict(excel_dict):
                                 else:
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None
-                                task_config = {'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
-                                                                     'project_mode':get_default_project_mode_dict().get(st,'')}
+                                if do_split:
+                                    task_config = {'split_slice':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                         'project_mode':get_default_project_mode_dict().get(st,'')}
+                                else:
+                                    task_config = {'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                         'project_mode':get_default_project_mode_dict().get(st,'')}
 
                                 if reduce_input_format:
                                     task_config.update({'input_format':'AOD'})
