@@ -2182,6 +2182,7 @@ function ProcessingStep() {
   this.input_events = undefined;
   this.merging_tag = undefined;
   this.nFilesPerMergeJob = undefined;
+  this.nEventsPerMergeJob = undefined;
   this.nGBPerMergeJob = undefined;
   this.nMaxFilesPerMergeJob = undefined;
   this.nFilesPerJob = undefined;
@@ -2871,7 +2872,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     <div class="content" data-section-content>
                         <fieldset>
                         <div class="row">
-                                <div class="large-3 columns">
+                                <div class="large-2 columns">
                                   <label> AMI tag
                                     <input type="text" class="step storeOutput{{forloop.counter0}} storeInput" placeholder=" " onchange="spreadAMI(this);"  />
                                   </label>
@@ -2882,13 +2883,13 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                   </label>
 
                                 </div>
-                                 <div class="large-2 columns">
+                                 <div class="large-3 columns">
                                   <label>Events per Input file
                                     <input type="number" class="nEventsPerInputFile storeOutput{{forloop.counter0}} storeInput"  placeholder=""  />
                                   </label>
 
                                 </div>
-                                 <div class="large-2 columns">
+                                 <div class="large-3 columns">
                                   <label>Events per job
                                     <input type="number" class="nEventsPerJob storeOutput{{forloop.counter0}} storeInput"  placeholder=""  />
                                   </label>
@@ -2965,21 +2966,26 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 </div>
                               </div>
                               <div class="row">
-                                <div class="large-3 columns">
+                                <div class="large-2 columns">
                                   <label>merging tag
                                     <input type="text" class="merging_tag storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                 </div>
-                                 <div class="large-3 columns">
+                                 <div class="large-2 columns">
                                   <label>nFilesPerMergeJob
                                     <input type="number" class="nFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                 </div>
-                                  <div class="large-3 columns">
+                                  <div class="large-2 columns">
                                   <label>nGBPerMergeJob
                                     <input type="number" class="nGBPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                 </div>
+                                  <div class="large-3 columns">
+                                  <label>nEventsPerMergeJob
+                                    <input type="number" class="nEventsPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
+                                  </label>
+                                      </div>
                                  <div class="large-3 columns">
                                   <label>nMaxFilesPerMergeJob
                                     <input type="number" class="nMaxFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
@@ -3153,19 +3159,24 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 </div>
                               </div>
                               <div class="row">
-                                <div class="large-3 columns">
+                                <div class="large-2 columns">
                                   <label>merging tag
                                     <input type="text" class="merging_tag storeBulk"  />
                                   </label>
                                 </div>
-                                 <div class="large-3 columns">
+                                 <div class="large-2 columns">
                                   <label>nFilesPerMergeJob
                                     <input type="number" class="nFilesPerMergeJob storeBulk"  />
                                   </label>
                                 </div>
-                                  <div class="large-3 columns">
+                                  <div class="large-2 columns">
                                   <label>nGBPerMergeJob
                                     <input type="number" class="nGBPerMergeJob storeBulk"  />
+                                  </label>
+                                </div>
+                                  <div class="large-3 columns">
+                                  <label>nEventsPerMergeJob
+                                    <input type="number" class="nEventsPerMergeJob storeBulk"  />
                                   </label>
                                 </div>
                                  <div class="large-3 columns">
