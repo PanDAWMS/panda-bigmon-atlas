@@ -485,6 +485,8 @@ def form_skipped_slice(slice, reqid):
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
+            if input_type=='merge.HITS':
+                dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'simul.HITS')
             #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
             return {slice:dataset_events}
