@@ -461,7 +461,7 @@ class StepExecution(models.Model):
              'Atlf TAG']
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
-    INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
+    INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
                               'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile','maxFailure','split_slice']
     TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode']
 

@@ -42,7 +42,7 @@ _logger = logging.getLogger('prodtaskwebui')
 def get_object_form_step(step):
     result_object = {"datasetList":"","parentstepshort":"","inputFormat":"","ctag":"","formats":"","eventsperjob":"","totalevents":"",
                "ram":"","cmtconfig":"","projectmode":"","priority":"","nFilesPerJob":"","nGBPerJob":"","maxFailure":"",
-               "maxAttempt":"","token":"","jediTag":"","nFilesPerMergeJob":"","nGBPerMergeJob":"","nMaxFilesPerMergeJob":"",
+               "maxAttempt":"","token":"","jediTag":"","nFilesPerMergeJob":"","nEventsPerMergeJob":"","nGBPerMergeJob":"","nMaxFilesPerMergeJob":"",
                "datasets":""}
     result_object["inputFormat"] = step.get_task_config('input_format')
     result_object["ctag"] = step.step_template.ctag
@@ -58,7 +58,7 @@ def get_object_form_step(step):
         else:
             project_without_cmt.append(token)
     result_object["projectmode"] = ';'.join(project_without_cmt)
-    for x in ["nFilesPerJob","nGBPerJob","maxFailure","maxAttempt","token","nFilesPerMergeJob","nGBPerMergeJob",
+    for x in ["nFilesPerJob","nGBPerJob","maxFailure","maxAttempt","token","nEventsPerMergeJob","nFilesPerMergeJob","nGBPerMergeJob",
               "nMaxFilesPerMergeJob"]:
         result_object[x] = str(step.get_task_config(x))
     result_object["jediTag"] = str(step.get_task_config('merging_tag'))
@@ -947,7 +947,7 @@ def parse_json_slice_dict(json_string):
                         task_config = {}
                         nEventsPerJob = slice['eventsperjob']
                         task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-                        merge_options = ['nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob']
+                        merge_options = ['nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob']
                         if slice['jediTag']:
                             task_config.update({'merging_tag':slice['jediTag']})
                             for merge_option in merge_options:
@@ -1577,7 +1577,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                                 task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
                                         else:
                                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
-                                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                                    task_config_options = ['project_mode','input_format','token','nEventsPerMergeJob','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
                                                            'nGBPerJob','maxAttempt','maxFailure']
                                     for task_config_option in task_config_options:
