@@ -299,7 +299,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config = json.loads(step_in_db.task_config)
                             else:
                                 task_config = {}
-                            for x in ['input_format','nEventsPerJob','token','merging_tag',
+                            for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
                                       'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
                                 if x in step_value['changes']:
@@ -372,7 +372,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                     events_per_input_file(index,STEPS,task_config,parent_step)
                             else:
                                 task_config.update({'project_mode':input_list.project_mode})
-                            for x in ['input_format','nEventsPerJob','token','merging_tag',
+                            for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
                                       'nGBPerJob','maxAttempt','maxFailure']:
                                 if x in step_value['changes']:
@@ -2089,7 +2089,7 @@ def make_slices_from_dict(req, file_dict):
                                 task_config.update({'nEventsPerInputFile':int(step['task_config']['nEventsPerJob'].get(step['step_name'],0))})
                         else:
                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
-                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob',
+                    task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob','nEventsPerMergeJob',
                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
                                            'nGBPerJob','maxAttempt','maxFailure','split_slice']
                     for task_config_option in task_config_options:

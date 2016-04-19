@@ -771,7 +771,7 @@ def slice_steps(request, reqid, slice_number):
                                         'nFilesPerMergeJob':task_config.get('nFilesPerMergeJob',''),'nGBPerMergeJob':task_config.get('nGBPerMergeJob',''),
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
                                         'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
-                                        'maxFailure':task_config.get('maxFailure',''),
+                                        'maxFailure':task_config.get('maxFailure',''),'nEventsPerMergeJob':task_config.get('nEventsPerMergeJob',''),
                                         'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''
