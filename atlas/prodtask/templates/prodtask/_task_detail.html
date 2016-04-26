@@ -58,10 +58,12 @@
 <tr><th><label for="total_events">Total events:</label></th><td>{{ task.total_events }}</td></tr>
 <tr><th><label for="total_req_jobs">Total req jobs:</label></th><td>{{ task.total_req_jobs }}</td></tr>
 <tr><th><label for="total_done_jobs">Total done jobs:</label></th><td>{{ task.total_done_jobs }}</td></tr>
+<tr><th><label for="reference">Reference:</label></th><td><a href="https://its.cern.ch/jira/browse/{{ task.reference }}">{{ task.reference }}</a></td></tr>
 <tr><th><label for="submit_time">Submit time:</label></th><td>{{ task.submit_time }}</td></tr>
 <tr><th><label for="start_time">Start time:</label></th><td>{{ task.start_time }}</td></tr>
 <tr><th><label for="timestamp">Timestamp:</label></th><td>{{ task.timestamp }}</td></tr>
-<tr><th><label for="reference">Reference:</label></th><td><a href="https://its.cern.ch/jira/browse/{{ task.reference }}">{{ task.reference }}</a></td></tr>
+<tr><th><label for="ttcr_timestamp">TTC Cold:</label></th><td>{{ task.ttcr_timestamp }}</td></tr>
+<tr><th><label for="ttcj_timestamp">TTC Hot:</label></th><td>{{ task.ttcj_timestamp }}</td></tr>
 <tr><th><label for="core_count">Cores:</label></th><td>{% if ttask.jedi_task_parameters.coreCount %}{{ ttask.jedi_task_parameters.coreCount }}{% else %}1{% endif %}</td></tr>
 <tr><th><label for="pptimestamp">Pptimestamp:</label></th><td>{{ task.pptimestamp }}</td></tr>
 <tr><th><label for="postproduction">Postproduction:</label></th><td>{{ task.postproduction }}</td></tr>

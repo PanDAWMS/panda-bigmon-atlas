@@ -448,6 +448,9 @@ class ParentToChildRequest(models.Model):
 
 
 
+
+
+
 class StepExecution(models.Model):
     STEPS = ['Evgen',
              'Simul',
@@ -624,7 +627,9 @@ class ProductionTask(models.Model):
     total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
     is_extension = models.NullBooleanField(db_column='IS_EXTENSION', null=True, blank=False)
     total_files_finished = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFINISHED', null=True)
-
+    ttcr_timestamp = models.DateTimeField(db_column='TTCR_TIMESTAMP', null=True)
+    ttcj_timestamp = models.DateTimeField(db_column='TTCJ_TIMESTAMP', null=True)
+    ttcj_update_time = models.DateTimeField(db_column='TTCJ_UPDATE_TIME', null=True)
 
     # def save(self):
     #     raise NotImplementedError
@@ -795,6 +800,8 @@ class MCPriority(models.Model):
 
     class Meta:
         db_table = u'T_PRODUCTION_MC_PRIORITY'
+
+
 
 
 def get_priority_object(priority_key):
