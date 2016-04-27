@@ -39,9 +39,13 @@ def make_open_ended(request,reqid):
     if request.method == 'POST':
         # check that production request is not open ended
         try:
+            open_ended_request = None
             if OpenEndedRequest.objects.filter(request=reqid).exists():
                 if OpenEndedRequest.objects.get(request=reqid).status == 'open':
                     return  HttpResponse(json.dumps({'success': False,'message':'Already open ended'}), content_type='application/json')
+                if OpenEndedRequest.objects.get(request=reqid).status == 'closed':
+                    open_ended_request = OpenEndedRequest.objects.get(request=reqid)
+
             #Make open ended from slice 0
             slices = list(InputRequestList.objects.filter(request=reqid))
             if not slices:
@@ -70,7 +74,8 @@ def make_open_ended(request,reqid):
                         for step in steps:
                             step.status = 'Skipped'
                             step.save()
-            open_ended_request = OpenEndedRequest()
+            if not (open_ended_request):
+                open_ended_request = OpenEndedRequest()
             open_ended_request.request = TRequest.objects.get(reqid=reqid)
             open_ended_request.container = new_name
             open_ended_request.status = 'open'
@@ -78,6 +83,7 @@ def make_open_ended(request,reqid):
             extend_open_ended_request(int(reqid))
 
         except Exception,e:
+            _logger.error(form_request_log(reqid,None,'Problem with making open ended: %s'%str(e)))
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
         return  HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
