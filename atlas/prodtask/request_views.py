@@ -557,6 +557,10 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination.is_error = None
     request_destination.manager = owner
     request_destination.ref_link = new_ref
+    if request_destination.info_fields:
+        info_field = json.loads(request_destination.info_fields)
+        info_field['long_description'] = 'Cloned from request %s'%str(reqid)
+        request_destination.info_fields=json.dumps(info_field)
     request_destination.save()
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
