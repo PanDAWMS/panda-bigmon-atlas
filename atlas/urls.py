@@ -24,20 +24,20 @@ common_patterns = patterns('',
     ### Applications
     url(r'^htcondorjobs', include('core.htcondor.urls')),
 #obsoleted.2014-05-01.jschovan#    url(r'^job', include('core.pandajob.urls')),
-    url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
-    url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
-    url(r'^dash/', include('core.pandajob.urls_pandajob_dash')),
+    # url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
+    # url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
+    # url(r'^dash/', include('core.pandajob.urls_pandajob_dash')),
 #    url(r'^support/', include('core.pandajob.urls_pandajob_support')),
 
 #obsoleted.2014-05-01.jschovan#    url(r'^u', include('core.pandajob.urls_users', namespace='user')),
-    url(r'^users/', include('core.pandajob.urls_pandajob_users')),
-    url(r'^user/', include('core.pandajob.urls_pandajob_singleuser')),
-
-    url(r'^tasks/', include('core.pandajob.urls_pandajob_tasks')),
-    url(r'^task/', include('core.pandajob.urls_pandajob_singletask')),
-
-    url(r'^sites/', include('core.pandajob.urls_pandajob_sites')),
-    url(r'^site/', include('core.pandajob.urls_pandajob_singlesite')),
+    # url(r'^users/', include('core.pandajob.urls_pandajob_users')),
+    # url(r'^user/', include('core.pandajob.urls_pandajob_singleuser')),
+    #
+    # url(r'^tasks/', include('core.pandajob.urls_pandajob_tasks')),
+    # url(r'^task/', include('core.pandajob.urls_pandajob_singletask')),
+    #
+    # url(r'^sites/', include('core.pandajob.urls_pandajob_sites')),
+    # url(r'^site/', include('core.pandajob.urls_pandajob_singlesite')),
 
     url(r'^resource', include('core.resource.urls')),
 ###     url(r'^api-auth', include('core.api.urls')),

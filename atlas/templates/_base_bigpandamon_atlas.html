@@ -99,28 +99,18 @@
 
 
 
-<li>
-          <a href="http://dashb-atlas-data.cern.ch/ddm2/" target="_blank">DDMDash</a>
-</li>
 
-<li>
-          <a href="http://dashb-atlas-ssb.cern.ch/dashboard/request.py/siteview#currentView=Shifter+view&highlight=false" target="_blank">SSB</a>
-</li>
 {% endblock %}
+
+
 
 {% block top_menu_all_5 %}
-<li>
-          <a href="{% url 'index' %}">Quick search</a>
-</li>
-{% endblock %}
-
-{% block top_menu_all_6 %}
     <li class="has-dropdown">
-      {% block top_menu_6 %}
+      {% block top_menu_5 %}
       <a href="#">Help</a>
       <ul class="dropdown">
-        <li><a href="http://twiki.cern.ch/twiki/bin/view/PanDA/PanDA">PanDA home</a></li>
-        <li><a href="http://pandawms.org">Big PanDA home</a></li>
+        <li><a href="https://twiki.cern.ch/twiki/bin/view/AtlasComputing/ProdSys">ProdSys home</a></li>
+
       </ul>
       {% endblock %}
     </li>
