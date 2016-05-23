@@ -62,8 +62,8 @@
     function changeSelector(selectID, baseList, sourceSelectID){
         var baseValue = $(selectID).val();
         $(sourceSelectID).html('');
-        for (var i=0; i<baseList.length;i++){
-            var new_option = baseValue + baseList[i];
+        for (var i=0; i<baseList[baseValue].length;i++){
+            var new_option = baseValue + baseList[baseValue][i];
             $(sourceSelectID).append($('<option>', {
                 value: new_option,
                 text: new_option
@@ -90,15 +90,16 @@
     }
 
     function  MCCampaignHandling(){
-        var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15'];
-        var SUB_CAMPAIGN = ['a','b','c','d','e','f'];
+        var MC_CAMPAIGN_LIST = ['MC11','MC12','MC14','MC15','MC16'];
+        var SUB_CAMPAIGN = {'MC11':['a','b','c','d','e','f'],'MC12':['a','b','c','d','e','f'],
+            'MC14':['a','b','c','d','e','f'],'MC15':['a','b','c'],'MC16':['a']};
         if ($("#{{ form.request_type.auto_id }}").val()=='MC'){
             $("#{{ form.train.auto_id }}").parent().parent().show();
             addHelpText();
             var campaign_name = changeInputOnSelect("{{ form.campaign.auto_id }}","campaign",'none_mc_campaign',MC_CAMPAIGN_LIST);
             var sub_campaign_list = [];
-            for (var i=0; i<SUB_CAMPAIGN.length;i++){
-                sub_campaign_list.push(campaign_name + SUB_CAMPAIGN[i]);
+            for (var i=0; i<SUB_CAMPAIGN[campaign_name].length;i++){
+                sub_campaign_list.push(campaign_name + SUB_CAMPAIGN[campaign_name][i]);
             }
             var sub_campaign_name = changeInputOnSelect("{{ form.subcampaign.auto_id }}","subcampaign",'none_mc_subcampaign',sub_campaign_list);
             $("#{{ form.campaign.auto_id }}").change(function(){changeSelector("#{{ form.campaign.auto_id }}",SUB_CAMPAIGN,"#{{ form.subcampaign.auto_id }}")});
