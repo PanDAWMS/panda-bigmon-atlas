@@ -2,6 +2,7 @@ import json
 import requests
 # import logging
 # import os
+import re
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -70,6 +71,9 @@ def get_jobs(request):
     #url = 'http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861';
 
     url = json.loads(request.body)[0];
+    url=re.sub('&display_limit.*(\d+)','',url)
+
+
 
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
