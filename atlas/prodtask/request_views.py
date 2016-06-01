@@ -59,7 +59,7 @@ def get_object_form_step(step):
             project_without_cmt.append(token)
     result_object["projectmode"] = ';'.join(project_without_cmt)
     for x in ["nFilesPerJob","nGBPerJob","maxFailure","maxAttempt","token","nEventsPerMergeJob","nFilesPerMergeJob","nGBPerMergeJob",
-              "nMaxFilesPerMergeJob"]:
+              "nMaxFilesPerMergeJob","spreadsheet_original"]:
         result_object[x] = str(step.get_task_config(x))
     result_object["jediTag"] = str(step.get_task_config('merging_tag'))
     for key in result_object:
@@ -1583,7 +1583,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nEventsPerMergeJob','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                                           'nGBPerJob','maxAttempt','maxFailure']
+                                                           'nGBPerJob','maxAttempt','maxFailure','spreadsheet_original']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})

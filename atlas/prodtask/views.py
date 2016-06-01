@@ -359,6 +359,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 total_events = -1
                                 still_skipped = False
                             step_in_db.set_task_config(task_config)
+                            step_in_db.remove_task_config('spreadsheet_original')
                             step_in_db.step_def_time = None
                             step_in_db.save_with_current_time()
                             parent_step = step_in_db
@@ -402,6 +403,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                         priority=temp_priority)
                             no_parent = True
                             st_exec.set_task_config(task_config)
+                            st_exec.remove_task_config('spreadsheet_original')
                             if parent_step:
                                 st_exec.step_parent = parent_step
                                 no_parent = False
@@ -1157,16 +1159,21 @@ def request_table_view(request, rid=None, show_hidden=False):
         return_status = 'not_submitted'
         exist_approved = False
         exist_not_approved = False
+        exist_spreadsheet_original = False
         for step_task in ste_task_list:
             if step_task['step']:
                 if (step_task['step']['status'] == 'Approved')or(step_task['step']['status'] == 'Skipped'):
                     exist_approved = True
                 else:
                     exist_not_approved = True
+                if 'spreadsheet_original' in step_task['step']['task_config']:
+                    exist_spreadsheet_original = True
         if exist_approved and exist_not_approved:
             return_status = 'partially_submitted'
         if exist_approved and not(exist_not_approved):
             return_status = 'submitted'
+        if exist_spreadsheet_original:
+            return_status+='_original'
         return return_status
 
     def approve_level(step_task_list):
@@ -1184,6 +1191,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                     return  True
         return False
 
+
+
+
     BIG_PANDA_TASK_BASE = 'http://bigpanda.cern.ch/task/'
     FAKE_TASK_NUMBER = '123456'
     PRODTASK_TASK_BASE = ''
@@ -1200,7 +1210,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                     is_another_request = True
                 slice={'slice':str(input_slice),'request':another_request}
                 skipped = 'foreign'
-
             elif (step['status'] =='Skipped')or(step['status']=='NotCheckedSkipped'):
                 skipped = 'skipped'
             else:

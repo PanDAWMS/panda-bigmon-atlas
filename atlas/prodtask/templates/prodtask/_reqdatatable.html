@@ -75,6 +75,9 @@
     td.submitted { color : green;	}
     td.not_submitted { color : red;}
     td.partially_submitted { color : orange;	}
+    td.submitted_original { background-color: indianred; color : black;	}
+    td.not_submitted_original {background-color: indianred; color : black;	}
+    td.partially_submitted_original { background-color: indianred; color : black;		}
     td.hidden { color : #463cff;	}
 
    </style>
@@ -597,6 +600,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 {#                   8 = "checkbox".length#}
                    var sliceID = $(this).attr("id").slice(8);
                    if ($("#inputList_div".concat(sliceID)).is(":visible")){
+                       if (($("#aprroveLabel".concat(sliceID)).html()!="submitted")&&($("#aprroveLabel".concat(sliceID)).html()!="partially_submitted")){
+                           $("#aprroveLabel".concat(sliceID)).html('not_submitted');
+                           $("#aprroveLabel".concat(sliceID)).addClass('not_submitted');
+                           $("#aprroveLabel".concat(sliceID)).css({'background-color':'transparent'});
+                       }
                        {% for step in step_list %}
                            var stepValue = $("#patternform{{ forloop.counter0 }}").val();
                            var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");

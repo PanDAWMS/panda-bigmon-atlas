@@ -249,10 +249,10 @@ def translate_excl_to_dict(excel_dict):
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None
                                 if do_split:
-                                    task_config = {'split_slice':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config = {'split_slice':1,'spreadsheet_original':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')}
                                 else:
-                                    task_config = {'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config = {'maxAttempt':20,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')}
 
                                 if reduce_input_format:

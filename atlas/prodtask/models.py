@@ -491,6 +491,13 @@ class StepExecution(models.Model):
         currrent_dict.update(update_dict)
         self.task_config = json.dumps(currrent_dict)
 
+    def remove_task_config(self, key):
+        if self.task_config:
+            currrent_dict = json.loads(self.task_config)
+            if key in currrent_dict:
+                currrent_dict.pop(key)
+                self.task_config = json.dumps(currrent_dict)
+
     def get_task_config(self, field = None):
         return_dict = json.loads(self.task_config)
         if field:
