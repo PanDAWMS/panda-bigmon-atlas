@@ -109,5 +109,4 @@ def get_tasks(request):
     #data = json.dumps(list(qs.values()),default = decimal_default)
     #data = json.dumps(list(qs),default = decimal_default)
 
-
     return HttpResponse(data)
