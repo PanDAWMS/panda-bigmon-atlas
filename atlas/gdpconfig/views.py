@@ -35,12 +35,12 @@ def config_action(request,action):
     #print user,action
 
     is_superuser = request.user.is_superuser
-    #print request.body
-    if not is_superuser:
-        result['status']='Failed'
-        result['exception'] = 'Permission denied'
-        return HttpResponse(json.dumps(result))
-        #return HttpResponse('Permission denied')
+    # #print request.body
+    # if not is_superuser:
+    #     result['status']='Failed'
+    #     result['exception'] = 'Permission denied'
+    #     return HttpResponse(json.dumps(result))
+
 
 
     data_json = request.body
