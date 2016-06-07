@@ -861,9 +861,23 @@ class Site(models.Model):
     def save(self, *args, **kwargs):
         raise NotImplementedError('Only manual creation')
 
-    def __str__(self):
-        return "%i - %s" % (int(self.id), self.queue_name)
-
     class Meta:
         app_label = 'panda_dev'
         db_table = u'"ATLAS_PANDA"."SITE"'
+
+class GDPConfig(models.Model):
+    app = models.CharField(max_length=64, db_column='APP', primary_key=True)
+    component = models.CharField(max_length=64, db_column='COMPONENT')
+    key = models.CharField(max_length=64, db_column='KEY')
+    vo = models.CharField(max_length=16, db_column='VO')
+    value = models.CharField(max_length=256, db_column='VALUE')
+    type = models.CharField(max_length=64, db_column='TYPE')
+    descr = models.CharField(max_length=256, db_column='DESCR')
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    class Meta:
+        unique_together = (('app', 'component' , 'key' , 'vo'),)
+        app_label = 'panda_dev'
+        db_table = u'"ATLAS_PANDA"."CONFIG"'
