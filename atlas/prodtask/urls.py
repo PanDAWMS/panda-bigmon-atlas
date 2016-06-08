@@ -4,7 +4,7 @@ from django.conf.urls import patterns, include, url
 # from django.contrib import admin
 # admin.autodiscover()
 from ..prodtask.train_views import TrainLoad, TrainLoads
-
+# from ..prodtask.selection import request_progress_general
 urlpatterns = patterns('',
     # Examples:
 
@@ -62,7 +62,8 @@ urlpatterns = patterns('',
     url(r'^push_check/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.push_check',  name='push_check'),
     url(r'^short_hlt_form/$','atlas.prodtask.request_views.short_hlt_form',  name='short_hlt_form'),
     url(r'^hlt_form_prepare_request/$','atlas.prodtask.request_views.hlt_form_prepare_request',  name='hlt_form_prepare_request'),
-
+    url(r'^short_valid_form/$','atlas.prodtask.request_views.short_valid_form',  name='short_valid_form'),
+    url(r'^valid_form_prepare_request/$','atlas.prodtask.request_views.valid_form_prepare_request',  name='valid_form_prepare_request'),
     url(r'^status_history/(?P<reqid>\d+)/$','atlas.prodtask.request_views.status_history',  name='status_history'),
     url(r'^check_extend_request/(?P<reqid>\d+)/$','atlas.prodtask.request_views.check_extend_request',  name='check_extend_request'),
     url(r'^extend_request/(?P<reqid>\d+)/$','atlas.prodtask.request_views.extend_request',  name='extend_request'),
@@ -150,6 +151,8 @@ urlpatterns = patterns('',
 
     url(r'^trainloads/$', TrainLoads.as_view(), name='trainloads'),
     url(r'^trainloads/(?P<pk>[0-9]+)/$', TrainLoad.as_view(),name='trainload'),
+    # url(r'^request_progress_general/(?P<reqids>[\w|,]+)/$', 'atlas.prodtask.selection.request_progress_general', name='request_progress_general'),
+    # url(r'^request_progress_main/', 'atlas.prodtask.selection.request_progress_main', name='request_progress_main'),
     url(r'^assembled_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.assembled_train', name='assembled_train'),
 
     url(r'^login/$', 'atlas.auth.views.login', name='login'),
