@@ -98,8 +98,18 @@ $(document).ready(function () {
             newval = $("#value").val();
         }
 
-        $('#myModal').foundation('reveal', 'close');
+
         doAction(action, sRow, newval);
+
+
+
+        //Reload table
+{#        function fnReloadData() {#}
+{#            get_data();#}
+{#            $('#myModal').foundation('reveal', 'close');#}
+{#        }#}
+        setTimeout(get_data, 1000);
+        $('#myModal').foundation('reveal', 'close');
 
     } // doSelected
 

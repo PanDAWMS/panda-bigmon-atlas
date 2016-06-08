@@ -109,7 +109,45 @@
         });
 
 
+        function get_data(){
 
+            var parameters = {}
+
+            var ajaxUrl =  Django.url('gdpconfig:get_config');
+            $('#example').dataTable().fnProcessingIndicator();
+
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(parameters),
+                dataType: "json",
+
+                complete: function (jqXHR, textStatus) {
+
+                    var data =  $.parseJSON(jqXHR.responseText);
+
+
+
+                    var oTable = $('#example').dataTable();
+                    oTable.fnClearTable();
+                    if (data.length !== 0) {
+                        oTable.fnAddData(data);
+                    }
+                    oTable.fnDraw();
+
+
+                    $('#example').dataTable().fnProcessingIndicator(false);
+
+
+                } // 'complete' event handler
+
+            });
+
+                    // Apply the search
+
+            //$('#example').dataTable().fnProcessingIndicator();
+            //$(".dataTables_processing").css('visibility','visible');
+        };
 
 
         $(document).ready(function() {
@@ -198,66 +236,8 @@
 
             } );
 
-        //$("#btn_find_tasks").click(function(){
-        function get_data(){
-
-            var parameters = {}
-            {% if reqid %}
-            parameters = {{ reqid }}
-            {% endif %}
-            //if (parameters.length == 0) return;
-
-            var ajaxUrl =  Django.url('gdpconfig:get_config');
-            $('#example').dataTable().fnProcessingIndicator();
-
-            $.ajax({
-                url: ajaxUrl,
-                type: "POST",
-                data: $.toJSON(parameters),
-                dataType: "json",
-
-             //   success: function(){
 
 
-
-//                } // 'success' event handler
-                complete: function (jqXHR, textStatus) {
-
-                    //alert(jqXHR.responseText);
-                    //var data = jqXHR.responseText;
-
-                    var data =  $.parseJSON(jqXHR.responseText);
-
-
-
-                    var oTable = $('#example').dataTable();
-                    oTable.fnClearTable();
-                    if (data.length !== 0) {
-                        oTable.fnAddData(data);
-                    }
-                    oTable.fnDraw();
-
-
-                    $('#example').dataTable().fnProcessingIndicator(false);
-
-
-
-                    //console.log(oTable.api().columns(2).search( 'failed' ).data()[0]);
-
-
-
-                    //oTable.api().columns(2).search( columns(2).footer().value ).draw();
-
-
-                } // 'complete' event handler
-
-            });
-
-                    // Apply the search
-
-            //$('#example').dataTable().fnProcessingIndicator();
-            //$(".dataTables_processing").css('visibility','visible');
-        };
         //} );
             //$(".dataTables_processing").css('visibility','hidden');
         get_data();

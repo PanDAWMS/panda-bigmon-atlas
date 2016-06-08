@@ -874,8 +874,8 @@ class GDPConfig(models.Model):
     type = models.CharField(max_length=64, db_column='TYPE')
     descr = models.CharField(max_length=256, db_column='DESCR')
 
-    def save(self, *args, **kwargs):
-        raise NotImplementedError('Only manual creation')
+    #def save(self, *args, **kwargs):
+    #    raise NotImplementedError('Only manual creation')
 
     class Meta:
         unique_together = (('app', 'component' , 'key' , 'vo'),)

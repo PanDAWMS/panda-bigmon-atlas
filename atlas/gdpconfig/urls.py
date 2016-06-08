@@ -7,6 +7,9 @@ urlpatterns = patterns('',
     url(r'^config_action/(?P<action>\w+)/$', 'atlas.gdpconfig.views.config_action', name='config_action'),
     #url(r'^config_action/$', 'atlas.gdpconfig.views.config_action', name='config_action'),
     url(r'^get_config/$', 'atlas.gdpconfig.views.get_config', name='get_config'),
+
+    url(r'^login/$', 'atlas.auth.views.login', name='login'),
+    url(r'^logout/$', 'atlas.auth.views.logout', name='logout'),
 )
 
 

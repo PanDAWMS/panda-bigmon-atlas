@@ -1,24 +1,21 @@
 import json
-import requests
-from django.core import serializers
+#import requests
+
 from atlas.prodtask.models import GDPConfig
 
-# import logging
+import logging
 # import os
-from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus
 
-from decimal import Decimal
-from datetime import datetime
+#from django.contrib.auth.decorators import login_required
 
 from django.http import HttpResponse
 from django.shortcuts import render
 
 
-# _logger = logging.getLogger('prodtaskwebui')
+_logger = logging.getLogger('prodtaskwebui')
 
 
 def gdpconfig(request, rid = None):
-
 
     return render(request, 'gdpconfig/_config_table.html')
 
@@ -30,16 +27,10 @@ def config_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    user = request.user.username
-
-    #print user,action
-
-    is_superuser = request.user.is_superuser
-    # #print request.body
-    # if not is_superuser:
-    #     result['status']='Failed'
-    #     result['exception'] = 'Permission denied'
-    #     return HttpResponse(json.dumps(result))
+    if (not request.user.is_superuser) and (not request.user.username in ['fbarreir']):
+        result['status']='Failed'
+        result['exception'] = 'Permission denied'
+        return HttpResponse(json.dumps(result))
 
 
 
@@ -61,16 +52,27 @@ def config_action(request,action):
 
     row_type = str_to_type(param).__name__
 
-    #print row_type, sRow['type']
-
     if row_type != sRow['type']:
         result["exception"] = "Wrong type"
         return HttpResponse(json.dumps(result))
-    #print sRow, params
 
 
-    result['status'] = 'OK'
-    #return HttpResponse('OK')
+    qs = GDPConfig.objects.filter(app=sRow['app'],component=sRow['component'],key=sRow['key'],vo=sRow['vo'])
+
+    _logger.info("GDPConfig: Update user:{user} old data:{old_data}".format(user=request.user.username,
+                                                                 old_data=qs.values()))
+
+
+
+    try:
+        qs.update(value=param)
+    except:
+        result["exception"] = "Can't update DB"
+        return HttpResponse(json.dumps(result))
+
+    _logger.info("GDPConfig: Update user:{user} new data:{old_data}".format(user=request.user.username,
+                                                                 old_data=qs.values()))
+
     return HttpResponse(json.dumps(result))
 
 def str_to_type (s):
