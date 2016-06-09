@@ -88,10 +88,13 @@
         validShortModel.request = {};
         validShortModel.outputs = {NTUP_PHYSVAL:true,ESD:true,AOD:true};
         validShortModel.request.priority = 900;
-
+        validShortModel.request.doNTUP = true;
         validShortModel.request.recoProjectMode = 'lumiblock=yes;';
         validShortModel.request.AODMergeProjectMode = 'lumiblock=yes;';
         validShortModel.request.ntupProjectMode = '';
+        validShortModel.request.aod_format='AOD';
+        validShortModel.request.esd_format='ESD';
+
         validShortModel.proceed = function() {
             var checkedOutput = [];
             for (var output in  validShortModel.outputs){

@@ -378,6 +378,9 @@ def short_valid_form(request):
             last_dataset = None
             for dataset in datasets:
                 if dataset:
+                    format_ESD = input_dict['esd_format']
+                    format_AOD = input_dict['aod_format']
+
                     irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
                            input_data='',
                            project_mode=input_dict['recoProjectMode'],
@@ -390,35 +393,36 @@ def short_valid_form(request):
                     task_config.update({'project_mode':input_dict['recoProjectMode'],
                                         'nFilesPerJob':1})
                     st_sexec_list.append({'step_name': step_from_tag(input_dict['recoTag']), 'tag': input_dict['recoTag'], 'step_exec': sexec,
-                                      'formats': 'AOD.ESD',
+                                      'formats': format_AOD + '.'  + format_ESD,
                                       'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':str(slice_index)+'_0'})
                     sexec = dict(status='NotChecked', priority=priority,
                                  input_events=-1)
                     task_config =  {'maxAttempt':15,'maxFailure':5}
                     task_config.update({'project_mode':input_dict['AODMergeProjectMode'],
-                                        'nFilesPerJob':10,'input_format':'AOD'})
+                                        'nFilesPerJob':10,'input_format':format_AOD})
                     st_sexec_list.append({'step_name': step_from_tag(input_dict['aodTag']), 'tag': input_dict['aodTag'], 'step_exec': sexec,
-                                      'formats': 'AOD',
+                                      'formats': format_AOD,
                                       'task_config':task_config,'step_order':str(slice_index)+'_1','step_parent':str(slice_index)+'_0'})
                     spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
                     slice_index += 1
-                    irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
-                           input_data='',
-                           project_mode=input_dict['ntupProjectMode'],
-                           priority=priority,
-                           input_events=-1)
+                    if input_dict['doNTUP']:
+                        irl = dict(slice=slice_index, brief='Reco', comment='Reco', dataset=dataset,
+                               input_data='',
+                               project_mode=input_dict['ntupProjectMode'],
+                               priority=priority,
+                               input_events=-1)
 
-                    sexec = dict(status='NotChecked', priority=priority,
-                                 input_events=-1)
-                    task_config =  {'maxAttempt':15,'maxFailure':5}
-                    st_sexec_list = []
-                    task_config.update({'project_mode':input_dict['ntupProjectMode'],
-                                        'nFilesPerJob':1,'input_format':'AOD'})
-                    st_sexec_list.append({'step_name': step_from_tag(input_dict['ntupTag']), 'tag': input_dict['ntupTag'], 'step_exec': sexec,
-                                      'formats': 'NTUP_PHYSVAL',
-                                      'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':str(slice_index-1)+'_1'})
-                    spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-                    slice_index += 1
+                        sexec = dict(status='NotChecked', priority=priority,
+                                     input_events=-1)
+                        task_config =  {'maxAttempt':15,'maxFailure':5}
+                        st_sexec_list = []
+                        task_config.update({'project_mode':input_dict['ntupProjectMode'],
+                                            'nFilesPerJob':1,'input_format':format_AOD})
+                        st_sexec_list.append({'step_name': step_from_tag(input_dict['ntupTag']), 'tag': input_dict['ntupTag'], 'step_exec': sexec,
+                                          'formats': 'NTUP_PHYSVAL',
+                                          'task_config':task_config,'step_order':str(slice_index)+'_0','step_parent':str(slice_index-1)+'_1'})
+                        spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+                        slice_index += 1
                     last_dataset = dataset
             request.session['file_dict'] = spreadsheet_dict
             request.session['valid_dataset'] = last_dataset

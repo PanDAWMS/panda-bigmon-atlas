@@ -27,8 +27,20 @@
 
         <div class="row">
         <div class="large-6 columns">
-
-
+            <span>Additional outputs:</span><br>
+            <label>
+                <input type="checkbox" ng-model="validShortModel.request.doNTUP" /> NTUP_PHYSVAL
+            </label>
+            <label> *AOD* format:
+            <input type="text" name="aod_format" ng-model="validShortModel.request.aod_format" required >
+               <span ng-show="validShortForm.aod_format.$error.required && !validShortForm.aod_format.$pristine" >
+                Required </span>
+          </label>
+        <label> *ESD* format:
+            <input type="text" name="esd_format" ng-model="validShortModel.request.esd_format" required >
+               <span ng-show="validShortForm.esd_formatt.$error.required && !validShortForm.esd_formatt.$pristine" >
+                Required </span>
+          </label>
         </div>
             <div class="large-4 columns">
                <label> Reco tag:
@@ -38,7 +50,7 @@
                     Required </span>
               </label>
 
-                <label> AOD merge tag:
+                <label> *AOD* merge tag:
                     <input type="text" name="aodTag" ngRequired="false" ng-model="validShortModel.request.aodTag"   required >
                    <span ng-show="validShortForm.aodTag.$error.amitag">The value is not a valid amitag!</span>
                     <span ng-show="validShortForm.aodTag.$error.required && !validShortForm.aodTag.$pristine" >
