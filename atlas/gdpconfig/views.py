@@ -53,8 +53,13 @@ def config_action(request,action):
     row_type = str_to_type(param).__name__
 
     if row_type != sRow['type']:
-        result["exception"] = "Wrong type"
-        return HttpResponse(json.dumps(result))
+        if row_type == 'int' and sRow['type'] == 'float':
+            pass
+        elif sRow['type'] == 'str':
+            pass
+        else:
+            result["exception"] = "Wrong type"
+            return HttpResponse(json.dumps(result))
 
 
     qs = GDPConfig.objects.filter(app=sRow['app'],component=sRow['component'],key=sRow['key'],vo=sRow['vo'])
