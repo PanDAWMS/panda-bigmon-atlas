@@ -49,27 +49,11 @@
            <thead>
            <tr>
 
-           <th>Application</th>
-           <th>Component</th>
-           <th>Key</th>
-           <th>VO</th>
-           <th>Value</th>
-           <th>Type</th>
-           <th>Description</th>
+           <th>Name</th>
+           <th>Fairshare</th>
            </tr>
            </thead>
-           <tfoot>
-           <tr>
 
-           <th>Application</th>
-           <th>Component</th>
-           <th>Key</th>
-           <th>VO</th>
-           <th>Value</th>
-           <th>Type</th>
-           <th>Description</th>
-           </tr>
-           </tfoot>
         </table>
 
 <!--
@@ -85,7 +69,7 @@
 
     <div class="left">
 
-        {% include "gdpconfig/manage_panel.html" %}
+        {% include "gdpconfig/manage_panel_fairshare.html" %}
 
     </div>
 
@@ -113,7 +97,7 @@
 
             var parameters = {}
 
-            var ajaxUrl =  Django.url('gdpconfig:get_config');
+            var ajaxUrl =  Django.url('gdpconfig:get_fairshare');
             $('#example').dataTable().fnProcessingIndicator();
 
             $.ajax({
@@ -143,10 +127,6 @@
 
             });
 
-                    // Apply the search
-
-            //$('#example').dataTable().fnProcessingIndicator();
-            //$(".dataTables_processing").css('visibility','visible');
         };
 
 
@@ -154,31 +134,29 @@
 
 
 
-            $('#example tfoot th').each( function () {
-                    var title = $(this).text();
-                    if( title !== '')
-                        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
-                } );
+{#            $('#example tfoot th').each( function () {#}
+{#                    var title = $(this).text();#}
+{#                    if( title !== '')#}
+{#                        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );#}
+{#                } );#}
 
 
 	        var table = $('#example').DataTable({
 	                    "bProcessing" : true,
+                        "bFilter" : false,
+                        "bSort" : false,
                         dataType : "json",
                         columns : [
 
-                                {"data" : "app"},
-                                {"data" : "component"},
-                                {"data" : "key"},
-                                {"data" : "vo"},
-                                {"data" : "value"},
-                                {"data" : "type"},
-                                {"data" : "descr"}
+                                {"data" : "name"},
+                                {"data" : "fairshare"}
+
 
                         ],
                         dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "single",
-                            "aButtons": [],
+                            "aButtons": []
                         },
                         "aoColumnDefs": [
 
@@ -187,7 +165,7 @@
 
                                                                     },
 
-                        "order": [[1, 'asc']]
+                        "paging": false
 
                         //fnInitComplete : function() {
                         //    $("thead tr").clone().appendTo($("tfoot")) ;
@@ -198,16 +176,16 @@
 
 
 
-        table.columns().every( function () {
-
-                        var column = this;
-
-                        $( 'input', this.footer() ).on( 'keyup change', function () {
-                                //console.log(column.data());
-                                column.search( this.value ).draw();
-
-                        } );
-        } );
+{#        table.columns().every( function () {#}
+{##}
+{#                        var column = this;#}
+{##}
+{#                        $( 'input', this.footer() ).on( 'keyup change', function () {#}
+{#                                //console.log(column.data());#}
+{#                                column.search( this.value ).draw();#}
+{##}
+{#                        } );#}
+{#        } );#}
 
 
 
@@ -222,24 +200,16 @@
 
                 var table = $('#example').DataTable();
                 var rowData = table.row('.selected').data();
-                var row_value = rowData["value"];
+                var row_value = rowData["fairshare"];
                 //console.log(row_value);
                 document.getElementById("value").value = row_value;
 
                 $('#myModal').foundation('reveal', 'open');
 
-                //$(this).fnDeselect();
-{#                var oTT = TableTools.fnGetInstance('example');#}
-{#                oTT.fnSelectNone();#}
-
             {% endif %}
 
             } );
 
-
-
-        //} );
-            //$(".dataTables_processing").css('visibility','hidden');
         get_data();
 
 
