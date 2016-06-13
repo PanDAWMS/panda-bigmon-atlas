@@ -151,8 +151,8 @@ urlpatterns = patterns('',
 
     url(r'^trainloads/$', TrainLoads.as_view(), name='trainloads'),
     url(r'^trainloads/(?P<pk>[0-9]+)/$', TrainLoad.as_view(),name='trainload'),
-    # url(r'^request_progress_general/(?P<reqids>[\w|,]+)/$', 'atlas.prodtask.selection.request_progress_general', name='request_progress_general'),
-    # url(r'^request_progress_main/', 'atlas.prodtask.selection.request_progress_main', name='request_progress_main'),
+    url(r'^request_progress_general/(?P<reqids>[\w|,]+)/$', 'atlas.prodtask.selection.request_progress_general', name='request_progress_general'),
+    url(r'^request_progress_main/', 'atlas.prodtask.selection.request_progress_main', name='request_progress_main'),
     url(r'^assembled_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.assembled_train', name='assembled_train'),
 
     url(r'^login/$', 'atlas.auth.views.login', name='login'),

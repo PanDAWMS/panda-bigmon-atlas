@@ -1,0 +1,23 @@
+   <div class="spinner" ng-show="loading">  Loading...</div>
+    <table>
+        <tbody>
+        <td>Step Name % <br> Input/processed events</td>
+            <td ng-repeat="step in requestProgressData.steps ">
+                <div class="{{  step.step_status }}"><b>{{ step.step_name }} {{ step.percent }}</b> <p/> {{ step.statistic.input_events }}/{{ step.statistic.processed_events }}</div>
+
+             </td>
+        </tbody>
+    </table>
+     <table>
+        <tbody>
+        <tr ng-repeat="chain_requests in requestProgressData.chains ">
+            <td><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
+            <td ng-repeat="task in chain_requests.chain ">
+                <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a>
+                    <br>{{ task.input_events }}/{{ task.processed_events }}</div>
+
+             </td>
+        </tr>
+
+        </tbody>
+    </table>
