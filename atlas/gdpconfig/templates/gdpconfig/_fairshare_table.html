@@ -32,6 +32,24 @@
     background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_close.png') no-repeat center center;
     }
 
+    .alert-box {
+        color:#555;
+        border-radius:10px;
+        font-family:Tahoma,Geneva,Arial,sans-serif;font-size:14px;
+        padding:10px 10px 10px 36px;
+        margin:10px;
+    }
+
+    .alert-box span {
+        font-weight:bold;
+        text-transform:uppercase;
+    }
+
+    .warning {
+        background:#fff8c4 no-repeat 10px 50%;
+        border:1px solid #f2c779;
+    }
+
 </style>
 
     <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>
@@ -42,6 +60,10 @@
     <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+
+
+
+    <div class="alert-box warning"><span>warning: </span>Please edit the values only if you know what you are doing.</div>
 
 
         <table id="example" class="display responsive nowrap" cellspacing="0" width="100%">
