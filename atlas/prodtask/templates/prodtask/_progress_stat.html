@@ -122,13 +122,36 @@
 
         }]);
 
+    progressStatApp.controller('progressStatHashtagMonkCtrl',['$scope','$http', '$routeParams','requestProgress', '$location',
+
+        function (scope, http, routeParams, requestProgress,  location ) {
+            var requestProgressData = this;
+            requestProgressData.steps = [];
+            scope.loading = true;
+            http.get(Django.url('prodtask:request_hashtag_monk')).
+              success(function(data, status, headers, config) {
+                 console.log(data);
+                requestProgressData.steps = data.load;
+
+                 scope.loading = false;
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+                 scope.loading = false;
+              });
+
+        }]);
+
     progressStatApp.config(function($routeProvider) {
           $routeProvider.
           //  when('/', {
          //     templateUrl:'/static/html/_ng_request_progress_main.html',
          //     controller: 'progressStatMainCtrl'
          //   }).
-          when('/:requests', {
+          when('/hashtags', {
+              templateUrl: '/static/html/_ng_hashtag_progress.html',
+              controller: 'progressStatHashtagMonkCtrl as requestProgressData'
+            }).when('/:requests', {
               templateUrl: '/static/html/_ng_request_progress.html',
               controller: 'progressStatCtrl as requestProgressData'
             });

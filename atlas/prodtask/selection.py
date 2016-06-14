@@ -1,5 +1,6 @@
 import json
 import logging
+import pickle
 
 from django.http import HttpResponse, HttpResponseRedirect
 
@@ -10,6 +11,8 @@ from copy import deepcopy
 
 from rest_framework.response import Response
 from django.shortcuts import render
+
+from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
 from ..prodtask.request_views import clone_slices
@@ -34,13 +37,9 @@ def request_progress_main(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
-@api_view(['GET'])
-def request_progress_general(request, reqids):
-    requests_to_process = map(int,reqids.split(','))
-    request_statistics = request_progress(requests_to_process)
-    result = {}
-    ordered_step_statistic = []
-    try:
+
+def prepare_step_statistic(request_statistics):
+        ordered_step_statistic = []
         for step_statistic in request_statistics['step_statistic']:
             percent_done = 0.0
             if request_statistics['step_statistic'][step_statistic]["input_events"] == 0:
@@ -58,6 +57,30 @@ def request_progress_general(request, reqids):
                                            'step_status':step_status,'percent':str(round(percent_done*100,2))+'%'})
 
         ordered_step_statistic.sort(key=lambda x:x['order'])
+        return ordered_step_statistic
+
+
+@api_view(['GET'])
+def request_hashtag_monk(request):
+    hashtag_monk = pickle.load(open('/data/hashtagmonk.pkl','rb'))
+    result = []
+    try:
+        for entry in hashtag_monk:
+            progress = request_progress(entry['requests_ids'])
+            ordered_step_statistic = prepare_step_statistic(progress)
+            result.append({'hashtags':entry['filter'],'step_statistic':ordered_step_statistic})
+    except Exception,e:
+         print str(e)
+    return Response({"load": result})
+
+@api_view(['GET'])
+def request_progress_general(request, reqids):
+    requests_to_process = map(int,reqids.split(','))
+    request_statistics = request_progress(requests_to_process)
+    result = {}
+    ordered_step_statistic = []
+    try:
+        ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
         chains = []
         for chain in request_statistics['chains'].values():
@@ -84,7 +107,7 @@ def get_parent_tasks(task):
     if 'tid' in task_input:
         return [int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])]
     else:
-        return []
+        return tid_from_container(task_input)
 
 
 def request_progress(reqid_list):
@@ -144,13 +167,13 @@ def request_progress(reqid_list):
                             other_requests_tasks.update(get_all_tasks_from_request(parent_task_id))
                         task_input_events += other_requests_tasks[parent_tasks_id]["processed_events"]
                 chain_id = int(task.id)
-        processed_tasks.update({int(task.id):{"input_events":task_input_events, "processed_events":task.total_events,
-                                              "chain_id":chain_id, 'status':task.status, 'step':step_by_name[task_step], 'request':task.request_id}})
-        if step_by_name[task_step] in step_statistic:
-            step_statistic[step_by_name[task_step]] = {'input_events':step_statistic[step_by_name[task_step]]['input_events']+task_input_events,
-                                         'processed_events':step_statistic[step_by_name[task_step]]['processed_events']+task.total_events}
-        else:
-            step_statistic[step_by_name[task_step]] = {'input_events':task_input_events,
-                                         'processed_events':task.total_events}
+            processed_tasks.update({int(task.id):{"input_events":task_input_events, "processed_events":task.total_events,
+                                                  "chain_id":chain_id, 'status':task.status, 'step':step_by_name[task_step], 'request':task.request_id}})
+            if step_by_name[task_step] in step_statistic:
+                step_statistic[step_by_name[task_step]] = {'input_events':step_statistic[step_by_name[task_step]]['input_events']+task_input_events,
+                                             'processed_events':step_statistic[step_by_name[task_step]]['processed_events']+task.total_events}
+            else:
+                step_statistic[step_by_name[task_step]] = {'input_events':task_input_events,
+                                             'processed_events':task.total_events}
     return {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
 

@@ -1,0 +1,13 @@
+   <div class="spinner" ng-show="loading">  Loading...</div>
+   <div ng-repeat="entry in requestProgressData.steps ">
+   <h5>{{ entry.hashtags }}</h5>
+       <table>
+        <tbody>
+        <td>Step Name % <br> Input/processed events</td>
+            <td ng-repeat="step in entry.step_statistic ">
+                <div class="{{  step.step_status }}"><b>{{ step.step_name }} {{ step.percent }}</b> <p/> {{ step.statistic.input_events }}/{{ step.statistic.processed_events }}</div>
+
+             </td>
+        </tbody>
+    </table>
+       </div>

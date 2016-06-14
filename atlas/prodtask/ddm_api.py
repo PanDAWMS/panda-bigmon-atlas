@@ -71,6 +71,13 @@ def find_dataset_events(dataset_pattern):
         #             pass
         return return_list
 
+def tid_from_container(container):
+    ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+    if container[-1]!='/':
+        container = container + '/'
+    datasets = ddm.dataset_in_container(container)
+    return map(lambda x: int(x[x.rfind('tid')+3:x.rfind('_')]),datasets)
+
 class DDM(object):
     """
         Wrapper for atlas ddm systems: dq2/rucio
