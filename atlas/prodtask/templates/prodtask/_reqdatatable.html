@@ -2543,11 +2543,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
                     <td colspan="10" style="width: 500px" >
-                         <span class="showTasksInSlice">+ </span><span class="showFullSpan changedatasetName{{ inputList.slice }} DatasetSort" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
+                         <span class="showTasksInSlice">+ </span><span class="showFullSpan changedatasetName{{ inputList.slice }} DatasetSort filterField" id="inputDatasetName{{ inputList.slice }}" style="padding:0px" title="{{ inputList.dataset }}">
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl JOSort"  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
+                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl JOSort filterField"  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
                     {% if cloned != 'no' %}
                         <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
@@ -2556,11 +2556,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     {% endif %}
                 {% else %}
                     <td colspan="10" style="width: 500px" >
-                        <span class="showTasksInSlice">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl JOSort' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
+                        <span class="showTasksInSlice">+ </span><a href='' class='changejobOption{{ inputList.slice }} makeJOUrl JOSort filterField' target="_blank" style="padding:0px" id="sliceInputJobOptions{{ inputList.slice }}" title="{{ inputList.input_data }}">
                             {{ inputList.input_data}}
                         </a>
                     </td>
-                    <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }}">{{ inputList.dataset }}</span></td>
+                    <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td>
                     <td></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
