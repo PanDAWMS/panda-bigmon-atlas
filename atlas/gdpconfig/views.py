@@ -34,7 +34,8 @@ def config_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    if (not request.user.is_superuser) and (not request.user.username in ['fbarreir']):
+
+    if not request.user.groups.filter(name='gdpconfig').exists():
         result['status']='Failed'
         result['exception'] = 'Permission denied'
         return HttpResponse(json.dumps(result))
@@ -95,7 +96,7 @@ def fairshare_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    if (not request.user.is_superuser) and (not request.user.username in ['fbarreir']):
+    if not request.user.groups.filter(name='gdpconfig').exists():
         result['status']='Failed'
         result['exception'] = 'Permission denied'
         return HttpResponse(json.dumps(result))
