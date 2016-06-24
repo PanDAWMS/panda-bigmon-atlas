@@ -34,8 +34,7 @@ def config_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-
-    if not request.user.groups.filter(name='gdpconfig').exists():
+    if not request.user.user_permissions.filter(name='Can edit GDPConfig').exists():
         result['status']='Failed'
         result['exception'] = 'Permission denied'
         return HttpResponse(json.dumps(result))
@@ -96,7 +95,7 @@ def fairshare_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    if not request.user.groups.filter(name='gdpconfig').exists():
+    if not request.user.user_permissions.filter(name='Can edit GDPConfig').exists():
         result['status']='Failed'
         result['exception'] = 'Permission denied'
         return HttpResponse(json.dumps(result))
