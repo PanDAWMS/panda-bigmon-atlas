@@ -862,7 +862,7 @@ class Site(models.Model):
         raise NotImplementedError('Only manual creation')
 
     class Meta:
-        app_label = 'panda_dev'
+        app_label = 'panda'
         db_table = u'"ATLAS_PANDA"."SITE"'
 
 class GDPConfig(models.Model):
@@ -914,3 +914,7 @@ class Cloudconfig(models.Model):
     class Meta:
         app_label = 'panda_dev'
         db_table = u'"ATLAS_PANDAMETA"."CLOUDCONFIG"'
+
+
+
+
