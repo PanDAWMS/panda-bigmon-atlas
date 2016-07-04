@@ -103,6 +103,10 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('resume_task', owner, body)
 
+    def trigger_task_brokerage(self, owner, task_id):
+        body = {'task_id': task_id}
+        return self._create_request('trigger_task_brokerage', owner, body)
+
     def increase_attempt_number(self, owner, task_id, increment):
         body = {'task_id': task_id, 'increment': increment}
         return self._create_request('increase_attempt_number', owner, body)

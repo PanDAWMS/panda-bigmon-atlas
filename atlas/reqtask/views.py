@@ -33,7 +33,8 @@ def request_tasks(request, rid = None):
                             {'reqid':rid,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'nucleus': get_nucleus()})
+                             'nucleus': get_nucleus()
+                             })
 
 
 def tasks_action(request):

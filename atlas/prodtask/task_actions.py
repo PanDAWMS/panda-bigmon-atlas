@@ -32,7 +32,7 @@ _deft_actions = {
     'obsolete': 'obsolete_task',
     'change_core_count': 'change_task_attribute',
     'change_split_rule': 'change_task_split_rule',
-    'pause_task': 'pause_task', 'resume_task':'resume_task'
+    'pause_task': 'pause_task', 'resume_task':'resume_task', 'trigger_task':'trigger_task_brokerage'
 }
 
 supported_actions = _deft_actions.keys()
@@ -61,7 +61,10 @@ for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exh
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs',
-                                          'pause_task', 'resume_task'])
+                                          'ctrl'])
+
+
+
 # Extending actions by groups of them
 for _status in allowed_task_actions:
     if 'change_priority' in allowed_task_actions[_status]:
@@ -70,7 +73,8 @@ for _status in allowed_task_actions:
         allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus'])
-
+    if 'ctrl' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task_brokerage'])
 
 def do_action(owner, task_id, action, *args):
 
