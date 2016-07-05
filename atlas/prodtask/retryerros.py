@@ -132,3 +132,16 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
         'url_args'  : retry_errors_id,
         'parent_template' : 'prodtask/_index.html',
         })
+
+@login_required(login_url='/prodtask/login/')
+def retry_errors_delete(request, retry_errors_id):
+    if request.method == 'GET':
+        if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
+
+            try:
+                RetryErrors.objects.get(id=retry_errors_id).delete()
+
+            except:
+                pass
+
+        return HttpResponseRedirect('/prodtask/retry_errors_list')
