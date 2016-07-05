@@ -139,7 +139,10 @@ def retry_errors_delete(request, retry_errors_id):
         if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
 
             try:
-                RetryErrors.objects.get(id=retry_errors_id).delete()
+                values = RetryErrors.objects.get(id=retry_errors_id)
+                _logger.info("update user:{user} delete data:{old_data}".format(user=request.user.username,
+                                                                             old_data=model_to_dict(values)))
+                values.delete()
 
             except:
                 pass
