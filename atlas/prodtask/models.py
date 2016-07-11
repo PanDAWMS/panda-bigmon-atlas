@@ -451,6 +451,46 @@ class ParentToChildRequest(models.Model):
 
 
 
+# class HashTagToTask(models.Model):
+#
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
+#     request = models.ForeignKey(TRequest,  db_column='PR_ID')
+#     hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+#
+#     def save(self, *args, **kwargs):
+#         if not self.id:
+#             self.id = prefetch_id('dev_db',u'T_HT_TO_TASK',"T_HT_TO_TASK",'HTTT_ID')
+#         super(HashTagToTask, self).save(*args, **kwargs)
+#
+#     def save_last_update(self, *args, **kwargs):
+#         self.last_update = timezone.now()
+#         super(HashTagToTask, self).save(*args, **kwargs)
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = u'"T_HT_TO_TASK"'
+#
+#
+# class HashTagToHashTag(models.Model):
+#
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
+#     hashtag_parent = models.ForeignKey(TRequest,  db_column='HT_ID_PARENT')
+#     hashtag_child = models.ForeignKey(HashTag, db_column='HT_ID_CHILD')
+#
+#     def save(self, *args, **kwargs):
+#         if not self.id:
+#             self.id = prefetch_id('dev_db',u'T_HT_TO_TASK',"T_HT_TO_TASK",'HTTT_ID')
+#         super(HashTagToHashTag, self).save(*args, **kwargs)
+#
+#     def save_last_update(self, *args, **kwargs):
+#         self.last_update = timezone.now()
+#         super(HashTagToHashTag, self).save(*args, **kwargs)
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = u'"T_HT_TO_HT"'
+
+
 class StepExecution(models.Model):
     STEPS = ['Evgen',
              'Simul',
@@ -702,6 +742,48 @@ class OpenEndedRequest(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = u'"T_OPEN_ENDED"'
+
+
+class HashTag(models.Model):
+    HASHTAG_TYPE = (
+                ('UD', 'User defined'),
+                ('KW', 'Key word'),
+                )
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HT_ID', primary_key=True)
+    hashtag = models.CharField(max_length=80, db_column='HASHTAG')
+    type = models.CharField(max_length=2, db_column='TYPE', choices=HASHTAG_TYPE)
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
+        super(HashTag, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_HASHTAG"'
+
+class HashTagToRequest(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTR_ID', primary_key=True)
+    request = models.ForeignKey(TRequest,  db_column='PR_ID')
+    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_HT_TO_REQUEST_SEQ',"T_HT_TO_REQUEST",'HTTR_ID')
+        super(HashTagToRequest, self).save(*args, **kwargs)
+
+    def save_last_update(self, *args, **kwargs):
+        self.last_update = timezone.now()
+        super(HashTagToRequest, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_HT_TO_REQUEST"'
+
 
 class TrainProductionLoad(models.Model):
 

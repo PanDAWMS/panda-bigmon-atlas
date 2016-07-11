@@ -16,8 +16,11 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 import time
+
+from atlas.prodtask.hashtag import form_hashtag_string
 from atlas.prodtask.helper import form_request_log
-from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object
+from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
+    HashTagToRequest
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -1682,6 +1685,12 @@ def request_table_view(request, rid=None, show_hidden=False):
 
             except:
                 pass
+            hashtags_string = ''
+            hashtags_path = ''
+            try:
+                hashtags_string,hashtags_path = form_hashtag_string(cur_request.reqid)
+            except:
+                pass
             selected_slices = json.dumps([])
             try:
                 if 'selected_slices' in request.session:
@@ -1723,7 +1732,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'train_pattern_list':train_pattern_list,
                 'selected_slices':selected_slices,
                 'original_spreadsheet':original_spreadsheet,
-                'child_requests':child_requests
+                'child_requests':child_requests,
+                'hashtags_string':hashtags_string,
+                'hashtags_path':hashtags_path
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

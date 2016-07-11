@@ -928,6 +928,22 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
                 });
         }
+        function addHashTag(event){
+            event.preventDefault();
+            sendData = {'hashtag':$('#newHashTag').val()};
+            $.ajax({
+                    url: "{% url 'prodtask:add_request_hashtag' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        newHashtags =$.evalJSON(data).data;
+                        console.log(newHashtags);
+                        $('.hashtags').html(newHashtags);
+                    }
+                });
+        }
         function showStatusHistory(event){
             event.preventDefault();
 {#            $('#statusHistoryModal').foundation('reveal', 'open');#}
@@ -1941,6 +1957,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $.ajaxSetup({async: true});
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
+        function showModalHashTag(event){
+                event.preventDefault();
+
+                $('#hashtagModalWindow').foundation('reveal', 'open');
+            }
         function createReprocessing(event){
             event.preventDefault();
             var sendData = {slices:getCheckedSlices()};
@@ -2298,7 +2319,14 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </table>
 </div>
 </div>
+<div>
+    <div class="row">
+        <div class="large-2 column"><a class="button prefix" onclick="showModalHashTag(event);">Add #</a></div>
+        <div class="large-10 column"><span>HashTags: <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a></span></div>
 
+
+    </div>
+</div>
 <div>
     <div class="row">
         <div class="large-5 column"><span>last comment: <span id="lastComment">{{ comment_author }}-{{ last_comment }}</span></span></div>
@@ -3223,6 +3251,24 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <a  class="close-reveal-modal">&#215;</a>
 </div>
 
+<div id="hashtagModalWindow" class="reveal-modal" data-reveal>
+    <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a>
+    <h3>New hashtag:</h3>
+    <div class="row">
+            <div class="large-4 column">
+                <label>New HashTag:
+                <input type="text"  id="newHashTag"  maxlength="80"  /></label>
+            </div>
+            <div class="large-1 column">
+                <a href='#' class="button btn_is_authorized postfix" onclick="addHashTag(event);">Add</a>
+            </div>
+            <div class="large-7 column"></div>
+        </div>
+
+
+
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
 
 <div id="extendModalWindow" class="reveal-modal" data-reveal>
     <h3>Extend request using google spreadsheet</h3>
