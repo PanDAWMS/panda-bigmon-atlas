@@ -90,8 +90,8 @@ def add_request_hashtag(request, reqid):
                 request_hashtag.hashtag = existed_hashtag
                 request_hashtag.request = TRequest.objects.get(reqid=reqid)
                 request_hashtag.save()
-
-            results = {'success':True,'data':form_hashtag_string(reqid)}
+            hashtag_html,hashtag_href = form_hashtag_string(reqid)
+            results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
         except Exception,e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')

@@ -940,7 +940,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     success: function(data,status) {
                         newHashtags =$.evalJSON(data).data;
                         console.log(newHashtags);
-                        $('.hashtags').html(newHashtags);
+                        $('.hashtags').html(newHashtags.html);
+                        $('.hashtags').attr('href',"{% url 'prodtask:request_hashtags_main'  %}#/"+newHashtags.href);
                     }
                 });
         }
