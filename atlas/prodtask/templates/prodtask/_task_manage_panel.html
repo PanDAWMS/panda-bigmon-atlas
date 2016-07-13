@@ -611,6 +611,20 @@
 
             </div>
 
+             <div class="small-12 large-12 columns panel" id="ctrl_panel3">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Force avalanche </label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_avalanche">Go</a>
+                            </div>
+
+                </div>
+
+            </div>
+
+
          </div>
 
                <div class="row">
@@ -742,7 +756,7 @@ function doTasksAction(action, tasks, parameters) {
 
 // Perform action on the selected tasks
 function doTasksActionSelected(action) {
-    console.log(action);
+    //console.log(action);
     var tasks = getSelectedTasksList();
 
     if (tasks.length == 0) {
@@ -830,7 +844,7 @@ $(document).ready(function () {
         "kill_jobs": "abort_unfinished_jobs",
         "delete_output": "delete_output",
         "kill_job": "kill_job",
-        "pause":"pause_task", "resume":"resume_task", "trigger":"trigger_task", "ctrl":"task_ctrl"
+        "pause":"pause_task", "resume":"resume_task", "trigger":"trigger_task", "avalanche":"avalanche_task", "ctrl":"task_ctrl"
     };
 
     $.each(button_action_map, function(name, action) {
