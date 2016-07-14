@@ -31,9 +31,9 @@ def request_tasks(request, rid = None):
 
     return render(request, 'reqtask/_task_table.html',
                             {'reqid':rid,
-                             #'clouds': get_clouds(),
-                             #'sites': get_sites(),
-                             #'nucleus': get_nucleus()
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'nucleus': get_nucleus()
                              })
 
 
