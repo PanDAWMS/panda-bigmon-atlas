@@ -19,6 +19,7 @@ _deft_job_actions = {
 
     'kill_jobs': 'kill_job',
     'set_debug_jobs': 'set_job_debug_mode',
+    'reassign_jobs': 'reassign_jobs',
 
 }
 
@@ -37,7 +38,7 @@ def jobs_action(request,action):
     is_superuser = request.user.is_superuser
     jobs= json.loads(request.body);
 
-
+    fin_res=[]
 
     result = dict(owner=user, job=None, task=None, action=action, args=None,
                   status=None, accepted=False, registered=False,
@@ -60,10 +61,12 @@ def jobs_action(request,action):
 
     #do actions here
 
+
     for job in jobs:
         result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action))
+        fin_res.append(result)
 
-    return HttpResponse(json.dumps(result))
+    return HttpResponse(json.dumps(fin_res))
 
 
 def get_jobs(request):

@@ -87,6 +87,10 @@ class Client(object):
         body = {'task_id': task_id, 'nucleus': nucleus, 'mode': mode}
         return self._create_request('reassign_task', owner, body)
 
+    def reassign_jobs(self, owner, task_id, for_pending=False, first_submission=None):
+        body = {'task_id': task_id, 'for_pending': for_pending, 'first_submission': first_submission}
+        return self._create_request('reassign_jobs', owner, body)
+
     def change_task_priority(self, owner, task_id, priority):
         body = {'task_id': task_id, 'priority': priority}
         return self._create_request('change_task_priority', owner, body)

@@ -22,12 +22,12 @@
 
                     >Set debug</a>
                 </li>
-                <li><a data-options="is_hover:true" id="btn_something_jobs"
+                <li><a data-options="is_hover:true" id="btn_reassign_jobs"
 
                         class="small radio button"
-                        data-dropdown="something_menu"
+                        data-dropdown="reassign_jobs_menu"
 
-                    >Next button</a>
+                    >Reassign jobs</a>
                 </li>
 
         {% if not user.is_authenticated %}
@@ -39,7 +39,7 @@
             </ul>
         </div>
 
-
+    </div>
 
         <div id="kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
          <div class="small-12 large-12 columns bodyfont-color">
@@ -105,8 +105,37 @@
 
         </div>
 
+        <div id="reassign_jobs_menu" class="small content f-dropdown" data-dropdown-content>
+         <div class="small-12 large-12 columns bodyfont-color">
 
-    </div>
+            <div class="small-12 large-12 columns panel" id="reassign_job_panel">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <label> Reassign jobs &nbsp;
+                                <span id="selected_data_reassign_jobs"></span>
+                                </label>
+                            </div>
+                            <div class="small-6 large-6 columns">
+                                <a class="button postfix" id="btn_do_reassign_jobs">Go</a>
+                            </div>
+                </div>
+
+            </div>
+
+
+
+         </div>
+
+               <div class="row">
+                    <div class="small-12 large-12 columns text-center bodyfont-color">
+                        <label>
+                            Jobs selected:&nbsp;
+                            <span id="selected_count_reassign_jobs">0</span>
+                        </label>
+                    </div>
+                </div>
+
+        </div>
 
     <div class="bottom" id="request_status_container"></div>
 
@@ -160,7 +189,8 @@ $(document).ready(function () {
     // Setting buttons handlers
     var button_action_map = {
         "kill_jobs": "kill_jobs",
-        "set_debug_jobs": "set_debug_jobs"
+        "set_debug_jobs": "set_debug_jobs",
+        "reassign_jobs": "reassign_jobs"
     };
 
 
@@ -198,13 +228,28 @@ $(document).ready(function () {
                 dataType: "json",
                 complete: function (jqXHR, textStatus) {
                     //alert(jqXHR.responseText);
-                    //var response = JSON.parse(jqXHR.responseText);
-                    var response = jqXHR.responseText;
+                    var response = JSON.parse(jqXHR.responseText);
+                    //var response = jqXHR.responseText;
+                    //console.log(response);
+                    if ($.isArray(response)){
+                        response.forEach(function(res) {
+                        //console.log(entry)
+                        if (!res.exception || res.exception === "") {
+                            $("#req_status_text").html("Request status: Done");
+                        } else {
+                        $('#req_status_text').append($('<li/>').html("Request status: Denied, reason: " + res.exception));
+                        }
 
-                    if (!response.exception || response.exception === "") {
-                        $("#req_status_text").html("Request status: Done");
-                    } else {
-                        $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                        })
+
+
+                    }else{
+
+                        if (!response.exception || response.exception === "") {
+                            $("#req_status_text").html("Request status: Done");
+                        } else {
+                            $("#req_status_text").html("Request status: Denied, reason: " + response.exception);
+                        }
                     }
 
                 }
