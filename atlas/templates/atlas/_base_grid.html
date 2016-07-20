@@ -113,14 +113,9 @@
 
     <!-- bread-crumbs -->
     <div class="right">
-      {% block header-nav-chain %}
-        {% block header-nav-chain-1 %}<a href="{{ prefix }}/">{{ APP_NAME }}</a>{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-        {% block header-nav-chain-2 %}<a href="{{ prefix }}/#">DEFT</a>{% endblock %}{% block header-nav-chain-2-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-        {% block header-nav-chain-3 %}<a href="{{ prefix }}/#">ItemSub2</a>{% endblock %}{% block header-nav-chain-3-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-        {% block header-nav-chain-4 %}<a href="{{ prefix }}/#">ItemSub3</a>{% endblock %}{% block header-nav-chain-4-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-        {% block header-nav-chain-5 %}<a href="{{ prefix }}/#">ItemSub4</a>{% endblock %}{% block header-nav-chain-5-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-        {% block header-nav-chain-6 %}<a href="{{ prefix }}/#">CurrentView</a>{% endblock %}
-      {% endblock %}
+
+        <span class="hide-for-small"><font size=-1>Built  {% now "H:i" %}</font></span>
+
     </div>
     <!-- End bread-crumbs -->
   </div>
