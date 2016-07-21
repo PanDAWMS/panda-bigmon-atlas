@@ -2287,7 +2287,13 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <th>Manager:</th>
   <th>Physic group:</th>
   <th>Project:</th>
+    <th>
+    {% ifequal trequest.request_type "MC" %}
+        Priorities:
+    {% endifequal %}
+    </th>
   <th>Status:</th>
+
 </tr>
 <tr>
   <td><a href="#" data-dropdown="drop1" >menu(&#9776;)</a>
@@ -2316,6 +2322,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
   <td>{{ trequest.phys_group}}</td>
   <td>{{ trequest.project}}</td>
+    <td>
+        {% ifequal trequest.request_type "MC" %}
+            {{ priorities_str }}
+        {% endifequal %}
+    </td>
     <td><a onclick="showStatusHistory(event);"><u><span  style="cursor: pointer;" id="requestStatus">{{ trequest.cstatus}}</span></u></a></td>
 </tr>
 </table>

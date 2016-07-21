@@ -1314,6 +1314,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             first_approval_message = ''
             show_is_fast = False
             show_split = False
+            slice_priorities = set()
             is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
             if (cur_request.request_type in ['HLT','REPROCESSING', 'GROUP']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
@@ -1463,7 +1464,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                             step_execs = steps[slice.id]
                         except:
                             step_execs = []
-
+                        slice_priorities.add(str(slice.priority))
                         slice_steps = {}
                         total_slice += 1
                         show_task = False
@@ -1708,7 +1709,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                'pattern_list': pattern_list_name,
                'pr_id': rid,
                'approvedCount': approved_count,
-               'pattern': '.'.join(slice_pattern),
+               'pattern': '.'.join(list(slice_pattern)),
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
                'show_reprocessing':show_reprocessing,
@@ -1735,7 +1736,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'original_spreadsheet':original_spreadsheet,
                 'child_requests':child_requests,
                 'hashtags_string':hashtags_string,
-                'hashtags_path':hashtags_path
+                'hashtags_path':hashtags_path,
+                'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities])
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
