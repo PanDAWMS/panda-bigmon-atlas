@@ -667,7 +667,7 @@ def find_input_per_file(dataset_name):
         dataset = ProductionDataset.objects.extra(where=['name like %s'], params=[to_search]).first()
         if dataset:
             current_task = ProductionTask.objects.get(id=dataset.task_id)
-            return json.loads(current_task.step.task_config).get('nEventsPerJob','')
+            return current_task.step.get_task_config('nEventsPerJob')
     except Exception,e:
         return ''
 
@@ -682,7 +682,12 @@ def change_dataset_in_slice(req, slice, new_dataset_name):
     input_list.save()
     if events_per_file:
         temp1, pattern_tags, approved_step = get_skipped_steps(req,input_list)
-        if json.loads(approved_step.task_config).get('nEventsPerInputFile','') != events_per_file:
+        if approved_step.step_parent != approved_step:
+            if approved_step.step_parent.status in ['NotCheckedSkipped','Skipped']:
+                if approved_step.step_parent.get_task_config('nEventsPerJob') != events_per_file:
+                    approved_step.step_parent.set_task_config({'nEventsPerJob':events_per_file})
+                    approved_step.step_parent.save()
+        if approved_step.get_task_config('nEventsPerInputFile') != events_per_file:
             approved_step.set_task_config({'nEventsPerInputFile':events_per_file})
             approved_step.save()
 
