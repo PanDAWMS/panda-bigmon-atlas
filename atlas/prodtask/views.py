@@ -1291,7 +1291,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                       [unwrap(json.loads(x.pattern_dict).get(step,{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
                 pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
-
+                pattern_list_name += [('Initial', [{} for step in STEPS_LIST])]
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = list(InputRequestList.objects.filter(request=cur_request).order_by('slice'))
             input_list_count = InputRequestList.objects.filter(request=cur_request).count()
