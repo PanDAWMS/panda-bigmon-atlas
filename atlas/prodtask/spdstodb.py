@@ -21,7 +21,7 @@ from .models import get_default_nEventsPerJob_dict
 
 _logger = logging.getLogger('prodtaskwebui')
 
-TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
+TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
                          'Evgen',
                          'Simul',
                          'Merge',
@@ -32,7 +32,17 @@ TRANSLATE_EXCEL_LIST = ["brief", "ds", "format", "joboptions", "evfs", "eva2", "
                          'Atlfast',
                          'Atlf Merge',
                          'Atlf TAG',
-                         "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"]
+                         "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"],
+
+                        '2.0' : ["brief","joboptions","ecm","evevgen","evfs", "eva2","priority","format","LO",
+                             "luminocity","feff","evgencpu","input_files","mctag","comment",'Evgen',
+                             'Simul',
+                             'Merge',
+                             'Digi',
+                             'Reco',
+                             'Rec Merge',
+                             'Atlfast',
+                             'Atlf Merge'] }
 
 STRIPPED_FIELDS  = [ "format", "joboptions"]
 
@@ -178,30 +188,37 @@ def format_splitting(format_string, events_number):
     return result
 
 
-def translate_excl_to_dict(excel_dict):
+def translate_excl_to_dict(excel_dict, version='1.0'):
         return_list = []
         index = 0
         checked_rows = []
         _logger.debug('Converting to input-step dict: %s' % excel_dict)
-        for row in excel_dict:
 
+        translate_list = TRANSLATE_EXCEL_LIST[version]
+
+        for row in excel_dict:
             translated_row = {}
             for key in excel_dict[row]:
-                if key < len(TRANSLATE_EXCEL_LIST):
-                    if TRANSLATE_EXCEL_LIST[key] in STRIPPED_FIELDS:
-                        translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key].strip()
+                if key < len(translate_list):
+                    if translate_list[key] in STRIPPED_FIELDS:
+                        translated_row[translate_list[key]] = excel_dict[row][key].strip()
                     else:
-                        translated_row[TRANSLATE_EXCEL_LIST[key]] = excel_dict[row][key]
+                        translated_row[translate_list[key]] = excel_dict[row][key]
 
-            if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row)) and ('ds' in translated_row):
+            if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row) or ('evevgen' in translated_row)):
+                try:
+                    total_input_events = int(translated_row.get('evevgen', 0))
+                    if total_input_events == 0:
+                        total_input_events = int(translated_row.get('evfs', 0))
+                    is_fullsym = True
+                    if total_input_events == 0:
+                        total_input_events = int(translated_row.get('eva2', 0))
+                        is_fullsym = False
+                except:
+                    continue
                 if translated_row in checked_rows:
                     continue
                 else:
-                    total_input_events = translated_row.get('evfs', 0)
-                    is_fullsym = True
-                    if total_input_events == 0:
-                        total_input_events = translated_row.get('eva2', 0)
-                        is_fullsym = False
                     input_events_format = format_splitting(translated_row.get('format', ''),total_input_events)
 
                     for input_events, format, do_split in input_events_format:
@@ -278,7 +295,7 @@ def translate_excl_to_dict(excel_dict):
         return  return_list  
 
 
-def fill_steptemplate_from_gsprd(gsprd_link):
+def fill_steptemplate_from_gsprd(gsprd_link, version='1.0'):
         """Parse google spreadsheet. 
 
         :param gsprd_link: A link to google sreapsheet.
@@ -293,7 +310,7 @@ def fill_steptemplate_from_gsprd(gsprd_link):
             excel_dict = excel_parser.open_by_key(url,xls_format)[0]
         except Exception, e:
             raise RuntimeError("Problem with link openning, \n %s" % e)
-        return translate_excl_to_dict(excel_dict) 
+        return translate_excl_to_dict(excel_dict, version)
 
 def fill_steptemplate_from_file(file_obj):
         try:
