@@ -1,4 +1,4 @@
-
+from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -17,7 +17,7 @@ import atlas.datatables as datatables
 from core.resource.models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
-from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site
+from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, JediTasks, JediDatasets
 from .task_actions import allowed_task_actions
 
 from django.db.models import Count, Q
@@ -558,3 +558,44 @@ def create_fake_task(step_id,task_id):
     new_fake_task.jedi_info = ''
     new_fake_task.save()
     return new_fake_task
+
+
+
+
+
+
+def sync_deft_jedi_task(task_id):
+    jedi_values = {}
+    _logger.info("Sync task between deft and jedi task id:%s"%str(task_id))
+    deft_task = ProductionTask.objects.get(id=task_id)
+    t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
+                                                   'total_events')[0]
+    jedi_values.update(t_task)
+    #post production status
+    if deft_task.status in ['obsolete']:
+        jedi_values['status'] = deft_task.status
+    jedi_task = JediTasks.objects.filter(id=task_id).values('start_time','errordialog')[0]
+    if not jedi_values['start_time']:
+        jedi_values['start_time'] = jedi_task['start_time']
+    jedi_values['jedi_info'] = jedi_task['errordialog'][0:255]
+    if not jedi_values['jedi_info']:
+        jedi_values['jedi_info'] = 'no info from JEDI'
+    nfiles_stat = ['total_files_tobeused','total_files_used','total_files_finished','total_files_failed','total_files_onhold']
+    for nfiles_name in nfiles_stat:
+        jedi_values.update({nfiles_name:0})
+    jedi_datasets = list(JediDatasets.objects.filter(id=task_id,type__in=['input','pseudo_input']).values())
+    for jedi_dataset in jedi_datasets:
+        if (jedi_dataset['masterid'] == None) and (not jedi_dataset['datasetname'].startswith('ddo')) \
+                and (not jedi_dataset['datasetname'].startswith('panda')) and ('.log.' not in jedi_dataset['datasetname']):
+            for nfiles_name in nfiles_stat:
+                jedi_values[nfiles_name] = jedi_values[nfiles_name] + jedi_dataset[nfiles_name]
+    do_update = False
+
+    for item in jedi_values.keys():
+        if jedi_values[item] != deft_task.__getattribute__(item):
+            do_update = True
+            _logger.info("Field %s updated: %s - %s"%(item, jedi_values[item], deft_task.__getattribute__(item)))
+            setattr(deft_task, item, jedi_values[item])
+    if do_update:
+        deft_task.timestamp=timezone.now()
+        deft_task.save()
