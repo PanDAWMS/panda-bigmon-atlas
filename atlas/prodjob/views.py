@@ -36,11 +36,13 @@ def jobs_action(request,action):
     user = request.user.username
 
     is_superuser = request.user.is_superuser
-    jobs= json.loads(request.body);
+    data = json.loads(request.body)
+    jobs= data.get('jobs')
+    args= data.get('parameters', [])
 
     fin_res=[]
 
-    result = dict(owner=user, job=None, task=None, action=action, args=None,
+    result = dict(owner=user, job=None, task=None, action=action, args=args,
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
@@ -63,7 +65,7 @@ def jobs_action(request,action):
 
 
     for job in jobs:
-        result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action))
+        result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
         fin_res.append(result)
 
     return HttpResponse(json.dumps(fin_res))
@@ -93,7 +95,7 @@ def get_jobs(request):
     return HttpResponse(json.dumps(data))
 
 
-def _do_deft_job_action(owner, task_id, job_id, action):
+def _do_deft_job_action(owner, task_id, job_id, action, *args):
     """
     Perform task action using DEFT API
     :param owner: username form which task action will be performed
@@ -107,7 +109,7 @@ def _do_deft_job_action(owner, task_id, job_id, action):
     #result['status'] = "OK"
     #return result
 
-    result = dict(owner=owner, job=job_id, task=task_id, action=action, args=None,
+    result = dict(owner=owner, job=job_id, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
@@ -123,7 +125,7 @@ def _do_deft_job_action(owner, task_id, job_id, action):
         return result
 
     try:
-        request_id = func(owner, task_id, job_id)
+        request_id = func(owner, task_id, job_id, *args)
     except Exception as e:
         result.update(exception=str(e),
                       exception_source=_deft_client.__class__.__name__)

@@ -44,6 +44,21 @@
         <div id="kill_jobs_menu" class="small content f-dropdown" data-dropdown-content>
          <div class="small-12 large-12 columns bodyfont-color">
 
+
+            <div class="small-12 large-12 columns panel" id="kill_job_panel">
+                <div class="small-6 large-6 columns">
+                    <label class="right inline bodyfont-color">
+                        Hard (-9) Kill
+                    </label>
+                </div>
+                <div class="small-6 columns">
+                    <label class="left inline">
+                        <input type="checkbox" id="cbx_job_hard_kill">
+                    </label>
+                </div>
+            </div>
+
+
             <div class="small-12 large-12 columns panel" id="kill_job_panel">
                 <div class="row">
                             <div class="small-6 large-6 columns">
@@ -215,9 +230,15 @@ $(document).ready(function () {
         );
 
 
+        var parameters = [];
+        // fill action parameters from inputs
+            if (action == "kill_jobs") {
+                parameters = [$("#cbx_job_hard_kill").prop("checked") ? 9 : null];
+            }
+
             //console.log(action);
             var table = $('#example').DataTable();
-            var data = table.rows('.selected').data().toArray();
+            var data = {'jobs' : table.rows('.selected').data().toArray(), 'parameters' : parameters};
             //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
             var ajaxUrl =  Django.url('prodjob:jobs_action',action);
 
