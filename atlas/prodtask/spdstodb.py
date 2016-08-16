@@ -35,7 +35,7 @@ TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", 
                          "LO", "feff", "NLO", "gen", "ecm", "ef", "comment", "contact", "store"],
 
                         '2.0' : ["brief","joboptions","ecm","evevgen","evfs", "eva2","priority","format","LO",
-                             "luminocity","feff","evgencpu","input_files","mctag","comment",'Evgen',
+                             "luminocity","feff","evgencpu","input_files","mctag","release","comment",'Evgen',
                              'Simul',
                              'Merge',
                              'Digi',
