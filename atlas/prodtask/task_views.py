@@ -565,6 +565,12 @@ def create_fake_task(step_id,task_id):
 
 
 def sync_deft_jedi_task(task_id):
+    """
+    Sync task between JEDI and DEFT DB.
+    :param task_id: task id for sync
+    :return:
+    """
+
     jedi_values = {}
     _logger.info("Sync task between deft and jedi task id:%s"%str(task_id))
     deft_task = ProductionTask.objects.get(id=task_id)
