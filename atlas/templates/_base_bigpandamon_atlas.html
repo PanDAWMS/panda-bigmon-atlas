@@ -75,6 +75,13 @@
             <li class="divider"></li>
           </ul>
 </li>
+<li class="has-dropdown">
+          <a href="#">Jobs</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'prodjob:request_jobs' %}">Jobs</a></li>
+            <li class="divider"></li>
+          </ul>
+</li>
     <li class="has-dropdown">
           <a href="#">Train</a>
           <ul class="dropdown">
@@ -90,7 +97,6 @@
             <li><a href="{% url 'getdatasets:request_data_form' %}">Search</a></li>
           </ul>
 </li>
-
 <li class="has-dropdown">
           <a href="#">Error retry</a>
           <ul class="dropdown">
@@ -98,7 +104,14 @@
             <li><a href="{% url 'prodtask:retry_errors_create' %}">Create error</a></li>
           </ul>
 </li>
-
+<li class="has-dropdown">
+          <a href="#">PanDA Config</a>
+          <ul class="dropdown">
+            <li><a href="{% url 'gdpconfig:gdpconfig' %}">GDP Config (testing)</a></li>
+            <li><a href="{% url 'gdpconfig:fairshare' %}">Fairshare Config (testing)</a></li>
+            <li class="divider"></li>
+          </ul>
+</li>
 
 
 
