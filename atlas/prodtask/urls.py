@@ -94,6 +94,8 @@ urlpatterns = patterns('',
     url(r'^make_request_fast/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_request_fast',
         name='make_request_fast'),
 
+    url(r'redirect_to_value/(?P<site_name>\w+)/$', 'atlas.prodtask.views.redirect_to_value',
+        name='redirect_to_value'),
     url(r'^request_steps_save/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_steps_save', name='request_steps_save'),
 
     url(r'^retry_errors_list/', 'atlas.prodtask.retryerros.retry_errors_list', name='retry_errors_list'),

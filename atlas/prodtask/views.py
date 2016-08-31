@@ -5,7 +5,7 @@ import logging
 import os
 from copy import deepcopy
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render, render_to_response, redirect
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
@@ -1139,6 +1139,8 @@ def input_list_approve_full(request, rid=None):
 
 NUMBER_EVENTS_TO_SPLIT = 2000000
 
+def redirect_to_value(request, site_name):
+    return redirect("http://%s.cern.ch/"%site_name)
 
 def egroup_permissions(username):
     return_list = []
