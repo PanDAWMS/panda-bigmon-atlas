@@ -1,0 +1,216 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+
+<script>
+
+
+    {% autoescape off %}
+    {% endautoescape %}
+
+    {% verbatim %}
+
+
+
+
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
+    var hashtagServices = angular.module('hashtagServices', ['ngResource']);
+    hashtagServices.run(run);
+
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+    hashtagServices.factory('hashtagLists', ['$resource',
+      function($resource){
+        return $resource(Django.url('prodtask:hashtagslists'), {}, {
+          query: {method:'GET',  isArray:true},
+            save: {method:'POST'}
+        });
+      }]);
+
+
+
+    var hashtagFormula = '';
+
+    var hashtagApp = angular.module('hashtagApp',['ngRoute','hashtagServices']);
+    hashtagApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+    hashtagApp.controller('HashTagCtrl',['$scope','$http','hashtagLists', function (scope, http, hashtagLists){
+        if (typeof scope.hashTags == "undefined") {
+            scope.hashTags = hashtagLists.query();
+            scope.hashtag_formula = '';
+            var hashtagOperators = ['and_selected', 'or_selected', 'not_selected'];
+            var hashtagSign = ['&', '|', '!'];
+            for (var j = 0; j < scope.hashTags.length; j++) {
+                for (var i = 0; i < hashtagOperators.length; i++) {
+                    scope.hashTags[j][hashtagOperators[i]] = false;
+                }
+            }
+            var hashtag_formula_entyties = {};
+            for (var i = 0; i < hashtagOperators.length; i++) {
+                hashtag_formula_entyties[hashtagOperators[i]] = [];
+            }
+        }
+        scope.change_hashtag_formula = function(hashtag, is_selected, operator, hashtagIndex){
+                var index = 0;
+                if(is_selected){
+                    for(var i=0; i<hashtagOperators.length;i++){
+                        if(hashtagOperators[i]!=operator){
+                            scope.hashTags[hashtagIndex][hashtagOperators[i]] = false;
+                            index = hashtag_formula_entyties[hashtagOperators[i]].indexOf(hashtag);
+                            if (index > -1) {
+                                hashtag_formula_entyties[hashtagOperators[i]].splice(index, 1);
+                            }
+                        }
+                    }
+                    console.log(hashtag, hashtag_formula_entyties, operator);
+                    index = hashtag_formula_entyties[operator].indexOf(hashtag);
+                    if (index == -1) {
+                        hashtag_formula_entyties[operator].push(hashtag);
+                    }
+
+
+                } else {
+                    index = hashtag_formula_entyties[operator].indexOf(hashtag);
+                    if (index > -1) {
+                        hashtag_formula_entyties[operator].splice(index, 1);
+                    }
+                }
+                scope.hashtag_formula = '';
+                for(var i=0; i<hashtagOperators.length;i++){
+                    for(var j=0; j<hashtag_formula_entyties[hashtagOperators[i]].length;j++){
+                        scope.hashtag_formula += hashtagSign[i] + hashtag_formula_entyties[hashtagOperators[i]][j];
+                    }
+                }
+                hashtagFormula = scope.hashtag_formula;
+                console.log(scope.hashtag_formula);
+        };
+
+
+        scope.showTasks= function(){
+
+            http.post(Django.url('prodtask:tasks_hashtag'),scope.hashtag_formula).
+              success(function(data, status, headers, config) {
+                console.log(data);
+                window.location.href = Django.url('reqtask:request_tasks');
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+        };
+        scope.showStatistic= function(){
+            var tasks = [];
+            http.post(Django.url('prodtask:tasks_hashtag'),scope.hashtag_formula).
+              success(function(data, status, headers, config) {
+                tasks = data;
+                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                  success(function(data, status, headers, config) {
+                     console.log(data);
+                    }).
+                  error(function(data, status, headers, config) {
+                    console.log(status);
+                  });
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+        }
+
+    }]);
+
+
+    hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http',
+
+        function (scope, http) {
+            var requestProgressData = this;
+            requestProgressData.steps = [];
+            scope.loading = true;
+            var tasks = [];
+
+            http.post(Django.url('prodtask:tasks_hashtag'),hashtagFormula).
+              success(function(data, status, headers, config) {
+                tasks = data;console.log(data);
+                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                  success(function(data, status, headers, config) {
+                     console.log(data);
+                            requestProgressData.steps = data.load.step_statistic;
+                            requestProgressData.chains = data.load.chains;
+                            console.log(requestProgressData.chains);
+                             scope.loading = false;
+                    }).
+                  error(function(data, status, headers, config) {
+                console.log(status);
+                 scope.loading = false;
+                  });
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+                scope.loading = false;
+              });
+
+        }]);
+
+    hashtagApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_hashtags_list.html',
+              controller: 'HashTagCtrl'
+            }).
+          when('/hashtags/', {
+              templateUrl: '/static/html/_ng_request_progress.html',
+              controller: 'progressStatHashtagCtrl as requestProgressData'
+            })
+
+    });
+</script>
+{% endverbatim %}
+
+
+<div ng-app="hashtagApp">
+    <div ng-view></div>
+
+</div>
+
+{% endblock %}

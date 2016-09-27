@@ -451,25 +451,8 @@ class ParentToChildRequest(models.Model):
 
 
 
-# class HashTagToTask(models.Model):
-#
-#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
-#     request = models.ForeignKey(TRequest,  db_column='PR_ID')
-#     hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
-#
-#     def save(self, *args, **kwargs):
-#         if not self.id:
-#             self.id = prefetch_id('dev_db',u'T_HT_TO_TASK',"T_HT_TO_TASK",'HTTT_ID')
-#         super(HashTagToTask, self).save(*args, **kwargs)
-#
-#     def save_last_update(self, *args, **kwargs):
-#         self.last_update = timezone.now()
-#         super(HashTagToTask, self).save(*args, **kwargs)
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table = u'"T_HT_TO_TASK"'
-#
+
+
 #
 # class HashTagToHashTag(models.Model):
 #
@@ -773,6 +756,10 @@ class HashTag(models.Model):
         super(HashTag, self).save(*args, **kwargs)
 
 
+
+    def __str__(self):
+        return self.hashtag
+
     class Meta:
         app_label = 'dev'
         db_table = u'"T_HASHTAG"'
@@ -792,10 +779,28 @@ class HashTagToRequest(models.Model):
         self.last_update = timezone.now()
         super(HashTagToRequest, self).save(*args, **kwargs)
 
+
     class Meta:
         app_label = 'dev'
         db_table = u'"T_HT_TO_REQUEST"'
 
+class HashTagToTask(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
+    task = models.ForeignKey(ProductionTask,  db_column='TASKID')
+    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_HT_TO_TASK_SEQ',"T_HT_TO_TASK",'HTTT_ID')
+        super(HashTagToTask, self).save(*args, **kwargs)
+
+    def save_last_update(self, *args, **kwargs):
+        self.last_update = timezone.now()
+        super(HashTagToTask, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_HT_TO_TASK"'
 
 class TrainProductionLoad(models.Model):
 

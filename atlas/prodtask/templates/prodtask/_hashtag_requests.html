@@ -121,10 +121,10 @@
 
     hashtagRequestApp.config(function($routeProvider) {
           $routeProvider.
-          //  when('/', {
-         //     templateUrl:'/static/html/_ng_request_progress_main.html',
-         //     controller: 'progressStatMainCtrl'
-         //   }).
+            when('/', {
+              templateUrl:'/static/html/_ng_request_progress_main.html',
+              controller: 'progressStatMainCtrl'
+            }).
         when('/:hashtags', {
               templateUrl: '/static/html/_ng_hashtag_request.html',
               controller: 'hashtagRequestCtrl as hashtagRequestData'

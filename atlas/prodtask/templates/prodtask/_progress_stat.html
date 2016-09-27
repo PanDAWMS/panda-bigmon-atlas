@@ -122,17 +122,20 @@
 
         }]);
 
-    progressStatApp.controller('progressStatHashtagMonkCtrl',['$scope','$http', '$routeParams','requestProgress', '$location',
+    progressStatApp.controller('progressStatHashtagCtrl',['$scope','$http', '$routeParams','requestProgress', '$location',
 
         function (scope, http, routeParams, requestProgress,  location ) {
             var requestProgressData = this;
             requestProgressData.steps = [];
             scope.loading = true;
-            http.get(Django.url('prodtask:request_hashtag_monk')).
+             console.log(routeParams.hashtags);
+            scope.request_base = Django.url('prodtask:input_list_approve',1).slice(0,-2);
+            http.get(Django.url('prodtask:request_hashtags',routeParams.hashtags)).
               success(function(data, status, headers, config) {
                  console.log(data);
-                requestProgressData.steps = data.load;
-
+                requestProgressData.steps = data.load.step_statistic;
+                requestProgressData.chains = data.load.chains;
+                console.log(requestProgressData.chains);
                  scope.loading = false;
               }).
               error(function(data, status, headers, config) {
@@ -148,9 +151,9 @@
          //     templateUrl:'/static/html/_ng_request_progress_main.html',
          //     controller: 'progressStatMainCtrl'
          //   }).
-          when('/hashtags', {
-              templateUrl: '/static/html/_ng_hashtag_progress.html',
-              controller: 'progressStatHashtagMonkCtrl as requestProgressData'
+          when('/hashtags/:hashtags', {
+              templateUrl: '/static/html/_ng_request_progress.html',
+              controller: 'progressStatHashtagCtrl as requestProgressData'
             }).when('/:requests', {
               templateUrl: '/static/html/_ng_request_progress.html',
               controller: 'progressStatCtrl as requestProgressData'
