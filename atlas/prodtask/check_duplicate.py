@@ -75,6 +75,23 @@ def get_outputs_offset(task_param_dict):
                outputs.append(value.get('value').replace(' ','=').split('.')[0])
     return offset,outputs
 
+
+
+def get_outputs_firstevent(task_param_dict):
+    offset = 0
+    outputs = []
+    if 'skipFilesUsedBy' in task_param_dict:
+        return 0,[]
+    for value  in task_param_dict['jobParameters']:
+        if type(value)==dict:
+            if (value.get('value') == '--firstEvent=${FIRSTEVENT}')or(value.get('value') =='firstEvent=${FIRSTEVENT}'):
+                if value.get('offset',0)!=0:
+                    offset =  value.get('offset')
+            if (value.get('param_type') == 'output'):
+               outputs.append(value.get('value').replace(' ','=').split('.')[0])
+    return offset,outputs
+
+
 def get_output_dataset(task_param_dict):
     outputs = []
     for value  in task_param_dict['jobParameters']:
@@ -108,6 +125,125 @@ def fill_output_fraction(file_name, output_file_name):
 
 
 def  find_duplicates_all_db(same_name_list):
+
+
+    duplicates = []
+    for index, same_tasks in enumerate(same_name_list):
+        is_dataset = False
+        input_datasets = []
+        same_input = {}
+        suspicious_tasks = set()
+        container_suspicious = set()
+        requests_set = set()
+        dataset_ids = []
+        if (index % 100)==0:
+            print index,
+        container_exist = False
+        dataset_exist = False
+        for same_task in same_tasks:
+            requests_set.add(int(same_task['request_id']))
+            ttask = TTask.objects.get(id=same_task['id'])
+            container_names = []
+
+            container_name = ''
+            current_input_dataset = ttask.input_dataset
+            current_input_datasets = with_without_scope(current_input_dataset)
+            if 'tid' in current_input_dataset:
+                dataset_exist = True
+                container_name = current_input_dataset.split('_tid')[0]+'/'
+                container_names = with_without_scope(container_name)
+                container_name2 = current_input_dataset.split('_tid')[0]
+                container_names += with_without_scope(container_name2)
+                dataset_ids.append(same_task['id'])
+                same_task['type'] = 'd'
+                same_task['parent_tid']=int(current_input_dataset[current_input_dataset.rfind('tid')+3:current_input_dataset.rfind('_')])
+            else:
+                if '/' in current_input_dataset:
+                    current_input_datasets += with_without_scope(current_input_dataset[-1])
+                else:
+                    current_input_datasets += with_without_scope(current_input_dataset+'/')
+                container_exist = True
+                same_task['type'] = 'c'
+
+            if current_input_dataset not in input_datasets:
+                input_datasets += current_input_datasets
+                same_input[current_input_dataset] = [{'task':same_task,'jedi_task':ttask}]
+            else:
+                for input_dataset in current_input_datasets:
+                    if input_dataset in same_input:
+                        add = False
+                        if 'parent_tid' in same_task:
+                            for item in same_input[input_dataset]:
+                                if 'parent_tid' in item['task']:
+                                    if item['task']['parent_tid'] == same_task['parent_tid']:
+                                        add = True
+                                        break
+                                else:
+                                   add = True
+                                   break
+                        else:
+                            add = True
+                        if add:
+                            same_input[input_dataset] += [{'task':same_task,'jedi_task':ttask}]
+                            suspicious_tasks.add(input_dataset)
+                is_dataset = True
+            if container_name:
+                if container_name not in input_datasets:
+                    input_datasets += container_names
+                    same_input[container_name] = [{'task':same_task,'jedi_task':ttask}]
+                else:
+                    for container_current_name in container_names:
+                        if container_current_name in same_input:
+                            same_input[container_current_name]+=[{'task':same_task,'jedi_task':ttask}]
+                            suspicious_tasks.add(container_current_name)
+                            container_suspicious.add(container_current_name)
+
+        if not container_exist:
+            for container in container_suspicious:
+                same_input.pop(container)
+                suspicious_tasks.remove(container)
+
+
+        #print same_input
+        if is_dataset  and (max(requests_set)>1000):
+            for suspicious_task in suspicious_tasks:
+                output_dict = {}
+                for task in same_input[suspicious_task]:
+
+                    offset, current_outputs = get_outputs_offset(task['jedi_task'].jedi_task_parameters)
+                    for output in current_outputs:
+                        output_dict[output] = output_dict.get(output,[]) + [{'offset':int(offset),'task':task['task']}]
+                for tasks_offset in output_dict.values():
+                    current_task_offset = sorted(tasks_offset, key=lambda x: x['offset'])
+                    current_offset_task = current_task_offset[0]
+                    new_series = False
+                    for offset_task in current_task_offset[1:]:
+                        if offset_task['offset'] == current_offset_task['offset']:
+                            if not(((current_offset_task['task']['type']=='d')and(offset_task['task']['type']=='c')and
+                                        (current_offset_task['task']['id']>offset_task['task']['id']))or
+                                       ((offset_task['task']['type']=='d')and(current_offset_task['task']['type']=='c')
+                                        and(offset_task['task']['id']>current_offset_task['task']['id']))):
+
+                                if not new_series:
+                                    add_dupl = False
+                                    if (('parent_tid' in current_offset_task['task']) and ('parent_tid' in offset_task['task'])):
+                                        if current_offset_task['task']['parent_tid'] == offset_task['task']['parent_tid']:
+                                            add_dupl = True
+                                    else:
+                                       add_dupl = True
+                                    if add_dupl:
+                                        duplicates.append([current_offset_task['task'],offset_task['task']])
+                                        new_series = True
+                                else:
+                                    duplicates[-1] += [offset_task['task']]
+                            else:
+                                new_series = False
+                        else:
+                            new_series = False
+                        current_offset_task = offset_task
+    return duplicates
+
+def  find_same_first_all_db(same_name_list):
 
 
     duplicates = []
@@ -197,8 +333,6 @@ def  find_duplicates_all_db(same_name_list):
                             new_series = False
                         current_offset_task = offset_task
     return duplicates
-
-
 
 
 
@@ -569,12 +703,14 @@ def check_duplication(file_name, provenance='AP'):
     #find possible duplicates
     #ap_to_check = list_intersection(tasks_to_check_id,[all_ap_same])
     #gp_to_check = list_intersection(tasks_to_check_id,[all_gp_same])
-    #print len(ap_to_check)
+
     #print len(gp_to_check)
     ap_duplicates = find_duplicates_all_db(all_gp_same)
+
     ap_duplicates_reduced = clean_reapeated(ap_duplicates)
     ap_duplicates_sorted = sorted(ap_duplicates_reduced, key=lambda x: max([y['id'] for y in x]))
-    #ap_duplicates_sorted_with_dwonstream = ap_add_downstream(ap_duplicates_sorted)
+    if provenance == 'AP':
+        ap_add_downstream(ap_duplicates_sorted)
     pickle.dump({'execute_time':datetime.datetime.now(),'duplicate_list':ap_duplicates_sorted},open(file_name,'wb'))
 
 
@@ -633,3 +769,13 @@ def get_event_number_by_ds(ds_name):
     print ds_name+','+tasks_id_str+','+str(total_events)
 
 
+def find_wrong_simul(request_id):
+    tasks = list(ProductionTask.objects.filter(request=request_id,name__contains='simul',status__in=['done','finished']))
+    for task in tasks:
+        if task.total_events != 0:
+            if task.step.input_events != -1:
+                ratio = float(task.total_events)/float(task.step.input_events)
+            else:
+                ratio = float(task.total_events)/float(task.step.slice.input_events)
+            if ((ratio>1) or (ratio < 0.11)):
+                print task.id, ratio
