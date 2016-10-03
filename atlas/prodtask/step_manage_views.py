@@ -626,7 +626,8 @@ def test_auth_for_api(request, param):
 def test_auth_for_api2(request, param):
     if request.method == 'POST':
         return HttpResponse(json.dumps({'user':request.user.username,'arg':param}), content_type='application/json')
-
+    if request.method == 'GET':
+        return HttpResponse(json.dumps({'user':'test','arg':param}), content_type='application/json')
 
 @csrf_protect
 def update_project_mode(request, reqid):
@@ -1527,3 +1528,51 @@ def find_retried(file_name):
                 except:
                     pass
             print ''
+
+def reshuffle_slices(reqid,starting_slice=0):
+    inputs = list(InputRequestList.objects.filter(request=reqid,slice__gte=starting_slice).order_by('slice'))
+    i=starting_slice
+    for slice in inputs:
+        if slice.slice != i:
+            slice.slice = i
+            slice.save()
+        i+=1
+
+
+
+def clean_open_request(reqid,starting_slice=0):
+    inputs = list(InputRequestList.objects.filter(request=reqid))
+    uniq_datasets = set()
+    duplicated_slices = []
+    slices = []
+    for current_slice in inputs:
+        if (current_slice.dataset_id in uniq_datasets) and (current_slice.slice>=starting_slice):
+            slices.append(current_slice.id)
+            duplicated_slices.append(current_slice)
+        uniq_datasets.add(current_slice.dataset_id)
+    slices.sort()
+    print slices[:30]
+    if not duplicated_slices:
+        return False
+    for slice in duplicated_slices:
+        steps = list(StepExecution.objects.filter(slice=slice))
+        if len(steps) == 0:
+            slice.delete()
+        elif len(steps) == 1:
+            step=steps[0]
+            if (step.status == 'NotChecked') or (step.status == 'NotCheckedSkipped'):
+                step.delete()
+                slice.delete()
+    reshuffle_slices(reqid,starting_slice)
+    return True
+
+
+def change_slice_parent(request,slice,new_parent_slice):
+    step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    if parent_step:
+        step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=new_parent_slice))
+        ordered_existed_steps_parent, parent_step = form_existed_step_list(step_execs_parent)
+        step = ordered_existed_steps[0]
+        step.step_parent = ordered_existed_steps_parent[-1]
+        step.save()
