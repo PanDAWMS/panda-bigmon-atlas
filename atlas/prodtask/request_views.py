@@ -1193,7 +1193,7 @@ def dpd_form_prefill(form_data, request):
         if 'events_per_job' in output_dict:
             nEventsPerJob = output_dict['events_per_job'][0]
             task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-        TASK_CONFIG_FIELDS =   ['project_mode','nGBPerJob','nFilesPerJob']
+        TASK_CONFIG_FIELDS =   ['project_mode','nGBPerJob','nFilesPerJob','nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob']
         for x in TASK_CONFIG_FIELDS:
             if x in output_dict:
                 field_value = output_dict[x][0]
