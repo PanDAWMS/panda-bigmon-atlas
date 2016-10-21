@@ -1503,13 +1503,14 @@ Best,
 
 Details:
 - JIRA for the request : {ref_link}
-- Campaign {energy} {campaign} {sub_campaign}
+- Campaign {energy} {campaign} {sub_campaign} {project}
 - Link to Request: {link}
 """.format(long_description=long_description,ref_link=production_request.ref_link,
                energy=production_request.energy_gev,campaign=production_request.campaign,
-               sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name )
+               sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name,
+            project=production_request.project )
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
-        mail_body = "Dear Marjorie, Monica and Dan,\n"+mail_body
+        mail_body = "Dear Marjorie, Josh and Tancredi,\n"+mail_body
         mail_from = "atlas.mc-production@cern.ch"
         if need_approve:
             owner_mails += ["atlas-csc-prodman@cern.ch"]
