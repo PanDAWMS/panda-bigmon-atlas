@@ -42,7 +42,11 @@
 
 
          <div class="small-6 large-6 columns">
-            <input type="text" id="find_job">
+         {% if params_for_bigpanda %}
+            <input type="text" id="find_job" value="{{ params_for_bigpanda  }}">
+         {% else %}
+             <input type="text" id="find_job" value="">
+         {% endif %}
          </div>
 
          <div class="small-3 large-3 columns">
@@ -333,7 +337,12 @@
         }  );
 
 
+    $(document).ready(function(){
+        if ($('#find_job').val().length > 0){
+             $("#btn_find_jobs").click();
+        }
 
+    });
 
 
 

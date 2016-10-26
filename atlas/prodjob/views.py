@@ -24,7 +24,11 @@ _deft_job_actions = {
 }
 
 def request_jobs(request):
-    return render(request, 'prodjob/_job_table.html')
+    params_for_bigpanda = ''
+    request_path = request.META['QUERY_STRING']
+    if request_path:
+        params_for_bigpanda = "http://bigpanda.cern.ch/jobs/?" + request_path
+    return render(request, 'prodjob/_job_table.html',{ 'params_for_bigpanda':  params_for_bigpanda  })
 
 
 def jobs_action(request,action):
