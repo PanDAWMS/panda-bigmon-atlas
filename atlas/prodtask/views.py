@@ -1456,8 +1456,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                     for step_template in step_templates_set:
                         step_templates[step_template] = StepTemplate.objects.get(id=step_template)
                     for slice in input_lists_pre:
-                        if slice.input_events >= NUMBER_EVENTS_TO_SPLIT:
-                            show_split = True
                         if (not show_hidden) and slice.is_hide:
                             hidden_slices += 1
                             continue
@@ -1525,6 +1523,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 else:
                                     temp_step_list.append((step,step_task))
                         if cur_request.request_type == 'MC':
+                            show_split = True
                             first_step = True
                             slice_steps_ordered = []
                             another_chain_step_dict = {}
