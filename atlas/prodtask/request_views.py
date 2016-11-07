@@ -17,11 +17,12 @@ from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset
-from atlas.prodtask.views import make_slices_from_dict
+from atlas.prodtask.views import make_slices_from_dict, request_clone_slices
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
-from ..prodtask.views import form_existed_step_list, form_step_in_page, fill_dataset, egroup_permissions
+from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
 from ..prodtask.views import set_request_status
+
 #import core.datatables as datatables
 import atlas.datatables as datatables
 from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, \
@@ -573,118 +574,6 @@ def close_deft_ref(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
-def get_problematic_task_list(step_id):
-    tasks = ProductionTask.objects.filter((Q(status__in=['failed','broken','aborted']),Q(step=step_id)))
-    return_list = []
-    for task in tasks:
-        return_list.append(task.id)
-    return return_list
-
-
-def clone_child_slices(parent_request, parent_steps):
-    child_requests = list(ParentToChildRequest.objects.filter(status='active',parent_request=parent_request).values_list('child_request',flat=True))
-    for child_request in child_requests:
-        if child_requests:
-            current_child_slice_set = set()
-            child_steps =  list(StepExecution.objects.filter(request=child_request))
-            for child_step in child_steps:
-                if child_step.step_parent_id in parent_steps.keys():
-                    current_child_slice_set.add(child_step.slice.slice)
-            clone_slices(child_request,child_request,list(current_child_slice_set),-1,False,False,False,parent_steps)
-
-
-def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}):
-        ordered_slices = map(int,slices)
-        ordered_slices.sort()
-        #form levels from input text lines
-        #create chains for each input
-        request_source = TRequest.objects.get(reqid=reqid_source)
-        if reqid_source == reqid_destination:
-            request_destination = request_source
-        else:
-            request_destination = TRequest.objects.get(reqid=reqid_destination)
-        #TODO: fix race condition
-        new_slice_numbers = []
-        new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
-        old_new_step = {}
-        for slice_number in ordered_slices:
-            current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
-            new_slice = current_slice.values()[0]
-            new_slice['slice'] = new_slice_number
-            new_slice_numbers.append(new_slice_number)
-            new_slice_number += 1
-            del new_slice['id']
-            del new_slice['request_id']
-            new_slice['request'] = request_destination
-            new_input_data = InputRequestList(**new_slice)
-            new_input_data.save()
-            if fill_slice_from:
-                new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
-                new_input_data.save()
-            step_execs = StepExecution.objects.filter(slice=current_slice)
-            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-            if request_source.request_type == 'MC':
-                STEPS = StepExecution.STEPS
-            else:
-                STEPS = ['']*len(StepExecution.STEPS)
-            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
-            first_changed = not make_link
-            for index,step in enumerate(step_as_in_page):
-                if step:
-                    if (index >= step_from) or (not make_link):
-                        self_looped = step.id == step.step_parent.id
-                        old_step_id = step.id
-                        step.id = None
-                        step.step_appr_time = None
-                        step.step_def_time = None
-                        step.step_exe_time = None
-                        step.step_done_time = None
-                        step.slice = new_input_data
-                        step.request = request_destination
-                        if do_smart:
-                            problematic_tasks = get_problematic_task_list(old_step_id)
-                            if problematic_tasks:
-                                step.set_task_config({'previous_task_list':problematic_tasks})
-                        if (step.status == 'Skipped') or (index < step_from):
-                            step.status = 'NotCheckedSkipped'
-                        elif step.status in ['Approved','Waiting']:
-                            step.status = 'NotChecked'
-                        if first_changed and ((step.step_parent.id in old_new_step)or(step.step_parent.id in predefined_parrent)):
-                            if (step.step_parent.id in predefined_parrent):
-                                step.step_parent = predefined_parrent[int(step.step_parent.id)]
-                            else:
-                                step.step_parent = old_new_step[int(step.step_parent.id)]
-                        step.save_with_current_time()
-                        if self_looped:
-                            step.step_parent = step
-                        first_changed = True
-                        step.save()
-                        old_new_step[old_step_id] = step
-        clone_child_slices(reqid_source,old_new_step)
-        return new_slice_numbers
-
-def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
-    request_destination = TRequest.objects.get(reqid=reqid)
-    request_destination.reqid = None
-    request_destination.cstatus = 'waiting'
-    request_destination.description = new_short_description
-    request_destination.jira_reference = None
-    request_destination.is_error = None
-    request_destination.manager = owner
-    request_destination.ref_link = new_ref
-    if request_destination.info_fields:
-        info_field = json.loads(request_destination.info_fields)
-        info_field['long_description'] = 'Cloned from request %s'%str(reqid)
-        request_destination.info_fields=json.dumps(info_field)
-    request_destination.save()
-    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
-                                                       status='waiting')
-    request_status.save_with_current_time()
-    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
-    clone_slices(reqid,request_destination.reqid,slices,0,False)
-    return request_destination.reqid
-
-
 def request_comments(request, reqid):
      if request.method == 'GET':
         results = {'success':False}
@@ -747,7 +636,7 @@ def request_clone2(request, reqid):
             if not owner:
                 owner = 'default'
             _logger.debug(form_request_log(reqid,request,'Clone request' ))
-            new_request_id = request_clone_slices(reqid,owner,new_short_description,new_ref,ordered_slices)
+            new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices)
             results = {'success':True,'new_request':int(new_request_id)}
         except Exception, e:
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))

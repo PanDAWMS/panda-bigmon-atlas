@@ -17,10 +17,11 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import time
 
+from atlas.getdatasets.models import TRequest
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern
+    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -33,7 +34,7 @@ import atlas.datatables as datatables
 
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
-    OpenEndedRequest, TrainProduction, ParentToChildRequest
+    OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
 from .spdstodb import fill_template
 
 from django.db.models import Count, Q
@@ -672,6 +673,76 @@ def find_input_per_file(dataset_name):
         return ''
 
 
+def split_slice_between_projects(slice, parent_request, child_request, step_to_split_number):
+    #Clone slice to two requests
+    new_slice_number = clone_slices(parent_request.reqid,child_request.reqid,[slice.slice],-1,True,False,False,{},step_to_split_number)[0]
+    ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=parent_request, slice=slice))
+    child_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=child_request,
+                                                                                            slice=InputRequestList.objects.get(request=child_request,slice=new_slice_number)))
+    parent_steps = {ordered_existed_steps[step_to_split_number].step_parent.id:child_steps[step_to_split_number-1]}
+    new_parent_slice = clone_slices(parent_request.reqid,parent_request.reqid,[slice.slice],step_to_split_number,True,False,False,parent_steps)[0]
+    # Approve child request:
+    for step in child_steps:
+        if step:
+            step.status = 'Approved'
+            step.save()
+    set_request_status('cron',child_request.reqid,'approved','Automatic cloned approve', 'Request was automatically approved')
+    # Waiting new slice
+    cloned_parent_slice, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=parent_request,
+                                                                                                    slice=InputRequestList.objects.get(request=parent_request,slice=new_parent_slice)))
+    for index, step in enumerate(cloned_parent_slice):
+        if step:
+            if ordered_existed_steps[index-step_to_split_number].status == 'Approved':
+                step.status = 'Waiting'
+                step.save()
+    # work with original slice
+    containers = form_skipped_slice(slice.slice, parent_request.reqid)[slice.slice]
+    if containers:
+        containers.sort(key= lambda x: x['events'])
+        change_dataset_in_slice(parent_request.reqid,slice.slice,containers[0])
+    else:
+        for index, step in enumerate(ordered_existed_steps):
+            if step:
+                if step.status == 'Approved':
+                    step.status = 'NotApproved'
+                    step.save()
+
+    pass
+
+
+def split_request(production_request_number, slice_numbers):
+    production_request = TRequest.objects.get(reqid=production_request_number)
+    slices = InputRequestList.objects.filter(request=production_request, slice__in=slice_numbers).order_by('slice')
+    # Create evgen request if doesn't exist
+    child_request = {}
+    related_requests = ParentToChildRequest.objects.filter(parent_request = production_request, relation_type='SP')
+    for related_request in related_requests:
+        child_request[related_request.child_request.project] = related_request.child_request
+
+    for slice in slices:
+        existed_steps = StepExecution.objects.filter(request=production_request, slice=slice)
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+        if existed_foreign_step:
+            continue
+
+        if (ordered_existed_steps[0] and ordered_existed_steps[1]):
+            campaign = slice.input_data.split('.')[0].lower()
+            evgen_project = campaign + '_' + str(production_request.project).split('_')[1]
+            if evgen_project in child_request:
+                evgen_request = child_request[evgen_project]
+            else:
+                evgen_request_id = request_clone_slices(production_request_number, production_request.manager,
+                                                        'Evgen for '+production_request.description,
+                                                        production_request.ref_link,[])
+                evgen_request = TRequest.objects.get(reqid=evgen_request_id)
+                evgen_request.project = TProject.objects.get(project=evgen_project)
+                evgen_request.save()
+                child_request[evgen_project] = evgen_request
+            split_slice_between_projects(slice, production_request, evgen_request, 1)
+    # Create a new evgen slice in evgen request
+    # Create a new slice in simul-request
+        # Find containers
+    # Modify original slice in a simul request
 
 
 def change_dataset_in_slice(req, slice, new_dataset_name):
@@ -2277,3 +2348,116 @@ def get_parent_tasks(task):
         return [int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])]
     else:
         return tid_from_container(task_input)
+
+
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
+    request_destination = TRequest.objects.get(reqid=reqid)
+    request_destination.reqid = None
+    request_destination.cstatus = 'waiting'
+    request_destination.description = new_short_description
+    request_destination.jira_reference = None
+    request_destination.is_error = None
+    request_destination.manager = owner
+    request_destination.ref_link = new_ref
+    if request_destination.info_fields:
+        info_field = json.loads(request_destination.info_fields)
+        info_field['long_description'] = 'Cloned from request %s'%str(reqid)
+        request_destination.info_fields=json.dumps(info_field)
+    request_destination.save()
+    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
+                                                       status='waiting')
+    request_status.save_with_current_time()
+    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
+    clone_slices(reqid,request_destination.reqid,slices,0,False)
+    return request_destination.reqid
+
+
+def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):
+        ordered_slices = map(int,slices)
+        ordered_slices.sort()
+        #form levels from input text lines
+        #create chains for each input
+        request_source = TRequest.objects.get(reqid=reqid_source)
+        if reqid_source == reqid_destination:
+            request_destination = request_source
+        else:
+            request_destination = TRequest.objects.get(reqid=reqid_destination)
+        #TODO: fix race condition
+        new_slice_numbers = []
+        new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
+        old_new_step = {}
+        for slice_number in ordered_slices:
+            current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
+            new_slice = current_slice.values()[0]
+            new_slice['slice'] = new_slice_number
+            new_slice_numbers.append(new_slice_number)
+            new_slice_number += 1
+            del new_slice['id']
+            del new_slice['request_id']
+            new_slice['request'] = request_destination
+            new_input_data = InputRequestList(**new_slice)
+            new_input_data.save()
+            if fill_slice_from:
+                new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
+                new_input_data.save()
+            step_execs = StepExecution.objects.filter(slice=current_slice)
+            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+            if request_source.request_type == 'MC':
+                STEPS = StepExecution.STEPS
+            else:
+                STEPS = ['']*len(StepExecution.STEPS)
+            step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+            first_changed = not make_link
+            for index,step in enumerate(step_as_in_page):
+                if step:
+                    if ((index >= step_from) and (index < step_before)) or (not make_link):
+                        self_looped = step.id == step.step_parent.id
+                        old_step_id = step.id
+                        step.id = None
+                        step.step_appr_time = None
+                        step.step_def_time = None
+                        step.step_exe_time = None
+                        step.step_done_time = None
+                        step.slice = new_input_data
+                        step.request = request_destination
+                        if do_smart:
+                            problematic_tasks = get_problematic_task_list(old_step_id)
+                            if problematic_tasks:
+                                step.set_task_config({'previous_task_list':problematic_tasks})
+                        if (step.status == 'Skipped') or (index < step_from):
+                            step.status = 'NotCheckedSkipped'
+                        elif step.status in ['Approved','Waiting']:
+                            step.status = 'NotChecked'
+                        if step.step_parent.id in predefined_parrent:
+                            step.step_parent = predefined_parrent[step.step_parent.id]
+                        else:
+                            if first_changed and (step.step_parent.id in old_new_step):
+                                    step.step_parent = old_new_step[int(step.step_parent.id)]
+                        step.save_with_current_time()
+                        if self_looped:
+                            step.step_parent = step
+                        first_changed = True
+                        step.save()
+                        old_new_step[old_step_id] = step
+        clone_child_slices(reqid_source,old_new_step)
+        return new_slice_numbers
+
+
+def get_problematic_task_list(step_id):
+    tasks = ProductionTask.objects.filter((Q(status__in=['failed','broken','aborted']),Q(step=step_id)))
+    return_list = []
+    for task in tasks:
+        return_list.append(task.id)
+    return return_list
+
+
+def clone_child_slices(parent_request, parent_steps):
+    child_requests = list(ParentToChildRequest.objects.filter(status='active',parent_request=parent_request).values_list('child_request',flat=True))
+    for child_request in child_requests:
+        if child_requests:
+            current_child_slice_set = set()
+            child_steps =  list(StepExecution.objects.filter(request=child_request))
+            for child_step in child_steps:
+                if child_step.step_parent_id in parent_steps.keys():
+                    current_child_slice_set.add(child_step.slice.slice)
+            clone_slices(child_request, child_request, list(current_child_slice_set), -1, False, False, False, parent_steps)
