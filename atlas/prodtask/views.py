@@ -225,10 +225,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         for slice, steps_status in slice_steps.items():
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
             existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
-            if input_list.priority:
-                priority_obj = get_priority_object(input_list.priority)
-            else:
+            if input_list.priority is None:
                 priority_obj = get_priority_object(850)
+            else:
+                priority_obj = get_priority_object(input_list.priority)
             # Check steps which already exist in slice, and change them if needed
             try:
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
@@ -1353,7 +1353,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             long_description = cur_request.info_field('long_description')
             original_spreadsheet = cur_request.info_field('data_source')
             if cur_request.request_type != 'MC':
-                STEPS_LIST = [str(x) for x in range(10)]
+                STEPS_LIST = [str(x) for x in range(len(StepExecution.STEPS))]
                 pattern_list_name = [('Empty', [unwrap({'ctag':'','project_mode':'','nEventsPerJob':''}) for step in STEPS_LIST])]
             else:
                 pattern_list_name = []

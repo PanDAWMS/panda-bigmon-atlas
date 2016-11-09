@@ -9,6 +9,18 @@ import logging
 
 _logger = logging.getLogger('prodtaskwebui')
 
+MC_STEPS = ['Evgen',
+             'Simul',
+             'Merge',
+             'Digi',
+             'Reco',
+             'Rec Merge',
+             'Rec TAG',
+             'Atlfast',
+             'Atlf Merge',
+             'Atlf TAG',
+             'Deriv']
+
 class sqliteID(Singleton):
     def get_id(self,cursor,id_field_name,table_name):
         if (id_field_name+table_name) in self.__id_dict.keys():
@@ -476,16 +488,7 @@ class ParentToChildRequest(models.Model):
 
 
 class StepExecution(models.Model):
-    STEPS = ['Evgen',
-             'Simul',
-             'Merge',
-             'Digi',
-             'Reco',
-             'Rec Merge',
-             'Rec TAG',
-             'Atlfast',
-             'Atlf Merge',
-             'Atlf TAG']
+    STEPS = MC_STEPS
     STEPS_STATUS = ['NotChecked','NotCheckedSkipped','Skipped','Approved']
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
     INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
@@ -844,16 +847,7 @@ class TrainProductionLoad(models.Model):
         db_table = u"T_TRAIN_CARRIAGE"
 
 class MCPattern(models.Model):
-    STEPS = ['Evgen',
-             'Simul',
-             'Merge',
-             'Digi',
-             'Reco',
-             'Rec Merge',
-             'Rec TAG',
-             'Atlfast',
-             'Atlf Merge',
-             'Atlf TAG']
+    STEPS = MC_STEPS
     STATUS = [(x,x) for x in ['IN USE','Obsolete']]
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='MCP_ID', primary_key=True)
     pattern_name =  models.CharField(max_length=150, db_column='PATTERN_NAME', unique=True)
@@ -883,7 +877,8 @@ class MCPriority(models.Model):
              'Rec TAG',
              'Atlfast',
              'Atlf Merge',
-             'Atlf TAG']
+             'Atlf TAG',
+             'Deriv']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCPRIOR_ID', primary_key=True)
     priority_key = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY_KEY', unique=True)
     priority_dict = models.CharField(max_length=2000, db_column='PRIORITY_DICT')
@@ -935,7 +930,8 @@ def get_default_nEventsPerJob_dict():
         'Rec TAG':25000,
         'Atlfast':500,
         'Atlf Merge':5000,
-        'Atlf TAG':25000
+        'Atlf TAG':25000,
+        'Deriv':100000
     }
     return defult_dict
 
@@ -950,7 +946,8 @@ def get_default_project_mode_dict():
          'Rec TAG':'spacetoken=ATLASDATADISK',
          'Atlfast':'Npileup=5;spacetoken=ATLASDATADISK',
          'Atlf Merge':'spacetoken=ATLASDATADISK',
-         'Atlf TAG':'spacetoken=ATLASDATADISK'
+         'Atlf TAG':'spacetoken=ATLASDATADISK',
+         'Deriv':'spacetoken=ATLASDATADISK'
     }
     return default_dict
 
