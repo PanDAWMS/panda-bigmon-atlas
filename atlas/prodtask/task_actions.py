@@ -103,8 +103,6 @@ def do_action(owner, task_id, action, *args):
     if action in _deft_actions:
         if action == 'change_core_count':
             args = ('coreCount',)+args
-        elif action == 'change_split_rule':
-            args = ('TW',)+args
         result.update(_do_deft_action(owner, task_id, action, *args))
     elif action == 'increase_priority':
         result.update(increase_task_priority(owner, task_id, *args))

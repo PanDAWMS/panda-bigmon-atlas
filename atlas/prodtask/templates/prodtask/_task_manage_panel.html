@@ -352,13 +352,15 @@
             <div class="small-12 large-12 columns panel" id="splitrule_panel">
                 <div class="row">
                     <div class="small-4 large-4 columns">
-                        <p> <label for="new_twvalue" class="inline"> Split rule </label> </p>
+                        <p> <label for="splitrule_parameter" class="inline"> Split rule </label> </p>
                     </div>
                     <div class="small-4 large-4 columns">
-                        <input type="text" id="new_twvalue" placeholder="TW value">
+                        <input type="text" id="splitrule_parameter" placeholder="Parameter">
+
+                        <input type="text" id="splitrule_value" placeholder="Value">
                     </div>
                     <div class="small-4 large-4 columns">
-                        <a class="button postfix" id="btn_do_set_twvalue">Set</a>
+                        <a class="button postfix" id="btn_do_set_splitrule">Set</a>
                     </div>
                 </div>
             </div>
@@ -789,7 +791,7 @@ function doTasksActionSelected(action) {
     } else if (action == "change_core_count") {
         parameters = [$("#new_corecount").val()];
     } else if (action == "change_split_rule") {
-        parameters = [$("#new_twvalue").val()];
+        parameters = [$("#splitrule_parameter").val(),$("#splitrule_value").val()];
     } else if (action == "delete_output") {
         var checkboxes = document.getElementsByName("outputs");
         if (checkboxes.length==0){
@@ -839,7 +841,7 @@ $(document).ready(function () {
         "reassign_site": "reassign_to_site",
         "reassign_nucleus": "reassign_to_nucleus",
         "retry": "retry","retry_new": "retry_new",
-        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time", "set_cputime": "change_cpu_time","set_corecount": "change_core_count", "set_twvalue":"change_split_rule",
+        "set_ramcount": "change_ram_count", "set_walltime": "change_wall_time", "set_cputime": "change_cpu_time","set_corecount": "change_core_count", "set_splitrule":"change_split_rule",
         "increase_attempt": "increase_attempt_number",
         "kill_jobs": "abort_unfinished_jobs",
         "delete_output": "delete_output",
