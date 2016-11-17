@@ -79,6 +79,12 @@
     td.submitted_original { background-color: indianred; color : black;	}
     td.not_submitted_original {background-color: indianred; color : black;	}
     td.partially_submitted_original { background-color: indianred; color : black;		}
+    td.submitted_split { color : green;	}
+    td.not_submitted_split { color : red;}
+    td.partially_submitted_split { color : orange;	}
+    td.submitted_original_split { background-color: indianred; color : black;	}
+    td.not_submitted_original_split {background-color: indianred; color : black;	}
+    td.partially_submitted_original_split { background-color: indianred; color : black;		}
     td.hidden { color : #463cff;	}
 
    </style>
@@ -263,6 +269,15 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $('.storeInput').bind('change',function(){changeSliceChanges(this);});
         })();
     (function(){
+            $('.StatusFilter').each(function(){
+                if($(this).html().endsWith('_split')){
+                    splitSlices.push($(this).attr("id").slice('aprroveLabel'.length));
+                        var new_status = $(this).html().slice(0,-1*('_split'.length));
+                        $(this).html(new_status);
+                }
+            })
+        })();
+    (function(){
             $('.storeBulk').bind('change',function(){saveBulkStepChanges(this);});
         })();
     (function(){
@@ -343,6 +358,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         var startFindig = false;
         var sendData = Object();
         var doReload = false;
+        var doSplit = false;
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
@@ -355,6 +371,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
                     var sliceSteps=[];
                     var foreignID = "0";
+                    if (sliceID in splitSlices){
+                        doSplit = true;
+                    }
                     {% for step in step_list %}
                         var val = " ";
                         var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");
@@ -403,13 +422,27 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
             }
+            if (doSplit && isApprove){
+                doSplit = confirm('Some slices should be split between two request. Do splitting?');
+                if (doSplit){
+                    doReload = true;
+                }
 
+            }
+            //var split_request = checkForRequestSplit(sendData);
             if (true){
                 $( "#waitingDialog" ).dialog();
 
                 var ajaxURL = '';
+
                 if (isApprove){
-                    ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+                    if (doSplit){
+                        console.log('dosplit');
+                        ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve_split/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+                    } else{
+                        ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+                    }
+
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
@@ -2246,7 +2279,7 @@ var patternDict = [];
 var changeMode = true;
 var lastCheckedSlice = -1;
 var lastChecked = true;
-
+var splitSlices = [];
 
 function ProjectModeForm(parentDiv, inputField){
     this.parentDiv = parentDiv;
@@ -2367,8 +2400,14 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     {% else %}
                         <div class="large-2 column" >None</div>
                     {% endif %}
+                    {% if child_request.pattern_id %}
                     <div class="large-8 column"><a href= "{%  url 'prodtask:input_list_approve' child_request.pattern_id %}">{{ child_request.pattern_name }}</a></div>
+                    {% else %}
+                        <div class="large-8 column"></div>
+                    {% endif %}
                     <div class="large-2 column">{{ child_request.type }}</div>
+
+
                 </div>
             {% endfor %}
         </div>

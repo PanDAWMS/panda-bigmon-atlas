@@ -87,6 +87,9 @@ urlpatterns = patterns('',
 
     url(r'^request_steps_approve/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/$', 'atlas.prodtask.views.request_steps_approve',
         name='request_steps_approve'),
+
+    url(r'^request_steps_approve_split/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/$', 'atlas.prodtask.views.request_steps_approve_split',
+        name='request_steps_approve_split'),
     url(r'^request_reprocessing_steps_create/(?P<reqid>\d+)/$', 'atlas.prodtask.views.request_reprocessing_steps_create',
         name='request_reprocessing_steps_create'),
     url(r'^make_test_request/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_test_request',

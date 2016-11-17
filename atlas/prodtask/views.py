@@ -462,7 +462,7 @@ def form_skipped_slice(slice, reqid):
     except ValueError,e:
         ordered_existed_steps, existed_foreign_step = [],None
     if ordered_existed_steps[0].status == 'Skipped' and input_list.dataset:
-        return {}
+        return {slice:[]}
     processed_tags = []
     last_step_name = ''
     for step in ordered_existed_steps:
@@ -498,8 +498,8 @@ def form_skipped_slice(slice, reqid):
             return {slice:dataset_events}
         except Exception,e:
             logging.error("Can't find skipped dataset: %s" %str(e))
-            return {}
-    return {}
+            return {slice:[]}
+    return {slice:[]}
 
 
 def get_skipped_steps(production_request, slice):
@@ -675,35 +675,57 @@ def find_input_per_file(dataset_name):
 
 def split_slice_between_projects(slice, parent_request, child_request, step_to_split_number):
     #Clone slice to two requests
+    _logger.debug('Clone slice %s from %s to %s'%(str(slice),str(parent_request.reqid),str(child_request.reqid)))
     new_slice_number = clone_slices(parent_request.reqid,child_request.reqid,[slice.slice],-1,True,False,False,{},step_to_split_number)[0]
     ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=parent_request, slice=slice))
+    new_slice = InputRequestList.objects.get(request=child_request,slice=new_slice_number)
     child_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=child_request,
-                                                                                            slice=InputRequestList.objects.get(request=child_request,slice=new_slice_number)))
+                                                                                            slice=new_slice))
+    new_slice.input_events = child_steps[0].get_task_config('split_events')
+    new_slice.save()
+    if  slice.input_events > new_slice.input_events:
+        slice.input_events = slice.input_events - new_slice.input_events
+        slice.save()
     parent_steps = {ordered_existed_steps[step_to_split_number].step_parent.id:child_steps[step_to_split_number-1]}
-    new_parent_slice = clone_slices(parent_request.reqid,parent_request.reqid,[slice.slice],step_to_split_number,True,False,False,parent_steps)[0]
+    new_parent_slice_number = clone_slices(parent_request.reqid,parent_request.reqid,[slice.slice],step_to_split_number,True,False,False,parent_steps)[0]
+    new_parent_slice = InputRequestList.objects.get(request=parent_request,slice=new_parent_slice_number)
+    new_parent_slice.input_events = new_slice.input_events
+    new_parent_slice.save()
     # Approve child request:
     for step in child_steps:
         if step:
             step.status = 'Approved'
+            step.input_events = step.get_task_config('split_events')
+            step.remove_task_config('split_events')
             step.save()
     set_request_status('cron',child_request.reqid,'approved','Automatic cloned approve', 'Request was automatically approved')
     # Waiting new slice
     cloned_parent_slice, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=parent_request,
-                                                                                                    slice=InputRequestList.objects.get(request=parent_request,slice=new_parent_slice)))
+                                                                                                    slice=new_parent_slice))
     for index, step in enumerate(cloned_parent_slice):
         if step:
-            if ordered_existed_steps[index-step_to_split_number].status == 'Approved':
+            if ordered_existed_steps[index+step_to_split_number].status in ['Approved','Waiting']:
                 step.status = 'Waiting'
                 step.save()
+    for index, step in enumerate(ordered_existed_steps):
+        if step and (index<step_to_split_number):
+            step.status = 'Skipped'
+            step.save()
     # work with original slice
     containers = form_skipped_slice(slice.slice, parent_request.reqid)[slice.slice]
     if containers:
+        _logger.debug('Find containers: %s'%(str(containers)))
         containers.sort(key= lambda x: x['events'])
         change_dataset_in_slice(parent_request.reqid,slice.slice,containers[0])
+        for index, step in enumerate(ordered_existed_steps):
+            if step:
+                if step.status == 'Waiting':
+                    step.status = 'Approved'
+                    step.save()
     else:
         for index, step in enumerate(ordered_existed_steps):
             if step:
-                if step.status == 'Approved':
+                if (step.status == 'Approved') or (step.status == 'Waiting'):
                     step.status = 'NotApproved'
                     step.save()
 
@@ -714,31 +736,43 @@ def split_request(production_request_number, slice_numbers):
     production_request = TRequest.objects.get(reqid=production_request_number)
     slices = InputRequestList.objects.filter(request=production_request, slice__in=slice_numbers).order_by('slice')
     # Create evgen request if doesn't exist
-    child_request = {}
+    child_requests = {}
     related_requests = ParentToChildRequest.objects.filter(parent_request = production_request, relation_type='SP')
     for related_request in related_requests:
-        child_request[related_request.child_request.project] = related_request.child_request
+        child_requests[str(related_request.child_request.project)] = related_request.child_request
 
     for slice in slices:
         existed_steps = StepExecution.objects.filter(request=production_request, slice=slice)
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
         if existed_foreign_step:
             continue
-
-        if (ordered_existed_steps[0] and ordered_existed_steps[1]):
-            campaign = slice.input_data.split('.')[0].lower()
-            evgen_project = campaign + '_' + str(production_request.project).split('_')[1]
-            if evgen_project in child_request:
-                evgen_request = child_request[evgen_project]
-            else:
-                evgen_request_id = request_clone_slices(production_request_number, production_request.manager,
-                                                        'Evgen for '+production_request.description,
-                                                        production_request.ref_link,[])
-                evgen_request = TRequest.objects.get(reqid=evgen_request_id)
-                evgen_request.project = TProject.objects.get(project=evgen_project)
-                evgen_request.save()
-                child_request[evgen_project] = evgen_request
-            split_slice_between_projects(slice, production_request, evgen_request, 1)
+        split_number = -1
+        for index,step in enumerate(ordered_existed_steps):
+            if step.get_task_config('split_events'):
+                split_number=index
+        if split_number != -1:
+            if (ordered_existed_steps[split_number] and ordered_existed_steps[split_number+1]):
+                campaign = slice.input_data.split('.')[0].lower()
+                child_project = campaign + '_' + str(production_request.project).split('_')[1]
+                if child_project in child_requests:
+                    child_request = child_requests[child_project]
+                else:
+                    _logger.debug('Create new request for split steps for %s'%str(production_request_number))
+                    evgen_request_id = request_clone_slices(production_request_number, production_request.manager,
+                                                            'Evgen for '+production_request.description,
+                                                            production_request.ref_link,[])
+                    child_request = TRequest.objects.get(reqid=evgen_request_id)
+                    child_request.project = TProject.objects.get(project=child_project)
+                    child_request.save()
+                    request_relation = ParentToChildRequest()
+                    request_relation.child_request = child_request
+                    request_relation.parent_request = production_request
+                    request_relation.relation_type = 'SP'
+                    request_relation.status = 'active'
+                    request_relation.save()
+                    child_requests[child_project] = child_request
+                    _logger.debug('New request for split steps is %s'%str(child_request.reqid))
+                split_slice_between_projects(slice, production_request, child_request, split_number+1)
     # Create a new evgen slice in evgen request
     # Create a new slice in simul-request
         # Find containers
@@ -898,7 +932,7 @@ def make_child_update(parent_request_id, manager, slices):
                 # find steps which already exist
 
 
-def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99):
+def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
     try:
         data = request.body
@@ -939,6 +973,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
             removed_input = []
+            error_slices = []
             if ['-1'] == slice_steps.keys():
                 slice_0 = deepcopy(slice_steps['-1'])
                 if req.request_type == 'MC':
@@ -980,10 +1015,12 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                                                    status=req.cstatus)
                     request_status.save_with_current_time()
             if req.request_type == 'MC':
-
-                for slice, new_dataset in slice_new_input.items():
-                    if new_dataset:
-                        change_dataset_in_slice(req, int(slice), new_dataset)
+                if do_split:
+                    split_request(reqid,[x for x in map(int,slices) if x not in error_slices])
+                else:
+                    for slice, new_dataset in slice_new_input.items():
+                        if new_dataset:
+                            change_dataset_in_slice(req, int(slice), new_dataset)
 
             results = {'missing_tags': missing_tags,
                        'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
@@ -1070,6 +1107,12 @@ def request_steps_approve(request, reqid, approve_level, waiting_level):
         return request_steps_approve_or_save(request, reqid, int(approve_level)-1, int(waiting_level))
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
+
+@csrf_protect
+def request_steps_approve_split(request, reqid, approve_level, waiting_level):
+    if request.method == 'POST':
+        return request_steps_approve_or_save(request, reqid, int(approve_level)-1, int(waiting_level), True)
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 def form_step_hierarchy(tags_formats_text):
     step_levels = []
@@ -1241,6 +1284,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         exist_approved = False
         exist_not_approved = False
         exist_spreadsheet_original = False
+        exist_to_split = False
         for step_task in ste_task_list:
             if step_task['step']:
                 if (step_task['step']['status'] == 'Approved')or(step_task['step']['status'] == 'Skipped'):
@@ -1249,12 +1293,16 @@ def request_table_view(request, rid=None, show_hidden=False):
                     exist_not_approved = True
                 if 'spreadsheet_original' in step_task['step']['task_config']:
                     exist_spreadsheet_original = True
+                if ('split_events' in step_task['step']['task_config']) and (step_task['step']['status'] not in ['Skipped','NotCheckedSkipped']):
+                    exist_to_split = True
         if exist_approved and exist_not_approved:
             return_status = 'partially_submitted'
         if exist_approved and not(exist_not_approved):
             return_status = 'submitted'
         if exist_spreadsheet_original:
             return_status+='_original'
+        if exist_to_split:
+            return_status+= '_split'
         return return_status
 
     def approve_level(step_task_list):
@@ -1750,7 +1798,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 pass
             child_requests = []
             try:
-                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,status='active')
+                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA'],status='active')
                 for related_request in related_requests:
                     if related_request.child_request:
                         child_requests.append({'request':int(related_request.child_request_id),'pattern_id':int(related_request.train.pattern_request_id),
@@ -1759,6 +1807,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                     else:
                         child_requests.append({'request':None,'pattern_id':int(related_request.train.pattern_request_id),
                                            'pattern_name':related_request.train.pattern_request.description,
+                                           'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
+                related_requests = ParentToChildRequest.objects.filter(child_request=rid,relation_type='SP',status='active')
+                for related_request in related_requests:
+                    child_requests.append({'request':int(related_request.parent_request_id),'pattern_id':None,
+                                           'pattern_name':None,
                                            'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
 
             except:

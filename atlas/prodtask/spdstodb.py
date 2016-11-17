@@ -207,13 +207,15 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
 
             if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row) or ('evevgen' in translated_row)):
                 try:
-                    total_input_events = int(translated_row.get('evevgen', 0))
-                    if total_input_events == 0:
-                        total_input_events = int(translated_row.get('evfs', 0))
+                    total_input_events_evgen = int(translated_row.get('evevgen', 0))
+                    total_input_events = int(translated_row.get('evfs', 0))
                     is_fullsym = True
                     if total_input_events == 0:
                         total_input_events = int(translated_row.get('eva2', 0))
                         is_fullsym = False
+                    if total_input_events == 0:
+                        total_input_events = total_input_events_evgen
+                        total_input_events_evgen = 0
                 except:
                     continue
                 if translated_row in checked_rows:
@@ -248,6 +250,8 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                         reduce_input_format = False
                         step_index = 0
                         for currentstep in StepExecution.STEPS:
+                            if (total_input_events_evgen != 0) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()):
+                                translated_row[currentstep]='e9999'
                             if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
                             if format and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
@@ -257,20 +261,22 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                             if translated_row.get(currentstep):
                                 st = currentstep
                                 tag = translated_row[currentstep]
-
+                                task_config = {}
 
                                 # Store input events only for evgen
                                 if StepExecution.STEPS.index(currentstep)==0:
                                     sexec = dict(status='NotChecked', input_events=int(input_events))
+                                    if (total_input_events_evgen != 0):
+                                        task_config.update({'split_events': total_input_events_evgen})
                                 else:
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None
                                 if do_split:
-                                    task_config = {'split_slice':1,'spreadsheet_original':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
-                                                                         'project_mode':get_default_project_mode_dict().get(st,'')}
+                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                         'project_mode':get_default_project_mode_dict().get(st,'')})
                                 else:
-                                    task_config = {'maxAttempt':20,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
-                                                                         'project_mode':get_default_project_mode_dict().get(st,'')}
+                                    task_config.update({'maxAttempt':20,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                                                         'project_mode':get_default_project_mode_dict().get(st,'')})
 
                                 if reduce_input_format:
                                     task_config.update({'input_format':'AOD'})
