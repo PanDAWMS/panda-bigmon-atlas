@@ -982,6 +982,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         function showStatusHistory(event){
             event.preventDefault();
 {#            $('#statusHistoryModal').foundation('reveal', 'open');#}
+            $('#chooseNewStatus').val($('#requestStatus').html());
+            $('#requestStatusUpatde').html('');
             $.ajax({
                     url: "{% url 'prodtask:status_history' pr_id %}",
                     type: 'GET',
@@ -1577,6 +1579,36 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 $("#saveStatus"+sliceNumber).html("edit (saved)");
             }
             return sliceDBInfo;
+        }
+
+        function saveRequestStatus(event){
+            event.preventDefault();
+            if ($('#requestStatus').html()=='approved'){
+                alert('"approved" status could not be changed manually');
+            } else {
+                $('#loadStatusHistory').spin('small');
+              $.ajax({
+                    url:Django.url('prodtask:change_production_request_status',"{{ pr_id }}",$('#chooseNewStatus').val()),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: {},
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $('#loadStatusHistory').spin(false);
+                        var newStatus =  $.evalJSON(data).newStatus;
+                        if (newStatus==undefined){
+                            $('#requestStatusUpatde').html('Problem this request status update');
+                        } else {
+                            $('#requestStatusUpatde').html('Request status was changed to '+newStatus);
+                            if (newStatus != $('#requestStatus').html()) {
+                                $('#requestStatus').html(newStatus);
+                        }
+                        }
+
+                    }
+
+                });
+            }
         }
         function cloneRequest(event){
             event.preventDefault();
@@ -2897,6 +2929,32 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </div>
 
 <div id="statusHistoryModal" class="reveal-modal" data-reveal>
+    <div class="row">
+        <div class="column large-3">
+            <label> Status:
+                    <select id="chooseNewStatus" >
+                        <option value="registered" >registered</option>
+                        <option value="waiting" >waiting</option>
+                        <option value="not-taken" >not-taken</option>
+                        <option value="working" >working</option>
+                        <option value="approved" >approved</option>
+                        <option value="processed" >processed</option>
+                        <option value="monitoring" >monitoring</option>
+                        <option value="reworking" >reworking</option>
+                        <option value="remonitoring" >remonitoring</option>
+                        <option value="cancelled" >cancelled</option>
+                        <option value="test" >test</option>
+                    </select>
+            </label>
+         </div>
+            <div class="column large-1">
+                 <a class="button btn_is_authenticated" onclick="saveRequestStatus(event);">Save</a>
+            </div>
+            <div class="column large-1">&nbsp</div>
+            <div class="large-2 column"><span id="loadStatusHistory"></span></div>
+            <div class="column large-2"><span id="requestStatusUpatde"></span></div>
+            <div class="column large-3"></div>
+    </div>
     <div>
         <table>
             <thead>

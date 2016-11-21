@@ -1739,6 +1739,16 @@ def do_mc_management_cancel(request, reqid):
     return change_request_status(request, reqid,'cancelled',
                                  'Request was cancelled  by %s' %request.user.username, 'Request cancelled by WebUI')
 
+@csrf_protect
+def change_production_request_status(request, reqid, new_status):
+    if new_status in ['not-taken','working','monitoring','finished','reworking','remonitoring','cancelled',
+                      'test','registered','approved','processed','waiting']:
+        return change_request_status(request, reqid, new_status,
+                                     'Request status was changed to %s by %s' %(new_status, request.user.username),
+                                     'Request status is changed to %s by WebUI' % new_status)
+    else:
+         return HttpResponse(json.dumps({}), content_type='application/json')
+
 
 def change_request_status(request, reqid, status, message, comment):
     results = {}
