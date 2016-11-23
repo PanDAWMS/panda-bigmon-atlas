@@ -1009,7 +1009,7 @@ class Cloudconfig(models.Model):
 
 
     class Meta:
-        app_label = 'panda_dev'
+        app_label = 'panda'
         db_table = u'"ATLAS_PANDAMETA"."CLOUDCONFIG"'
 
 
