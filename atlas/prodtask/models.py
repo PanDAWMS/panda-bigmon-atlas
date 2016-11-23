@@ -976,7 +976,7 @@ class GDPConfig(models.Model):
 
     class Meta:
         unique_together = (('app', 'component' , 'key' , 'vo'),)
-        app_label = 'panda_dev'
+        app_label = 'panda'
         db_table = u'"ATLAS_PANDA"."CONFIG"'
 
 
