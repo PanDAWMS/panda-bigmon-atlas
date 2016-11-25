@@ -716,7 +716,7 @@ def split_slice_between_projects(slice, parent_request, child_request, step_to_s
     if containers:
         _logger.debug('Find containers: %s'%(str(containers)))
         containers.sort(key= lambda x: x['events'])
-        change_dataset_in_slice(parent_request.reqid,slice.slice,containers[0])
+        change_dataset_in_slice(parent_request.reqid,slice.slice,containers[0]['dataset_name'])
         for index, step in enumerate(ordered_existed_steps):
             if step:
                 if step.status == 'Waiting':
