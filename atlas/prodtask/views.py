@@ -921,7 +921,7 @@ def make_child_update(parent_request_id, manager, slices):
                 if parent_steps and (not output_pattern):
                     output_pattern = form_output_pattern(parent_request.phys_group, child_request.train)
                 if parent_steps and output_pattern:
-                    if  not child_request.child_request:
+                    if not child_request.child_request:
                         child_request.child_request = create_request_for_pattern(parent_request_id, manager, "Automatic derivation for request #%s"%str(parent_request_id))
                         child_request.save()
                     create_steps_in_child_pattern(child_request.child_request,parent_steps,child_request.train.pattern_request,output_pattern,'Approved')
@@ -1441,6 +1441,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             show_is_fast = False
             show_split = False
             slice_priorities = set()
+            manage_slice_priorities = {}
             is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
             if (cur_request.request_type in ['HLT','REPROCESSING', 'GROUP']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
@@ -1589,6 +1590,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         except:
                             step_execs = []
                         slice_priorities.add(str(slice.priority))
+                        manage_slice_priorities[str(slice.priority)] = manage_slice_priorities.get(str(slice.priority),0) + 1
                         slice_steps = {}
                         total_slice += 1
                         show_task = False
@@ -1823,6 +1825,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             except:
                 pass
             selected_slices = json.dumps([])
+            manage_priorities = []
+            priorities_list = []
+            # if manage_slice_priorities:
+            #     for item in manage_slice_priorities.keys():
+            #         manage_priorities.append({'slices':manage_slice_priorities[item], 'value':item, 'name':item.replace('-2','0+')})
+            #
+            #     priorities_list = [{'value':x,'name':x.replace('-2','0+')} for x in ['-2','0','1','2','3','4']]
             try:
                 if 'selected_slices' in request.session:
                     selected_slices = json.dumps(map(int,request.session['selected_slices']))
@@ -1867,6 +1876,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'child_requests':child_requests,
                 'hashtags_string':hashtags_string,
                 'hashtags_path':hashtags_path,
+                'manage_priorities':manage_priorities,
+                'priorities_list':priorities_list,
                 'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities])
                })
         except Exception, e:

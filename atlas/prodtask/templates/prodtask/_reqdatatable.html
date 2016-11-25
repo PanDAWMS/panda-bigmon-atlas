@@ -278,6 +278,14 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             })
         })();
     (function(){
+            $('.managementPriority').each(function(){
+                var priority = $(this).attr("id").slice('managementPriorityChange'.length);
+                console.log(priority);
+                $(this).val(priority);
+
+            })
+        })();
+    (function(){
             $('.storeBulk').bind('change',function(){saveBulkStepChanges(this);});
         })();
     (function(){
@@ -362,6 +370,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
+                console.log(sliceID);
                 var existSkipped = false;
                 if (sliceID == '-1'){
                     doReload = true;
@@ -371,7 +380,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
                     var sliceSteps=[];
                     var foreignID = "0";
-                    if (sliceID in splitSlices){
+                    if (splitSlices.indexOf(sliceID) > -1){
                         doSplit = true;
                     }
                     {% for step in step_list %}
@@ -1805,6 +1814,27 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 );
               return false;
         };
+        function savePriorityRequest(event,priority){
+            event.preventDefault();
+            var new_priority = $('#managementPriorityChange'+priority);
+            if (new_priority!=priority){
+                $( "#reloadDialog" ).dialog();
+                $.ajax({
+                    url: Django.url('prodtask:change_request_priority',priority,new_priority),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: {},
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                            location.reload();
+                        }
+                    }
+                );
+            }
+
+              return false;
+        }
 
         function closeOpenEnded(event){
             event.preventDefault();
@@ -2449,9 +2479,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
 
 
-<div class="row">
+
 
     {% if needed_management_approve %}
+        <div class="row">
        {% if not user.is_authenticated %}
            <div class="large-1 column">
             <a class="small radio button success"
@@ -2472,14 +2503,35 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
         <div class="large-6 column">
         </div>
+        </div>
+        {% for manage_priority in manage_priorities %}
+            <div class="row">
+                <div class="large-2 column">{{ manage_priority.slices }} slices</div>
+                 <div class="large-3 column">
+                     <select id="managementPriorityChange{{ manage_priority.value }}" class="managementPriority" >
+                         {% for priority in  priorities_list%}
+                                <option value="{{ priority.value }}" >{{ priority.name }}</option>
+                         {% endfor %}
+
+                    </select>
+                </div>
+                <div class="large-1 column">
+                    <a id='savePriority' class=" button btn_is_authenticated" onclick="savePriorityRequest(event,{{ manage_priority.value }});">Save new priority</a>
+                </div>
+                <div class="large-6 column">
+                </div>
+            </div>
+        {% endfor %}
     {% else %}
+         <div class="row">
          <div class="large-12 column">
             <span>{{ first_approval_message }}</span>
+        </div>
         </div>
     {% endif %}
 
 
-</div>
+
 {% ifequal trequest.request_type "MC" %}
     <div class="row">
         <div class="large-12 column">
