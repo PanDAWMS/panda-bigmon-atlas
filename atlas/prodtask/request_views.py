@@ -610,6 +610,9 @@ def make_user_as_owner(request, reqid):
                     current_manager = owner
             except:
                 pass
+            change_request_status(request, reqid, 'working',
+                                     'Request status was changed to %s by %s' %('working', request.user.username),
+                                     'Request status is changed to %s by WebUI' % 'working')
             results = {'success':True,'ownerName':current_manager}
         except Exception, e:
             _logger.error("Problem with changing manager #%i: %s"%(reqid,e))

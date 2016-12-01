@@ -1029,6 +1029,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         var newOwnerName =  $.evalJSON(data).ownerName;
                         if ((newOwnerName!='')&&(newOwnerName!=undefined)){
                             $('#ownerName').html(newOwnerName);
+                            $('#requestStatus').html('working');
                         }
                     }
                 });
@@ -2988,10 +2989,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     <select id="chooseNewStatus" >
                         <option value="registered" >registered</option>
                         <option value="waiting" >waiting</option>
-                        <option value="not-taken" >not-taken</option>
                         <option value="working" >working</option>
                         <option value="approved" >approved</option>
-                        <option value="processed" >processed</option>
+                        <option value="finished" >finished</option>
                         <option value="monitoring" >monitoring</option>
                         <option value="reworking" >reworking</option>
                         <option value="remonitoring" >remonitoring</option>
