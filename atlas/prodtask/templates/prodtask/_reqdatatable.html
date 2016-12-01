@@ -1816,11 +1816,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         };
         function savePriorityRequest(event,priority){
             event.preventDefault();
-            var new_priority = $('#managementPriorityChange'+priority);
+            console.log(priority);
+            var new_priority = $('#managementPriorityChange'+priority).val();
             if (new_priority!=priority){
                 $( "#reloadDialog" ).dialog();
                 $.ajax({
-                    url: Django.url('prodtask:change_request_priority',priority,new_priority),
+                    url: Django.url('prodtask:change_request_priority',"{{ pr_id }}",priority,new_priority),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: {},
@@ -2506,8 +2507,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
         {% for manage_priority in manage_priorities %}
             <div class="row">
-                <div class="large-2 column">{{ manage_priority.slices }} slices</div>
-                 <div class="large-3 column">
+                <div class="large-3 column">{{ manage_priority.slices }} slices with priority: </div>
+                 <div class="large-1 column">
                      <select id="managementPriorityChange{{ manage_priority.value }}" class="managementPriority" >
                          {% for priority in  priorities_list%}
                                 <option value="{{ priority.value }}" >{{ priority.name }}</option>
@@ -2515,10 +2516,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
                     </select>
                 </div>
-                <div class="large-1 column">
-                    <a id='savePriority' class=" button btn_is_authenticated" onclick="savePriorityRequest(event,{{ manage_priority.value }});">Save new priority</a>
+                <div class="large-3 column">
+                    <a id='savePriority' class=" button btn_is_authenticated" onclick="savePriorityRequest(event,{{ manage_priority.value }});">Change priority</a>
                 </div>
-                <div class="large-6 column">
+                <div class="large-5 column">
                 </div>
             </div>
         {% endfor %}

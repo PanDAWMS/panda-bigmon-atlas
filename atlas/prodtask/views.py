@@ -538,6 +538,25 @@ def find_input_datasets(request, reqid):
 
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def change_request_priority(request, reqid, old_priority, new_priority):
+    if request.method == 'POST':
+        slices = list(InputRequestList.objects.filter(request=reqid,priority=int(old_priority)))
+
+        slice_steps = {}
+        for slice in slices:
+            slice_steps.update({str(slice.slice) : {'changes':{'priority':str(int(new_priority))}}})
+
+        try:
+                save_slice_changes(reqid, slice_steps)
+        except Exception,e:
+                logging.error("Can't update slice priority: %s" %str(e))
+        results = {}
+        results.update({'success':True})
+
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
 MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta','boeriu',
                   'onofrio','jmonk','kado']
 
@@ -1827,11 +1846,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             selected_slices = json.dumps([])
             manage_priorities = []
             priorities_list = []
-            # if manage_slice_priorities:
-            #     for item in manage_slice_priorities.keys():
-            #         manage_priorities.append({'slices':manage_slice_priorities[item], 'value':item, 'name':item.replace('-2','0+')})
-            #
-            #     priorities_list = [{'value':x,'name':x.replace('-2','0+')} for x in ['-2','0','1','2','3','4']]
+            PMG_PRIORITIES = ['-2','0','1','2','3','4']
+            if manage_slice_priorities:
+                for item in manage_slice_priorities.keys():
+                    if item in PMG_PRIORITIES:
+                        manage_priorities.append({'slices':manage_slice_priorities[item], 'value':item, 'name':item.replace('-2','0+')})
+
+                priorities_list = [{'value':x,'name':x.replace('-2','0+')} for x in PMG_PRIORITIES]
             try:
                 if 'selected_slices' in request.session:
                     selected_slices = json.dumps(map(int,request.session['selected_slices']))
