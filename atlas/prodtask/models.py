@@ -167,6 +167,32 @@ class TRequest(models.Model):
             return ""
         return date[0].get('timestamp').strftime('%Y-%m-%d')
 
+    @property
+    def priority(self):
+        try:
+            priority = self.info_field('priority')
+            if priority:
+                return priority.replace('-2','0+')
+            else:
+                return ''
+        except:
+            return ""
+
+
+    def update_priority(self, new_priorities):
+        info_field_dict = {}
+        if self.info_fields:
+            info_field_dict = json.loads(self.info_fields)
+        priorities_set = set()
+        old_priorities = [int(x) for x in info_field_dict.get('priority','').split(',') if x]
+        priorities_set.update(old_priorities)
+        priorities_set.update(new_priorities)
+        priorities = list(priorities_set)
+        priorities.sort()
+        info_field_dict['priority'] = ','.join([str(x) for x in priorities])
+        self.info_fields = json.dumps(info_field_dict)
+        return info_field_dict['priority']
+
     def info_field(self,field):
         if self.info_fields:
             info_field_dict = json.loads(self.info_fields)

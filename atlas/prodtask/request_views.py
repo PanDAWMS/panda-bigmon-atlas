@@ -17,7 +17,7 @@ from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset
-from atlas.prodtask.views import make_slices_from_dict, request_clone_slices
+from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
@@ -1643,6 +1643,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             new_relation.relation_type = 'BC'
                             new_relation.status = 'active'
                             new_relation.save()
+                        try:
+                            fill_request_priority(req.reqid,req.reqid)
+                        except:
+                            pass
                 except Exception, e:
                     _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
@@ -2005,6 +2009,12 @@ class RequestTable(datatables.DataTable):
         sClass='centered',
     )
 
+    priority = datatables.Column(
+        label='Priority',
+        bSortable=False,
+        sClass='centered',
+    )
+
     class Meta:
         model = TRequest
 
@@ -2152,4 +2162,5 @@ def request_table(request):
     return TemplateResponse(request, 'prodtask/_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'table': request.fct,
                              'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
+
 

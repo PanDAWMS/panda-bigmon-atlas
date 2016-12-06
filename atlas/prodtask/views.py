@@ -553,7 +553,7 @@ def change_request_priority(request, reqid, old_priority, new_priority):
                 logging.error("Can't update slice priority: %s" %str(e))
         results = {}
         results.update({'success':True})
-
+        fill_request_priority(reqid,reqid)
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
@@ -959,6 +959,10 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
         slices = slice_steps.keys()
         fail_slice_save = save_slice_changes(reqid, slice_steps)
+        try:
+            fill_request_priority(reqid,reqid)
+        except:
+            pass
         for slice, steps_status in slice_steps.items():
             slice_steps[slice] = steps_status['sliceSteps']
         for steps_status in slice_steps.values():
@@ -2546,3 +2550,13 @@ def clone_child_slices(parent_request, parent_steps):
                 if child_step.step_parent_id in parent_steps.keys():
                     current_child_slice_set.add(child_step.slice.slice)
             clone_slices(child_request, child_request, list(current_child_slice_set), -1, False, False, False, parent_steps)
+
+
+def fill_request_priority(request_from, request_to):
+    requests = TRequest.objects.filter(reqid__gte=request_from,reqid__lte=request_to,request_type='MC')
+    for request in requests:
+        slices_priority = list(InputRequestList.objects.filter(request=request).values('priority').distinct())
+        priorities = [int(x['priority']) for x in slices_priority]
+        priorities.sort()
+        request.update_priority(priorities)
+        request.save()
