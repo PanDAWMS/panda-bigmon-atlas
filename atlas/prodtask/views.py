@@ -119,6 +119,7 @@ def form_existed_step_list(step_list):
                 another_chain_step = current_step.step_parent
                 result_list.append(current_step)
                 temporary_list.pop(index)
+                break
     for i in range(len(temporary_list)):
         j = 0
         while (temporary_list[j].step_parent!=result_list[-1]):
