@@ -1727,7 +1727,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         dataType: 'text',
                         success: function (data, status) {
                             $("#waitingDialog").dialog('close');
-                            window.location.href = Django.url('reqtask:request_tasks');
+                            var slices_str =  $.evalJSON(data).slices_range;
+                            console.log(data);
+                            console.log( Django.url('reqtask:request_tasks_slices',"{{ pr_id }}",slices_str));
+                            window.location.href = Django.url('reqtask:request_tasks_slices',"{{ pr_id }}",slices_str);
 
                         }
                     }

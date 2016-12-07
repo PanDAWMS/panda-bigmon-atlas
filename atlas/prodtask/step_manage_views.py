@@ -1435,6 +1435,25 @@ def test_tasks_from_slices(request):
     return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+
+def slices_range_to_str(slices):
+    return_string = hex(slices[0])[2:]
+    last_value = slices[0]
+    is_chain = False
+    for slice in slices[1:]:
+        if (slice-last_value) == 1:
+            is_chain = True
+        else:
+            if is_chain:
+                return_string += 'x'+hex(last_value)[2:]
+            is_chain = False
+            return_string += 'y'+hex(slice)[2:]
+        last_value = slice
+    if is_chain:
+        return_string += 'x'+hex(last_value)[2:]
+    return_string += 'y'
+    return return_string
+
 @csrf_protect
 def form_tasks_from_slices(request,request_id):
     results = {'success':False}
@@ -1446,11 +1465,10 @@ def form_tasks_from_slices(request,request_id):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             ordered_slices = map(int,slices)
-            slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=ordered_slices).values_list('id',flat=True))
-            steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
-            task_ids = list(ProductionTask.objects.filter(step__in=steps).values_list('id',flat=True))
-            request.session['selected_tasks'] = map(int,task_ids)
-            results = {'success':True}
+            ordered_slices.sort()
+
+
+            results = {'success':True, 'slices_range': slices_range_to_str(ordered_slices)}
         except Exception,e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')

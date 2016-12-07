@@ -1,7 +1,7 @@
 import json
 import requests
 from django.core import serializers
-from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate
+from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, InputRequestList
 # import logging
 # import os
 from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus
@@ -14,6 +14,46 @@ from django.shortcuts import render
 
 
 # _logger = logging.getLogger('prodtaskwebui')
+
+
+def str_to_slices_range(range_str):
+    token = ''
+    slices = []
+    chain_start = -1
+    for ch in range_str:
+        if ch not in ['x','y']:
+            token += ch
+        else:
+            current_value = int(token,16)
+            token = ''
+            if ch == 'x':
+                if chain_start != -1:
+                    raise ValueError('Wrong sequence to convert')
+                chain_start = current_value
+            if ch == 'y':
+                if chain_start != -1:
+                    slices += range(chain_start,current_value+1)
+                    chain_start =-1
+                else:
+                    slices += [current_value]
+    return slices
+
+
+def request_tasks_slices(request, rid, slices):
+
+
+    if (rid and slices):
+            ordered_slices = str_to_slices_range(slices)
+            slice_ids = list(InputRequestList.objects.filter(request=rid, slice__in=ordered_slices).values_list('id',flat=True))
+            steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
+            task_ids = list(ProductionTask.objects.filter(step__in=steps).values_list('id',flat=True))
+            request.session['selected_tasks'] = map(int,task_ids)
+    return render(request, 'reqtask/_task_table.html',
+                            {'reqid':None,
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'nucleus': get_nucleus()
+                             })
 
 
 def request_tasks(request, rid = None):
