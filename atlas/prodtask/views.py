@@ -685,10 +685,12 @@ def find_input_per_file(dataset_name):
     else:
         to_search = dataset_name.replace('/','')[dataset_name.find(':')+1:]
     try:
-        dataset = ProductionDataset.objects.extra(where=['name like %s'], params=[to_search]).first()
-        if dataset:
+        datasets = ProductionDataset.objects.extra(where=['name like %s'], params=[to_search])
+        for dataset in datasets:
             current_task = ProductionTask.objects.get(id=dataset.task_id)
-            return current_task.step.get_task_config('nEventsPerJob')
+            if current_task.status not in ProductionTask.RED_STATUS:
+                return current_task.step.get_task_config('nEventsPerJob')
+        return ''
     except Exception,e:
         return ''
 
