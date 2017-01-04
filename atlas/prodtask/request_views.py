@@ -1604,7 +1604,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                 step['step_exec']['request'] = req
                                 step['step_exec']['slice'] = irl
                                 step['step_exec']['step_template'] = st
-                                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                                if not step['step_exec'].get('priority'):
+                                    step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
                                 _logger.debug("Filling step execution data: %s" % step['step_exec'])
                                 st_exec = StepExecution(**step['step_exec'])
                                 if step_parent_dict:
