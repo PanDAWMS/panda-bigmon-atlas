@@ -1,3 +1,5 @@
+from _ast import In
+
 from django.core.mail import send_mail
 from django.forms import model_to_dict
 import json
@@ -70,7 +72,7 @@ def find_missing_tags(tags):
     return_list = []
     for tag in tags:
         try:
-            if int(tag[1:])>9000:
+            if int(tag[1:])>9998:
                 return_list.append(tag)
             else:
                 trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
@@ -693,6 +695,49 @@ def find_input_per_file(dataset_name):
         return ''
     except Exception,e:
         return ''
+
+
+
+def find_evgen_missing(evgen_tag,job_options, energy = '13Tev'):
+    task_name = job_options.split('.')[0].lower() + '_'+energy+'.'+job_options.split('.')[1]+'.' +\
+                 job_options.split('.')[2] + '.' + evgen_tag
+    tasks = ProductionTask.objects.filter(name=task_name)
+    if tasks:
+        total_events = 0
+        for task in tasks:
+            if task.status not in (ProductionTask.RED_STATUS + ['obsolete']):
+                total_events += task.total_events
+        return total_events
+    else:
+        return None
+
+
+
+@csrf_protect
+def check_slices_for_request_split(request, production_request):
+    results = {'success':False}
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices_evgen = input_dict
+            do_split = False
+            for slice_evgen in slices_evgen:
+                if slice_evgen[0] != -1:
+                    slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
+                    evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
+                    if not evgen_events:
+                        do_split = True
+                        break
+            results = {'success':True, 'do_split': do_split}
+        except Exception,e:
+            pass
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+
+
+
 
 
 def split_slice_between_projects(slice, parent_request, child_request, step_to_split_number):
