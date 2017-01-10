@@ -1424,15 +1424,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                 task['short'] = task['status'][0:8]
                 task['finished_rate'] = 'full_finished'
                 if task['status']=='finished':
-                    if task['total_req_jobs'] == 10:
-                        task['finished_rate'] = 'finished60'
-                    else:
-                        if (task['total_files_failed']!=0) and (task['total_files_finished']!=0):
+                        if (task['total_files_tobeused']!=0) and (task['total_files_finished']!=0):
                             try:
-                                task_rate = (float(task['total_files_failed'])/(float(task['total_files_finished'])+float(task['total_files_failed'])))
-                                if task_rate > 0.3:
+                                task_rate = (float(task['total_files_finished']))/(float(task['total_files_tobeused']))
+                                if task_rate < 0.7:
                                     task['finished_rate'] = 'finished60'
-                                elif task_rate > 0.1:
+                                elif task_rate < 0.9:
                                     task['finished_rate'] = 'finished80'
                             except:
                                 pass
