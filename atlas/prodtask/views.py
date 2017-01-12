@@ -698,9 +698,9 @@ def find_input_per_file(dataset_name):
 
 
 
-def find_evgen_missing(evgen_tag,job_options, energy = '13Tev'):
+def find_evgen_missing(evgen_tag,job_options, energy = '13TeV'):
     task_name = job_options.split('.')[0].lower() + '_'+energy+'.'+job_options.split('.')[1]+'.' +\
-                 job_options.split('.')[2] + '.' + evgen_tag
+                 job_options.split('.')[2] + '.' + 'evgen' + '.' + evgen_tag
     tasks = ProductionTask.objects.filter(name=task_name)
     if tasks:
         total_events = 0
@@ -709,7 +709,7 @@ def find_evgen_missing(evgen_tag,job_options, energy = '13Tev'):
                 total_events += task.total_events
         return total_events
     else:
-        return None
+        return 0
 
 
 
@@ -722,14 +722,15 @@ def check_slices_for_request_split(request, production_request):
             input_dict = json.loads(data)
             slices_evgen = input_dict
             do_split = False
+            no_events = False
             for slice_evgen in slices_evgen:
                 if slice_evgen[0] != -1:
                     slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
                     evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
-                    if not evgen_events:
+                    if evgen_events <= (0.95 * float(slice.input_events)):
                         do_split = True
                         break
-            results = {'success':True, 'do_split': do_split}
+            results = {'success':True, 'do_split': do_split, 'no_events': no_events }
         except Exception,e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
@@ -817,6 +818,13 @@ def split_request(production_request_number, slice_numbers):
         for index,step in enumerate(ordered_existed_steps):
             if step.get_task_config('split_events'):
                 split_number=index
+        if split_number == -1:
+            step = ordered_existed_steps[0]
+            events_done = find_evgen_missing(step.step_template.ctag, slice.input_data)
+            if float(events_done)<(0.95*float(step.input_events)):
+                    split_number = 0
+                    step.set_task_config({'split_events':int(step.input_events-events_done)})
+                    step.save()
         if split_number != -1:
             if (ordered_existed_steps[split_number] and ordered_existed_steps[split_number+1]):
                 campaign = slice.input_data.split('.')[0].lower()

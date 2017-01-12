@@ -356,7 +356,20 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 var dsid = jo[1].substring(0, 3) + "xxx";
                 var link = "https://svnweb.cern.ch/cern/wsvn/atlasoff/Generators/" + jo[0] + "JobOptions/trunk/share/DSID" + dsid + "/" + joboptions
                 $(this).attr('href', link);
-               }
+                var jo_project = jo[0].substring(0,4).toLowerCase();
+                var request_project = $('#requestProject').html().substring(0,4).toLowerCase();
+                if (request_project == 'mc16'){
+
+                    if (jo_project != request_project){
+                        var sliceID = $(this).attr("id").slice('sliceInputJobOptions'.length);
+                        if (suspectSplit.indexOf(sliceID)==-1){
+                            suspectSplit.push(sliceID);
+                        }
+                   }
+                  }
+
+                }
+
         });
     }
 
@@ -367,6 +380,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         var sendData = Object();
         var doReload = false;
         var doSplit = false;
+        var noEvents = false;
+        var askSplit = {'ask':false, 'slices':[]};
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
@@ -383,39 +398,51 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     if (splitSlices.indexOf(sliceID) > -1){
                         doSplit = true;
                     }
-                    {% for step in step_list %}
+
+                var steps_length = {{  step_list|length }};
+                for(var i=0; i<steps_length; i++){
                         var val = " ";
-                        var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");
+                        var step_td_short = "td#short".concat(sliceID).concat("s"+ i.toString()+".showFullSpan");
                         var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
                         if (isSkipped){
                             existSkipped = true;
                         }
+
                         if ($(step_td_short).css("background-color") !=  $("#foreignColor").css("background-color")){
                             val = $(step_td_short).html();
                         } else {
                             val = " ";
                         }
 
-                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.notShowFullSpan");
+                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s" + i.toString() + ".notShowFullSpan");
                         if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
                             foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
                             val = " ";
                         }
+                        if ((!doSplit)&&(i==0)&&(val!=' ')&&(suspectSplit.indexOf(sliceID)>-1)&&(!(isSkipped))){
+                            askSplit['ask'] = true;
+                            askSplit['slices'].push([sliceID,val]);
+                        }
                         if (sliceID in changesList){
-                            if(changesList[sliceID].stepsInSlice.length>{{ forloop.counter0 }}){
-                                sliceSteps[{{ forloop.counter0 }}] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[{{ forloop.counter0 }}]};
+                            if(changesList[sliceID].stepsInSlice.length>i){
+                                sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[i]};
                             }
                             else{
-                                sliceSteps[{{ forloop.counter0 }}] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                                sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
                             }
 
                         }
                         else{
-                            sliceSteps[{{ forloop.counter0 }}] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                            sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
                         }
-                    {% endfor %}
-                     sliceSteps[{{  step_list|length }}] = {"foreign_id":foreignID};
-                     sliceSteps[{{  step_list|length }}+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
+                }
+
+
+
+
+
+                     sliceSteps[steps_length] = {"foreign_id":foreignID};
+                     sliceSteps[steps_length+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
 
 
                     if (sliceID in changesList){
@@ -429,6 +456,27 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
                         startFindig = true;
                     }
+
+            }
+            if(askSplit['ask'] && isApprove){
+{#                do async check for split with message#}
+                var splitSliceData = $.toJSON(askSplit['slices']);
+
+                console.log(splitSliceData);
+            $.ajaxSetup({async: false});
+              $.ajax({
+                    url: Django.url('prodtask:check_slices_for_request_split',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: splitSliceData,
+                    dataType: 'text',
+                    success: function(data,status) {
+                            doSplit = $.evalJSON(data).do_split;
+                            noEvents
+                        }
+                    }
+                );
+            $.ajaxSetup({async: true});
 
             }
             if (doSplit && isApprove){
@@ -2347,6 +2395,7 @@ var changeMode = true;
 var lastCheckedSlice = -1;
 var lastChecked = true;
 var splitSlices = [];
+var suspectSplit = [];
 
 function ProjectModeForm(parentDiv, inputField){
     this.parentDiv = parentDiv;
@@ -2421,7 +2470,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td><a href='{{trequest.ref_link}}' id='request_link'>{{ trequest.ref_link}}</a></td>
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
   <td>{{ trequest.phys_group}}</td>
-  <td>{{ trequest.project}}</td>
+  <td id="requestProject">{{ trequest.project}}</td>
     <td>
         {% ifequal trequest.request_type "MC" %}
             {{ priorities_str }}

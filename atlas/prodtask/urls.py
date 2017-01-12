@@ -96,6 +96,9 @@ urlpatterns = patterns('',
         name='request_reprocessing_steps_create'),
     url(r'^make_test_request/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_test_request',
         name='make_test_request'),
+    url(r'^check_slices_for_request_split/(?P<production_request>\d+)/$', 'atlas.prodtask.views.check_slices_for_request_split',
+        name='check_slices_for_request_split'),
+
     url(r'^make_request_fast/(?P<reqid>\d+)/$', 'atlas.prodtask.views.make_request_fast',
         name='make_request_fast'),
 
