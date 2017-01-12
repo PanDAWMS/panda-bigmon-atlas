@@ -400,9 +400,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
                 var steps_length = {{  step_list|length }};
-                for(var i=0; i<steps_length; i++){
+                for(var j=0; j<steps_length; j++){
                         var val = " ";
-                        var step_td_short = "td#short".concat(sliceID).concat("s"+ i.toString()+".showFullSpan");
+                        var step_td_short = "td#short".concat(sliceID).concat("s"+ j.toString()+".showFullSpan");
                         var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
                         if (isSkipped){
                             existSkipped = true;
@@ -419,21 +419,21 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
                             val = " ";
                         }
-                        if ((!doSplit)&&(i==0)&&(val!=' ')&&(suspectSplit.indexOf(sliceID)>-1)&&(!(isSkipped))){
+                        if ((!doSplit)&&(j==0)&&(val!=' ')&&(suspectSplit.indexOf(sliceID)>-1)&&(!(isSkipped))){
                             askSplit['ask'] = true;
                             askSplit['slices'].push([sliceID,val]);
                         }
                         if (sliceID in changesList){
-                            if(changesList[sliceID].stepsInSlice.length>i){
-                                sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[i]};
+                            if(changesList[sliceID].stepsInSlice.length>j){
+                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[j]};
                             }
                             else{
-                                sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
                             }
 
                         }
                         else{
-                            sliceSteps[i] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                            sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
                         }
                 }
 
@@ -458,6 +458,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
             }
+            console.log('finishPreapreData');
             if(askSplit['ask'] && isApprove){
 {#                do async check for split with message#}
                 var splitSliceData = $.toJSON(askSplit['slices']);
