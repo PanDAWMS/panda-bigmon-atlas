@@ -414,7 +414,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             val = " ";
                         }
 
-                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s" + i.toString() + ".notShowFullSpan");
+                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s" + j.toString() + ".notShowFullSpan");
                         if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
                             foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
                             val = " ";
