@@ -20,6 +20,13 @@ from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, Production
 from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, JediTasks, JediDatasets
 from .task_actions import allowed_task_actions
 
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -44,6 +51,17 @@ def descent_tasks(request, task_id):
     except Exception,e:
         _logger.error("Problem with retrieving descends tasks for %s: %s"%(str(task_id),str(e)))
         return HttpResponseRedirect('/')
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def test_auth_task(request, format=None):
+    content = {
+        'user': unicode(request.user),  # `django.contrib.auth.User` instance.
+    }
+    return Response(content)
+
+
 
 def task_details(request, rid=None):
     if rid:
@@ -358,6 +376,31 @@ class ProductionTaskTable(datatables.DataTable):
         return { 'task_stat' : status_stat }
 
 
+@api_view(['POST'])
+def outside_task_action(request, action):
+    result = {}
+    try:
+        tasks_ids = json.loads(request.body)
+        tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+        request_statistics = tasks_progress(tasks)
+        ordered_step_statistic = prepare_step_statistic(request_statistics)
+        steps_name = [x['step_name'] for x in ordered_step_statistic]
+        chains = []
+        for chain in request_statistics['chains'].values():
+            current_chain = [{}] * len(steps_name)
+            chain_requests = set()
+            for task_id in chain:
+                i = steps_name.index(request_statistics['processed_tasks'][task_id]['step'])
+                task = {'task_id':task_id}
+                task.update(request_statistics['processed_tasks'][task_id])
+                chain_requests.add(request_statistics['processed_tasks'][task_id]['request'])
+                current_chain[i] = task
+            chains.append({'chain':current_chain,'requests':chain_requests})
+        result.update({'step_statistic':ordered_step_statistic,'chains':chains})
+    except Exception,e:
+        print str(e)
+    return Response({"load": result})
+
 def get_status_stat(qs):
     """
     Compute ProductionTasks statuses by query set
@@ -485,6 +528,12 @@ def get_nucleus():
 
 
     return nucleus
+
+
+
+
+
+
 
 def get_permissions(request,tasks):
     """

@@ -31,7 +31,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'atlas.auth.voms',
-
+    'rest_framework.authtoken',
     ### BigPanDAmon core
     'core.common',
     'core.table',
