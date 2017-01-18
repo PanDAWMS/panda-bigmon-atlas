@@ -26,7 +26,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from django.http import HttpResponseForbidden
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -52,14 +53,55 @@ def descent_tasks(request, task_id):
         _logger.error("Problem with retrieving descends tasks for %s: %s"%(str(task_id),str(e)))
         return HttpResponseRedirect('/')
 
-@api_view(['GET'])
-@authentication_classes((TokenAuthentication, BasicAuthentication))
-@permission_classes((IsAuthenticated,))
-def test_auth_task(request, format=None):
-    content = {
-        'user': unicode(request.user),  # `django.contrib.auth.User` instance.
-    }
-    return Response(content)
+
+
+
+def get_permission_analy(action_username, tasks, userfullname):
+    is_superuser=False
+    user = ""
+    group_permissions = []
+
+    if  User.objects.filter(username=action_username).exists():
+        user = User.objects.get(username=action_username)
+        user_groups = user.groups.all()
+        is_superuser = user.is_superuser
+        for gp in user_groups:
+            group_permissions += list(gp.permissions.all())
+
+
+    is_permitted=False
+    denied_tasks=[]
+
+    allowed_groups = []
+    for gp in group_permissions:
+            if "has_" in gp.name and "_permissions" in gp.name:
+                     allowed_groups.append(gp.codename)
+
+
+    for task in tasks:
+            if ProductionTask.objects.filter(id=task).exists():
+                task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
+                task_name = ProductionTask.objects.values('name').get(id=task).get('name')
+            else:
+                task_owner = JediTasks.objects.values('username').get(id=task).get('username')
+                task_name = JediTasks.objects.values('taskname').get(id=task).get('taskname')
+            #print "phys_group:", physgroup
+
+            if is_superuser is True or user==task_owner:
+                is_permitted=True
+            elif (userfullname == task_owner) and (task_name.split('.')[1] == action_username):
+                is_permitted=True
+            else:
+                denied_tasks.append(task)
+
+    if len(denied_tasks)>0:
+           is_permitted=False
+
+    return (is_permitted,denied_tasks)
+    pass
+
+
+
 
 
 
@@ -535,7 +577,7 @@ def get_nucleus():
 
 
 
-def get_permissions(request,tasks):
+def get_permissions(username,tasks):
     """
 
     :param request: HTTP request
@@ -551,10 +593,10 @@ def get_permissions(request,tasks):
     task_owner = ""
 
     try:
-            user = request.user.username
-            user_groups = request.user.groups.all()
-            is_superuser = request.user.is_superuser
-            user_permissions = request.user.user_permissions.all()
+            user = User.objects.get(username=username)
+            user_groups = user.groups.all()
+            is_superuser = user.is_superuser
+            user_permissions = user.user_permissions.all()
             for gp in user_groups:
                     group_permissions += list(gp.permissions.all())
     except:

@@ -6,15 +6,24 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
-
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import parser_classes
+from rest_framework.parsers import JSONParser
+from django.http import HttpResponseForbidden
 import atlas.datatables as datatables
+import logging
 
-from .models import ProductionTask, TRequest, StepExecution
+from .models import ProductionTask, TRequest, StepExecution, JediTasks
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_permission_analy
 from .task_views import get_permissions
 from .task_actions import do_action
 
+logger = logging.getLogger('prodtaskwebui')
 
 def do_tasks_action(owner, tasks, action, *args):
     """
@@ -50,6 +59,102 @@ def _http_json_response(data):
     :return: HTTP response with the data dumped to string
     """
     return HttpResponse(json.dumps(data))
+
+ALLOWED_FOR_EXTERNAL_API = ['abort','finish']
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def task_action_ext(request, action=None):
+    """
+    Sending task action to JEDI.
+    \narguments:
+       \n * username: user from whom action will be made. Required
+       \n * task: task id. Required
+       \n * userfullname: user full name for analysis tasks.
+       \n * parameters: dict of parameters. Required
+
+    """
+    #TODO: change to privileges check
+    if not action:
+        content = {
+            'Actions': ', '.join(ALLOWED_FOR_EXTERNAL_API),
+        }
+        return content
+    if request.user.username != 'bigpanda_api':
+        return HttpResponseForbidden()
+    error_message = []
+    is_permitted = False
+    action_username = ''
+    task_id = None
+    try:
+        data = json.loads(request.body)
+        if action not in ALLOWED_FOR_EXTERNAL_API:
+            error_message += '%s is not allowed' % action
+        action_username = data.get('username')
+        if not action_username:
+            error_message.append('username is required for task action')
+
+        task_id = data.get('task')
+        is_analy = False
+        task = None
+        if not task_id:
+            error_message.append('task is required for task action')
+        else:
+            params = data.get('parameters', None)
+            if not ProductionTask.objects.filter(id=int(task_id)).exists():
+                if JediTasks.objects.filter(id=int(task_id)).exists():
+                    is_analy = True
+                else:
+                    error_message.append("task %s doesn't exists" % task_id)
+            else:
+                task = ProductionTask.objects.get(id=int(task_id))
+                if task.request_id == 300:
+                    is_analy = True
+
+            denied_tasks = [task_id]
+            # Analysis
+            if is_analy:
+                userfullname = data.get('userfullname')
+                if not userfullname:
+                    error_message.append('userfullname is required for analysis task action')
+        if not error_message:
+            if not is_analy:
+                is_permitted, denied_tasks = get_permissions(action_username, [int(task_id)])
+            else:
+                is_permitted, denied_tasks = get_permission_analy(action_username, [int(task_id)], userfullname)
+    except Exception,e:
+        error_message.append(str(e))
+    if  error_message:
+        content = {
+            'exception': '; '.join(error_message),
+            'result': 'FAILED'
+        }
+        logger.error( "Task action problems: %s" % ('; '.join(error_message)))
+
+    else:
+        if not is_permitted:
+            content = {
+                'exception': "User '%s' don't have permissions to make action '%s' with task(s) '%s'" %
+                             (action_username,action,','.join([str(x) for x in denied_tasks])),
+                'result': 'FAILED'
+             }
+            logger.error( "User '%s' don't have permissions to make action '%s' with task(s) '%s'" %
+                             (action_username,action,','.join([str(x) for x in denied_tasks])))
+        else:
+            content = {
+                'details': "Action '%s' will be perfomed for task %s with parameters %s" %
+                             (action,task_id,str(params)),
+                'result': 'OK'
+             }
+
+            logger.debug("Action '%s' will be perfomed for task %s with parameters %s" %
+                             (action,task_id,str(params)))
+
+    return Response(content)
+
+
 
 def tasks_action(request, action):
     """
