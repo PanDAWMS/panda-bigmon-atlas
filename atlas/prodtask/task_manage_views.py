@@ -193,7 +193,7 @@ def tasks_action(request, action):
 
     params = data.get("parameters", [])
 
-    is_permitted, denied_tasks = get_permissions(request,tasks)
+    is_permitted, denied_tasks = get_permissions(request.user.username,tasks)
 
     #if is_permitted is False:
     if denied_tasks:
