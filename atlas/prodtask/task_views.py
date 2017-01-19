@@ -127,7 +127,7 @@ def task_details(request, rid=None):
     # TODO: check user permissions on the task (SB)
     tasks=[]
     tasks.append(rid)
-    is_permitted,denied_task = get_permissions(request,tasks)
+    is_permitted,denied_task = get_permissions(request.user.username,tasks)
 
     permissions = {}
     if task.status in allowed_task_actions:
