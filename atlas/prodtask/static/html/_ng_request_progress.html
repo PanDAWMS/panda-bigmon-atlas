@@ -31,13 +31,13 @@
              </td>
         </tbody>
     </table>
-     <table>
+     <table >
         <tbody>
         <tr ng-repeat="chain_requests in requestProgressData.chains ">
-            <td><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
-            <td ng-repeat="task in chain_requests.chain ">
-                <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a>
-                    <br>{{ task.input_events }}/{{ task.processed_events }}</div>
+            <td style="border:1px solid black"><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
+            <td ng-repeat="task in chain_requests.chain " style="border:1px solid black">
+                <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></div>
+                    <br>{{ task.input_events }}/{{ task.processed_events }}
 
              </td>
         </tr>

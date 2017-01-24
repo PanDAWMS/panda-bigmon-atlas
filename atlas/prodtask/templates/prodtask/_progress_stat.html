@@ -95,8 +95,35 @@
 
             location.path(scope.requestsToShow);
              console.log(routeParams);
-         }
+         };
+        scope.showTasks= function(){
 
+            http.post(Django.url('prodtask:tasks_requests'),scope.requestsToShow).
+              success(function(data, status, headers, config) {
+                console.log(data);
+                window.location.href = Django.url('reqtask:request_tasks');
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+        };
+        scope.showStatistic= function(){
+            var tasks = [];
+            http.post(Django.url('prodtask:tasks_requests'),scope.requestsToShow).
+              success(function(data, status, headers, config) {
+                tasks = data;
+                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                  success(function(data, status, headers, config) {
+                     console.log(data);
+                    }).
+                  error(function(data, status, headers, config) {
+                    console.log(status);
+                  });
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+        }
     }]);
 
     progressStatApp.controller('progressStatCtrl',['$scope','$http', '$routeParams','requestProgress', '$location',
@@ -128,19 +155,28 @@
             var requestProgressData = this;
             requestProgressData.steps = [];
             scope.loading = true;
-             console.log(routeParams.hashtags);
-            scope.request_base = Django.url('prodtask:input_list_approve',1).slice(0,-2);
-            http.get(Django.url('prodtask:request_hashtags',routeParams.hashtags)).
+            var tasks = [];
+            var requestsToShow = routeParams.request;
+            console.log(requestsToShow);
+            http.post(Django.url('prodtask:tasks_requests'),requestsToShow).
               success(function(data, status, headers, config) {
-                 console.log(data);
-                requestProgressData.steps = data.load.step_statistic;
-                requestProgressData.chains = data.load.chains;
-                console.log(requestProgressData.chains);
+                tasks = data;console.log(data);
+                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                  success(function(data, status, headers, config) {
+                     console.log(data);
+                            requestProgressData.steps = data.load.step_statistic;
+                            requestProgressData.chains = data.load.chains;
+                            console.log(requestProgressData.chains);
+                             scope.loading = false;
+                    }).
+                  error(function(data, status, headers, config) {
+                console.log(status);
                  scope.loading = false;
+                  });
               }).
               error(function(data, status, headers, config) {
                 console.log(status);
-                 scope.loading = false;
+                scope.loading = false;
               });
 
         }]);
@@ -154,16 +190,16 @@
           when('/hashtags/:hashtags', {
               templateUrl: '/static/html/_ng_request_progress.html',
               controller: 'progressStatHashtagCtrl as requestProgressData'
-            }).when('/:requests', {
+            }).when('/requests/:request', {
               templateUrl: '/static/html/_ng_request_progress.html',
-              controller: 'progressStatCtrl as requestProgressData'
+              controller: 'progressStatHashtagCtrl as requestProgressData'
             });
         //    otherwise({
         //      redirectTo: '/'
         //    });
     });
 </script>
-{% endverbatim %}
+
 
 <div class="row">
 
@@ -179,9 +215,10 @@
                 <input  ng-model="requestsToShow" name="requestsToShow" type="text">
                     </label>
             </div>
-            <div class="large-1 column">
-                <button ng-click="changeRequests()" class="btn btn-primary">Show</button>
-            </div>
+            <div class="large-4 column">
+          <button ng-click="showTasks()" class="btn btn-primary">Manage tasks</button>
+          <a href="#/requests/{{ requestsToShow }}" class="button">Show statistic</a>
+                </div>
             <div class="large-1 column"></div>
             <div class="large-7 column"></div>
         </div>
@@ -189,5 +226,5 @@
         <div ng-view></div>
 </div>
 </div>
-
+{% endverbatim %}
 {% endblock %}

@@ -81,6 +81,21 @@ def tasks_by_hashtag(hashtag):
         return tasks_hashtags_int
     return []
 
+
+@csrf_protect
+@api_view(['POST'])
+def tasks_requests(request):
+    result_tasks_list = []
+    try:
+        input_str = request.body
+        reqid_list = [int(x) for x in input_str.replace(' ',',').replace(';',',').split(',') if x]
+        result_tasks_list = list(ProductionTask.objects.filter(request__in=reqid_list).order_by('id').values_list('id',flat=True))
+        result_tasks_list_ids = map(int, result_tasks_list)
+        request.session['selected_tasks'] = result_tasks_list_ids
+    except Exception,e:
+        print str(e)
+    return Response(result_tasks_list)
+
 @csrf_protect
 @api_view(['POST'])
 def tasks_hashtag(request):

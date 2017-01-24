@@ -173,6 +173,7 @@ urlpatterns = patterns('',
     url(r'^request_hashtag_monk/', 'atlas.prodtask.selection.request_hashtag_monk', name='request_hashtag_monk'),
     url(r'^hashtagslists/', 'atlas.prodtask.hashtag.hashtagslists', name='hashtagslists'),
     url(r'^tasks_hashtag/$', 'atlas.prodtask.hashtag.tasks_hashtag', name='tasks_hashtag'),
+    url(r'^tasks_requests/$', 'atlas.prodtask.hashtag.tasks_requests', name='tasks_requests'),
 
     url(r'^assembled_train/(?P<train_id>[0-9]+)/$', 'atlas.prodtask.train_views.assembled_train', name='assembled_train'),
 
