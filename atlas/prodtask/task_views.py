@@ -124,11 +124,11 @@ def task_details(request, rid=None):
     else:
         return HttpResponseRedirect('/')
 
-    # TODO: check user permissions on the task (SB)
     tasks=[]
     tasks.append(rid)
-    is_permitted,denied_task = get_permissions(request.user.username,tasks)
-
+    #is_permitted,denied_task = get_permissions(request.user.username,tasks)
+    denied_task,tmp = check_action_allowed(request.user.username, tasks)
+    is_permitted = denied_task == []
     permissions = {}
     if task.status in allowed_task_actions:
         for action in allowed_task_actions[task.status]:
@@ -572,9 +572,59 @@ def get_nucleus():
     return nucleus
 
 
+def check_action_allowed(username, tasks, action=None, userfullname=''):
+    is_superuser=False
+    group_permissions = []
+    denied_tasks=[]
+    not_allowed_tasks = []
+    allowed_groups = []
+    if User.objects.filter(username=username).exists():
+        user = User.objects.get(username=username)
+        user_groups = user.groups.all()
+        is_superuser = user.is_superuser
+        for gp in user_groups:
+            group_permissions += list(gp.permissions.all())
+        for gp in group_permissions:
+            if "has_" in gp.name and "_permissions" in gp.name:
+                allowed_groups.append(gp.codename)
+    for task in tasks:
+            physgroup = ''
+            if ProductionTask.objects.filter(id=task).exists():
+                task_dict = ProductionTask.objects.values('username','name','status','request_id','phys_group').get(id=task)
+                task_owner =task_dict.get('username')
+                task_name = task_dict.get('name')
+                task_status = task_dict.get('status')
+                physgroup = task_dict.get('phys_group')
+                is_analy = task_dict.get('request_id') == 300
+            else:
+                task_dict = JediTasks.objects.values('username','taskname','status').get(id=task)
+                task_owner = task_dict.get('username')
+                task_name = task_dict.get('taskname')
+                task_status = task_dict.get('status')
+                is_analy = True
 
-
-
+            if action and (action not in allowed_task_actions[task_status]):
+                not_allowed_tasks.append(task)
+            else:
+                if not is_analy:
+                    if is_superuser or (username==task_owner):
+                            pass
+                    elif physgroup in allowed_groups:
+                            pass
+                    elif "DPD" in allowed_groups:
+                            pass
+                    elif "MCCOORD" in  allowed_groups:
+                            pass
+                    else:
+                            denied_tasks.append(task)
+                else:
+                    if is_superuser or (username==task_owner):
+                        pass
+                    elif (userfullname == task_owner) and (task_name.split('.')[1] == username):
+                        pass
+                    else:
+                        denied_tasks.append(task)
+    return denied_tasks, not_allowed_tasks
 
 
 def get_permissions(username,tasks):

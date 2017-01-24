@@ -19,7 +19,8 @@ import logging
 
 from .models import ProductionTask, TRequest, StepExecution, JediTasks
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_permission_analy
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_permission_analy, \
+    check_action_allowed
 from .task_views import get_permissions
 from .task_actions import do_action
 
@@ -88,6 +89,9 @@ def task_action_ext(request, action=None):
     is_permitted = False
     action_username = ''
     task_id = None
+    userfullname = ''
+    denied_tasks = []
+    not_allowed_tasks = []
     try:
         data = json.loads(request.body)
         if action not in ALLOWED_FOR_EXTERNAL_API:
@@ -98,32 +102,15 @@ def task_action_ext(request, action=None):
 
         task_id = data.get('task')
         is_analy = False
-        task = None
         if not task_id:
             error_message.append('task is required for task action')
         else:
             params = data.get('parameters', None)
-            if not ProductionTask.objects.filter(id=int(task_id)).exists():
-                if JediTasks.objects.filter(id=int(task_id)).exists():
-                    is_analy = True
-                else:
-                    error_message.append("task %s doesn't exists" % task_id)
-            else:
-                task = ProductionTask.objects.get(id=int(task_id))
-                if task.request_id == 300:
-                    is_analy = True
-
-            denied_tasks = [task_id]
-            # Analysis
-            if is_analy:
-                userfullname = data.get('userfullname')
-                if not userfullname:
-                    error_message.append('userfullname is required for analysis task action')
+            userfullname = data.get('userfullname','')
+        is_permitted = False
         if not error_message:
-            if not is_analy:
-                is_permitted, denied_tasks = get_permissions(action_username, [int(task_id)])
-            else:
-                is_permitted, denied_tasks = get_permission_analy(action_username, [int(task_id)], userfullname)
+            denied_tasks, not_allowed_tasks = check_action_allowed(action_username, [int(task_id)], action, userfullname)
+            is_permitted = (not denied_tasks) and (not not_allowed_tasks)
     except Exception,e:
         error_message.append(str(e))
     if  error_message:
@@ -135,13 +122,16 @@ def task_action_ext(request, action=None):
 
     else:
         if not is_permitted:
+            msg = "User '%s' can't perform %s:"%(action_username,action)
+            if denied_tasks:
+                msg += " no permissions to make action with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
+            if not_allowed_tasks:
+                msg += "action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
             content = {
-                'exception': "User '%s' don't have permissions to make action '%s' with task(s) '%s'" %
-                             (action_username,action,','.join([str(x) for x in denied_tasks])),
+                'exception': msg,
                 'result': 'FAILED'
              }
-            logger.error( "User '%s' don't have permissions to make action '%s' with task(s) '%s'" %
-                             (action_username,action,','.join([str(x) for x in denied_tasks])))
+            logger.error(msg)
         else:
             content = {
                 'details': "Action '%s' will be perfomed for task %s with parameters %s" %
@@ -171,9 +161,6 @@ def tasks_action(request, action):
             "Request method %s is not supported" % request.method
         return _http_json_response(response)
 
-    # TODO: rewrite with django auth system
-    #if not request.user.groups.filter(name='vomsrole:/atlas/Role=production'):
-    #    return empty_response
     owner = request.user.username
     if not owner:
         response["exception"] = "Username is empty"
@@ -190,17 +177,23 @@ def tasks_action(request, action):
     if not tasks:
         response["exception"] = "Tasks list is empty"
         return _http_json_response(response)
-
+    tasks_ids = map(int, tasks)
     params = data.get("parameters", [])
-
-    is_permitted, denied_tasks = get_permissions(request.user.username,tasks)
-
-    #if is_permitted is False:
-    if denied_tasks:
-            denied_tasks_string = ", ".join(denied_tasks)
-            response["exception"] = "User '%s' don't have permissions to make action '%s' with task(s) '%s'" % (owner,action,denied_tasks_string)     
-    else:
-            response = do_tasks_action(owner, tasks, action, *params)
+    try:
+        denied_tasks, not_allowed_tasks = check_action_allowed(owner, tasks_ids, action)
+        if denied_tasks or not_allowed_tasks:
+                msg = "User '%s' can't perform %s:"%(owner,action)
+                if denied_tasks:
+                    msg += " no permissions to make action '%s' with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
+                if not_allowed_tasks:
+                    msg += " action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
+                logger.error(msg)
+                response["exception"] = msg
+        else:
+                response = do_tasks_action(owner, tasks, action, *params)
+                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s"%(str(tasks),owner,action,str(params)))
+    except Exception, e:
+        response["exception"] = str(e)
     return _http_json_response(response)
 
 
