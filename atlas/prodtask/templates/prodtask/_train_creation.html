@@ -214,11 +214,20 @@
         editTrainLoad.trainLoad.manager = currentUser;
         editTrainLoad.trainLoad.train = train_id;
         var result_outputs = [];
+        var hasDAOD_TRUTH = false;
+        var nonTRUTH = false;
+        var hasEVNT = false;
+        var hasAOD = false;
         for(var j=0;j<scope.parsed_pattern.length;j++){
                  var slice_outputs = [];
                   for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++) {
                       if (scope.parsed_pattern[j].outputs[i].selected) {
                           slice_outputs.push(scope.parsed_pattern[j].outputs[i].name);
+                          if (scope.parsed_pattern[j].outputs[i].name.indexOf('_TRUTH')>-1){
+                             hasDAOD_TRUTH = true;
+                          } else {
+                              nonTRUTH = true
+                          }
                       }
                   }
                   if (slice_outputs.length>0){
@@ -229,24 +238,31 @@
               }
 
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
-        console.log(editTrainLoad.trainLoad.outputs);
-        if (editTrainLoad.trainLoad.datasets.length<1000){
-            trainLoads.save(editTrainLoad.trainLoad,function(data) {
-                console.log(data);
-               location.path('/');
-            });
-        } else {
-            var temp_datasets = editTrainLoad.trainLoad.datasets;
-            editTrainLoad.trainLoad.datasets = 'ongoing_transaction';
-            trainLoads.save(editTrainLoad.trainLoad,function(data) {
-                 editTrainLoad.trainLoad.datasets=temp_datasets;
-
-
-               trainLoad.update({id:data.id},editTrainLoad.trainLoad,function(data2) {
-                location.path('/');
+        hasEVNT = editTrainLoad.trainLoad.datasets.indexOf('EVNT')>-1;
+        hasAOD = editTrainLoad.trainLoad.datasets.indexOf('AOD')>-1;
+        if ((hasDAOD_TRUTH&&nonTRUTH)||(hasDAOD_TRUTH&&hasAOD)||(nonTRUTH&&hasEVNT)){
+            alert('Only EVNT could be used with DAOD_TRUTH*, only xAOD with the rests');
+        } else{
+            console.log(editTrainLoad.trainLoad.outputs);
+            if (editTrainLoad.trainLoad.datasets.length<1000){
+                trainLoads.save(editTrainLoad.trainLoad,function(data) {
+                    console.log(data);
+                   location.path('/');
                 });
-            });
+            } else {
+                var temp_datasets = editTrainLoad.trainLoad.datasets;
+                editTrainLoad.trainLoad.datasets = 'ongoing_transaction';
+                trainLoads.save(editTrainLoad.trainLoad,function(data) {
+                     editTrainLoad.trainLoad.datasets=temp_datasets;
+
+
+                   trainLoad.update({id:data.id},editTrainLoad.trainLoad,function(data2) {
+                    location.path('/');
+                    });
+                });
+            }
         }
+
     };
     }]);
     trainApp.controller('AssemblerTrainCtrl',['$scope','$http', function (scope, http){
