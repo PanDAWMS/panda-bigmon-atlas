@@ -1,0 +1,68 @@
+.top-subbar {
+  overflow: hidden;
+/*  height: 30px; */
+  height: 2em;
+  width: 100%;
+  line-height: 30px;
+  top: -30px;
+  position: relative;
+  background: #DDDDDD;
+/* margin-bottom: 1.875em; */ 
+  margin-bottom:-1em; 
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.left-menu {
+  overflow: hidden;
+  height: 220px;
+  width: 10em;
+  line-height: 30px;
+  top: 100px;
+  position: absolute;
+  background: #DDDDDD;
+  margin-bottom: 1.875em; 
+  padding-left: 1em;
+  padding-right: 1em;
+}
+.left-menu-title {
+    font-size:100%;
+    font-weight:bold;
+}
+.left-menu-item {
+    font-size:95%;
+}
+.left-menu-subitem {
+    font-size:85%;
+}
+
+
+.showentries {
+  background-color : transparent;
+  font-size: 1em;
+  color: #FFFFFF;
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.1875em; 
+}
+.showentries.label {
+  background-color : transparent;
+  font-size: 1em;
+  color: #FFFFFF;
+}
+
+.tableFilter{
+vertical-align: top;
+}
+.tableFilter.td{
+vertical-align: top;
+}
+
+.tdF{
+vertical-align: top;
+}
+
+.inputW{
+width:10em;
+}
+

@@ -26,7 +26,7 @@ DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
 STATICFILES_DIRS = [
 
-     join(dirname(atlas.__file__), 'static'),
+     join(dirname(atlas.common.__file__), 'static'),
 ]
 
 TEMPLATE_DIRS = (
