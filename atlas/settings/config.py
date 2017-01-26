@@ -79,9 +79,9 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
-    'atlas.auth.fake.backends.LoginAsBackend',
-#    'atlas.auth.voms.backends.VomsBackend',
-#    'shibsso.backends.ShibSSOBackend',
+#    'atlas.auth.fake.backends.LoginAsBackend',
+    'atlas.auth.voms.backends.VomsBackend',
+    'shibsso.backends.ShibSSOBackend',
 )
 
 
