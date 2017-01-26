@@ -187,11 +187,9 @@ setup(
     packages=[ #FIXME 
         'atlas',
         'atlas.settings',
-        'atlas.common',
         'atlas.postproduction',
         'atlas.postproduction.deft',
         'atlas.prodtask',
-        'atlas.todoview',
         'atlas.getdatasets',
         'atlas.auth',
         'atlas.auth.voms',

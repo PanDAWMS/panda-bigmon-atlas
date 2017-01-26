@@ -1,9 +1,8 @@
 
 from os.path import dirname, join
 
-import core
 import atlas
-
+import atlas.common
 from .local import MY_SECRET_KEY, dbaccess
 
 ALLOWED_HOSTS = [
@@ -16,38 +15,27 @@ ALLOWED_HOSTS = [
     ### pandawms.org
     '.pandawms.org',  # Allow domain and subdomains
     '.pandawms.org.',  # Also allow FQDN and subdomains
+
+    '127.0.0.1', '.localhost'
 ]
 
+defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
 
-### VIRTUALENV
-#VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__jedimon'
-VIRTUALENV_PATH = '/data/virtualenv/django1.6.1__python2.6.6__atlas'
-
-### WSGI
-WSGI_PATH = VIRTUALENV_PATH + '/pythonpath'
 
 DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
-STATICFILES_DIRS = (
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    join(dirname(core.common.__file__), 'static'),
-#    join(join(dirname(core.__file__),'datatables'), 'static'),
-#    join(dirname(atlas.__file__), 'static'),
-)
+STATICFILES_DIRS = [
+
+     join(dirname(atlas.__file__), 'static'),
+]
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    join(dirname(core.common.__file__), 'templates'),
     join(dirname(atlas.__file__), 'templates'),
 )
 
-STATIC_ROOT = join(dirname(atlas.__file__), 'static')
+STATIC_ROOT = join(dirname(atlas.__file__), 'static_media/')
 #STATIC_ROOT = None
-MEDIA_ROOT = join(dirname(atlas.__file__), 'media')
+MEDIA_ROOT = join(dirname(atlas.__file__), 'static_media2/')
 STATIC_URL_BASE = '/static/'
 #STATIC_URL_BASE = '/jedimonstatic/'
 MEDIA_URL_BASE = '/media/'
@@ -70,7 +58,7 @@ URL_PATH_PREFIX = ''
 MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
-
+DEBUG=True
 ## init logger
 ## A sample logging configuration. The only tangible logging
 ## performed by this configuration is to send an email to
@@ -91,9 +79,9 @@ MIDDLEWARE_CLASSES = (
 
 
 AUTHENTICATION_BACKENDS = (
-#    'atlas.auth.fake.backends.LoginAsBackend',
-    'atlas.auth.voms.backends.VomsBackend',
-    'shibsso.backends.ShibSSOBackend',
+    'atlas.auth.fake.backends.LoginAsBackend',
+#    'atlas.auth.voms.backends.VomsBackend',
+#    'shibsso.backends.ShibSSOBackend',
 )
 
 

@@ -6,12 +6,10 @@ from django.conf.urls import *
 import atlas.settings
 
 #import core.pandajob.views as pandajob_views
-import atlas.common.views as atlas_common_views
-#import atlas.todoview.views as atlas_todo_views
 
 from django.contrib import admin
 admin.autodiscover()
-
+import atlas.common.views as atlas_common_views
 
 common_patterns = patterns('',
     ### robots.txt
@@ -19,10 +17,10 @@ common_patterns = patterns('',
 
     ### the front page
 #obsoleted.2014-05-01.jschovan#    url(r'^$', atlas_common_views.index, name='index'),
-    url(r'^$', include('core.pandajob.urls_pandajob_mainpage')),
+
 
     ### Applications
-    url(r'^htcondorjobs', include('core.htcondor.urls')),
+    url(r'^$', atlas_common_views.index, name='index'),
 #obsoleted.2014-05-01.jschovan#    url(r'^job', include('core.pandajob.urls')),
     # url(r'^jobs/', include('core.pandajob.urls_pandajob_jobs')),
     # url(r'^job/', include('core.pandajob.urls_pandajob_singlejob')),
@@ -39,12 +37,12 @@ common_patterns = patterns('',
     # url(r'^sites/', include('core.pandajob.urls_pandajob_sites')),
     # url(r'^site/', include('core.pandajob.urls_pandajob_singlesite')),
 
-    url(r'^resource', include('core.resource.urls')),
+
 ###     url(r'^api-auth', include('core.api.urls')),
 
 
     ### UI elements
-    url(r'^api/datatables', include('core.table.urls')),
+
 #    url(r'^graphics/', include('core.graphics.urls')),
     url(r'^prodtask/', include('atlas.prodtask.urls', namespace='prodtask')),
     url(r'^prodjob/', include('atlas.prodjob.urls', namespace='prodjob')),
@@ -52,7 +50,6 @@ common_patterns = patterns('',
     url(r'^gdpconfig/', include('atlas.gdpconfig.urls', namespace='gdpconfig')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
 
-    url(r'^todo', include('atlas.todoview.urls', namespace='todoview')),
 
 #    ### TEST/Playground
 #    url(r'^test_playground/$', common_views.testing, name='testing'),

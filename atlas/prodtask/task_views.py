@@ -12,9 +12,8 @@ import logging
 
 from ..settings import defaultDatetimeFormat
 
-#import core.datatables as datatables
 import atlas.datatables as datatables
-from core.resource.models import Schedconfig
+from .models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, JediTasks, JediDatasets
