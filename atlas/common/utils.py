@@ -48,15 +48,7 @@ def getContextVariables(request):
     
     """
     ret = { 'STATIC_URL': settings.STATIC_URL, 'prefix': getPrefix(request) }
-    try:
-        ret.update(ENV)
-    except:
-        ret = ret
-    for envVar in settings.ENV:
-        try:
-            ret.update({envVar: settings.ENV[envVar]})
-        except:
-            pass
+
     return ret
 
 
