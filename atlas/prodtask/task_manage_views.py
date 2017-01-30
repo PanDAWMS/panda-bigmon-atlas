@@ -184,7 +184,7 @@ def tasks_action(request, action):
         if denied_tasks or not_allowed_tasks:
                 msg = "User '%s' can't perform %s:"%(owner,action)
                 if denied_tasks:
-                    msg += " no permissions to make action '%s' with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
+                    msg += " no permissions to make action with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
                 if not_allowed_tasks:
                     msg += " action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
                 logger.error(msg)
