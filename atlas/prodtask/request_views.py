@@ -129,6 +129,16 @@ def reprocessing_object_form(request, reqid):
     return HttpResponse(json.dumps({'success':False,'message':''}),status=500, content_type='application/json')
 
 
+def previous_request_status(production_request_id):
+    statuses = RequestStatus.objects.filter(request=production_request_id).order_by('-timestamp').values_list('status',flat=True)
+    for status in statuses:
+        if status != 'approved':
+            if status == 'waiting':
+                return 'working'
+            else:
+                return status
+
+
 @login_required(login_url='/prodtask/login/')
 @csrf_protect
 def short_hlt_form(request):
