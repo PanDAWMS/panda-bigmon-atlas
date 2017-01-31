@@ -61,7 +61,7 @@ def _http_json_response(data):
     """
     return HttpResponse(json.dumps(data))
 
-ALLOWED_FOR_EXTERNAL_API = ['abort','finish']
+ALLOWED_FOR_EXTERNAL_API = ['abort','finish', 'change_priority', 'retry']
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication))
@@ -92,6 +92,7 @@ def task_action_ext(request, action=None):
     userfullname = ''
     denied_tasks = []
     not_allowed_tasks = []
+    params = None
     try:
         data = json.loads(request.body)
         if action not in ALLOWED_FOR_EXTERNAL_API:
@@ -133,14 +134,16 @@ def task_action_ext(request, action=None):
              }
             logger.error(msg)
         else:
+            response = do_tasks_action(action_username, [task_id], action, *params)
             content = {
-                'details': "Action '%s' will be perfomed for task %s with parameters %s" %
-                             (action,task_id,str(params)),
+                'details': "Action '%s' will be performed by %s for task %s with parameters %s" %
+                             (action,action_username,task_id,str(params)),
                 'result': 'OK'
+
              }
 
-            logger.debug("Action '%s' will be perfomed for task %s with parameters %s" %
-                             (action,task_id,str(params)))
+            logger.debug("Action '%s' will be performed  by %s for task %s with parameters %s, response %s" %
+                             (action,action_username,task_id,str(params),str(response)))
 
     return Response(content)
 
