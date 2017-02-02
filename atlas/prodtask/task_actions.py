@@ -52,7 +52,7 @@ allowed_task_actions = {
     'running': ['kill_job','retry'],
     'exhausted': ['kill_job','retry','retry_new', 'reassign'],
     'done': ['obsolete', 'delete_output'],
-    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output'],
+    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority'],
     'broken': [],
     'failed': [],
 }
