@@ -1,6 +1,7 @@
 {% extends "_base_bigpandamon_atlas.html" %}
 {% load url from future %}
 {% load static from staticfiles %}
+{% load js %}
 {% comment %}  
 {% extends "prodtask/_index.html" %}{% load url from future %}
 {% block urlprefix %}{{ prefix }}{% endblock %}
@@ -23,8 +24,7 @@ this is atlas's atlas/_index_grid
 
 
 
-{% block body %}
-{% endblock %}
+
 
 {% block header-nav-chain-1 %}{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
 {% block header-nav-chain-2 %}{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}
@@ -129,22 +129,49 @@ this is atlas's atlas/_index_grid
 {% endblock %}
 {% endcomment %}
 
-{% block bl_header_title %}ATLAS PanDA Monitoring{% endblock %}
+{% block bl_header_title %}ATLAS ProdSys{% endblock %}
 
 {% block bl_home_down %}<a href="{% url 'mcprod:about' %}">info and help</a>{% endblock %}
 
-{% block bl_top_right %}
-<!-- <button id="syncsh" title="Synchronisation of spreadsheet and DB">SYNC</button>
-<p>
- Column in spreadsheet: <input type="text"  id="lineinsps" > </p> -->
-<div id="dialog" title="Synchronisation of spreadsheet and DB" style="display: none;">
-<p>This button push have to call synchronisation of spreadsheet and DB</p>
-</div>
-{% endblock %}
+
 
 {% block bl_entry_point %}
     {{ block.super }}
     $(".meter").tipTip({maxWidth: "auto", edgeOffset: 10});
 
+
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+{% block body %}
+    <script>
+
+    </script>
+    <div class="row">
+        <div class="column large-2 ">
+            <label>Task: <input type="text" id="taskID" /> </label>
+        </div>
+        <div class="column large-6">
+            <a class="button" onclick="window.location.href = Django.url('prodtask:task',$('#taskID').val());">ProdSys</a>
+            <a class="button" onclick="window.location.href = 'https://bigpanda.cern.ch/task/'+$('#taskID').val();">BigPanda</a>
+            <a class="button" onclick="window.location.href = Django.url('prodtask:slice_by_task',$('#taskID').val());">Slice</a>
+        </div>
+        <div class="column large-4"></div>
+    </div>
+    <div class="row">
+        <div class="column large-2 ">
+            <label>Request: <input type="text" id="RequestID" /> </label>
+        </div>
+        <div class="column large-6">
+            <a class="button" onclick="window.location.href = Django.url('prodtask:input_list_approve_full',$('#RequestID').val());">ProdSys</a>
+            <a class="button" onclick="window.location.href = Django.url('reqtask:request_tasks_rid',$('#RequestID').val());">Tasks</a>
+        </div>
+        <div class="column large-8"></div>
+    </div>
 
 {% endblock %}

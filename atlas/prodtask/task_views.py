@@ -1,10 +1,10 @@
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render, render_to_response, redirect
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task
 from atlas.prodtask.models import StepExecution
@@ -570,6 +570,15 @@ def get_nucleus():
 
     return nucleus
 
+
+def slice_by_task(request, task_id):
+    try:
+        task = ProductionTask.objects.get(id=task_id)
+        request_id = task.request_id
+        slice = task.step.slice.slice
+    except:
+        return HttpResponseRedirect('/')
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve_full', args=[request_id])+'#inputList'+str(slice))
 
 def check_action_allowed(username, tasks, action=None, userfullname=''):
     is_superuser=False
