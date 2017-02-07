@@ -75,7 +75,7 @@ for _status in allowed_task_actions:
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus'])
     if 'ctrl' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task_brokerage' , 'avalanche_task'])
+        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task'])
 
 def do_action(owner, task_id, action, *args):
 
