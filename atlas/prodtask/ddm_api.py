@@ -137,7 +137,7 @@ class DDM(object):
         _logger.debug('Return dataset list from container: %s' % container_name)
         scope, name = self.rucio_convention(container_name)
         output_datasets = list(self.__ddm.list_content(scope=scope, name=name))
-        return [x['name'] for x in output_datasets]
+        return [x['scope']+':'+x['name'] for x in output_datasets]
 
 
 

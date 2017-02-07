@@ -1563,12 +1563,12 @@ def clean_open_request(reqid,starting_slice=0):
     duplicated_slices = []
     slices = []
     for current_slice in inputs:
-        if (current_slice.dataset_id in uniq_datasets) and (current_slice.slice>=starting_slice):
+        if (current_slice.dataset_id[current_slice.dataset_id.find(':')+1:] in uniq_datasets) and (current_slice.slice>=starting_slice):
             slices.append(current_slice.id)
             duplicated_slices.append(current_slice)
-        uniq_datasets.add(current_slice.dataset_id)
+        uniq_datasets.add(current_slice.dataset_id[current_slice.dataset_id.find(':')+1:])
     slices.sort()
-    print slices[:30]
+    #print slices[:30]
     if not duplicated_slices:
         return False
     for slice in duplicated_slices:
@@ -1580,6 +1580,7 @@ def clean_open_request(reqid,starting_slice=0):
             if (step.status == 'NotChecked') or (step.status == 'NotCheckedSkipped'):
                 step.delete()
                 slice.delete()
+                print slice.slice
     reshuffle_slices(reqid,starting_slice)
     return True
 
@@ -1593,3 +1594,23 @@ def change_slice_parent(request,slice,new_parent_slice):
         step = ordered_existed_steps[0]
         step.step_parent = ordered_existed_steps_parent[-1]
         step.save()
+
+def delete_empty_slice(slice):
+    steps = list(StepExecution.objects.filter(slice=slice))
+    if len(steps) == 0:
+        slice.delete()
+    elif len(steps) == 1:
+        step=steps[0]
+        if (step.status == 'NotChecked') or (step.status == 'NotCheckedSkipped'):
+            step.delete()
+            slice.delete()
+
+def remove_dubl_slices(reqid):
+    slices = list(InputRequestList.objects.filter(request=reqid).order_by('-slice'))
+    prev_slice = slices[0]
+    for slice in slices[1:]:
+        if slice.slice == prev_slice.slice:
+            print slice.slice
+            delete_empty_slice(prev_slice)
+            delete_empty_slice(slice)
+
