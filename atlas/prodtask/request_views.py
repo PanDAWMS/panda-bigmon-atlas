@@ -132,7 +132,7 @@ def reprocessing_object_form(request, reqid):
 def previous_request_status(production_request_id):
     statuses = RequestStatus.objects.filter(request=production_request_id).order_by('-timestamp').values_list('status',flat=True)
     for status in statuses:
-        if status != 'approved':
+        if status not in ['approved','comment']:
             if status == 'waiting':
                 return 'working'
             else:
