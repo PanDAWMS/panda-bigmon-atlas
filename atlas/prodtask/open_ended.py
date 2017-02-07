@@ -197,7 +197,8 @@ def extend_open_ended_request(reqid):
                     new_slice.is_hide = True
                     new_slice.save()
     if tasks_count_control:
-        is_extended = is_extended or do_task_start(reqid)
+        do_task = do_task_start(reqid)
+        is_extended = is_extended or do_task
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
 
