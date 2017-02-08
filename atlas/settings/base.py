@@ -86,6 +86,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
     'django.core.context_processors.request', #django-tables2
 )
+LANGUAGE_CODE = 'en-us'
+LANGUAGE_NAME = 'English'
+LANGUAGE_NAME_LOCAL = 'English'
+
+TIME_ZONE = 'UTC'
 
 USE_TZ = True
 USE_L10N = True
