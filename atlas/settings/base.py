@@ -87,6 +87,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request', #django-tables2
 )
 
+USE_TZ = True
+USE_L10N = True
+USE_I18N = True
 
 ROOT_URLCONF = 'atlas.urls'
 
