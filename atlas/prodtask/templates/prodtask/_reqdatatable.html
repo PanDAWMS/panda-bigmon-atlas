@@ -373,122 +373,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         });
     }
 
-    function approveSlices(isApprove, approveLevel, waitingLevel, slices){
 
-        var toChangeDatasets = [];
-        var startFindig = false;
-        var sendData = Object();
-        var doReload = false;
-        var doSplit = false;
-        var noEvents = false;
-        var askSplit = {'ask':false, 'slices':[]};
-            for(var i=0;i<slices.length;i++){
-                {#                   8 = "checkbox".length#}
-                var sliceID = slices[i];
-                console.log(sliceID);
-                var existSkipped = false;
-                if (sliceID == '-1'){
-                    doReload = true;
-                }
-                    if (! sendData[sliceID]){
-                        sendData[sliceID] = Object();
-                    }
-                    var sliceSteps=[];
-                    var foreignID = "0";
-                    if (splitSlices.indexOf(sliceID) > -1){
-                        doSplit = true;
-                    }
-
-                var steps_length = {{  step_list|length }};
-                for(var j=0; j<steps_length; j++){
-                        var val = " ";
-                        var step_td_short = "td#short".concat(sliceID).concat("s"+ j.toString()+".showFullSpan");
-                        var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
-                        if (isSkipped){
-                            existSkipped = true;
-                        }
-
-                        if ($(step_td_short).css("background-color") !=  $("#foreignColor").css("background-color")){
-                            val = $(step_td_short).html();
-                        } else {
-                            val = " ";
-                        }
-
-                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s" + j.toString() + ".notShowFullSpan");
-                        if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
-                            foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
-                            val = " ";
-                        }
-                        if ((!doSplit)&&(j==0)&&(val!=' ')&&(suspectSplit.indexOf(sliceID)>-1)&&(!(isSkipped))){
-                            askSplit['ask'] = true;
-                            askSplit['slices'].push([sliceID,val]);
-                        }
-                        if (sliceID in changesList){
-                            if(changesList[sliceID].stepsInSlice.length>j){
-                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[j]};
-                            }
-                            else{
-                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
-                            }
-
-                        }
-                        else{
-                            sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
-                        }
-                }
-
-
-
-
-
-                     sliceSteps[steps_length] = {"foreign_id":foreignID};
-                     sliceSteps[steps_length+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
-
-
-                    if (sliceID in changesList){
-                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':changesList[sliceID]};
-                    } else {
-                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':''};
-                    }
-                    if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
-                        toChangeDatasets.push(sliceID);
-                    }
-                    if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
-                        startFindig = true;
-                    }
-
-            }
-            console.log('finishPreapreData');
-            if(askSplit['ask'] && isApprove){
-{#                do async check for split with message#}
-                var splitSliceData = $.toJSON(askSplit['slices']);
-
-                console.log(splitSliceData);
-            $.ajaxSetup({async: false});
-              $.ajax({
-                    url: Django.url('prodtask:check_slices_for_request_split',"{{ pr_id }}"),
-                    type: 'POST',
-                    contentType: 'application/json; charset=utf-8',
-                    data: splitSliceData,
-                    dataType: 'text',
-                    success: function(data,status) {
-                            doSplit = $.evalJSON(data).do_split;
-                            noEvents
-                        }
-                    }
-                );
-            $.ajaxSetup({async: true});
-
-            }
-            if (doSplit && isApprove){
-                doSplit = confirm('Some slices should be split between two request. Do splitting?');
-                if (doSplit){
-                    doReload = true;
-                }
-
-            }
-            //var split_request = checkForRequestSplit(sendData);
-            if (true){
+    function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel){
                 $( "#waitingDialog" ).dialog();
 
                 var ajaxURL = '';
@@ -634,7 +520,130 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                     }
                 });
+    }
+
+
+    function approveSlices(isApprove, approveLevel, waitingLevel, slices){
+
+        var toChangeDatasets = [];
+        var startFindig = false;
+        var sendData = Object();
+        var doReload = false;
+        var doSplit = false;
+        var noEvents = false;
+        var askSplit = {'ask':false, 'slices':[]};
+            for(var i=0;i<slices.length;i++){
+                {#                   8 = "checkbox".length#}
+                var sliceID = slices[i];
+                console.log(sliceID);
+                var existSkipped = false;
+                if (sliceID == '-1'){
+                    doReload = true;
+                }
+                    if (! sendData[sliceID]){
+                        sendData[sliceID] = Object();
+                    }
+                    var sliceSteps=[];
+                    var foreignID = "0";
+                    if (splitSlices.indexOf(sliceID) > -1){
+                        doSplit = true;
+                    }
+
+                var steps_length = {{  step_list|length }};
+                for(var j=0; j<steps_length; j++){
+                        var val = " ";
+                        var step_td_short = "td#short".concat(sliceID).concat("s"+ j.toString()+".showFullSpan");
+                        var isSkipped = ($(step_td_short).css("background-color") ==  $("#skippedColor").css("background-color"));
+                        if (isSkipped){
+                            existSkipped = true;
+                        }
+
+                        if ($(step_td_short).css("background-color") !=  $("#foreignColor").css("background-color")){
+                            val = $(step_td_short).html();
+                        } else {
+                            val = " ";
+                        }
+
+                        var step_td_short_foreign = "td#short".concat(sliceID).concat("s" + j.toString() + ".notShowFullSpan");
+                        if ($(step_td_short_foreign).css("background-color") ==  $("#foreignColor").css("background-color")){
+                            foreignID = $(step_td_short_foreign).children(".foreignStepID").html();
+                            val = " ";
+                        }
+                        if ((!doSplit)&&(j==0)&&(val!=' ')&&(suspectSplit.indexOf(sliceID)>-1)&&(!(isSkipped))){
+                            askSplit['ask'] = true;
+                            askSplit['slices'].push([sliceID,val]);
+                        }
+                        if (sliceID in changesList){
+                            if(changesList[sliceID].stepsInSlice.length>j){
+                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':changesList[sliceID].stepsInSlice[j]};
+                            }
+                            else{
+                                sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                            }
+
+                        }
+                        else{
+                            sliceSteps[j] = {"value": val, "is_skipped": isSkipped, "formats": "", 'changes':''};
+                        }
+                }
+
+
+
+
+
+                     sliceSteps[steps_length] = {"foreign_id":foreignID};
+                     sliceSteps[steps_length+1] = {"input_dataset":$("#inputDatasetSelect" + sliceID).val()};
+
+
+                    if (sliceID in changesList){
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':changesList[sliceID]};
+                    } else {
+                        sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':''};
+                    }
+                    if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
+                        toChangeDatasets.push(sliceID);
+                    }
+                    if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
+                        startFindig = true;
+                    }
+
             }
+            console.log('finishPreapreData');
+            if(askSplit['ask'] && isApprove){
+{#                do async check for split with message#}
+                var splitSliceData = $.toJSON(askSplit['slices']);
+                $( "#waitingDialog" ).dialog();
+                console.log(splitSliceData);
+              $.ajax({
+                          url: Django.url('prodtask:check_slices_for_request_split', "{{ pr_id }}"),
+                          type: 'POST',
+                          contentType: 'application/json; charset=utf-8',
+                          data: splitSliceData,
+                          dataType: 'text',
+                          success: function (data, status) {
+                              $( "#waitingDialog" ).dialog('close');
+                              doSplit = $.evalJSON(data).do_split;
+                              if (doSplit) {
+                                  doSplit = confirm('Some slices should be split between two request. Do splitting?');
+                              } else {
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
+                              }
+
+                              if (doSplit) {
+                                  doReload = true;
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
+                              }
+
+                          }
+                      }
+                );
+
+
+            } else {
+
+                saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel);
+            }
+
 
 
     }
