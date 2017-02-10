@@ -625,8 +625,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                               doSplit = $.evalJSON(data).do_split;
                               if (doSplit) {
                                   doSplit = confirm('Some slices should be split between two request. Do splitting?');
-                              } else {
-                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
                               }
 
                               if (doSplit) {
