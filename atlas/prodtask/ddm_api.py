@@ -15,19 +15,20 @@ def number_of_files_in_dataset(dsn):
 
 def find_dataset_events(dataset_pattern):
         return_list = []
-
-        #datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = u'deleted').values())
+        datasets_prodsys1_db = []
         datasets_prodsys2_db = list(ProductionDataset.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).filter(status__iexact = u'done').values())
+        if not datasets_prodsys2_db:
+            datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = u'deleted').values())
         patterns_for_container = set()
         dataset_dict = {}
-        # for current_dataset in datasets_prodsys1_db:
-        #     if '_tid' in current_dataset['name']:
-        #         patterns_for_container.add(current_dataset['name'][current_dataset['name'].find(':')+1:current_dataset['name'].rfind('_tid')]+'/')
-        #     else:
-        #         patterns_for_container.add(current_dataset['name'])
-        #     task = TaskProdSys1.objects.get(taskid=current_dataset['taskid'])
-        #     if (task.status not in ['aborted','failed','lost']):
-        #         dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['taskid'],'events':task.total_events}})
+        for current_dataset in datasets_prodsys1_db:
+            if '_tid' in current_dataset['name']:
+                patterns_for_container.add(current_dataset['name'][current_dataset['name'].find(':')+1:current_dataset['name'].rfind('_tid')]+'/')
+            else:
+                patterns_for_container.add(current_dataset['name'])
+            task = TaskProdSys1.objects.get(taskid=current_dataset['taskid'])
+            if (task.status not in ['aborted','failed','lost']):
+                dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['taskid'],'events':task.total_events}})
         for current_dataset in datasets_prodsys2_db:
             if '_tid' in current_dataset['name']:
                 patterns_for_container.add(current_dataset['name'][current_dataset['name'].find(':')+1:current_dataset['name'].rfind('_tid')]+'/')
