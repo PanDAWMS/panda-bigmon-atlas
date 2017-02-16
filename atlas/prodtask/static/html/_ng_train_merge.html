@@ -1,0 +1,37 @@
+<div class="row">
+<h5>Trains from last 7 days:</h5>
+</div>
+<div class="row">
+<h6>Requests: {{ requestsNumber }} Datasets: {{ datasetsNUmber }} Merged: {{ mergedTotal }}</h6>
+</div>
+   <div class="spinner" ng-show="loading">  Loading...</div>
+
+<div ng-repeat="train in Trains" >
+    <div class="row">
+        <div class="columns large-12">{{ train.train_name }} - <b>{{ train.request_count }}</b> requests to merge</div>
+
+     </div>
+        <div class="row">
+             <div class="columns large-12">
+            <div class="spinner" ng-show="train.loading">  Loading...</div>
+            <table>
+                <thead>
+                <tr>
+                    <th>Dataset</th>
+                    <th>Outputs</th>
+                    <th>Merged</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                <tr ng-repeat="dataset in train.datasets">
+                    <td>{{ dataset.dataset }}</td>
+                    <td>{{ dataset.outputs }}</td>
+                    <td class="{{ dataset.mergedClass }}">{{ dataset.count }}</td>
+                </tr>
+
+                </tbody>
+            </table>
+    </div>
+     </div>
+       </div>

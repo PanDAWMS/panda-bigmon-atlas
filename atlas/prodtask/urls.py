@@ -147,6 +147,10 @@ urlpatterns = patterns('',
 
 
     url(r'^$', 'atlas.prodtask.views.home', name='home'),
+
+    url(r'^merge_trains/$', 'atlas.prodtask.train_views.merge_trains', name='merge_trains'),
+    url(r'^train_luanch/$', 'atlas.prodtask.train_views.train_luanch', name='train_luanch'),
+    url(r'^trains_to_merge/$', 'atlas.prodtask.train_views.trains_to_merge', name='trains_to_merge'),
     url(r'^train_create/$', 'atlas.prodtask.train_views.train_create', name='train_create'),
     url(r'^pattern_train_list/$', 'atlas.prodtask.train_views.pattern_train_list', name='pattern_train_list'),
     url(r'^create_request_as_child/$', 'atlas.prodtask.train_views.create_request_as_child', name='create_request_as_child'),

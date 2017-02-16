@@ -1,6 +1,7 @@
 import json
 import logging
 
+from datetime import timedelta
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -9,7 +10,10 @@ from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
 from rest_framework import serializers,generics
 from django.forms.models import model_to_dict
-
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from atlas.prodtask.models import RequestStatus
 from atlas.prodtask.views import create_steps_in_child_pattern
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
@@ -17,6 +21,104 @@ from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, Inpu
     ParentToChildRequest
 
 _logger = logging.getLogger('prodtaskwebui')
+
+
+
+
+def merge_pattern_train(train, requests):
+    def form_output_lookup(outputs):
+        result_dict = {}
+        for slice in outputs:
+            for output in slice[1]:
+                result_dict[output] = slice[0]
+        return result_dict
+    outputs = train.output_by_slice
+    outputs_lookup = form_output_lookup(outputs)
+    dataset_slice = {}
+    merged = 0
+    for production_request in requests:
+        slices = list(InputRequestList.objects.filter(request=production_request).order_by('id'))
+        steps = list(StepExecution.objects.filter(request=production_request).order_by('slice'))
+        if len(slices)!=len(steps):
+            continue
+        for index, step in enumerate(steps):
+            dataset = slices[index].dataset_id
+            current_dataset_outputs = dataset_slice.get(dataset,{})
+            outputs = step.step_template.output_formats.split('.')
+            if outputs[0] not in outputs_lookup:
+                print train.id, production_request
+            else:
+                pattern_slice = outputs_lookup[outputs[0]]
+                if pattern_slice not in current_dataset_outputs:
+                    current_dataset_outputs[pattern_slice] = {'outputs':outputs,'count':1}
+                else:
+                    new_outputs = [x for x in outputs if x not in current_dataset_outputs[pattern_slice]['outputs']]
+                    if new_outputs:
+                        merged += 1
+                        current_dataset_outputs[pattern_slice]['count'] += 1
+                        current_dataset_outputs[pattern_slice]['outputs'] = current_dataset_outputs[pattern_slice]['outputs'] + new_outputs
+                dataset_slice[dataset] = current_dataset_outputs
+    return dataset_slice, merged
+
+@api_view(['POST'])
+def merge_trains(request):
+    data = json.loads(request.body)
+    to_send = {}
+    try:
+        for train_id in data:
+            train = TrainProduction.objects.get(id=train_id)
+            dataset_slice, merged = merge_pattern_train(train,data[train_id])
+            to_send[train_id]  = dataset_slice
+    except Exception, e:
+        Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+    return Response({"load": to_send})
+
+@api_view(['GET'])
+def trains_to_merge(request):
+    to_send = {}
+    try:
+        result = collect_trains(7)
+        for entry in result.values():
+            to_send[int(entry['train'].id)] = {'train_name':entry['train'].description,'request':map(int,entry['requests']),'request_count':len(entry['requests'])}
+    except Exception, e:
+        Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+    return Response({"trains": to_send})
+
+
+
+def train_luanch(request):
+    if request.method == 'GET':
+        return render(request, 'prodtask/_train_merge.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Trains',
+                'submit_url': 'prodtask:train_luanch',
+                'parent_template': 'prodtask/_index.html',
+            })
+
+
+
+def collect_trains(days):
+    min_request = RequestStatus.objects.filter(status='waiting', timestamp__gt=timezone.now()-timedelta(days=days)).order_by('id')[0].request_id
+    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request)
+    patterns = {}
+    for production_request in requests:
+        print production_request.reqid
+        if TrainProduction.objects.filter(request = int(production_request.reqid)).exists():
+            train = TrainProduction.objects.filter(request = int(production_request.reqid))[0]
+            if int(train.pattern_request_id) in patterns:
+                patterns[int(train.pattern_request_id)].update({'requests':patterns[int(train.pattern_request_id)].get('requests',[])+[train.request]})
+            else:
+                patterns[int(train.pattern_request_id)] = {'train':train,
+                                                       'requests':[train.request]}
+
+    return patterns
+    # result = {}
+    # merged = 0
+    # total_merged = 0
+    # for pattern in patterns.values():
+    #     result[pattern['train'].id], merged = merge_pattern_train(pattern['train'],pattern['requests'])
+    #     total_merged += merged
+    # print  merged
 
 
 def prepare_train_carriages(train_id):

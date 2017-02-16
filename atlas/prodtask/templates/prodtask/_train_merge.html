@@ -1,0 +1,174 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+
+  <style type="text/css">
+    td.one   { color: green }
+    td.two         { color:orange }
+    td.many        { color: red }
+
+  </style>
+
+<script>
+
+
+
+    {% verbatim %}
+
+
+
+
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
+    var trainMergeServices = angular.module('trainMergeServices', ['ngResource']);
+    trainMergeServices.run(run);
+
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+
+
+
+
+
+    var trainMergeApp = angular.module('trainMergeApp',['ngRoute','trainMergeServices']);
+    trainMergeApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+    trainMergeApp.controller('TrainMergeCtrl',['$scope','$http', function (scope, http){
+
+            scope.requestsNumber = 0;
+            scope.datasetsNUmber = 0;
+            scope.mergedTotal = 0;
+            http.get(Django.url('prodtask:trains_to_merge')).
+              success(function(data, status, headers, config) {
+                scope.Trains = data.trains;
+                var PARALLEL_THREADS = 2;
+                var mergedClass = '';
+                var i = 0;
+                var div_number =  Math.floor(Object.keys(scope.Trains).length/PARALLEL_THREADS);
+                var j = div_number;
+                var k = 1;
+                var to_send = {};
+                for (var key in scope.Trains) {
+                    to_send[key] = scope.Trains[key].request;
+                    scope.requestsNumber += scope.Trains[key].request_count;
+                    console.log(scope.Trains[key]);
+                    scope.Trains[key].loading = true;
+                    if (i == j){
+
+                        k += 1;
+                        if (k<PARALLEL_THREADS){
+                            j += div_number;
+                        } else {
+                            j = Object.keys(scope.Trains).length - 1;
+                        }
+                         http.post(Django.url('prodtask:merge_trains'),to_send).
+                            success(function(data, status, headers, config){
+                                console.log(data.load);
+                                merged_datasets = data.load;
+                                 for (var train in merged_datasets){
+                                     scope.Trains[train].datasets = [];
+                                     for( var dataset in merged_datasets[train]){
+                                         for (var slice in merged_datasets[train][dataset]){
+                                             switch(merged_datasets[train][dataset][slice].count){
+                                                 case 1:
+                                                     mergedClass = 'one';
+                                                     break;
+                                                 case 2:
+                                                     mergedClass = 'two';
+                                                     scope.mergedTotal += 1;
+                                                     break;
+                                                 default:
+                                                     scope.mergedTotal += merged_datasets[train][dataset][slice].count -1;
+                                                     mergedClass = 'many';
+                                             };
+                                             scope.Trains[train].datasets.push({'dataset':dataset,'outputs':merged_datasets[train][dataset][slice].outputs,
+                                                'count':merged_datasets[train][dataset][slice].count,'mergedClass':mergedClass})
+                                             scope.datasetsNUmber += 1;
+
+                                         }
+
+                                     }
+                                     scope.Trains[train].loading = false;
+                                 }
+                         }).
+                         error(function(data, status, headers, config) {
+                            console.log(status);
+                         });
+                        to_send = {};
+                    }
+                    i+=1;
+
+                }
+
+
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+              });
+    }]);
+
+    trainMergeApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_train_merge.html',
+              controller: 'TrainMergeCtrl'
+            }).
+            otherwise({
+              redirectTo: '/'
+            });
+    });
+</script>
+{% endverbatim %}
+
+<div class="row">
+
+</div>
+    <p/>
+<div ng-app="trainMergeApp">
+    <div ng-view></div>
+
+</div>
+
+{% endblock %}

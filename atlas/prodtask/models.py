@@ -454,6 +454,13 @@ class TrainProduction(models.Model):
             self.id = prefetch_id('dev_db',u'T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
         super(TrainProduction, self).save(*args, **kwargs)
 
+
+    @property
+    def output_by_slice(self):
+        if self.outputs:
+            return json.loads(self.outputs)
+        return []
+
     def __str__(self):
         return "%i - %s"%(self.pattern_request.reqid,self.pattern_request.description)
 
