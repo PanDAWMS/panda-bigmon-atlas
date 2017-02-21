@@ -1804,7 +1804,33 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             showTasksFromSlices(sliceList)
         }
 
-
+        function splitSlicesByTIDClick(event){
+            event.preventDefault();
+            var sliceList=[];
+            var i=0;
+            $(".checkboxSlice:checked").each(function(){
+                {#                   8 = "checkbox".length#}
+                var sliceID = $(this).attr("id").slice(8);
+                sliceList.push(sliceID);
+            });
+            var sendData = {slices:sliceList};
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:split_slices_by_tid',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        }
         function splitSlicesClick(event, splitNumber){
             event.preventDefault();
             var sliceList=[];
@@ -2998,6 +3024,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     </div>
                  <div class="row">
                      <button id="splitSlice" class="btn_is_authenticated" title="Split slices" onclick="splitSlicesClick(event,$('#splitNumber').val());">Split</button>
+                 </div>
+                 <div class="row">
+                     <button id="splitSliceByTID" class="btn_is_authenticated" title="Split slices by tid" onclick="splitSlicesByTIDClick(event);">Split by tid</button>
                  </div>
             </div>
         {% endif %}

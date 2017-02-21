@@ -7,10 +7,14 @@ from django.views.decorators.csrf import csrf_protect
 from time import sleep
 from django.utils import timezone
 from copy import deepcopy
+
+from atlas.getdatasets.models import TaskProdSys1
+from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
+from ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
@@ -1027,6 +1031,76 @@ def create_tier0_split_slice(slice_dict, steps_list):
                                    status=last_request.cstatus)
     request_status.save_with_current_time()
     return last_request.reqid
+
+
+
+def split_slice_by_tid(reqid, slice_number):
+    production_request = TRequest.objects.get(reqid=reqid)
+    slice_to_split = InputRequestList.objects.get(request=production_request, slice=slice_number)
+    if not slice_to_split.dataset:
+        raise  ValueError("Can't split slice by datasets - container name should be saved")
+    if 'tid' in slice_to_split.dataset_id:
+        raise  ValueError("Can't split slice by datasets - container name should be saved")
+    datasets_events = dataset_events(slice_to_split.dataset_id)
+    datasets_events.sort(key=lambda x:x['events'])
+    datasets_events.reverse()
+    events_to_proceed = slice_to_split.input_events
+    for index, dataset in enumerate(datasets_events):
+        new_slice_slice = clone_slices(reqid,reqid,[slice_to_split.slice],-1,False)[0]
+        new_event_number = 0
+        new_slice = InputRequestList.objects.get(request=production_request, slice=new_slice_slice)
+        new_slice.dataset = fill_dataset(dataset['dataset'])
+        if events_to_proceed != -1:
+            old_event_number = new_slice.input_events
+            if index == (len(datasets_events)-1):
+                new_event_number = events_to_proceed
+            elif dataset['events'] <= events_to_proceed:
+                new_event_number = dataset['events']
+                events_to_proceed -= dataset['events']
+            elif dataset['events'] > events_to_proceed:
+                new_event_number = events_to_proceed
+                events_to_proceed = 0
+            new_slice.input_events = new_event_number
+            steps = StepExecution.objects.filter(slice=new_slice)
+            for step in steps:
+                if step.input_events == old_event_number:
+                    step.input_events = new_event_number
+                    step.save()
+        new_slice.save()
+
+
+
+@csrf_protect
+def split_slices_by_tid(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Split slices by tid: %s' % str(slices)))
+            good_slices = []
+            bad_slices = []
+            for slice_number in slices:
+                try:
+                    split_slice_by_tid(reqid,slice_number)
+                    good_slices.append(slice_number)
+                    splitted_slice = InputRequestList.objects.get(request = reqid, slice = slice_number)
+                    splitted_slice.is_hide = True
+                    splitted_slice.comment = 'Splitted'
+                    splitted_slice.save()
+                except  Exception,e:
+                    bad_slices.append(slice_number)
+                    _logger.error("Problem with slice splitting : %s"%( e))
+            if len(bad_slices) > 0:
+                results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
+            else:
+                results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 

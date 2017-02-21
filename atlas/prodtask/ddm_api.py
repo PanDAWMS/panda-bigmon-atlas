@@ -2,7 +2,7 @@
 import logging
 import os
 
-from ..prodtask.models import ProductionDataset
+from ..prodtask.models import ProductionDataset, ProductionTask
 from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
 from ..settings import dq2client as dq2_settings
 from rucio.client import Client
@@ -68,6 +68,26 @@ def tid_from_container(container):
         container = container + '/'
     datasets = ddm.dataset_in_container(container)
     return map(lambda x: int(x[x.rfind('tid')+3:x.rfind('_')]),datasets)
+
+
+def dataset_events(container):
+    ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+    if container[-1]!='/':
+        container = container + '/'
+    datasets = ddm.dataset_in_container(container)
+    result = []
+    for dataset in datasets:
+        events = 0
+        dataset_tid = 0
+        if 'tid' in dataset:
+            dataset_tid = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+            if ProductionTask.objects.filter(id=dataset_tid).exists():
+                events = ProductionTask.objects.get(id=dataset_tid).total_events
+            elif TaskProdSys1.objects.filter(taskid=dataset_tid).exists():
+                events = TaskProdSys1.objects.get(id=dataset_tid).total_events
+        result.append({'dataset':dataset,'events':events, 'tid':dataset_tid})
+    return result
+
 
 class DDM(object):
     """
