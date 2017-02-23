@@ -73,6 +73,7 @@
 <tr><th><label for="input_dataset">Input dataset:</label></th><td>{{ task.input_dataset }}</td></tr>
 <tr><th><label for="output_dataset">Output dataset:</label></th><td>{% for od in output_datasets %}{% if od.status == 'Deleted' %}<a style="color: red"/>{% else %}<a style="color: black">{% endif %}{{ od.name }}<br/>{% endfor %}</td></tr>
 <tr><th><label for="physics_tag">Physics tag:</label></th><td>{{ task.physics_tag }}</td></tr>
+<tr><th><label for="hashtags">Hashtags:</label></th><td>{{ hashtags }}</td></tr>
 {% if extasks %}<tr><th><label for="same_tasks">Same Tasks:</label></th><td>{% for etask in extasks %}<a href="{% url 'prodtask:task' etask %}">{{ etask }}   </a>{% endfor %}</td></tr>{% endif %}
 
 </table>

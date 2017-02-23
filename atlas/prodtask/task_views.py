@@ -7,7 +7,7 @@ from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task
-from atlas.prodtask.models import StepExecution
+from atlas.prodtask.models import StepExecution, HashTagToTask
 import logging
 
 from ..settings import defaultDatetimeFormat
@@ -136,7 +136,10 @@ def task_details(request, rid=None):
     # TODO: these actions are needed from DEFT and JEDI (SB)
     for action in ['edit', 'clone']:
         permissions[action] = False
-
+    try:
+        hashtags = ','.join([x.hashtag.hashtag for x in HashTagToTask.objects.filter(task=rid)])
+    except:
+        hashtags = ''
     request_parameters = {
         'active_app' : 'prodtask',
         'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
@@ -148,6 +151,7 @@ def task_details(request, rid=None):
         'nucleus': get_nucleus(),
         'outputs': output_formats,
         'extasks': same_tasks,
+        'hashtags': hashtags,
         'parent_template' : 'prodtask/_index.html',
         }
 
