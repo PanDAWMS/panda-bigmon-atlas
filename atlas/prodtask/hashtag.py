@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
+import pickle
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask, HashTagToTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string
@@ -46,6 +46,38 @@ def request_hashtags(request, hashtags):
     except Exception,e:
         print str(e)
     return Response({"load": result})
+
+
+
+def prefilll_tophashtag(hashtag, file_name):
+    hashtag_set = set()
+    main_hashtag = HashTag.objects.get(hashtag=hashtag)
+    hashtag_set.add(int(main_hashtag.id))
+    tasks_ids = tasks_by_hashtag(hashtag)
+    hashtag_dict = {}
+    for task_id in tasks_ids:
+        hashtag_ids = map(int,(HashTagToTask.objects.filter(task=task_id).values_list('hashtag_id',flat=True)))
+        for hashtag_id in hashtag_ids:
+            hashtag_dict[hashtag_id] = hashtag_dict.get(hashtag_id,0)+1
+    tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+    request_statistics = tasks_progress(tasks)
+    ordered_step_statistic = prepare_step_statistic(request_statistics)
+    result = {'step_statistic':ordered_step_statistic, 'hashtags':hashtag_dict}
+    pickle.dump(result,open(file_name,'wb'))
+
+
+def hashtag_request_to_tasks():
+    all_hashtags = HashTagToRequest.objects.all()
+    for request_hashtag in all_hashtags:
+        if ' ' not in request_hashtag.hashtag.hashtag:
+            tasks = ProductionTask.objects.filter(request=request_hashtag.request)
+            tasks_to_update = []
+            for task in tasks:
+                if not HashTagToTask.objects.filter(task=task,hashtag=request_hashtag.hashtag).exists():
+                    tasks_to_update.append(task.id)
+            print tasks_to_update,request_hashtag.hashtag
+            map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
+
 
 
 @api_view(['POST'])
@@ -150,6 +182,45 @@ def hashtagslists(request):
     return Response(result)
 
 
+@api_view(['GET'])
+def hashtags_campaign_lists(request):
+    result = []
+    try:
+
+        campaign_summery = pickle.load(open('/data/hashtagscampaign.pkl','rb'))
+        hashtags = campaign_summery['hashtags']
+        for hashtag_id in hashtags:
+            hashtag = HashTag.objects.get(id=hashtag_id).hashtag
+            result.append({'hashtag':hashtag,'tasks': hashtags[hashtag_id]})
+
+    except Exception,e:
+        pass
+
+    return Response(result)
+
+
+@api_view(['GET'])
+def campaign_steps(request):
+    result = {}
+    try:
+
+        campaign_summery = pickle.load(open('/data/hashtagscampaign.pkl','rb'))
+        result = campaign_summery['step_statistic']
+    except Exception,e:
+        print e
+        pass
+
+    return Response(result)
+
+def request_hashtags_campaign(request):
+    if request.method == 'GET':
+        return render(request, 'prodtask/_hashtag_campaign.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Hashtags for mc16 campaign',
+                'submit_url': 'prodtask:request_hashtags_campaign',
+                'parent_template': 'prodtask/_index.html',
+            })
+
 def request_hashtags_main(request):
     if request.method == 'GET':
         return render(request, 'prodtask/_hashtags_list.html', {
@@ -206,17 +277,43 @@ def get_include_file(file_name):
 
 CVMFS_BASEPATH = '/cvmfs/atlas.cern.ch/repo/sw/Generators/'
 
+
+def set_mc16_hashtags():
+    mc16_hashtag = HashTag.objects.get(hashtag='mc16campaign')
+    last_task_id = HashTagToTask.objects.filter(hashtag=mc16_hashtag).order_by('task').values_list('task_id',flat=True).last()
+    last_task = ProductionTask.objects.get(id=last_task_id)
+    new_tasks = ProductionTask.objects.filter(request_id__gt=last_task.request_id,campaign='MC16',provenance='AP')
+    unique_requests = set()
+    for task in new_tasks:
+        add_hashtag_to_task(mc16_hashtag.hashtag,task.id)
+        unique_requests.add(int(task.request_id))
+    map(get_key_for_request,list(unique_requests))
+    #print unique_requests
+
+
+
+def add_hashtag_to_task(hashtag_name, task_id):
+    current_hashtags = HashTagToTask.objects.filter(task=task_id).values_list('hashtag_id',flat=True)
+    hashtag = HashTag.objects.get(hashtag=hashtag_name)
+    if hashtag.id not in current_hashtags:
+        new_hashtag = HashTagToTask()
+        new_hashtag.hashtag = hashtag
+        task = ProductionTask.objects.get(id=task_id)
+        new_hashtag.task = task
+        new_hashtag.save()
+
 def get_key_for_request(reqid):
     print reqid
     request = TRequest.objects.get(reqid=reqid)
-    campaign = request.campaign.upper()
-    base_path = CVMFS_BASEPATH+campaign+'JobOptions/latest/'
-    common_keywords = get_common_keywords(base_path+'common/')
+
     slices = list(InputRequestList.objects.filter(request=request))
 
     for slice in slices:
         steps = list(StepExecution.objects.filter(slice=slice))
         tasks = []
+        campaign = slice.input_data.split('.')[0].upper()
+        base_path = CVMFS_BASEPATH+campaign+'JobOptions/latest/'
+        common_keywords = get_common_keywords(base_path+'common/')
         keywords = get_keyword_jo(slice.input_data, base_path+'share/',common_keywords)
         hashtags = []
         for keyword in keywords:

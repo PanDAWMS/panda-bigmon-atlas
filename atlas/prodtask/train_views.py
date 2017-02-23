@@ -102,7 +102,6 @@ def collect_trains(days):
     requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request)
     patterns = {}
     for production_request in requests:
-        print production_request.reqid
         if TrainProduction.objects.filter(request = int(production_request.reqid)).exists():
             train = TrainProduction.objects.filter(request = int(production_request.reqid))[0]
             if int(train.pattern_request_id) in patterns:

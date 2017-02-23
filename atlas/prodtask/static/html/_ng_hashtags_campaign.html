@@ -1,0 +1,92 @@
+<div class="row">
+     <div class="columns large-2"><span>Selected:</span>{{ hashtag_formula }}</div>
+</div>
+<div class="row">
+          <button ng-click="showTasks()" class="btn btn-primary">Manage tasks</button>
+          <a href="#/hashtags" class="button">Show statistic</a>
+</div>
+<div class="row">
+    <div class="columns large-6">
+        <input type="text" ng-model="hashtags.search" class="search-query" id="hashtag_search"
+               placeholder="Filter">
+    </div>
+ </div>
+
+   <style type="text/css">
+ 	div.StepDone	{ background-color : forestgreen;}
+	div.Unknown 	{ background-color : gray;	}
+	div.StepProgressing	{ background-color : yellowgreen;		}
+	div.StepNotStarted	{ background-color : orangered;		}
+ 	div.obsolete	{ background-color : lightblue;}
+	div.holding 	{ background-color : black;	}
+	div.pending	{ background-color : blue;		}
+	div.waiting	{ background-color : blue;	}
+	div.submitting	{ background-color : blue;	}
+	div.archived 	{ background-color : magenta;	}
+	div.failed 	{ background-color : red;	}
+	div.aborted 	{ background-color : red;	}
+	div.broken		{ background-color : red;	}
+
+	div.running 	{ background-color : LightGreen;	}
+
+	div.done 		{ background-color : darkgreen;	}
+    div.finished 		{ background-color : darkgreen;	}
+    div.registered {  background-color : blue;}
+  </style>
+
+
+    <table>
+        <tbody>
+        <td>Step Name % <br> Input/processed events</td>
+            <td ng-repeat="step in mainSteps ">
+                <div ><b>{{ step.step_name }} <div class="{{  step.step_status }}">{{ step.percent }}</div></b> <p/> {{ step.statistic.input_events | number:0 }} / {{ step.statistic.processed_events | number:0 }}</div>
+
+             </td>
+        </tbody>
+    </table>
+<div class="row">
+            <div class="columns large-1">
+               <span>Main(AND)</span>
+            </div>
+            <div class="columns large-1">
+                <span>Filter(OR)</span>
+            </div>
+            <div class="columns large-2">
+                <span>Exclude(NOT)</span>
+            </div>
+
+           <div class="columns large-3">
+                <span>HashTag</span>
+           </div>
+
+            <div class="columns large-3">
+                <span>N tasks</span>
+            </div>
+            <div class="columns large-5">
+
+            </div>
+
+ </div>
+<div ng-repeat="hashtag in hashTags| filter:hashtags.search " class="row">
+            <div class="columns large-1">
+                <input type="checkbox" ng-change="change_hashtag_formula(hashtag.hashtag,hashtag.and_selected, 'and_selected', $index)" ng-model="hashtag.and_selected">
+            </div>
+            <div class="columns large-1">
+                <input type="checkbox" ng-change="change_hashtag_formula(hashtag.hashtag,hashtag.or_selected, 'or_selected', $index)" ng-model="hashtag.or_selected">
+            </div>
+            <div class="columns large-2">
+                <input type="checkbox" ng-change="change_hashtag_formula(hashtag.hashtag,hashtag.not_selected, 'not_selected', $index)" ng-model="hashtag.not_selected">
+            </div>
+
+           <div class="columns large-3">
+                <span>{{ hashtag.hashtag }}</span>
+           </div>
+
+            <div class="columns large-3">
+            {{ hashtag.tasks }}
+            </div>
+            <div class="columns large-5">
+
+            </div>
+
+ </div>
