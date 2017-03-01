@@ -266,6 +266,7 @@ class RetryErrorsForm(ModelForm):
 
     class Meta:
         model = RetryErrors
+        fields = '__all__'
 
     def clean(self):
         cleaned_data = super(RetryErrorsForm, self).clean()
@@ -357,6 +358,7 @@ class RequestUpdateForm(ModelForm):
             'reqid': TextInput(attrs={'readonly': 'readonly'}),
             'info_fields': TextInput(attrs={'readonly': 'readonly'}),
         }
+        fields = '__all__'
 
 
 class StepExecutionForm(ModelForm):
@@ -367,6 +369,7 @@ class StepExecutionForm(ModelForm):
 class ProductionTaskForm(ModelForm):
     class Meta:
         model = ProductionTask
+        fields = '__all__'
 
 
 
@@ -375,6 +378,7 @@ class ProductionTaskForm(ModelForm):
 class ProductionTaskCreateCloneForm(ModelForm):
     class Meta:
         model = ProductionTask
+        fields = '__all__'
 
 
 def pattern_from_request(reqid):
@@ -427,3 +431,4 @@ class ProductionTaskUpdateForm(ModelForm):
         widgets = {
             'id': TextInput(attrs={'readonly': 'readonly'}),
         }
+        fields = '__all__'
