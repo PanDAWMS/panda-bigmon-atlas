@@ -364,6 +364,7 @@ class RequestUpdateForm(ModelForm):
 class StepExecutionForm(ModelForm):
     class Meta:
         model = StepExecution
+        fields = '__all__'
 
 
 class ProductionTaskForm(ModelForm):
