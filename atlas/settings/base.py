@@ -54,6 +54,23 @@ TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),
 
 )
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+    'django.core.context_processors.request', #django-tables2
+)
+
+TEMPLATE = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': TEMPLATE_DIRS,
+        'OPTIONS': {
+            'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+            'loaders': TEMPLATE_LOADERS
+        },
+    },
+
+]
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.auth',
@@ -81,11 +98,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
 INSTALLED_APPS =  INSTALLED_APPS_BIGPANDAMON_ATLAS
 JS_I18N_APPS_EXCLUDE = INSTALLED_APPS_BIGPANDAMON_ATLAS + ('django_tables2',)
 
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.request', #django-tables2
-)
+
 LANGUAGE_CODE = 'en-us'
 LANGUAGE_NAME = 'English'
 LANGUAGE_NAME_LOCAL = 'English'
