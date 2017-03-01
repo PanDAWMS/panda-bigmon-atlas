@@ -15,10 +15,6 @@ LOGGING = {
         }
     },
     'handlers': {
-        'null': {
-            'level':'DEBUG',
-            'class':'django.utils.log.NullHandler',
-        },
         'logfile-django': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
