@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import select_template
 from copy import deepcopy
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict as SortedDict
 from django.utils.safestring import mark_safe
 from django.db.models import Q
 from django.forms.widgets import Media, media_property
