@@ -113,7 +113,7 @@ urlpatterns = [
         name='redirect_to_value'),
     url(r'^request_steps_save/(?P<reqid>\d+)/$',  views.request_steps_save, name='request_steps_save'),
 
-    url(r'^retry_errors_list/',  retryerros.retry_errors_lis, name='retry_errors_list'),
+    url(r'^retry_errors_list/',  retryerros.retry_errors_list, name='retry_errors_list'),
     url(r'^retry_errors_edit/(?P<retry_errors_id>\d+)/$',  retryerros.retry_errors_edit, name='retry_errors_edit'),
     url(r'^retry_errors_delete/(?P<retry_errors_id>\d+)/$',  retryerros.retry_errors_delete, name='retry_errors_delete'),
     url(r'^retry_errors_clone/(?P<retry_errors_id>\d+)/$',  retryerros.retry_errors_clone, name='retry_errors_clone'),
@@ -169,7 +169,7 @@ urlpatterns = [
     url(r'^close_train/(?P<train_id>[0-9]+)/$',  train_views.close_train, name='close_train'),
     url(r'^reopen_train/(?P<train_id>[0-9]+)/$',  train_views.reopen_train, name='reopen_train'),
 
-    url(r'^check_slices_for_trains/$',  train_views.check_slices_for_train, name='check_slices_for_trains'),
+    url(r'^check_slices_for_trains/$',  train_views.check_slices_for_trains, name='check_slices_for_trains'),
     url(r'^train_as_child/(?P<reqid>\d+)/$',  train_views.train_as_child, name='train_as_child'),
 
 
@@ -192,8 +192,8 @@ urlpatterns = [
 
     url(r'^assembled_train/(?P<train_id>[0-9]+)/$',  train_views.assembled_train, name='assembled_train'),
 
-    url(r'^login/$', auth_views.views.login, name='login'),
-    url(r'^logout/$', auth_views.views.logout, name='logout'),
+    url(r'^login/$', auth_views.login, name='login'),
+    url(r'^logout/$', auth_views.logout, name='logout'),
 
     url(r'^userinfo/$',  views.userinfo, name='userinfo'),
 
