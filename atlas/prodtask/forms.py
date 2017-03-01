@@ -24,7 +24,7 @@ class RequestForm(ModelForm):
 
     class Meta:
         model = TRequest
-
+        fields = '__all__'
 
 def energy_to_str(energy):
     if (int(energy)==5023)or(int(energy)==5020):
