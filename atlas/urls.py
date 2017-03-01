@@ -11,7 +11,7 @@ from django.contrib import admin
 admin.autodiscover()
 import atlas.common.views as atlas_common_views
 
-common_patterns = patterns('',
+common_patterns =[
     ### robots.txt
     url('^robots\.txt$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 
@@ -73,10 +73,10 @@ common_patterns = patterns('',
     ### Django.js
     url(r'^djangojs/', include('djangojs.urls')),
 
-) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 
-urlpatterns = patterns('',)
+urlpatterns = []
 urlpatterns += common_patterns
 
 #### django-debug-toolbar

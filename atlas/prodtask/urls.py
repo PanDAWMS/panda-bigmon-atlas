@@ -1,11 +1,11 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
 from ..prodtask.train_views import TrainLoad, TrainLoads
 # from ..prodtask.selection import request_progress_general
-urlpatterns = patterns('',
+urlpatterns = [
     # Examples:
 
     #url(r'^syncButton/(?P<rid>\d+)/$', 'atlas.prodtask.views.syncButton', name='syncButton'),
@@ -200,4 +200,4 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     #url(r'^admin/', include(admin.site.urls)),
-)
+]

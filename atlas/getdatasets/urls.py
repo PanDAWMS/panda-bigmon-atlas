@@ -1,7 +1,7 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import  include, url
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^$', 'atlas.getdatasets.views.request_data_form',       name='request_data_form'),
-)
+]
 
 

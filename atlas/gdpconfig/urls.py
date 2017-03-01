@@ -1,6 +1,6 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import  include, url
 
-urlpatterns = patterns('',
+urlpatterns =[
     url(r'^$', 'atlas.gdpconfig.views.gdpconfig',       name='gdpconfig'),
     url(r'^fairshare/$', 'atlas.gdpconfig.views.fairshare',       name='fairshare'),
     url(r'^config_action/(?P<action>\w+)/$', 'atlas.gdpconfig.views.config_action', name='config_action'),
@@ -9,6 +9,6 @@ urlpatterns = patterns('',
     url(r'^get_fairshare/$', 'atlas.gdpconfig.views.get_fairshare', name='get_fairshare'),
     url(r'^login/$', 'atlas.auth.views.login', name='login'),
     url(r'^logout/$', 'atlas.auth.views.logout', name='logout'),
-)
+]
 
 
