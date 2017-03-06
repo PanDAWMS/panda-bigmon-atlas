@@ -1,6 +1,8 @@
 import json
 import requests
 from django.core import serializers
+
+from atlas.prodtask.hashtag import tasks_from_string
 from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, InputRequestList
 # import logging
 # import os
@@ -38,6 +40,20 @@ def str_to_slices_range(range_str):
                     slices += [current_value]
     return slices
 
+
+def tasks_hashtags(request, hashtag_formula):
+    task_ids = []
+    try:
+        task_ids = tasks_from_string(hashtag_formula)
+        request.session['selected_tasks'] = map(int,task_ids)
+    except Exception,e:
+        pass
+    return render(request, 'reqtask/_task_table.html',
+                            {'reqid':None,
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'nucleus': get_nucleus()
+                             })
 
 def request_tasks_slices(request, rid, slices):
 

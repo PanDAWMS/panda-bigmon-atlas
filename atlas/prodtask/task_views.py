@@ -137,9 +137,9 @@ def task_details(request, rid=None):
     for action in ['edit', 'clone']:
         permissions[action] = False
     try:
-        hashtags = ','.join([x.hashtag.hashtag for x in HashTagToTask.objects.filter(task=rid)])
+        hashtags = [x.hashtag.hashtag for x in HashTagToTask.objects.filter(task=rid)]
     except:
-        hashtags = ''
+        hashtags = []
     request_parameters = {
         'active_app' : 'prodtask',
         'pre_form_text' : 'ProductionTask details with ID = %s' % rid,

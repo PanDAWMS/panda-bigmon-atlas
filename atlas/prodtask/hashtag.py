@@ -134,35 +134,38 @@ def tasks_hashtag(request):
     result_tasks_list = []
     try:
         input_str = request.body
-        input_str.replace('#','')
-        input_str = input_str.replace('&','#&').replace('|','#|').replace('!','#!')
-        tokens = input_str.split('#')
-        hashtags_operations = {'and':[],'or':[],'not':[]}
-        operators = {'&':'and','|':'or','!':'not'}
-        for token in tokens:
-            if token:
-                hashtags_operations[operators[token[0:1]]].append(token[1:])
-        result_tasks = set()
-        for hashtag in hashtags_operations['or']:
-            result_tasks.update(tasks_by_hashtag(hashtag))
-        for hashtag in hashtags_operations['and']:
-            current_tasks = tasks_by_hashtag(hashtag)
-            if not result_tasks:
-                result_tasks.update(current_tasks)
-            else:
-                temp_task_set = [x for x in current_tasks if x in result_tasks]
-                result_tasks = set(temp_task_set)
-        if result_tasks:
-            for hashtag in hashtags_operations['not']:
-                current_tasks = tasks_by_hashtag(hashtag)
-                temp_task_set = [x for x in result_tasks if x not in current_tasks]
-                result_tasks = set(temp_task_set)
-        result_tasks_list = list(result_tasks)
+        result_tasks_list = tasks_from_string(input_str)
         request.session['selected_tasks'] = result_tasks_list
     except Exception,e:
         print str(e)
     return Response(result_tasks_list)
 
+
+def tasks_from_string(input_str):
+    input_str.replace('#','')
+    input_str = input_str.replace('&','#&').replace('|','#|').replace('!','#!')
+    tokens = input_str.split('#')
+    hashtags_operations = {'and':[],'or':[],'not':[]}
+    operators = {'&':'and','|':'or','!':'not'}
+    for token in tokens:
+        if token:
+            hashtags_operations[operators[token[0:1]]].append(token[1:])
+    result_tasks = set()
+    for hashtag in hashtags_operations['or']:
+        result_tasks.update(tasks_by_hashtag(hashtag))
+    for hashtag in hashtags_operations['and']:
+        current_tasks = tasks_by_hashtag(hashtag)
+        if not result_tasks:
+            result_tasks.update(current_tasks)
+        else:
+            temp_task_set = [x for x in current_tasks if x in result_tasks]
+            result_tasks = set(temp_task_set)
+    if result_tasks:
+        for hashtag in hashtags_operations['not']:
+            current_tasks = tasks_by_hashtag(hashtag)
+            temp_task_set = [x for x in result_tasks if x not in current_tasks]
+            result_tasks = set(temp_task_set)
+    return list(result_tasks)
 
 @api_view(['GET'])
 def hashtagslists(request):
