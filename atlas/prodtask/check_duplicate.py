@@ -13,6 +13,8 @@ from django.views.decorators.csrf import csrf_protect
 from time import sleep
 from django.utils import timezone
 from copy import deepcopy
+
+from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
 
@@ -570,6 +572,36 @@ def find_task_by_input(task_ids, task_name, request_id):
     return second_tasks,not_duplicate
 
 
+
+def create_task_chain(task_id):
+    original_task = ProductionTask.objects.filter(id=task_id).values('id','name','inputdataset','provenance','request_id','status')[0]
+    task_name = original_task['name']
+    task_project = task_name.split('.')[0]
+    task_pattern = task_name.split('.')[0][:2]+'%.'+'.'.join(task_name.split('.')[1:-2]) + '%'+task_name.split('.')[-1] +'%'
+    similar_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).
+                          filter(Q( status__in=['done','finished','obsolete','running'] )).values('id','name','inputdataset','provenance','request_id','status').
+                          order_by('id'))
+    chain = {int(task_id):{'task':original_task,'level':0, 'parent':int(task_id)}}
+    for task in similar_tasks:
+        task_input = task['inputdataset']
+        parent_task_id = None
+        if 'py' not in task_input:
+            if ('tid' not in task_input) and (int(task['id'])>int(task_id)) and (task_name!=task['name']):
+                tasks_in_container = tid_from_container(task_input)
+                for task_input_id in tasks_in_container:
+                    if task_input_id in chain.keys():
+                        parent_task_id = task_input_id
+                        break
+            else:
+                if 'tid' in task_input:
+                    task_input_id = int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])
+                    if (task_input_id in chain.keys()) :
+                        parent_task_id = task_input_id
+        if parent_task_id:
+            level = chain[parent_task_id]['level'] + 1
+            chain[int(task['id'])] = {'task':task,'level': level, 'parent':parent_task_id}
+    return chain
+
 def find_downstreams_by_task(task_id):
     result_duplicate = []
     original_task = ProductionTask.objects.filter(id=task_id).values('id','name','inputdataset','provenance','request_id','status')[0]
@@ -587,23 +619,13 @@ def find_downstreams_by_task(task_id):
         if 'py' not in task_input:
             if ('/' in task_input) and (int(task['id'])>int(task_id)) and (task_name!=task['name']):
                 task_chains.append(int(task['id']))
-                #current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 current_duplicates.append(task)
-                # if (task['request_id'] != original_task.request_id) and (task['provenance']=='AP'):
-                #     print 'Simul problem' +'-'+ task_name + '-' + task['name']
-                #print task_input,int(task['id'])
             else:
                 if 'tid' in task_input:
                     task_input_id = int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])
-                    #print task_input_id,task['id'], len(task_chains)
-
                     if (task_input_id in task_chains) :
                         task_chains.append(int(task['id']))
-                        #current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                         current_duplicates.append(task)
-
-
-
     return current_duplicates
 
 def find_identical_step(step):

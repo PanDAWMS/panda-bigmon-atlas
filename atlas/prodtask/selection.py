@@ -21,6 +21,14 @@ def request_progress_main(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
+def task_chain(request):
+    if request.method == 'GET':
+        return render(request, 'prodtask/_task_chain.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Progress',
+                'parent_template': 'prodtask/_index.html',
+            })
+
 
 @api_view(['GET'])
 def request_hashtag_monk(request, hashtags):
