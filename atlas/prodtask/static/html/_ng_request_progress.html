@@ -24,9 +24,9 @@
    <div class="spinner" ng-show="loading">  Loading...</div>
     <table>
         <tbody>
-        <td>Step Name % <br> Input/processed events</td>
+        <td>Step Name % <br> Processed/Input events</td>
             <td ng-repeat="step in requestProgressData.steps ">
-                <div ><b>{{ step.step_name }} <div class="{{  step.step_status }}">{{ step.percent }}</div></b> <p/> {{ step.statistic.input_events | number:0 }} / {{ step.statistic.processed_events | number:0 }}</div>
+                <div ><b>{{ step.step_name }} <div class="{{  step.step_status }}">{{ step.percent }}</div></b> <p/> {{ step.statistic.processed_events | number:0 }} / {{ step.statistic.input_events | number:0 }} </div>
 
              </td>
         </tbody>

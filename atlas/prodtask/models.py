@@ -751,13 +751,13 @@ class ProductionTask(models.Model):
 
     @property
     def hashtags(self):
-        return get_hashtags_by_task(self.id)
+        return get_hashtags_by_task(int(self.id))
 
     def hashtag_exists(self, hashtag):
-        return task_hashtag_exists(self.id,hashtag)
+        return task_hashtag_exists(int(self.id),hashtag)
 
     def set_hashtag(self, hashtag):
-        set_hashtag(hashtag, self.id)
+        set_hashtag(hashtag, [int(self.id)])
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
@@ -871,6 +871,8 @@ def set_hashtag(hashtag, tasks):
     """
     if type(hashtag) == int:
         hashtag = HashTag.objects.get(id=hashtag)
+    else:
+        hashtag = HashTag.objects.get(hashtag=hashtag)
     hashtag_id = hashtag.id
     cursor = None
     try:
