@@ -559,7 +559,11 @@ class StepExecution(models.Model):
                 self.task_config = json.dumps(currrent_dict)
 
     def get_task_config(self, field = None):
-        return_dict = json.loads(self.task_config)
+        return_dict = {}
+        try:
+            return_dict = json.loads(self.task_config)
+        except:
+            pass
         if field:
             return return_dict.get(field,None)
         else:
@@ -745,6 +749,16 @@ class ProductionTask(models.Model):
             return ""
         return dataset
 
+    @property
+    def hashtags(self):
+        return get_hashtags_by_task(self.id)
+
+    def hashtag_exists(self, hashtag):
+        return task_hashtag_exists(self.id,hashtag)
+
+    def set_hashtag(self, hashtag):
+        set_hashtag(hashtag, self.id)
+
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'T_PRODUCTION_TASK'
@@ -790,17 +804,138 @@ class HashTag(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
+            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
         super(HashTag, self).save(*args, **kwargs)
 
+    @property
+    def tasks_ids(self):
+        return get_tasks_by_hashtag(self)
 
+    @property
+    def tasks(self):
+        return ProductionTask.objects.filter(id__in=get_tasks_by_hashtag(self))
+
+    @property
+    def tasks_count(self):
+        return count_tasks_by_hashtag(self)
+
+    @property
+    def last_task(self):
+        return last_task_for_hashtag(self)
 
     def __str__(self):
         return self.hashtag
 
     class Meta:
-        app_label = 'dev'
-        db_table = u'"T_HASHTAG"'
+        db_table = u'"ATLAS_DEFT"."T_HASHTAG"'
+
+
+
+
+
+class HashTagToTask(models.Model):
+    task = models.ForeignKey(ProductionTask,  db_column='TASKID')
+    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    def create_relation(self):
+        print self._meta.db_table
+
+    class Meta:
+        db_table = u'"ATLAS_DEFT"."T_HT_TO_TASK"'
+
+
+
+def last_task_for_hashtag(hashtag):
+    hashtag_id = HashTag.objects.get(hashtag=hashtag).id
+    cursor = None
+    last = None
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT TASKID from %s WHERE HT_ID=%s AND  ROWNUM<=1 ORDER BY TASKID ASC"%(HashTagToTask._meta.db_table,hashtag_id))
+        result = cursor.fetchall()
+        last = result[0][0]
+    finally:
+        if cursor:
+            cursor.close()
+    return last
+
+def set_hashtag(hashtag, tasks):
+    """
+
+    :param hashtag: Hashtag object or hashtag id
+    :param task: Tasks ids
+    :return:
+    """
+    if type(hashtag) == int:
+        hashtag = HashTag.objects.get(id=hashtag)
+    hashtag_id = hashtag.id
+    cursor = None
+    try:
+        cursor = connections['deft'].cursor()
+        for task in tasks:
+            if type(task) != int:
+                raise ValueError('Wrong task type')
+            cursor.execute("insert into %s (HT_ID,TASKID) values(%s, %s)"%(HashTagToTask._meta.db_table,hashtag_id,task))
+    finally:
+        if cursor:
+            cursor.close()
+
+
+def count_tasks_by_hashtag(hashtag):
+    hashtag_id = HashTag.objects.get(hashtag=hashtag).id
+    cursor = None
+    total = 0
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT COUNT(TASKID) from %s WHERE HT_ID=%s"%(HashTagToTask._meta.db_table,hashtag_id))
+        result = cursor.fetchall()
+        total = result[0][0]
+    finally:
+        if cursor:
+            cursor.close()
+    return total
+
+def task_hashtag_exists(task_id,hashtag):
+    hashtag_id = HashTag.objects.get(hashtag=hashtag).id
+    exists = False
+    cursor = None
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT TASKID,HT_ID from %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+        result = cursor.fetchall()
+        if result:
+            exists = True
+    finally:
+        if cursor:
+            cursor.close()
+    return exists
+
+def get_tasks_by_hashtag(hashtag):
+    hashtag_id = HashTag.objects.get(hashtag=hashtag).id
+    cursor = None
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT TASKID from %s WHERE HT_ID=%s"%(HashTagToTask._meta.db_table,hashtag_id))
+        tasks = cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+    return [x[0] for x in tasks]
+
+def get_hashtags_by_task(task_id):
+    cursor = None
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT HT_ID from %s WHERE TASKID=%s"%(HashTagToTask._meta.db_table,task_id))
+        hashtags_id = cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+    hashtags = [HashTag.objects.get(id=x[0]) for x in hashtags_id]
+    return hashtags
 
 class HashTagToRequest(models.Model):
 
@@ -822,23 +957,7 @@ class HashTagToRequest(models.Model):
         app_label = 'dev'
         db_table = u'"T_HT_TO_REQUEST"'
 
-class HashTagToTask(models.Model):
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
-    task = models.ForeignKey(ProductionTask,  db_column='TASKID')
-    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
 
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = prefetch_id('dev_db',u'T_HT_TO_TASK_SEQ',"T_HT_TO_TASK",'HTTT_ID')
-        super(HashTagToTask, self).save(*args, **kwargs)
-
-    def save_last_update(self, *args, **kwargs):
-        self.last_update = timezone.now()
-        super(HashTagToTask, self).save(*args, **kwargs)
-
-    class Meta:
-        app_label = 'dev'
-        db_table = u'"T_HT_TO_TASK"'
 
 class TrainProductionLoad(models.Model):
 

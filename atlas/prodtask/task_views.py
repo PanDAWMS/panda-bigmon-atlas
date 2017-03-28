@@ -6,8 +6,8 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse, resolve
 
-from atlas.prodtask.check_duplicate import find_downstreams_by_task
-from atlas.prodtask.models import StepExecution, HashTagToTask
+from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
+from atlas.prodtask.models import StepExecution
 import logging
 
 from ..settings import defaultDatetimeFormat
@@ -53,7 +53,26 @@ def descent_tasks(request, task_id):
         return HttpResponseRedirect('/')
 
 
+@api_view(['GET'])
+def form_task_chain(request, task_id):
+    chain = create_task_chain(int(task_id))
+    levels = [[] for x in range(15)]
+    task_childs = {}
+    for task in chain:
+        levels[chain[task]['level']].append({'task_id':task,'parent':chain[task]['parent']})
+        task_childs[chain[task]['parent']] = task_childs.get(chain[task]['parent'],0) + 1
+    result = []
+    for level in levels:
+        if level:
+            level.sort(key = lambda x:(x['parent'],x['task_id']))
+            for task in level:
+                task.update({'childs':task_childs.get(task['task_id'],0)})
+            result.append(level)
+    content = result
+    return Response(content)
 
+def task_chain_view(request):
+    pass
 
 def get_permission_analy(action_username, tasks, userfullname):
     is_superuser=False
@@ -137,7 +156,7 @@ def task_details(request, rid=None):
     for action in ['edit', 'clone']:
         permissions[action] = False
     try:
-        hashtags = [x.hashtag.hashtag for x in HashTagToTask.objects.filter(task=rid)]
+        hashtags = [str(x) for x in task.hashtags]
     except:
         hashtags = []
     request_parameters = {

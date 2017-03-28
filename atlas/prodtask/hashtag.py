@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import pickle
 from atlas.prodtask.helper import form_request_log
-from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask, HashTagToTask
+from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string
 from .models import StepExecution, InputRequestList, TRequest
 
@@ -49,17 +49,17 @@ def request_hashtags(request, hashtags):
 
 
 
-def prefilll_tophashtag(hashtag, file_name):
-    hashtag_set = set()
-    main_hashtag = HashTag.objects.get(hashtag=hashtag)
-    hashtag_set.add(int(main_hashtag.id))
-    tasks_ids = tasks_by_hashtag(hashtag)
+def prefilll_tophashtag(hashtags, file_name):
+    tasks_ids = set()
+    for hashtag in hashtags:
+        tasks_ids.update(tasks_by_hashtag(hashtag))
     hashtag_dict = {}
-    for task_id in tasks_ids:
-        hashtag_ids = map(int,(HashTagToTask.objects.filter(task=task_id).values_list('hashtag_id',flat=True)))
+    tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+    for task in tasks:
+        hashtag_ids = [int(x.id) for x in task.hashtags]
         for hashtag_id in hashtag_ids:
             hashtag_dict[hashtag_id] = hashtag_dict.get(hashtag_id,0)+1
-    tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+
     request_statistics = tasks_progress(tasks)
     ordered_step_statistic = prepare_step_statistic(request_statistics)
     result = {'step_statistic':ordered_step_statistic, 'hashtags':hashtag_dict}
@@ -73,7 +73,7 @@ def hashtag_request_to_tasks():
             tasks = ProductionTask.objects.filter(request=request_hashtag.request)
             tasks_to_update = []
             for task in tasks:
-                if not HashTagToTask.objects.filter(task=task,hashtag=request_hashtag.hashtag).exists():
+                if not task.hashtag_exists(request_hashtag.hashtag):
                     tasks_to_update.append(task.id)
             print tasks_to_update,request_hashtag.hashtag
             map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
@@ -108,9 +108,8 @@ def tasks_statistic_steps(request):
 
 def tasks_by_hashtag(hashtag):
     if HashTag.objects.filter(hashtag__iexact=hashtag).exists():
-        tasks_hashtags = list(HashTagToTask.objects.filter(hashtag=HashTag.objects.filter(hashtag__iexact=hashtag)[0]).values_list('task_id',flat=True))
-        tasks_hashtags_int = map(int, tasks_hashtags)
-        return tasks_hashtags_int
+        tasks_hashtags = HashTag.objects.filter(hashtag__iexact=hashtag)[0].tasks_ids
+        return tasks_hashtags
     return []
 
 
@@ -174,7 +173,7 @@ def hashtagslists(request):
 
         hashtags = HashTag.objects.all()
         for hashtag in hashtags:
-            hashtag_tasks_number = HashTagToTask.objects.filter(hashtag=hashtag).count()
+            hashtag_tasks_number = hashtag.tasks_count
             if hashtag_tasks_number >0:
                 result.append({'hashtag':hashtag.hashtag,'tasks':hashtag_tasks_number})
     except Exception,e:
@@ -282,8 +281,8 @@ CVMFS_BASEPATH = '/cvmfs/atlas.cern.ch/repo/sw/Generators/'
 
 
 def set_mc16_hashtags():
-    mc16_hashtag = HashTag.objects.get(hashtag='mc16campaign')
-    last_task_id = HashTagToTask.objects.filter(hashtag=mc16_hashtag).order_by('task').values_list('task_id',flat=True).last()
+    mc16_hashtag = HashTag.objects.get(hashtag='MC16a_CP')
+    last_task_id = mc16_hashtag.last_task
     last_task = ProductionTask.objects.get(id=last_task_id)
     new_tasks = ProductionTask.objects.filter(request_id__gt=last_task.request_id,campaign='MC16',provenance='AP')
     unique_requests = set()
@@ -296,14 +295,11 @@ def set_mc16_hashtags():
 
 
 def add_hashtag_to_task(hashtag_name, task_id):
-    current_hashtags = HashTagToTask.objects.filter(task=task_id).values_list('hashtag_id',flat=True)
+    task = ProductionTask.objects.get(id=task_id)
+    current_hashtags = task.hashtags
     hashtag = HashTag.objects.get(hashtag=hashtag_name)
-    if hashtag.id not in current_hashtags:
-        new_hashtag = HashTagToTask()
-        new_hashtag.hashtag = hashtag
-        task = ProductionTask.objects.get(id=task_id)
-        new_hashtag.task = task
-        new_hashtag.save()
+    if hashtag not in current_hashtags:
+        task.set_hashtag(hashtag_name)
 
 def get_key_for_request(reqid):
     print reqid
@@ -324,13 +320,11 @@ def get_key_for_request(reqid):
         for step in steps:
             tasks += list(ProductionTask.objects.filter(step=step))
         for task in tasks:
-            current_hashtags = HashTagToTask.objects.filter(task=task).values_list('hashtag_id',flat=True)
+            current_hashtags = task.hashtags
             for hashtag in hashtags:
-                if hashtag.id not in current_hashtags:
-                    new_hashtag = HashTagToTask()
-                    new_hashtag.hashtag = hashtag
-                    new_hashtag.task = task
-                    new_hashtag.save()
+                if hashtag not in current_hashtags:
+                    task.set_hashtag(hashtag)
+
 
 
 
