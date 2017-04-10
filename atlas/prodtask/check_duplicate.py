@@ -578,8 +578,7 @@ def create_task_chain(task_id):
     task_name = original_task['name']
     task_project = task_name.split('.')[0]
     task_pattern = task_name.split('.')[0][:2]+'%.'+'.'.join(task_name.split('.')[1:-2]) + '%'+task_name.split('.')[-1] +'%'
-    similar_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).
-                          filter(Q( status__in=['done','finished','obsolete','running'] )).values('id','name','inputdataset','provenance','request_id','status').
+    similar_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).values('id','name','inputdataset','provenance','request_id','status').
                           order_by('id'))
     chain = {int(task_id):{'task':original_task,'level':0, 'parent':int(task_id)}}
     for task in similar_tasks:

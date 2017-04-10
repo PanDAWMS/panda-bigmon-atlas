@@ -1,0 +1,239 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+   <style type="text/css">
+ 	div.StepDone	{ background-color : forestgreen;}
+	div.Unknown 	{ background-color : gray;	}
+	div.StepProgressing	{ background-color : yellowgreen;		}
+	div.StepNotStarted	{ background-color : orangered;		}
+ 	span.obsolete	{ color : lightblue;}
+	span.holding 	{ color : black;	}
+	span.pending	{ color : blue;		}
+	span.waiting	{ color : blue;	}
+	span.submitting	{ color : blue;	}
+	span.archived 	{ color : magenta;	}
+	span.failed 	{ color : red;	}
+	span.aborted 	{ color : red;	}
+	span.broken		{ color : red;	}
+
+	span.running 	{ color : LightGreen;	}
+
+	span.done 		{ color : darkgreen;	}
+    span.finished 		{ color : darkgreen;	}
+    span.registered {  color : blue;}
+    span.grey {color: gray; }
+    span.AP {color: indigo}
+    span.GP {color: yellow}
+    span.EI {color: yellowgreen}
+    span.AP.grey {color: gray}
+    span.GP.grey {color: gray}
+    span.EI.grey {color: gray}
+  </style>
+<script>
+
+
+    {% autoescape off %}
+          var task = {};
+          task['id'] = {{ taskid }};
+          task['name'] = "{{ taskName }}";
+          task['total_events'] = {{ total_events }};
+    {% endautoescape %}
+
+
+    {% verbatim %}
+
+
+
+
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
+    var chainServices = angular.module('chainServices', ['ngResource']);
+    chainServices.run(run);
+
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+
+
+
+
+
+    var chainApp = angular.module('chainApp',['ngRoute','chainServices']);
+    chainApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+    chainApp.controller('chainCtrl',['$scope','$http', function (scope, http){
+        scope.task = task;
+        scope.showNonAP = true;
+        scope.loading = true;
+        var taskStatistic = {'AP':{},'GP':{}, 'EI':{}};
+        http.get(Django.url('prodtask:form_task_chain',task.id)).
+              success(function(data, status, headers, config) {
+                 console.log(data);
+                var levels = Object.keys(data).length;
+                var chainRowTable = [];
+                var X = 0;
+                var lastInRow = levels+1;
+                var row = [];
+                var currentRow = [];
+                var currentTasksStack = [data[0][task.id]];
+                for(var i=0;i<levels;i++){
+                    currentRow.push({'id':' ','status':'hide'});
+                }
+                var taskFields = ['id','etag','provenance'];
+                var elementFields = taskFields.concat(['status','showAP']);
+
+                var FAILED_STATUS = ['failed','broken','aborted','obsolete'];
+                while (currentTasksStack.length >0){
+                        if (currentTasksStack[currentTasksStack.length-1].length>0){
+                            var nextExists = true;
+                            var showAP = 'all';
+                            while (nextExists){
+                                element = currentTasksStack[currentTasksStack.length-1].pop();
+                                for(j=0;j<taskFields.length;j++){
+                                    currentRow[X][taskFields[j]] = element[taskFields[j]];
+                                }
+                                currentRow[X]['status'] = element['status'];
+                                if(element['status'] in taskStatistic[element['provenance']]){
+                                    taskStatistic[element['provenance']][element['status']] += 1;
+                                } else {
+                                    taskStatistic[element['provenance']][element['status']] = 1;
+                                }
+                                currentRow[X]['showAP'] = 'all';
+                                if ((element['provenance']=='AP')&&(FAILED_STATUS.indexOf(element['status'])==-1)){
+                                    showAP = 'AP';
+                                    currentRow[X]['showAP']='AP';
+                                }
+                                if (lastInRow<X) {
+                                    lastInRow = X;
+                                    console.log(lastInRow);
+                                }
+                                if ((X+1)<levels){
+                                    if(element['id'].toString() in data[X+1]){
+                                        currentTasksStack.push(data[X+1][element['id'].toString()]);
+                                        X++;
+                                    } else{
+                                        nextExists = false;
+                                    }
+                                } else {
+                                    nextExists = false;
+                                }
+                            }
+                            row = [];
+
+                            for(i=0;i<levels;i++) {
+                                var new_element = Object();
+                                if(i <= lastInRow){
+                                    for(j=0;j<elementFields.length;j++){
+                                        new_element[elementFields[j]] = currentRow[i][elementFields[j]];
+                                    }
+                                    currentRow[i]['status'] = 'grey'
+                                } else{
+                                    for(j=0;j<elementFields.length;j++){
+                                        new_element[elementFields[j]] = " ";
+                                        currentRow[i][elementFields[j]]=' ';
+                                    }
+                                    new_element['status'] = 'hide';
+                                    currentRow[i]['status']='hide';
+                                }
+                                row.push(new_element);
+
+
+                            }
+                            lastInRow = -1;
+                            chainRowTable.push({'row':row,'showAP': showAP});
+                        } else{
+                            currentTasksStack.pop();
+                            X--;
+                        }
+                    }
+                scope.chainTable = chainRowTable;
+                var totalEI = 0;
+                for(var key in taskStatistic.EI){
+                   totalEI +=  taskStatistic.EI[key];
+                }
+                scope.totalEI = totalEI;
+                scope.taskStatistic = taskStatistic;
+                 scope.loading = false;
+
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+                 scope.loading = false;
+              });
+        scope.search = {'showAP':undefined};
+        scope.change_search_criteria = function(is_selected){
+            if(is_selected){
+               scope.search.showAP = 'AP';
+                scope.showNonAP = false;
+            } else{
+                 scope.search.showAP = undefined;
+                scope.showNonAP = true;
+            }
+
+
+        };
+
+    }]);
+
+
+
+
+    chainApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_task_chain.html',
+              controller: 'chainCtrl'
+            })
+
+
+    });
+</script>
+{% endverbatim %}
+
+
+<div ng-app="chainApp">
+    <div ng-view></div>
+
+</div>
+{% endblock %}

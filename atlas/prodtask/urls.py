@@ -82,7 +82,8 @@ urlpatterns = patterns('',
     url(r'^task_stat_by_req/(?P<rid>\d+)/$', 'atlas.prodtask.task_views.task_status_stat_by_request',        name='task_status_stat_by_request'),
 
     url(r'^descent_tasks/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.descent_tasks', name='descent_tasks'),
-    
+    url(r'^task_chain_view/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.task_chain_view', name='task_chain_view'),
+    url(r'^form_task_chain/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.form_task_chain', name='form_task_chain'),
     url(r'^task_manage/$',              'atlas.prodtask.task_manage_views.task_manage', name='task_manage'),
     url(r'^task_manage/actions/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.tasks_action', name='tasks_action'),
     url(r'^task_action_ext/(?P<action>\w+)/$', 'atlas.prodtask.task_manage_views.task_action_ext', name='task_action_ext'),
@@ -175,6 +176,9 @@ urlpatterns = patterns('',
     url(r'^request_progress_general/(?P<reqids>[\w|,]+)/$', 'atlas.prodtask.selection.request_progress_general', name='request_progress_general'),
     url(r'^request_hashtags/(?P<hashtags>[\w|,]+)/$', 'atlas.prodtask.hashtag.request_hashtags', name='request_hashtags'),
     url(r'^request_progress_main/', 'atlas.prodtask.selection.request_progress_main', name='request_progress_main'),
+    url(r'^task_chain/', 'atlas.prodtask.selection.task_chain', name='task_chain'),
+
+
     url(r'^request_hashtags_main/', 'atlas.prodtask.hashtag.request_hashtags_main', name='request_hashtags_main'),
     url(r'^tasks_statistic_steps/', 'atlas.prodtask.hashtag.tasks_statistic_steps', name='tasks_statistic_steps'),
     url(r'^request_hashtag_monk/', 'atlas.prodtask.selection.request_hashtag_monk', name='request_hashtag_monk'),

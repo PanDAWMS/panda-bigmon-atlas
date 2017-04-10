@@ -1,0 +1,73 @@
+
+   <div class="row">
+   <h5>Child tasks for {{ task.id }} - {{ task.name }} ({{ task.total_events }} events)</h5>
+      <div class="spinner" ng-show="loading">  Loading...</div>
+   </div>
+                <div class="row">
+               <div class="columns large-1">
+                   <label>Active AP only
+                       <input type="checkbox" ng-change="change_search_criteria(showCriteria)" ng-model="showCriteria"></label>
+
+            </div>
+                <div class="columns large-2">
+                    <a class="button">Obsolete</a>
+
+            </div>
+                                    <div class="columns large-8"></div>
+                </div>
+            <div class="row">
+               <div class="columns large-1">
+                   <span>AP tasks:</span>
+                </div>
+                <div class="columns large-11">
+                    <table>
+                    <tbody>
+                    <tr>
+                        <td ng-repeat="(key, value) in taskStatistic.AP   ">
+                          <span class="{{ key }}">{{ key }} </span>
+                         </td>
+                    </tr>
+                    <tr>
+                        <td ng-repeat="(key, value) in taskStatistic.AP   ">
+                          <span>{{ value }} </span>
+                         </td>
+                    </tr>
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row" ng-show="showNonAP">
+               <div class="columns large-1">
+                   <span>GP tasks:</span>
+                </div>
+                <div class="columns large-9">
+                    <table>
+                    <tbody>
+                    <tr>
+                        <td ng-repeat="(key, value) in taskStatistic.GP   ">
+                          <span class="{{ key }}">{{ key }} </span>
+                         </td>
+                    </tr>
+                    <tr>
+                        <td ng-repeat="(key, value) in taskStatistic.GP   ">
+                          <span>{{ value }} </span>
+                         </td>
+                    </tr>
+                    </tbody>
+                    </table>
+                </div>
+                <div class="columns large-2">
+                   <span>EI tasks:{{ totalEI }}</span>
+                </div>
+            </div>
+   <div class="row">
+   <table>
+        <tbody>
+        <tr ng-repeat="row in chainTable| filter:search">
+            <td ng-repeat="element in row.row | filter:search  ">
+                <a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.provenance }} {{ element.status }}">{{ element.provenance }} </span><span class="{{ element.status }}">{{ element.etag }}</span></a>
+             </td>
+        </tr>
+        </tbody>
+    </table>
+       </div>

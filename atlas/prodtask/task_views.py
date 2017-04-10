@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response, redirect
@@ -55,24 +57,49 @@ def descent_tasks(request, task_id):
 
 @api_view(['GET'])
 def form_task_chain(request, task_id):
+    def update_parent(chain, task_childs, parent):
+            task_childs[parent] = task_childs.get(parent,0) + 1
+            if chain[parent]['parent']!=parent:
+                update_parent(chain, task_childs, chain[parent]['parent'])
     chain = create_task_chain(int(task_id))
-    levels = [[] for x in range(15)]
+    levels = [{} for x in range(15)]
+    brunch = 0
     task_childs = {}
     for task in chain:
-        levels[chain[task]['level']].append({'task_id':task,'parent':chain[task]['parent']})
-        task_childs[chain[task]['parent']] = task_childs.get(chain[task]['parent'],0) + 1
-    result = []
-    for level in levels:
+        dict_to_send = {'id':int(chain[task]['task']['id']),'etag':chain[task]['task']['name'].split('.')[-1].split('_')[-1],
+                        'status':chain[task]['task']['status'],'provenance':chain[task]['task']['provenance']}
+        if 'eventIndex' in chain[task]['task']['name']:
+            dict_to_send['provenance'] = 'EI'
+        levels[chain[task]['level']][chain[task]['parent']] = levels[chain[task]['level']].get(chain[task]['parent'],[]) + [dict_to_send]
+        #levels[chain[task]['level']].append({'task_id':task,'parent':chain[task]['parent']})
+        #task_childs[chain[task]['parent']] = True
+        #update_parent(chain, task_childs, chain[task]['parent'])
+    result = {}
+    for index, level in enumerate(levels[1:]):
+
         if level:
-            level.sort(key = lambda x:(x['parent'],x['task_id']))
-            for task in level:
-                task.update({'childs':task_childs.get(task['task_id'],0)})
-            result.append(level)
+            new_level = {}
+            # for key in level:
+            #     new_level[str(key)] = [str(x) for x in sorted(level[key])]
+            result.update({index:level})
+
     content = result
+    #print content
     return Response(content)
 
-def task_chain_view(request):
-    pass
+
+def task_chain_view(request, task_id):
+    if request.method == 'GET':
+        task = ProductionTask.objects.get(id = int(task_id))
+        return render(request, 'prodtask/_task_chain.html', {
+                'active_app': 'prodtask',
+                'pre_form_text': 'Task chain obsolete',
+                'submit_url': 'prodtask:task_chain_view',
+                'parent_template': 'prodtask/_index.html',
+                'taskid': int(task.id),
+                'taskName': task.name,
+                'total_events':task.total_events
+            })
 
 def get_permission_analy(action_username, tasks, userfullname):
     is_superuser=False
