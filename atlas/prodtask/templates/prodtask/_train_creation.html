@@ -216,8 +216,8 @@
         var result_outputs = [];
         var hasDAOD_TRUTH = false;
         var nonTRUTH = false;
-        var hasEVNT = false;
-        var hasAOD = false;
+        var nonSUSY15 = false;
+        var hasSUSY15 = false;
         for(var j=0;j<scope.parsed_pattern.length;j++){
                  var slice_outputs = [];
                   for(var i=0;i<scope.parsed_pattern[j].outputs.length;i++) {
@@ -227,6 +227,11 @@
                              hasDAOD_TRUTH = true;
                           } else {
                               nonTRUTH = true
+                          }
+                          if (scope.parsed_pattern[j].outputs[i].name.indexOf('_SUSY15')>-1){
+                             hasSUSY15 = true;
+                          } else {
+                              nonSUSY15 = true
                           }
                       }
                   }
@@ -238,9 +243,10 @@
               }
 
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
-        hasEVNT = editTrainLoad.trainLoad.datasets.indexOf('EVNT')>-1;
-        hasAOD = editTrainLoad.trainLoad.datasets.indexOf('AOD')>-1;
-        if ((hasDAOD_TRUTH&&nonTRUTH)||(hasDAOD_TRUTH&&hasAOD)||(nonTRUTH&&hasEVNT)){
+        var hasEVNT = editTrainLoad.trainLoad.datasets.indexOf('EVNT')>-1;
+        var hasAOD = editTrainLoad.trainLoad.datasets.indexOf('.AOD.')>-1;
+        hasDAOD = editTrainLoad.trainLoad.datasets.indexOf('DAOD')>-1;
+        if ((hasDAOD_TRUTH&&nonTRUTH)||(hasDAOD_TRUTH&&hasAOD)||(nonTRUTH&&hasEVNT)||(hasDAOD&&nonSUSY15)){
             alert('Only EVNT could be used with DAOD_TRUTH*, only xAOD with the rests');
         } else{
             console.log(editTrainLoad.trainLoad.outputs);
