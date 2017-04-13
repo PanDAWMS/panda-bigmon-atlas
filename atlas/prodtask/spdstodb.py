@@ -74,13 +74,13 @@ def get_key_by_url(url):
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
         return (google_key, format)
 
+STEP_FORMAT = { 'Evgen':'EVNT','Simul':'HITS','Merge':'HITS','Rec TAG':'TAG',
+                'Atlf Merge':'AOD','Atlf TAG':'TAG'
 
+}
 
 def fill_template(step_name, tag, priority, formats=None, ram=None):
-        STEP_FORMAT = { 'Evgen':'EVNT','Simul':'HITS','Merge':'HITS','Rec TAG':'TAG',
-                        'Atlf Merge':'AOD','Atlf TAG':'TAG'
 
-        }
         st = None
         try:
             if not step_name:
@@ -162,14 +162,28 @@ def format_check(format):
         raise ValueError('Wrong format: %s'%format)
 
 
+FORMAT_BY_STEP = {'Evgen':['TXT']}
+
 def format_splitting(format_string, events_number):
-    if events_number==-1:
-        return [(-1,format_string,False)]
+
     formats_percentage = format_string.split('.')
-    formats_dict = []
-    percentages = set()
     result = []
+    step_formats_percentage = []
+    additional_formats_by_step = {}
     for format_percentage in formats_percentage:
+        non_reco = False
+        for step in FORMAT_BY_STEP:
+            for format in FORMAT_BY_STEP[step]:
+                if format in format_percentage:
+                    additional_formats_by_step[step] = additional_formats_by_step.get(step,[]) + [format_percentage]
+                    non_reco = True
+        if not non_reco:
+            step_formats_percentage += [format_percentage]
+    if events_number==-1:
+        return ([(-1,format_string,False)], additional_formats_by_step)
+    percentages = set()
+    formats_dict = []
+    for format_percentage in step_formats_percentage:
         if '-' in format_percentage:
             if int(format_percentage.split('-')[1]) > 100:
                 raise ValueError('Wrong format %s'%format_string)
@@ -184,17 +198,17 @@ def format_splitting(format_string, events_number):
     for percentage in percentages_list:
         section_events = (int(events_number) * percentage) / 100
         section_formats = []
-        do_split = False
+        do_split_step = False
         for format in formats_dict:
             if format[1] >= percentage:
                 section_formats.append(format[0])
             if format[2]:
-                do_split = True
-        result.append((section_events - processed_events,'.'.join(section_formats),do_split))
+                do_split_step = True
+        result.append((section_events - processed_events,'.'.join(section_formats),do_split_step))
         processed_events = section_events
     if 100 not in percentages_list:
         result.append((int(events_number)-processed_events,'',True))
-    return result
+    return (result, additional_formats_by_step)
 
 
 def translate_excl_to_dict(excel_dict, version='1.0'):
@@ -234,7 +248,7 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                 if translated_row in checked_rows:
                     continue
                 else:
-                    input_events_format = format_splitting(translated_row.get('format', ''),total_input_events)
+                    input_events_format, additional_formats = format_splitting(translated_row.get('format', ''),total_input_events)
 
                     for input_events, format, do_split in input_events_format:
                         irl = {}
@@ -260,14 +274,14 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                                    input_events=int(input_events))
 
                         index += 1
-                        reduce_input_format = False
+                        reduce_input_format = None
                         step_index = 0
                         for currentstep in StepExecution.STEPS:
-                            if (total_input_events_evgen != 0) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()):
+                            if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[])) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
                                 translated_row[currentstep]='e9999'
                             if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
-                            if format and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
+                            if format and (currentstep == 'Rec Merge') and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
                                 translated_row[currentstep]='p9999'
                             if format and (currentstep == 'Atlfast') and (not translated_row.get(currentstep,'').strip()) and (not is_fullsym):
                                 translated_row[currentstep]='a9999'
@@ -292,15 +306,18 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')})
 
                                 if reduce_input_format:
-                                    task_config.update({'input_format':'AOD'})
-                                    reduce_input_format = False
-                                if ((currentstep == 'Reco') and is_fullsym) or ((currentstep == 'Atlfast')and(not is_fullsym)):
+                                    task_config.update({'input_format':reduce_input_format})
+                                    reduce_input_format = None
+                                if (currentstep == 'Reco') or (currentstep == 'Atlfast'):
                                     if format:
                                         format_check(format)
                                         formats = 'AOD'+'.'+format
-                                        reduce_input_format = True
+                                        reduce_input_format = 'AOD'
                                     else:
                                         formats = 'AOD'
+                                if currentstep in additional_formats:
+                                    formats = '.'.join(additional_formats[currentstep]+[STEP_FORMAT[currentstep]])
+
                                 if step_index != 0:
                                     step_index_parent = step_index - 1
                                 else:
