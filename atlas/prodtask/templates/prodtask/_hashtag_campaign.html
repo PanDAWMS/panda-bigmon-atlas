@@ -145,7 +145,7 @@
 
 
         scope.showTasks= function(){
-            var full_formula = scope.hashtag_formula + '&mc16campaign';
+            var full_formula = scope.hashtag_formula + '&MC16a_CP';
             http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
               success(function(data, status, headers, config) {
                 console.log(data);
@@ -157,7 +157,7 @@
         };
         scope.showStatistic= function(){
             var tasks = [];
-            var full_formula = scope.hashtag_formula + '&mc16campaign';
+            var full_formula = scope.hashtag_formula + '&MC16a_CP';
             http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
               success(function(data, status, headers, config) {
                 tasks = data;
@@ -184,7 +184,7 @@
             requestProgressData.steps = [];
             scope.loading = true;
             var tasks = [];
-            var full_formula = hashtagFormula + '&mc16campaign';
+            var full_formula = hashtagFormula + '&MC16a_CP';
             http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
               success(function(data, status, headers, config) {
                 tasks = data;console.log(data);

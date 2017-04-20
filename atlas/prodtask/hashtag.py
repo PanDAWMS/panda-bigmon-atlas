@@ -8,6 +8,8 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import pickle
+
+from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string
@@ -314,9 +316,14 @@ def get_key_for_request(reqid):
         base_path = CVMFS_BASEPATH+campaign+'JobOptions/latest/'
         common_keywords = get_common_keywords(base_path+'common/')
         keywords = get_keyword_jo(slice.input_data, base_path+'share/',common_keywords)
+        category = get_category(keywords, slice.input_data)
         hashtags = []
         for keyword in keywords:
             hashtags.append(add_or_get_request_hashtag(keyword,'KW'))
+        if category:
+            category_hashtag = add_or_get_request_hashtag(category,'KW')
+            if category_hashtag not in hashtags:
+                hashtags.append(category_hashtag)
         for step in steps:
             tasks += list(ProductionTask.objects.filter(step=step))
         for task in tasks:
@@ -325,7 +332,68 @@ def get_key_for_request(reqid):
                 if hashtag not in current_hashtags:
                     task.set_hashtag(hashtag)
 
+def fix_wrong_jo(request):
+    slices = InputRequestList.objects.filter(request=request)
+    for slice in slices:
+        if '.py' not in slice.input_data:
+            tid = tid_from_container(slice.input_data)[0]
+            parent_slice = ProductionTask.objects.get(id=tid).step.slice
+            if '.py' in parent_slice.input_data:
+                slice.input_data = parent_slice.input_data
+                slice.save()
+                print slice.input_data, parent_slice.input_data
 
+
+def get_category(jo_keys, job_option):
+    PHYS_CATEGORIES_MAP = {"BPhysics":["charmonium","Jpsi","Bs","Bd","Bminus","Bplus",'CHARM','BOTTOM','BOTTOMONIUM','B0'],
+                  "BTag":["bTagging", "btagging"],
+                  "Diboson":["diboson","ZZ", "WW", "WZ", "WWbb", "WWll", "zz", "ww", "wz", "wwbb","wwll"],
+                  "DrellYan":["drellyan"],
+                  "Exotic":["exotic", "monojet", "blackhole", "technicolor", "RandallSundrum",
+                       "Wprime", "Zprime", "magneticMonopole", "extraDimensions", "warpedED",
+                       "randallsundrum", "wprime", "zprime", "magneticmonopole",
+                       "extradimensions", "warpeded", "contactInteraction","contactinteraction",'SEESAW'],
+                  "GammaJets":["photon", "diphoton"],
+                  "Higgs":["WHiggs", "ZHiggs", "mH125", "Higgs", "VBF", "SMHiggs", "higgs", "mh125",
+                       "zhiggs", "whiggs", "bsmhiggs", "chargedHiggs","BSMHiggs","smhiggs"],
+                  "Minbias":["minBias", "minbias"],
+                  "Multijet":["dijet", "multijet", "qcd"],
+                  "Performance":["performance"],
+                  "SingleParticle":["singleparticle"],
+                  "SingleTop":["singleTop", "singletop"],
+                  "SUSY":["SUSY", "pMSSM", "leptoSUSY", "RPV", "bino", "susy", "pmssm", "leptosusy", "rpv",'MSSM'],
+                  "Triboson":["tripleGaugeCoupling", "triboson", "ZZW", "WWW", "triplegaugecoupling", "zzw", "www"],
+                  "TTbar":["ttbar"],
+                  "TTbarX":["ttw","ttz","ttv","ttvv","4top","ttW","ttZ","ttV","ttWW","ttVV"],
+                  "Upgrade":["upgrad"],
+                  "Wjets":["W", "w"],
+                  "Zjets":["Z", "z"]}
+
+    match = {}
+    for phys_category in PHYS_CATEGORIES_MAP:
+        current_map = [x.strip(' ').lower() for x in PHYS_CATEGORIES_MAP[phys_category]]
+        match[phys_category] = len([x for x in jo_keys if x.lower() in current_map])
+    closest_category = max(match,  key=match.get)
+    if match[closest_category]!=0:
+        return closest_category
+    else:
+        phys_short = job_option.split('_',1)[1].lower()
+        if 'singletop' in phys_short: return "SingleTop"
+        if 'ttbar'     in phys_short: return "TTbar"
+        if 'jets'      in phys_short: return "Multijet"
+        if 'h125'      in phys_short: return "Higgs"
+        if 'ttbb'      in phys_short: return "TTbarX"
+        if 'ttgamma'   in phys_short: return "TTbarX"
+        if '_tt_'      in phys_short: return "TTbar"
+        if 'upsilon'   in phys_short: return "BPhysics"
+        if 'tanb'      in phys_short: return "SUSY"
+        if '4topci'    in phys_short: return "Exotic"
+        if 'xhh'       in phys_short: return "Higgs"
+        if '3top'      in phys_short: return "TTbarX"
+        if '_wt'       in phys_short: return "SingleTop"
+        if '_wwbb'     in phys_short: return "SingleTop"
+        if '_wenu_'    in phys_short: return "Wjets"
+    return None
 
 
 def get_common_keywords(parent_dir_path):
