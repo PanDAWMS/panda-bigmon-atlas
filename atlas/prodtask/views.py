@@ -2389,8 +2389,9 @@ def tasks_progress(all_tasks):
             result_dict.update({int(parent_request_task['id']):int(parent_request_task['total_events'])})
         return result_dict
 
-    def get_step_name(task_name):
-        return '.'.join(task_name.split('.')[3:5])+'.'+task_name[:task_name.rfind('_tid')].split('.')[-1].split('_')[-1][0]
+    def get_step_name(task_input, task_name):
+        return '.'.join(task_input.split('.')[3:5])+'.'+\
+               task_input[:task_input.rfind('_tid')].split('.')[-1].split('_')[-1][0]+'.'+task_name.split('.')[-1].split('_')[-1][0]
 
 
     step_by_name = {}
@@ -2403,7 +2404,7 @@ def tasks_progress(all_tasks):
     for task in all_tasks:
         if task.status not in  ProductionTask.RED_STATUS:
             task_input_events = 0
-            task_step = get_step_name(task.inputdataset)
+            task_step = get_step_name(task.inputdataset, task.name)
             if task_step not in step_by_name:
                 step_by_name.update({task_step:task.step.step_template.step})
             parent_tasks_id = get_parent_tasks(task)
@@ -2449,6 +2450,7 @@ def tasks_progress(all_tasks):
             else:
                 step_statistic[step_by_name[task_step]] = {'input_events':task_input_events,
                                              'processed_events':task.total_events}
+    #print {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
     return {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
 
 
