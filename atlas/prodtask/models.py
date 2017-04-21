@@ -10,16 +10,17 @@ import logging
 _logger = logging.getLogger('prodtaskwebui')
 
 MC_STEPS = ['Evgen',
+            'Evgen Merge',
              'Simul',
              'Merge',
              'Digi',
              'Reco',
              'Rec Merge',
-             'Rec TAG',
              'Atlfast',
              'Atlf Merge',
-             'Atlf TAG',
-             'Deriv']
+             'TAG',
+             'Deriv',
+             'Deriv Merge']
 
 class sqliteID(Singleton):
     def get_id(self,cursor,id_field_name,table_name):
@@ -1023,17 +1024,18 @@ class MCPattern(models.Model):
 
 class MCPriority(models.Model):
     STEPS = ['Evgen',
+             'Evgen Merge',
              'Simul',
              'Simul(Fast)',
              'Merge',
              'Digi',
              'Reco',
              'Rec Merge',
-             'Rec TAG',
              'Atlfast',
              'Atlf Merge',
-             'Atlf TAG',
-             'Deriv']
+             'TAG',
+             'Deriv',
+             'Deriv Merge']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCPRIOR_ID', primary_key=True)
     priority_key = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY_KEY', unique=True)
     priority_dict = models.CharField(max_length=2000, db_column='PRIORITY_DICT')
@@ -1077,6 +1079,7 @@ def get_priority_object(priority_key):
 def get_default_nEventsPerJob_dict():
     defult_dict = {
         'Evgen':5000,
+        'Evgen Merge':5000,
         'Simul':100,
         'Merge':1000,
         'Digi':500,
@@ -1085,24 +1088,26 @@ def get_default_nEventsPerJob_dict():
         'Rec TAG':25000,
         'Atlfast':500,
         'Atlf Merge':5000,
-        'Atlf TAG':25000,
-        'Deriv':100000
+        'TAG':25000,
+        'Deriv':100000,
+        'Deriv Merge':5000000
     }
     return defult_dict
 
 def get_default_project_mode_dict():
     default_dict = {
          'Evgen':'spacetoken=ATLASDATADISK',
+         'Evgen Merge':'spacetoken=ATLASDATADISK',
          'Simul':'spacetoken=ATLASDATADISK',
          'Merge':'spacetoken=ATLASDATADISK',
          'Digi':'Npileup=5;spacetoken=ATLASDATADISK',
          'Reco':'Npileup=5;spacetoken=ATLASDATADISK',
          'Rec Merge':'spacetoken=ATLASDATADISK',
-         'Rec TAG':'spacetoken=ATLASDATADISK',
          'Atlfast':'Npileup=5;spacetoken=ATLASDATADISK',
          'Atlf Merge':'spacetoken=ATLASDATADISK',
-         'Atlf TAG':'spacetoken=ATLASDATADISK',
-         'Deriv':'spacetoken=ATLASDATADISK'
+         'TAG':'spacetoken=ATLASDATADISK',
+         'Deriv':'spacetoken=ATLASDATADISK',
+         'Deriv Merge':'spacetoken=ATLASDATADISK'
     }
     return default_dict
 
