@@ -161,9 +161,9 @@ def task_chain_obsolete_action(request):
        if not user.user_permissions.filter(name='Can obsolete chain').exists():
            error_message.append('User %s has no permission for chain task obsoleting '% user.username)
        else:
-            #response = do_tasks_action(user.username, [tasks_id], "obsolete_entity", *params)
-            #logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(tasks_id),user,"obsolete_entity",str(params),str(response)))
-            print user, tasks_id, params
+            response = do_tasks_action(user.username, [tasks_id], "obsolete_entity", *params)
+            logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(tasks_id),user,"obsolete_entity",str(params),str(response)))
+            #print user, tasks_id, params
 
     except Exception,e:
         error_message.append(str(e))
