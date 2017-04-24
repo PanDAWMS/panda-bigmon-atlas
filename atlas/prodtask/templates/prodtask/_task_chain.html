@@ -107,6 +107,9 @@
         scope.showNonAP = true;
         scope.loading = true;
         var taskStatistic = {'AP':{},'GP':{}, 'EI':{}};
+        var AP_tasks = [task.id];
+        var GP_tasks = [];
+        scope.alreadyObsoleted = false;
         http.get(Django.url('prodtask:form_task_chain',task.id)).
               success(function(data, status, headers, config) {
                  console.log(data);
@@ -140,9 +143,16 @@
                                     taskStatistic[element['provenance']][element['status']] = 1;
                                 }
                                 currentRow[X]['showAP'] = 'all';
-                                if ((element['provenance']=='AP')&&(FAILED_STATUS.indexOf(element['status'])==-1)){
-                                    showAP = 'AP';
-                                    currentRow[X]['showAP']='AP';
+                                if (FAILED_STATUS.indexOf(element['status'])==-1){
+                                    if(element['provenance']=='AP'){
+                                        showAP = 'AP';
+                                        currentRow[X]['showAP']='AP';
+                                        AP_tasks.push(currentRow[X]['id']);
+                                    }
+                                    if(element['provenance']=='GP'){
+                                        GP_tasks.push(currentRow[X]['id']);
+                                    }
+
                                 }
                                 if (lastInRow<X) {
                                     lastInRow = X;
@@ -201,6 +211,38 @@
                 console.log(status);
                  scope.loading = false;
               });
+        scope.obsolete_tasks = function(){
+            var taskToObsolete = [];
+            var obsoleteMessage = '';
+            console.log("obsolete");
+            if (scope.showNonAP){
+                taskToObsolete = AP_tasks.concat(GP_tasks);
+                obsoleteMessage = AP_tasks.length.toString() + " AP tasks and " +
+                        GP_tasks.length.toString()+ " GP  tasks will be obsoleted";
+            } else {
+                taskToObsolete = AP_tasks;
+                obsoleteMessage = AP_tasks.length.toString() + " AP tasks will be obsoleted";
+            }
+
+            if(confirm(obsoleteMessage)){
+
+            http.post(Django.url('prodtask:task_chain_obsolete_action'),{tasks:taskToObsolete}).
+              success(function(data, status, headers, config) {
+                console.log(data);
+                var result = data.result;
+                if(result != "OK"){
+                    alert(data.exception);
+                } else {
+                    scope.alreadyObsoleted = true;
+                }
+              }).
+              error(function(data, status, headers, config) {
+                console.log(status);
+                alert(data);
+              });
+            }
+
+        };
         scope.search = {'showAP':undefined};
         scope.change_search_criteria = function(is_selected){
             if(is_selected){

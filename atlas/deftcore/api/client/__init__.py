@@ -151,6 +151,10 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('obsolete_task', owner, body)
 
+    def obsolete_entity(self, owner, tasks, force=False):
+        body = {'tasks': ','.join([str(e) for e in tasks]), 'force': force}
+        return self._create_request('obsolete_entity', owner, body)
+
     def clean_task_carriages(self, owner, task_id, output_formats):
         body = {'task_id': task_id, 'output_formats': '.'.join(output_formats)}
         return self._create_request('clean_task_carriages', owner, body)

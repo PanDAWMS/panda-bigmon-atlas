@@ -33,7 +33,8 @@ _deft_actions = {
     'change_core_count': 'change_task_attribute',
     'change_split_rule': 'change_task_split_rule',
     'pause_task': 'pause_task', 'resume_task':'resume_task', 'trigger_task':'trigger_task_brokerage',
-    'avalanche_task':'avalanche_task'
+    'avalanche_task':'avalanche_task',
+    'obsolete_entity': 'obsolete_entity'
 }
 
 supported_actions = _deft_actions.keys()
@@ -51,8 +52,8 @@ allowed_task_actions = {
     'ready': ['kill_job','retry'],
     'running': ['kill_job','retry'],
     'exhausted': ['kill_job','retry','retry_new', 'reassign'],
-    'done': ['obsolete', 'delete_output'],
-    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority'],
+    'done': ['obsolete', 'delete_output', 'obsolete_entity'],
+    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority', 'obsolete_entity'],
     'broken': [],
     'failed': [],
 }

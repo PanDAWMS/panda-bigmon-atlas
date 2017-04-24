@@ -149,6 +149,36 @@ def task_action_ext(request, action=None):
 
 
 
+@api_view(['POST'])
+def task_chain_obsolete_action(request):
+    content = {}
+    error_message = []
+    try:
+       data = json.loads(request.body)
+       tasks_id = data.get('tasks')
+       params = data.get('parameters', [])
+       user = request.user
+       if not user.user_permissions.filter(name='Can obsolete chain').exists():
+           error_message.append('User %s has no permission for chain task obsoleting '% user.username)
+       else:
+            #response = do_tasks_action(user.username, [tasks_id], "obsolete_entity", *params)
+            #logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(tasks_id),user,"obsolete_entity",str(params),str(response)))
+            print user, tasks_id, params
+
+    except Exception,e:
+        error_message.append(str(e))
+
+    if not error_message:
+        content = {'result': 'OK'}
+    else:
+        content = {
+                   'result': 'FAILED',
+                   'exception': '; '.join(error_message)
+                   }
+
+    return Response(content)
+
+
 def tasks_action(request, action):
     """
     Handling task actions requests
