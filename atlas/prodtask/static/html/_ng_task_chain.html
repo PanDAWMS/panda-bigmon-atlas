@@ -1,6 +1,6 @@
 
    <div class="row">
-   <h5>Child tasks for {{ task.id }} - {{ task.name }} ({{ task.total_events }} events)</h5>
+   <h5>Child tasks for <a href="{{ mainTaskLink}}">{{ task.id }}</a> - {{ task.name }} ({{ task.total_events | number:0  }} events)</h5>
       <div class="spinner" ng-show="loading">  Loading...</div>
    </div>
                 <div class="row">
@@ -9,12 +9,18 @@
                        <input type="checkbox" ng-change="change_search_criteria(showCriteria)" ng-model="showCriteria"></label>
 
             </div>
+            <div class="columns large-1">
+                   <label>Force
+                       <input type="checkbox" ng-change="change_search_criteria(showCriteria)" ng-model="forceObsolete"></label>
+
+            </div>
                 <div class="columns large-2">
                     <button  ng-click="obsolete_tasks()" ng-disabled="alreadyObsoleted">Obsolete</button>
 
             </div>
                                     <div class="columns large-8"></div>
                 </div>
+
             <div class="row">
                <div class="columns large-1">
                    <span>AP tasks:</span>
@@ -61,13 +67,22 @@
                 </div>
             </div>
    <div class="row">
-   <table>
+       <div class="columns large-1">
+           <label>Show tag/taskIF<input type="checkbox"  ng-model="showTag"></label>
+           </div>
+        <div class="columns large-11">
+       <table>
         <tbody>
         <tr ng-repeat="row in chainTable| filter:search">
             <td ng-repeat="element in row.row | filter:search  ">
-                <a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.provenance }} {{ element.status }}">{{ element.provenance }} </span><span class="{{ element.status }}">{{ element.etag }}</span></a>
+                <a href="https://bigpanda.cern.ch/task/{{ element.id }}" >
+                    <span class="{{ element.provenance }} {{ element.status }}">{{ element.provenance }} </span>
+                    <span ng-show="showTag" class="{{ element.status }}">{{ element.etag }}</span>
+                    <span ng-show="!showTag" class="{{ element.status }}">{{ element.id }}</span>
+                </a>
              </td>
         </tr>
         </tbody>
     </table>
+            </div>
        </div>

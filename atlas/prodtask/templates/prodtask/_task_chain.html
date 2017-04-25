@@ -71,6 +71,7 @@
           task['id'] = {{ taskid }};
           task['name'] = "{{ taskName }}";
           task['total_events'] = {{ total_events }};
+
     {% endautoescape %}
 
 
@@ -106,13 +107,15 @@
         scope.task = task;
         scope.showNonAP = true;
         scope.loading = true;
+        scope.showTag = true;
         var taskStatistic = {'AP':{},'GP':{}, 'EI':{}};
         var AP_tasks = [task.id];
         var GP_tasks = [];
         scope.alreadyObsoleted = false;
+        scope.mainTaskLink = Django.url('prodtask:task', task.id);
         http.get(Django.url('prodtask:form_task_chain',task.id)).
               success(function(data, status, headers, config) {
-                 console.log(data);
+               //  console.log(data);
                 var levels = Object.keys(data).length;
                 var chainRowTable = [];
                 var X = 0;
@@ -156,7 +159,7 @@
                                 }
                                 if (lastInRow<X) {
                                     lastInRow = X;
-                                    console.log(lastInRow);
+                                    //console.log(lastInRow);
                                 }
                                 if ((X+1)<levels){
                                     if(element['id'].toString() in data[X+1]){
@@ -208,13 +211,14 @@
 
               }).
               error(function(data, status, headers, config) {
-                console.log(status);
+                //console.log(status);
                  scope.loading = false;
+                 alert(data);
               });
         scope.obsolete_tasks = function(){
             var taskToObsolete = [];
             var obsoleteMessage = '';
-            console.log("obsolete");
+            //console.log("obsolete");
             if (scope.showNonAP){
                 taskToObsolete = AP_tasks.concat(GP_tasks);
                 obsoleteMessage = AP_tasks.length.toString() + " AP tasks and " +
@@ -225,10 +229,10 @@
             }
 
             if(confirm(obsoleteMessage)){
-
+            var sendObj = {};
             http.post(Django.url('prodtask:task_chain_obsolete_action'),{tasks:taskToObsolete}).
               success(function(data, status, headers, config) {
-                console.log(data);
+                //console.log(data);
                 var result = data.result;
                 if(result != "OK"){
                     alert(data.exception);
@@ -237,7 +241,7 @@
                 }
               }).
               error(function(data, status, headers, config) {
-                console.log(status);
+                //console.log(status);
                 alert(data);
               });
             }

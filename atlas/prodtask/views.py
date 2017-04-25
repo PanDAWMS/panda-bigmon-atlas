@@ -2416,6 +2416,11 @@ def tasks_progress(all_tasks):
             #evgen
             if (len(parent_tasks_id) == 0) or (task_input_events > -1):
                 task_input_events = task.step.input_events
+                if task_input_events == -1:
+                    if int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
+                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile'))
+                    else:
+                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob'))
                 chain_id = int(task.id)
                 chains.update({int(task.id):[int(task.id)]})
             else:
@@ -2499,7 +2504,7 @@ def get_parent_tasks(task):
     if 'tid' in task_input:
         return [int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])]
     else:
-        return tid_from_container(task_input)
+        return [] #tid_from_container(task_input)
 
 
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):

@@ -2,6 +2,7 @@ import json
 import logging
 from os import walk
 
+import time
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
@@ -61,8 +62,9 @@ def prefilll_tophashtag(hashtags, file_name):
         hashtag_ids = [int(x.id) for x in task.hashtags]
         for hashtag_id in hashtag_ids:
             hashtag_dict[hashtag_id] = hashtag_dict.get(hashtag_id,0)+1
-
+    print time.time()
     request_statistics = tasks_progress(tasks)
+    print time.time()
     ordered_step_statistic = prepare_step_statistic(request_statistics)
     result = {'step_statistic':ordered_step_statistic, 'hashtags':hashtag_dict}
     pickle.dump(result,open(file_name,'wb'))
