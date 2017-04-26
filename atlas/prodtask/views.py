@@ -2448,7 +2448,9 @@ def tasks_progress(all_tasks):
                             task_input_events += other_requests_tasks[parent_task_id]
                     chain_id = int(task.id)
             processed_tasks.update({int(task.id):{"input_events":task_input_events, "processed_events":task.total_events,
-                                                  "chain_id":chain_id, 'status':task.status, 'step':step_by_name[task_step], 'request':task.request_id}})
+                                                  "chain_id":chain_id, 'status':task.status,
+                                                  'step':step_by_name[task_step], 'request':task.request_id,
+                                                  'name':task.name, 'tag': task.name.split('.')[-1].split('_')[-1]}})
             if step_by_name[task_step] in step_statistic:
                 step_statistic[step_by_name[task_step]] = {'input_events':step_statistic[step_by_name[task_step]]['input_events']+task_input_events,
                                              'processed_events':step_statistic[step_by_name[task_step]]['processed_events']+task.total_events}

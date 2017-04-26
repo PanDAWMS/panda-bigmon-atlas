@@ -94,6 +94,7 @@ def tasks_statistic_steps(request):
         ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
         chains = []
+        chain_name = ''
         for chain in request_statistics['chains'].values():
             current_chain = [{}] * len(steps_name)
             chain_requests = set()
@@ -101,9 +102,11 @@ def tasks_statistic_steps(request):
                 i = steps_name.index(request_statistics['processed_tasks'][task_id]['step'])
                 task = {'task_id':task_id}
                 task.update(request_statistics['processed_tasks'][task_id])
+                if not chain_name:
+                    chain_name = '.'.join(task['name'].split('.')[1:3])
                 chain_requests.add(request_statistics['processed_tasks'][task_id]['request'])
                 current_chain[i] = task
-            chains.append({'chain':current_chain,'requests':chain_requests})
+            chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
     except Exception,e:
         print str(e)

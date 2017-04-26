@@ -183,6 +183,7 @@
             var requestProgressData = this;
             requestProgressData.steps = [];
             scope.loading = true;
+            scope.showTag = false;
             var tasks = [];
             var full_formula = hashtagFormula + '&MC16a_CP';
             http.post(Django.url('prodtask:tasks_hashtag'),full_formula).

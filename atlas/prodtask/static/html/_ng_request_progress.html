@@ -21,7 +21,9 @@
     div.registered {  background-color : blue;}
   </style>
 
-   <div class="spinner" ng-show="loading">  Loading...</div>
+   <div class="spinner" ng-show="loading"> Loading...</div>
+      <div class="row">
+
     <table>
         <tbody>
         <td>Step Name % <br> Processed/Input events</td>
@@ -31,12 +33,23 @@
              </td>
         </tbody>
     </table>
+          </div>
+      <div class="row">
+
+          <div class="columns large-1">
+           <label>Show tag/taskID<input type="checkbox"  ng-model="showTag"></label>
+           </div>
+          </div>
+       <div class="row">
      <table >
         <tbody>
         <tr ng-repeat="chain_requests in requestProgressData.chains ">
-            <td style="border:1px solid black"><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
+            <td style="border:1px solid black"><span>{{ chain_requests.chain_name  }}</span><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
             <td ng-repeat="task in chain_requests.chain " style="border:1px solid black">
-                <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></div>
+                <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">
+                    <div ng-show="!showTag">{{ task.task_id }}</div>
+                    <div ng-show="showTag">{{ task.tag }}</div>
+                    </a></div>
                     <br>{{ task.input_events }}/{{ task.processed_events }}
 
              </td>
@@ -44,4 +57,5 @@
 
         </tbody>
     </table>
+          </div>
          <a href="#/" class="button">Back</a>

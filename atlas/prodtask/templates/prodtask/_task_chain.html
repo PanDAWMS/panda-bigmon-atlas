@@ -108,6 +108,7 @@
         scope.showNonAP = true;
         scope.loading = true;
         scope.showTag = true;
+        scope.forceObsolete = false;
         var taskStatistic = {'AP':{},'GP':{}, 'EI':{}};
         var AP_tasks = [task.id];
         var GP_tasks = [];
@@ -115,57 +116,59 @@
         scope.mainTaskLink = Django.url('prodtask:task', task.id);
         http.get(Django.url('prodtask:form_task_chain',task.id)).
               success(function(data, status, headers, config) {
-               //  console.log(data);
-                var levels = Object.keys(data).length;
-                var chainRowTable = [];
-                var X = 0;
-                var lastInRow = levels+1;
-                var row = [];
-                var currentRow = [];
-                var currentTasksStack = [data[0][task.id]];
-                for(var i=0;i<levels;i++){
-                    currentRow.push({'id':' ','status':'hide'});
-                }
-                var taskFields = ['id','etag','provenance'];
-                var elementFields = taskFields.concat(['status','showAP']);
+                // console.log(data);
 
-                var FAILED_STATUS = ['failed','broken','aborted','obsolete'];
-                while (currentTasksStack.length >0){
-                        if (currentTasksStack[currentTasksStack.length-1].length>0){
+                var levels = Object.keys(data).length;
+                if(levels!=0) {
+                    var chainRowTable = [];
+                    var X = 0;
+                    var lastInRow = levels + 1;
+                    var row = [];
+                    var currentRow = [];
+                    var currentTasksStack = [data[0][task.id]];
+                    for (var i = 0; i < levels; i++) {
+                        currentRow.push({'id': ' ', 'status': 'hide'});
+                    }
+                    var taskFields = ['id', 'etag', 'provenance'];
+                    var elementFields = taskFields.concat(['status', 'showAP']);
+
+                    var FAILED_STATUS = ['failed', 'broken', 'aborted', 'obsolete'];
+                    while (currentTasksStack.length > 0) {
+                        if (currentTasksStack[currentTasksStack.length - 1].length > 0) {
                             var nextExists = true;
                             var showAP = 'all';
-                            while (nextExists){
-                                element = currentTasksStack[currentTasksStack.length-1].pop();
-                                for(j=0;j<taskFields.length;j++){
+                            while (nextExists) {
+                                element = currentTasksStack[currentTasksStack.length - 1].pop();
+                                for (j = 0; j < taskFields.length; j++) {
                                     currentRow[X][taskFields[j]] = element[taskFields[j]];
                                 }
                                 currentRow[X]['status'] = element['status'];
-                                if(element['status'] in taskStatistic[element['provenance']]){
+                                if (element['status'] in taskStatistic[element['provenance']]) {
                                     taskStatistic[element['provenance']][element['status']] += 1;
                                 } else {
                                     taskStatistic[element['provenance']][element['status']] = 1;
                                 }
                                 currentRow[X]['showAP'] = 'all';
-                                if (FAILED_STATUS.indexOf(element['status'])==-1){
-                                    if(element['provenance']=='AP'){
+                                if (FAILED_STATUS.indexOf(element['status']) == -1) {
+                                    if (element['provenance'] == 'AP') {
                                         showAP = 'AP';
-                                        currentRow[X]['showAP']='AP';
+                                        currentRow[X]['showAP'] = 'AP';
                                         AP_tasks.push(currentRow[X]['id']);
                                     }
-                                    if(element['provenance']=='GP'){
+                                    if (element['provenance'] == 'GP') {
                                         GP_tasks.push(currentRow[X]['id']);
                                     }
 
                                 }
-                                if (lastInRow<X) {
+                                if (lastInRow < X) {
                                     lastInRow = X;
                                     //console.log(lastInRow);
                                 }
-                                if ((X+1)<levels){
-                                    if(element['id'].toString() in data[X+1]){
-                                        currentTasksStack.push(data[X+1][element['id'].toString()]);
+                                if ((X + 1) < levels) {
+                                    if (element['id'].toString() in data[X + 1]) {
+                                        currentTasksStack.push(data[X + 1][element['id'].toString()]);
                                         X++;
-                                    } else{
+                                    } else {
                                         nextExists = false;
                                     }
                                 } else {
@@ -174,41 +177,42 @@
                             }
                             row = [];
 
-                            for(i=0;i<levels;i++) {
+                            for (i = 0; i < levels; i++) {
                                 var new_element = Object();
-                                if(i <= lastInRow){
-                                    for(j=0;j<elementFields.length;j++){
+                                if (i <= lastInRow) {
+                                    for (j = 0; j < elementFields.length; j++) {
                                         new_element[elementFields[j]] = currentRow[i][elementFields[j]];
                                     }
                                     currentRow[i]['status'] = 'grey'
-                                } else{
-                                    for(j=0;j<elementFields.length;j++){
+                                } else {
+                                    for (j = 0; j < elementFields.length; j++) {
                                         new_element[elementFields[j]] = " ";
-                                        currentRow[i][elementFields[j]]=' ';
+                                        currentRow[i][elementFields[j]] = ' ';
                                     }
                                     new_element['status'] = 'hide';
-                                    currentRow[i]['status']='hide';
+                                    currentRow[i]['status'] = 'hide';
                                 }
                                 row.push(new_element);
 
 
                             }
                             lastInRow = -1;
-                            chainRowTable.push({'row':row,'showAP': showAP});
-                        } else{
+                            chainRowTable.push({'row': row, 'showAP': showAP});
+                        } else {
                             currentTasksStack.pop();
                             X--;
                         }
                     }
-                scope.chainTable = chainRowTable;
-                var totalEI = 0;
-                for(var key in taskStatistic.EI){
-                   totalEI +=  taskStatistic.EI[key];
-                }
-                scope.totalEI = totalEI;
-                scope.taskStatistic = taskStatistic;
-                 scope.loading = false;
+                    scope.chainTable = chainRowTable;
+                    var totalEI = 0;
+                    for (var key in taskStatistic.EI) {
+                        totalEI += taskStatistic.EI[key];
+                    }
+                    scope.totalEI = totalEI;
+                    scope.taskStatistic = taskStatistic;
 
+                }
+                scope.loading = false;
               }).
               error(function(data, status, headers, config) {
                 //console.log(status);
@@ -230,7 +234,12 @@
 
             if(confirm(obsoleteMessage)){
             var sendObj = {};
-            http.post(Django.url('prodtask:task_chain_obsolete_action'),{tasks:taskToObsolete}).
+            if(scope.forceObsolete){
+                sendObj = {tasks:taskToObsolete,parameters:true};
+            } else {
+                sendObj = {tasks:taskToObsolete};
+            }
+            http.post(Django.url('prodtask:task_chain_obsolete_action'),sendObj).
               success(function(data, status, headers, config) {
                 //console.log(data);
                 var result = data.result;

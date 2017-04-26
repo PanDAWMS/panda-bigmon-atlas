@@ -672,7 +672,7 @@ class TTask(models.Model):
 class ProductionTask(models.Model):
 
     RED_STATUS = ['failed','aborted','broken']
-
+    NOT_RUNNING = RED_STATUS + ['finished','done','obsolete']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     step = models.ForeignKey(StepExecution, db_column='STEP_ID')
     request = models.ForeignKey(TRequest, db_column='PR_ID')

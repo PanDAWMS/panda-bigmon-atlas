@@ -151,18 +151,32 @@ def task_action_ext(request, action=None):
 
 @api_view(['POST'])
 def task_chain_obsolete_action(request):
-    content = {}
     error_message = []
     try:
        data = json.loads(request.body)
        tasks_id = data.get('tasks')
+       if len(tasks_id)>50:
+           raise ValueError('Too much tasks to obsolete. Please contact DPA')
        params = data.get('parameters', [])
        user = request.user
+       obsolete_list = []
+       abort_list = []
+       tasks = ProductionTask.objects.filter(id__in=tasks_id)
+       for task in tasks:
+           if task.status in ProductionTask.NOT_RUNNING:
+                obsolete_list.append(int(task.id))
+           else:
+                abort_list.append(int(task.id))
        if not user.user_permissions.filter(name='Can obsolete chain').exists():
-           error_message.append('User %s has no permission for chain task obsoleting '% user.username)
+           raise LookupError('User %s has no permission for chain task obsoleting '% user.username)
        else:
-            response = do_tasks_action(user.username, [tasks_id], "obsolete_entity", *params)
-            logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(tasks_id),user,"obsolete_entity",str(params),str(response)))
+            if  obsolete_list:
+                response = do_tasks_action(user.username, [obsolete_list], "obsolete_entity", *params)
+                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(obsolete_list),user,"obsolete_entity",str(params),str(response)))
+            if abort_list:
+                params = []
+                response = do_tasks_action(user.username, abort_list, "abort", *params)
+                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(abort_list),user,"abort",str(params),str(response)))
             #print user, tasks_id, params
 
     except Exception,e:
