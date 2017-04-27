@@ -29,7 +29,7 @@ def request_hashtags(request, hashtags):
         tasks_id = set()
         for hashtag in hashtags_to_process:
             tasks_id.update(tasks_by_hashtag(hashtag))
-        tasks = ProductionTask.objects.filter(id__in=list(tasks_id))
+        tasks = list(ProductionTask.objects.filter(id__in=list(tasks_id)))
         request_statistics = tasks_progress(tasks)
         result = {}
         ordered_step_statistic =   prepare_step_statistic(request_statistics)
@@ -54,10 +54,11 @@ def request_hashtags(request, hashtags):
 
 def prefilll_tophashtag(hashtags, file_name):
     tasks_ids = set()
+    print time.time()
     for hashtag in hashtags:
         tasks_ids.update(tasks_by_hashtag(hashtag))
     hashtag_dict = {}
-    tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+    tasks = list(ProductionTask.objects.filter(id__in=tasks_ids))
     for task in tasks:
         hashtag_ids = [int(x.id) for x in task.hashtags]
         for hashtag_id in hashtag_ids:
@@ -89,7 +90,7 @@ def tasks_statistic_steps(request):
     result = {}
     try:
         tasks_ids = json.loads(request.body)
-        tasks = ProductionTask.objects.filter(id__in=tasks_ids)
+        tasks = list(ProductionTask.objects.filter(id__in=tasks_ids))
         request_statistics = tasks_progress(tasks)
         ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
