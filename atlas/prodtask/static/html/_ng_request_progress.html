@@ -37,15 +37,18 @@
     </table>
           </div>
       <div class="row">
-
+          <div class="columns large-3">
+           <label>Filter: <input ng-model="search.chain_name"></label>
+           </div>
           <div class="columns large-1">
            <label>Show tag/taskID<input type="checkbox"  ng-model="showTag"></label>
            </div>
+          <div class="columns large-8"></div>
           </div>
        <div class="row">
      <table >
         <tbody>
-        <tr ng-repeat="chain_requests in requestProgressData.chains ">
+        <tr ng-repeat="chain_requests in requestProgressData.chains| filter:search ">
             <td style="border:1px solid black"><span>{{ chain_requests.chain_name  }}</span><div ng-repeat="request_id in chain_requests.requests" ><a href="{{ request_base }}{{ request_id }}">{{ request_id}}</a><br></div></td>
             <td ng-repeat="task in chain_requests.chain " style="border:1px solid black">
                 <div class="{{  task.status }}"><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">
