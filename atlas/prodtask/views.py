@@ -2451,12 +2451,30 @@ def tasks_progress(all_tasks):
                                                   "chain_id":chain_id, 'status':task.status,
                                                   'step':step_by_name[task_step], 'request':task.request_id,
                                                   'name':task.name, 'tag': task.name.split('.')[-1].split('_')[-1]}})
+            events_done = 0
+            running_events = 0
+            pending = 0
+            if task.status in ProductionTask.NOT_RUNNING:
+                events_done = task.total_events
+            elif task.status in ['running','paused','exhausted']:
+                running_events = task_input_events - task.total_events
+                events_done = task.total_events
+            else:
+                pending = task_input_events
             if step_by_name[task_step] in step_statistic:
+
+
                 step_statistic[step_by_name[task_step]] = {'input_events':step_statistic[step_by_name[task_step]]['input_events']+task_input_events,
-                                             'processed_events':step_statistic[step_by_name[task_step]]['processed_events']+task.total_events}
+                                             'processed_events':step_statistic[step_by_name[task_step]]['processed_events']+task.total_events,
+                                                           'events_done':step_statistic[step_by_name[task_step]]['events_done']+events_done,
+                                                           'running_events':step_statistic[step_by_name[task_step]]['running_events']+running_events,
+                                                           'pending_events':step_statistic[step_by_name[task_step]]['pending_events']+pending}
             else:
                 step_statistic[step_by_name[task_step]] = {'input_events':task_input_events,
-                                             'processed_events':task.total_events}
+                                             'processed_events':task.total_events,
+                                                           'events_done':events_done,
+                                                           'running_events':running_events,
+                                                           'pending_events':pending}
     #print {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
     return {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
 
@@ -2465,6 +2483,9 @@ def prepare_step_statistic(request_statistics):
         ordered_step_statistic = []
         for step_statistic in request_statistics['step_statistic']:
             percent_done = 0.0
+            percent_finished = 0.0
+            percent_runnning = 0.0
+            percent_paending = 0.0
             if request_statistics['step_statistic'][step_statistic]["input_events"] == 0:
                 step_status = 'Unknown'
             else:
@@ -2475,9 +2496,13 @@ def prepare_step_statistic(request_statistics):
                    step_status = 'StepProgressing'
                 else:
                    step_status =  'StepNotStarted'
+                percent_finished = float(request_statistics['step_statistic'][step_statistic]['events_done']) / float(request_statistics['step_statistic'][step_statistic]['input_events'])
+                percent_runnning = float(request_statistics['step_statistic'][step_statistic]['running_events']) / float(request_statistics['step_statistic'][step_statistic]['input_events'])
+                percent_paending = float(request_statistics['step_statistic'][step_statistic]['pending_events']) / float(request_statistics['step_statistic'][step_statistic]['input_events'])
             ordered_step_statistic.append({'statistic':request_statistics['step_statistic'][step_statistic],
                                            'step_name':step_statistic,'order':MCPattern.STEPS.index(step_statistic),
-                                           'step_status':step_status,'percent':str(round(percent_done*100,2))+'%'})
+                                           'step_status':step_status,'percent':str(round(percent_done*100,2))+'%',
+                                           'percent_status':str(round(percent_runnning*100,2))+'%'+'/'+str(round(percent_paending*100,2))+'%'+'/'+str(round(percent_finished*100,2))+'%'})
 
         ordered_step_statistic.sort(key=lambda x:x['order'])
         return ordered_step_statistic
