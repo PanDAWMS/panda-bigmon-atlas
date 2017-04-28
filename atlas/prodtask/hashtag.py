@@ -293,7 +293,16 @@ def get_include_file(file_name):
 CVMFS_BASEPATH = '/cvmfs/atlas.cern.ch/repo/sw/Generators/'
 
 
-def set_mc16_hashtags():
+
+def set_hashtags_keys_by_hahstag(hashtags):
+    requests = set()
+    for hashtag in hashtags:
+        current_requests = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.get(hashtag=hashtag)).values_list('request_id',flat=True))
+        requests.update(current_requests)
+    #print requests
+    map(get_key_for_request,list(requests))
+
+def set_mc16_hashtags(hashtags):
     mc16_hashtag = HashTag.objects.get(hashtag='MC16a_CP')
     last_task_id = mc16_hashtag.last_task
     last_task = ProductionTask.objects.get(id=last_task_id)
@@ -347,7 +356,7 @@ def fix_wrong_jo(request):
     slices = InputRequestList.objects.filter(request=request)
     for slice in slices:
         if '.py' not in slice.input_data:
-            tid = tid_from_container(slice.input_data)[0]
+            tid = tid_from_container(slice.dataset_id)[0]
             parent_slice = ProductionTask.objects.get(id=tid).step.slice
             if '.py' in parent_slice.input_data:
                 slice.input_data = parent_slice.input_data

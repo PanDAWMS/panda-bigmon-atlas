@@ -161,14 +161,15 @@
     }]);
 
 
-    hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http',
+    hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http','$routeParams',
 
-        function (scope, http) {
+        function (scope, http, routeParams) {
             var requestProgressData = this;
             requestProgressData.steps = [];
             scope.loading = true;
             var tasks = [];
-
+            var hashtagFormula = routeParams.hashtags;
+            console.log(routeParams.hashtags);
             http.post(Django.url('prodtask:tasks_hashtag'),hashtagFormula).
               success(function(data, status, headers, config) {
                 tasks = data;console.log(data);
@@ -177,6 +178,7 @@
                      console.log(data);
                             requestProgressData.steps = data.load.step_statistic;
                             requestProgressData.chains = data.load.chains;
+                            requestProgressData.hashtags = hashtagFormula;
                             console.log(requestProgressData.chains);
                              scope.loading = false;
                     }).
@@ -198,7 +200,7 @@
               templateUrl:'/static/html/_ng_hashtags_list.html',
               controller: 'HashTagCtrl'
             }).
-          when('/hashtags/', {
+          when('/hashtags/:hashtags', {
               templateUrl: '/static/html/_ng_request_progress.html',
               controller: 'progressStatHashtagCtrl as requestProgressData'
             })
