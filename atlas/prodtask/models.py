@@ -1140,6 +1140,20 @@ class GDPConfig(models.Model):
         db_table = u'"ATLAS_PANDA"."CONFIG"'
 
 
+class GlobalShare(models.Model):
+    name = models.CharField(max_length=32, db_column='NAME', primary_key=True)
+    value = models.DecimalField(decimal_places=0, max_digits=3, db_column='VALUE')
+    parent = models.CharField (max_length=32, db_column='PARENT')
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Only manual creation')
+
+    class Meta:
+        app_label = 'panda'
+        db_table = u'"ATLAS_PANDA"."GLOBAL_SHARES"'
+
+
+
 class Cloudconfig(models.Model):
     name = models.CharField(max_length=20, primary_key=True, db_column='NAME') # Field name made lowercase.
     description = models.CharField(max_length=50, db_column='DESCRIPTION') # Field name made lowercase.

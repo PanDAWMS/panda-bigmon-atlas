@@ -9,6 +9,10 @@ urlpatterns = patterns('',
     url(r'^get_fairshare/$', 'atlas.gdpconfig.views.get_fairshare', name='get_fairshare'),
     url(r'^login/$', 'atlas.auth.views.login', name='login'),
     url(r'^logout/$', 'atlas.auth.views.logout', name='logout'),
+    url(r'^global_share/$', 'atlas.gdpconfig.views.global_share',       name='global_share'),
+    url(r'^global_share_tree/$', 'atlas.gdpconfig.views.global_share_tree',       name='global_share_tree'),
+    url(r'^global_share_change/$', 'atlas.gdpconfig.views.global_share_change',       name='global_share_change')
+
 )
 
 

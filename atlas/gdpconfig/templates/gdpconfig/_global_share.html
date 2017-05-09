@@ -1,0 +1,227 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+{%  django_js %}
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+
+{% endblock %}
+
+{% block body %}
+
+   <style type="text/css">
+    span.wrong		{ color : red;	}
+    span.changed		{ color : green;	}
+  </style>
+<script>
+
+
+
+
+
+    {% verbatim %}
+
+
+
+
+ //   var parsed_pattern = [{slice:'0',selected:false,outputs:[{slice:'0',name:'DAOD',selected:false},{slice:'0',name:'ESD',selected:false}]},
+   //     {slice:'1',selected:false,outputs:[{slice:'1',name:'DESD',selected:false},{slice:'1',name:'DESD1',selected:false},{slice:'1',name:'DESD2',selected:false}]}];
+    var globalShareServices = angular.module('globalShareServices', ['ngResource']);
+    globalShareServices.run(run);
+
+    run.$inject = ['$http'];
+/**
+* @name run
+* @desc Update xsrf $http headers to align with Django's defaults
+*/
+    function run($http) {
+      $http.defaults.xsrfHeaderName = 'X-CSRFToken';
+      $http.defaults.xsrfCookieName = 'csrftoken';
+    }
+
+
+
+
+
+    var globalShareApp = angular.module('globalShareApp',['ngRoute','globalShareServices']);
+    globalShareApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+    globalShareApp.controller('globalShareCtrl',['$scope','$http', function (scope, http){
+
+        scope.globalShareTable = [];
+
+        var changeTree = function(parents){
+            var parents_value = {};
+            var total_brunch = {};
+            var new_parents = [];
+            if(parents.indexOf('root')>-1){
+                    parents_value['root'] = 100
+
+            }
+            while(parents.length>0){
+                new_parents = [];
+                for(var i=0;i<parents.length;i++){
+                    total_brunch[parents[i]] = 0;
+                }
+                for(i=0;i< scope.globalShareTable.length;i++){
+                for(j=0;j<scope.globalShareTable[i].length;j++){
+                    if(scope.globalShareTable[i][j]['show']){
+                        if(parents.indexOf(scope.globalShareTable[i][j]['name'])>-1){
+                            parents_value[scope.globalShareTable[i][j]['name']] = scope.globalShareTable[i][j]['percentage'];
+                        }
+                        if(parents.indexOf(scope.globalShareTable[i][j]['parent'])>-1){
+                            total_brunch[scope.globalShareTable[i][j]['parent']] += scope.globalShareTable[i][j]['value'];
+                            new_parents.push(scope.globalShareTable[i][j]['name']);
+                        }
+                    }
+
+                }
+                }
+                if (new_parents.length>0){
+                        for(i=0;i< scope.globalShareTable.length;i++){
+                        for(j=0;j<scope.globalShareTable[i].length;j++){
+                            if(scope.globalShareTable[i][j]['show']) {
+                                if (parents.indexOf(scope.globalShareTable[i][j]['parent']) > -1) {
+                                    scope.globalShareTable[i][j]['percentage'] = (scope.globalShareTable[i][j]['value'] / total_brunch[scope.globalShareTable[i][j]['parent']]) * parents_value[scope.globalShareTable[i][j]['parent']];
+                                    if (total_brunch[scope.globalShareTable[i][j]['parent']] != 100) {
+                                        scope.globalShareTable[i][j]['percentType'] = 'wrong';
+                                    } else if (scope.globalShareTable[i][j]['value'] != scope.globalShareTable[i][j]['original_value']) {
+                                        scope.globalShareTable[i][j]['percentType'] = 'changed';
+                                    } else {
+                                        scope.globalShareTable[i][j]['percentType'] = 'default';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                parents = new_parents;
+
+            }
+        };
+        http.get(Django.url('gdpconfig:global_share_tree')).
+              success(function(data, status, headers, config) {
+                // console.log(data);
+                scope.globalShareTable = data;
+                changeTree(['root']);
+                scope.loading = false;
+              }).
+              error(function(data, status, headers, config) {
+                //console.log(status);
+                 scope.loading = false;
+                 alert(data);
+              });
+        scope.save_gs = function(){
+                var toSave = {};
+                var wrongSubSum = [];
+                var wrongNumber = [];
+                var hasChanges = false;
+                for(i=0;i< scope.globalShareTable.length;i++){
+                    for(j=0;j<scope.globalShareTable[i].length;j++){
+                        if(scope.globalShareTable[i][j]['show']) {
+                            if (scope.globalShareTable[i][j]['value'] != scope.globalShareTable[i][j]['original_value']) {
+                                if ((scope.globalShareTable[i][j]['value'] >= 0) && (scope.globalShareTable[i][j]['value'] <= 100)) {
+                                    toSave[scope.globalShareTable[i][j]['name']] = scope.globalShareTable[i][j]['value'];
+                                    hasChanges = true;
+                                } else {
+                                    wrongNumber.push(scope.globalShareTable[i][j]['name']);
+                                }
+
+                            }
+                            if (scope.globalShareTable[i][j]['percentType'] == 'wrong') {
+                                wrongSubSum.push(scope.globalShareTable[i][j]['name']);
+                            }
+                        }
+                    }
+                }
+                var errorMessage = '';
+                var isError = false;
+                if(wrongSubSum.length>0){
+                    errorMessage += 'Next shares have wrong sub sum(!=100):'+ wrongSubSum.toString()+'; ';
+                    isError = true;
+                }
+                if(wrongNumber.length>0){
+                    errorMessage += 'Next shares have wrong value: '+ wrongNumber.toString();
+                    isError = true;
+                }
+                if(isError){
+                    alert(errorMessage);
+                }
+                if ((hasChanges)&&(!isError)){
+                    console.log(toSave);
+                    var confirm_message='Do you want to change shares: ';
+                    for(var key in toSave){
+                        confirm_message += key+'-'+toSave[key]+'; '
+                    }
+                    if(confirm(confirm_message)){
+                        http.post(Django.url('gdpconfig:global_share_change'),toSave).
+                                  success(function(data, status, headers, config) {
+                                    //console.log(data);
+                                    var result = data.result;
+                                    if(result != "OK"){
+                                        alert(data.exception);
+                                    } else {
+                                        scope.alreadyObsoleted = true;
+                                    }
+                                  }).
+                                  error(function(data, status, headers, config) {
+                                    //console.log(status);
+                                    alert(data);
+                                  });
+                    }
+                }
+        };
+        scope.change_value = function(parent){
+            changeTree([parent])
+        };
+
+    }]);
+
+
+
+
+    globalShareApp.config(function($routeProvider) {
+          $routeProvider.
+            when('/', {
+              templateUrl:'/static/html/_ng_global_share_table.html',
+              controller: 'globalShareCtrl'
+            })
+
+
+    });
+</script>
+{% endverbatim %}
+
+
+<div ng-app="globalShareApp">
+    <div ng-view></div>
+
+</div>
+{% endblock %}
