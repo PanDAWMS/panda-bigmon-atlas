@@ -80,7 +80,8 @@ def hashtag_request_to_tasks():
             for task in tasks:
                 if not task.hashtag_exists(request_hashtag.hashtag):
                     tasks_to_update.append(task.id)
-            print tasks_to_update,request_hashtag.hashtag
+            if tasks_to_update:
+                _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
             map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
 
 
