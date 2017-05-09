@@ -781,10 +781,14 @@ def mcfile_form_prefill(form_data, request):
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             if form_data.get('campaign'):
-                if form_data.get('campaign').lower()>'mc15':
-                    spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'],'2.0')
+                version = '1.0'
+                if form_data.get('project'):
+                    if str(form_data.get('project')).split('_')[0]>'mc15':
+                        version = '2.0'
                 else:
-                    spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
+                    if form_data.get('campaign').lower()>'mc15':
+                        version = '2.0'
+                spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'],version)
             else:
                 spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
         elif form_data.get('excelfile'):
