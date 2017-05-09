@@ -131,14 +131,9 @@
 
         scope.showTasks= function(){
 
-            http.post(Django.url('prodtask:tasks_hashtag'),scope.hashtag_formula).
-              success(function(data, status, headers, config) {
-                console.log(data);
-                window.location.href = Django.url('reqtask:request_tasks');
-              }).
-              error(function(data, status, headers, config) {
-                console.log(status);
-              });
+
+                window.location.href = Django.url('reqtask:tasks_hashtags',scope.hashtag_formula);
+
         };
         scope.showStatistic= function(){
             var tasks = [];
