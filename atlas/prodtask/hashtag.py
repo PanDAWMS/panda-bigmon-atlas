@@ -280,6 +280,21 @@ def add_request_hashtag(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
+def add_task_hashtag(request, taskid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            hashtag = input_dict['hashtag']
+            hashtag = hashtag.replace('#','')
+            existed_hashtag = add_or_get_request_hashtag(hashtag)
+            add_hashtag_to_task(existed_hashtag,taskid)
+            results = {'success':True,'data':existed_hashtag.hashtag}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 def get_include_file(file_name):
     include_files  = []

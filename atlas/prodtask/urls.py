@@ -134,6 +134,8 @@ urlpatterns = patterns('',
     url(r'^split_slices_by_tid/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_by_tid', name='split_slices_by_tid'),
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
     url(r'^add_request_hashtag/(?P<reqid>\d+)/$', 'atlas.prodtask.hashtag.add_request_hashtag', name='add_request_hashtag'),
+    url(r'^add_task_hashtag/(?P<taskid>\d+)/$', 'atlas.prodtask.hashtag.add_task_hashtag', name='add_task_hashtag'),
+
     url(r'^test_auth_for_api/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api', name='test_auth_for_api'),
     url(r'^test_auth_for_api2/(?P<param>\w+)/$', 'atlas.prodtask.step_manage_views.test_auth_for_api2', name='test_auth_for_api2'),
     url(r'^get_ami_tag_list/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_ami_tag_list', name='get_ami_tag_list'),

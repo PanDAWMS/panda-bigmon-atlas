@@ -26,6 +26,23 @@
 
     <script type="text/javascript">
         $(document).foundation();
+        function addHashTag(event){
+            event.preventDefault();
+            sendData = {'hashtag':$('#newHashTag').val()};
+            $.ajax({
+                    url: "{% url 'prodtask:add_task_hashtag' task.id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        newHashtag =$.evalJSON(data).data;
+                        var old_hashtags=$('#hashtags_list').html();
+                        $('#hashtags_list').html(old_hashtags+' '+'<a href="{% url 'reqtask:request_tasks'  %}hashtags/&'+newHashtag+'">'+newHashtag+'</a>');
+                        $('#hashtagModalWindow').foundation('reveal', 'close');
+                    }
+                });
+        }
     </script>
 {% endblock %}
 
@@ -73,11 +90,25 @@
 <tr><th><label for="input_dataset">Input dataset:</label></th><td>{{ task.input_dataset }}</td></tr>
 <tr><th><label for="output_dataset">Output dataset:</label></th><td>{% for od in output_datasets %}{% if od.status == 'Deleted' %}<a style="color: red"/>{% else %}<a style="color: black">{% endif %}{{ od.name }}<br/>{% endfor %}</td></tr>
 <tr><th><label for="physics_tag">Physics tag:</label></th><td>{{ task.physics_tag }}</td></tr>
-<tr><th><label for="hashtags">Hashtags:</label></th><td>{% for hashtag in hashtags %}<a href="{% url 'reqtask:request_tasks'  %}hashtags/&{{ hashtag }}">{{ hashtag }} </a>{% endfor %}</td></tr>
+<tr><th><label for="hashtags">Hashtags:</label></th><td ><div id="hashtags_list">{% for hashtag in hashtags %}<a href="{% url 'reqtask:request_tasks'  %}hashtags/&{{ hashtag }}">{{ hashtag }} </a>{% endfor %}</div>
+    <a href='#' class="button " onclick="$('#hashtagModalWindow').foundation('reveal', 'open');" >+</a></td></tr>
 {% if extasks %}<tr><th><label for="same_tasks">Same Tasks:</label></th><td>{% for etask in extasks %}<a href="{% url 'prodtask:task' etask %}">{{ etask }}   </a>{% endfor %}</td></tr>{% endif %}
 
 </table>
 
 {% include "prodtask/_task_manage_panel.html" %}
 
+<div id="hashtagModalWindow" class="reveal-modal" data-reveal>
+    <div class="row">
+            <div class="large-4 column">
+                <label>New HashTag:
+                <input type="text"  id="newHashTag"  maxlength="80"  /></label>
+            </div>
+            <div class="large-1 column">
+                <a href='#' class="button  postfix" onclick="addHashTag(event);">Add</a>
+            </div>
+            <div class="large-7 column"></div>
+        </div>
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
 {% endblock %}
