@@ -2410,6 +2410,7 @@ def tasks_progress(all_tasks):
             parent_tasks_id = get_parent_tasks(task)
             chain_id = 0
             task_input_events = -1
+
             if step_by_name[task_step] in ['Simul']:
                 task_input_events = task.step.input_events
             #Count number of events for parent task
@@ -2431,9 +2432,20 @@ def tasks_progress(all_tasks):
                         chains[processed_tasks[parent_task_id]["chain_id"]] = chains[processed_tasks[parent_task_id]["chain_id"]] + [int(task.id)]
                         chain_id = processed_tasks[parent_task_id]["chain_id"]
                     else:
-                        if parent_task_id not in other_requests_tasks:
-                            other_requests_tasks.update(get_all_tasks_from_request(parent_task_id))
-                        task_input_events = other_requests_tasks[parent_task_id]
+                        if task.status == 'done':
+                            task_input_events = task.total_events
+                        else:
+                            task_input_events = task.step.input_events
+                            if task_input_events == -1:
+                                if task.status=='finished':
+                                    if int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
+                                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile'))
+                                    else:
+                                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob'))
+                                else:
+                                    if parent_task_id not in other_requests_tasks:
+                                        other_requests_tasks.update(get_all_tasks_from_request(parent_task_id))
+                                    task_input_events = other_requests_tasks[parent_task_id]
                         chains.update({int(task.id):[int(task.id)]})
                         chain_id = int(task.id)
                 if len(parent_tasks_id) > 1:
