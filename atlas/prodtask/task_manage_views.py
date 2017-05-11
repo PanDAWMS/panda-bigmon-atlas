@@ -92,7 +92,7 @@ def task_action_ext(request, action=None):
     userfullname = ''
     denied_tasks = []
     not_allowed_tasks = []
-    params = None
+    params = []
     try:
         data = json.loads(request.body)
         if action not in ALLOWED_FOR_EXTERNAL_API:
@@ -106,7 +106,7 @@ def task_action_ext(request, action=None):
         if not task_id:
             error_message.append('task is required for task action')
         else:
-            params = data.get('parameters', None)
+            params = data.get('parameters', [])
             userfullname = data.get('userfullname','')
         is_permitted = False
         if not error_message:
@@ -134,16 +134,23 @@ def task_action_ext(request, action=None):
              }
             logger.error(msg)
         else:
-            response = do_tasks_action(action_username, [task_id], action, *params)
-            content = {
-                'details': "Action '%s' will be performed by %s for task %s with parameters %s" %
-                             (action,action_username,task_id,str(params)),
-                'result': 'OK'
+            try:
+                response = do_tasks_action(action_username, [int(task_id)], action, *params)
+                content = {
+                    'details': "Action '%s' will be performed by %s for task %s with parameters %s" %
+                                 (action,action_username,task_id,str(params)),
+                    'result': 'OK'
 
-             }
+                 }
 
-            logger.debug("Action '%s' will be performed  by %s for task %s with parameters %s, response %s" %
-                             (action,action_username,task_id,str(params),str(response)))
+                logger.debug("Action '%s' will be performed  by %s for task %s with parameters %s, response %s" %
+                                 (action,action_username,task_id,str(params),str(response)))
+            except Exception,e:
+                    content = {
+                        'exception': '; '.join(error_message),
+                        'result': 'FAILED'
+                    }
+                    logger.error( "Task action problems: %s" % ('; '.join(error_message)))
 
     return Response(content)
 
