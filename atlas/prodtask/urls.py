@@ -125,6 +125,8 @@ urlpatterns = patterns('',
     url(r'^clone_slices_in_req/(?P<reqid>\d+)/(?P<step_from>[-+]?\d+)/(?P<make_link_value>[01])/$', 'atlas.prodtask.step_manage_views.clone_slices_in_req', name='clone_slices_in_req'),
     url(r'^reject_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.reject_slices_in_req', name='reject_slices_in_req'),
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.hide_slices_in_req', name='hide_slices_in_req'),
+    url(r'^find_parent_slices/(?P<reqid>\d+)/(?P<parent_request>\d+)/$', 'atlas.prodtask.step_manage_views.find_parent_slices', name='find_parent_slices'),
+
     url(r'^change_request_priority/(?P<reqid>\d+)/(?P<old_priority>[-+]?\d+)/(?P<new_priority>[-+]?\d+)/$', 'atlas.prodtask.views.change_request_priority', name='change_request_priority'),
 
     url(r'^form_tasks_from_slices/(?P<request_id>\d+)/$', 'atlas.prodtask.step_manage_views.form_tasks_from_slices', name='form_tasks_from_slices'),

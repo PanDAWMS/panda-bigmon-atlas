@@ -211,6 +211,73 @@ def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
 
 
 @csrf_protect
+def find_parent_slices(request, reqid, parent_request):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Find parent slices: %s, parent request %s'% (str(ordered_slices),parent_request)))
+            ordered_slices.sort()
+            changed_slices = set_parent_step(ordered_slices,int(reqid),int(parent_request))
+            results = {'success':True}
+            request.session['selected_slices'] = map(int,changed_slices)
+        except Exception,e:
+            _logger.error(str(e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def set_parent_step(slices, request, parent_request):
+    parent_slices = list(InputRequestList.objects.filter(request=parent_request).order_by('-slice'))
+    parent_slice_dict = {}
+    slices_updated = []
+    for parent_slice in parent_slices:
+        if parent_slice.input_data:
+            parent_slice_dict[parent_slice.input_data] = parent_slice_dict.get(parent_slice.input_data,[])+[parent_slice]
+    for slice_number in slices:
+        slice = InputRequestList.objects.get(slice=slice_number,request=request)
+        steps = StepExecution.objects.filter(slice=slice)
+        ordered_existed_steps, parent_step = form_existed_step_list(steps)
+        if (not (parent_step)) and slice.input_data:
+            first_not_skipped = None
+            step_to_delete = []
+            tags = []
+            for step in ordered_existed_steps:
+                if step.status in ['NotCheckedSkipped']:
+                    tags.append(step.step_template.ctag)
+                    step_to_delete.append(step)
+                else:
+                    first_not_skipped = step
+                    break
+            step_to_delete.reverse()
+            if tags:
+                parent_found = False
+                for parent_slice in parent_slice_dict.get(slice.input_data,[]):
+                    parent_slice_steps = StepExecution.objects.filter(slice=parent_slice)
+                    parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
+                    if not (parent_step):
+                        for index,step in enumerate(parent_ordered_existed_steps):
+                            if step.status in ['Approved']:
+                                if step.step_template.ctag == tags[index]:
+                                    if index == (len(tags)-1):
+                                        first_not_skipped.step_parent = step
+                                        first_not_skipped.save()
+                                        for x in step_to_delete:
+                                            x.delete()
+                                        slices_updated.append(slice_number)
+                                        break
+                                else:
+                                    break
+                    if parent_found:
+                        break
+
+    return slices_updated
+
+
+@csrf_protect
 def get_steps_bulk_info(request, reqid):
     if request.method == 'POST':
         try:

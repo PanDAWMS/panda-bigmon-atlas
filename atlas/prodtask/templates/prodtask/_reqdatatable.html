@@ -1831,6 +1831,35 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 );
               return false;
         }
+
+
+            function findParentClick(event, parentRequestNumber){
+                event.preventDefault();
+                var sliceList=[];
+                var i=0;
+                $(".checkboxSlice:checked").each(function(){
+                    {#                   8 = "checkbox".length#}
+                    var sliceID = $(this).attr("id").slice(8);
+                    sliceList.push(sliceID);
+                });
+                var sendData = {slices:sliceList};
+                  $( "#reloadDialog" ).dialog();
+                  $.ajax({
+                        url: Django.url('prodtask:find_parent_slices',"{{ pr_id }}",parentRequestNumber),
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $( "#reloadDialog" ).dialog('close');
+                            if(status){
+                                location.reload();
+                            }
+                            }
+                        }
+                    );
+                  return false;
+        };
         function splitSlicesClick(event, splitNumber){
             event.preventDefault();
             var sliceList=[];
@@ -2987,7 +3016,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
     </div>
     <div class="row">
-                <div class="large-4 columns">
+                <div class="large-3 columns">
                     {% ifequal trequest.request_type "MC" %}
                         <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</a>
                     {% else  %}
@@ -3013,7 +3042,23 @@ ProjectModeForm.prototype.createForm = function(inputString){
              <button id="trainsSlices" class="btn_is_authorized" title="Create child trains" onclick="showTrainExtendModal(event);">Trains</button>
 
     </div>
-    <div class="large-3 columns">
+             <div class="large-2 columns">
+
+             <button id="findParent" class="btn_is_authorized" title="Find steps from parent request" href="#" data-dropdown="dropFindParentMenu">Find parents</button>
+            <div id="dropFindParentMenu" class="f-dropdown content" data-dropdown-content style="display: none">
+                    <div class="row">
+                        <label> Parent request:
+                            <input type="number" id="parentRequestNumber" value="" />
+                        </label>
+                    </div>
+                 <div class="row">
+                     <button id="findParentAction" class="btn_is_authenticated" title="Split slices" onclick="findParentClick(event,$('#parentRequestNumber').val());">Find</button>
+                 </div>
+
+            </div>
+
+    </div>
+    <div class="large-2 columns">
         {% if show_split %}
             <button class="btn_is_authenticated"  title="Split slices" href="#" data-dropdown="dropSplitMenu">Split </button>
             <div id="dropSplitMenu" class="f-dropdown content" data-dropdown-content style="display: none">
