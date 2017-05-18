@@ -211,6 +211,11 @@ def format_splitting(format_string, events_number):
         result.append((int(events_number)-processed_events,'',True))
     return (result, additional_formats_by_step)
 
+def format_from_jo(job_options):
+    if re.match(r"(ph)|(Powheg)|(aMcAtNlo)",job_options.split('.')[2]):
+        return {'Evgen':['TXT']}
+    return {}
+
 
 def translate_excl_to_dict(excel_dict, version='1.0'):
         return_list = []
@@ -250,7 +255,8 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                     continue
                 else:
                     input_events_format, additional_formats = format_splitting(translated_row.get('format', ''),total_input_events)
-
+                    if (not additional_formats) and translated_row.get('joboptions', ''):
+                        additional_formats = format_from_jo(translated_row.get('joboptions', ''))
                     for input_events, format, do_split in input_events_format:
                         irl = {}
                         st_sexec_list = []
@@ -264,6 +270,7 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                         if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
                             if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
                                 raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
+
                         if translated_row.get('priority', 0) == '0+':
                             priority = -2
                         else:
