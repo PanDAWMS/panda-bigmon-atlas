@@ -836,10 +836,7 @@ def split_request(production_request_number, slice_numbers):
                     _logger.debug('Create new request for split steps for %s'%str(production_request_number))
                     evgen_request_id = request_clone_slices(production_request_number, production_request.manager,
                                                             'Evgen for '+production_request.description,
-                                                            production_request.ref_link,[])
-                    child_request = TRequest.objects.get(reqid=evgen_request_id)
-                    child_request.project = TProject.objects.get(project=child_project)
-                    child_request.save()
+                                                            production_request.ref_link,[],child_project)
                     request_relation = ParentToChildRequest()
                     request_relation.child_request = child_request
                     request_relation.parent_request = production_request
@@ -1924,6 +1921,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     del request.session['selected_slices']
             except:
                 pass
+            project_list = [str(x) for x in list(TProject.objects.all())]
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -1964,7 +1962,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'hashtags_path':hashtags_path,
                 'manage_priorities':manage_priorities,
                 'priorities_list':priorities_list,
-                'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities])
+                'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities]),
+                'project_list':project_list
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
@@ -2546,7 +2545,7 @@ def get_parent_tasks(task):
         return [] #tid_from_container(task_input)
 
 
-def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project):
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
     request_destination.cstatus = 'waiting'
@@ -2555,6 +2554,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices):
     request_destination.is_error = None
     request_destination.manager = owner
     request_destination.ref_link = new_ref
+    request_destination.project = TProject.objects.get(project=project)
     if request_destination.info_fields:
         info_field = json.loads(request_destination.info_fields)
         info_field['long_description'] = 'Cloned from request %s'%str(reqid)

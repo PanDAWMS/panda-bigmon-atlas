@@ -235,7 +235,7 @@ def set_parent_step(slices, request, parent_request):
     parent_slice_dict = {}
     slices_updated = []
     for parent_slice in parent_slices:
-        if parent_slice.input_data:
+        if (parent_slice.input_data) and (not parent_slice.is_hide):
             parent_slice_dict[parent_slice.input_data] = parent_slice_dict.get(parent_slice.input_data,[])+[parent_slice]
     for slice_number in slices:
         slice = InputRequestList.objects.get(slice=slice_number,request=request)

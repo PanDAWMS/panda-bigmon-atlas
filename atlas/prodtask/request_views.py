@@ -641,6 +641,7 @@ def request_clone2(request, reqid):
             ordered_slices.sort()
             new_short_description = input_dict['description']
             new_ref = input_dict['ref']
+            new_project = input_dict['project']
             owner=''
             try:
                 owner = request.user.username
@@ -649,7 +650,7 @@ def request_clone2(request, reqid):
             if not owner:
                 owner = 'default'
             _logger.debug(form_request_log(reqid,request,'Clone request' ))
-            new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices)
+            new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project)
             results = {'success':True,'new_request':int(new_request_id)}
         except Exception, e:
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
