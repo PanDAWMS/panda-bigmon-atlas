@@ -1880,8 +1880,9 @@ def request_table_view(request, rid=None, show_hidden=False):
             except:
                 pass
             child_requests = []
+            parent_request_id = ''
             try:
-                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA'],status='active')
+                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA','CL'],status='active')
                 for related_request in related_requests:
                     if related_request.child_request:
                         child_requests.append({'request':int(related_request.child_request_id),'pattern_id':int(related_request.train.pattern_request_id),
@@ -1896,6 +1897,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                     child_requests.append({'request':int(related_request.parent_request_id),'pattern_id':None,
                                            'pattern_name':None,
                                            'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
+                if ParentToChildRequest.objects.filter(child_request=rid,relation_type ='CL',status='active').exists():
+                    parent_request_id = str(ParentToChildRequest.objects.filter(child_request=rid,relation_type ='CL',status='active').last().parent_request_id)
 
             except:
                 pass
@@ -1963,7 +1966,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'manage_priorities':manage_priorities,
                 'priorities_list':priorities_list,
                 'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities]),
-                'project_list':project_list
+                'project_list':project_list,
+                'parent_request_id':parent_request_id
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
@@ -2563,6 +2567,12 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
     request_status.save_with_current_time()
+    new_parent_child = ParentToChildRequest()
+    new_parent_child.parent_request = TRequest.objects.get(reqid=reqid)
+    new_parent_child.child_request = request_destination
+    new_parent_child.relation_type = 'CL'
+    new_parent_child.status = 'active'
+    new_parent_child.save()
     _logger.debug("New request: #%i"%(int(request_destination.reqid)))
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid

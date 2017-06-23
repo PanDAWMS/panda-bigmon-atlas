@@ -473,8 +473,10 @@ class ParentToChildRequest(models.Model):
     RELATION_TYPE = (
                     ('BC', 'By creation'),
                     ('MA', 'Manually'),
-                    ('SP', 'Evgen Split')
+                    ('SP', 'Evgen Split'),
+                    ('CL', 'Cloned')
                     )
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
     parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID')
     child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True)
