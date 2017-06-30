@@ -1754,18 +1754,23 @@ def eventindex_request_create(request):
 @csrf_protect
 def do_mc_management_approve(request, reqid):
     return change_request_status(request, reqid,'registered',
-                             'Request was approved for processing by %s' %request.user.username,'Request registered by WebUI')
+                             'Request was approved for processing by %s' %request.user.username,'Request is registered by WebUI')
 
 
 @csrf_protect
 def do_mc_management_cancel(request, reqid):
     return change_request_status(request, reqid,'cancelled',
-                                 'Request was cancelled  by %s' %request.user.username, 'Request cancelled by WebUI')
+                                 'Request was cancelled  by %s' %request.user.username, 'Request is cancelled by WebUI')
+
+@csrf_protect
+def do_mc_management_hold(request, reqid):
+    return change_request_status(request, reqid,'hold',
+                                 'Request was cancelled  by %s' %request.user.username, 'Request is put on hold by WebUI')
 
 @csrf_protect
 def change_production_request_status(request, reqid, new_status):
     if new_status in ['not-taken','working','monitoring','finished','reworking','remonitoring','cancelled',
-                      'test','registered','approved','processed','waiting']:
+                      'test','registered','approved','processed','waiting', 'hold']:
         return change_request_status(request, reqid, new_status,
                                      'Request status was changed to %s by %s' %(new_status, request.user.username),
                                      'Request status is changed to %s by WebUI' % new_status)
@@ -1978,6 +1983,7 @@ class RequestTable(datatables.DataTable):
 
     ref_link = datatables.Column(
         label='Link',
+        #bSortable=False,
     )
 
     phys_group = datatables.Column(
@@ -2016,6 +2022,7 @@ class RequestTable(datatables.DataTable):
     request_created = datatables.Column(
         label='Created',
         iDataSort=0,
+        #bSortable=False,
         sClass='centered',
     )
 
@@ -2029,6 +2036,7 @@ class RequestTable(datatables.DataTable):
         label='Priority',
         bSortable=False,
         sClass='centered',
+        bSearchable=False,
     )
 
     class Meta:

@@ -867,6 +867,32 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 });
               return false;
         }
+
+        function onHoldRequest(event){
+            event.preventDefault();
+            sendData = {};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:change_production_request_status' pr_id 'hold'%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        var newStatus =  $.evalJSON(data).newStatus;
+                        var registrationMessage = $.evalJSON(data).registrationMessage;
+                        if (newStatus != $('#requestStatus').html()) {
+                            $('#requestStatus').html(newStatus);
+                            $('#requestRegistButton').hide();
+                            $('#requestCancelButton').hide();
+                            $('#requestOnHoldButton').hide();
+                            $('#onHoldRequestMessgae').html(registrationMessage);
+                        }
+                    }
+                });
+              return false;
+        }
         function registerRequest(event){
             event.preventDefault();
             sendData = {};
@@ -885,6 +911,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             $('#requestStatus').html(newStatus);
                             $('#requestRegistButton').hide();
                             $('#requestCancelButton').hide();
+                            $('#requestOnHoldButton').hide();
                             $('#registrationMessgae').html(registrationMessage);
                         }
                     }
@@ -909,6 +936,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             $('#requestStatus').html(newStatus);
                             $('#requestRegistButton').hide();
                             $('#requestCancelButton').hide();
+                            $('#requestOnHoldButton').hide();
                             $('#cancelationMessgae').html(cancelationMessage);
                         }
                     }
@@ -2616,11 +2644,15 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <a id='requestRegistButton' class=" button success radius btn_is_authenticated" onclick="registerRequest(event);">PMG approval</a>
              <span id="registrationMessgae"></span>
         </div>
-        <div class="large-2 column">
+        <div class="large-3 column">
+            <a id='requestOnHoldButton' class=" button radius  btn_is_authenticated" style="background-color:#ffce15;" onclick="onHoldRequest(event);">On hold</a>
+             <span id="onHoldMessgae"></span>
+        </div>
+        <div class="large-3 column">
             <a id='requestCancelButton' class=" button radius alert  btn_is_authenticated" onclick="cancelRequest(event);">Cancel</a>
              <span id="cancelationMessgae"></span>
         </div>
-        <div class="large-6 column">
+        <div class="large-4 column">
         </div>
         </div>
         {% for manage_priority in manage_priorities %}
@@ -3131,6 +3163,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <label> Status:
                     <select id="chooseNewStatus" >
                         <option value="registered" >registered</option>
+                        <option value="hold" >hold</option>
                         <option value="waiting" >waiting</option>
                         <option value="working" >working</option>
                         <option value="approved" >approved</option>
