@@ -1755,3 +1755,16 @@ def remove_dubl_slices(reqid):
             delete_empty_slice(prev_slice)
             delete_empty_slice(slice)
 
+
+def find_project_mode(project_mode, request_type):
+    result = {}
+    ignoreStep = StepExecution.objects.filter(task_config__contains=project_mode)
+    for step in ignoreStep:
+        if not int(step.request_id) in result:
+            if step.request.request_type == request_type:
+                result[int(step.request_id)] = []
+        if int(step.request_id) in result:
+            if ProductionTask.objects.filter(step=step).exists():
+                if not step.slice.is_hide:
+                    result[step.request_id].append((step.step_template.ctag,step.slice.slice))
+    return result

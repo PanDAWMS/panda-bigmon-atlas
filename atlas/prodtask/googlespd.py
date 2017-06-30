@@ -31,7 +31,7 @@ class GSP(object):
         result = None
         try:
             result = service.spreadsheets().values().update(spreadsheetId=spreadsheetId, range=rangeName,
-                                                            valueInputOption='RAW', body= {'values':dataToStore}).execute()
+                                                            valueInputOption='USER_ENTERED', body= {'values':dataToStore}).execute()
         except Exception,e:
             print str(e)
             _logger.error("Problem with google API %s",str(e))
