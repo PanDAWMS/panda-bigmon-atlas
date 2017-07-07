@@ -537,8 +537,18 @@
 
             <div class="small-12 large-12 columns panel" id="kill_job_panel">
                 <div class="row">
-                            <div class="small-6 large-6 columns">
+                            <div class="small-3 large-3 columns">
                                 <p> <label class="inline"> Kill jobs</label> </p>
+                            </div>
+                            <div class="small-4 large-4 columns">
+                                <label class="right inline bodyfont-color">
+                                    Hard (-9) Kill
+                                </label>
+                            </div>
+                            <div class="small-2 large-2 columns">
+                                <label class="left inline">
+                                    <input type="checkbox" id="cbx_job_hard_kill" checked>
+                                </label>
                             </div>
                             <div class="small-3 large-3 columns">
                                 <a class="button postfix" id="btn_do_kill_jobs">Go</a>
@@ -807,7 +817,9 @@ function doTasksActionSelected(action) {
           }
     } else if (action == "kill_job") {
         parameters = [$("#kill_job").val()];
-    }
+    }  else if (action == "abort_unfinished_jobs") {
+                parameters = [$("#cbx_job_hard_kill").prop("checked") ? 9 : null];
+            }
 
     tasks.sort();
 

@@ -45,7 +45,7 @@ supported_actions.extend(['retry_new'])
 
 # Allowed task actions per status
 allowed_task_actions = {
-    'waiting': ['abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job'],
+    'waiting': ['abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs'],
     'registered': ['kill_job','retry'],
     'assigning': ['kill_job','retry'],
     'submitting': ['kill_job','retry'],

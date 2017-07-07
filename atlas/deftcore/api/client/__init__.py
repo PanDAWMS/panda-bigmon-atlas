@@ -159,8 +159,8 @@ class Client(object):
         body = {'task_id': task_id, 'output_formats': '.'.join(output_formats)}
         return self._create_request('clean_task_carriages', owner, body)
 
-    def kill_job(self, owner, task_id, job_id, code=None):
-        body = {'task_id': task_id, 'job_id': job_id, 'code': code}
+    def kill_job(self, owner, task_id, job_id, code=None, keep_unmerged=False):
+        body = {'task_id': task_id, 'job_id': job_id, 'code': code, 'keep_unmerged': keep_unmerged}
         return self._create_request('kill_job', owner, body)
 
     def set_job_debug_mode(self, owner, task_id, job_id, debug_mode=True):
