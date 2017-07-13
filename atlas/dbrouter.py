@@ -4,6 +4,8 @@ class ProdMonDBRouter(object):
             return 'default'
         if model._meta.app_label == 'prodtask':
             return 'deft'
+        if model._meta.app_label == 'art':
+            return 'deft'
         if model._meta.app_label == 'panda':
             return 'panda'
         if model._meta.app_label == 'grisli':
@@ -24,6 +26,8 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'panda_dev':
             return 'panda_dev'
         if model._meta.app_label == 'prodtask':
+            return 'deft'
+        if model._meta.app_label == 'art':
             return 'deft'
         if model._meta.app_label == 'dev':
             return 'dev_db_wr'

@@ -49,7 +49,7 @@ common_patterns = patterns('',
     url(r'^reqtask/', include('atlas.reqtask.urls', namespace='reqtask')),
     url(r'^gdpconfig/', include('atlas.gdpconfig.urls', namespace='gdpconfig')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
-
+    url(r'^art/', include('atlas.art.urls', namespace='art')),
 
 #    ### TEST/Playground
 #    url(r'^test_playground/$', common_views.testing, name='testing'),
