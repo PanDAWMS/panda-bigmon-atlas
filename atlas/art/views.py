@@ -40,6 +40,23 @@ def get_all_package_test():
 @authentication_classes((TokenAuthentication, BasicAuthentication))
 @permission_classes((IsAuthenticated,))
 @parser_classes((JSONParser,))
+def get_new_tasks(request):
+    """
+    """
+    if request.user.username != 'art_api':
+        return HttpResponseForbidden()
+    try:
+        last_task_id = PackageTest.objects.all().order_by('task').last().task_id
+        new_tasks = map(lambda x: {'id':int(x['id']),'name':x['name']}, ProductionTask.objects.filter(username='artprod',id__gt=last_task_id).values('id','name'))
+    except Exception,e:
+        return  Response(str(e),400)
+    return  Response(new_tasks)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
 def create_atr_task(request):
     """
     Sending task action to JEDI.

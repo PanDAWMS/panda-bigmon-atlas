@@ -19,7 +19,7 @@ class Client(object):
                         'Authorization': "Token %s" % auth_key}
 
     def _get_action_list(self):
-        return ['create_atr_task']
+        return ['create_atr_task','get_new_tasks']
 
     def _create_request(self, action, body):
         action_list = self._get_action_list()
@@ -42,3 +42,7 @@ class Client(object):
                 'nightly_tag':nightly_tag,'sequence_tag':sequence_tag,'package':package}
         return self._create_request('create_atr_task', body)
 
+
+    def get_new_tasks(self):
+        body = {}
+        return self._create_request('get_new_tasks', body)
