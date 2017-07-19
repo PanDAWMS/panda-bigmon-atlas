@@ -37,9 +37,9 @@ class Client(object):
         else:
             raise Exception("Invalid HTTP response code: %d" % response.status_code)
 
-    def create_atr_task(self, task_id, nightly_release,project,platform,nightly_tag,sequence_tag,package):
+    def create_atr_task(self, task_id, nightly_release,project,platform,nightly_tag,sequence_tag,package, test_names):
         body = {'task_id':task_id,'nightly_release':nightly_release,'project':project,'platform':platform,
-                'nightly_tag':nightly_tag,'sequence_tag':sequence_tag,'package':package}
+                'nightly_tag':nightly_tag,'sequence_tag':sequence_tag,'package':package, 'test_names':test_names}
         return self._create_request('create_atr_task', body)
 
 
