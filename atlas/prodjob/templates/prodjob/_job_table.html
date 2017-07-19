@@ -52,6 +52,9 @@
          <div class="small-3 large-3 columns">
             <a class="button postfix" id="btn_find_jobs">Go</a>
          </div>
+         <div class="small-1 large-1 columns">
+            <a class="button postfix alert" id="btn_clean_table">X</a>
+         </div>
 
 
 
@@ -287,6 +290,15 @@
             //$(".dataTables_processing").css('visibility','visible');
 
         } );
+        $("#btn_clean_table").click(function(){
+
+            $("#find_job").val('');
+                                var oTable = $('#example').dataTable();
+                    oTable.fnClearTable();
+                    oTable.fnAddData(data);
+                    oTable.fnDraw();
+        } );
+
             //$(".dataTables_processing").css('visibility','hidden');
 
             // Add event listener for opening and closing details
