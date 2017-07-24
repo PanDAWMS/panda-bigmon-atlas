@@ -56,6 +56,7 @@ allowed_task_actions = {
     'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority', 'obsolete_entity'],
     'broken': [],
     'failed': [],
+    'scouting':[],
     'paused': ['retry']
 }
 
