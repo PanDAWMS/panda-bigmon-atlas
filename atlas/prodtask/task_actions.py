@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
-from .models import ProductionTask, MCPriority, ProductionDataset
+from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset
 
 import atlas.deftcore.api.client as deft
 
@@ -60,7 +60,7 @@ allowed_task_actions = {
 }
 
 # Actions for tasks in "active" states
-for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused']:
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs',
