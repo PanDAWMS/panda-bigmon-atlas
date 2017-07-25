@@ -268,7 +268,13 @@ def train_create(request):
                 del form.cleaned_data['pattern_request_id']
                 train = TrainProduction(**form.cleaned_data)
                 train.status = 'loading'
+                outputs = train.outputs
+                if len(outputs)>2000:
+                    train.outputs = 'Error'
                 train.save()
+                if len(outputs)>2000:
+                    train.outputs = outputs
+                    train.save()
                 return HttpResponseRedirect(reverse('prodtask:train_edit', args=(train.id,)))  # Redirect after POST
             except Exception,e :
                  _logger.error("Problem with train creation  %s"% e)
@@ -291,12 +297,17 @@ def create_pattern_train(pattern_request_id, pattern_type='MC'):
 
     pattern_train = TrainProduction()
     pattern_train.pattern_request = TRequest.objects.get(reqid=pattern_request_id)
-    pattern_train.outputs = json.dumps(pattern_from_request(pattern_train.pattern_request))
+    outputs = json.dumps(pattern_from_request(pattern_train.pattern_request))
+    if len(outputs) > 2000:
+        pattern_train.outputs = 'Error'
     pattern_train.status = pattern_type
     pattern_train.departure_time = timezone.now()
     pattern_train.description = pattern_train.pattern_request.description
     pattern_train.manager = 'mborodin'
     pattern_train.save()
+    if len(outputs) > 2000:
+        pattern_train.outputs = outputs
+        pattern_train.save()
     return pattern_train.id
 
 
