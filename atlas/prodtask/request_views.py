@@ -2108,6 +2108,10 @@ class Parameters(datatables.Parametrized):
     def _status_Q(value):
         if value == 'notest':
             return Q( cstatus__iexact='test').__invert__()
+        if value == 'active':
+            return Q( cstatus__in=['approved', 'monitoring', 'working','reworking', 'remonitoring','registered', 'waiting'])
+        if value == 'ended':
+             return Q( cstatus__in=['finished', 'cancelled', 'done','processed'])
         return Q( cstatus__iexact=value )
 
     status = datatables.Parameter(label='Status', model_field='cstatus', get_Q=_status_Q)
