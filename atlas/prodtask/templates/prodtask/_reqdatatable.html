@@ -2598,7 +2598,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 {% if child_requests %}
     <div class="row">
     <div class="large-12">
-        <a onclick="$('#childRequests').toggle('slow')" style="cursor: pointer;"><u>Child requests: {{ child_requests|length }}</u></a>
+        <a onclick="$('#childRequests').toggle('slow')" style="cursor: pointer;"><u>Related requests: {{ child_requests|length }}</u></a>
     </div>
     </div>
         <div id="childRequests" style="display: none">
@@ -2612,7 +2612,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     {% if child_request.pattern_id %}
                     <div class="large-8 column"><a href= "{%  url 'prodtask:input_list_approve' child_request.pattern_id %}">{{ child_request.pattern_name }}</a></div>
                     {% else %}
-                        <div class="large-8 column"></div>
+                        {% if child_request.pattern_name %}
+                            <div class="large-8 column"><span>{{ child_request.pattern_name }}</span></div>
+                        {% else %}
+                            <div class="large-8 column"></div>
+                        {% endif %}
                     {% endif %}
                     <div class="large-2 column">{{ child_request.type }}</div>
 

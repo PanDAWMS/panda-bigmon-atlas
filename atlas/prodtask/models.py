@@ -481,7 +481,7 @@ class ParentToChildRequest(models.Model):
     parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID')
     child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True)
     relation_type = models.CharField(max_length=2, db_column='RELATION_TYPE', choices=RELATION_TYPE, null=False)
-    train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID')
+    train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
 
     def save(self, *args, **kwargs):
