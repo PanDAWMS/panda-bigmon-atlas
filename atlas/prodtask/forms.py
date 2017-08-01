@@ -96,12 +96,12 @@ class TRequestCreateCloneConfirmation(ModelForm):
                         msg = "project can't be data for MC request"
                         self._errors['project'] = self.error_class([msg])
                         del cleaned_data['project']
-                    elif ('valid' not in project_name) and (campaign.lower()!=project_name.split('_')[0]):
-                        msg = "Campaign doesn't correspond project"
-                        self._errors['project'] = self.error_class([msg])
-                        self._errors['campaign'] = self.error_class([msg])
-                        del cleaned_data['project']
-                        del cleaned_data['campaign']
+                    # elif ('valid' not in project_name) and (campaign.lower()!=project_name.split('_')[0]):
+                    #     msg = "Campaign doesn't correspond project"
+                    #     self._errors['project'] = self.error_class([msg])
+                    #     self._errors['campaign'] = self.error_class([msg])
+                    #     del cleaned_data['project']
+                    #     del cleaned_data['campaign']
 
 
         return cleaned_data
