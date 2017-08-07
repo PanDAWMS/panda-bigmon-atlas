@@ -1357,7 +1357,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         if slice:
             if slice.is_hide:
                 return 'hidden'
-        return_status = 'not_submitted'
+        return_status = {'submitted':'not_submitted','original':'changed','split':'no'}
         exist_approved = False
         exist_not_approved = False
         exist_spreadsheet_original = False
@@ -1369,17 +1369,15 @@ def request_table_view(request, rid=None, show_hidden=False):
                 else:
                     exist_not_approved = True
                 if 'spreadsheet_original' in step_task['step']['task_config']:
-                    exist_spreadsheet_original = True
+                    return_status['original'] = 'original'
                 if ('split_events' in step_task['step']['task_config']) and (step_task['step']['status'] not in ['Skipped','NotCheckedSkipped']):
-                    exist_to_split = True
+                    return_status['split'] = 'split'
+
         if exist_approved and exist_not_approved:
-            return_status = 'partially_submitted'
+            return_status['submitted'] = 'partially_submitted'
         if exist_approved and not(exist_not_approved):
-            return_status = 'submitted'
-        if exist_spreadsheet_original:
-            return_status+='_original'
-        if exist_to_split:
-            return_status+= '_split'
+            return_status['submitted'] = 'submitted'
+
         return return_status
 
     def approve_level(step_task_list):
@@ -1754,9 +1752,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                             #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
                             approved = get_approve_status(slice_steps_ordered)
 
-                            if (approved == 'submitted')or(approved == 'partially_submitted'):
+                            if (approved['submitted'] == 'submitted')or(approved['submitted'] == 'partially_submitted'):
                                     approved_count += 1
-                            if (approved == 'submitted'):
+                            if (approved['submitted'] == 'submitted'):
                                 fully_approved +=1
                             slice_dict = model_to_dict(slice)
                             if not slice_dict['dataset']:
@@ -1828,7 +1826,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                             edit_mode = True
                             slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
                             approved = get_approve_status(slice_steps[:len(slice_steps_list)])
-                            if (approved == 'submitted')or(approved == 'partially_submitted'):
+                            if (approved['submitted'] == 'submitted')or(approved['submitted'] == 'partially_submitted'):
                                     approved_count += 1
                             slice_dict =  model_to_dict(slice)
                             if not slice_dict['dataset']:

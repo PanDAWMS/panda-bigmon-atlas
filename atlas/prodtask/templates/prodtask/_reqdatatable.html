@@ -76,15 +76,10 @@
     td.submitted { color : green;	}
     td.not_submitted { color : red;}
     td.partially_submitted { color : orange;	}
-    td.submitted_original { background-color: indianred; color : black;	}
-    td.not_submitted_original {background-color: indianred; color : black;	}
-    td.partially_submitted_original { background-color: indianred; color : black;		}
-    td.submitted_split { color : green;	}
-    td.not_submitted_split { color : red;}
-    td.partially_submitted_split { color : orange;	}
-    td.submitted_original_split { background-color: indianred; color : black;	}
-    td.not_submitted_original_split {background-color: indianred; color : black;	}
-    td.partially_submitted_original_split { background-color: indianred; color : black;		}
+    td.submitted.original { background-color: indianred; color : black;	}
+    td.not_submitted.original {background-color: indianred; color : black;	}
+    td.partially_submitted.original { background-color: indianred; color : black;		}
+
     td.hidden { color : #463cff;	}
 
    </style>
@@ -269,11 +264,28 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $('.storeInput').bind('change',function(){changeSliceChanges(this);});
         })();
     (function(){
-            $('.StatusFilter').each(function(){
-                if($(this).html().endsWith('_split')){
-                    splitSlices.push($(this).attr("id").slice('aprroveLabel'.length));
-                        var new_status = $(this).html().slice(0,-1*('_split'.length));
-                        $(this).html(new_status);
+            $('.sliceSplit').each(function(){
+                if($(this).html().endsWith('split')){
+                    splitSlices.push($(this).attr("id").slice('sliceSplit'.length));
+                }
+            })
+        })();
+
+    (function(){
+            $('.taskStatus').each(function(){
+                if (NOTRUNNING.indexOf($(this).html())==-1){
+                        var currentID = $(this).attr("id");
+                        var slice = currentID.slice(currentID.indexOf('ts')+2);
+                        $('#taskStatusFilter'+slice).html('running');
+                }
+
+
+            })
+        })();
+    (function(){
+            $('.sliceOrigin').each(function(){
+                if($(this).html().endsWith('original')){
+                    $(this).attr("style",'');
                 }
             })
         })();
@@ -2272,19 +2284,19 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 function changeStatusFilter(){
 
        var valThis = $('#filter').val().toLowerCase();
-
-    if(valThis == ""){
+    var statusFilterValue = $('#statusFilter').val();
+    if((valThis == "")){
            $(".inputListDivs").show();
        } else{
+        $(".inputListDivs").hide();
         if ($("#filterType").val()!='tag'){
-             $(".inputListDivs").hide();
+
            $(".filterField").each(function(){
               if($(this).text().toLowerCase().indexOf(valThis)>=0){
                   $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
               }
            });
         } else {
-            $(".inputListDivs").hide();
            $(".filterTag").each(function(){
               if($(this).text().toLowerCase().indexOf(valThis)>=0){
                   $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().show();
@@ -2293,7 +2305,7 @@ function changeStatusFilter(){
         }
 
        }
-       var statusFilterValue = $('#statusFilter').val();
+
 
         switch (statusFilterValue) {
             case  '!submitted':
@@ -2313,6 +2325,13 @@ function changeStatusFilter(){
             case  'not_submitted':
                 $('.StatusFilter').each(function(){
                   if($(this).html()!='not_submitted'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
+                break;
+            case 'running_tasks':
+                $('.TaskStatusFilter').each(function(){
+                  if($(this).html()!='running'){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }
                });
@@ -2489,7 +2508,7 @@ var lastCheckedSlice = -1;
 var lastChecked = true;
 var splitSlices = [];
 var suspectSplit = [];
-
+var NOTRUNNING = ['finished','done','obsolete','aborted','failed'];
 function ProjectModeForm(parentDiv, inputField){
     this.parentDiv = parentDiv;
     this.inputField = inputField;
@@ -2746,6 +2765,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="!submitted">hide submitted</option>
                 <option value="partially_submitted">partially submitted</option>
                 <option value="not_submitted">not submitted</option>
+                <option value="running_tasks">running tasks</option>
+
             </select>
            </label>
         </div>
@@ -2950,8 +2971,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                         {% endifequal %}
                 {% endfor %}
-
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved }} StatusFilter" style="width: 8em;text-align:center">{{ approved }}</td><td>
+                    <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">Not running</span>
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved.submitted }} {{ approved.original }} StatusFilter" style="width: 8em;text-align:center">{{ approved.submitted }}<span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
+                <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
                             edit (saved)
                         </a></u></td>
@@ -2964,7 +2986,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% if step.tasks|length == 1 %}
                         {% for task in step.tasks %}
                         {% if task %}
-
+                        <span id="{{ task.id }}ts{{ inputList.slice }}" class="taskStatus" style="display: none;">{{ task.status }}</span>
                         <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }} {{ task.finished_rate }}" >
                             <div>
                                <a  href="{{ task.href }}"><span  class="{{ task.finished_rate }}">{{ task.short }}</span></a>
@@ -2982,7 +3004,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% if task %}
 
                         <tr style="padding:0px;margin:0px;height: 20px">
-                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }} {{ task.finished_rate }}" >
+                        <span id="{{ task.id }}ts{{ inputList.slice }}" class="taskStatus" style="display: none;">{{ task.status }}</span>
+                        <td  style="padding: 0px;width: 50px;border:1px solid black" class="{{ task.status }} {{ task.finished_rate }} " >
                             <div>
                                <a  href="{{ task.href }}"><span  class="{{ task.finished_rate }}">{{ task.short }}</span></a>
                             </div>
