@@ -1081,7 +1081,7 @@ def get_priority_object(priority_key):
 def get_default_nEventsPerJob_dict():
     defult_dict = {
         'Evgen':5000,
-        'Evgen Merge':5000,
+        'Evgen Merge':10000,
         'Simul':100,
         'Merge':1000,
         'Digi':500,
