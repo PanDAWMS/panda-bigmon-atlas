@@ -75,7 +75,7 @@ def get_key_by_url(url):
         return (google_key, format)
 
 STEP_FORMAT = { 'Evgen':'EVNT','Simul':'HITS','Merge':'HITS','Rec TAG':'TAG',
-                'Atlf Merge':'AOD','Atlf TAG':'TAG', 'TAG':'TAG', 'Evgen Merge':'EVNT', 'Deriv Merge': 'NTUP_PILEUP',
+                'Atlf Merge':'AOD','Rec Merge':'AOD','Atlf TAG':'TAG', 'TAG':'TAG', 'Evgen Merge':'EVNT', 'Deriv Merge': 'NTUP_PILEUP',
                 'Deriv' :  'NTUP_PILEUP'
 
 }
