@@ -317,6 +317,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                         task_config[x] = int(step_value['changes'][x])
                                     else:
                                         task_config[x] = ''
+                                elif new_step:
+                                    task_config[x] = ''
                             if 'maxFailure' in task_config:
                                 if task_config['maxFailure']:
                                     task_config['maxAttempt'] = int(task_config['maxFailure']) + 10
