@@ -1135,6 +1135,10 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
 
 
 
+
+
+
+
 def find_old_double_trf(tags):
     double_trf_tags = set()
     for tag in tags:
@@ -2554,6 +2558,16 @@ def get_parent_tasks(task):
         return [] #tid_from_container(task_input)
 
 
+def clone_request_hashtags(old_request_id, new_request):
+    old_request_hashatgs = HashTagToRequest.objects.filter(request=old_request_id)
+    for old_request_hashatg in old_request_hashatgs:
+        new_request_hashatg = HashTagToRequest()
+        new_request_hashatg.request = new_request
+        new_request_hashatg.hashtag = old_request_hashatg.hashtag
+        new_request_hashatg.save()
+
+
+
 def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project):
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
@@ -2579,6 +2593,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
     new_parent_child.status = 'active'
     new_parent_child.save()
     _logger.debug("New request: #%i"%(int(request_destination.reqid)))
+    clone_request_hashtags(reqid, request_destination)
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
