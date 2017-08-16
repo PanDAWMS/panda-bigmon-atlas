@@ -264,6 +264,7 @@ def set_parent_step(slices, request, parent_request):
                                 if step.step_template.ctag == tags[index]:
                                     if index == (len(tags)-1):
                                         first_not_skipped.step_parent = step
+                                        first_not_skipped.set_task_config({'nEventsPerInputFile':''})
                                         first_not_skipped.save()
                                         for x in step_to_delete:
                                             x.delete()
@@ -1730,7 +1731,7 @@ def change_slice_parent(request,slice,new_parent_slice):
     step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     if parent_step:
-        step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=new_parent_slice))
+        step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=new_parent_slice))
         ordered_existed_steps_parent, parent_step = form_existed_step_list(step_execs_parent)
         step = ordered_existed_steps[0]
         step.step_parent = ordered_existed_steps_parent[-1]

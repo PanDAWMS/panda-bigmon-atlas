@@ -2593,7 +2593,10 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
     new_parent_child.status = 'active'
     new_parent_child.save()
     _logger.debug("New request: #%i"%(int(request_destination.reqid)))
-    clone_request_hashtags(reqid, request_destination)
+    try:
+        clone_request_hashtags(reqid, request_destination)
+    except:
+        pass
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
