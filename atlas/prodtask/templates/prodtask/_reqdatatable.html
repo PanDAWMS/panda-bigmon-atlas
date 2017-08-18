@@ -1146,15 +1146,32 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         var slice;
                         for (slice in slices) {
                             var sliceName = "#inputDatasetSelect" + slice;
+                            var existReduced = false;
                             $(sliceName).html("");
                             for (var i=0;i<slices[slice].length;i++){
-                                $(sliceName).append($('<option>', {
-                                    value: slices[slice][i].dataset_name,
-                                    text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
-                                }));
-                                $(sliceName).show();
+                                if (!slices[slice][i].excluded){
+                                     $(sliceName).append($('<option>', {
+                                        value: slices[slice][i].dataset_name,
+                                        text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
+                                    }));
+                                } else {
+                                     $(sliceName).append($('<option>', {
+                                        value: slices[slice][i].dataset_name,
+                                        text: slices[slice][i].dataset_name + " - " + slices[slice][i].events + " (reduced)"
+                                    }));
+                                    existReduced = true;
+                                }
+
+
                             }
-                            $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString())
+                            $(sliceName).show();
+                            if (existReduced){
+                                  $("#inputDatasetSelectReduced"+slice).html(" ! ");
+
+                            } else {
+                                 $("#inputDatasetSelectReduced"+slice).html("");
+                            }
+                            $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString());
                             if(slices[slice].length == 1){
                                 $("#inputDatasetSelectCount"+slice).css({'color':'green'})
                             }else{
@@ -2951,7 +2968,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
                     </select>
                 </td>
-                <td colspan="2"><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong></td><td></td>
+                <td colspan="2"><strong id="inputDatasetSelectCount{{ inputList.slice }}"></strong><strong style="color:orangered" id="inputDatasetSelectReduced{{ inputList.slice }}" title="Some datasets from container will not be processed due to sub campaign mutually exclusive"></strong></td><td></td>
             </tr>
 
             <tr class="inputListRow">

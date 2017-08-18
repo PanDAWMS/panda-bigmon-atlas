@@ -454,7 +454,36 @@ def get_step_input_type(ctag):
     return trtf.input
 
 
+def filter_mc_campaign(cur_request, tasks):
+    result = tasks
+    events = -1
+    if cur_request.campaign == 'MC16':
+        result = []
+        events = 0
+        subcampaign = cur_request.subcampaign
+        for task_id in tasks:
+            task = ProductionTask.objects.get(id=task_id)
+            if task.request.campaign == cur_request.campaign:
+                if task.request.subcampaign == subcampaign:
+                    result.append(task_id)
+                    events += task.total_events
+            else:
+                result.append(task_id)
+    return result, events
 
+
+def filter_input_datasets(dataset_events, reqid):
+    result = []
+    for item in dataset_events:
+        cur_request = TRequest.objects.get(reqid=reqid)
+        new_tasks, new_events = filter_mc_campaign(cur_request,item['tasks'])
+        if len(new_tasks)<len(item['tasks']):
+            if len(new_tasks)>0:
+                result.append({'dataset_name':item['dataset_name'],'events':str(new_events), 'excluded':True})
+        else:
+            result.append({'dataset_name':item['dataset_name'],'events':item['events'], 'excluded':False})
+
+    return result
 
 
 def form_skipped_slice(slice, reqid):
@@ -500,7 +529,8 @@ def form_skipped_slice(slice, reqid):
                 dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'simul.HITS')
             #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
-            return {slice:dataset_events}
+
+            return {slice:filter_input_datasets(dataset_events, reqid)}
         except Exception,e:
             logging.error("Can't find skipped dataset: %s" %str(e))
             return {slice:[]}

@@ -48,17 +48,19 @@ def find_dataset_events(dataset_pattern):
         for container in containers:
 
             event_count = 0
+            tasks = []
             is_good = False
             datasets_in_container = ddm.dataset_in_container(container)
             for dataset_name in datasets_in_container:
                 if dataset_name[dataset_name.find(':')+1:] in dataset_dict.keys():
                     is_good = True
                     event_count += dataset_dict[dataset_name[dataset_name.find(':')+1:]]['events']
+                    tasks.append(dataset_dict[dataset_name[dataset_name.find(':')+1:]]['taskid'])
             if is_good:
-                return_list.append({'dataset_name':container,'events':str(event_count)})
+                return_list.append({'dataset_name':container,'events':str(event_count),'tasks':tasks, 'excluded':False})
         if (not return_list) and dataset_dict:
             for dataset in dataset_dict.keys():
-                return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events'])})
+                return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events']),'tasks':[dataset_dict[dataset]['taskid']], 'excluded':False})
 
         return return_list
 
