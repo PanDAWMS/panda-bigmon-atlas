@@ -189,6 +189,8 @@ urlpatterns = patterns('',
     url(r'^request_hashtag_monk/', 'atlas.prodtask.selection.request_hashtag_monk', name='request_hashtag_monk'),
     url(r'^hashtagslists/', 'atlas.prodtask.hashtag.hashtagslists', name='hashtagslists'),
     url(r'^hashtags_campaign_lists/', 'atlas.prodtask.hashtag.hashtags_campaign_lists', name='hashtags_campaign_lists'),
+    url(r'^hashtags_by_request/(?P<reqid>\d+)/$', 'atlas.prodtask.hashtag.hashtags_by_request', name='hashtags_by_request'),
+    url(r'^remove_hashtag_request/(?P<reqid>\d+)/$', 'atlas.prodtask.hashtag.remove_hashtag_request', name='remove_hashtag_request'),
 
     url(r'^campaign_steps/', 'atlas.prodtask.hashtag.campaign_steps', name='campaign_steps'),
     url(r'^request_hashtags_campaign/', 'atlas.prodtask.hashtag.request_hashtags_campaign', name='request_hashtags_campaign'),

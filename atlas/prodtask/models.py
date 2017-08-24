@@ -762,6 +762,9 @@ class ProductionTask(models.Model):
     def set_hashtag(self, hashtag):
         set_hashtag(hashtag, [int(self.id)])
 
+    def remove_hashtag(self, hashtag):
+        remove_hashtag_from_task(int(self.id), hashtag)
+
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = u'T_PRODUCTION_TASK'
@@ -941,6 +944,24 @@ def get_hashtags_by_task(task_id):
             cursor.close()
     hashtags = [HashTag.objects.get(id=x[0]) for x in hashtags_id]
     return hashtags
+
+
+def remove_hashtag_from_task(task_id, hashtag):
+    hashtag_id = HashTag.objects.get(hashtag=hashtag).id
+    cursor = None
+    deleted = False
+    try:
+        cursor = connections['deft'].cursor()
+        cursor.execute("SELECT TASKID,HT_ID from %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+        result = cursor.fetchall()
+        if result:
+            cursor.execute("DELETE FROM %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+            deleted = True
+    finally:
+        if cursor:
+            cursor.close()
+    return deleted
+
 
 class HashTagToRequest(models.Model):
 

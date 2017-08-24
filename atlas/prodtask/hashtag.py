@@ -10,10 +10,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import pickle
 
+from atlas.prodtask.check_duplicate import create_task_chain
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
-from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string
+from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks
 from .models import StepExecution, InputRequestList, TRequest
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -120,6 +121,39 @@ def tasks_statistic_steps(request):
     return Response({"load": result})
 
 
+
+def find_child_tasks(parent_hashtag, step_tags, child_provenance):
+    def name_to_step(task_name):
+        tags = task_name.split('.')[-1].split('_')
+        step_tag_letters = ''
+        for i in range(len(step_tags)):
+            step_tag_letters += tags[-len(step_tags)+i][0]
+        return step_tags == step_tag_letters
+    tasks_ids = tasks_by_hashtag(parent_hashtag)
+    tasks = list(ProductionTask.objects.filter(id__in=tasks_ids))
+    filtered_tasks = [x for x in tasks if name_to_step(x.name)]
+    requests = set()
+    for task in filtered_tasks[:40]:
+         child_tasks = create_task_chain(task.id, child_provenance)
+         if len(child_tasks.keys())>1:
+             for task_id in child_tasks.keys():
+                 if task_id!=int(task.id):
+                    requests.add(int(child_tasks[task_id]['task']['request_id']))
+    print list(requests)
+
+
+def propogate_hashtag_to_child(task_id, hashtag_type):
+    task = ProductionTask.objects.get(id=task_id)
+    parent_task_id = get_parent_tasks(task)
+    if parent_task_id:
+        parent_task = ProductionTask.objects.get(id=parent_task_id[0])
+        hashtags = parent_task.hashtags
+        for hashtag in hashtags:
+            if hashtag.type == hashtag_type:
+                add_hashtag_to_task(hashtag,task.id)
+
+
+
 def tasks_by_hashtag(hashtag):
     if HashTag.objects.filter(hashtag__iexact=hashtag).exists():
         tasks_hashtags = HashTag.objects.filter(hashtag__iexact=hashtag)[0].tasks_ids
@@ -197,6 +231,17 @@ def hashtagslists(request):
     print result
     return Response(result)
 
+@api_view(['GET'])
+def hashtags_by_request(request, reqid):
+    hashtags = []
+    try:
+        for hashtag_to_request in HashTagToRequest.objects.filter(request=reqid):
+            hashtags.append(hashtag_to_request.hashtag.hashtag)
+    except Exception,e:
+        pass
+
+    return Response({'hashtags':hashtags})
+
 
 @api_view(['GET'])
 def hashtags_campaign_lists(request):
@@ -257,6 +302,24 @@ def add_or_get_request_hashtag(hashtag, type='UD'):
         existed_hashtag.type = type
         existed_hashtag.save()
     return existed_hashtag
+
+
+@csrf_protect
+def remove_hashtag_request(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            hashtag = input_dict['hashtag']
+            hashtag = hashtag.replace('#','')
+            _logger.debug(form_request_log(reqid,request,'Remove hashtag: %s' % str(hashtag)))
+            remove_hashtag_from_request(reqid, hashtag)
+            hashtag_html,hashtag_href = form_hashtag_string(reqid)
+            results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
 def add_request_hashtag(request, reqid):
@@ -330,6 +393,16 @@ def set_mc16_hashtags(hashtags):
     map(get_key_for_request,list(unique_requests))
     #print unique_requests
 
+
+
+def remove_hashtag_from_request(reqid, hashtag_name):
+    hashtag = HashTag.objects.get(hashtag=hashtag_name)
+    if HashTagToRequest.objects.filter(request=reqid,hashtag=hashtag).exists():
+        tasks = ProductionTask.objects.filter(request=reqid)
+        for task in tasks:
+            task.remove_hashtag(hashtag.hashtag)
+        hashtag_to_request = HashTagToRequest.objects.get(request=reqid,hashtag=hashtag)
+        hashtag_to_request.delete()
 
 
 def add_hashtag_to_task(hashtag_name, task_id):

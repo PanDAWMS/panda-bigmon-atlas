@@ -1077,10 +1077,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     data: $.toJSON(sendData),
                     dataType: 'text',
                     success: function(data,status) {
-                        newHashtags =$.evalJSON(data).data;
-                        console.log(newHashtags);
+                        var newHashtags =$.evalJSON(data).data;
                         $('.hashtags').html(newHashtags.html);
                         $('.hashtags').attr('href',"{% url 'prodtask:request_hashtags_main'  %}#/"+newHashtags.href);
+                        redoHashtagList();
                     }
                 });
         }
@@ -2229,9 +2229,34 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $.ajaxSetup({async: true});
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
-        function showModalHashTag(event){
-                event.preventDefault();
+        function removeHashTag(hashtag){
 
+            removeUrl = Django.url('prodtask:remove_hashtag_request', {{ pr_id }});
+            var sendData = {'hashtag':hashtag};
+
+            $.post(removeUrl,$.toJSON(sendData), function(data,status){
+                var newHashtags =data.data;
+                $('.hashtags').html(newHashtags.html);
+                $('.hashtags').attr('href',"{% url 'prodtask:request_hashtags_main'  %}#/"+newHashtags.href);
+                redoHashtagList();
+            });
+        }
+        function redoHashtagList(){
+            $.ajaxSetup({async: false});
+            $.get("{% url 'prodtask:hashtags_by_request' pr_id %}",function(data,status){
+                $('#hashtagList').html('');
+                var hashtagList = data.hashtags;
+                for (var i=0;i<hashtagList.length;i++){
+                    $('#hashtagList').prepend('<li>'+hashtagList[i]+' <a class="button" onclick=removeHashTag("'+ hashtagList[i]+'");>(-)</a></li>');
+                }
+            });
+            $.ajaxSetup({async: true});
+        }
+        function showModalHashTag(event){
+            if(event!=undefined) {
+                event.preventDefault();
+            }
+                        redoHashtagList();
                 $('#hashtagModalWindow').foundation('reveal', 'open');
             }
         function createReprocessing(event){
@@ -2612,7 +2637,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </div>
 <div>
     <div class="row">
-        <div class="large-2 column"><a class="button prefix" onclick="showModalHashTag(event);">Add #</a></div>
+        <div class="large-2 column"><a id='hashtagWork' class="button prefix" onclick="showModalHashTag(event);">Add/Del #</a></div>
         <div class="large-10 column"><span>HashTags: <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a></span></div>
 
 
@@ -3635,6 +3660,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </div>
 
 <div id="hashtagModalWindow" class="reveal-modal" data-reveal>
+    <ul id="hashtagList">
+
+    </ul>
     <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a>
     <h3>New hashtag:</h3>
     <div class="row">
@@ -3650,7 +3678,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
 
 
-  <a  class="close-reveal-modal">&#215;</a>
+  <a id='closeHashtagModal' class="close-reveal-modal">&#215;</a>
 </div>
 
 <div id="extendModalWindow" class="reveal-modal" data-reveal>
