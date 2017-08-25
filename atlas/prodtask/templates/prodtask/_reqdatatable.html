@@ -2596,7 +2596,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
     {% endifequal %}
     </th>
   <th>Status:</th>
-
+    <th>DEFT:</th>
 </tr>
 <tr>
   <td><a href="#" data-dropdown="drop1" >menu(&#9776;)</a>
@@ -2631,7 +2631,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
         {% endifequal %}
     </td>
     <td><a onclick="showStatusHistory(event);"><u><span  style="cursor: pointer;" id="requestStatus">{{ trequest.cstatus}}</span></u></a></td>
-</tr>
+    <td>
+        {% if jira_problem_link %}
+            <u><a href="https://its.cern.ch/jira/browse/{{ jira_problem_link }}" target="_blank">JIRA</a></u>
+        {% endif %}
+        </tr>
 </table>
 </div>
 </div>

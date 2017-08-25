@@ -1884,6 +1884,8 @@ def request_table_view(request, rid=None, show_hidden=False):
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
             jira_problem_link = ''
+            if cur_request.jira_reference:
+                jira_problem_link = cur_request.jira_reference
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
                 slice_output = get_last_step_format(temp_list)
@@ -1895,8 +1897,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                 input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:
                 has_deft_problem = True
-                if cur_request.jira_reference:
-                    jira_problem_link = cur_request.jira_reference
             else:
                 has_deft_problem = False
             _logger.debug(form_request_log(rid,request,'Finish prepare data fro request page'))
