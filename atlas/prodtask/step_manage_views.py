@@ -1727,15 +1727,46 @@ def clean_open_request(reqid,starting_slice=0):
     return True
 
 
+@csrf_protect
+def change_parent(request, reqid, new_parent):
+    """
+    :param request:
+    :param reqid:
+    :return:
+    """
+    results = {'success':False}
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            ordered_slices = map(int,slices)
+            _logger.debug(form_request_log(reqid,request,'Change parent for slices: %s to %s' % (str(ordered_slices),str(new_parent))))
+            ordered_slices.sort()
+            for slice in ordered_slices:
+                change_slice_parent(reqid,slice,new_parent)
+            request.session['selected_slices'] = map(int,slices)
+            results = {'success':True}
+        except Exception,e:
+            _logger.error('Problem with set new parent: %s',str(e))
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
+
 def change_slice_parent(request,slice,new_parent_slice):
     step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     if parent_step:
+        step_execs_old_parent = StepExecution.objects.filter(slice=parent_step.slice)
+        ordered_existed_steps_old_parent, parent_step_temp = form_existed_step_list(step_execs_old_parent)
+        step_index = ordered_existed_steps_old_parent.index(parent_step)
         step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=new_parent_slice))
         ordered_existed_steps_parent, parent_step = form_existed_step_list(step_execs_parent)
         step = ordered_existed_steps[0]
-        step.step_parent = ordered_existed_steps_parent[-1]
-        step.save()
+        if step_index < len(ordered_existed_steps_parent):
+            step.step_parent = ordered_existed_steps_parent[step_index]
+            step.save()
 
 def delete_empty_slice(slice):
     steps = list(StepExecution.objects.filter(slice=slice))
