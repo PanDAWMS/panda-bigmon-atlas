@@ -1757,16 +1757,21 @@ def change_parent(request, reqid, new_parent):
 def change_slice_parent(request,slice,new_parent_slice):
     step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-    if parent_step:
+    step = ordered_existed_steps[0]
+    if parent_step and (step.status not in StepExecution.STEPS_APPROVED_STATUS):
         step_execs_old_parent = StepExecution.objects.filter(slice=parent_step.slice)
         ordered_existed_steps_old_parent, parent_step_temp = form_existed_step_list(step_execs_old_parent)
         step_index = ordered_existed_steps_old_parent.index(parent_step)
         step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=new_parent_slice))
-        ordered_existed_steps_parent, parent_step = form_existed_step_list(step_execs_parent)
-        step = ordered_existed_steps[0]
+        ordered_existed_steps_parent, parent_step_parent = form_existed_step_list(step_execs_parent)
         if step_index < len(ordered_existed_steps_parent):
             step.step_parent = ordered_existed_steps_parent[step_index]
             step.save()
+            changed_slice = step.slice
+            changed_slice.dataset = step.step_parent.slice.dataset
+            changed_slice.input_data = step.step_parent.slice.input_data
+            changed_slice.input_events = step.step_parent.slice.input_events
+            changed_slice.save()
 
 def delete_empty_slice(slice):
     steps = list(StepExecution.objects.filter(slice=slice))
