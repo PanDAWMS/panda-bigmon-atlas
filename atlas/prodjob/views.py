@@ -81,8 +81,12 @@ def get_jobs(request):
 
     url = json.loads(request.body)[0];
     url=re.sub('&display_limit.*(\d+)','',url)
-
-
+    url = url.replace('https','http')
+    if 'json' not in url:
+        if url[-1]=='&':
+            url=url+'&'
+        else:
+            url=url+'&json'
 
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
