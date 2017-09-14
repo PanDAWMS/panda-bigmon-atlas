@@ -48,9 +48,10 @@ def get_new_tasks(request):
     try:
         last_task_id = PackageTest.objects.all().order_by('task').last().task_id
         new_tasks = map(lambda x: {'id':int(x['id']),'name':x['name']}, ProductionTask.objects.filter(username='artprod',id__gt=last_task_id).values('id','name'))
+        result_tasks = [x for x in new_tasks if x['name'].startswith('user.artprod.atlas')]
     except Exception,e:
         return  Response(str(e),400)
-    return  Response(new_tasks)
+    return  Response(result_tasks)
 
 
 @api_view(['POST'])
@@ -79,7 +80,7 @@ def create_atr_task(request):
                 new_package_test.__dict__[x] = data[x]
             new_package_test.save()
             if 'test_names' in data:
-                for test_name, index in enumerate(data['test_names']):
+                for index, test_name in enumerate(data['test_names']):
                     test_in_tasks = TestsInTasks()
                     test_in_tasks.test_index = index
                     test_in_tasks.name = test_name
