@@ -11,6 +11,15 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 _logger = logging.getLogger('googleSP')
 
+
+
+def make_request_link(request_id):
+    return '=HYPERLINK("https://prodtask-dev.cern.ch/prodtask/inputlist_with_request/{request}/","{request}")'.format(request=request_id)
+
+
+def make_task_link(task_id):
+    return '=HYPERLINK("https://bigpanda.cern.ch/task/{task}/","{task}")'.format(task=task_id)
+
 class GSP(object):
     def get_credentials(self):
         credentials = ServiceAccountCredentials.from_json_keyfile_name('/data/client_server_criedent.json', SCOPES)

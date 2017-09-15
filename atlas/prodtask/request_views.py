@@ -1612,7 +1612,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nEventsPerMergeJob','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                                           'nGBPerJob','maxAttempt','maxFailure','spreadsheet_original','split_events']
+                                                           'nGBPerJob','maxAttempt','maxFailure','spreadsheet_original','split_events','evntFilterEff']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})

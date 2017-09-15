@@ -243,12 +243,15 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                     total_input_events_evgen = int(translated_row.get('evevgen', 0))
                     total_input_events = int(translated_row.get('evfs', 0))
                     is_fullsym = True
-                    if total_input_events == 0:
-                        total_input_events = int(translated_row.get('eva2', 0))
+                    total_input_events_fast = int(translated_row.get('eva2', 0))
+                    if (total_input_events == 0) and (total_input_events_fast != 0):
+                        total_input_events = total_input_events_fast
                         is_fullsym = False
                     if total_input_events == 0:
                         total_input_events = total_input_events_evgen
                         total_input_events_evgen = 0
+                    filter_eff = translated_row.get('feff', 0)
+
                 except:
                     continue
                 if translated_row in checked_rows:
@@ -285,7 +288,7 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                         reduce_input_format = None
                         step_index = 0
                         for currentstep in StepExecution.STEPS:
-                            if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[])) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
+                            if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0)) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
                                 translated_row[currentstep]='e9999'
                             if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
@@ -303,6 +306,8 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
                                     sexec = dict(status='NotChecked', input_events=int(input_events))
                                     if (total_input_events_evgen != 0):
                                         task_config.update({'split_events': total_input_events_evgen})
+                                    if (filter_eff!=0):
+                                        task_config.update({'evntFilterEff': filter_eff})
                                 else:
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None

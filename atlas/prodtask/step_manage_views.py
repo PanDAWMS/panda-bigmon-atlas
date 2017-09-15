@@ -814,14 +814,14 @@ def slice_steps(request, reqid, slice_number):
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':''}
                         foreign_step_dict_index = 0
                     else:
                         foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':''}
                         foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
 
             for index,step in enumerate(step_as_in_page):
@@ -844,6 +844,7 @@ def slice_steps(request, reqid, slice_number):
                                         'nMaxFilesPerMergeJob':task_config.get('nMaxFilesPerMergeJob',''),
                                         'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
                                         'maxFailure':task_config.get('maxFailure',''),'nEventsPerMergeJob':task_config.get('nEventsPerMergeJob',''),
+                                        'evntFilterEff':task_config.get('evntFilterEff',''),
                                         'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''

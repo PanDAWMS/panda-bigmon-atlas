@@ -142,6 +142,16 @@ def do_task_start(reqid):
     return is_extended
 
 
+def clean_open_ended(reqid):
+    slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
+    for slice in slices:
+        if not slice.is_hide:
+            if not StepExecution.objects.filter(slice=slice).exists():
+                print slice.request_id,slice.slice
+                slice.is_hide = True
+                slice.save()
+
+
 def extend_open_ended_request(reqid):
     """
     To extend request by adding dataset which are not yet processed. Container is taken from first slice,

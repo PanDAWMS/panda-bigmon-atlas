@@ -308,7 +308,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config = {}
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
-                                      'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
+                                      'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','evntFilterEff']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
@@ -384,7 +384,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config.update({'project_mode':input_list.project_mode})
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
-                                      'nGBPerJob','maxAttempt','maxFailure']:
+                                      'nGBPerJob','maxAttempt','maxFailure','evntFilterEff']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
@@ -2383,7 +2383,7 @@ def make_slices_from_dict(req, file_dict):
                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob','nEventsPerMergeJob',
                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                           'nGBPerJob','maxAttempt','maxFailure','split_slice']
+                                           'nGBPerJob','maxAttempt','maxFailure','split_slice','evntFilterEff']
                     for task_config_option in task_config_options:
                         if task_config_option in step['task_config']:
                             task_config.update({task_config_option:step['task_config'][task_config_option]})
