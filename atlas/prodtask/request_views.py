@@ -781,17 +781,8 @@ def mcfile_form_prefill(form_data, request):
     try:
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
-            if form_data.get('campaign'):
-                version = '1.0'
-                if form_data.get('project'):
-                    if str(form_data.get('project')).split('_')[0]>'mc15':
-                        version = '2.0'
-                else:
-                    if form_data.get('campaign').lower()>'mc15':
-                        version = '2.0'
-                spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'],version)
-            else:
-                spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'])
+
+            spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'], '2.0')
         elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
@@ -2140,11 +2131,7 @@ def check_extend_request(request, reqid):
             data = request.body
             excel_link = json.loads(data)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            production_request = TRequest.objects.get(reqid=reqid)
-            spreadsheet_version = '1.0'
-            if production_request.campaign.lower() > 'mc15':
-                spreadsheet_version = '2.0'
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link, spreadsheet_version)
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
             slices_number = len(spreadsheet_dict)
             steps_number = 0
             for current_slice in spreadsheet_dict:
@@ -2164,11 +2151,7 @@ def extend_request(request, reqid):
             excel_link = json.loads(data)
             production_request = TRequest.objects.get(reqid=reqid)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            production_request = TRequest.objects.get(reqid=reqid)
-            spreadsheet_version = '1.0'
-            if production_request.campaign.lower() > 'mc15':
-                spreadsheet_version = '2.0'
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link, spreadsheet_version)
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
             if make_slices_from_dict(production_request, spreadsheet_dict):
                 results = {'success':True, 'message': ''}
         except Exception,e:

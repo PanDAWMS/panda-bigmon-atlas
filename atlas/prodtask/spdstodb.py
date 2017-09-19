@@ -217,7 +217,7 @@ def format_from_jo(job_options):
     return {}
 
 
-def translate_excl_to_dict(excel_dict, version='1.0'):
+def translate_excl_to_dict(excel_dict, version='2.0'):
         return_list = []
         index = 0
         checked_rows = []
@@ -344,7 +344,7 @@ def translate_excl_to_dict(excel_dict, version='1.0'):
         return  return_list  
 
 
-def fill_steptemplate_from_gsprd(gsprd_link, version='1.0'):
+def fill_steptemplate_from_gsprd(gsprd_link, version='2.0'):
         """Parse google spreadsheet. 
 
         :param gsprd_link: A link to google sreapsheet.
@@ -359,7 +359,12 @@ def fill_steptemplate_from_gsprd(gsprd_link, version='1.0'):
             excel_dict = excel_parser.open_by_key(url,xls_format)[0]
         except Exception, e:
             raise RuntimeError("Problem with link openning, \n %s" % e)
-        return translate_excl_to_dict(excel_dict, version)
+        try:
+            result = translate_excl_to_dict(excel_dict, version)
+            return result
+        except Exception, e:
+            raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format")
+
 
 def fill_steptemplate_from_file(file_obj):
         try:
