@@ -1503,6 +1503,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                 return_value = step['output_format']
         return return_value
 
+    def check_empty_pattern(pattern, default_pattern):
+        for x in pattern.keys():
+            if pattern[x]:
+                return pattern
+        return default_pattern
+
     if request.method == 'GET':
         try:
             PRODTASK_TASK_BASE = request.build_absolute_uri(reverse('prodtask:task',args=[FAKE_TASK_NUMBER,]))
@@ -1520,7 +1526,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 # Load patterns which are currently in use
                 pattern_list = MCPattern.objects.filter(pattern_status='IN USE').order_by('pattern_name')
                 pattern_list_name = [(x.pattern_name,
-                                      [unwrap(json.loads(x.pattern_dict).get(step,{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
+                                      [unwrap(check_empty_pattern(json.loads(x.pattern_dict).get(step,{}),{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
                 pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
                 pattern_list_name += [('Initial', [{} for step in STEPS_LIST])]
