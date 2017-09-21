@@ -742,12 +742,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                     changesList[sliceIDint].addStep(newStep);
                                   }
                                 var currentStep = changesList[sliceIDint].getStepByNumber(i);
-                                if ($("#patternform"+ i.toString()).val()!=''){
-                                    for (field in patternDict[i]){
-                                        currentStep[field] = patternDict[i][field];
-                                    }
+                                for (field in patternDict[i]){
+                                    currentStep[field] = patternDict[i][field];
                                 }
-
                             }
                    }
                 };
