@@ -66,7 +66,8 @@ def form_task_chain(request, task_id):
 
     for task in chain:
         dict_to_send = {'id':int(chain[task]['task']['id']),'etag':chain[task]['task']['name'].split('.')[-1].split('_')[-1],
-                        'status':chain[task]['task']['status'],'provenance':chain[task]['task']['provenance']}
+                        'status':chain[task]['task']['status'],'provenance':chain[task]['task']['provenance'],
+                        'request':chain[task]['task']['request_id']}
         if 'eventIndex' in chain[task]['task']['name']:
             dict_to_send['provenance'] = 'EI'
         levels[chain[task]['level']][chain[task]['parent']] = levels[chain[task]['level']].get(chain[task]['parent'],[]) + [dict_to_send]

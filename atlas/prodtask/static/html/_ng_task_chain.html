@@ -68,18 +68,21 @@
             </div>
    <div class="row">
        <div class="columns large-1">
-           <label>Show tag/taskID<input type="checkbox"  ng-model="showTag"></label>
+           <label>Show tag-request/taskID<input type="checkbox"  ng-model="showTag"></label>
            </div>
         <div class="columns large-11">
        <table>
         <tbody>
         <tr ng-repeat="row in chainTable| filter:search">
             <td ng-repeat="element in row.row | filter:search  ">
-                <a href="https://bigpanda.cern.ch/task/{{ element.id }}" >
+
                     <span class="{{ element.provenance }} {{ element.status }}">{{ element.provenance }} </span>
-                    <span ng-show="showTag" class="{{ element.status }}">{{ element.etag }}</span>
-                    <span ng-show="!showTag" class="{{ element.status }}">{{ element.id }}</span>
-                </a>
+                    <span ng-show="showTag" >
+                        <a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.status }}">{{ element.etag }}</span></a><span>-</span>
+                        <a href="{{ request_base }}{{ element.request }}">{{ element.request }}</a>
+                    </span>
+                    <span ng-show="!showTag" class="{{ element.status }}"><a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.status }}">{{ element.id }}</span></a></span>
+
              </td>
         </tr>
         </tbody>

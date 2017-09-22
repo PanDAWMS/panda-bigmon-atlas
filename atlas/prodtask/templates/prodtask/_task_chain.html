@@ -113,6 +113,7 @@
         var AP_tasks = [task.id];
         var GP_tasks = [];
         scope.alreadyObsoleted = false;
+        scope.request_base = Django.url('prodtask:input_list_approve', '').slice(0,-1);
         scope.mainTaskLink = Django.url('prodtask:task', task.id);
         http.get(Django.url('prodtask:form_task_chain',task.id)).
               success(function(data, status, headers, config) {
@@ -126,10 +127,12 @@
                     var row = [];
                     var currentRow = [];
                     var currentTasksStack = [data[0][task.id]];
+                    console.log('test');
+
                     for (var i = 0; i < levels; i++) {
                         currentRow.push({'id': ' ', 'status': 'hide'});
                     }
-                    var taskFields = ['id', 'etag', 'provenance'];
+                    var taskFields = ['id', 'etag', 'provenance', 'request'];
                     var elementFields = taskFields.concat(['status', 'showAP']);
 
                     var FAILED_STATUS = ['failed', 'broken', 'aborted', 'obsolete'];
@@ -139,6 +142,7 @@
                             var showAP = 'all';
                             while (nextExists) {
                                 element = currentTasksStack[currentTasksStack.length - 1].pop();
+                                console.log(element);
                                 for (j = 0; j < taskFields.length; j++) {
                                     currentRow[X][taskFields[j]] = element[taskFields[j]];
                                 }
