@@ -81,7 +81,8 @@
                         <a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.status }}">{{ element.etag }}</span></a><span>-</span>
                         <a href="{{ request_base }}{{ element.request }}">{{ element.request }}</a>
                     </span>
-                    <span ng-show="!showTag" class="{{ element.status }}"><a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.status }}">{{ element.id }}</span></a></span>
+                    <span ng-show="!showTag" class="{{ element.status }}"><a href="https://bigpanda.cern.ch/task/{{ element.id }}" ><span class="{{ element.status }}">{{ element.id }}</span></a>
+                    <a href="{{ request_base }}{{ element.request }}">{{ element.request }}</a></span>
 
              </td>
         </tr>

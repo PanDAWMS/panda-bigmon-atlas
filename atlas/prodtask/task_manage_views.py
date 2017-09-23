@@ -162,7 +162,7 @@ def task_chain_obsolete_action(request):
     try:
        data = json.loads(request.body)
        tasks_id = data.get('tasks')
-       if len(tasks_id)>50:
+       if len(tasks_id)>100:
            raise ValueError('Too much tasks to obsolete. Please contact DPA')
        params = data.get('parameters', [])
        user = request.user
