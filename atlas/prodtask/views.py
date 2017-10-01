@@ -468,7 +468,9 @@ def filter_mc_campaign(cur_request, tasks):
                     result.append(task_id)
                     events += task.total_events
             else:
-                result.append(task_id)
+                if subcampaign == 'MC16a':
+                    result.append(task_id)
+                    events += task.total_events
     return result, events
 
 
