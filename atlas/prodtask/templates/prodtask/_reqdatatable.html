@@ -725,7 +725,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                            var stepFormLong = "#".concat(sliceID).concat("s{{ forloop.counter0 }}.slice_form");
                            var step_th_long = "th#step".concat(sliceID).concat("s{{ forloop.counter0 }}.stepchoose");
                            $(step_th_long).css({"background-color":stepColor});
-                           if($('#replaceByPattern').is(':checked')||(stepValue!='')){
+                           if(stepValue.length == 1){
+                               $(stepFormLong).val('');
+                               $(step_td_short).html('');
+                           } else if($('#replaceByPattern').is(':checked')||(stepValue.length > 1)){
                                $(stepFormLong).val(stepValue);
                                $(step_td_short).html(stepValue);
                            }
