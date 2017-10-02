@@ -1408,7 +1408,7 @@ Details:
                sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name,
             project=production_request.project )
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
-        mail_body = "Dear Marjorie, Josh and Tancredi,\n"+mail_body
+        mail_body = "Dear Josh, Frank and Pierre,\n"+mail_body
         mail_from = "atlas.mc-production@cern.ch"
         if need_approve:
             owner_mails += ["atlas-csc-prodman@cern.ch"]
