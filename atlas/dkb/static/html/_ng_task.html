@@ -1,5 +1,9 @@
+<div class="container">
+<div id="header{{  taskMeta.taskid }}"  ng-click="showStuff(taskMeta)" style="cursor: pointer; border: groove" >
+  <span class="taskheader {{ taskMeta.status }}" > {{  taskMeta.taskid }} </span>{{  taskMeta.taskname }}</div>
 
-<table border="1" class="table-datasets" >
+<div id="body{{ taskMeta.taskid }}" class="total" ng-show="taskMeta.show">
+    <table border="1" class="table-datasets" >
     <tbody>
         <tr>
             <th colspan="2" style="background-color: rgb(124,112,107); text-align: center;">TASK</th>
@@ -50,7 +54,7 @@
             <th colspan=2>
 
                         EVENTS Requested / Processed <p/>
-                        {{ taskMeta.requested_events }} {{ taskMeta.processed_events }}
+                        {{ taskMeta.requested_events }} / {{ taskMeta.processed_events }}
 
             </th>
             <th ></th> <td></td>
@@ -74,3 +78,4 @@
          </tr>
     </tbody>
 </table>
+</div>

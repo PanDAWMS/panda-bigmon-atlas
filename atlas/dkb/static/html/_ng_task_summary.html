@@ -1,8 +1,27 @@
 <h3>Keywords: {{ query_string }}</h3>
 
  <div  ng-show="loading"> Loading...</div>
-<div  ng-repeat="element in tasks" >
+<h5> Datasets found: {{ tasks.length }}</h5>
+<div class="row">
+    <div class="column large-6">
+                    <input type="text" ng-model="tasksname_search" class="search-query" id="tasksname_search"
+               placeholder="Filter">
+    </div>
+    <div class="column large-2">
+        <select ng-model="orderTaskBy"> Order by
+          <option value="" selected>Default</option>
+          <option value="taskid">Task ID</option>
+          <option value="taskname">Task Name</option>
+          <option value="-processed_events">Processed events</option>
+        </select>
+    </div>
+    <div class="column large-4"></div>
+</div>
+
+<div  ng-repeat="element in tasks| filter:tasksname_search| orderBy:orderTaskBy " >
     <atlastask taskmeta="element">
 
     </atlastask>
+
+    <p/>
 </div>
