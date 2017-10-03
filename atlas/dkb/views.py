@@ -29,7 +29,7 @@ def es_task_search(request):
     search_string = json.loads(request.body)
     response = keyword_search(key_string_from_input(search_string)['query_string'])
     result = []
-    for hit in response:
+    for hit in response[:10000]:
         result.append(hit.to_dict())
     return Response(result)
 
@@ -62,4 +62,4 @@ def index(request):
 def keyword_search(keyword_string):
     es_search = Search(index="prodsys", doc_type='MC16')
     query = es_search.update_from_dict({'query':{'query_string':{"query": keyword_string,"analyze_wildcard":True}}})
-    return query.execute()
+    return query
