@@ -50,6 +50,7 @@ common_patterns = patterns('',
     url(r'^gdpconfig/', include('atlas.gdpconfig.urls', namespace='gdpconfig')),
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
     url(r'^art/', include('atlas.art.urls', namespace='art')),
+    url(r'^dkb/', include('atlas.dkb.urls', namespace='dkb')),
 
 #    ### TEST/Playground
 #    url(r'^test_playground/$', common_views.testing, name='testing'),

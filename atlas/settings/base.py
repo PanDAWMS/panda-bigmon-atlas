@@ -72,6 +72,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.datatables',
     'atlas.gdpconfig',
     'atlas.art',
+    'atlas.dkb',
      'djangojs',
     'django_datatables_view',
     ### atlas.todoview: Placeholder for views which need to be implemented

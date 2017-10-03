@@ -1,0 +1,76 @@
+
+<table border="1" class="table-datasets" >
+    <tbody>
+        <tr>
+            <th colspan="2" style="background-color: rgb(124,112,107); text-align: center;">TASK</th>
+            <th colspan="2" style="width:50%; background-color: rgb(209,213,216); text-align: center;">EXPERIMENT</th>
+            <th colspan="2" style="background-color: rgb(243,121,52); text-align: center;">CONFIGURATION</th>
+        </tr>
+        <tr>
+            <th >taskID</th> <td>{{ taskMeta.taskid }}</td>
+            <th >Campaign</th> <td>{{ taskMeta.campaign }}</td>
+            <th >Step Name</th> <td>{{ taskMeta.step_name }}</td>
+        </tr>
+        <tr>
+            <th >taskName</th> <td>{{ taskMeta.taskname }}</td>
+            <th >Subcampaign</th> <td>{{ taskMeta.subcampaign }}</td>
+            <th >ticket_id</th> <td>{{ taskMeta.ticket_id }}</td>
+        </tr>
+        <tr>
+            <th >status</th> <td>{{ taskMeta.status }}</td>
+            <th >Project</th> <td>{{ taskMeta.project }}</td>
+            <th >Architecture</th> <td>{{ taskMeta.architecture }}</td>
+        </tr>
+        <tr>
+            <th >Description</th> <td>{{ taskMeta.description }}</td>
+            <th >Energy</th> <td>{{ taskMeta.energy }}</td>
+            <th >Core Number</th> <td>{{ taskMeta.core_number }}</td>
+        </tr>
+         <tr>
+            <th >timestamp</th> <td>{{ taskMeta.task_timestamp }}</td>
+            <th >Physics Group</th> <td>{{ taskMeta.phys_group }}</td>
+            <th >ATLAS Geometry</th> <td>{{ taskMeta.geometry_version }}</td>
+        </tr>
+         <tr>
+            <th >start time</th> <td>{{ taskMeta.start_time }}</td>
+            <th >Physics Category</th> <td>{{ taskMeta.phys_category }}</td>
+            <th >Conditions Tags</th> <td>{{ taskMeta.conditions_tags }}</td>
+        </tr>
+         <tr>
+            <th >end time</th> <td>{{ taskMeta.end_time }}</td>
+            <th >Hashtags</th> <td>{{ taskMeta.hashtag_list }}</td>
+            <th >trigger_config</th> <td>{{ taskMeta.trigger_config }}</td>
+        </tr>
+          <tr>
+            <th >Duration</th> <td>{{ taskMeta.duration }}</td>
+            <th ></th> <td></td>
+            <th >transPath</th> <td>{{ taskMeta.trans_path }}</td>
+        </tr>
+          <tr>
+            <th colspan=2>
+
+                        EVENTS Requested / Processed <p/>
+                        {{ taskMeta.requested_events }} {{ taskMeta.processed_events }}
+
+            </th>
+            <th ></th> <td></td>
+            <th >transUses</th> <td>{{ taskMeta.trans_home }}</td>
+        </tr>
+          <tr>
+            <th ></th> <td></td>
+            <th ></th> <td></td>
+            <th >run number</th> <td colspan=3>{{ taskMeta.run_number }}</td>
+        </tr>
+          <tr>
+            <th colspan=8 style="background-color: rgb(44,130,201); text-align: center;">Datasets</th>
+        </tr>
+          <tr>
+             <th>Input Datasets</th>
+            <td colspan=7 >{{ taskMeta.input_datasets }}</td>
+         </tr>
+          <tr>
+             <th>Output Datasets</th>
+            <td colspan=7 >{{ taskMeta.output_datasets }}</td>
+         </tr>
+    </tbody>
+</table>
