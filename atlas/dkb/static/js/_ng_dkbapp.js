@@ -26,7 +26,6 @@
             templateUrl: '/static/html/_ng_task.html',
               link: function (scope){
                   scope.showStuff =    function (obj) {
-                    console.log(obj);
                     if(obj.show == undefined){
                         obj.show = true;
                     } else if (obj.show){
@@ -35,9 +34,12 @@
                         obj.show = true;
                     }
                 };
+
               }
           };
         });
+    var requestBaseLink =  Django.url('prodtask:input_list_approve',1).slice(0,-2);
+    var taskBaseLink = Django.url('prodtask:task',1).slice(0,-2);
 
     DKBApp.controller('DKBCtrl',['$scope','$http',  '$location',
         function (scope, http, location){

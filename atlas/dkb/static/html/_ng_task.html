@@ -6,17 +6,17 @@
     <table border="1" class="table-datasets" >
     <tbody>
         <tr>
-            <th colspan="2" style="background-color: rgb(124,112,107); text-align: center;">TASK</th>
-            <th colspan="2" style="width:50%; background-color: rgb(209,213,216); text-align: center;">EXPERIMENT</th>
+            <th colspan="2" style="width:40%; background-color: rgb(124,112,107); text-align: center;">TASK</th>
+            <th colspan="2" style="width:30%; background-color: rgb(209,213,216); text-align: center;">EXPERIMENT</th>
             <th colspan="2" style="background-color: rgb(243,121,52); text-align: center;">CONFIGURATION</th>
         </tr>
         <tr>
-            <th >taskID</th> <td>{{ taskMeta.taskid }}</td>
+            <th >taskID</th> <td><a href="/prodtask/task/{{ taskMeta.taskid }}">{{ taskBaseLink }} {{ taskMeta.taskid }}</a></td>
             <th >Campaign</th> <td>{{ taskMeta.campaign }}</td>
             <th >Step Name</th> <td>{{ taskMeta.step_name }}</td>
         </tr>
         <tr>
-            <th >taskName</th> <td>{{ taskMeta.taskname }}</td>
+            <th >Request</th> <td><a href="/prodtask/inputlist_with_request/{{ taskMeta.pr_id }}">{{ taskMeta.pr_id }}</a></td>
             <th >Subcampaign</th> <td>{{ taskMeta.subcampaign }}</td>
             <th >ticket_id</th> <td>{{ taskMeta.ticket_id }}</td>
         </tr>
