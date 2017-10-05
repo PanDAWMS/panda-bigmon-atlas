@@ -72,7 +72,7 @@ def find_missing_tags(tags):
     return_list = []
     for tag in tags:
         try:
-            if int(tag[1:])>9998:
+            if int(tag[1:])==9999:
                 return_list.append(tag)
             else:
                 trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
