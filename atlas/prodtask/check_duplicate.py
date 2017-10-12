@@ -573,13 +573,17 @@ def find_task_by_input(task_ids, task_name, request_id):
 
 
 
-def create_task_chain(task_id):
+def create_task_chain(task_id, provenance=''):
     original_task = ProductionTask.objects.filter(id=task_id).values('id','name','inputdataset','provenance','request_id','status')[0]
     task_name = original_task['name']
     task_project = task_name.split('.')[0]
     task_pattern = task_name.split('.')[0][:2]+'%.'+'.'.join(task_name.split('.')[1:-2]) + '%'+task_name.split('.')[-1] +'%'
-    similar_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).values('id','name','inputdataset','provenance','request_id','status').
-                          order_by('id'))
+    if not provenance:
+        similar_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).values('id','name','inputdataset','provenance','request_id','status').
+                              order_by('id'))
+    else:
+        similar_tasks = list(ProductionTask.objects.filter(provenance=provenance).extra(where=['taskname like %s'], params=[task_pattern]).values('id','name','inputdataset','provenance','request_id','status').
+                              order_by('id'))
     chain = {int(task_id):{'task':original_task,'level':0, 'parent':int(task_id)}}
     for task in similar_tasks:
         task_input = task['inputdataset']

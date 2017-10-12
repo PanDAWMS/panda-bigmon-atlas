@@ -15,6 +15,7 @@
 	<style type="text/css" title="currentStyle">
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+        @import "{% static "css/font-awesome.min.css" %}";
 	</style>
    <style type="text/css">
 
@@ -99,7 +100,6 @@
 <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
 <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
-<script type="text/javascript" src="{% static 'js/slice.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
 
 
@@ -1117,7 +1117,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
         function makeUserOwner(event){
             event.preventDefault();
-            sendData = {};
+            changeOwner("{{ user.username }}");
+
+        }
+        function changeOwner(newUserName){
+             sendData = {username:newUserName};
             $.ajax({
                     url: "{% url 'prodtask:make_user_as_owner' pr_id %}",
                     type: 'POST',
@@ -1129,9 +1133,41 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         if ((newOwnerName!='')&&(newOwnerName!=undefined)){
                             $('#ownerName').html(newOwnerName);
                             $('#requestStatus').html('working');
+                             $('#changeOwnerWindow').foundation('reveal', 'close');
                         }
+                    },
+                    error: function(data,status) {
+                        alert(data);
                     }
                 });
+        }
+        function changeOwnerUser(event, newUserName){
+            event.preventDefault();
+            sendData = {username:newUserName};
+            $.ajax({
+                    url: "{% url 'prodtask:check_user_exists'  %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                            var userExists = $.evalJSON(data).user_exists;
+                            if (!userExists) {
+                                if(confirm("User doesn't exist. Change owner anyway?")){
+                                    changeOwner(newUserName);
+                                }
+                            } else {
+                                changeOwner(newUserName);
+                            }
+                             $('#changeOwnerWindow').foundation('reveal', 'close');
+                        },
+
+                    error: function(data,status) {
+
+                        alert(data);
+                    }
+                });
+
         }
         function findInputForSlices(sliceList){
 
@@ -2356,6 +2392,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
             $('#trainModalWindow').foundation('reveal', 'open');
         }
+        function showOwnerChangeModal(event){
+            event.preventDefault();
+            $('#changeOwnerWindow').foundation('reveal', 'open');
+        }
 function changeStatusFilter(){
 
        var valThis = $('#filter').val().toLowerCase();
@@ -2655,7 +2695,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
   <td><a href='{{trequest.ref_link}}' id='request_link'>{{ trequest.ref_link}}</a></td>
-  <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="makeUserOwner(event);">Me</a></td>
+  <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="showOwnerChangeModal(event);"><i class="fa fa-edit"></i></a></td>
   <td>{{ trequest.phys_group}}</td>
   <td id="requestProject">{{ trequest.project}}</td>
     <td>
@@ -3710,6 +3750,32 @@ ProjectModeForm.prototype.createForm = function(inputString){
     </ul>
   <a  class="close-reveal-modal">&#215;</a>
 </div>
+
+<div id="changeOwnerWindow" class="reveal-modal" data-reveal>
+   <h3>Change request owner:</h3>
+    <div class="row">
+            <div class="large-1 column">
+                <a href='#' class="button btn_is_authorized postfix" onclick="makeUserOwner(event);">Me</a>
+            </div>
+         <div class="large-11 column">
+         </div>
+    </div>
+    <div class="row">
+             <div class="large-4 column">
+                <label>or :
+                <input type="text"  id="newOwnerName"  maxlength="80" placeholder="username" /></label>
+             </div>
+            <div class="large-2 column">
+                <a href='#' class="button btn_is_authorized postfix" onclick="changeOwnerUser(event,$('#newOwnerName').val());">Change</a>
+            </div>
+            <div class="large-6 column"></div>
+        </div>
+
+
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
+
 
 <div id="hashtagModalWindow" class="reveal-modal" data-reveal>
     <ul id="hashtagList">

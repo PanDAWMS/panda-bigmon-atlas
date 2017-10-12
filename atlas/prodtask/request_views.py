@@ -5,6 +5,7 @@ import string
 from math import sqrt
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -600,6 +601,19 @@ def request_comments(request, reqid):
 
 
 @csrf_protect
+def check_user_exists(request):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            results = {'user_exists': User.objects.filter(username=input_dict['username']).exists()}
+        except Exception, e:
+            _logger.error("Problem with checking user : %s"%e)
+            results = str(e)
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@csrf_protect
 def make_user_as_owner(request, reqid):
     if request.method == 'POST':
         results = {'success':False}
@@ -607,11 +621,10 @@ def make_user_as_owner(request, reqid):
             production_request = TRequest.objects.get(reqid=reqid)
             current_manager = production_request.manager
             # if production_request.cstatus in ['waiting','registered','test']:
-            owner=''
-            try:
-                owner = request.user.username
-            except:
-                pass
+            data = request.body
+            input_dict = json.loads(data)
+            owner = input_dict['username']
+
             _logger.debug(form_request_log(reqid,request,'Change manager %s'%owner ))
             try:
                 if owner and (owner != current_manager):
@@ -620,12 +633,15 @@ def make_user_as_owner(request, reqid):
                     current_manager = owner
             except:
                 pass
-            change_request_status(request, reqid, 'working',
-                                     'Request status was changed to %s by %s' %('working', request.user.username),
-                                     'Request status is changed to %s by WebUI' % 'working')
+            if production_request.cstatus == 'registered':
+                change_request_status(request, reqid, 'working',
+                                         'Request status was changed to %s by %s' %('working', request.user.username),
+                                         'Request status is changed to %s by WebUI' % 'working')
+
             results = {'success':True,'ownerName':current_manager}
         except Exception, e:
             _logger.error("Problem with changing manager #%i: %s"%(reqid,e))
+            results = str(e)
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
