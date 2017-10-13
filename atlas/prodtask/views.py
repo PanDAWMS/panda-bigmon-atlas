@@ -758,13 +758,15 @@ def check_slices_for_request_split(request, production_request):
             slices_evgen = input_dict
             do_split = False
             no_events = False
-            for slice_evgen in slices_evgen:
-                if slice_evgen[0] != -1:
-                    slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
-                    evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
-                    if evgen_events <= (0.95 * float(slice.input_events)):
-                        do_split = True
-                        break
+            project = TRequest.objects.get(reqid=production_request).project_id
+            if project > 'mc16':
+                for slice_evgen in slices_evgen:
+                    if slice_evgen[0] != -1:
+                        slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
+                        evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
+                        if evgen_events <= (0.95 * float(slice.input_events)):
+                            do_split = True
+                            break
             results = {'success':True, 'do_split': do_split, 'no_events': no_events }
         except Exception,e:
             pass

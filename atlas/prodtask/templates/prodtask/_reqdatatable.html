@@ -642,6 +642,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                               if (doSplit) {
                                   doReload = true;
                                   saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
+                              } else {
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
                               }
 
                           }
