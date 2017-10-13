@@ -2662,7 +2662,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <th>Reference:</th>
   <th>Manager:</th>
   <th>Physic group:</th>
-  <th>Project:</th>
+{% ifequal trequest.request_type "MC" %}
+ <th>SubCampaign Project:</th>
+    {% else %}
+    <th>Project:</th>
+{% endifequal %}
+
     <th>
     {% ifequal trequest.request_type "MC" %}
         Priorities:
@@ -2697,12 +2702,17 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td><a href='{{trequest.ref_link}}' id='request_link'>{{ trequest.ref_link}}</a></td>
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="showOwnerChangeModal(event);"><i class="fa fa-edit"></i></a></td>
   <td>{{ trequest.phys_group}}</td>
-  <td id="requestProject">{{ trequest.project}}</td>
+{% ifequal trequest.request_type "MC" %}
+  <td id="requestProject">{{ trequest.subcampaign}} {{ trequest.project}}</td>
     <td>
-        {% ifequal trequest.request_type "MC" %}
+
             {{ priorities_str }}
-        {% endifequal %}
+
     </td>
+    {% else %}
+   <td id="requestProject">{{ trequest.project}}</td>
+  <td></td>
+{% endifequal %}
     <td><a onclick="showStatusHistory(event);"><u><span  style="cursor: pointer;" id="requestStatus">{{ trequest.cstatus}}</span></u></a></td>
     <td>
         {% if jira_problem_link %}
