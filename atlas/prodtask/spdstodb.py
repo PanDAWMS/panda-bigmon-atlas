@@ -278,6 +278,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                             priority = -2
                         else:
                             priority = translated_row.get('priority', 0)
+                        if len(translated_row.get('brief', ' '))>150:
+                            raise RuntimeError("Brief description is too big, should be <150 characters")
                         irl = dict(slice=index, brief=translated_row.get('brief', ' '),
                                    comment=comment,
                                    input_data=translated_row.get('joboptions', ''),
@@ -363,7 +365,7 @@ def fill_steptemplate_from_gsprd(gsprd_link, version='2.0'):
             result = translate_excl_to_dict(excel_dict, version)
             return result
         except Exception, e:
-            raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format")
+            raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format. \n Error: %s"%str(e))
 
 
 def fill_steptemplate_from_file(file_obj):
