@@ -344,6 +344,10 @@
 
             row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
             row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';
+            if (row[12]!=''){
+                row[12] = parseInt(row[12]).toPrecision(2);
+            }
+
         }
         updateInterface(data['additional']['request_stat']);
     }

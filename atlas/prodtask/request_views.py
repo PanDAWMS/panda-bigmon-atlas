@@ -18,7 +18,7 @@ from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset
-from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority
+from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, fill_request_events
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
@@ -1668,6 +1668,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             new_relation.save()
                         try:
                             fill_request_priority(req.reqid,req.reqid)
+                            fill_request_events(req.reqid,req.reqid)
                         except:
                             pass
                 except Exception, e:
@@ -2045,6 +2046,12 @@ class RequestTable(datatables.DataTable):
         sClass='centered',
         bSearchable=False,
     )
+    request_events = datatables.Column(
+        label='Events',
+        bSortable=False,
+        sClass='centered',
+        bSearchable=False,
+    )
 
     class Meta:
         model = TRequest
@@ -2191,3 +2198,9 @@ def request_table(request):
                              'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
 
 
+def sizeof_fmt(num):
+    for unit in ['','K','M']:
+        if abs(num) < 1000:
+            return "%3.1f%s%s" % (num, unit)
+        num /= 1000
+    return "%.1f%s%s" % (num, 'B')

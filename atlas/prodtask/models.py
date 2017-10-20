@@ -180,6 +180,17 @@ class TRequest(models.Model):
             return ""
 
 
+    @property
+    def request_events(self):
+        try:
+            request_events = self.info_field('request_events')
+            if request_events:
+                return request_events
+            else:
+                return ''
+        except:
+            return ""
+
     def update_priority(self, new_priorities):
         info_field_dict = {}
         if self.info_fields:
@@ -193,6 +204,15 @@ class TRequest(models.Model):
         info_field_dict['priority'] = ','.join([str(x) for x in priorities])
         self.info_fields = json.dumps(info_field_dict)
         return info_field_dict['priority']
+
+    def set_info_field(self,field,value):
+        if self.info_fields:
+            info_field_dict = json.loads(self.info_fields)
+
+        else:
+            info_field_dict={}
+        info_field_dict.update({field:value})
+        self.info_fields = json.dumps(info_field_dict)
 
     def info_field(self,field):
         if self.info_fields:
@@ -717,7 +737,9 @@ class ProductionTask(models.Model):
     ttcr_timestamp = models.DateTimeField(db_column='TTCR_TIMESTAMP', null=True)
     ttcj_timestamp = models.DateTimeField(db_column='TTCJ_TIMESTAMP', null=True)
     ttcj_update_time = models.DateTimeField(db_column='TTCJ_UPDATE_TIME', null=True)
-
+    primary_input = models.CharField(max_length=250, db_column='PRIMARY_INPUT', null=True)
+    ami_tag = models.CharField(max_length=15, db_column='CTAG')
+    output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS')
     # def save(self):
     #     raise NotImplementedError
 
