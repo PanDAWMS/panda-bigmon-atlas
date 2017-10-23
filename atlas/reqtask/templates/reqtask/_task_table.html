@@ -19,6 +19,7 @@
 <style type="text/css">
 
     @import "{% static "css/dataTables.tableTools.css" %}";
+     @import "{% static "css/prodtask.css" %}";
     @import "{% static "css/dataTables.foundation.min.css" %}";
     @import "{% static "css/jquery.dataTables.min.css" %}";
 
@@ -90,6 +91,7 @@
 <input type="text" id="find_job">
 <a class="button postfix" id="btn_find_jobs">Go</a>
 -->
+        <table class="right" id ='statusStat'></table>
         <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
@@ -98,14 +100,14 @@
            <th>Task Name</th>
            <th>TaskID</th>
            <th>Owner</th>
-           <th>RequestID</th>
-           <th>Step</th>
-           <th>Priority</th>
-           <th>(Current) Priority</th>
-           <th>Total jobs</th>
-           <th>Done jobs</th>
-           <th>Failure %</th>
+           <th>ReqID</th>
            <th>Status</th>
+           <th>Priority</th>
+           <th style="font-size : 50%">(Current) Priority</th>
+
+           <th>Events</th>
+           <th style="font-size : 50%">Failure %</th>
+           <th>Step</th>
            </tr>
            </thead>
            <tfoot>
@@ -114,18 +116,19 @@
            <th>Task Name</th>
            <th>TaskID</th>
            <th>Owner</th>
-           <th>RequestID</th>
-           <th>Step</th>
+           <th>ReqID</th>
+            <th id="statusFilter">Status</th>
+
            <th>Priority</th>
-           <th>(Current) Priority</th>
-           <th>Total jobs</th>
-           <th>Done jobs</th>
-           <th>Failure %</th>
-           <th>Status</th>
+           <th >(Current) Priority</th>
+
+           <th>Events</th>
+           <th >Failure %</th>
+          <th>Step</th>
            </tr>
            </tfoot>
         </table>
-
+<h6 >Tasks selected: <span id="selectedTasksNumber">0</span></h6>
 <!--
          <div class="small-3 large-3 columns">
             <a class="button postfix" id="btn_handle_jobs">Action</a>
@@ -207,27 +210,33 @@
                                 },
                                 {
                                 "data" : "name",
-                                "visible" : false
+                                "visible" : true
+
                                 },
                                 {"data" : "id" },
                                 {"data" : "username"},
                                 {"data" : "request_id" },
-                                {
-                                "data" : "step_name",
-                                "visible" : true
-                                },
+                                {"data" : "status"},
                                 {"data" : "priority",
                                 "visible" : false
                                 },
                                 {"data" : "current_priority" },
-                                {"data" : "total_req_jobs" },
-                                {"data" : "total_done_jobs" },
+                                {"data" : "total_events" },
                                 {"data" : "failure_rate" },
-                                {"data" : "status" }
+                                {
+                                "data" : "step_name",
+                                "visible" : true
+                                }
                         ],
                         dom: 'T<"clear">lftirp',
                         tableTools: {
                             "sRowSelect": "os",
+                            "fnRowSelected" : function(){
+                                $("#selectedTasksNumber").html(table.rows('.selected').data().length);
+                            },
+                            "fnRowDeselected" : function(){
+                                $("#selectedTasksNumber").html(table.rows('.selected').data().length);
+                            },
                             "aButtons": [
                                             "select_all",
                                             {
@@ -242,21 +251,22 @@
                                         ]
  //                           "aButtons": [ "select_all", "select_none" ]
                         },
+                        "aLengthMenu": [[10, 50, 100, 500, 1000], [10, 50, 100, 500, 1000]],
                         "aoColumnDefs": [{
-                                            "aTargets": [11],
-                                            "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
-                                                if ( $.inArray(sData , ["finished","done"]) !== -1 ) {
-                                                    $(nTd).css('color', 'green')
-                                                } else if ( $.inArray(sData , ["failed","broken","aborted"]) !== -1 ) {
-                                                    $(nTd).css('color', 'red')
-                                                } else if ( $.inArray(sData , ["cancelled","throttled","sent","holding"]) !== -1) {
-                                                    $(nTd).css('color', 'orange')
-                                                } else if ( $.inArray(sData , ["submitted","running"]) !== -1) {
-                                                    $(nTd).css('color', 'lightgreen')
-                                                } else if ( sData == "activated" ) {
-                                                    $(nTd).css('color', 'blue')
-                                                }
+                                            "aTargets": [5],
+                                            "mRender": function ( data, type, full ) {
+                                                //return '<a href="http://bigpanda.cern.ch/task/'+data+'/">'+data+'</a>'
+                                                return '<span class="rstat tstat '+data+'">'+ data+ '</span>'
                                             }
+
+                                        },
+                                        {
+                                            "aTargets": [1],
+                                            "mRender": function ( data, type, full ) {
+                                                //return '<a href="http://bigpanda.cern.ch/task/'+data+'/">'+data+'</a>'
+                                                return '<span style="font-size : 80%;word-wrap: break-word;">'+ data+ '</span>'
+                                            },
+
                                         },
                                         {
                                             "aTargets": [2],
@@ -276,7 +286,7 @@
                         "rowCallback": function ( row, data, index ) {
 
                                     if (data.current_priority == null){
-                                        $('td:eq(5)', row).html( data['priority'] );
+                                        $('td:eq(6)', row).html( data['priority'] );
                                         }
                                                                     },
 
@@ -302,6 +312,11 @@
                         } );
         } );
 
+        table.on( 'select', function ( e, dt, type, indexes ) {
+                console.log('test');
+               $("#selectedTasksNumber").html(table.rows('.selected').data().length);
+            } );
+
 
 
 
@@ -312,11 +327,38 @@
                 //$(this).toggleClass('selected');
                 $(this).toggleClass('active');
             } );
+        $('#example').on( 'select', function (e, dt, type, indexes ) {
+                //$(this).toggleClass('selected');
+
+                console.log('test');
+               $("#selectedTasksNumber").html(table.rows('.selected').data().length);
+            } );
 
         //$("#btn_find_tasks").click(function(){
+
+        function reDrawStatus(statusList){
+            $('#statusStat').html('<tr id="statusHeader"></tr><tr id="statusBody"></tr>');
+            for(i=0;i<statusList.length;i++){
+                $('#statusHeader').append('<th><span class=" rstat tstat  '+ statusList[i][0]+' changeStatusFilter" style="cursor: pointer;">'+statusList[i][0]+'</span></th>');
+            }
+            for(i=0;i<statusList.length;i++){
+                $('#statusBody').append('<th >'+statusList[i][1]+'</th>');
+            }
+            $(".changeStatusFilter").click(function changeStatusFilterFun(){
+                var newStatus = $(this).html();
+                var newValue = '';
+                if (newStatus!='total'){
+                    newValue=newStatus;
+                }
+                $("#statusFilter input").val(newValue);
+                $("#statusFilter input").keyup();
+            });
+
+
+        }
         function find_tasks(){
 
-            var parameters = {}
+            var parameters = {};
             {% if reqid %}
             parameters = {{ reqid }}
             {% endif %}
@@ -340,18 +382,18 @@
 
                     //alert(jqXHR.responseText);
                     //var data = jqXHR.responseText;
-
+                    console.log(jqXHR);
                     var data =  $.parseJSON(jqXHR.responseText);
 
-
+                    console.log(data);
 
                     var oTable = $('#example').dataTable();
                     oTable.fnClearTable();
-                    if (data.length !== 0) {
-                        oTable.fnAddData(data);
+                    if (data.data.length !== 0) {
+                        oTable.fnAddData(data.data);
                     }
                     oTable.fnDraw();
-
+                    reDrawStatus(data.status_stat);
 
                     $('#example').dataTable().fnProcessingIndicator(false);
 
