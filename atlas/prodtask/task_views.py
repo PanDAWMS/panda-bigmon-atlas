@@ -9,6 +9,7 @@ from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
+from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import StepExecution
 import logging
 
@@ -801,3 +802,23 @@ def sync_deft_jedi_task(task_id):
     if do_update:
         deft_task.timestamp=timezone.now()
         deft_task.save()
+
+
+def create_mc_exhausted_hashtag():
+    tasks = ProductionTask.objects.filter(status__in=['assigning','running','ready','submitting','registered','exhausted','waiting'],provenance='AP',project__startswith='mc')
+    exhausted_tasks = []
+    for task in tasks:
+        if task.status == 'exhausted':
+            exhausted_tasks.append(task)
+        else:
+            jedi_task = JediTasks.objects.get(id=task.id)
+            if (jedi_task.status == 'exhausted') or (jedi_task.superstatus == 'exhausted'):
+                exhausted_tasks.append(task)
+    hashtag = add_or_get_request_hashtag('MC_exhausted')
+    hashtag_tasks = hashtag.tasks
+    for task in hashtag.tasks:
+        if task not in exhausted_tasks:
+            task.remove_hashtag(hashtag)
+    for task in exhausted_tasks:
+        if task not in hashtag_tasks:
+            task.set_hashtag(hashtag)

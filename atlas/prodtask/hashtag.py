@@ -218,7 +218,7 @@ def tasks_from_string(input_str):
 def hashtagslists(request):
     result = []
     try:
-
+        input_str = request.body
         hashtags = HashTag.objects.all()
         for hashtag in hashtags:
             hashtag_tasks_number = hashtag.tasks_count
@@ -242,6 +242,23 @@ def hashtags_by_request(request, reqid):
 
     return Response({'hashtags':hashtags})
 
+
+@csrf_protect
+@api_view(['POST'])
+def set_hashtag_for_tasks(request):
+
+    try:
+        input_data = json.loads(request.body)
+        hashtag_name, tasks = input_data['hashtag'], input_data['tasks']
+        hashtag = add_or_get_request_hashtag(hashtag_name)
+        for task in tasks:
+            if ProductionTask.objects.filter(id=task).exists():
+                production_task = ProductionTask.objects.get(id=task)
+                production_task.set_hashtag(hashtag)
+    except Exception,e:
+        return Response({'error':str(e)},status=400)
+
+    return Response({'success':True})
 
 @api_view(['GET'])
 def hashtags_campaign_lists(request):
