@@ -52,7 +52,8 @@ def tasks_hashtags(request, hashtag_formula):
                             {'reqid':None,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'nucleus': get_nucleus()
+                             'nucleus': get_nucleus(),
+                             'search_string':'Hashtags: %s'%hashtag_formula
                              })
 
 def request_tasks_slices(request, rid, slices):
@@ -68,7 +69,8 @@ def request_tasks_slices(request, rid, slices):
                             {'reqid':None,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'nucleus': get_nucleus()
+                             'nucleus': get_nucleus(),
+                             'search_string':'Slices for request: %s'%str(rid)
                              })
 
 
@@ -159,7 +161,7 @@ def get_tasks(request):
             return obj.isoformat()
 
         raise TypeError
-    STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted']
+    STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted','obsolete']
     status_stat = [('total',len(data_list))]
     for status in STATUS_ORDER:
         if status in status_dict:

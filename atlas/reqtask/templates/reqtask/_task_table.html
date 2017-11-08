@@ -91,8 +91,11 @@
 <input type="text" id="find_job">
 <a class="button postfix" id="btn_find_jobs">Go</a>
 -->
+        <div class="row">
+        <h6 class="left">{{ search_string }}</h6>
         <table class="right" id ='statusStat'></table>
-        <table id="example" class="display" cellspacing="0" width="100%">
+        </div>
+            <table id="example" class="display" cellspacing="0" width="100%">
 
            <thead>
            <tr>
@@ -175,13 +178,16 @@
             '</tr>'+
             '<tr>'+
                 '<td>Input Dataset :</td>'+
-                '<td>'+d.inputdataset+'</td>'+
+                '<td>'+d.primary_input+'</td>'+
             '</tr>'+
             '<tr>'+
                 '<td>BigPanDA link :</td>'+
                 '<td>'+'<a href="http://bigpanda.cern.ch/task/'+ d.id+'/">'+"http://bigpanda.cern.ch/task/"+ d.id+'</a>'+'</td>'+
             '</tr>'+
-
+            '<tr>'+
+                '<td>Outputs:</td>'+
+                '<td>'+ d.output_formats+'</td>'+
+            '</tr>'+
 
 
             '</table>';
@@ -226,6 +232,10 @@
                                 {
                                 "data" : "step_name",
                                 "visible" : true
+                                },
+                                {
+                                "data" : "output_formats",
+                                "visible" : false
                                 }
                         ],
                         dom: 'T<"clear">lftirp',
