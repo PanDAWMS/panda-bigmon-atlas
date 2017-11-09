@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
+from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset
 
 import atlas.deftcore.api.client as deft
@@ -42,10 +43,11 @@ supported_actions = _deft_actions.keys()
 #supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 supported_actions.extend(['increase_priority', 'decrease_priority'])
 supported_actions.extend(['retry_new'])
+supported_actions.extend(['set_hashtag','remove_hashtag'])
 
 # Allowed task actions per status
 allowed_task_actions = {
-    'waiting': ['abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs'],
+    'waiting': ['set_hashtag','remove_hashtag','abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs'],
     'registered': ['kill_job','retry'],
     'assigning': ['kill_job','retry'],
     'submitting': ['kill_job','retry'],
@@ -53,10 +55,11 @@ allowed_task_actions = {
     'running': ['kill_job','retry'],
     'exhausted': ['kill_job','retry','retry_new', 'reassign'],
     'done': ['obsolete', 'delete_output', 'obsolete_entity'],
-    'finished': ['retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority', 'obsolete_entity'],
-    'broken': [],
-    'failed': [],
-    'scouting':[],
+    'finished': ['set_hashtag','remove_hashtag','retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority', 'obsolete_entity'],
+    'broken': ['set_hashtag','remove_hashtag'],
+    'failed': ['set_hashtag','remove_hashtag'],
+    'scouting':['set_hashtag','remove_hashtag'],
+    'obsolete':['set_hashtag','remove_hashtag'],
     'paused': ['retry']
 }
 
@@ -64,7 +67,7 @@ allowed_task_actions = {
 for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
-                                          'increase_attempt_number', 'abort_unfinished_jobs',
+                                          'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
                                           'ctrl'])
 
 
@@ -111,6 +114,10 @@ def do_action(owner, task_id, action, *args):
         result.update(increase_task_priority(owner, task_id, *args))
     elif action == 'decrease_priority':
         result.update(decrease_task_priority(owner, task_id, *args))
+    elif action == 'set_hashtag':
+        result.update(set_hashtag(owner, task_id, args))
+    elif action == 'remove_hashtag':
+        result.update(remove_hashtag(owner, task_id, args))
     #elif action == 'obsolete':
     #    result.update(obsolete_task(owner, task_id))
     elif action == 'retry_new':
@@ -121,6 +128,27 @@ def do_action(owner, task_id, action, *args):
             result['exception'] = "Can't retry task {0}".format(task_id)
 
     return result
+
+
+def set_hashtag(owner, task_id, hashtag_name):
+    try:
+        task = ProductionTask.objects.get(id=task_id)
+        hashtag = add_or_get_request_hashtag(hashtag_name[0])
+        task.set_hashtag(hashtag)
+        #print hashtag_name[0]
+        return {'status':'success'}
+    except Exception,e:
+        return {'exception':str(e)}
+
+
+def remove_hashtag(owner, task_id, hashtag_name):
+    try:
+        task = ProductionTask.objects.get(id=task_id)
+        hashtag = add_or_get_request_hashtag(hashtag_name[0])
+        task.remove_hashtag(hashtag)
+        return {'status':'success'}
+    except Exception,e:
+        return {'exception':str(e)}
 
 
 def _do_deft_action(owner, task_id, action, *args):

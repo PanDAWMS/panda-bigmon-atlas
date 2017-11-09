@@ -200,7 +200,7 @@
             $('#example tfoot th').each( function () {
                     var title = $(this).text();
                     if( title !== '')
-                        $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+                        $(this).html( '<input class="SearchFooter" type="text" placeholder="Search '+title+'" />' );
                 } );
 
 
@@ -233,10 +233,7 @@
                                 "data" : "step_name",
                                 "visible" : true
                                 },
-                                {
-                                "data" : "output_formats",
-                                "visible" : false
-                                }
+
                         ],
                         dom: 'T<"clear">lftirp',
                         tableTools: {
