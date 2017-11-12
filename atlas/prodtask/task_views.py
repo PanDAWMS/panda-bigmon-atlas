@@ -822,3 +822,19 @@ def create_mc_exhausted_hashtag():
     for task in exhausted_tasks:
         if task not in hashtag_tasks:
             task.set_hashtag(hashtag)
+
+def create_nucleus_hashtag(nucleus,hashtag):
+    tasks = ProductionTask.objects.filter(status__in=['assigning','running','ready','submitting','registered','exhausted','waiting'],request_id__gte=1000)
+    selcted_tasks = []
+    for task in tasks:
+            jedi_task = JediTasks.objects.get(id=task.id)
+            if (jedi_task.nucleus == nucleus) :
+                selcted_tasks.append(task)
+    hashtag = add_or_get_request_hashtag(hashtag)
+    hashtag_tasks = hashtag.tasks
+    for task in hashtag.tasks:
+        if task not in selcted_tasks:
+            task.remove_hashtag(hashtag)
+    for task in selcted_tasks:
+        if task not in hashtag_tasks:
+            task.set_hashtag(hashtag)
