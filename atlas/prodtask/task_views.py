@@ -628,6 +628,10 @@ def slice_by_task(request, task_id):
         return HttpResponseRedirect('/')
     return HttpResponseRedirect(reverse('prodtask:input_list_approve_full', args=[request_id])+'#inputList'+str(slice))
 
+
+ALWAYS_ALLOWED = ['set_hashtag','remove_hashtag']
+
+
 def check_action_allowed(username, tasks, action=None, userfullname=''):
     is_superuser=False
     group_permissions = []
@@ -662,24 +666,25 @@ def check_action_allowed(username, tasks, action=None, userfullname=''):
             if action and (action not in allowed_task_actions[task_status]):
                 not_allowed_tasks.append(task)
             else:
-                if not is_analy:
-                    if is_superuser or (username==task_owner):
-                            pass
-                    elif physgroup in allowed_groups:
-                            pass
-                    elif "DPD" in allowed_groups:
-                            pass
-                    elif "MCCOORD" in  allowed_groups:
-                            pass
+                if action not in ALWAYS_ALLOWED:
+                    if not is_analy:
+                        if is_superuser or (username==task_owner):
+                                pass
+                        elif physgroup in allowed_groups:
+                                pass
+                        elif "DPD" in allowed_groups:
+                                pass
+                        elif "MCCOORD" in  allowed_groups:
+                                pass
+                        else:
+                                denied_tasks.append(task)
                     else:
+                        if is_superuser or (username==task_owner):
+                            pass
+                        elif (userfullname == task_owner) and (task_name.split('.')[1] == username):
+                            pass
+                        else:
                             denied_tasks.append(task)
-                else:
-                    if is_superuser or (username==task_owner):
-                        pass
-                    elif (userfullname == task_owner) and (task_name.split('.')[1] == username):
-                        pass
-                    else:
-                        denied_tasks.append(task)
     return denied_tasks, not_allowed_tasks
 
 

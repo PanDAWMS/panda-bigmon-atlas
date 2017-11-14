@@ -54,7 +54,7 @@ allowed_task_actions = {
     'ready': ['kill_job','retry'],
     'running': ['kill_job','retry'],
     'exhausted': ['kill_job','retry','retry_new', 'reassign'],
-    'done': ['obsolete', 'delete_output', 'obsolete_entity'],
+    'done': ['obsolete', 'delete_output', 'obsolete_entity','set_hashtag','remove_hashtag'],
     'finished': ['set_hashtag','remove_hashtag','retry', 'retry_new', 'change_parameters', 'obsolete', 'delete_output','change_priority', 'obsolete_entity'],
     'broken': ['set_hashtag','remove_hashtag'],
     'failed': ['set_hashtag','remove_hashtag'],
