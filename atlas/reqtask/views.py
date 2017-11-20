@@ -1,4 +1,6 @@
 import json
+import re
+
 import requests
 from django.core import serializers
 
@@ -47,7 +49,7 @@ def tasks_hashtags(request, hashtag_formula):
         task_ids = tasks_from_string(hashtag_formula)
         request.session['selected_tasks'] = map(int,task_ids)
     except Exception,e:
-        pass
+        request.session['selected_tasks'] = []
     return render(request, 'reqtask/_task_table.html',
                             {'reqid':None,
                              'clouds': get_clouds(),
@@ -95,6 +97,21 @@ def request_tasks(request, rid = None):
                              })
 
 
+def request_tasks_by_url(request):
+    params_for_bigpanda = ''
+    request_path = request.META['QUERY_STRING']
+    if request_path:
+        params_for_bigpanda = "http://bigpanda.cern.ch/tasks/?" + request_path
+    return render(request, 'reqtask/_task_table.html',{ 'params_for_bigpanda':  params_for_bigpanda  , 'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'nucleus': get_nucleus(), 'get_tasks_by_url':True})
+
+
+
+
+
+
+
 def tasks_action(request):
     """
 
@@ -130,14 +147,38 @@ def get_task_array(request):
     return task_array
 
 
+
+def  get_tasks_by_url(url):
+    url=re.sub('&display_limit.*(\d+)','',url)
+    url = url.replace('https','http')
+    if 'json' not in url:
+        if url[-1]=='&':
+            url=url+'&'
+        else:
+            url=url+'&json'
+    headers = {'content-type': 'application/json', 'accept': 'application/json'};
+    resp = requests.get(url, headers=headers)
+    data = resp.json()
+    return [x['jeditaskid'] for x in data]
+
 def get_tasks(request):
 
-    reqid = json.loads(request.body)
-    if not reqid:
-        task_array = get_task_array(request)
+    input_data = json.loads(request.body)
+    reqid = None
+    print input_data
+    if 'reqid' in input_data:
+        reqid = input_data['reqid']
+        qs = ProductionTask.objects.filter(request__reqid = reqid)
+    elif 'site' in input_data:
+        try:
+            task_array = get_tasks_by_url(input_data['site'])
+        except:
+            task_array = []
         qs = ProductionTask.objects.filter(id__in=task_array)
     else:
-        qs = ProductionTask.objects.filter(request__reqid = reqid)
+        task_array = get_task_array(request)
+        qs = ProductionTask.objects.filter(id__in=task_array)
+
 
     data_list = []
     status_dict = {}
@@ -167,5 +208,4 @@ def get_tasks(request):
         if status in status_dict:
             status_stat.append((status,status_dict[status]))
     data= json.dumps({'data':list(data_list),'status_stat':status_stat},default = decimal_default)
-
     return HttpResponse(data)

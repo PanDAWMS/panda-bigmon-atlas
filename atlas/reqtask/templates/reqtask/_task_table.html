@@ -46,53 +46,21 @@
 
 
 
-<!--
-         <div class="small-6 large-6 columns">
-            <input type="text" id="find_job">
-         </div>
-
-        <table>
-
-            <tr>
-                <td>Request ID <= </td>
-                <td>
-                <input id="high_reqid" />
-                </td>
-            </tr>
-
-            <tr>
-                <td>Request ID >= </td>
-                <td>
-                <input id="low_reqid" />
-            </td>
-            </tr>
-
-
-
-
-            <input type="text" id="low_reqid" aria-label="request">
-            <input type="text" id="high_reqid" aria-label="request">
-
-
-
-        </table>
--->
-
-<!--
-
-
-
-         <div class="small-3 large-3 columns">
-            <a class="button postfix" id="btn_find_tasks">Load</a>
-         </div>
--->
-
-<!--
-<input type="text" id="find_job">
-<a class="button postfix" id="btn_find_jobs">Go</a>
--->
+        {% if get_tasks_by_url %}
+            <div class="row">
+            <div class="small-6 large-6 columns">
+                <input type="text" id="find_tasks_url" value="{{ params_for_bigpanda  }}">
+            </div>
+            <div class="small-3 large-3 columns">
+                <a class="button postfix" id="btn_find_jobs">Go</a>
+            </div>
+             <div class="small-1 large-1 columns">
+                <a class="button postfix alert" id="btn_clean_table">X</a>
+            </div>
+            </div>
+        {% endif %}
         <div class="row">
-        <h6 class="left">{{ search_string }}</h6>
+         <h6 class="left">{{ search_string }}</h6>
         <table class="right" id ='statusStat'></table>
         </div>
             <table id="example" class="display" cellspacing="0" width="100%">
@@ -153,6 +121,19 @@
 
 
     <script type="text/javascript" class="init">
+    {% autoescape off %}
+        {% if reqid %}
+            var reqID = {{ reqid }};
+        {% else %}
+            var reqID = false;
+        {% endif %}
+        {% if get_tasks_by_url %}
+            var useInputURL = true;
+        {% else %}
+            var useInputURL = false;
+        {% endif %}
+
+    {% endautoescape %}
 
         function csrfSafeMethod(method) {
             // these HTTP methods do not require CSRF protection
@@ -232,7 +213,7 @@
                                 {
                                 "data" : "step_name",
                                 "visible" : true
-                                },
+                                }
 
                         ],
                         dom: 'T<"clear">lftirp',
@@ -343,85 +324,11 @@
 
         //$("#btn_find_tasks").click(function(){
 
-        function reDrawStatus(statusList){
-            $('#statusStat').html('<tr id="statusHeader"></tr><tr id="statusBody"></tr>');
-            for(i=0;i<statusList.length;i++){
-                $('#statusHeader').append('<th><span class=" rstat tstat  '+ statusList[i][0]+' changeStatusFilter" style="cursor: pointer;">'+statusList[i][0]+'</span></th>');
-            }
-            for(i=0;i<statusList.length;i++){
-                $('#statusBody').append('<th >'+statusList[i][1]+'</th>');
-            }
-            $(".changeStatusFilter").click(function changeStatusFilterFun(){
-                var newStatus = $(this).html();
-                var newValue = '';
-                if (newStatus!='total'){
-                    newValue=newStatus;
-                }
-                $("#statusFilter input").val(newValue);
-                $("#statusFilter input").keyup();
-            });
-
-
-        }
-        function find_tasks(){
-
-            var parameters = {};
-            {% if reqid %}
-            parameters = {{ reqid }}
-            {% endif %}
-            //if (parameters.length == 0) return;
-
-            var ajaxUrl =  Django.url('reqtask:get_tasks');
-            $('#example').dataTable().fnProcessingIndicator();
-
-            $.ajax({
-                url: ajaxUrl,
-                type: "POST",
-                data: $.toJSON(parameters),
-                dataType: "json",
-
-             //   success: function(){
 
 
 
-//                } // 'success' event handler
-                complete: function (jqXHR, textStatus) {
-
-                    //alert(jqXHR.responseText);
-                    //var data = jqXHR.responseText;
-                    console.log(jqXHR);
-                    var data =  $.parseJSON(jqXHR.responseText);
-
-                    console.log(data);
-
-                    var oTable = $('#example').dataTable();
-                    oTable.fnClearTable();
-                    if (data.data.length !== 0) {
-                        oTable.fnAddData(data.data);
-                    }
-                    oTable.fnDraw();
-                    reDrawStatus(data.status_stat);
-
-                    $('#example').dataTable().fnProcessingIndicator(false);
 
 
-
-                    //console.log(oTable.api().columns(2).search( 'failed' ).data()[0]);
-
-
-
-                    //oTable.api().columns(2).search( columns(2).footer().value ).draw();
-
-
-                } // 'complete' event handler
-
-            });
-
-                    // Apply the search
-
-            //$('#example').dataTable().fnProcessingIndicator();
-            //$(".dataTables_processing").css('visibility','visible');
-        };
         //} );
             //$(".dataTables_processing").css('visibility','hidden');
         find_tasks();
@@ -446,8 +353,74 @@
 
 
         } );
+     function reDrawStatus(statusList){
+            $('#statusStat').html('<tr id="statusHeader"></tr><tr id="statusBody"></tr>');
+            for(i=0;i<statusList.length;i++){
+                $('#statusHeader').append('<th><span class=" rstat tstat  '+ statusList[i][0]+' changeStatusFilter" style="cursor: pointer;">'+statusList[i][0]+'</span></th>');
+            }
+            for(i=0;i<statusList.length;i++){
+                $('#statusBody').append('<th >'+statusList[i][1]+'</th>');
+            }
+            $(".changeStatusFilter").click(function changeStatusFilterFun(){
+                var newStatus = $(this).html();
+                var newValue = '';
+                if (newStatus!='total'){
+                    newValue=newStatus;
+                }
+                $("#statusFilter input").val(newValue);
+                $("#statusFilter input").keyup();
+            });
+     }
+        function find_tasks(){
+             var parameters = {};
+            if (reqID){
+                 parameters = {'reqid':reqID};
+            }
+                if(useInputURL){
+                    parameters = {'site':$('#find_tasks_url').val()}
+                }
+            var ajaxUrl =  Django.url('reqtask:get_tasks');
+            $('#example').dataTable().fnProcessingIndicator();
+            $.ajax({
+                url: ajaxUrl,
+                type: "POST",
+                data: $.toJSON(parameters),
+                dataType: "json",
+                complete: function (jqXHR, textStatus) {
+
+                    var data =  $.parseJSON(jqXHR.responseText);
+                    $('#example').dataTable().fnClearTable();
+                    if (data.data.length !== 0) {
+                        $('#example').dataTable().fnAddData(data.data);
+                    }
+                    $('#example').dataTable().fnDraw();
+                    reDrawStatus(data.status_stat);
+
+                    $('#example').dataTable().fnProcessingIndicator(false);
 
 
+
+                } // 'complete' event handler
+
+            });
+
+        };
+
+        $("#btn_find_jobs").click(function(){
+            $("#statusStat").html('');
+            find_tasks();
+
+
+        } );
+        $("#btn_clean_table").click(function(){
+
+            $("#find_tasks_url").val('');
+            $("#statusStat").html('');
+            var oTable = $('#example').dataTable();
+                    oTable.fnClearTable();
+                    oTable.fnAddData(data);
+                    oTable.fnDraw();
+        } );
 
         $("#btn_handle_jobs").click(function(){
 
@@ -473,13 +446,7 @@
         }  );
 
 
-
-
-
-
-
     </script>
-
 
 
 

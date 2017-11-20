@@ -8,6 +8,7 @@ urlpatterns = patterns('',
                        #url(r'^(?P<rid>\d+)/$|^$', 'atlas.reqtask.views.request_tasks',       name='request_tasks'),
     url(r'^tasks_action/$', 'atlas.reqtask.views.tasks_action', name='tasks_action'),
                        url(r'^get_tasks/$', 'atlas.reqtask.views.get_tasks', name='get_tasks'),
+                       url(r'^by_url/$', 'atlas.reqtask.views.request_tasks_by_url', name='request_tasks_by_url')
                        )
 
 
