@@ -597,6 +597,10 @@ def change_request_priority(request, reqid, old_priority, new_priority):
 MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta','boeriu',
                   'onofrio','jmonk','kado']
 
+
+PATTERNS_TO_MERGE = [14372, 14373, 14391, 14392]
+
+
 def request_approve_status(production_request, request):
     if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
         user_name=''
@@ -616,6 +620,11 @@ def request_approve_status(production_request, request):
             return 'approved'
 
     else:
+        if production_request.request_type == 'GROUP':
+            if ParentToChildRequest.objects.filter(parent_request=production_request).exists():
+                if ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id:
+                    if TrainProduction.objects.get(id=ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id).pattern_request_id in PATTERNS_TO_MERGE:
+                        return 'registered'
         return 'approved'
 
 
