@@ -12,6 +12,18 @@
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
         @import "{% static "css/prodtask.css" %}";
+        @import "{% static "css/dataTables.tableTools.css" %}";
+        @import "{% static "css/dataTables.foundation.min.css" %}";
+        @import "{% static "css/jquery.dataTables.min.css" %}";
+        .dataTables_wrapper .dataTables_paginate .paginate_button {padding: 0em 0em;}
+
+    td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_open.png') no-repeat center center;
+    cursor: pointer;
+    }
+    tr.shown td.details-control {
+    background: url('http://legacy.datatables.net/release-datatables/examples/examples_support/details_close.png') no-repeat center center;
+    }
 	</style>
     <style>
     table.stale,table.info td,table.info th {
@@ -46,6 +58,9 @@
 {%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
+<script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
 {% endblock %}
 
 
@@ -97,7 +112,7 @@ $(document).ready(function(){
       <span><a href="{%  url 'prodtask:input_list_approve' request_id %}">{{ request_id }}</a>,</span>
     {% endfor  %}
 <h4 style="color: red" id="failedTasks">Failed tasks:</h4>
-    <table class="alarm">
+    <table id="tableFailed" class="alarm">
     <thead>
     <tr>
     <th>Request</th>
@@ -126,7 +141,7 @@ $(document).ready(function(){
     </tbody>
     </table>
 <h4 style="color: orange" id="staleTasks">Stale for more than 3 days:</h4>
-    <table class="stale">
+    <table id="tableStale" class="stale">
     <thead>
     <tr>
     <th>Request ID</th>
@@ -155,7 +170,7 @@ $(document).ready(function(){
     </tbody>
     </table>
 <h4 style="color: orange" id="warningTasks">Warning, stale for 1 day:</h4>
-    <table class="warning">
+    <table id="tableWarning" class="warning">
     <thead>
     <tr>
     <th>Request ID</th>
@@ -183,5 +198,11 @@ $(document).ready(function(){
     {% endfor %}
     </tbody>
     </table>
-
+<script>
+$(document).ready(function() {
+    var table = $('#tableFailed').DataTable({"aLengthMenu": [[1000, 'all'], [1000, -1]]});
+     $('#tableStale').DataTable({"aLengthMenu": [[1000, 'all'], [1000, -1]]});
+     $('#tableWarning').DataTable({"aLengthMenu": [[1000, 'all'], [1000, -1]]});
+})
+</script>
 {% endblock %}
