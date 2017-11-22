@@ -99,7 +99,7 @@ def train_luanch(request):
 
 def collect_trains(days):
     min_request = RequestStatus.objects.filter(status='waiting', timestamp__gt=timezone.now()-timedelta(days=days)).order_by('id')[0].request_id
-    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request, status='registered')
+    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request, cstatus='registered')
     patterns = {}
     for production_request in requests:
         if TrainProduction.objects.filter(request = int(production_request.reqid)).exists():
