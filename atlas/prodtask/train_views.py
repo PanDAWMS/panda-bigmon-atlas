@@ -77,7 +77,7 @@ def merge_trains(request):
 def trains_to_merge(request):
     to_send = {}
     try:
-        result = collect_trains(7)
+        result = collect_trains(14)
         for entry in result.values():
             to_send[int(entry['train'].id)] = {'train_name':entry['train'].description,'request':map(int,entry['requests']),'request_count':len(entry['requests'])}
     except Exception, e:
@@ -99,7 +99,7 @@ def train_luanch(request):
 
 def collect_trains(days):
     min_request = RequestStatus.objects.filter(status='waiting', timestamp__gt=timezone.now()-timedelta(days=days)).order_by('id')[0].request_id
-    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request)
+    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request, status='registered')
     patterns = {}
     for production_request in requests:
         if TrainProduction.objects.filter(request = int(production_request.reqid)).exists():
