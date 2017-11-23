@@ -1592,7 +1592,19 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         except Exception,e:
                             _logger.error("Problem during mail sending: %s" % str(e))
                         # Saving slices->steps
-
+                        if close_train:
+                            train_id = close_train
+                            train = TrainProduction.objects.get(id=train_id)
+                            train.status = 'Started'
+                            train.request = req
+                            train.save()
+                        if train:
+                            new_relation = ParentToChildRequest()
+                            new_relation.train = train
+                            new_relation.parent_request = req
+                            new_relation.relation_type = 'BC'
+                            new_relation.status = 'active'
+                            new_relation.save()
                         step_parent_dict = {}
                         for current_slice in file_dict:
                             input_data = current_slice["input_dict"]
@@ -1653,19 +1665,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                     else:
                                         st_exec.step_parent = step_parent_dict[0]
                                     st_exec.save()
-                        if close_train:
-                            train_id = close_train
-                            train = TrainProduction.objects.get(id=train_id)
-                            train.status = 'Started'
-                            train.request = req
-                            train.save()
-                        if train:
-                            new_relation = ParentToChildRequest()
-                            new_relation.train = train
-                            new_relation.parent_request = req
-                            new_relation.relation_type = 'BC'
-                            new_relation.status = 'active'
-                            new_relation.save()
+
                         try:
                             fill_request_priority(req.reqid,req.reqid)
                             fill_request_events(req.reqid,req.reqid)
