@@ -494,7 +494,8 @@ class ParentToChildRequest(models.Model):
                     ('BC', 'By creation'),
                     ('MA', 'Manually'),
                     ('SP', 'Evgen Split'),
-                    ('CL', 'Cloned')
+                    ('CL', 'Cloned'),
+                    ('MR', 'Merged')
                     )
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
