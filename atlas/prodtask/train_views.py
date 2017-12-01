@@ -14,7 +14,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from atlas.prodtask.models import RequestStatus
-from atlas.prodtask.views import create_steps_in_child_pattern
+from atlas.prodtask.spdstodb import fill_template
+from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
@@ -35,6 +36,7 @@ def merge_pattern_train(train, requests):
     outputs = train.output_by_slice
     outputs_lookup = form_output_lookup(outputs)
     dataset_slice = {}
+    merge_requests = set()
     merged = 0
     for production_request in requests:
         slices = list(InputRequestList.objects.filter(request=production_request).order_by('id'))
@@ -50,15 +52,62 @@ def merge_pattern_train(train, requests):
             else:
                 pattern_slice = outputs_lookup[outputs[0]]
                 if pattern_slice not in current_dataset_outputs:
-                    current_dataset_outputs[pattern_slice] = {'outputs':outputs,'count':1}
+                    current_dataset_outputs[pattern_slice] = {'outputs':outputs,'count':1, 'requests':[production_request], 'slices':[slices[index].slice]}
                 else:
                     new_outputs = [x for x in outputs if x not in current_dataset_outputs[pattern_slice]['outputs']]
                     if new_outputs:
                         merged += 1
                         current_dataset_outputs[pattern_slice]['count'] += 1
                         current_dataset_outputs[pattern_slice]['outputs'] = current_dataset_outputs[pattern_slice]['outputs'] + new_outputs
+                        current_dataset_outputs[pattern_slice]['requests'].append(production_request)
+                        current_dataset_outputs[pattern_slice]['slices'].append(slices[index].slice)
+                        merge_requests.update(current_dataset_outputs[pattern_slice]['requests'])
                 dataset_slice[dataset] = current_dataset_outputs
-    return dataset_slice, merged
+    return dataset_slice, merged, list(merge_requests)
+
+
+def do_merge_requests(train_id, requests):
+        train = TrainProduction.objects.get(id=train_id)
+        dataset_slices, merged, merge_requests = merge_pattern_train(train,requests)
+        dataset_to_merge = {}
+        slices_to_skip = []
+        for dataset in dataset_slices:
+            for pattern_slice in dataset_slices[dataset]:
+                if dataset_slices[dataset][pattern_slice]['count']>1:
+                    dataset_to_merge.update({str(dataset_slices[dataset][pattern_slice]['requests'][0])+','+str(dataset_slices[dataset][pattern_slice]['slices'][0]):dataset_slices[dataset][pattern_slice]['outputs']})
+                    for index, request_to_skip in enumerate(dataset_slices[dataset][pattern_slice]['requests'][1:],1):
+                        slices_to_skip.append(str(request_to_skip)+','+str(dataset_slices[dataset][pattern_slice]['slices'][index]))
+        for request in requests:
+            if request not in merge_requests:
+                print request,'approved'
+                set_request_status('cron',request,'approved','Automatic merged approve', 'Request was approved during merging')
+        if len(merge_requests)>0:
+            base_request = TRequest.objects.get(reqid=merge_requests[0])
+            merged_request = request_clone_slices(base_request.reqid, base_request.manager, 'Merged request for pattern %s'%str(train.pattern_request_id), base_request.ref_link,  [], base_request.project, False)
+            for request in merge_requests:
+                slices = list(InputRequestList.objects.filter(request=request))
+                for slice in slices:
+                    slice_index = str(request)+','+str(slice.slice)
+                    if slice_index not in slices_to_skip:
+                        new_slice = clone_slices(request,merged_request,[slice.slice],0,False)
+                        step = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=merged_request,slice=new_slice[0]))[0]
+                        if slice_index in dataset_to_merge.keys():
+                            step.step_template = fill_template(step.step_template.step,step.step_template.ctag,
+                                                               step.step_template.priority,
+                                                               '.'.join(dataset_to_merge[slice_index]))
+                        step.status = 'Approved'
+                        step.save()
+                set_request_status('cron',request,'merged','Automatic merging', 'Request was merged to %s'%(str(merged_request)))
+                relationship = ParentToChildRequest()
+                relationship.status = 'active'
+                relationship.parent_request = TRequest.objects.get(reqid=request)
+                relationship.child_request = TRequest.objects.get(reqid=merged_request)
+                relationship.train = None
+                relationship.relation_type = 'MR'
+                relationship.save()
+                print request,'merged', merged_request
+            set_request_status('cron',merged_request,'approved','Automatic merged approve', 'Request was approved after merging')
+
 
 @api_view(['POST'])
 def merge_trains(request):
@@ -67,7 +116,7 @@ def merge_trains(request):
     try:
         for train_id in data:
             train = TrainProduction.objects.get(id=train_id)
-            dataset_slice, merged = merge_pattern_train(train,data[train_id])
+            dataset_slice, merged, temp = merge_pattern_train(train,data[train_id])
             to_send[train_id]  = dataset_slice
     except Exception, e:
         Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
