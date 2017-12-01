@@ -80,6 +80,7 @@ def do_merge_requests(train_id, requests):
         for request in requests:
             if request not in merge_requests:
                 print request,'approved'
+                set_request_status('cron',request,'working','Automatic merged approve', 'Request was approved after merging')
                 set_request_status('cron',request,'approved','Automatic merged approve', 'Request was approved during merging')
         if len(merge_requests)>0:
             base_request = TRequest.objects.get(reqid=merge_requests[0])
@@ -106,6 +107,7 @@ def do_merge_requests(train_id, requests):
                 relationship.relation_type = 'MR'
                 relationship.save()
                 print request,'merged', merged_request
+            set_request_status('cron',merged_request,'working','Automatic merged approve', 'Request was approved after merging')
             set_request_status('cron',merged_request,'approved','Automatic merged approve', 'Request was approved after merging')
 
 

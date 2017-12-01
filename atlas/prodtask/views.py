@@ -23,7 +23,7 @@ from atlas.getdatasets.models import TRequest
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest
+    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -598,8 +598,6 @@ MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase
                   'onofrio','jmonk','kado']
 
 
-PATTERNS_TO_MERGE = [14372, 14373, 14391, 14392]
-
 
 def request_approve_status(production_request, request):
     if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
@@ -623,8 +621,10 @@ def request_approve_status(production_request, request):
         if production_request.request_type == 'GROUP':
             if ParentToChildRequest.objects.filter(parent_request=production_request).exists():
                 if ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id:
-                    if TrainProduction.objects.get(id=ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id).pattern_request_id in PATTERNS_TO_MERGE:
-                        return 'registered'
+                    if HashTag.objects.filter(hashtag__iexact='PatternToMerge').exists():
+                        patterns = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.filter(hashtag__iexact='PatternToMerge')[0]).values_list('request_id',flat=True))
+                        if TrainProduction.objects.get(id=ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id).pattern_request_id in patterns:
+                            return 'registered'
         return 'approved'
 
 
