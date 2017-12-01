@@ -1935,7 +1935,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             child_requests = []
             parent_request_id = ''
             try:
-                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA','CL'],status='active')
+                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA','CL','MR'],status='active')
                 for related_request in related_requests:
                     pattern_name = ''
                     pattern_id = rid
@@ -2619,7 +2619,7 @@ def clone_request_hashtags(old_request_id, new_request):
 
 
 
-def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project):
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project, do_parent = True):
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
     request_destination.cstatus = 'waiting'
@@ -2637,12 +2637,13 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
     request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
                                                        status='waiting')
     request_status.save_with_current_time()
-    new_parent_child = ParentToChildRequest()
-    new_parent_child.parent_request = TRequest.objects.get(reqid=reqid)
-    new_parent_child.child_request = request_destination
-    new_parent_child.relation_type = 'CL'
-    new_parent_child.status = 'active'
-    new_parent_child.save()
+    if do_parent:
+        new_parent_child = ParentToChildRequest()
+        new_parent_child.parent_request = TRequest.objects.get(reqid=reqid)
+        new_parent_child.child_request = request_destination
+        new_parent_child.relation_type = 'CL'
+        new_parent_child.status = 'active'
+        new_parent_child.save()
     _logger.debug("New request: #%i"%(int(request_destination.reqid)))
     try:
         clone_request_hashtags(reqid, request_destination)
@@ -2734,7 +2735,7 @@ def get_problematic_task_list(step_id):
 def clone_child_slices(parent_request, parent_steps):
     child_requests = list(ParentToChildRequest.objects.filter(status='active',parent_request=parent_request).values_list('child_request',flat=True))
     for child_request in child_requests:
-        if child_requests:
+        if child_request:
             current_child_slice_set = set()
             child_steps =  list(StepExecution.objects.filter(request=child_request))
             for child_step in child_steps:
