@@ -137,24 +137,25 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 _logger.debug('Created step template: %i' % st.id)
                 return st
             else:
-                if (not step_name) or (not tag):
+                if not tag:
                     raise ValueError("Can't create an empty step")
-                else:
-                    if st:
-                       return st
-                    output_formats = STEP_FORMAT.get(step_name,'')
-                    if formats:
-                        output_formats = formats
-                    memory = 0
-                    if ram:
-                        memory = ram
-                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
-                               ctag=tag, priority=0,
-                               cpu_per_event=0, memory=memory,
-                               output_formats=output_formats, trf_name='',
-                               lparams='', vparams='', swrelease='')
-                    st.save()
-                    return st
+                if not step_name:
+                    step_name = 'Reco'
+                if st:
+                   return st
+                output_formats = STEP_FORMAT.get(step_name,'')
+                if formats:
+                    output_formats = formats
+                memory = 0
+                if ram:
+                    memory = ram
+                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
+                           ctag=tag, priority=0,
+                           cpu_per_event=0, memory=memory,
+                           output_formats=output_formats, trf_name='',
+                           lparams='', vparams='', swrelease='')
+                st.save()
+                return st
 
 
 def format_check(format):
@@ -314,10 +315,10 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 formats = None
                                 if do_split:
-                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':20,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')})
                                 else:
-                                    task_config.update({'maxAttempt':20,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')})
 
                                 if reduce_input_format:
