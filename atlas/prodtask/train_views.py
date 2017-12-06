@@ -349,6 +349,7 @@ def create_pattern_train(pattern_request_id, pattern_type='MC'):
     pattern_train = TrainProduction()
     pattern_train.pattern_request = TRequest.objects.get(reqid=pattern_request_id)
     outputs = json.dumps(pattern_from_request(pattern_train.pattern_request))
+    pattern_train.outputs = outputs
     if len(outputs) > 2000:
         pattern_train.outputs = 'Error'
     pattern_train.status = pattern_type
@@ -513,7 +514,7 @@ def create_request_from_train(request,train_id):
                 current_output_formats = merged_trains[dataset_slice]
                 if current_output_formats:
                             st_sexec_list = []
-                            irl = dict(slice=slice_index, brief=current_parent_step.slice.brief, comment=current_parent_step.slice.comment, dataset=dataset,
+                            irl = dict(slice=slice_index, brief=current_parent_step.slice.brief, comment=current_parent_step.slice.comment, dataset=dataset.strip(),
                                        input_data='',
                                        project_mode=current_parent_step.slice.project_mode,
                                        priority=int(current_parent_step.slice.priority),
