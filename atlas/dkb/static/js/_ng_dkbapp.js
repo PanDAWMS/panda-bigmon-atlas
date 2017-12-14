@@ -64,12 +64,24 @@
         function (scope, http, routeParams) {
 
             scope.loading = true;
-            scope.query_string  = '';
+            scope.keywords  = routeParams.search_string;
 
+            scope.showTasks= function(){
+                var toSend = {search_string:scope.keywords};
+                http.post(Django.url('dkb:search_string_to_url'),toSend).
+                  success(function(data, status, headers, config) {
+                    var url = data.url;
+                    window.location.href = '#/task_keywords/'+url;
+                  }).
+                  error(function(data, status, headers, config) {
+                    console.log(status);
+                  });
+            };
             var toSend = {search_string:routeParams.search_string};
             http.post(Django.url('dkb:es_task_search'), toSend).
              success(function(data, status, headers, config) {
-                scope.tasks = data;
+                scope.tasks = data.tasks;
+                scope.total = data.total;
                 scope.loading = false;
 
              }).
@@ -91,7 +103,39 @@
 
             });
         }]);
+    DKBApp.controller('DKBStepsCtrl',['$scope','$http','$routeParams',
 
+        function (scope, http, routeParams) {
+
+            scope.loading = true;
+            scope.query_string  = '';
+
+            var toSend = {search_string:routeParams.search_string};
+            http.post(Django.url('dkb:es_task_search'), toSend).
+             success(function(data, status, headers, config) {
+                scope.tasks = data;
+                console.log(data);
+                scope.loading = false;
+
+             }).
+            error(function(data, status, headers, config) {
+                        if (data.message != undefined){
+                            alert(data.message);
+                        }
+
+            });
+            http.post(Django.url('dkb:search_string_to_url'), toSend).
+             success(function(data, status, headers, config) {
+                scope.query_string = data.query_string;
+
+             }).
+            error(function(data, status, headers, config) {
+                        if (data.message != undefined){
+                            alert(data.message);
+                        }
+
+            });
+        }]);
     DKBApp.config(function($routeProvider) {
           $routeProvider.
             when('/', {
@@ -101,6 +145,10 @@
           when('/task_keywords/:search_string', {
               templateUrl: '/static/html/_ng_task_summary.html',
               controller: 'DKBSummaryCtrl'
+            }).
+          when('/steps_groups/', {
+              templateUrl: '/static/html/_ng_task_summary.html',
+              controller: 'DKBStepsCampaign'
             }).
             otherwise({
               redirectTo: '/'

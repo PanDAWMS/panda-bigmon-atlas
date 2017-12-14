@@ -20,6 +20,8 @@ from atlas.settings.local import ESLogin
 
 connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']))
 
+SIZE_TO_DISPLAY = 2000
+
 def test_connection():
     return Search(index="prodsys", doc_type='MC16')
 
@@ -27,11 +29,16 @@ def test_connection():
 @api_view(['POST'])
 def es_task_search(request):
     search_string = json.loads(request.body)
-    response = keyword_search(key_string_from_input(search_string)['query_string'])
+    response = keyword_search2(key_string_from_input(search_string)['query_string']).execute()
     result = []
-    for hit in response[:10000]:
-        result.append(hit.to_dict())
-    return Response(result)
+    total = response.hits.total
+    for hit in response:
+        current_hit = hit.to_dict()
+        current_hit['output_dataset'] = []
+        for hit2 in hit.meta.inner_hits['output_dataset']:
+            current_hit['output_dataset'].append(hit2.to_dict())
+        result.append(current_hit)
+    return Response({'tasks':result,'total':total})
 
 
 @api_view(['POST'])
@@ -58,6 +65,70 @@ def index(request):
 
 
 
+def keyword_search2(keyword_string):
+    es_search = Search(index="prodsys_rucio_ami", doc_type='task')
+    query = es_search.update_from_dict({"query": {
+                                          "bool": {
+                                            "must": [
+                                              {
+                                                "query_string": {
+                                                "query": keyword_string,
+                                                "analyze_wildcard": True
+                                              }},
+
+                                            { "has_child": {
+                                                "type": "output_dataset",
+                                                "score_mode": "sum",
+                                                "query": {
+                                                    "match_all": {}
+                                                },
+                                                "inner_hits": {}
+                                            }}]
+                                          }
+                                        }, 'size':SIZE_TO_DISPLAY
+    })
+    return query
+
+
+def summary():
+    es_search = Search(index="prodsys_rucio_ami", doc_type='task')
+
+    query = {
+        "query": {
+               "bool": {
+                 "must": [
+                   { "term": { "status": "done" } }
+                 ],
+                 "should": [
+                   { "term": { "hashtag_list": "MC16a_CP"} }
+                 ]
+               }
+             },
+             "aggs": {
+               "category": {
+                 "terms": {"field": "phys_category"},
+                 "aggs": {
+                   "step": {
+                     "terms": {
+                       "field": "step_name.keyword"
+                     },
+                     "aggs": {
+                       "requested": {
+                         "sum": {
+                           "field": "requested_events"
+                         }
+                       },
+                       "processed": {
+                         "sum": {"field": "processed_events"}
+                       }
+                     }
+                   }
+                 }
+               }
+             }
+            }
+    aggregs =  es_search.update_from_dict(query)
+    return aggregs.execute()
 
 def keyword_search(keyword_string):
     es_search = Search(index="prodsys", doc_type='MC16')

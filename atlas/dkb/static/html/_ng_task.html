@@ -1,8 +1,8 @@
 <div class="container">
-<div id="header{{  taskMeta.taskid }}"  ng-click="showStuff(taskMeta)" style="cursor: pointer; border: groove" >
+<div id="header{{  taskMeta.taskid }}"  ng-click="showStuff(taskMeta)" style="cursor: pointer;" >
   <span class="taskheader {{ taskMeta.status }}" > {{  taskMeta.taskid }} </span>{{  taskMeta.taskname }}</div>
 
-<div id="body{{ taskMeta.taskid }}" class="total" ng-show="taskMeta.show">
+    <div id="body{{ taskMeta.taskid }}" class="total" ng-show="taskMeta.show">
     <table border="1" class="table-datasets" >
     <tbody>
         <tr>
@@ -12,42 +12,42 @@
         </tr>
         <tr>
             <th >taskID</th> <td><a href="/prodtask/task/{{ taskMeta.taskid }}">{{ taskBaseLink }} {{ taskMeta.taskid }}</a></td>
-            <th >Campaign</th> <td>{{ taskMeta.campaign }}</td>
+            <th >AMI tag</th> <td>{{ taskMeta.ctag }}</td>
             <th >Step Name</th> <td>{{ taskMeta.step_name }}</td>
         </tr>
         <tr>
             <th >Request</th> <td><a href="/prodtask/inputlist_with_request/{{ taskMeta.pr_id }}">{{ taskMeta.pr_id }}</a></td>
-            <th >Subcampaign</th> <td>{{ taskMeta.subcampaign }}</td>
+            <th >Campaign</th> <td>{{ taskMeta.campaign }}</td>
             <th >ticket_id</th> <td>{{ taskMeta.ticket_id }}</td>
         </tr>
         <tr>
             <th >status</th> <td>{{ taskMeta.status }}</td>
-            <th >Project</th> <td>{{ taskMeta.project }}</td>
+            <th >Subcampaign</th> <td>{{ taskMeta.subcampaign }}</td>
             <th >Architecture</th> <td>{{ taskMeta.architecture }}</td>
         </tr>
         <tr>
             <th >Description</th> <td>{{ taskMeta.description }}</td>
-            <th >Energy</th> <td>{{ taskMeta.energy }}</td>
-            <th >Core Number</th> <td>{{ taskMeta.core_number }}</td>
+            <th >Project</th> <td>{{ taskMeta.project }}</td>
+            <th >Core Number</th> <td>{{ taskMeta.core_count }}</td>
         </tr>
          <tr>
             <th >timestamp</th> <td>{{ taskMeta.task_timestamp }}</td>
-            <th >Physics Group</th> <td>{{ taskMeta.phys_group }}</td>
+            <th >Energy</th> <td>{{ taskMeta.energy_gev }}</td>
             <th >ATLAS Geometry</th> <td>{{ taskMeta.geometry_version }}</td>
         </tr>
          <tr>
             <th >start time</th> <td>{{ taskMeta.start_time }}</td>
-            <th >Physics Category</th> <td>{{ taskMeta.phys_category }}</td>
+            <th >Physics Group</th> <td>{{ taskMeta.phys_group }}</td>
             <th >Conditions Tags</th> <td>{{ taskMeta.conditions_tags }}</td>
         </tr>
          <tr>
             <th >end time</th> <td>{{ taskMeta.end_time }}</td>
-            <th >Hashtags</th> <td>{{ taskMeta.hashtag_list }}</td>
+            <th >Physics Category</th> <td>{{ taskMeta.phys_category }}</td>
             <th >trigger_config</th> <td>{{ taskMeta.trigger_config }}</td>
         </tr>
           <tr>
-            <th >Duration</th> <td>{{ taskMeta.duration }}</td>
-            <th ></th> <td></td>
+            <th >Outputs</th> <td>{{ taskMeta.output_formats}}</td>
+            <th >Hashtags</th> <td>{{ taskMeta.hashtag_list }}</td>
             <th >transPath</th> <td>{{ taskMeta.trans_path }}</td>
         </tr>
           <tr>
@@ -70,12 +70,20 @@
         </tr>
           <tr>
              <th>Input Datasets</th>
-            <td colspan=7 >{{ taskMeta.input_datasets }}</td>
+            <td colspan=7 >{{ taskMeta.primary_input }}</td>
          </tr>
-          <tr>
-             <th>Output Datasets</th>
-            <td colspan=7 >{{ taskMeta.output_datasets }}</td>
-         </tr>
+        <tr ><th colspan=5>Output Datasets</th><th colspan=3 >Size(bytes)</th></tr>
+          <tbody ng-repeat="output in taskMeta.output_dataset ">
+            <tr  >
+                <td colspan=5 >{{ output.datasetname }}</td>
+                  <td colspan=3 >{{ output.bytes }}</td>
+            </tr>
+              <tr>
+                <td colspan=2 >cross section:</td> <td colspan=2 >{{ output.cross_section }}</td>
+                  <td colspan=1 >filt eff:</td> <td colspan=3 >{{ output.gen_filt_eff }}</td>
+            </tr>
+         </tbody>
     </tbody>
 </table>
+</div>
 </div>
