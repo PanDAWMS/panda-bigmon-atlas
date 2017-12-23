@@ -468,7 +468,7 @@ def filter_mc_campaign(cur_request, tasks):
                     result.append(task_id)
                     events += task.total_events
             else:
-                if subcampaign == 'MC16a':
+                if (subcampaign == 'MC16a') or ('valid' in task.name):
                     result.append(task_id)
                     events += task.total_events
     return result, events
@@ -618,7 +618,7 @@ def request_approve_status(production_request, request):
             return 'approved'
 
     else:
-        if production_request.request_type == 'GROUP':
+        if (production_request.request_type == 'GROUP') and (production_request.cstatus == 'waiting'):
             if ParentToChildRequest.objects.filter(parent_request=production_request).exists():
                 if ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id:
                     if HashTag.objects.filter(hashtag__iexact='PatternToMerge').exists():
