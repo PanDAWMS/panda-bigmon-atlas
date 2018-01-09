@@ -107,6 +107,10 @@ class Client(object):
         body = {'task_id': task_id}
         return self._create_request('resume_task', owner, body)
 
+    def reassign_task_to_share(self, owner, task_id, share):
+        body = {'task_id': task_id, 'share': share}
+        return self._create_request('reassign_task_to_share', owner, body)
+
     def trigger_task_brokerage(self, owner, task_id):
         body = {'task_id': task_id}
         return self._create_request('trigger_task_brokerage', owner, body)
