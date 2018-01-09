@@ -514,8 +514,8 @@ def form_skipped_slice(slice, reqid):
             input_type = ''
             default_input_type_prefix = {
                 'Evgen': {'format':'EVNT','prefix':''},
-                'Simul': {'format':'HITS','prefix':'simul.'},
-                'Merge': {'format':'HITS','prefix':'merge.'},
+                'Simul': {'format':'HITS','prefix':'.'},
+                'Merge': {'format':'HITS','prefix':'.'},
                 'Reco': {'format':'AOD','prefix':'recon.'},
                 'Rec Merge': {'format':'AOD','prefix':'merge.'}
             }
@@ -527,8 +527,10 @@ def form_skipped_slice(slice, reqid):
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
-            if input_type=='merge.HITS':
-                dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'simul.HITS')
+            # if input_type=='merge.HITS':
+            #     dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'simul.HITS')
+            # if input_type=='simul.HITS':
+            #     dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'merge.HITS')
             #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
 
