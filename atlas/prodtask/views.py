@@ -474,9 +474,12 @@ def filter_mc_campaign(cur_request, tasks):
     return result, events
 
 
-def filter_input_datasets(dataset_events, reqid):
+def filter_input_datasets(dataset_events, reqid, filter_type):
     result = []
     for item in dataset_events:
+        if filter_type:
+            if filter_type not in item['dataset_name']:
+                continue
         cur_request = TRequest.objects.get(reqid=reqid)
         new_tasks, new_events = filter_mc_campaign(cur_request,item['tasks'])
         if len(new_tasks)<len(item['tasks']):
@@ -514,19 +517,23 @@ def form_skipped_slice(slice, reqid):
             input_type = ''
             default_input_type_prefix = {
                 'Evgen': {'format':'EVNT','prefix':''},
-                'Simul': {'format':'HITS','prefix':'.'},
-                'Merge': {'format':'HITS','prefix':'.'},
+                'Simul': {'format':'HITS','prefix':'.', 'filter':'simul'},
+                'Merge': {'format':'HITS','prefix':'.','filter':'merge'},
                 'Reco': {'format':'AOD','prefix':'recon.'},
                 'Rec Merge': {'format':'AOD','prefix':'merge.'}
             }
+            filter_type = ''
             if last_step_name in default_input_type_prefix:
                 if input_step_format:
                     input_type = default_input_type_prefix[last_step_name]['prefix'] + input_step_format
                 else:
                     input_type = default_input_type_prefix[last_step_name]['prefix'] + default_input_type_prefix[last_step_name]['format']
+                if 'filter' in default_input_type_prefix[last_step_name]:
+                    filter_type = default_input_type_prefix[last_step_name]['filter']
             dsid = input_list.input_data.split('.')[1]
             job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
+
             # if input_type=='merge.HITS':
             #     dataset_events += find_skipped_dataset(dsid,job_option_pattern,processed_tags,'simul.HITS')
             # if input_type=='simul.HITS':
@@ -534,7 +541,7 @@ def form_skipped_slice(slice, reqid):
             #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
 
-            return {slice:filter_input_datasets(dataset_events, reqid)}
+            return {slice:filter_input_datasets(dataset_events, reqid, filter_type)}
         except Exception,e:
             logging.error("Can't find skipped dataset: %s" %str(e))
             return {slice:[]}
