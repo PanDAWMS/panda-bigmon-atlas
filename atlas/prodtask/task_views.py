@@ -45,7 +45,25 @@ _logger = logging.getLogger('prodtaskwebui')
 
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
-
+GLOBAL_SHARES = [
+    'Express',
+    'Validation',
+    'Test',
+    'MC 16',
+    'MC Default',
+    'MC 16 evgen',
+    'MC Default evgen',
+    'Reprocessing default',
+    'Heavy Ion',
+    'MC Derivations',
+    'Data Derivations',
+    'Overlay',
+    'Analysis',
+    'Group production',
+    'Upgrade',
+    'HLT Reprocessing',
+    'Event Index'
+]
 def descent_tasks(request, task_id):
     try:
         child_tasks = find_downstreams_by_task(task_id)
@@ -193,6 +211,7 @@ def task_details(request, rid=None):
         'clouds': get_clouds(),
         'sites': get_sites(),
         'nucleus': get_nucleus(),
+        'shares': GLOBAL_SHARES,
         'outputs': output_formats,
         'extasks': same_tasks,
         'hashtags': hashtags,

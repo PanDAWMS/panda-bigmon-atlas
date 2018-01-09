@@ -22,6 +22,7 @@ _deft_actions = {
     'reassign_to_site': 'reassign_task_to_site',
     'reassign_to_cloud': 'reassign_task_to_cloud',
     'reassign_to_nucleus': 'reassign_task_to_nucleus',
+    'reassign_to_share': 'reassign_task_to_share',
     'retry': 'retry_task',
     'change_ram_count': 'change_task_ram_count',
     'change_wall_time': 'change_task_wall_time',
@@ -80,7 +81,7 @@ for _status in allowed_task_actions:
     if 'change_parameters' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
     if 'reassign' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus'])
+        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share'])
     if 'ctrl' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task'])
 
