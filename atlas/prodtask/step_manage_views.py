@@ -258,20 +258,19 @@ def set_parent_step(slices, request, parent_request):
                 for parent_slice in parent_slice_dict.get(slice.input_data,[]):
                     parent_slice_steps = StepExecution.objects.filter(slice=parent_slice)
                     parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
-                    if not (parent_step):
-                        for index,step in enumerate(parent_ordered_existed_steps):
-                            if step.status in ['Approved']:
-                                if step.step_template.ctag == tags[index]:
-                                    if index == (len(tags)-1):
-                                        first_not_skipped.step_parent = step
-                                        first_not_skipped.set_task_config({'nEventsPerInputFile':''})
-                                        first_not_skipped.save()
-                                        for x in step_to_delete:
-                                            x.delete()
-                                        slices_updated.append(slice_number)
-                                        break
-                                else:
+                    for index,step in enumerate(parent_ordered_existed_steps):
+                        if step.status in ['Approved']:
+                            if step.step_template.ctag == tags[index]:
+                                if index == (len(tags)-1):
+                                    first_not_skipped.step_parent = step
+                                    first_not_skipped.set_task_config({'nEventsPerInputFile':''})
+                                    first_not_skipped.save()
+                                    for x in step_to_delete:
+                                        x.delete()
+                                    slices_updated.append(slice_number)
                                     break
+                            else:
+                                break
                     if parent_found:
                         break
 
@@ -1760,10 +1759,14 @@ def change_slice_parent(request,slice,new_parent_slice):
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     step = ordered_existed_steps[0]
     if parent_step and (step.status not in StepExecution.STEPS_APPROVED_STATUS):
+        if int(new_parent_slice) == -1:
+            step.step_parent = step
+            step.save()
+            return
         step_execs_old_parent = StepExecution.objects.filter(slice=parent_step.slice)
         ordered_existed_steps_old_parent, parent_step_temp = form_existed_step_list(step_execs_old_parent)
         step_index = ordered_existed_steps_old_parent.index(parent_step)
-        step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=new_parent_slice))
+        step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=int(new_parent_slice)))
         ordered_existed_steps_parent, parent_step_parent = form_existed_step_list(step_execs_parent)
         if step_index < len(ordered_existed_steps_parent):
             step.step_parent = ordered_existed_steps_parent[step_index]
@@ -1806,3 +1809,30 @@ def find_project_mode(project_mode, request_type):
                 if not step.slice.is_hide:
                     result[step.request_id].append((step.step_template.ctag,step.slice.slice))
     return result
+
+
+def merge_rest_events(original_task_id, new_request_id):
+    task = ProductionTask.objects.get(id=original_task_id)
+    new_request = TRequest.objects.get(reqid=new_request_id)
+    original_request = task.request
+    if (original_request.project == new_request.project):
+        new_slice = clone_slices(original_request.reqid,new_request_id,[task.step.slice.slice],0,True,False,False,{},2)[0]
+        slice = InputRequestList.objects.get(request=new_request,slice=new_slice)
+        slice.dataset = fill_dataset(task.primary_input)
+        slice.input_events = -1
+        slice.save()
+        steps = StepExecution.objects.filter(slice=slice)
+        for step in steps:
+            step.input_events = -1
+            step.save()
+    else:
+        return original_task_id
+
+
+
+
+
+
+
+
+

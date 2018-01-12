@@ -144,7 +144,7 @@ urlpatterns = patterns('',
     url(r'^get_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_steps_bulk_info', name='get_steps_bulk_info'),
     url(r'^set_steps_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.set_steps_bulk_info', name='set_steps_bulk_info'),
     url(r'^get_slices_bulk_info/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.get_slices_bulk_info', name='get_slices_bulk_info'),
-    url(r'^change_parent/(?P<reqid>\d+)/(?P<new_parent>\d+)/$', 'atlas.prodtask.step_manage_views.change_parent', name='change_parent'),
+    url(r'^change_parent/(?P<reqid>\d+)/(?P<new_parent>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.change_parent', name='change_parent'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', 'atlas.prodtask.step_manage_views.slice_steps', name='slice_steps'),
 
     url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', 'atlas.prodtask.report_view.make_report', name='make_report'),
