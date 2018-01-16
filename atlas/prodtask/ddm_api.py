@@ -13,7 +13,8 @@ def number_of_files_in_dataset(dsn):
     ddm = DDM()
     return len(ddm.list_files(dsn)[0])
 
-def find_dataset_events(dataset_pattern):
+
+def find_dataset_events(dataset_pattern, ami_tags=None):
         return_list = []
         datasets_prodsys1_db = []
         datasets_prodsys2_db = list(ProductionDataset.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).filter(status__iexact = u'done').values())
@@ -38,8 +39,13 @@ def find_dataset_events(dataset_pattern):
         datasets_containers = []
         ddm = DDM()
         for pattern_for_container in patterns_for_container:
+            if ami_tags:
+                ami_tags_in_container = pattern_for_container.replace('/','').split('.')[-1].split('_')
+                if len(ami_tags_in_container)>len(ami_tags):
+                    datasets_containers.append('.'.join(pattern_for_container.replace('/','').split('.')[:-1])+'_'.join(ami_tags))
             datasets_containers += ddm.find_container(pattern_for_container)
         containers = datasets_containers
+        containers.sort(key=lambda item: (len(item), item))
         # if len(datasets_containers)>1:
         #     containers = [x for x in datasets_containers if x[-1] == '/' ]
         # else:
@@ -54,8 +60,9 @@ def find_dataset_events(dataset_pattern):
             for dataset_name in datasets_in_container:
                 if dataset_name[dataset_name.find(':')+1:] in dataset_dict.keys():
                     is_good = True
-                    event_count += dataset_dict[dataset_name[dataset_name.find(':')+1:]]['events']
-                    tasks.append(dataset_dict[dataset_name[dataset_name.find(':')+1:]]['taskid'])
+                    item = dataset_dict.pop(dataset_name[dataset_name.find(':')+1:])
+                    event_count += item['events']
+                    tasks.append(item['taskid'])
             if is_good:
                 return_list.append({'dataset_name':container,'events':str(event_count),'tasks':tasks, 'excluded':False})
         if (not return_list) and dataset_dict:
@@ -163,6 +170,13 @@ class DDM(object):
         return [x['scope']+':'+x['name'] for x in output_datasets]
 
 
-
+    def dataset_size(self, dataset_name):
+        """
+        :param dataset_name: name of the dataset
+        :return: size of the dataset
+        """
+        scope, name = self.rucio_convention(dataset_name)
+        bytes = self.__ddm.get_metadata(scope=scope,name=name)['bytes']
+        return bytes
 
 

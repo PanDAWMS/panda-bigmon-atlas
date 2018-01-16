@@ -1182,7 +1182,7 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
     for base_value in ['valid','mc']:
         dataset_pattern = base_value+"%"+str(DSID)+"%"+job_option+"%"+data_type+"%"+"%".join(tags)+"%"
         _logger.debug("Search dataset by pattern %s"%dataset_pattern)
-        return_list += find_dataset_events(dataset_pattern)
+        return_list += find_dataset_events(dataset_pattern, tags)
     return return_list
 
 
