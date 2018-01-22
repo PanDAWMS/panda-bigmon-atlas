@@ -61,6 +61,18 @@
                 <div class="row">
                 <div class="small-6 large-6 columns">
                     <label class="right inline bodyfont-color">
+                        User jobs (91)
+                    </label>
+                </div>
+                <div class="small-6 columns">
+                    <label class="left inline">
+                        <input type="checkbox" id="cbx_job_user_kill">
+                    </label>
+                </div>
+                </div>
+                <div class="row">
+                <div class="small-6 large-6 columns">
+                    <label class="right inline bodyfont-color">
                         keep unmerged
                     </label>
                 </div>
@@ -247,8 +259,14 @@ $(document).ready(function () {
         var parameters = [];
         // fill action parameters from inputs
             if (action == "kill_jobs") {
-                parameters = [$("#cbx_job_hard_kill").prop("checked") ? 9 : null,
-                    $("#cbx_keep_unmerged").prop("checked")];
+                var code = null;
+                if($("#cbx_job_hard_kill").prop("checked")){
+                    code = 9;
+                }
+                if($("#cbx_job_user_kill").prop("checked")){
+                    code = 91;
+                }
+                parameters = [code, $("#cbx_keep_unmerged").prop("checked")];
             }
 
             //console.log(action);
