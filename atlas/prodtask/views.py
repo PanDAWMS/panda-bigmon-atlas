@@ -2034,7 +2034,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'priorities_list':priorities_list,
                 'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities]),
                 'project_list':project_list,
-                'parent_request_id':parent_request_id
+                'parent_request_id':parent_request_id,
+                'bigpanda_base':BIG_PANDA_TASK_BASE
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)

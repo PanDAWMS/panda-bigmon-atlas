@@ -42,8 +42,16 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
             if ami_tags:
                 ami_tags_in_container = pattern_for_container.replace('/','').split('.')[-1].split('_')
                 if len(ami_tags_in_container)>len(ami_tags):
-                    datasets_containers.append('.'.join(pattern_for_container.replace('/','').split('.')[:-1])+'_'.join(ami_tags))
-            datasets_containers += ddm.find_container(pattern_for_container)
+                    try:
+                        new_dataset_container = ddm.find_container('.'.join(pattern_for_container.replace('/','').split('.')[:-1])+'.'+'_'.join(ami_tags))
+                        if new_dataset_container:
+                            if new_dataset_container not in datasets_containers:
+                                datasets_containers+=new_dataset_container
+                    except:
+                        pass
+            new_dataset_container = ddm.find_container(pattern_for_container)
+            if new_dataset_container not in datasets_containers:
+                datasets_containers += ddm.find_container(pattern_for_container)
         containers = datasets_containers
         containers.sort(key=lambda item: (len(item), item))
         # if len(datasets_containers)>1:
@@ -95,6 +103,20 @@ def dataset_events(container):
             elif TaskProdSys1.objects.filter(taskid=dataset_tid).exists():
                 events = TaskProdSys1.objects.get(id=dataset_tid).total_events
         result.append({'dataset':dataset,'events':events, 'tid':dataset_tid})
+    return result
+
+def dataset_events_ddm(container):
+    ddm = DDM(dq2_settings.PROXY_CERT,dq2_settings.RUCIO_ACCOUNT)
+    if container[-1]!='/':
+        container = container + '/'
+    datasets = ddm.dataset_in_container(container)
+    result = []
+    for dataset in datasets:
+        dataset_tid = 0
+        if 'tid' in dataset:
+            dataset_tid = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+        dataset_metadata = ddm.dataset_metadata(dataset)
+        result.append({'dataset':dataset,'events':dataset_metadata['events'], 'tid':dataset_tid, 'metadata':dataset_metadata})
     return result
 
 
@@ -166,7 +188,10 @@ class DDM(object):
         """
         _logger.debug('Return dataset list from container: %s' % container_name)
         scope, name = self.rucio_convention(container_name)
-        output_datasets = list(self.__ddm.list_content(scope=scope, name=name))
+        if self.dataset_metadata(container_name)['did_type'] == 'CONTAINER':
+            output_datasets = list(self.__ddm.list_content(scope=scope, name=name))
+        else:
+             output_datasets =[{'scope':scope,'name': name}]
         return [x['scope']+':'+x['name'] for x in output_datasets]
 
 
@@ -179,4 +204,11 @@ class DDM(object):
         bytes = self.__ddm.get_metadata(scope=scope,name=name)['bytes']
         return bytes
 
-
+    def dataset_metadata(self, dataset_name):
+        """
+        :param dataset_name: name of the dataset
+        :return: size of the dataset
+        """
+        scope, name = self.rucio_convention(dataset_name)
+        events = self.__ddm.get_metadata(scope=scope,name=name)
+        return events

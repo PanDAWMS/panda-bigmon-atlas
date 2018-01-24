@@ -72,6 +72,9 @@
    <style>
     tr.bottom_row_task td {border-bottom: 1px solid black;}
    </style>
+   <style>
+    tr.CurrentCampaign  {border: 2px solid green;}
+   </style>
 
     <style>
     td.submitted { color : green;	}
@@ -2032,6 +2035,50 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
         }
 
+        function showModalDatasetInfo(event, sliceNumber){
+            event.preventDefault();
+            $('#datasetsInfoList').html('');
+            $('#datasetsInfoLoad').show();
+             $('#datasetInfoWindow').foundation('reveal', 'open');
+            $.ajax({
+                    url: Django.url('prodtask:dataset_slice_info',"{{ pr_id }}",sliceNumber),
+                    type: 'GET',
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'text',
+                    success: function(data,status) {
+                        var datasetList =  $.evalJSON(data).data;
+                        for (i=0;i<datasetList.length;i++){
+                            var datasetRow = $('<tr class=' +  datasetList[i].currentCampaign +' ></tr>');
+                            console.log(datasetList[i]);
+                            datasetRow.append('<td><a href="https://rucio-ui.cern.ch/did?name='+
+                                    datasetList[i].dataset+'">'+datasetList[i].dataset+ '</a></td>');
+                            datasetRow.append('<td>'+datasetList[i].events+'</td>');
+                            datasetRow.append('<td>'+datasetList[i].SubCampaing+'</td>');
+
+                            var tasksCell = $('<td></td>');
+
+                            for(j=0;j<datasetList[i].Tasks.length;j++){
+                                tasksCell.append('<a href="{{ bigpanda_base }}'+datasetList[i].Tasks[j]+'">'+datasetList[i].Tasks[j]+'</a>');
+                            }
+                                     datasetRow.append(tasksCell);
+                            $('#datasetsInfoList').append(datasetRow);
+{#                            tasksCell = $('<td></td>');#}
+{##}
+{#                            for(j=0;j<datasetList[i].otherTasks.length;j++){#}
+{#                                tasksCell.append('<a href="{{ bigpanda_base }}'+datasetList[i].otherTasks[j]+'">'+datasetList[i].otherTasks[j]+'</a>');#}
+{#                            }#}
+{#                                     datasetRow.append(tasksCell);#}
+{#                            $('#datasetsInfoList').append(datasetRow);#}
+
+                        }
+                       $('#datasetsInfoLoad').hide();
+
+
+                    }
+                });
+
+        }
+
          function rejectSlicesClick(event){
             event.preventDefault();
             var sliceList=[];
@@ -3018,7 +3065,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             {{ inputList.dataset }}
                         </span>
                     </td>
-                    <td colspan="2"><a href=""  id="sliceInputJobOptions{{ inputList.slice }}" class="changejobOption{{ inputList.slice }} makeJOUrl JOSort filterField"  target="_blank" title="{{ inputList.input_data }}">{{ inputList.input_data }}</a></td>
+                    <td colspan="2"><a href="#" onclick="showModalDatasetInfo(event,{{ inputList.slice }})">datasets</a></td>
                     {% if cloned != 'no' %}
                         <td><a href="#inputList{{ cloned }}" style="color: red"><u>Cloned</u></a></td>
 
@@ -3031,7 +3078,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             {{ inputList.input_data}}
                         </a>
                     </td>
-                    <td  colspan="2"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span></td>
+                    <td  colspan="2"><a href="#" onclick="showModalDatasetInfo(event,{{ inputList.slice }})"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span><a/></td>
                     <td></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}
@@ -3762,6 +3809,40 @@ ProjectModeForm.prototype.createForm = function(inputString){
     </ul>
   <a  class="close-reveal-modal">&#215;</a>
 </div>
+
+
+
+    <div id="datasetInfoWindow" class="reveal-modal" data-reveal>
+    <h5 id="datasetsInfoLoad">Loading...</h5>
+    <table >
+        <thead>
+            <tr>
+               <th >
+                Dataset Name
+            </th>
+         <th>
+             Events Number
+         </th>
+         <th >
+             SubCampaing
+         </th>
+        <th >
+             Tasks
+         </th>
+{#        <th >#}
+{#             Other T.#}
+{#         </th>#}
+    </tr>
+        </thead>
+    <tbody id="datasetsInfoList">
+
+    </tbody>
+
+    </table>
+
+  <a  class="close-reveal-modal">&#215;</a>
+</div>
+
 
 <div id="changeOwnerWindow" class="reveal-modal" data-reveal>
    <h3>Change request owner:</h3>

@@ -135,6 +135,7 @@ urlpatterns = patterns('',
     url(r'^split_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_in_req', name='split_slices_in_req'),
     url(r'^split_slices_by_tid/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_by_tid', name='split_slices_by_tid'),
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
+    url(r'^dataset_slice_info/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.dataset_slice_info', name='dataset_slice_info'),
     url(r'^add_request_hashtag/(?P<reqid>\d+)/$', 'atlas.prodtask.hashtag.add_request_hashtag', name='add_request_hashtag'),
     url(r'^add_task_hashtag/(?P<taskid>\d+)/$', 'atlas.prodtask.hashtag.add_task_hashtag', name='add_task_hashtag'),
 

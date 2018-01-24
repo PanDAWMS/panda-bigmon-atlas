@@ -9,7 +9,7 @@ from django.utils import timezone
 from copy import deepcopy
 
 from atlas.getdatasets.models import TaskProdSys1
-from atlas.prodtask.ddm_api import tid_from_container
+from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
@@ -1829,8 +1829,65 @@ def merge_rest_events(original_task_id, new_request_id):
         return original_task_id
 
 
+def check_campaign(reqid, rucio_campaign):
+    request = TRequest.objects.get(reqid=reqid)
+    if request.request_type != 'MC':
+        return True
+    subcampaign = request.subcampaign.lower()
+    if 'mc16' not in subcampaign:
+        return True
+    if ('mc16' not in rucio_campaign.lower()) or (':' not in rucio_campaign):
+        if subcampaign == 'mc16a':
+            return True
+        else:
+            return False
+    else:
+        rucio_subcampaign = rucio_campaign.split(':')[1].lower()
+        if subcampaign == rucio_subcampaign:
+            return True
+        elif (subcampaign == 'mc16d') and (rucio_subcampaign == 'mc16c'):
+            return True
+        else:
+            return False
 
 
+@csrf_protect
+def dataset_slice_info(request, reqid, slice_number):
+    if request.method == 'GET':
+        results = {'success':False}
+        try:
+            slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
+            container = slice.dataset_id
+            dataset_events_list = dataset_events_ddm(container)
+            steps = list(StepExecution.objects.filter(slice=slice))
+            # ordered_existed_steps, parent_step = form_existed_step_list(steps)
+            # tag = None
+            # for step in ordered_existed_steps:
+            #     if step.status  not in ['NotCheckedSkipped','Skipped']:
+            #         tag = step.step_template.ctag
+            #         break
+            tasks = list(ProductionTask.objects.filter(step__in=steps))
+            result_data = []
+            for dataset in dataset_events_list:
+
+                current_tasks = []
+                for task in tasks:
+                    if (task.primary_input.split('.')[0]+':'+task.primary_input) == dataset['dataset']:
+                        current_tasks.append(int(task.id))
+                other_tasks = []
+                # if tag:
+                #     for task in ProductionTask.objects.filter(ami_tag=tag,primary_input=dataset['dataset'].split(':')[1]):
+                #         if (task.status not in (['obsolete']+ProductionTask.RED_STATUS)) and (int(task.id) not in current_tasks):
+                #             other_tasks.append(int(task.id))
+                current_campaign = 'NotCurrentCampaign'
+                if check_campaign(reqid,dataset['metadata']['campaign']):
+                    current_campaign = 'CurrentCampaign'
+                result_data.append({'dataset':dataset['dataset'],'events':dataset['events'],'SubCampaing':dataset['metadata']['campaign'],
+                'Tasks':current_tasks,'otherTasks':other_tasks,'currentCampaign':current_campaign})
+            results = {'success': True,'data': result_data}
+        except Exception, e:
+            _logger.error("Problem with getting dataset info #%i %i: %s"%(int(reqid),int(slice_number),e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 
