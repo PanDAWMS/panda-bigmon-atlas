@@ -517,7 +517,7 @@ def form_skipped_slice(slice, reqid):
             input_type = ''
             default_input_type_prefix = {
                 'Evgen': {'format':'EVNT','prefix':''},
-                'Evgen Merge': {'format':'EVNT','prefix':'.','filter':'merge'},
+                'Evgen Merge': {'format':'EVNT','prefix':'.'},
                 'Simul': {'format':'HITS','prefix':'.', 'filter':'simul'},
                 'Merge': {'format':'HITS','prefix':'.','filter':'merge'},
                 'Reco': {'format':'AOD','prefix':'recon.'},
