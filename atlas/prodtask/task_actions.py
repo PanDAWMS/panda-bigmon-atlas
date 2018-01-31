@@ -62,7 +62,7 @@ allowed_task_actions = {
     'scouting':['set_hashtag','remove_hashtag'],
     'obsolete':['set_hashtag','remove_hashtag'],
     'paused': ['retry'],
-    'toretry':[]
+    'toretry':['retry']
 }
 
 # Actions for tasks in "active" states
