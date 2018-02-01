@@ -3050,7 +3050,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
     <div >
     <div  id="baseInput"></div>
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full,real_events  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -3093,7 +3093,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 {{ inputList.comment }}
                              </span>
                             </td>
-                            <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ inputList.input_events }}</span></td>
+                            <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ real_events }}</span></td>
 
                          {% else %}
                             <td colspan="15" style="width: 500px" >

@@ -1476,6 +1476,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             elif (step['status'] =='Skipped')or(step['status']=='NotCheckedSkipped'):
                 skipped = 'skipped'
             else:
+
                 skipped = 'run'
             tag = step['ctag']
             output_format = step.get('output_format','')
@@ -1523,10 +1524,13 @@ def request_table_view(request, rid=None, show_hidden=False):
 
     def get_last_step_format(slice_data):
         return_value = ''
+        real_events = ''
         for step in slice_data[1]:
             if step.get('step'):
+                if (step['skipped'] not in ['skipped','foreign']) and (not real_events):
+                    real_events = step['step']['input_events']
                 return_value = step['output_format']
-        return return_value
+        return return_value, real_events
 
     def check_empty_pattern(pattern, default_pattern):
         for x in pattern.keys():
@@ -1919,11 +1923,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                 jira_problem_link = cur_request.jira_reference
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
-                slice_output = get_last_step_format(temp_list)
+                slice_output, real_events = get_last_step_format(temp_list)
+                events_str = str(temp_list[0]['input_events'])
+                if real_events and (real_events != temp_list[0]['input_events']):
+                    events_str = "%s (%s)"%(str(real_events), str(temp_list[0]['input_events']))
                 if (len(slice_output) > 60) and (cur_request.request_type == 'REPROCESSING'):
-                    temp_list+=[slice_output[:60]+"...",slice_output]
+                    temp_list+=[slice_output[:60]+"...",slice_output,events_str]
                 else:
-                    temp_list+=[slice_output,slice_output]
+                    temp_list+=[slice_output,slice_output,events_str]
 
                 input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:
