@@ -1856,40 +1856,84 @@ def dataset_slice_info(request, reqid, slice_number):
     if request.method == 'GET':
         results = {'success':False}
         try:
-            slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
-            container = slice.dataset_id
-            dataset_events_list = dataset_events_ddm(container)
-            steps = list(StepExecution.objects.filter(slice=slice))
-            # ordered_existed_steps, parent_step = form_existed_step_list(steps)
-            # tag = None
-            # for step in ordered_existed_steps:
-            #     if step.status  not in ['NotCheckedSkipped','Skipped']:
-            #         tag = step.step_template.ctag
-            #         break
-            tasks = list(ProductionTask.objects.filter(step__in=steps))
-            result_data = []
-            for dataset in dataset_events_list:
 
-                current_tasks = []
-                for task in tasks:
-                    if (task.primary_input.split('.')[0]+':'+task.primary_input) == dataset['dataset']:
-                        current_tasks.append(int(task.id))
-                other_tasks = []
-                # if tag:
-                #     for task in ProductionTask.objects.filter(ami_tag=tag,primary_input=dataset['dataset'].split(':')[1]):
-                #         if (task.status not in (['obsolete']+ProductionTask.RED_STATUS)) and (int(task.id) not in current_tasks):
-                #             other_tasks.append(int(task.id))
-                current_campaign = 'NotCurrentCampaign'
-                if check_campaign(reqid,dataset['metadata']['campaign']):
-                    current_campaign = 'CurrentCampaign'
-                result_data.append({'dataset':dataset['dataset'],'events':dataset['events'],'SubCampaing':dataset['metadata']['campaign'],
-                'Tasks':current_tasks,'otherTasks':other_tasks,'currentCampaign':current_campaign})
-            results = {'success': True,'data': result_data}
+            results = {'success': True,'data': find_slice_dataset_info(reqid, slice_number)}
         except Exception, e:
             _logger.error("Problem with getting dataset info #%i %i: %s"%(int(reqid),int(slice_number),e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+
+def find_slice_dataset_info(reqid, slice_number):
+    slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
+    container = slice.dataset_id
+    dataset_events_list = dataset_events_ddm(container)
+    steps = list(StepExecution.objects.filter(slice=slice))
+    # ordered_existed_steps, parent_step = form_existed_step_list(steps)
+    # tag = None
+    # for step in ordered_existed_steps:
+    #     if step.status  not in ['NotCheckedSkipped','Skipped']:
+    #         tag = step.step_template.ctag
+    #         break
+    tasks = list(ProductionTask.objects.filter(step__in=steps))
+    result_data = []
+    for dataset in dataset_events_list:
+
+        current_tasks = []
+        for task in tasks:
+            if (task.primary_input.split('.')[0]+':'+task.primary_input) == dataset['dataset']:
+                current_tasks.append(int(task.id))
+        other_tasks = []
+        # if tag:
+        #     for task in ProductionTask.objects.filter(ami_tag=tag,primary_input=dataset['dataset'].split(':')[1]):
+        #         if (task.status not in (['obsolete']+ProductionTask.RED_STATUS)) and (int(task.id) not in current_tasks):
+        #             other_tasks.append(int(task.id))
+        current_campaign = 'NotCurrentCampaign'
+        if check_campaign(reqid,dataset['metadata']['campaign']):
+            current_campaign = 'CurrentCampaign'
+        result_data.append({'dataset':dataset['dataset'],'events':dataset['events'],'SubCampaing':dataset['metadata']['campaign'],
+        'Tasks':current_tasks,'otherTasks':other_tasks,'currentCampaign':current_campaign})
+    return result_data
+
+
+
+def find_missing_tasks(req_id):
+    slices = list(InputRequestList.objects.filter(request=req_id))
+    slice_to_copy = []
+    for slice in slices:
+        if(not slice.is_hide)and(slice.slice != 155):
+            dataset_info = find_slice_dataset_info(req_id, slice.slice)
+            for slice_dataset in dataset_info:
+                if (slice_dataset['currentCampaign']=='CurrentCampaign') :
+                    steps  = list(StepExecution.objects.filter(slice=slice))
+                    ordered_existed_steps, parent_step = form_existed_step_list(steps)
+                    tag = None
+                    events_per_input = 0
+                    for step in ordered_existed_steps:
+                        if step.status  not in ['NotCheckedSkipped','Skipped']:
+                            tag = step.step_template.ctag
+                            events_per_input = step.get_task_config('nEventsPerInputFile')
+                            break
+                    task_exists = False
+                    for task in ProductionTask.objects.filter(ami_tag=tag,primary_input=slice_dataset['dataset'].split(':')[1]):
+                        if (task.status not in (['obsolete']+ProductionTask.RED_STATUS)):
+                           task_exists = True
+
+                    if not task_exists:
+
+                        task_id = int(slice_dataset['dataset'][slice_dataset['dataset'].rfind('tid')+3:slice_dataset['dataset'].rfind('_')])
+                        if int(ProductionTask.objects.get(id=task_id).step.get_task_config('nEventsPerJob')) == int(events_per_input):
+                            slice_to_copy.append((int(slice.slice),slice_dataset['dataset']))
+    return slice_to_copy
+
+def clone_missing_tasks_slices(req_id):
+    result = find_missing_tasks(req_id)
+    for slice_dataset in result:
+
+        new_slice_number = clone_slices(req_id,req_id,[slice_dataset[0]],-1,False)[0]
+        new_slice = InputRequestList.objects.get(request=req_id, slice=new_slice_number)
+        new_slice.dataset = fill_dataset(slice_dataset[1])
+        new_slice.save()
 
 
 
