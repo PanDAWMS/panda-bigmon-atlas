@@ -1491,7 +1491,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         if (task['total_files_tobeused']!=0) and (task['total_files_finished']!=0):
                             try:
                                 if task['total_files_finished']!=task['total_files_tobeused']:
-                                    task['short'] = 'finished*'
+                                    task['finished_rate'] = 'finished90'
                                 task_rate = (float(task['total_files_finished']))/(float(task['total_files_tobeused']))
                                 if task_rate < 0.7:
                                     task['finished_rate'] = 'finished60'
