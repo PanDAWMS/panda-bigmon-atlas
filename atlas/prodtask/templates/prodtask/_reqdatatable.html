@@ -2054,7 +2054,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             console.log(datasetList[i]);
                             datasetRow.append('<td><a href="https://rucio-ui.cern.ch/did?name='+
                                     datasetList[i].dataset+'">'+datasetList[i].dataset+ '</a></td>');
-                            datasetRow.append('<td>'+datasetList[i].events+'</td>');
+                            datasetRow.append('<td>'+'<a href="{{ bigpanda_base }}'+datasetList[i].input_task+'">'+datasetList[i].events+'</a>'+'</td>');
                             datasetRow.append('<td>'+datasetList[i].SubCampaing+'</td>');
 
                             var tasksCell = $('<td></td>');

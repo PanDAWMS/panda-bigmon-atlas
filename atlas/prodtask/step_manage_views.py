@@ -1831,8 +1831,10 @@ def merge_rest_events(original_task_id, new_request_id):
 
 def check_campaign(reqid, rucio_campaign):
     request = TRequest.objects.get(reqid=reqid)
-    if request.request_type != 'MC':
+    if (request.request_type != 'MC'):
         return True
+    if not rucio_campaign:
+        rucio_campaign='mc15:mc15a'
     subcampaign = request.subcampaign.lower()
     if 'mc16' not in subcampaign:
         return True
@@ -1891,7 +1893,7 @@ def find_slice_dataset_info(reqid, slice_number):
         current_campaign = 'NotCurrentCampaign'
         if check_campaign(reqid,dataset['metadata']['campaign']):
             current_campaign = 'CurrentCampaign'
-        result_data.append({'dataset':dataset['dataset'],'events':dataset['events'],'SubCampaing':dataset['metadata']['campaign'],
+        result_data.append({'dataset':dataset['dataset'],'events':dataset['events'],'input_task':dataset['metadata']['task_id'],'SubCampaing':dataset['metadata']['campaign'],
         'Tasks':current_tasks,'otherTasks':other_tasks,'currentCampaign':current_campaign})
     return result_data
 
