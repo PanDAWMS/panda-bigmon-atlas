@@ -9,7 +9,6 @@ from django.shortcuts import render
 from django.conf import settings
 import atlas.deftcore.api.client as deft
 
-#from atlas.prodtask.task_actions import _do_deft_action
 
 # _logger = logging.getLogger('prodtaskwebui')
 
@@ -50,24 +49,11 @@ def jobs_action(request,action):
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
 
-
-    #result = dict(status=None,exception=None)
-
-
     if not is_superuser:
         result['exception'] = "Permission denied"
         return HttpResponse(json.dumps(result))
-        #return HttpResponse('Permission denied')
-
-
-    #if action == 'decrease_priority':
-    #    result.update(decrease_task_priority(owner, task_id, *args))
-    #if action in _deft_actions:
-    #    result.update(_do_deft_action(owner, task_id, action, *args))
 
     #do actions here
-
-
     for job in jobs:
         result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
         fin_res.append(result)
@@ -76,30 +62,20 @@ def jobs_action(request,action):
 
 
 def get_jobs(request):
-    #    curl -H 'Accept: application/json' -H 'Content-Type: application/json' "http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861";
-    #url = 'http://bigpanda.cern.ch/jobs/?pandaid=2646731860,2646731861';
 
-    url = json.loads(request.body)[0];
+    url = json.loads(request.body)[0]
     url=re.sub('&display_limit.*(\d+)','',url)
     url = url.replace('https','http')
     if 'json' not in url:
         if url[-1]=='&':
-            url=url+'&'
+            url += '&'
         else:
-            url=url+'&json'
+            url += '&json'
 
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
-    #data = json.loads(resp.text);
-    data = resp.json()['jobs'];
-    #print data;
-    #jdict = {data};
-    #jlist = [];
-    #for job in data:
-    #    jlist.append([ '', job['pandaid'], job['attemptnr'], job['produsername'], job["reqid"],
-    #                  job['taskid'], job['transformation'], job['jobstatus']])
+    data = resp.json()['jobs']
 
-    #return HttpResponse(json.dumps(jlist))
     return HttpResponse(json.dumps(data))
 
 
@@ -112,18 +88,10 @@ def _do_deft_job_action(owner, task_id, job_id, action, *args):
     :param args: additional arguments for the action (if needed)
     :return: dictionary with action execution details
     """
-    #print owner, task_id, job_id, action
-    #result = dict(status=None,exception=None)
-    #result['status'] = "OK"
-    #return result
 
     result = dict(owner=owner, job=job_id, task=task_id, action=action, args=args,
                   status=None, accepted=False, registered=False,
                   exception=None, exception_source=None)
-
-    # if not action in _deft_actions:
-    #     result['exception'] = "Action '%s' is not supported" % action
-    #     return result
 
     try:
 

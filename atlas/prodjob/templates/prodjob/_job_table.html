@@ -267,12 +267,16 @@
 
                     var oTable = $('#example').dataTable();
                     oTable.fnClearTable();
-                    oTable.fnAddData(data);
-                    oTable.fnDraw();
+
 
 
                     $('#example').dataTable().fnProcessingIndicator(false);
-
+                    if(data.length === 0){
+                        alert('No jobs were found');
+                    } else {
+                        oTable.fnAddData(data);
+                        oTable.fnDraw();
+                    }
 
 
                     //console.log(oTable.api().columns(2).search( 'failed' ).data()[0]);
