@@ -2776,7 +2776,7 @@ def fill_request_priority(request_from, request_to):
 def fill_request_events(request_from, request_to):
     requests = TRequest.objects.filter(reqid__gte=request_from,reqid__lte=request_to,request_type='MC')
     for request in requests:
-        slices_events = list(InputRequestList.objects.filter(request=request).values('input_events').distinct())
+        slices_events = list(InputRequestList.objects.filter(request=request).values('input_events'))
         total_events = sum([int(x['input_events']) for x in slices_events])
         request.set_info_field('request_events',total_events)
         request.save()
