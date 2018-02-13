@@ -74,16 +74,19 @@
             }
         };
 
-        http.get(Django.url('gdpconfig:global_share_tree')).
-              success(function(data, status, headers, config) {
+        var loadTable = function(){
+            http.get(Django.url('gdpconfig:global_share_tree')).
+            success(function(data, status, headers, config) {
                 scope.globalShareTable = data;
                 changeTree(['root']);
                 scope.loading = false;
-              }).
-              error(function(data, status, headers, config) {
-                 scope.loading = false;
-                 alert(data);
-              });
+            }).
+            error(function(data, status, headers, config) {
+                scope.loading = false;
+                alert(data);
+            });
+        };
+        loadTable();
         scope.save_gs = function(){
                 var toSave = {};
                 var wrongSubSum = {};
@@ -142,7 +145,7 @@
                                     if(result != "OK"){
                                         alert(data.exception);
                                     } else {
-                                        scope.alreadyObsoleted = true;
+                                        loadTable();
                                     }
                                   }).
                                   error(function(data, status, headers, config) {
@@ -151,6 +154,7 @@
                     }
                 }
         };
+
         scope.change_value = function(parent){
             changeTree([parent])
         };
