@@ -164,11 +164,12 @@ def  get_tasks_by_url(url):
     data = resp.json()
     return [x['jeditaskid'] for x in data]
 
-def get_tasks(request):
 
+def get_tasks(request):
+    STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted','obsolete']
+    FAILED = ['failed','broken','aborted','obsolete']
+    NOT_RUNNING = ['done','finished','failed','broken','aborted','obsolete']
     input_data = json.loads(request.body)
-    reqid = None
-    print input_data
     if 'reqid' in input_data:
         reqid = input_data['reqid']
         qs = ProductionTask.objects.filter(request__reqid = reqid)
@@ -182,9 +183,10 @@ def get_tasks(request):
         task_array = get_task_array(request)
         qs = ProductionTask.objects.filter(id__in=task_array)
 
-
     data_list = []
     status_dict = {}
+    not_failed_count = 0
+    running_count = 0
     for task in list(qs):
         task_dict = task.__dict__
         step_id = StepExecution.objects.filter(id = task.step_id).values("step_template_id").get()['step_template_id']
@@ -195,6 +197,10 @@ def get_tasks(request):
         del task_dict['_state']
         data_list.append(task_dict)
         status_dict[task.status] = status_dict.get(task.status,0) + 1
+        if task.status not in FAILED:
+            not_failed_count += 1
+        if task.status not in NOT_RUNNING:
+            running_count += 1
 
     def decimal_default(obj):
         if isinstance(obj, Decimal):
@@ -205,10 +211,12 @@ def get_tasks(request):
             return obj.isoformat()
 
         raise TypeError
-    STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted','obsolete']
-    status_stat = [('total',len(data_list))]
+
+    status_stat = [{'name':'total','count':len(data_list),'property':{'active':False,'good':False}}]
+    status_stat.append({'name':'active','count':running_count,'property':{'active':False,'good':False}})
+    status_stat.append({'name':'good','count':not_failed_count,'property':{'active':False,'good':False}})
     for status in STATUS_ORDER:
         if status in status_dict:
-            status_stat.append((status,status_dict[status]))
+            status_stat.append({'name':status,'count':status_dict[status],'property':{'active':status not in NOT_RUNNING,'good':status not in FAILED}})
     data= json.dumps({'data':list(data_list),'status_stat':status_stat},default = decimal_default)
     return HttpResponse(data)

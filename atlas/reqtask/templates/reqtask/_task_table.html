@@ -134,6 +134,8 @@
         {% endif %}
 
     {% endautoescape %}
+        var runStatusList = [];
+        var goodStatusList = [];
 
         function csrfSafeMethod(method) {
             // these HTTP methods do not require CSRF protection
@@ -332,6 +334,7 @@
         //} );
             //$(".dataTables_processing").css('visibility','hidden');
         find_tasks();
+        $("#statusFilter input").css({'display':'none'});
             // Add event listener for opening and closing details
         $('#example tbody').on('click', 'td.details-control', function () {
             var tr = $(this).closest('tr');
@@ -353,22 +356,84 @@
 
 
         } );
+    function filterStatus(){
+        var tab = $('#example').DataTable();
+        var filterString = [];
+        var propertyStatus = ['total','active','good'];
+        $(".changeStatusCheckbox:checked").each(function() {
+            {#                   8 = "checkbox".length#}
+            var status = $(this).attr("id").slice('cb'.length);
+
+            if (propertyStatus.indexOf(status)==-1) {
+                filterString.push(status);
+            }
+
+        });
+        tab.columns(5).search(filterString.join('|'),true,false).draw();
+    }
      function reDrawStatus(statusList){
-            $('#statusStat').html('<tr id="statusHeader"></tr><tr id="statusBody"></tr>');
+            $('#statusStat').html('<tr id="statusHeader"></tr><tr id="statusBody"></tr><tr id="statusChoose"></tr>');
             for(i=0;i<statusList.length;i++){
-                $('#statusHeader').append('<th><span class=" rstat tstat  '+ statusList[i][0]+' changeStatusFilter" style="cursor: pointer;">'+statusList[i][0]+'</span></th>');
+                $('#statusHeader').append('<th><span class=" rstat tstat  '+ statusList[i]['name']+' changeStatusFilter" style="cursor: pointer;">'+statusList[i]['name']+'</span></th>');
+                $('#statusBody').append('<th >'+statusList[i]['count']+'</th>');
+                $('#statusChoose').append('<th><input id="cb'+statusList[i]['name']+'" type="checkbox" class=" '+ statusList[i]['name']+' changeStatusCheckbox" checked></th>');
+                if (statusList[i]['property']['active']){
+                    runStatusList.push(statusList[i]['name']);
+                }
+                if (statusList[i]['property']['good']){
+                    goodStatusList.push(statusList[i]['name']);
+                }
             }
-            for(i=0;i<statusList.length;i++){
-                $('#statusBody').append('<th >'+statusList[i][1]+'</th>');
-            }
+
             $(".changeStatusFilter").click(function changeStatusFilterFun(){
                 var newStatus = $(this).html();
-                var newValue = '';
-                if (newStatus!='total'){
-                    newValue=newStatus;
+                if (newStatus=='total'){
+                    $(".changeStatusCheckbox").prop("checked", true);
+                } else{
+                    $(".changeStatusCheckbox").prop("checked", false);
+
                 }
-                $("#statusFilter input").val(newValue);
-                $("#statusFilter input").keyup();
+                 if (newStatus=='active'){
+                     for(i=0;i<runStatusList.length;i++){
+                         $("input."+runStatusList[i]+".changeStatusCheckbox").prop("checked", true);
+                     }
+                 }
+                 if (newStatus=='good'){
+                     for(i=0;i<goodStatusList.length;i++){
+                         $("input."+goodStatusList[i]+".changeStatusCheckbox").prop("checked", true);
+                     }
+                 }
+                 $("input."+newStatus+".changeStatusCheckbox").prop("checked", true);
+                filterStatus();
+            });
+            $(".changeStatusCheckbox").click(function changeStatusFilterFun(){
+                var checkedStatus = $(this).attr("id").slice('cb'.length);
+                switch (checkedStatus){
+                    case 'total':
+                        $(".changeStatusCheckbox").prop("checked", $(this).prop("checked"));
+                        break;
+                    case 'active':
+                        if($(this).prop("checked")){
+                            $(".changeStatusCheckbox").prop("checked", false);
+                            $(this).prop("checked",true);
+                            for(i=0;i<runStatusList.length;i++){
+                             $("input."+runStatusList[i]+".changeStatusCheckbox").prop("checked", true);
+                            }
+                        }
+
+                        break;
+                    case 'good':
+                        if($(this).prop("checked")){
+                            $(".changeStatusCheckbox").prop("checked", false);
+                            $(this).prop("checked",true);
+                             for(i=0;i<goodStatusList.length;i++){
+                                 $("input."+goodStatusList[i]+".changeStatusCheckbox").prop("checked", true);
+                             }
+                        }
+                        break;
+                }
+
+                filterStatus();
             });
      }
         function find_tasks(){
