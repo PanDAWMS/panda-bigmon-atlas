@@ -1,5 +1,6 @@
 import json
 from django.http import HttpResponseForbidden
+import logging
 
 from atlas.art.models import PackageTest, TestsInTasks
 from atlas.prodtask.models import ProductionTask
@@ -19,6 +20,7 @@ from elasticsearch_dsl.connections import connections
 from atlas.settings.local import ESLogin
 
 connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']))
+_logger = logging.getLogger('prodtaskwebui')
 
 SIZE_TO_DISPLAY = 2000
 
@@ -66,7 +68,7 @@ def index(request):
 
 
 def keyword_search2(keyword_string):
-    es_search = Search(index="prodsys_rucio_ami", doc_type='task')
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = es_search.update_from_dict({"query": {
                                           "bool": {
                                             "must": [
