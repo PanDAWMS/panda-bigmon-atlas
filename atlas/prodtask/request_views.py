@@ -2123,7 +2123,7 @@ class Parameters(datatables.Parametrized):
         if value == 'notest':
             return Q( cstatus__iexact='test').__invert__()
         if value == 'active':
-            return Q( cstatus__in=['approved', 'monitoring', 'working','reworking', 'remonitoring','registered', 'waiting'])
+            return Q( cstatus__in=['approved', 'monitoring', 'working','reworking', 'remonitoring','registered', 'waiting','hold'])
         if value == 'ended':
              return Q( cstatus__in=['finished', 'cancelled', 'done','processed'])
         return Q( cstatus__iexact=value )

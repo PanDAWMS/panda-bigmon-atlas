@@ -2481,9 +2481,8 @@ def tasks_progress(all_tasks):
     processed_tasks = {}
     other_requests_tasks = {}
     chains = {}
-
     for task in all_tasks:
-        if task.status not in  ProductionTask.RED_STATUS:
+        if task.status not in (ProductionTask.RED_STATUS + ['obsolete']):
             task_input_events = 0
             task_step = get_step_name(task.inputdataset, task.name)
             if task_step not in step_by_name:
@@ -2494,6 +2493,7 @@ def tasks_progress(all_tasks):
 
             if step_by_name[task_step] in ['Simul']:
                 task_input_events = task.step.input_events
+
             #Count number of events for parent task
             #evgen
             if (len(parent_tasks_id) == 0) or (task_input_events > -1):
@@ -2568,7 +2568,6 @@ def tasks_progress(all_tasks):
                                                            'events_done':events_done,
                                                            'running_events':running_events,
                                                            'pending_events':pending}
-    #print {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
     return {'chains':chains,'processed_tasks':processed_tasks,'step_statistic':step_statistic}
 
 
