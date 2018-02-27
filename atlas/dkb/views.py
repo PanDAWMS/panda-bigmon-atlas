@@ -19,7 +19,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from atlas.settings.local import ESLogin
 
-connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']))
+connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=60)
 _logger = logging.getLogger('prodtaskwebui')
 
 SIZE_TO_DISPLAY = 2000
