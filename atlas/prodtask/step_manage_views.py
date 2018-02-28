@@ -241,7 +241,10 @@ def set_parent_step(slices, request, parent_request):
         slice = InputRequestList.objects.get(slice=slice_number,request=request)
         steps = StepExecution.objects.filter(slice=slice)
         ordered_existed_steps, parent_step = form_existed_step_list(steps)
-        if (not (parent_step)) and slice.input_data:
+        do_find = not parent_step
+        if parent_step:
+            do_find = parent_step.request_id != parent_request
+        if do_find and slice.input_data:
             first_not_skipped = None
             step_to_delete = []
             tags = []
@@ -1793,8 +1796,8 @@ def remove_dubl_slices(reqid):
     for slice in slices[1:]:
         if slice.slice == prev_slice.slice:
             print slice.slice
-            delete_empty_slice(prev_slice)
-            delete_empty_slice(slice)
+            #delete_empty_slice(prev_slice)
+            #delete_empty_slice(slice)
 
 
 def find_project_mode(project_mode, request_type):
