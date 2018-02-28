@@ -1427,8 +1427,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                     exist_approved = True
                 if (step_task['step']['status'] == 'NotChecked'):
                     exist_not_approved = True
-                if 'spreadsheet_original' in step_task['step']['task_config']:
-                    return_status['original'] = 'original'
+                # if 'spreadsheet_original' in step_task['step']['task_config']:
+                #     return_status['original'] = 'original'
                 if ('split_events' in step_task['step']['task_config']) and (step_task['step']['status'] not in ['Skipped','NotCheckedSkipped']):
                     return_status['split'] = 'split'
 
