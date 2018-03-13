@@ -231,7 +231,7 @@ def find_parent_slices(request, reqid, parent_request):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 def set_parent_step(slices, request, parent_request):
-    parent_slices = list(InputRequestList.objects.filter(request=parent_request).order_by('-slice'))
+    parent_slices = list(InputRequestList.objects.filter(request=parent_request).order_by('slice'))
     parent_slice_dict = {}
     slices_updated = []
     for parent_slice in parent_slices:
@@ -241,10 +241,7 @@ def set_parent_step(slices, request, parent_request):
         slice = InputRequestList.objects.get(slice=slice_number,request=request)
         steps = StepExecution.objects.filter(slice=slice)
         ordered_existed_steps, parent_step = form_existed_step_list(steps)
-        do_find = not parent_step
-        if parent_step:
-            do_find = parent_step.request_id != parent_request
-        if do_find and slice.input_data:
+        if ((not parent_step) or (parent_step.request_id != parent_request)) and slice.input_data:
             first_not_skipped = None
             step_to_delete = []
             tags = []
@@ -258,7 +255,8 @@ def set_parent_step(slices, request, parent_request):
             step_to_delete.reverse()
             if tags:
                 parent_found = False
-                for parent_slice in parent_slice_dict.get(slice.input_data,[]):
+                parent_slices = parent_slice_dict.get(slice.input_data,[])
+                for slice_index, parent_slice in enumerate(parent_slices):
                     parent_slice_steps = StepExecution.objects.filter(slice=parent_slice)
                     parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
                     for index,step in enumerate(parent_ordered_existed_steps):
@@ -270,6 +268,8 @@ def set_parent_step(slices, request, parent_request):
                                     first_not_skipped.save()
                                     for x in step_to_delete:
                                         x.delete()
+                                    parent_slice_dict[slice.input_data].pop(slice_index)
+                                    parent_found = True
                                     slices_updated.append(slice_number)
                                     break
                             else:
