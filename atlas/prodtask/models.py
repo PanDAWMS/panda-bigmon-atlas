@@ -489,6 +489,42 @@ class TrainProduction(models.Model):
         app_label = 'dev'
         db_table = u'"T_GROUP_TRAIN"'
 
+
+
+class MCPileupOverlayGroupDescription(models.Model):
+
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_GROUP_ID', primary_key=True)
+    description = models.CharField(max_length=255, db_column='DESCRIPTION')
+
+    def save(self, *args, **kwargs):
+        #self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_MC_PO_PHYS_GROUP_SEQ',"T_MC_PO_PHYS_GROUP",'POG_GROUP_ID')
+        super(MCPileupOverlayGroupDescription, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"ATLAS_DEFT"."T_MC_PO_PHYS_GROUP"'
+
+class MCPileupOverlayGroups(models.Model):
+
+    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_ID', primary_key=True)
+    campaign = models.CharField(max_length=50, db_column='CAMPAIGN')
+    dsid  = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID')
+    group = models.ForeignKey(MCPileupOverlayGroupDescription, db_column='POG_GROUP_ID')
+
+    def save(self, *args, **kwargs):
+        #self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_PILEUP_OVERLAY_GROUPS_SEQ',"T_PILEUP_OVERLAY_GROUPS",'POG_ID')
+        super(MCPileupOverlayGroups, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"ATLAS_DEFT"."T_PILEUP_OVERLAY_GROUPS"'
+
+
+
 class ParentToChildRequest(models.Model):
     RELATION_TYPE = (
                     ('BC', 'By creation'),
@@ -678,17 +714,18 @@ class TTask(models.Model):
                 return dataset.rstrip('/')
         return None
 
-    def save(self, **kwargs):
-        """ Read-only access to the table """
-        raise NotImplementedError
+#    def save(self, **kwargs):
+#        """ Read-only access to the table """
+#        raise NotImplementedError
 
     def delete(self, *args, **kwargs):
          return
 
     class Meta:
-        managed = False
-        db_table =  u'"ATLAS_DEFT"."T_TASK"'
-        app_label = 'taskmon'
+#        managed = False
+#        db_table =  u'"ATLAS_DEFT"."T_TASK"'
+        db_table =  u"T_TASK"
+     #   app_label = 'taskmon'
 
 
 
@@ -741,8 +778,8 @@ class ProductionTask(models.Model):
     primary_input = models.CharField(max_length=250, db_column='PRIMARY_INPUT', null=True)
     ami_tag = models.CharField(max_length=15, db_column='CTAG')
     output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS')
-    # def save(self):
-    #     raise NotImplementedError
+#    def save(self):
+#         raise NotImplementedError
 
     @property
     def failure_rate(self):
@@ -1197,6 +1234,7 @@ class GlobalShare(models.Model):
     class Meta:
         app_label = 'panda'
         db_table = u'"ATLAS_PANDA"."GLOBAL_SHARES"'
+#        db_table = u"GLOBAL_SHARES"
 
 
 
