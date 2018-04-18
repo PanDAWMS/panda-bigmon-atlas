@@ -92,7 +92,7 @@ def tasks_statistic_steps(request):
     result = {}
     try:
         tasks_ids = json.loads(request.body)
-        tasks = list(ProductionTask.objects.filter(id__in=tasks_ids))
+        tasks = list(ProductionTask.objects.filter(id__in=tasks_ids).order_by('id'))
         request_statistics = tasks_progress(tasks)
         ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]

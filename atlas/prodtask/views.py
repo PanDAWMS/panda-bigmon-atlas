@@ -2503,8 +2503,12 @@ def tasks_progress(all_tasks):
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile'))
                     else:
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob'))
-                chain_id = int(task.id)
-                chains.update({int(task.id):[int(task.id)]})
+                if (len(parent_tasks_id) == 1) and (parent_tasks_id[0] in processed_tasks):
+                    chains[processed_tasks[parent_tasks_id[0]]["chain_id"]] = chains[processed_tasks[parent_tasks_id[0]]["chain_id"]] + [int(task.id)]
+                    chain_id = processed_tasks[parent_tasks_id[0]]["chain_id"]
+                else:
+                    chain_id = int(task.id)
+                    chains.update({int(task.id):[int(task.id)]})
             else:
                 if len(parent_tasks_id) == 1:
                     parent_task_id = parent_tasks_id[0]
