@@ -77,6 +77,24 @@
                     console.log(status);
                   });
             };
+            scope.manageTasks= function(){
+                var taskIDs = [];
+                for (i=0;i<scope.tasks.length;i++){
+                    taskIDs.push(scope.tasks[i].taskid)
+                }
+                var toSend = {taskIDs:taskIDs};
+                http.post(Django.url('dkb:tasks_from_list'), toSend).
+                 success(function(data, status, headers, config) {
+                     window.location.href = '/reqtask';
+
+                 }).
+                error(function(data, status, headers, config) {
+                            if (data.message != undefined){
+                                alert(data.message);
+                            }
+
+                });
+            };
             var toSend = {search_string:routeParams.search_string};
             http.post(Django.url('dkb:es_task_search'), toSend).
              success(function(data, status, headers, config) {

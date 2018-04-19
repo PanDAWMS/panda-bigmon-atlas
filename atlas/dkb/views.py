@@ -136,3 +136,16 @@ def keyword_search(keyword_string):
     es_search = Search(index="prodsys", doc_type='MC16')
     query = es_search.update_from_dict({'query':{'query_string':{"query": keyword_string,"analyze_wildcard":True}}})
     return query
+
+
+
+@api_view(['POST'])
+def tasks_from_list(request):
+    result_tasks_list = []
+    try:
+        input_str = json.loads(request.body)
+        result_tasks_list = map(int, input_str['taskIDs'])
+        request.session['selected_tasks'] =  result_tasks_list
+    except Exception,e:
+        return Response({'error':str(e)},status=400)
+    return Response(result_tasks_list)
