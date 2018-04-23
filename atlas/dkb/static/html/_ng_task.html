@@ -12,7 +12,7 @@
             <th colspan="2" style="background-color: rgb(243,121,52); text-align: center;">CONFIGURATION</th>
         </tr>
         <tr>
-            <th >taskID</th> <td><a href="/prodtask/task/{{ taskMeta.taskid }}">{{ taskBaseLink }} {{ taskMeta.taskid }}</a></td>
+            <th >taskID</th> <td><a href="/prodtask/task/{{ taskMeta.taskid }}">{{ taskMeta.taskid }}</a><a href="https://bigpanda.cern.ch/task/{{ taskMeta.taskid }}"> BigPanda</a></td>
             <th >AMI tag</th> <td>{{ taskMeta.ctag }}</td>
             <th >Step Name</th> <td>{{ taskMeta.step_name }}</td>
         </tr>
@@ -32,24 +32,29 @@
             <th >Core Number</th> <td>{{ taskMeta.core_count }}</td>
         </tr>
          <tr>
-            <th >timestamp</th> <td>{{ taskMeta.task_timestamp }}</td>
+            <th >User</th> <td>{{ taskMeta.user_name }}</td>
             <th >Energy</th> <td>{{ taskMeta.energy_gev }}</td>
             <th >ATLAS Geometry</th> <td>{{ taskMeta.geometry_version }}</td>
         </tr>
          <tr>
-            <th >start time</th> <td>{{ taskMeta.start_time }}</td>
+            <th >timestamp</th> <td>{{ taskMeta.task_timestamp }}</td>
             <th >Physics Group</th> <td>{{ taskMeta.phys_group }}</td>
             <th >Conditions Tags</th> <td>{{ taskMeta.conditions_tags }}</td>
         </tr>
          <tr>
-            <th >end time</th> <td>{{ taskMeta.end_time }}</td>
+            <th >start time</th> <td>{{ taskMeta.start_time }}</td>
             <th >Physics Category</th> <td>{{ taskMeta.phys_category }}</td>
             <th >trigger_config</th> <td>{{ taskMeta.trigger_config }}</td>
         </tr>
           <tr>
-            <th >Outputs</th> <td>{{ taskMeta.output_formats}}</td>
+            <th >end time</th> <td>{{ taskMeta.end_time }}</td>
             <th >Hashtags</th> <td>{{ taskMeta.hashtag_list }}</td>
             <th >transPath</th> <td>{{ taskMeta.trans_path }}</td>
+        </tr>
+          <tr>
+            <th >Outputs</th> <td>{{ taskMeta.output_formats}}</td>
+            <th ></th> <td></td>
+            <th >transUses</th> <td>{{ taskMeta.trans_home }}</td>
         </tr>
           <tr>
             <th colspan=2>
@@ -58,11 +63,6 @@
                         {{ taskMeta.requested_events }} / {{ taskMeta.processed_events }}
 
             </th>
-            <th ></th> <td></td>
-            <th >transUses</th> <td>{{ taskMeta.trans_home }}</td>
-        </tr>
-          <tr>
-            <th ></th> <td></td>
             <th ></th> <td></td>
             <th >run number</th> <td colspan=3>{{ taskMeta.run_number }}</td>
         </tr>

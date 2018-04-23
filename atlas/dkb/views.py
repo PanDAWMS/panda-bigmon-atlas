@@ -19,7 +19,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from atlas.settings.local import ESLogin
 
-connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=60)
+connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=500)
 _logger = logging.getLogger('prodtaskwebui')
 
 SIZE_TO_DISPLAY = 2000
@@ -68,16 +68,34 @@ def index(request):
 
 
 def keyword_search2(keyword_string):
+    keyword_wildcard = []
+    keyword_non_wildcard = []
+    keywords = keyword_string.split(' AND ')
+    for keyword in keywords:
+        if ('?' in keyword) or ('*' in keyword):
+            tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
+            if keyword[-1] != '*':
+                tokens[-1] = tokens[-1][:-2]+'"'
+            keyword_wildcard+=tokens
+        else:
+           keyword_non_wildcard.append(keyword)
+    query_string = []
+    if keyword_wildcard:
+        query_string.append({
+                            "query_string": {
+                                "query": ' AND '.join(keyword_wildcard),
+                                "analyze_wildcard": True,
+                                "fields":['taskname']
+                              }})
+    if keyword_non_wildcard:
+        query_string.append({
+                            "query_string": {
+                                "query": ' AND '.join(keyword_non_wildcard),
+                              }})
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = es_search.update_from_dict({"query": {
                                           "bool": {
-                                            "must": [
-                                              {
-                                                "query_string": {
-                                                "query": keyword_string,
-                                                "analyze_wildcard": True
-                                              }},
-
+                                            "must":query_string+ [
                                             { "has_child": {
                                                 "type": "output_dataset",
                                                 "score_mode": "sum",
@@ -89,6 +107,7 @@ def keyword_search2(keyword_string):
                                           }
                                         }, 'size':SIZE_TO_DISPLAY
     })
+
     return query
 
 
