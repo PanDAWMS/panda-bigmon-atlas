@@ -58,6 +58,7 @@
     var groupList = [];
     var currentUser = '{{ request.user.username }}';
     var train_id = '{{ train.id }}';
+    var createRequestPage = "{%  url 'prodtask:create_request_from_train' train.id %}";
     //var pattern_request = prepare_pattern($.evalJSON('{{ train.pattern_output }}'));
     {% for group  in groups %}
         groupList.push('{{ group }}');
@@ -277,7 +278,17 @@
                 scope.assembled_train = data;
               }).
               error(function(data, status, headers, config) {
-                console.log(status);
+                console.log(data);
+              });
+    }]);
+    trainApp.controller('CreateRequestCtrl',['$scope','$http', function (scope, http){
+            http.get(Django.url('prodtask:assembled_train',train_id)).
+              success(function(data, status, headers, config) {
+                scope.assembled_train = data;
+                window.location.href =createRequestPage;
+              }).
+              error(function(data, status, headers, config) {
+                alert(data);
               });
     }]);
     trainApp.config(function($routeProvider) {
@@ -293,6 +304,10 @@
           when('/assembler', {
               templateUrl: '/static/html/_ng_train_assembler.html',
               controller: 'AssemblerTrainCtrl'
+            }).
+          when('/create', {
+              templateUrl: '/static/html/_ng_train_assembler.html',
+              controller: 'CreateRequestCtrl'
             }).
           when('/:loadID', {
               templateUrl: '/static/html/_ng_train_load_details.html',
@@ -312,7 +327,7 @@
 <div class="columns large-3" style="border: solid">Departure: {{ depart_date }}</div>
 {% if allow_assemble %}
     {% ifnotequal train.status 'Closed' %}
-        <a class='button' href="{%  url 'prodtask:create_request_from_train' train.id %}">Assemble</a>
+        <a class='button' href="#/create">Assemble</a>
         {% if allow_close %}
             <a class='button' href="{%  url 'prodtask:close_train' train.id %}">Close</a>
         {% endif %}

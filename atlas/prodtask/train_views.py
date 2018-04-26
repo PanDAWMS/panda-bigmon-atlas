@@ -251,7 +251,11 @@ def prepare_simple_train_carriages(train_id):
 def assembled_train(request,train_id):
     if request.method == 'GET':
         try:
+            if TrainProduction.objects.get(id=train_id).pattern_request.cstatus == 'cancelled':
+                raise ValueError('Pattern request was cancelled')
             train_carriages = prepare_simple_train_carriages(train_id)
+            if not train_carriages:
+                raise ValueError('No load to create request')
             results = []
             carriage_number = 0
             for train_carriage in train_carriages:
@@ -261,7 +265,8 @@ def assembled_train(request,train_id):
                 carriage_number += 1
             return HttpResponse(json.dumps(results), content_type='application/json')
         except Exception,e:
-            _logger.error("Problem with carriage forming  %s" % e)
+            _logger.error("Problem with carriage forming  %s" % str(e))
+            return HttpResponse(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 def trains_list(request):

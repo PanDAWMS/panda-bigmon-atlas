@@ -410,6 +410,8 @@ class ProductionTrainForm(ModelForm):
         if cleaned_data.get('pattern_request_id'):
             try:
                 cleaned_data['pattern_request'] = TRequest.objects.get(reqid=cleaned_data['pattern_request_id'])
+                if cleaned_data['pattern_request'].cstatus == 'cancelled':
+                    raise ValueError('This pattern was cancelled')
                 cleaned_data['outputs'] = json.dumps(pattern_from_request(cleaned_data.get('pattern_request')))
             except Exception,e:
                 del cleaned_data['pattern_request_id']
