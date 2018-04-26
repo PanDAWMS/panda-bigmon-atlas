@@ -300,6 +300,20 @@ class TrainCarriageSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
+
+
+
+class TrainLoadByTrain(generics.ListCreateAPIView):
+    queryset = TrainProductionLoad.objects.all()
+    serializer_class = TrainCarriageSerializer
+
+    def list(self, request, train):
+        # Note the use of `get_queryset()` instead of `self.queryset`
+        queryset = TrainProductionLoad.objects.filter(train=train)
+        serializer = TrainCarriageSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 class TrainLoads(generics.ListCreateAPIView):
     queryset = TrainProductionLoad.objects.all()
     serializer_class = TrainCarriageSerializer

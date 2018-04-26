@@ -3,7 +3,7 @@ from django.conf.urls import patterns, include, url
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
-from ..prodtask.train_views import TrainLoad, TrainLoads
+from ..prodtask.train_views import TrainLoad, TrainLoads, TrainLoadByTrain
 # from ..prodtask.selection import request_progress_general
 urlpatterns = patterns('',
     # Examples:
@@ -12,10 +12,10 @@ urlpatterns = patterns('',
 
     url(r'^step_template_table/$', 'atlas.prodtask.views.step_template_table', name='step_template_table'),
     url(r'^step_template/(?P<rid>\d+)/$', 'atlas.prodtask.views.step_template_details', name='step_template'),
-    
+
     url(r'^step_execution_table/$', 'atlas.prodtask.views.step_execution_table', name='step_execution_table'),
     url(r'^stepex/(?P<rid>\d+)/$', 'atlas.prodtask.views.stepex_details', name='step_execution'),
-    
+
     url(r'^inputlist_with_request/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve', name='input_list_approve'),
     url(r'^input_list_approve_full/(?P<rid>\d+)/$', 'atlas.prodtask.views.input_list_approve_full', name='input_list_approve_full'),
 
@@ -23,7 +23,7 @@ urlpatterns = patterns('',
 
     url(r'^production_dataset_table/$', 'atlas.prodtask.views.production_dataset_table',    name='production_dataset_table'),
     url(r'^production_dataset/(?P<name>.+)/$', 'atlas.prodtask.views.production_dataset_details',  name='production_dataset'),
-    
+
     url(r'^request_table/$',                'atlas.prodtask.request_views.request_table',   name='request_table'),
     url(r'^request/(?P<rid>\d+)/$',         'atlas.prodtask.request_views.request_details', name='request'),
     #url(r'^request_clone/(?P<reqid>\d+)/$',   'atlas.prodtask.request_views.request_clone',   name='request_clone'),
@@ -179,6 +179,8 @@ urlpatterns = patterns('',
 
     url(r'^trainloads/$', TrainLoads.as_view(), name='trainloads'),
     url(r'^trainloads/(?P<pk>[0-9]+)/$', TrainLoad.as_view(),name='trainload'),
+    url(r'^trainloadsbytrain/$', TrainLoadByTrain.as_view(),name='trainloadsbytrain'),
+    url(r'^trainloadsbytrain/(?P<train>[0-9]+)/$', TrainLoadByTrain.as_view(),name='trainloadsbytrain'),
     url(r'^request_progress_general/(?P<reqids>[\w|,]+)/$', 'atlas.prodtask.selection.request_progress_general', name='request_progress_general'),
     url(r'^request_hashtags/(?P<hashtags>[\w|,]+)/$', 'atlas.prodtask.hashtag.request_hashtags', name='request_hashtags'),
     url(r'^request_progress_main/', 'atlas.prodtask.selection.request_progress_main', name='request_progress_main'),

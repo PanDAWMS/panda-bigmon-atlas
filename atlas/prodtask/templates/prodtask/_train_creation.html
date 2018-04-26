@@ -88,11 +88,11 @@
     }
     trainServices.factory('TrainLoads', ['$resource',
       function($resource){
-        return $resource(Django.url('prodtask:trainloads'), {}, {
-          query: {method:'GET',  isArray:true},
-            save: {method:'POST'}
+        return $resource('/prodtask/trainloadsbytrain/'+':train', {}, {
+          query: {method:'GET',  isArray:true}
         });
       }]);
+
         trainServices.factory('TrainCreateLoads', ['$resource',
       function($resource){
         return $resource(Django.url('prodtask:traincreateloads'), {}, {
@@ -142,7 +142,7 @@
         $resourceProvider.defaults.stripTrailingSlashes = false;
     });
     trainApp.controller('TrainCtrl',['$scope','$http','TrainLoads', function (scope, http, trainLoads){
-        scope.trainLoads = trainLoads.query();
+        scope.trainLoads = trainLoads.query({train:train_id});
             scope.train_id = train_id;
     }]);
     trainApp.controller('TrainLoadCtrl',['$scope','$http', '$routeParams','TrainLoad', '$location',
