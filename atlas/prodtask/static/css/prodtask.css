@@ -74,6 +74,10 @@ span.tstat.finished {
     color: darkgreen;
 }
 
+span.tstat.exhausted {
+    color: orange;
+}
+
 span.tstat.failures {
     color: orange;
 }
