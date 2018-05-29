@@ -317,7 +317,7 @@ class TDataFormatAmi(models.Model):
         db_table = u'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
-    name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
+    name = models.CharField(max_length=160, db_column='NAME', primary_key=True)
     #task = models.ForeignKey(ProducitonTask,db_column='TASK_ID')
     task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', null=True)
     #parent_task = models.ForeignKey(ProducitonTask,db_column='TASK_ID')

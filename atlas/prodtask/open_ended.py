@@ -161,7 +161,7 @@ def extend_open_ended_request(reqid):
     True if request is extended
     """
     start_time = time()
-    slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
+    slices = list(InputRequestList.objects.filter(Q(request=reqid),~Q(is_hide=True)).order_by('slice'))
     _logger.debug(form_request_log(reqid,None,'Start request extending'))
     container_name = slices[0].dataset_id
     datasets = []
@@ -196,12 +196,22 @@ def extend_open_ended_request(reqid):
                     new_slice.dataset = fill_dataset(dataset)
                     new_slice.save()
                     steps = StepExecution.objects.filter(request=reqid,slice=new_slice)
+                    if len(steps) == 1:
+                        if steps[0].step_template.output_formats == '':
+                            output_format = dataset.split('.')[4]
+                            step_new_template = fill_template(steps[0].step_template.step,steps[0].step_template.ctag,
+                                                              steps[0].step_template.priority,output_format,
+                                                              steps[0].step_template.memory)
+                            step = steps[0]
+                            step.step_template = step_new_template
+                            step.save()
                     for step in steps:
                         if not tasks_count_control:
                             step.status = 'Approved'
                         else:
                             step.status = 'NotChecked'
                         step.save()
+
                 except Exception,e:
                     new_slice.dataset = None
                     new_slice.is_hide = True
