@@ -29,18 +29,49 @@ def test_connection():
 
 
 @api_view(['POST'])
+def es_task_search_analy(request):
+    search_string = json.loads(request.body)
+    result, total = es_task_search_all(search_string, 'analy')
+    return Response({'tasks':result,'total':total})
+
+
+def es_task_search_all(search_string, task_type):
+    search_values = []
+    if task_type == 'all':
+        search_values = [True, False]
+    if task_type == 'analy':
+        search_values = [True]
+    if task_type == 'prod':
+        search_values = [False]
+    result = []
+    total = 0
+    for search_value in search_values:
+        response = keyword_search2(key_string_from_input(search_string)['query_string'], search_value).execute()
+        total += response.hits.total
+        for hit in response:
+            current_hit = hit.to_dict()
+            current_hit['output_dataset'] = []
+            for hit2 in hit.meta.inner_hits['output_dataset']:
+                current_hit['output_dataset'].append(hit2.to_dict())
+            result.append(current_hit)
+    return result, total
+
+@api_view(['POST'])
 def es_task_search(request):
     search_string = json.loads(request.body)
-    response = keyword_search2(key_string_from_input(search_string)['query_string']).execute()
-    result = []
-    total = response.hits.total
-    for hit in response:
-        current_hit = hit.to_dict()
-        current_hit['output_dataset'] = []
-        for hit2 in hit.meta.inner_hits['output_dataset']:
-            current_hit['output_dataset'].append(hit2.to_dict())
-        result.append(current_hit)
+    result, total = es_task_search_all(search_string, 'prod')
     return Response({'tasks':result,'total':total})
+
+
+def hits_to_tasks(hits):
+    result = []
+    for hit in hits:
+        current_hit = hit.to_dict()
+#        current_hit['output_dataset'] = []
+#        for hit2 in hit.meta.inner_hits['output_dataset']:
+#            current_hit['output_dataset'].append(hit2.to_dict())
+        result.append(current_hit)
+    return result
 
 
 @api_view(['POST'])
@@ -65,9 +96,59 @@ def index(request):
             })
 
 
+def index2(request):
+    if request.method == 'GET':
+
+        return render(request, 'dkb/_index_dkb2.html', {
+                'active_app': 'dkb',
+                'pre_form_text': 'DKB',
+                'title': 'DKB search',
+                'parent_template': 'prodtask/_index.html',
+            })
+
+@api_view(['GET'])
+def test_name(request):
+    print request.user.username
+    return Response(request.user.username)
 
 
-def keyword_search2(keyword_string):
+@api_view(['GET'])
+def task_tree(request, task_id):
+    result_tree = []
+    task_info = []
+    return Response(request.user.username)
+
+
+def built_task_tree():
+    pass
+
+def es_by_field(field, value):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+        "query": {
+            "bool": {
+                    "must": {
+                                "term": { field : value}
+                            }
+
+                        # {"has_child": {
+                        #     "type": "output_dataset",
+                        #     "score_mode": "sum",
+                        #     "query": {
+                        #         "match_all": {}
+                        #     },
+                        #     "inner_hits": {}
+                        # }}]
+
+            }
+        }, 'size':2000
+    }
+    search = es_search.update_from_dict(query)
+    return search.execute()
+
+
+
+def keyword_search2(keyword_string, is_analy=False):
     keyword_wildcard = []
     keyword_non_wildcard = []
     keywords = keyword_string.split(' AND ')
@@ -92,7 +173,10 @@ def keyword_search2(keyword_string):
                             "query_string": {
                                 "query": ' AND '.join(keyword_non_wildcard),
                               }})
-    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    if is_analy:
+        es_search = Search(index="analysis", doc_type='task')
+    else:
+        es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = es_search.update_from_dict({"query": {
                                           "bool": {
                                             "must":query_string+ [
