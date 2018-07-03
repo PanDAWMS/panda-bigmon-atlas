@@ -23,7 +23,7 @@
 
    <div class="spinner" ng-show="loading"> Loading...</div>
      <div class="row">
-        <h6>{{ requestProgressData.hashtags }}  </h6>
+        <h6 class="hashtags">{{ requestProgressData.hashtags }}  </h6>
      </div>
       <div class="row">
 
@@ -45,6 +45,9 @@
            </div>
           <div class="columns large-1">
            <label>Show tag/taskID<input type="checkbox"  ng-model="showTag"></label>
+           </div>
+          <div class="columns large-1">
+           <label>Show active tasks<input type="checkbox" ng-model="showOnlyRunning" ng-change="changeShowOnlyRunning()"></label>
            </div>
           <div class="columns large-8"></div>
           </div>

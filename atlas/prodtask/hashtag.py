@@ -102,10 +102,13 @@ def tasks_statistic_steps(request):
             current_chain = [{}] * len(steps_name)
             chain_requests = set()
             chain_name = ''
+            chain_status = 'done'
             for task_id in chain:
                 i = steps_name.index(request_statistics['processed_tasks'][task_id]['step'])
                 task = {'task_id':task_id}
                 task.update(request_statistics['processed_tasks'][task_id])
+                if task['status'] not in ProductionTask.NOT_RUNNING:
+                    chain_status = 'running'
                 if not chain_name:
                     if '_' not in task['name'].split('.')[-1]:
                         chain_name = '.'.join(task['name'].split('.')[1:3])
@@ -114,7 +117,7 @@ def tasks_statistic_steps(request):
                         chain_name = '.'.join(task['name'].split('.')[1:3])+'...'+tags[:tags.rfind('_')]
                 chain_requests.add(request_statistics['processed_tasks'][task_id]['request'])
                 current_chain[i] = task
-            chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name})
+            chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name, 'chain_status':chain_status})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
     except Exception,e:
         print str(e)
