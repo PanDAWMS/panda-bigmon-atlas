@@ -160,7 +160,13 @@ def extend_open_ended_request(reqid):
     :return:
     True if request is extended
     """
-    start_time = time()
+    request = TRequest.objects.get(reqid=reqid)
+    old_status = request.cstatus
+    if old_status == 'extending':
+        return False
+    else:
+        request.cstatus = 'extending'
+        request.save()
     slices = list(InputRequestList.objects.filter(Q(request=reqid),~Q(is_hide=True)).order_by('slice'))
     _logger.debug(form_request_log(reqid,None,'Start request extending'))
     container_name = slices[0].dataset_id
@@ -175,7 +181,6 @@ def extend_open_ended_request(reqid):
 
 
     ddm = DDM()
-    request = TRequest.objects.get(reqid=reqid)
     tasks_count_control = False
     if request.request_type == 'EVENTINDEX':
         tasks_count_control = True
@@ -219,6 +224,8 @@ def extend_open_ended_request(reqid):
     if tasks_count_control:
         do_task = do_task_start(reqid)
         is_extended = is_extended or do_task
+    request.cstatus = old_status
+    request.save()
     if is_extended:
         set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
 
