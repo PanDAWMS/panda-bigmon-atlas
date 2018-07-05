@@ -186,7 +186,8 @@ def keyword_search2(keyword_string, is_analy=False):
                                                 "query": {
                                                     "match_all": {}
                                                 },
-                                                "inner_hits": {}
+                                                "inner_hits": {"size":20}
+
                                             }}]
                                           }
                                         }, 'size':SIZE_TO_DISPLAY
