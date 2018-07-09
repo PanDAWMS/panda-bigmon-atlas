@@ -178,14 +178,16 @@ def extend_open_ended_request(reqid):
                 slices_to_extend.append(int(slice.slice))
             else:
                 datasets.append(slice.dataset_id)
-
-
-    ddm = DDM()
     tasks_count_control = False
     if request.request_type == 'EVENTINDEX':
         tasks_count_control = True
-    datasets_in_container = ddm.dataset_in_container(container_name)
-    _logger.debug(form_request_log(reqid,None,'Datasets in container: %i'%len(datasets_in_container)))
+    try:
+        ddm = DDM()
+        datasets_in_container = ddm.dataset_in_container(container_name)
+        _logger.debug(form_request_log(reqid,None,'Datasets in container: %i'%len(datasets_in_container)))
+    except Exception, e:
+        datasets_in_container = []
+        _logger.error(form_request_log(reqid, None, 'error during request extension: %s' % str(e)))
 
     is_extended = False
     for dataset in datasets_in_container:
