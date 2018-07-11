@@ -1,0 +1,28 @@
+<div class="row">
+    <div class="columns large-4">
+        <label> project:
+        <input type="text" ng-model="project" placeholder="Project">
+        </label>
+    </div>
+    <div class="columns large-4">
+        <label> ami tag:
+        <input type="text" ng-model="ami_tag" placeholder="AMI tag">
+        </label>
+    </div>
+    <div class="columns large-2">
+            <button ng-click="showRatio()" ng-disabled='is_loading' class="btn btn-primary">Show</button>
+    </div>
+</div>
+<div class="row">
+    <h1 ng-show="is_loading">Loading....</h1>
+
+    <div class="row">
+<table id="taskTable">
+    <tr><th>Output</th><th>Ratio</th><th>Tasks</th></tr>
+    <tr  ng-repeat="element in ratio" >
+        <td>{{ element.output }}  </td> <td>{{ 100*element.ratio| number:4 }}%  </td> <td><a ng-click="showTasks(element.output)" style="cursor: pointer;">{{ element.tasks }}</a>  </td>
+
+</tr>
+    </table>
+    </div>
+</div>

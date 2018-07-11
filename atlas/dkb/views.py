@@ -3,7 +3,8 @@ from django.http import HttpResponseForbidden
 import logging
 
 from atlas.art.models import PackageTest, TestsInTasks
-from atlas.prodtask.models import ProductionTask
+from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.models import ProductionTask, StepTemplate
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -195,6 +196,78 @@ def keyword_search2(keyword_string, is_analy=False):
 
     return query
 
+def derivation_stat(project, ami, output):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+
+    query2 = {
+          "_source": ["primary_input","taskid"],
+          "query": {
+            "bool": {
+              "must": [
+                {"term": {"project": project.lower()}},
+                {"term": {"ctag": ami}},
+                {"term": {"output_formats": output}},
+                 {"term": {"status": "done"}},
+                {"has_child": {
+                      "type": "output_dataset",
+                      "score_mode": "sum",
+                      "query": {
+                          "term": {"data_format":output.upper()}
+                      }, "inner_hits": {"size":20}
+                  }}
+               ]
+             }
+           }, 'size':2000
+        }
+    aggregs = es_search.update_from_dict(query2)
+    exexute =  aggregs.execute()
+    result_tasks = []
+    for hit in exexute:
+        for hit2 in hit.meta.inner_hits['output_dataset']:
+            try:
+                if not hit2.deleted:
+                    if hit2.bytes > 0:
+                        result_tasks.append((hit.primary_input,hit2.bytes,hit.taskid))
+            except:
+                pass
+    return result_tasks
+
+def count_output_stat(project, ami, outputs=None):
+    no_empty = False
+    if not outputs:
+        no_empty = True
+        output_set = set()
+        templates = StepTemplate.objects.filter(ctag=ami)
+        for template in templates:
+            output_set.update(template.output_formats.split('.'))
+        outputs = list(output_set)
+    input_datasets = {}
+    result = []
+    ddm = DDM()
+    for output in outputs:
+        current_input_tasks = derivation_stat(project, ami, output)
+        current_input_size = 0
+        current_sum = 0
+        good_tasks = []
+        for input_dataset in current_input_tasks:
+            if input_dataset[0] not in input_datasets:
+                try:
+                    input_datasets[input_dataset[0]] = ddm.dataset_size(input_dataset[0])
+                except:
+                    input_datasets[input_dataset[0]] = 0
+            if input_datasets[input_dataset[0]] > 0:
+                current_input_size += input_datasets[input_dataset[0]]
+                current_sum += input_dataset[1]
+                good_tasks.append(input_dataset[2])
+
+        if current_input_size !=0:
+            result.append({'output':output,'ratio':float(current_sum)/float(current_input_size),'tasks':len(good_tasks),'tasks_ids':good_tasks})
+        else:
+            if not no_empty:
+                result.append({'output': output, 'ratio': 0,
+                               'tasks': len(good_tasks),'tasks_ids':good_tasks})
+    return result
+
 
 def summary():
     es_search = Search(index="prodsys_rucio_ami", doc_type='task')
@@ -233,8 +306,7 @@ def summary():
                }
              }
             }
-    aggregs =  es_search.update_from_dict(query)
-    return aggregs.execute()
+
 
 def keyword_search(keyword_string):
     es_search = Search(index="prodsys", doc_type='MC16')
@@ -253,3 +325,12 @@ def tasks_from_list(request):
     except Exception,e:
         return Response({'error':str(e)},status=400)
     return Response(result_tasks_list)
+
+@api_view(['GET'])
+def deriv_output_proportion(request,project,ami_tag):
+    try:
+        result = count_output_stat(project,ami_tag)
+    except Exception,e:
+            print str(e)
+            return Response({'error':str(e)},status=400)
+    return Response(result)

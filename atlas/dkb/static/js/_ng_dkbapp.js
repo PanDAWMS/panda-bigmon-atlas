@@ -171,6 +171,65 @@
 
             });
         }]);
+    var output_tasks={};
+    function loadRatio(http,ami_tag,project,scope){
+            output_tasks={};
+            http.get(Django.url('dkb:deriv_output_proportion',project,ami_tag)).
+             success(function(data, status, headers, config) {
+                scope.ratio= data;
+                scope.is_loading = false;
+                for(var i=0;i<data.length;i++){
+                    output_tasks[data[i]['output']] = data[i]['tasks_ids']
+                }
+
+             }).
+            error(function(data, status, headers, config) {
+                        if (data.message != undefined){
+                            alert(data.message);
+                        }
+                         scope.is_loading = false;
+
+            });
+    }
+
+    DKBApp.controller('DKBDerivRatio',['$scope','$http','$routeParams',
+
+        function (scope, http, routeParams) {
+            scope.ami_tag = '';
+            scope.project = '';
+            scope.is_loading = false;
+            if ('amitag' in routeParams){
+                scope.ami_tag = routeParams.amitag;
+            }
+            if ('project' in routeParams){
+                scope.project = routeParams.project;
+            }
+            if ((scope.ami_tag != '')&&(scope.project != '')){
+                scope.is_loading = true;
+                loadRatio(http,scope.ami_tag,scope.project,scope)
+            }
+            scope.showRatio = function () {
+                 scope.is_loading = true;
+                loadRatio(http,scope.ami_tag,scope.project,scope)
+            };
+            scope.showTasks = function (output) {
+                    if (output in output_tasks){
+                        var toSend = {taskIDs:output_tasks[output]};
+                        http.post(Django.url('dkb:tasks_from_list'), toSend).
+                         success(function(data, status, headers, config) {
+                             window.location.href = '/reqtask';
+
+                         }).
+                        error(function(data, status, headers, config) {
+                                    if (data.message != undefined){
+                                        alert(data.message);
+                                    }
+
+                        });
+                    }
+            }
+        }]);
+
     DKBApp.config(function($routeProvider) {
           $routeProvider.
             when('/', {
@@ -188,6 +247,10 @@
           when('/steps_groups/', {
               templateUrl: '/static/html/_ng_task_summary.html',
               controller: 'DKBStepsCampaign'
+            }).
+          when('/deriv_ratio/', {
+              templateUrl: '/static/html/_ng_deriv_ratio.html',
+              controller: 'DKBDerivRatio'
             }).
             otherwise({
               redirectTo: '/'
