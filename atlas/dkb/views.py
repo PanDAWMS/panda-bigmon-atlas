@@ -54,6 +54,7 @@ def es_task_search_all(search_string, task_type):
             current_hit['output_dataset'] = []
             for hit2 in hit.meta.inner_hits['output_dataset']:
                 current_hit['output_dataset'].append(hit2.to_dict())
+                print hit2.to_dict()
             result.append(current_hit)
     return result, total
 
@@ -205,9 +206,9 @@ def derivation_stat(project, ami, output):
             "bool": {
               "must": [
                 {"term": {"project": project.lower()}},
-                {"term": {"ctag": ami}},
+                {"terms": {"ctag": ami}},
                 {"term": {"output_formats": output}},
-                 {"term": {"status": "done"}},
+                 {"terms": {"status": ["done"]}},
                 {"has_child": {
                       "type": "output_dataset",
                       "score_mode": "sum",
@@ -227,17 +228,17 @@ def derivation_stat(project, ami, output):
             try:
                 if not hit2.deleted:
                     if hit2.bytes > 0:
-                        result_tasks.append((hit.primary_input,hit2.bytes,hit.taskid))
+                        result_tasks.append((hit.primary_input,hit2.bytes,hit.taskid,hit2.datasetname))
             except:
                 pass
     return result_tasks
 
-def count_output_stat(project, ami, outputs=None):
+def count_output_stat(project, ami_tags, outputs=None):
     no_empty = False
     if not outputs:
         no_empty = True
         output_set = set()
-        templates = StepTemplate.objects.filter(ctag=ami)
+        templates = StepTemplate.objects.filter(ctag__in=ami_tags)
         for template in templates:
             output_set.update(template.output_formats.split('.'))
         outputs = list(output_set)
@@ -245,27 +246,39 @@ def count_output_stat(project, ami, outputs=None):
     result = []
     ddm = DDM()
     for output in outputs:
-        current_input_tasks = derivation_stat(project, ami, output)
+        current_input_tasks = derivation_stat(project, ami_tags, output)
         current_input_size = 0
         current_sum = 0
+        current_input_events = 0
+        current_events = 0
         good_tasks = []
         for input_dataset in current_input_tasks:
             if input_dataset[0] not in input_datasets:
                 try:
-                    input_datasets[input_dataset[0]] = ddm.dataset_size(input_dataset[0])
+                    dataset_info = ddm.dataset_metadata(input_dataset[0])
+                    input_datasets[input_dataset[0]] = {'size':dataset_info['bytes'],'events':dataset_info['events']}
                 except:
-                    input_datasets[input_dataset[0]] = 0
-            if input_datasets[input_dataset[0]] > 0:
-                current_input_size += input_datasets[input_dataset[0]]
-                current_sum += input_dataset[1]
-                good_tasks.append(input_dataset[2])
+                    input_datasets[input_dataset[0]] = {'size':0,'events':0}
+            if input_datasets[input_dataset[0]]['size'] > 0:
+                try:
+                    output_dataset_info = ddm.dataset_metadata(input_dataset[3])
+                    current_input_size += input_datasets[input_dataset[0]]['size']
+                    current_input_events += input_datasets[input_dataset[0]]['events']
+                    current_events += output_dataset_info['events']
+                    current_sum += input_dataset[1]
+                    good_tasks.append(input_dataset[2])
+                except:
+                    pass
 
-        if current_input_size !=0:
-            result.append({'output':output,'ratio':float(current_sum)/float(current_input_size),'tasks':len(good_tasks),'tasks_ids':good_tasks})
+        if (current_input_size !=0)and(current_input_events!=0):
+            result.append({'output':output,'ratio':float(current_sum)/float(current_input_size),
+                           'events_ratio':float(current_events)/float(current_input_events),
+                           'tasks':len(good_tasks),'tasks_ids':good_tasks})
         else:
             if not no_empty:
-                result.append({'output': output, 'ratio': 0,
+                result.append({'output': output, 'ratio': 0,'events_ratio':0,
                                'tasks': len(good_tasks),'tasks_ids':good_tasks})
+    result.sort(key=lambda x:x['output'])
     return result
 
 
@@ -329,7 +342,7 @@ def tasks_from_list(request):
 @api_view(['GET'])
 def deriv_output_proportion(request,project,ami_tag):
     try:
-        result = count_output_stat(project,ami_tag)
+        result = count_output_stat(project,[x for x in ami_tag.split(',') if x])
     except Exception,e:
             print str(e)
             return Response({'error':str(e)},status=400)

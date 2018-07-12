@@ -210,6 +210,9 @@
             }
             scope.showRatio = function () {
                  scope.is_loading = true;
+                 var new_ami_tag = scope.ami_tag.split(/[\s,]+/).join(',');
+                scope.ami_tag = new_ami_tag;
+                window.location.href = '/dkb/#/deriv_ratio/?amitag='+ new_ami_tag + '&project='+scope.project;
                 loadRatio(http,scope.ami_tag,scope.project,scope)
             };
             scope.showTasks = function (output) {
@@ -250,7 +253,8 @@
             }).
           when('/deriv_ratio/', {
               templateUrl: '/static/html/_ng_deriv_ratio.html',
-              controller: 'DKBDerivRatio'
+              controller: 'DKBDerivRatio',
+              reloadOnSearch: false
             }).
             otherwise({
               redirectTo: '/'

@@ -18,9 +18,11 @@
 
     <div class="row">
 <table id="taskTable">
-    <tr><th>Output</th><th>Ratio</th><th>Tasks</th></tr>
-    <tr  ng-repeat="element in ratio" >
-        <td>{{ element.output }}  </td> <td>{{ 100*element.ratio| number:4 }}%  </td> <td><a ng-click="showTasks(element.output)" style="cursor: pointer;">{{ element.tasks }}</a>  </td>
+    <tr><th>Output</th><th>Ratio</th><th>Events ratio</th><th>Tasks</th></tr>
+    <tr  ng-repeat="element in ratio| orderBy:output" >
+        <td>{{ element.output }}  </td> <td>{{ 100*element.ratio| number:4 }}%  </td>
+        <td>{{ 100*element.events_ratio| number:4 }}%  </td>
+        <td><a ng-click="showTasks(element.output)" style="cursor: pointer;">{{ element.tasks }}</a>  </td>
 
 </tr>
     </table>
