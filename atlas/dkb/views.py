@@ -201,7 +201,7 @@ def derivation_stat(project, ami, output):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
 
     query2 = {
-          "_source": ["primary_input","taskid"],
+          "_source": ["primary_input","taskid","processed_events","input_bytes","requested_events"],
           "query": {
             "bool": {
               "must": [
@@ -224,13 +224,23 @@ def derivation_stat(project, ami, output):
     exexute =  aggregs.execute()
     result_tasks = []
     for hit in exexute:
+        if hasattr(hit, 'input_bytes'):
+            input_bytes = hit.input_bytes
+        else:
+            input_bytes = 0
         for hit2 in hit.meta.inner_hits['output_dataset']:
             try:
                 if not hit2.deleted:
+                    if hasattr(hit2, 'events'):
+                        events = hit2.events
+                    else:
+                        events = -1
                     if hit2.bytes > 0:
-                        result_tasks.append((hit.primary_input,hit2.bytes,hit.taskid,hit2.datasetname))
-            except:
-                pass
+                        result_tasks.append({'primary_input':hit.primary_input,'output_bytes':hit2.bytes,
+                                             'task_id':hit.taskid,'dataset_name':hit2.datasetname, 'input_bytes':input_bytes,
+                                             'input_events':hit.requested_events,'events':events})
+            except Exception,e:
+                print str(e)
     return result_tasks
 
 def count_output_stat(project, ami_tags, outputs=None):
@@ -252,21 +262,30 @@ def count_output_stat(project, ami_tags, outputs=None):
         current_input_events = 0
         current_events = 0
         good_tasks = []
+
         for input_dataset in current_input_tasks:
-            if input_dataset[0] not in input_datasets:
+            if input_dataset['primary_input'] not in input_datasets:
                 try:
-                    dataset_info = ddm.dataset_metadata(input_dataset[0])
-                    input_datasets[input_dataset[0]] = {'size':dataset_info['bytes'],'events':dataset_info['events']}
-                except:
-                    input_datasets[input_dataset[0]] = {'size':0,'events':0}
-            if input_datasets[input_dataset[0]]['size'] > 0:
+                    if input_dataset['input_bytes'] > 0:
+                        input_datasets[input_dataset['primary_input']] ={'size':input_dataset['input_bytes'],'events':input_dataset['input_events']}
+                    else:
+                        dataset_info = ddm.dataset_metadata(input_dataset['primary_input'])
+                        input_datasets[input_dataset['primary_input']] = {'size':dataset_info['bytes'],'events':dataset_info['events']}
+                except Exception,e:
+                    print str(e)
+                    input_datasets[input_dataset['primary_input']] = {'size':0,'events':0}
+            if input_datasets[input_dataset['primary_input']]['size'] > 0:
                 try:
-                    output_dataset_info = ddm.dataset_metadata(input_dataset[3])
-                    current_input_size += input_datasets[input_dataset[0]]['size']
-                    current_input_events += input_datasets[input_dataset[0]]['events']
-                    current_events += output_dataset_info['events']
-                    current_sum += input_dataset[1]
-                    good_tasks.append(input_dataset[2])
+                    if input_dataset['events'] > -1:
+                        events = input_dataset['events']
+                    else:
+                        output_dataset_info = ddm.dataset_metadata(input_dataset['dataset_name'])
+                        events = output_dataset_info['events']
+                    current_input_size += input_datasets[input_dataset['primary_input']]['size']
+                    current_input_events += input_datasets[input_dataset['primary_input']]['events']
+                    current_events += events
+                    current_sum += input_dataset['output_bytes']
+                    good_tasks.append(input_dataset['task_id'])
                 except:
                     pass
 
