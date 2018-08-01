@@ -2502,7 +2502,7 @@ def tasks_progress(all_tasks):
                     nFilesPerJob = 1
                     if task.step.get_task_config('nFilesPerJob') and (int(task.step.get_task_config('nFilesPerJob'))>0):
                         nFilesPerJob = int(task.step.get_task_config('nFilesPerJob'))
-                    if int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
+                    if task.step.get_task_config('nEventsPerInputFile') and (int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob'))):
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile')) / nFilesPerJob
                     else:
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob')) / nFilesPerJob
