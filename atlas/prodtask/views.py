@@ -2491,18 +2491,23 @@ def tasks_progress(all_tasks):
             chain_id = 0
             task_input_events = -1
 
-            if step_by_name[task_step] in ['Simul']:
-                task_input_events = task.step.input_events
+            # if step_by_name[task_step] in ['Simul']:
+            #     task_input_events = task.step.input_events
 
             #Count number of events for parent task
             #evgen
             if (len(parent_tasks_id) == 0) or (task_input_events > -1):
-                task_input_events = task.step.input_events
+                #task_input_events = task.step.input_events
                 if task_input_events == -1:
+                    nFilesPerJob = 1
+                    if task.step.get_task_config('nFilesPerJob') and (int(task.step.get_task_config('nFilesPerJob'))>0):
+                        nFilesPerJob = int(task.step.get_task_config('nFilesPerJob'))
                     if int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
-                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile'))
+                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile')) / nFilesPerJob
                     else:
-                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob'))
+                        task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob')) / nFilesPerJob
+                if task.total_events > task_input_events:
+                    task_input_events = task.total_events
                 if (len(parent_tasks_id) == 1) and (parent_tasks_id[0] in processed_tasks):
                     chains[processed_tasks[parent_tasks_id[0]]["chain_id"]] = chains[processed_tasks[parent_tasks_id[0]]["chain_id"]] + [int(task.id)]
                     chain_id = processed_tasks[parent_tasks_id[0]]["chain_id"]
