@@ -36,6 +36,7 @@ _deft_actions = {
     'change_split_rule': 'change_task_split_rule',
     'pause_task': 'pause_task', 'resume_task':'resume_task', 'trigger_task':'trigger_task_brokerage',
     'avalanche_task':'avalanche_task',
+    'reload_input':'reload_input',
     'obsolete_entity': 'obsolete_entity'
 }
 
@@ -83,7 +84,7 @@ for _status in allowed_task_actions:
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share'])
     if 'ctrl' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task'])
+        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input'])
 
 def do_action(owner, task_id, action, *args):
 

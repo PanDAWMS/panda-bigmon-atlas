@@ -217,3 +217,15 @@ class Client(object):
         """
         body = {'slice_dict': slice_dict, 'steps_list': steps_list}
         return self._create_request('create_slice_tier0', owner, body)
+
+    def set_ttcr(self, owner, ttcr_dict):
+        body = {'ttcr_dict': ttcr_dict}
+        return self._create_request('set_ttcr', owner, body)
+
+    def set_ttcj(self, owner, ttcj_dict):
+        body = {'ttcj_dict': ttcj_dict}
+        return self._create_request('set_ttcj', owner, body)
+
+    def reload_input(self, owner):
+        body = {}
+        return self._create_request('reload_input', owner, body)

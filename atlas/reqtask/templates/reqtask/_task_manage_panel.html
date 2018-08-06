@@ -288,37 +288,37 @@
         </div>
 
         <div id="task_reassign_menu" class="medium content f-dropdown" data-dropdown-content>
-            <div class="small-12 large-12 columns bodyfont-color">
-                <div class="row">
-                    <div class="small-6 large-6 columns">
-                        <select name="cloud_select" id="cloud_select">
-                            <option value="" selected>Select cloud</option>
-                            <option value="">Unset cloud</option>
-                        {% for entry in clouds %}
-                            <option value="{{ entry }}">{{ entry }}</option>
-                        {% endfor %}
-                        </select>
-                    </div>
-                    <div class="small-4 large-4 columns">
-                        <select name="cloude_mode_select" id="cloud_mode_select">
-                            <option value="None" selected>Kill</option>
-                            <option value="nokill">No kill</option>
-                            <option value="soft">Soft</option>
-                        </select>
-                    </div>
-                    <div class="small-2 large-2 columns">
-                        <a class="button postfix" id="btn_do_reassign_cloud">Go</a>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="small-10 large-10 columns text-center">
-                        <label> or </label>
-                    </div>
-                    <div class="small-10 large-10 columns">
-
-                    </div>
-                </div>
+{#            <div class="small-12 large-12 columns bodyfont-color">#}
+{#                <div class="row">#}
+{#                    <div class="small-6 large-6 columns">#}
+{#                        <select name="cloud_select" id="cloud_select">#}
+{#                            <option value="" selected>Select cloud</option>#}
+{#                            <option value="">Unset cloud</option>#}
+{#                        {% for entry in clouds %}#}
+{#                            <option value="{{ entry }}">{{ entry }}</option>#}
+{#                        {% endfor %}#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="small-4 large-4 columns">#}
+{#                        <select name="cloude_mode_select" id="cloud_mode_select">#}
+{#                            <option value="None" selected>Kill</option>#}
+{#                            <option value="nokill">No kill</option>#}
+{#                            <option value="soft">Soft</option>#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div class="small-2 large-2 columns">#}
+{#                        <a class="button postfix" id="btn_do_reassign_cloud">Go</a>#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#                <div class="row">#}
+{#                    <div class="small-10 large-10 columns text-center">#}
+{#                        <label> or </label>#}
+{#                    </div>#}
+{#                    <div class="small-10 large-10 columns">#}
+{##}
+{#                    </div>#}
+{#                </div>#}
 
                 <div class="row">
                     <div class="small-6 large-6 columns">
@@ -574,7 +574,18 @@
                 </div>
 
             </div>
+            <div class="small-12 large-12 columns panel" id="ctrl_panel3">
+                <div class="row">
+                            <div class="small-6 large-6 columns">
+                                <p> <label class="inline"> Reload input </label> </p>
+                            </div>
+                            <div class="small-3 large-3 columns">
+                                <a class="button postfix" id="btn_do_reload_input">Go</a>
+                            </div>
 
+                </div>
+
+            </div>
          </div>
 
                <div class="row">
@@ -717,7 +728,8 @@ $(document).ready(function () {
         "kill_job": "kill_job",
         "pause":"pause_task", "resume":"resume_task", "trigger":"trigger_task", "avalanche":"avalanche_task", "ctrl":"ctrl_task",
                 "set_hashtag":"set_hashtag",
-        "remove_hashtag":"remove_hashtag"
+        "remove_hashtag":"remove_hashtag",
+        "reload_input":"reload_input"
     };
 
 
