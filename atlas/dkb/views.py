@@ -197,6 +197,83 @@ def keyword_search2(keyword_string, is_analy=False):
 
     return query
 
+
+def new_derivation_stat(project, ami, output):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+      "size": 0,
+      "query": {
+        "bool": {
+          "must": [
+            {"term": {"primary_input": "aod"}},
+            {"term": {"project": project.lower()}},
+            {"terms": {"ctag": ami}},
+            {"term": {"status": "done"}},
+            {"range": {"input_bytes": {"gt": 0}}},
+            {"has_child": {
+                "type": "output_dataset",
+                "query" : {
+                  "bool": {
+                    "must": [
+                      {"term": {"data_format": output}},
+                      {"range": {"bytes": {"gt": 0}}}
+                    ]
+                  }
+                }
+            }}
+          ]
+        }
+      },
+      "aggs": {
+        "input_bytes": {
+           "sum": {"field": "input_bytes"}
+        },
+        "input_events": {
+           "sum": {"field": "requested_events"}
+        },
+        "output_datasets": {
+          "children": {"type": "output_dataset"},
+          "aggs": {
+            "not_removed": {
+              "filter": {"term": {"deleted": False}},
+              "aggs": {
+                "format": {
+                  "filter": {"term": {"data_format":output}},
+                  "aggs": {
+                    "sum_bytes": {
+                      "sum": {"field": "bytes"}
+                    },
+                    "sum_events": {
+                      "sum": {"field": "events"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    try:
+        total = exexute.hits.total
+        #print aggregs['aggregations'].__dict__['output_datasets']['not_removed']['format']['sum_events']['value'].__dict__
+        result_events = exexute.aggregations.output_datasets.not_removed.format.sum_events.value
+        result_bytes = exexute.aggregations.output_datasets.not_removed.format.sum_bytes.value
+        input_bytes = exexute.aggregations.input_bytes.value
+        input_events =  exexute.aggregations.input_events.value
+        ratio = 0
+        if input_bytes != 0:
+            ratio = float(result_bytes)/float(input_bytes)
+        events_ratio = 0
+        if input_events != 0:
+            events_ratio = float(result_events)/float(input_events)
+        return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
+    except:
+        return {'total': 0, 'ratio': 0, 'events_ratio': 0}
+
+
 def derivation_stat(project, ami, output):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
 
@@ -244,59 +321,62 @@ def derivation_stat(project, ami, output):
     return result_tasks
 
 def count_output_stat(project, ami_tags, outputs=None):
-    no_empty = False
+    # no_empty = False
     if not outputs:
-        no_empty = True
+        # no_empty = True
         output_set = set()
         templates = StepTemplate.objects.filter(ctag__in=ami_tags)
         for template in templates:
             output_set.update(template.output_formats.split('.'))
         outputs = list(output_set)
-    input_datasets = {}
+    # input_datasets = {}
     result = []
-    ddm = DDM()
+    # ddm = DDM()
     for output in outputs:
-        current_input_tasks = derivation_stat(project, ami_tags, output)
-        current_input_size = 0
-        current_sum = 0
-        current_input_events = 0
-        current_events = 0
-        good_tasks = []
-
-        for input_dataset in current_input_tasks:
-            if input_dataset['primary_input'] not in input_datasets:
-                try:
-                    if input_dataset['input_bytes'] > 0:
-                        input_datasets[input_dataset['primary_input']] ={'size':input_dataset['input_bytes'],'events':input_dataset['input_events']}
-                    else:
-                        dataset_info = ddm.dataset_metadata(input_dataset['primary_input'])
-                        input_datasets[input_dataset['primary_input']] = {'size':dataset_info['bytes'],'events':dataset_info['events']}
-                except Exception,e:
-                    print str(e)
-                    input_datasets[input_dataset['primary_input']] = {'size':0,'events':0}
-            if input_datasets[input_dataset['primary_input']]['size'] > 0:
-                try:
-                    if input_dataset['events'] > -1:
-                        events = input_dataset['events']
-                    else:
-                        output_dataset_info = ddm.dataset_metadata(input_dataset['dataset_name'])
-                        events = output_dataset_info['events']
-                    current_input_size += input_datasets[input_dataset['primary_input']]['size']
-                    current_input_events += input_datasets[input_dataset['primary_input']]['events']
-                    current_events += events
-                    current_sum += input_dataset['output_bytes']
-                    good_tasks.append(input_dataset['task_id'])
-                except:
-                    pass
-
-        if (current_input_size !=0)and(current_input_events!=0):
-            result.append({'output':output,'ratio':float(current_sum)/float(current_input_size),
-                           'events_ratio':float(current_events)/float(current_input_events),
-                           'tasks':len(good_tasks),'tasks_ids':good_tasks})
-        else:
-            if not no_empty:
-                result.append({'output': output, 'ratio': 0,'events_ratio':0,
-                               'tasks': len(good_tasks),'tasks_ids':good_tasks})
+        current_input_tasks = new_derivation_stat(project, ami_tags, output)
+        if current_input_tasks['total'] >0:
+            result.append({'output': output, 'ratio': current_input_tasks['ratio'],'events_ratio': current_input_tasks['events_ratio'],
+                           'tasks': current_input_tasks['total'],'tasks_ids':[]})
+        # current_input_size = 0
+        # current_sum = 0
+        # current_input_events = 0
+        # current_events = 0
+        # good_tasks = []
+        #
+        # for input_dataset in current_input_tasks:
+        #     if input_dataset['primary_input'] not in input_datasets:
+        #         try:
+        #             if input_dataset['input_bytes'] > 0:
+        #                 input_datasets[input_dataset['primary_input']] ={'size':input_dataset['input_bytes'],'events':input_dataset['input_events']}
+        #             else:
+        #                 dataset_info = ddm.dataset_metadata(input_dataset['primary_input'])
+        #                 input_datasets[input_dataset['primary_input']] = {'size':dataset_info['bytes'],'events':dataset_info['events']}
+        #         except Exception,e:
+        #             print str(e)
+        #             input_datasets[input_dataset['primary_input']] = {'size':0,'events':0}
+        #     if input_datasets[input_dataset['primary_input']]['size'] > 0:
+        #         try:
+        #             if input_dataset['events'] > -1:
+        #                 events = input_dataset['events']
+        #             else:
+        #                 output_dataset_info = ddm.dataset_metadata(input_dataset['dataset_name'])
+        #                 events = output_dataset_info['events']
+        #             current_input_size += input_datasets[input_dataset['primary_input']]['size']
+        #             current_input_events += input_datasets[input_dataset['primary_input']]['events']
+        #             current_events += events
+        #             current_sum += input_dataset['output_bytes']
+        #             good_tasks.append(input_dataset['task_id'])
+        #         except:
+        #             pass
+        #
+        # if (current_input_size !=0)and(current_input_events!=0):
+        #     result.append({'output':output,'ratio':float(current_sum)/float(current_input_size),
+        #                    'events_ratio':float(current_events)/float(current_input_events),
+        #                    'tasks':len(good_tasks),'tasks_ids':good_tasks})
+        # else:
+        #     if not no_empty:
+        #         result.append({'output': output, 'ratio': 0,'events_ratio':0,
+        #                        'tasks': len(good_tasks),'tasks_ids':good_tasks})
     result.sort(key=lambda x:x['output'])
     return result
 
