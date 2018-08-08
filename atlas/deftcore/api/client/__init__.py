@@ -226,6 +226,6 @@ class Client(object):
         body = {'ttcj_dict': ttcj_dict}
         return self._create_request('set_ttcj', owner, body)
 
-    def reload_input(self, owner):
-        body = {}
+    def reload_input(self, owner, task_id):
+        body = {'task_id': task_id}
         return self._create_request('reload_input', owner, body)
