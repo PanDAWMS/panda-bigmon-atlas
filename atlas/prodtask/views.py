@@ -2005,7 +2005,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
-                'pre_form_text': 'Reuqest ' + str(cur_request.reqid),
+                'pre_form_text': 'Request ' + str(cur_request.reqid),
                'trequest': cur_request,
                'inputLists': input_lists,
                'step_list': step_list,
