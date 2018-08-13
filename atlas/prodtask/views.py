@@ -2506,6 +2506,7 @@ def tasks_progress(all_tasks):
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile')) / nFilesPerJob
                     else:
                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob')) / nFilesPerJob
+
                 if task.total_events > task_input_events:
                     task_input_events = task.total_events
                 if (len(parent_tasks_id) == 1) and (parent_tasks_id[0] in processed_tasks):
@@ -2528,7 +2529,7 @@ def tasks_progress(all_tasks):
                             task_input_events = task.step.input_events
                             if task_input_events == -1:
                                 if task.status=='finished':
-                                    if int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
+                                    if task.step.get_task_config('nEventsPerInputFile') and  int(task.step.get_task_config('nEventsPerInputFile'))<int(task.step.get_task_config('nEventsPerJob')):
                                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerInputFile'))
                                     else:
                                         task_input_events = task.total_files_tobeused*int(task.step.get_task_config('nEventsPerJob'))
