@@ -94,13 +94,13 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 if (formats) and (ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]
             else:
-                if(not formats)and(not ram):
+                if(formats==None)and(not ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, step=step_name)[0]
-                if (not formats) and (ram):
+                if (formats==None) and (ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, memory=ram, step=step_name)[0]
-                if (formats) and (not ram):
+                if (formats!=None) and (not ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
-                if (formats) and (ram):
+                if (formats!=None) and (ram):
                     st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
         except:
             pass
@@ -213,7 +213,7 @@ def format_splitting(format_string, events_number):
     return (result, additional_formats_by_step)
 
 def format_from_jo(job_options):
-    if re.match(r"(ph)|(Powheg)|(aMcAtNlo)",job_options.split('.')[2]):
+    if re.match(r"(Ph)|(Powheg)|(aMcAtNlo)",job_options.split('.')[2]):
         return {'Evgen':['TXT']}
     return {}
 
