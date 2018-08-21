@@ -1039,10 +1039,11 @@ def make_child_update(parent_request_id, manager, slices):
                             used_slices.add(slice.slice)
                             if step.status == 'Approved':
                                 for child_step in step_relation[step.id]:
-                                    if child_step.status != 'Approved':
-                                        child_step.status = 'Approved'
-                                        child_step.save()
-                                        do_request_approve = True
+                                    if not(child_step.slice.is_hide):
+                                        if child_step.status != 'Approved':
+                                            child_step.status = 'Approved'
+                                            child_step.save()
+                                            do_request_approve = True
             if child_request.relation_type == 'BC':
                 slices_to_proceed = [slice_number for slice_number in slices if int(slice_number) not in used_slices]
                 parent_steps, slices_not_approved = find_parent_for_train_steps(slices_to_proceed, parent_request)
@@ -2522,6 +2523,8 @@ def tasks_progress(all_tasks):
                         task_input_events = processed_tasks[parent_task_id]["processed_events"]
                         chains[processed_tasks[parent_task_id]["chain_id"]] = chains[processed_tasks[parent_task_id]["chain_id"]] + [int(task.id)]
                         chain_id = processed_tasks[parent_task_id]["chain_id"]
+                        if task.total_events>task_input_events:
+                            print task.id
                     else:
                         if task.status == 'done':
                             task_input_events = task.total_events
