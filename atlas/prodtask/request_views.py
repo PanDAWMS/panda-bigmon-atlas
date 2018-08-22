@@ -2115,6 +2115,7 @@ class Parameters(datatables.Parametrized):
     phys_group = datatables.Parameter(label='Physics group', get_Q=_phys_group_Q )
     campaign = datatables.Parameter(label='Campaign')
     manager = datatables.Parameter(label='Manager')
+    subcampaign = datatables.Parameter(label='SubCampaign')
 
     type = datatables.Parameter(label='Type', model_field='request_type')
     #status = datatables.Parameter(label='Status', model_field='cstatus')
