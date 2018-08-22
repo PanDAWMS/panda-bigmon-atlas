@@ -2116,6 +2116,9 @@ class Parameters(datatables.Parametrized):
     campaign = datatables.Parameter(label='Campaign')
     manager = datatables.Parameter(label='Manager')
     subcampaign = datatables.Parameter(label='SubCampaign')
+    def _project_Q(value):
+        return Q(project_id=value)
+    project = datatables.Parameter(label='Project', get_Q=_project_Q)
 
     type = datatables.Parameter(label='Type', model_field='request_type')
     #status = datatables.Parameter(label='Status', model_field='cstatus')
