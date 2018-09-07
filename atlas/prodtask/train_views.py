@@ -13,7 +13,7 @@ from django.forms.models import model_to_dict
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from atlas.prodtask.models import RequestStatus
+from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
@@ -48,7 +48,7 @@ def merge_pattern_train(train, requests):
             current_dataset_outputs = dataset_slice.get(dataset,{})
             outputs = step.step_template.output_formats.split('.')
             if outputs[0] not in outputs_lookup:
-                print train.id, production_request
+                pass
             else:
                 pattern_slice = outputs_lookup[outputs[0]]
                 if pattern_slice not in current_dataset_outputs:
@@ -132,7 +132,7 @@ def trains_to_merge(request):
         for entry in result.values():
             to_send[int(entry['train'].id)] = {'train_name':entry['train'].description,'request':map(int,entry['requests']),'request_count':len(entry['requests'])}
     except Exception, e:
-        Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
     return Response({"trains": to_send})
 
 
@@ -147,10 +147,20 @@ def train_luanch(request):
             })
 
 
+def patterns_to_show():
+    requests = []
+    if HashTag.objects.filter(hashtag__iexact='PatternToShowMerge').exists():
+        patterns = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.filter(hashtag__iexact='PatternToShowMerge')[0]).values_list('request_id', flat=True))
+        for pattern in patterns:
+            trains = list(TrainProduction.objects.filter(pattern_request_id=pattern))
+            requests += [x.request for x in trains if x.request]
+    return requests
+
 
 def collect_trains(days):
     min_request = RequestStatus.objects.filter(status='waiting', timestamp__gt=timezone.now()-timedelta(days=days)).order_by('id')[0].request_id
-    requests = TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request, cstatus='registered')
+    requests = list(TRequest.objects.filter(request_type='GROUP',reqid__gte=min_request, cstatus='registered'))
+    requests += list(TRequest.objects.filter(reqid__in=patterns_to_show()))
     patterns = {}
     for production_request in requests:
         if TrainProduction.objects.filter(request = int(production_request.reqid)).exists():
