@@ -1482,6 +1482,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             tag = step['ctag']
             output_format = step.get('output_format','')
         task_short = ''
+        total_events = 0
         return_tasks = []
         if tasks:
 
@@ -1504,14 +1505,16 @@ def request_table_view(request, rid=None, show_hidden=False):
                 task['href'] = BIG_PANDA_TASK_BASE + str(task['id'])
                 task['href_local'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(task['id']))
                 return_tasks.append(task)
+                total_events +=  task['total_events']
                 if task['is_extension']:
                     ext_task = deepcopy(task)
                     ext_task['short'] =(' ^'+ 'ext.' + '^ ')
                     ext_task['href'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(ext_task['id']))
 
                     return_tasks.append(ext_task)
+
         return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks_real':tasks, 'tasks':return_tasks, 'slice':slice,
-                'is_another_request':is_another_request,'output_format':output_format}
+                'is_another_request':is_another_request,'output_format':output_format, 'total_events':total_events}
 
     def unwrap(pattern_dict):
         return_list = []
@@ -1526,12 +1529,15 @@ def request_table_view(request, rid=None, show_hidden=False):
     def get_last_step_format(slice_data):
         return_value = ''
         real_events = ''
+        total_events = None
         for step in slice_data[1]:
             if step.get('step'):
                 if (step['skipped'] not in ['skipped','foreign']) and (not real_events):
                     real_events = step['step']['input_events']
+                if step['total_events'] > 0:
+                    total_events = step['total_events']
                 return_value = step['output_format']
-        return return_value, real_events
+        return return_value, real_events, total_events
 
     def check_empty_pattern(pattern, default_pattern):
         for x in pattern.keys():
@@ -1924,14 +1930,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                 jira_problem_link = cur_request.jira_reference
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
-                slice_output, real_events = get_last_step_format(temp_list)
+                slice_output, real_events, total_events = get_last_step_format(temp_list)
                 events_str = str(temp_list[0]['input_events'])
                 if real_events and (real_events != temp_list[0]['input_events']):
                     events_str = "%s (%s)"%(str(real_events), str(temp_list[0]['input_events']))
                 if (len(slice_output) > 60) and (cur_request.request_type == 'REPROCESSING'):
-                    temp_list+=[slice_output[:60]+"...",slice_output,events_str]
+                    temp_list+=[slice_output[:60]+"...",slice_output,events_str, total_events]
                 else:
-                    temp_list+=[slice_output,slice_output,events_str]
+                    temp_list+=[slice_output,slice_output,events_str, total_events]
 
                 input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:
