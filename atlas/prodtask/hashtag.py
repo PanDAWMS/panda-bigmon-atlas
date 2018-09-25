@@ -100,6 +100,7 @@ def tasks_statistic_steps(request):
 
         for chain in request_statistics['chains'].values():
             current_chain = [{}] * len(steps_name)
+            unequal = {}
             chain_requests = set()
             chain_name = ''
             chain_status = 'done'
@@ -116,8 +117,10 @@ def tasks_statistic_steps(request):
                         tags = task['name'].split('.')[-1]
                         chain_name = '.'.join(task['name'].split('.')[1:3])+'...'+tags[:tags.rfind('_')]
                 chain_requests.add(request_statistics['processed_tasks'][task_id]['request'])
+                if task['input_events']!=task['processed_events']:
+                    unequal[request_statistics['processed_tasks'][task_id]['step']]='notequal'
                 current_chain[i] = task
-            chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name, 'chain_status':chain_status})
+            chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name, 'chain_status':chain_status, 'notequal':unequal})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
     except Exception,e:
         print str(e)
@@ -418,6 +421,7 @@ def set_mc16_hashtags(hashtags):
 def remove_hashtag_from_request(reqid, hashtag_name):
     hashtag = HashTag.objects.get(hashtag=hashtag_name)
     if HashTagToRequest.objects.filter(request=reqid,hashtag=hashtag).exists():
+        print 'exists'
         tasks = ProductionTask.objects.filter(request=reqid)
         for task in tasks:
             task.remove_hashtag(hashtag.hashtag)

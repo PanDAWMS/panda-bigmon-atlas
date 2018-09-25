@@ -112,37 +112,43 @@ hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http','$routeParams'
         requestProgressData.steps = [];
         scope.loading = true;
         scope.showOnlyRunning = false;
+        scope.showNotFull = {};
         scope.search = {};
+        scope.search.notequal = {};
         var tasks = [];
         var hashtagFormula = routeParams.hashtags;
-        console.log(routeParams.hashtags);
         http.post(Django.url('prodtask:tasks_hashtag'),hashtagFormula).
           success(function(data, status, headers, config) {
-            tasks = data;console.log(data);
+            tasks = data;
             http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
               success(function(data, status, headers, config) {
-                 console.log(data);
                         requestProgressData.steps = data.load.step_statistic;
                         requestProgressData.chains = data.load.chains;
                         requestProgressData.hashtags = hashtagFormula;
                         scope.loading = false;
                 }).
               error(function(data, status, headers, config) {
-            console.log(status);
              scope.loading = false;
               });
           }).
           error(function(data, status, headers, config) {
-            console.log(status);
             scope.loading = false;
           });
         scope.changeShowOnlyRunning = function () {
-            console.log('rabotaet');
             if (scope.showOnlyRunning){
                 scope.search.chain_status = 'running';
             } else {
                 scope.search.chain_status = '';
             }
+        };
+        scope.changeNotFull = function (step_name) {
+                 if (scope.search.notequal[step_name] != 'notequal'){
+                     scope.search.notequal[step_name] = 'notequal';
+                 }
+                 else{
+                    delete scope.search.notequal[step_name]
+                 }
+
         }
 
     }]);

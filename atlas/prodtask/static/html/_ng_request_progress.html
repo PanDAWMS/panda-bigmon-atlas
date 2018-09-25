@@ -49,7 +49,21 @@
           <div class="columns large-1">
            <label>Show active tasks<input type="checkbox" ng-model="showOnlyRunning" ng-change="changeShowOnlyRunning()"></label>
            </div>
-          <div class="columns large-8"></div>
+
+          <div class="columns large-7"></div>
+          </div>
+       <div class="row">
+
+    <table>
+        <tbody>
+        <td>Filter not full </td>
+            <td ng-repeat="step in requestProgressData.steps ">
+                <label>{{ step.step_name }}<input type="checkbox" ng-model="showNotFull[step.step_name]" ng-change="changeNotFull(step.step_name)"></label>
+
+
+             </td>
+        </tbody>
+    </table>
           </div>
        <div class="row">
      <table >
