@@ -1037,7 +1037,7 @@ class WaitingStep(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID')
-    step = models.ForeignKey(StepExecution, db_column='STEP_ID')
+    step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')#models.ForeignKey(StepExecution, db_column='STEP_ID')
     action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
     create_time = models.DateTimeField(db_column='SUBMIT_TIME')
     execution_time = models.DateTimeField(db_column='EXEC_TIME')

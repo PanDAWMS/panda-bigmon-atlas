@@ -55,7 +55,7 @@ def create_predefinition_action(step):
         if not WaitingStep.objects.filter(step=step, action=action,
                                           status__in=['active', 'executing']).exists():
             waiting_step = WaitingStep()
-            waiting_step.step = step
+            waiting_step.step = step.id
             waiting_step.request = step.request
             waiting_step.create_time = timezone.now()
             waiting_step.execution_time = timezone.now()

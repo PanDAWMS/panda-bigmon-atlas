@@ -39,7 +39,7 @@ def find_waiting():
 def postponed_step(waiting_step_id):
 
     waiting_step = WaitingStep.objects.get(id=waiting_step_id)
-    step = waiting_step.step
+    step = StepExecution.objects.get(id=waiting_step.step)
     if waiting_step.attempt>=2:
         step.status = 'Approved'
         waiting_step.done_time = timezone.now()
@@ -65,7 +65,7 @@ def get_slice_input_datasets(container, ddm):
 
 def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
     waiting_step = WaitingStep.objects.get(id=waiting_step_id)
-    step = waiting_step.step
+    step = StepExecution.objects.get(id=waiting_step.step)
     approve_step = False
     if (step.step_parent_id != step.id) and (step.step_parent.status not in ['Skipped','NotCheckedSkipped'] ):
         waiting_step.status = 'cancelled'
@@ -114,7 +114,7 @@ def set_test_waiting(request,slice):
     step.status = 'Waiting'
     step.save()
     waiting_step = WaitingStep()
-    waiting_step.step = step
+    waiting_step.step = step.id
     waiting_step.request = step.request
     waiting_step.create_time = timezone.now()
     waiting_step.execution_time = timezone.now()
