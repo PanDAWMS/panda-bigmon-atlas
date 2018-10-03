@@ -586,7 +586,7 @@ class StepExecution(models.Model):
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
     INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
                               'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile','maxFailure','split_slice']
-    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff']
+    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff', 'PDA', 'PDAParams']
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
@@ -680,7 +680,8 @@ class TTask(models.Model):
     start_time = models.DateTimeField(db_column='START_TIME', null=True)
     total_req_jobs = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_REQ_JOBS', null=True)
     total_events = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_EVENTS', null=True)
-
+    priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=True)
+    current_priority =  models.DecimalField(decimal_places=0, max_digits=5, db_column='CURRENT_PRIORITY', null=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
     __params = None
 
@@ -749,6 +750,7 @@ class ProductionTask(models.Model):
     provenance = models.CharField(max_length=12, db_column='PROVENANCE', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     total_events = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_EVENTS', null=True)
+    total_req_events =  models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_REQ_EVENTS', null=True)
     total_req_jobs = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_REQ_JOBS', null=True)
     total_done_jobs = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_DONE_JOBS', null=True)
     submit_time = models.DateTimeField(db_column='SUBMIT_TIME', null=False)
@@ -1022,6 +1024,42 @@ def remove_hashtag_from_task(task_id, hashtag):
             cursor.close()
     return deleted
 
+
+
+class WaitingStep(models.Model):
+
+    ACTIONS = {
+        1 : {'name':'postpone', 'description': 'Postpone ', 'attempts': 3, 'delay':1},
+        2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 12, 'delay':8}
+    }
+
+    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2}
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
+    request = models.ForeignKey(TRequest,  db_column='PR_ID')
+    step = models.ForeignKey(StepExecution, db_column='STEP_ID')
+    action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
+    create_time = models.DateTimeField(db_column='SUBMIT_TIME')
+    execution_time = models.DateTimeField(db_column='EXEC_TIME')
+    done_time = models.DateTimeField(db_column='DONE_TIME')
+    message = models.CharField(max_length=2000, db_column='MESSAGE')
+    attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
+    status = models.CharField(max_length=20, db_column='STATUS', null=True)
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
+        super(WaitingStep, self).save(*args, **kwargs)
+
+    def save_last_update(self, *args, **kwargs):
+        self.last_update = timezone.now()
+        super(WaitingStep, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_WAITING_STEP"'
 
 class HashTagToRequest(models.Model):
 

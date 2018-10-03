@@ -180,6 +180,11 @@ class DDM(object):
         return output_datasets
 
 
+    def deleteDataset(self, dataset):
+        scope, name = self.rucio_convention(dataset)
+        lifetime = 3600
+        self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
+
     def dataset_in_container(self, container_name):
         """
 
@@ -194,6 +199,40 @@ class DDM(object):
              output_datasets =[{'scope':scope,'name': name}]
         return [x['scope']+':'+x['name'] for x in output_datasets]
 
+    def number_of_full_replicas(self, dataset_name):
+        replicas = self.dataset_replicas(dataset_name)
+        full_replicas = 0
+        for replica in replicas:
+            if replica[1] == replica[2]:
+                full_replicas +=1
+        return full_replicas
+
+
+    def dataset_replicas(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        dids = self.__ddm.scope_list(scope=scope, name=name, recursive=True)
+        datasets = {}
+        result = {}
+        for d in dids:
+            if d['type'] == 'FILE':
+                dsn = '%s:%s' % (d['parent']['scope'], d['parent']['name'])
+                if dsn not in datasets:
+                    datasets[dsn] = 0
+                datasets[dsn] += 1
+        scope, name = self.rucio_convention(dsn)
+        replicas = self.__ddm.list_replicas([{'scope': scope, 'name': name}])
+        dsn = datasets.keys()[0]
+        result[dsn] = {}
+        for replica in replicas:
+            for rse in replica['rses']:
+                if rse not in result[dsn]:
+                    result[dsn][rse] = 0
+                if replica['rses'][rse] != []:
+                    result[dsn][rse] += 1
+        replicas = []
+        for rse in result[dsn]:
+            replicas.append((rse, result[dsn][rse], datasets[dsn]))
+        return replicas
 
     def dataset_size(self, dataset_name):
         """

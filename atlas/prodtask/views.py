@@ -23,7 +23,7 @@ from atlas.getdatasets.models import TRequest
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag
+    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -47,7 +47,24 @@ _logger = logging.getLogger('prodtaskwebui')
 
 
 
-
+def create_predefinition_action(step):
+    if not ProductionTask.objects.filter(step=step).exists():
+        action = WaitingStep.ACTION_NAME_TYPE[step.get_task_config('PDA')]
+        step.status = 'Waiting'
+        step.save()
+        if not WaitingStep.objects.filter(step=step, action=action,
+                                          status__in=['active', 'executing']).exists():
+            waiting_step = WaitingStep()
+            waiting_step.step = step
+            waiting_step.request = step.request
+            waiting_step.create_time = timezone.now()
+            waiting_step.execution_time = timezone.now()
+            waiting_step.attempt = 0
+            waiting_step.action = action
+            waiting_step.status = 'active'
+            if step.get_task_config('PDAParams'):
+                waiting_step.config = step.get_task_config('PDAParams')
+            waiting_step.save()
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     if request.method == 'GET':
@@ -207,6 +224,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
      :param is_approve: approve if true, save if false
 
     """
+
+    def set_action(step_to_check):
+        try:
+            create_predefinition_action(step_to_check)
+        except Exception, e:
+            _logger.error("Problem with pre defintion action %s" % str(e))
+
     def events_per_input_file(index, STEPS, task_config, parent_step):
         if index == 0:
             task_config.update({'nEventsPerInputFile':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
@@ -296,6 +320,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'],
                                                                                    index<=approve_level,
                                                                                    index>=waiting_level))
+                            if (step_in_db.status == 'Approved') and ('PDA' in step_in_db.task_config) and (step_in_db.get_task_config('PDA')):
+                                set_action(step_in_db)
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
                                 still_skipped = False
@@ -308,7 +334,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config = {}
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
-                                      'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','evntFilterEff']:
+                                      'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','evntFilterEff',
+                                      'PDA',
+                                      'PDAParams']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
@@ -349,6 +377,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level,
                                                                        index>=waiting_level)
 
+
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
                                 total_events = step_in_db.input_events
@@ -371,6 +400,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.remove_task_config('spreadsheet_original')
                             step_in_db.step_def_time = None
                             step_in_db.save_with_current_time()
+                            if (step_in_db.status == 'Approved') and ('predifinitionAction' in step_in_db.task_config) and (step_in_db.get_task_config('predifinitionAction')):
+                                set_action(step_in_db)
                             parent_step = step_in_db
                     else:
                             status_changed = True
@@ -384,7 +415,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 task_config.update({'project_mode':input_list.project_mode})
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
-                                      'nGBPerJob','maxAttempt','maxFailure','evntFilterEff']:
+                                      'nGBPerJob','maxAttempt','maxFailure','evntFilterEff',
+                                      'PDA',
+                                      'PDAParams']:
                                 if x in step_value['changes']:
                                     task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
@@ -431,6 +464,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if no_parent:
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
+                            if (st_exec.status == 'Approved') and ('PDA' in st_exec.task_config) and (st_exec.get_task_config('PDA')):
+                                set_action(step_in_db)
                             parent_step = st_exec
                             new_step = True
                 for step in to_delete:
@@ -1462,7 +1497,7 @@ def request_table_view(request, rid=None, show_hidden=False):
     FAKE_TASK_NUMBER = '123456'
     PRODTASK_TASK_BASE = ''
 
-    def form_step_obj(step,tasks,input_slice,foreign=False,another_request=None):
+    def form_step_obj(step,tasks,actions,input_slice,foreign=False,another_request=None):
         skipped = 'skipped'
         tag = ''
         slice = ''
@@ -1514,7 +1549,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     return_tasks.append(ext_task)
 
         return {'step':step, 'tag':tag, 'skipped':skipped, 'tasks_real':tasks, 'tasks':return_tasks, 'slice':slice,
-                'is_another_request':is_another_request,'output_format':output_format, 'total_events':total_events}
+                'is_another_request':is_another_request,'output_format':output_format, 'total_events':total_events, 'actions':actions}
 
     def unwrap(pattern_dict):
         return_list = []
@@ -1688,19 +1723,19 @@ def request_table_view(request, rid=None, show_hidden=False):
                     if (cur_request.request_type == 'MC'):
                         for step_name in StepExecution.STEPS:
                             if step_name not in steps:
-                                slice_steps_ordered.append(form_step_obj({},{},-1))
+                                slice_steps_ordered.append(form_step_obj({},{},[],-1))
                             else:
                                 step_dict = model_to_dict(steps[step_name])
                                 step_dict.update({'ctag':steps[step_name].step_template.ctag})
                                 step_dict.update({'slice':input_lists_pre_pattern})
-                                slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
+                                slice_steps_ordered.append(form_step_obj(step_dict,{},[],-1))
                     else:
                         for step in pattern_steps:
                                 step_dict = model_to_dict(step)
                                 step_dict.update({'ctag':step.step_template.ctag})
                                 step_dict.update({'slice':input_lists_pre_pattern})
-                                slice_steps_ordered.append(form_step_obj(step_dict,{},-1))
-                        slice_steps_ordered += [form_step_obj({},{},-1)] * (len(StepExecution.STEPS) - len(pattern_steps))
+                                slice_steps_ordered.append(form_step_obj(step_dict,{},[],-1))
+                        slice_steps_ordered += [form_step_obj({},{},[],-1)] * (len(StepExecution.STEPS) - len(pattern_steps))
                     if (cur_request.request_type == 'MC'):
                         approved = (total_steps_count >= input_list_count) and ((approve_level(slice_steps_ordered)*input_list_count)==(approved_steps_count))
                     else:
@@ -1710,15 +1745,20 @@ def request_table_view(request, rid=None, show_hidden=False):
                         slice_dict['dataset'] = ''
                     if approved:
                         input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,input_lists_pre_pattern),
-                                            False,'',approve_level(slice_steps_ordered),'no',has_waiting(slice_steps_ordered)))
+                                            False,False,'',approve_level(slice_steps_ordered),'no',has_waiting(slice_steps_ordered)))
                     else:
                         input_lists.append((slice_dict, slice_steps_ordered, 'not_submitted',
-                                            False,'',-1,'no',False))
+                                            False,False,'',-1,'no',False))
                 if do_all or do_cloned_and_failed:
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
-
+                        pre_definition_actions_db = []
+                        try:
+                            pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing']).values())
+                        except:
+                            pass
                     else:
+                        pre_definition_actions_db = []
                         steps_db = list(StepExecution.objects.filter(Q(request=rid),Q(slice_id__in=cloned_slices+list(failed_slices))).values())
                     tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
                     step_templates_set = set()
@@ -1729,6 +1769,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                     tasks = {}
                     for current_task in tasks_db:
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
+                    pre_definition_actions = {}
+                    for current_action in pre_definition_actions_db:
+                        pre_definition_actions[current_action['step_id']] = pre_definition_actions.get(current_action['step_id'], []) + [current_action]
+
                     step_templates = {}
                     for step_template in step_templates_set:
                         step_templates[step_template] = StepTemplate.objects.get(id=step_template)
@@ -1751,6 +1795,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         slice_steps = {}
                         total_slice += 1
                         show_task = False
+                        show_action = False
                         # creating a pattern
                         # if input_list_count < 50:
                         #     if use_input_date_for_pattern:
@@ -1778,35 +1823,41 @@ def request_table_view(request, rid=None, show_hidden=False):
                         another_chain_step = None
                         for step in step_execs:
                             step_task = []
+                            step_action = []
                             try:
                                 step_task = tasks[step['id']]
-
                             except Exception,e:
                                 step_task = []
+                            try:
+                                step_action = pre_definition_actions[step['id']]
+                            except Exception,e:
+                                step_action = []
 
                             if step_task:
                                 show_task = True
+                            if step_action:
+                                show_action = True
                             ctag = step_templates[step['step_template_id']].ctag
                             step_name = step_templates[step['step_template_id']].step
                             step_format = step_templates[step['step_template_id']].output_formats
                             step.update({'ctag':ctag,'output_format':step_format})
                             if cur_request.request_type == 'MC':
 
-                                slice_steps.update({step_name:form_step_obj(step,step_task,slice.slice)})
+                                slice_steps.update({step_name:form_step_obj(step,step_task,step_action,slice.slice)})
 
                             else:
 
                                 if step['id'] == step['step_parent_id']:
-                                    slice_steps_list.append((step['id'],form_step_obj(step,step_task,slice.slice)))
+                                    slice_steps_list.append((step['id'],form_step_obj(step,step_task,step_action,slice.slice)))
                                 else:
-                                    temp_step_list.append((step,step_task))
+                                    temp_step_list.append((step,step_task,step_action))
                         if cur_request.request_type == 'MC':
                             show_split = True
                             first_step = True
                             slice_steps_ordered = []
                             another_chain_step_dict = {}
                             for step_name in StepExecution.STEPS:
-                                slice_steps_ordered.append(form_step_obj({},{},slice.slice))
+                                slice_steps_ordered.append(form_step_obj({},{},[],slice.slice))
                             for index,step_name in enumerate(StepExecution.STEPS):
                                 if step_name not in slice_steps:
                                     pass
@@ -1821,11 +1872,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                                             another_chain_index = StepExecution.STEPS.index(another_chain_step.step_template.step)
                                             if another_chain_step_dict['request'] != int(rid):
                                                 slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
-                                                                                                         ,{}, another_chain_step.slice.slice,
+                                                                                                         ,{},[], another_chain_step.slice.slice,
                                                                                                       True,another_chain_step_dict['request'])
                                             else:
                                                 slice_steps_ordered[another_chain_index] = form_step_obj(another_chain_step_dict
-                                                         ,{}, another_chain_step.slice.slice,
+                                                         ,{}, [],another_chain_step.slice.slice,
                                                       True)
                             #slice_steps_ordered = [slice_steps.get(x,form_step_obj({},{},slice.slice)) for x in StepExecution.STEPS]
                             approved = get_approve_status(slice_steps_ordered)
@@ -1842,14 +1893,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                             if slice_dict['cloned_from']:
                                 if slice_dict['cloned_from'] in input_list_index:
                                    temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
-                                   temp_list[6] = str(slice_dict['slice'])
+                                   temp_list[7] = str(slice_dict['slice'])
                                    input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                             if another_chain_step_dict:
                                 input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                    show_task,another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
+                                                    show_task, show_action, another_chain_step_dict['id'],approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
                             else:
                                 input_lists.append((slice_dict, slice_steps_ordered, get_approve_status(slice_steps_ordered,slice),
-                                                    show_task,'',approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
+                                                    show_task, show_action, '',approve_level(slice_steps_ordered),cloned,has_waiting(slice_steps_ordered)))
 
                             if (not show_task)or(fully_approved<total_slice):
                                 edit_mode = True
@@ -1862,14 +1913,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     another_chain_step = model_to_dict(another_chain_step_obj)
                                     another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
                                     if another_chain_step['request'] != int(rid):
-                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},[],
                                                                                                       another_chain_step_obj.slice.slice,
                                                                                                       True,another_chain_step['request'])))
                                     else:
-                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                        slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},[],
                                                                                                           another_chain_step_obj.slice.slice,
                                                                                                           True)))
-                                slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],slice.slice)))
+                                slice_steps_list.append((temp_step_list[0][0]['id'],form_step_obj(temp_step_list[0][0],temp_step_list[0][1],temp_step_list[0][2],slice.slice)))
                                 temp_step_list.pop(0)
                             if not slice_steps_list:
                                 step_id_list = [x[0]['id'] for x in temp_step_list]
@@ -1881,14 +1932,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                         another_chain_step = model_to_dict(another_chain_step_obj)
                                         another_chain_step.update({'ctag':another_chain_step_obj.step_template.ctag})
                                         if another_chain_step['request'] != int(rid):
-                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},[],
                                                                                                           another_chain_step_obj.slice.slice,
                                                                                                           True,another_chain_step['request'])))
                                         else:
-                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},
+                                            slice_steps_list.append((another_chain_step['id'], form_step_obj(another_chain_step,{},[],
                                                                                                           another_chain_step_obj.slice.slice,
                                                                                                           True)))
-                                        slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],slice.slice)))
+                                        slice_steps_list.append((current_step[0]['id'],form_step_obj(current_step[0],current_step[1],current_step[2],slice.slice)))
                                         temp_step_list.pop(index)
 
 
@@ -1899,10 +1950,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     if j >= len(temp_step_list):
                                         raise ValueError('Not linked chain')
                                         #break
-                                slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],slice.slice)))
+                                slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],temp_step_list[j][2],slice.slice)))
 
                             edit_mode = True
-                            slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
+                            slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},[],slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
                             approved = get_approve_status(slice_steps[:len(slice_steps_list)])
                             if (approved['submitted'] == 'submitted')or(approved['submitted'] == 'partially_submitted'):
                                     approved_count += 1
@@ -1914,13 +1965,13 @@ def request_table_view(request, rid=None, show_hidden=False):
                             if slice_dict['cloned_from']:
                                 if slice_dict['cloned_from'] in input_list_index:
                                    temp_list = list(input_lists[input_list_index[slice_dict['cloned_from']]])
-                                   temp_list[6] = str(slice_dict['slice'])
+                                   temp_list[7] = str(slice_dict['slice'])
                                    input_lists[input_list_index[slice_dict['cloned_from']]] = tuple(temp_list)
                             if another_chain_step:
-                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task,
+                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, show_action,
                                                     another_chain_step['id'], approve_level(slice_steps),cloned,has_waiting(slice_steps)))
                             else:
-                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, '',
+                                input_lists.append((slice_dict, slice_steps, get_approve_status(slice_steps,slice),  show_task, show_action, '',
                                                     approve_level(slice_steps),cloned,has_waiting(slice_steps)))
 
 

@@ -10,7 +10,7 @@ from copy import deepcopy
 
 from atlas.getdatasets.models import TaskProdSys1
 from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm
-from atlas.prodtask.models import RequestStatus
+from atlas.prodtask.models import RequestStatus, WaitingStep
 from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
@@ -182,7 +182,13 @@ def reject_steps_in_slice(current_slice):
             elif (step.status == 'Approved') or (step.status == 'Waiting'):
                 step.status = 'NotChecked'
             step.save()
-
+            try:
+                for pre_definition_action in WaitingStep.objects.filter(step=step, status__in=['active','executing','failed']):
+                    pre_definition_action.status = 'cancelled'
+                    pre_definition_action.done_time = timezone.now()
+                    pre_definition_action.save()
+            except:
+                pass
 
 def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
         if step_to_check:
@@ -847,6 +853,8 @@ def slice_steps(request, reqid, slice_number):
                                         'nFilesPerJob':task_config.get('nFilesPerJob',''),'nGBPerJob':task_config.get('nGBPerJob',''),
                                         'maxFailure':task_config.get('maxFailure',''),'nEventsPerMergeJob':task_config.get('nEventsPerMergeJob',''),
                                         'evntFilterEff':task_config.get('evntFilterEff',''),
+                                        'PDA':task_config.get('PDA',''),
+                                         'PDAParams':task_config.get('PDAParams',''),
                                         'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''
@@ -1941,4 +1949,37 @@ def clone_missing_tasks_slices(req_id):
         new_slice.save()
 
 
-
+def set_sample_offset(parent_request, child_request, slices=None):
+    if slices:
+        child_slices = InputRequestList.objects.filter(request=child_request, slice__in=slices)
+    else:
+        child_slices = InputRequestList.objects.filter(request=child_request)
+    parent_slices = list(InputRequestList.objects.filter(request=parent_request))
+    parent_slice_dict = {}
+    for slice in parent_slices:
+        if slice.dataset and ProductionTask.objects.filter(step__in=list(StepExecution.objects.filter(slice=slice))).exists():
+            parent_slice_dict[slice.dataset_id] = parent_slice_dict.get(slice.dataset_id,[]) + [slice]
+    for slice in child_slices:
+        if not slice.is_hide and not(ProductionTask.objects.filter(step__in=list(StepExecution.objects.filter(slice=slice))).exists()):
+            offset = 0
+            steps = StepExecution.objects.filter(slice=slice)
+            ordered_steps, parent_step = form_existed_step_list(steps)
+            first_step_index = -1
+            step_to_change = None
+            for index,step in enumerate(ordered_steps):
+                if step.status == 'NotChecked':
+                    first_step_index = index
+                    step_to_change = step
+                    break
+            for parent_slice in parent_slice_dict.get(slice.dataset_id,[]):
+                steps = StepExecution.objects.filter(slice=parent_slice)
+                ordered_parent_steps, parent_step = form_existed_step_list(steps)
+                if (first_step_index != -1) and (first_step_index < len(ordered_parent_steps)):
+                    if ProductionTask.objects.filter(step=ordered_parent_steps[first_step_index]).exists():
+                        for task in ProductionTask.objects.filter(step=ordered_parent_steps[first_step_index]):
+                            jedi_task = TTask.objects.get(id=task.id)
+                            offset += jedi_task.jedi_task_parameters.get('nFiles',0)
+            if offset > 0:
+                print step_to_change.step_template.ctag, offset+1, slice.slice
+                step_to_change.update_project_mode('primaryInputOffset',offset+1)
+                step_to_change.save()

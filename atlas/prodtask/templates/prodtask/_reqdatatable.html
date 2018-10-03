@@ -69,6 +69,9 @@
 
 	td.navy		{ background-color : blue; }
     td.registered { background-color : blue;}
+    td.action.active { background-color : blueviolet;}
+    td.action.executing { background-color : blueviolet;}
+    td.action.failed { background-color : red;}
   </style>
 
    <style>
@@ -227,7 +230,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
     {#Fill pattern table#}
     (function(){
-       {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approve_level, cloned, is_waiting  in inputLists %}
+       {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approve_level, cloned, is_waiting  in inputLists %}
            {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");
@@ -2581,6 +2584,8 @@ function ProcessingStep() {
   this.nGBPerMergeJob = undefined;
   this.nMaxFilesPerMergeJob = undefined;
   this.nFilesPerJob = undefined;
+  this.predifinitionActionParameters = undefined;
+  this.predifinitionAction = undefined;
 };
 
  function RequestSlice(sliceNumber) {
@@ -2990,7 +2995,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
     <div >
     <div  id="baseInput"></div>
-    {% for inputList, step_exec_dict, approved, show_task, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full,real_events, total_events  in inputLists %}
+    {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full,real_events, total_events  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
 
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
@@ -3095,7 +3100,33 @@ ProjectModeForm.prototype.createForm = function(inputString){
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
                             edit (saved)
                         </a></u></td>
+            {% if show_action %}
+                        <tr>
+                        <td>A:</td>
 
+                        {% for step in step_exec_dict %}
+                            <td style="padding:0px;margin:0px">
+                                <table style="padding:0px;margin:0px">
+                            {% for action in step.actions %}
+                                {% if action %}
+
+                                <tr style="padding:0px;margin:0px;height: 20px">
+                                <td  style="padding: 0px;width: 50px;border:1px solid black" class="action {{ action.status }} " >
+                                    <div>
+                                       <a  href="/prodtask/predefinition_action/{{ action.id }}">{{ action.status }}</a>
+                                    </div>
+                                </td>
+                                {% else %}
+                                    <td  style="padding: 0px;width: 50px;border:1px solid black" ></td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </table>
+                            </td>
+                        {% endfor %}
+                        <td colspan="3"></td>
+                        </tr>
+            {% endif%}
             {% if show_task %}
                         <tr>
                         <td>T:</td>
@@ -3526,6 +3557,22 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                     <input type="number" class="nMaxFilesPerMergeJob storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                   </div>
+                              </div>
+                            <div class="row">
+                                <div class="large-4 columns">
+                                  <label>Pre definition action
+                                    <select  class="PDA storeOutput{{forloop.counter0}} storeInput"   >
+                                        <option value="">None</option>
+                                        <option value="postpone">Postpone</option>
+                                        <option value="check2rep">Wait 2 replicas</option>
+                                    </select>
+                                  </label>
+                                </div>
+                                <div class="large-8 columns">
+                                  <label>Parameters
+                                    <input type="text" class="PDAParams storeOutput{{forloop.counter0}} storeInput"  placeholder=" " />
+                                  </label>
+                                </div>
                               </div>
                               <div class="row">
                                 <div class="large-12 columns">
