@@ -158,6 +158,14 @@
                         <a class="button postfix secondary" id="btn_do_retry">Go</a>
                     </div>
                 </div>
+                <div class="row" title="Discard events">
+
+                    <div class="small-12 columns">
+                        <label class="left inline">  Discard events
+                            <input type="checkbox" id="cbx_discard_events" >
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -856,6 +864,8 @@ $(document).ready(function () {
             }
         } else if (action == "kill_job") {
             parameters = [$("#kill_job").val()];
+        }  else if (action == "retry") {
+            parameters = [$("#cbx_discard_events").prop("checked") ];
         } else if (action == "abort_unfinished_jobs") {
                 parameters = [$("#cbx_job_hard_kill").prop("checked") ? 9 : null];
             }    else if ((action == 'set_hashtag') || (action=='remove_hashtag')) {

@@ -95,8 +95,8 @@ class Client(object):
         body = {'task_id': task_id, 'priority': priority}
         return self._create_request('change_task_priority', owner, body)
 
-    def retry_task(self, owner, task_id):
-        body = {'task_id': task_id}
+    def retry_task(self, owner, task_id, discard_events=False):
+        body = {'task_id': task_id, 'discard_events': discard_events}
         return self._create_request('retry_task', owner, body)
 
     def pause_task(self, owner, task_id):
