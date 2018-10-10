@@ -804,7 +804,7 @@ def find_evgen_missing(evgen_tag,job_options, energy = '13TeV'):
 
 @csrf_protect
 def check_slices_for_request_split(request, production_request):
-    results = {'success':False}
+    results = {'success':False, 'do_split': False}
     if request.method == 'POST':
         try:
             data = request.body
@@ -812,16 +812,18 @@ def check_slices_for_request_split(request, production_request):
             slices_evgen = input_dict
             do_split = False
             no_events = False
-            project = TRequest.objects.get(reqid=production_request).project_id
-            if project > 'mc16':
-                for slice_evgen in slices_evgen:
-                    if slice_evgen[0] != -1:
-                        slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
-                        evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
-                        if evgen_events <= (0.95 * float(slice.input_events)):
-                            do_split = True
-                            break
-            results = {'success':True, 'do_split': do_split, 'no_events': no_events }
+            pr_request = TRequest.objects.get(reqid=production_request)
+            project = pr_request.project_id
+            if pr_request.phys_group != 'VALI':
+                if project > 'mc16':
+                    for slice_evgen in slices_evgen:
+                        if slice_evgen[0] != -1:
+                            slice = InputRequestList.objects.get(request=production_request,slice=slice_evgen[0])
+                            evgen_events = find_evgen_missing(slice_evgen[1],slice.input_data)
+                            if evgen_events <= (0.95 * float(slice.input_events)):
+                                do_split = True
+                                break
+                results = {'success':True, 'do_split': do_split, 'no_events': no_events }
         except Exception,e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
