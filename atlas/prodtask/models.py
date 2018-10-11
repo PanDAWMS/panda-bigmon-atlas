@@ -96,6 +96,7 @@ class TRequest(models.Model):
                                  'EGAM',
                                  'EXOT',
                                  'FTAG',
+                                 'HDBS',
                                  'HIGG',
                                  'HION',
                                  'IDET',
