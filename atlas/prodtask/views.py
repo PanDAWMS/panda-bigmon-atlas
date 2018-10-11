@@ -52,7 +52,7 @@ def create_predefinition_action(step):
         action = WaitingStep.ACTION_NAME_TYPE[step.get_task_config('PDA')]
         step.status = 'Waiting'
         step.save()
-        if not WaitingStep.objects.filter(step=step, action=action,
+        if not WaitingStep.objects.filter(step=int(step.id), action=action,
                                           status__in=['active', 'executing']).exists():
             waiting_step = WaitingStep()
             waiting_step.step = step.id
@@ -1773,7 +1773,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
-                        pre_definition_actions[current_action['step_id']] = pre_definition_actions.get(current_action['step_id'], []) + [current_action]
+                        pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
 
                     step_templates = {}
                     for step_template in step_templates_set:
