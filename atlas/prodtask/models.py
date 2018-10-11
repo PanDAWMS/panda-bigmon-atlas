@@ -266,7 +266,7 @@ class StepTemplate(models.Model):
     ctag = models.CharField(max_length=12, db_column='CTAG', null=False)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=False)
     cpu_per_event = models.DecimalField(decimal_places=0, max_digits=7, db_column='CPU_PER_EVENT', null=True)
-    output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
+    output_formats = models.CharField(max_length=2000, db_column='OUTPUT_FORMATS', null=True)
     memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY', null=True)
     trf_name = models.CharField(max_length=128, db_column='TRF_NAME', null=True)
     lparams = models.CharField(max_length=2000, db_column='LPARAMS', null=True)

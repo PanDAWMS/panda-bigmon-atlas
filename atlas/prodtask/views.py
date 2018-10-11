@@ -1987,7 +1987,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 events_str = str(temp_list[0]['input_events'])
                 if real_events and (real_events != temp_list[0]['input_events']):
                     events_str = "%s (%s)"%(str(real_events), str(temp_list[0]['input_events']))
-                if (len(slice_output) > 60) and (cur_request.request_type == 'REPROCESSING'):
+                if len(slice_output) > 60:
                     temp_list+=[slice_output[:60]+"...",slice_output,events_str, total_events]
                 else:
                     temp_list+=[slice_output,slice_output,events_str, total_events]
