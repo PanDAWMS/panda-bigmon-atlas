@@ -11,7 +11,7 @@ from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, I
 from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, GLOBAL_SHARES
 
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -56,8 +56,27 @@ def tasks_hashtags(request, hashtag_formula):
                              'sites': get_sites(),
                              'shares' : GLOBAL_SHARES,
                              'nucleus': get_nucleus(),
-                             'search_string':'Hashtags: %s'%hashtag_formula
+                             'search_string':'Hashtags: %s'%hashtag_formula,
+                             'title':'Hashtags: %s'%hashtag_formula
                              })
+
+
+def request_recent_tasks(request, days=3):
+    try:
+        task_ids = list(ProductionTask.objects.filter(timestamp__gte=datetime.now() - timedelta(days=int(days)),request_id__gt=1000).values_list('id',flat=True))
+        request.session['selected_tasks'] = map(int,task_ids)
+    finally:
+        pass
+    return render(request, 'reqtask/_task_table.html',
+                            {'reqid':None,
+                             'clouds': get_clouds(),
+                             'sites': get_sites(),
+                             'shares': GLOBAL_SHARES,
+                             'nucleus': get_nucleus(),
+                             'search_string':'Tasks for the last %s days'%str(days),
+                             'title': 'Tasks for the last %s days'%str(days)
+                             })
+
 
 def request_tasks_slices(request, rid, slices):
 
@@ -74,7 +93,8 @@ def request_tasks_slices(request, rid, slices):
                              'sites': get_sites(),
                              'shares': GLOBAL_SHARES,
                              'nucleus': get_nucleus(),
-                             'search_string':'Slices for request: %s'%str(rid)
+                             'search_string':'Slices for request: %s'%str(rid),
+                             'title': 'Slices for request: %s'%str(rid)
                              })
 
 
@@ -169,6 +189,18 @@ def get_tasks(request):
     STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted','obsolete']
     FAILED = ['failed','broken','aborted','obsolete']
     NOT_RUNNING = ['done','finished','failed','broken','aborted','obsolete']
+    STEPS_ORDER = ['Evgen',
+             'Evgen Merge',
+             'Simul',
+             'Merge',
+             'Digi',
+             'Reco',
+             'Rec Merge',
+             'Atlfast',
+             'Atlf Merge',
+             'TAG',
+             'Deriv',
+             'Deriv Merge']
     input_data = json.loads(request.body)
     if 'reqid' in input_data:
         reqid = input_data['reqid']
@@ -185,6 +217,7 @@ def get_tasks(request):
 
     data_list = []
     status_dict = {}
+    steps_dict = {}
     not_failed_count = 0
     running_count = 0
     for task in list(qs):
@@ -197,6 +230,7 @@ def get_tasks(request):
         del task_dict['_state']
         data_list.append(task_dict)
         status_dict[task.status] = status_dict.get(task.status,0) + 1
+        steps_dict[task_dict['step_name']] = steps_dict.get(task_dict['step_name'], 0) + 1
         if task.status not in FAILED:
             not_failed_count += 1
         if task.status not in NOT_RUNNING:
@@ -213,10 +247,17 @@ def get_tasks(request):
         raise TypeError
 
     status_stat = [{'name':'total','count':len(data_list),'property':{'active':False,'good':False}}]
+
     status_stat.append({'name':'active','count':running_count,'property':{'active':False,'good':False}})
     status_stat.append({'name':'good','count':not_failed_count,'property':{'active':False,'good':False}})
     for status in STATUS_ORDER:
         if status in status_dict:
             status_stat.append({'name':status,'count':status_dict[status],'property':{'active':status not in NOT_RUNNING,'good':status not in FAILED}})
-    data= json.dumps({'data':list(data_list),'status_stat':status_stat},default = decimal_default)
+    steps_stat = []
+    if len(steps_dict.keys())>1:
+        steps_stat = [{'name': 'total', 'count': len(data_list), 'property': {}}]
+        for step in STEPS_ORDER:
+            if step in steps_dict:
+                steps_stat.append({'name':step,'count':steps_dict[step],'property':{}})
+    data= json.dumps({'data':list(data_list),'status_stat':status_stat, 'steps_stat':steps_stat},default = decimal_default)
     return HttpResponse(data)

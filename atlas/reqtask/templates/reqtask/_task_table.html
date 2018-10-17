@@ -60,8 +60,13 @@
             </div>
         {% endif %}
         <div class="row">
-         <h6 class="left">{{ search_string }}</h6>
-        <table class="right" id ='statusStat'></table>
+         <div class="small-5 large-5 columns">
+         <table id ='stepStat'></table>
+             </div>
+
+            <div class="small-5 large-5 columns">
+        <table id ='statusStat'></table>
+                </div>
         </div>
             <table id="example" class="display" cellspacing="0" width="100%">
 
@@ -95,7 +100,7 @@
 
            <th>Events</th>
            <th >Failure %</th>
-          <th>Step</th>
+          <th id="stepsFilter">Step</th>
            </tr>
            </tfoot>
         </table>
@@ -228,7 +233,6 @@
                                 $("#selectedTasksNumber").html(table.rows('.selected').data().length);
                             },
                             "aButtons": [
-                                            "select_all",
                                             {
                                                 "sExtends":    "select",
                                                 "sButtonText": "Select Filtered",
@@ -335,6 +339,7 @@
             //$(".dataTables_processing").css('visibility','hidden');
         find_tasks();
         $("#statusFilter input").css({'display':'none'});
+        $("#stepsFilter input").css({'display':'none'});
             // Add event listener for opening and closing details
         $('#example tbody').on('click', 'td.details-control', function () {
             var tr = $(this).closest('tr');
@@ -436,6 +441,53 @@
                 filterStatus();
             });
      }
+          function reDrawSteps(stepsList){
+            $('#stepStat').html('<tr id="stepsHeader"></tr><tr id="stepsBody"></tr><tr id="stepsChoose"></tr>');
+            for(i=0;i<stepsList.length;i++){
+                step_name = stepsList[i]['name'].replace(" ",'_');
+                $('#stepsHeader').append('<th><span class=" rstat tstat  '+ step_name+' changeStepsFilter" style="cursor: pointer;">'+stepsList[i]['name']+'</span></th>');
+                $('#stepsBody').append('<th >'+stepsList[i]['count']+'</th>');
+                $('#stepsChoose').append('<th><input id="cb'+step_name+'" type="checkbox" class=" '+ step_name+' changeStepsCheckbox" checked></th>');
+
+            }
+
+            $(".changeStepsFilter").click(function changeStepsFilterFun(){
+                var newSteps = $(this).html();
+                if (newSteps=='total'){
+                    $(".changeStepsCheckbox").prop("checked", true);
+                } else{
+                    $(".changeStepsCheckbox").prop("checked", false);
+
+                }
+                 $("input."+newSteps.replace(" ",'_')+".changeStepsCheckbox").prop("checked", true);
+                filterSteps();
+            });
+            $(".changeStepsCheckbox").click(function changeStepsFilterFun(){
+                var checkedSteps = $(this).attr("id").slice('cb'.length);
+                switch (checkedSteps){
+                    case 'total':
+                        $(".changeStepsCheckbox").prop("checked", $(this).prop("checked"));
+                        break;
+                }
+
+                filterSteps();
+            });
+     }
+         function filterSteps(){
+                var tab = $('#example').DataTable();
+                var filterString = [];
+                var propertySteps = ['total'];
+                $(".changeStepsCheckbox:checked").each(function() {
+                    {#                   8 = "checkbox".length#}
+                    var steps = $(this).attr("id").slice('cb'.length);
+
+                    if (propertySteps.indexOf(steps)==-1) {
+                        filterString.push('^'+steps.replace('_'," ")+'$');
+                    }
+
+                });
+                tab.columns(10).search(filterString.join('|'),true,false).draw();
+        }
         function find_tasks(){
              var parameters = {};
             if (reqID){
@@ -460,7 +512,7 @@
                     }
                     $('#example').dataTable().fnDraw();
                     reDrawStatus(data.status_stat);
-
+                    reDrawSteps(data.steps_stat);
                     $('#example').dataTable().fnProcessingIndicator(false);
 
 
