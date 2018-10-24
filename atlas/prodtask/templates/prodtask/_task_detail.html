@@ -62,15 +62,13 @@
 <tr><th><label for="chain_tid">Chain ID:</label></th><td>{% if task.chain_tid %}<a href="{% url 'prodtask:task' task.chain_tid  %}">{{task.chain_tid}}</a>{% else %}None{% endif %}
 <a href="{% url 'prodtask:task_chain_view' task.id  %}">Descendants</a></td></tr>
 <tr><th><label for="name">Name:</label></th><td>{% if task.id %}<a href="{% url 'prodtask:task' task.id %}">{{task.name}}</a>{% else %}None{% endif %}</td></tr>
-<tr><th><label for="project">Project:</label></th><td>{{ task.project }}</td></tr>
 <tr><th><label for="username">Owner:</label></th><td>{{ task.username }}</td></tr>
 <tr><th><label for="campaign">Campaign : SubCampaign</label></th><td>{{ task.campaign }}:{{ task.request.subcampaign }}</td></tr>
-<tr><th><label for="provenance">Provenance:</label></th><td>{{ task.provenance }}</td></tr>
 <tr><th><label for="status">Status:</label></th><td><span class="tstat {{ task.status }}">{{ task.status }}</span></td></tr>
 <tr><th><label for="priority">Priority / Current priority:</label></th><td>{{ task.priority }} / {{ task.current_priority }}</td></tr>
 <tr><th><label for="frate">Failure rate:</label></th><td>{{ task.failure_rate }} {% if task.failure_rate != None %} % ( <a style="color: red"/> {{ task.total_files_failed}} <a style="color: black"/>| <a style="color: green"/> {{ task.total_files_tobeused}} <a style="color: black"/>){% endif %}</td></tr>
 <tr><th><label for="simulation_type">Simulation type:</label></th><td>{{ task.simulation_type }}</td></tr>
-<tr><th><label for="phys_group">Phys group:</label></th><td>{{ task.phys_group }}</td></tr>
+<tr><th><label for="phys_group">Provenance Phys group:</label></th><td>{{ task.provenance }} {{ task.phys_group }}</td></tr>
 <tr><th><label for="total_events">Total events:</label></th><td>{{ task.total_events }}</td></tr>
 <tr><th><label for="total_req_jobs">Total req/done jobs:</label></th><td>{{ task.total_req_jobs }}/{{ task.total_done_jobs }}</td></tr>
 <tr><th><label for="reference">Reference:</label></th><td><a href="https://its.cern.ch/jira/browse/{{ task.reference }}">{{ task.reference }}</a></td></tr>
