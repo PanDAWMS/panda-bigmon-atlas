@@ -66,7 +66,7 @@
 <tr><th><label for="campaign">Campaign : SubCampaign</label></th><td>{{ task.campaign }}:{{ task.request.subcampaign }}</td></tr>
 <tr><th><label for="status">Status:</label></th><td><span class="tstat {{ task.status }}">{{ task.status }}</span></td></tr>
 <tr><th><label for="priority">Priority / Current priority:</label></th><td>{{ task.priority }} / {{ task.current_priority }}</td></tr>
-<tr><th><label for="frate">Failure rate:</label></th><td>{{ task.failure_rate }} {% if task.failure_rate != None %} % ( <a style="color: red"/> {{ task.total_files_failed}} <a style="color: black"/>| <a style="color: green"/> {{ task.total_files_tobeused}} <a style="color: black"/>){% endif %}</td></tr>
+<tr><th><label for="frate">Failure rate:</label></th><td>{{ task.failure_rate }} {% if task.failure_rate != None %} % ( <span style="color: red"> {{ task.total_files_failed}} </span>| <span style="color: green"> {{ task.total_files_finished}}</span> from  <span style="color: black"> {{ task.total_files_tobeused}}</span>){% endif %}</td></tr>
 <tr><th><label for="simulation_type">Simulation type:</label></th><td>{{ task.simulation_type }}</td></tr>
 <tr><th><label for="phys_group">Provenance Phys group:</label></th><td>{{ task.provenance }} {{ task.phys_group }}</td></tr>
 <tr><th><label for="total_events">Total events:</label></th><td>{{ task.total_events }}</td></tr>
