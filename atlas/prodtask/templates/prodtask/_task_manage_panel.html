@@ -7,10 +7,7 @@
         <div id="manage_buttons_group" class="button-bar">
 
             <ul class="button-group radius">
-        {% if task.id %}
-                <li><a class="small radio button disabled" id="btn_edit" href="#">Edit</a></li>
-                <li><a class="small radio button disabled" id="btn_clone" href="#">Clone</a></li>
-        {% endif %}
+
 
                 <li><a data-options="is_hover:true" id="btn_abort"
                     {% if can_abort_task or not task.id %}
