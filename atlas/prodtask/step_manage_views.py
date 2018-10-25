@@ -183,11 +183,11 @@ def reject_steps_in_slice(current_slice):
                 step.status = 'NotChecked'
             step.save()
             try:
-                for pre_definition_action in WaitingStep.objects.filter(step=step, status__in=['active','executing','failed']):
+                for pre_definition_action in WaitingStep.objects.filter(step=step.id, status__in=['active','executing','failed']):
                     pre_definition_action.status = 'cancelled'
                     pre_definition_action.done_time = timezone.now()
                     pre_definition_action.save()
-            except:
+            except Exception,e:
                 pass
 
 def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
@@ -1983,3 +1983,19 @@ def set_sample_offset(parent_request, child_request, slices=None):
                 print step_to_change.step_template.ctag, offset+1, slice.slice
                 step_to_change.update_project_mode('primaryInputOffset',offset+1)
                 step_to_change.save()
+
+def recursive_delete(step_id, do_delete=False):
+    step_tree = []
+    not_root = True
+    while not_root:
+        step=StepExecution.objects.get(id=step_id)
+        step_tree.append(step.id)
+        step_id = step.step_parent_id
+        not_root = not(step.step_parent_id == step.id)
+    print step_tree
+    if do_delete:
+        for step_id in step_tree:
+            step = StepExecution.objects.get(id=step_id)
+            step.step_parent=step
+            step.save()
+            step.delete()

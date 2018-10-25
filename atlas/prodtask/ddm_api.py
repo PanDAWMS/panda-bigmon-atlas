@@ -185,6 +185,13 @@ class DDM(object):
         lifetime = 3600
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
+    def changeDatasetCampaign(self, dataset, campaign):
+        scope, name = self.rucio_convention(dataset)
+        self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
+
+
+
+
     def dataset_in_container(self, container_name):
         """
 
@@ -201,38 +208,39 @@ class DDM(object):
 
     def number_of_full_replicas(self, dataset_name):
         replicas = self.dataset_replicas(dataset_name)
-        full_replicas = 0
+        full_replicas = []
         for replica in replicas:
-            if replica[1] == replica[2]:
-                full_replicas +=1
+            if replica['available_length'] == replica['length']:
+                full_replicas.append(replica)
         return full_replicas
 
 
     def dataset_replicas(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
-        dids = self.__ddm.scope_list(scope=scope, name=name, recursive=True)
-        datasets = {}
-        result = {}
-        for d in dids:
-            if d['type'] == 'FILE':
-                dsn = '%s:%s' % (d['parent']['scope'], d['parent']['name'])
-                if dsn not in datasets:
-                    datasets[dsn] = 0
-                datasets[dsn] += 1
-        scope, name = self.rucio_convention(dsn)
-        replicas = self.__ddm.list_replicas([{'scope': scope, 'name': name}])
-        dsn = datasets.keys()[0]
-        result[dsn] = {}
-        for replica in replicas:
-            for rse in replica['rses']:
-                if rse not in result[dsn]:
-                    result[dsn][rse] = 0
-                if replica['rses'][rse] != []:
-                    result[dsn][rse] += 1
-        replicas = []
-        for rse in result[dsn]:
-            replicas.append((rse, result[dsn][rse], datasets[dsn]))
-        return replicas
+
+        return list(self.__ddm.list_dataset_replicas(scope=scope, name=name))
+
+    def list_rses(self, filter = ''):
+        return self.__ddm.list_rses(filter)
+
+    def full_replicas_per_type(self, dataset_name):
+        full_replicas = self.number_of_full_replicas(dataset_name)
+        data_replicas = [x for x in full_replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
+        tape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('type=DATATAPE')]]
+        return {'data':data_replicas,'tape':tape_replicas}
+
+    def dataset_active_datadisk_rule(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        active_rules = [(x) for x in rules if x['rse_expression'] in [y['rse'] for y in self.list_rses('type=DATADISK')] ]
+        return active_rules
+
+    def find_disk_for_tape(self, tape_rse):
+        rses = filter(lambda x: x['rse'].startswith(tape_rse.split('_')[0]),list(self.list_rses('type=DATADISK')))
+        if rses:
+            return rses[0]
+        return None
+
 
     def dataset_size(self, dataset_name):
         """

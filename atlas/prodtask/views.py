@@ -246,6 +246,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
     try:
         APPROVED_STATUS = ['Skipped','Approved']
         SKIPPED_STATUS = ['NotCheckedSkipped','Skipped']
+        waiting_level = 99
         error_slices = []
         no_action_slices = []
         cur_request = TRequest.objects.get(reqid=reqid)
@@ -315,12 +316,12 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                         if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
                                 (not step_value['changes']) and (total_events==step_in_db.input_events) and \
                                 similar_status(step_in_db.status,step_value['is_skipped']) and (not new_step):
-                            if still_skipped and (index>=waiting_level):
-                                 waiting_level = 99
+
+
                             approve_existed_step(step_in_db,step_status_definition(step_value['is_skipped'],
                                                                                    index<=approve_level,
                                                                                    index>=waiting_level))
-                            if (step_in_db.status == 'Approved') and ('PDA' in step_in_db.task_config) and (step_in_db.get_task_config('PDA')):
+                            if (step_in_db.status in ['Approved','Waiting']) and (step_in_db.get_task_config('PDA')):
                                 set_action(step_in_db)
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1
@@ -372,11 +373,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.step_parent = step_in_db
                             if not similar_status(step_in_db.status,step_value['is_skipped']):
                                 status_changed = True
-                            if still_skipped and (index>=waiting_level):
-                                 waiting_level = 99
                             step_in_db.status = step_status_definition(step_value['is_skipped'], index<=approve_level,
                                                                        index>=waiting_level)
-
 
                             if 'input_events' in step_value['changes']:
                                 step_in_db.input_events = step_value['changes']['input_events']
@@ -400,8 +398,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.remove_task_config('spreadsheet_original')
                             step_in_db.step_def_time = None
                             step_in_db.save_with_current_time()
-                            if (step_in_db.status == 'Approved') and ('predifinitionAction' in step_in_db.task_config) and (step_in_db.get_task_config('predifinitionAction')):
+                            if (step_in_db.status == 'Approved') and (step_in_db.get_task_config('PDA')):
                                 set_action(step_in_db)
+                                waiting_level = index
                             parent_step = step_in_db
                     else:
                             status_changed = True
@@ -444,15 +443,15 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             st_exec = StepExecution(request=cur_request,slice=input_list,step_template=step_template,
                                         priority=temp_priority)
                             no_parent = True
-                            st_exec.set_task_config(task_config)
-                            st_exec.remove_task_config('spreadsheet_original')
+
                             if parent_step:
                                 st_exec.step_parent = parent_step
                                 no_parent = False
-                            if still_skipped and (index>=waiting_level):
-                                 waiting_level = 99
+
                             st_exec.status = step_status_definition(step_value['is_skipped'], index<=approve_level,
                                                                     index>=waiting_level)
+                            st_exec.set_task_config(task_config)
+                            st_exec.remove_task_config('spreadsheet_original')
                             if 'input_events' in step_value['changes']:
                                 st_exec.input_events = step_value['changes']['input_events']
                             else:
@@ -464,7 +463,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if no_parent:
                                 st_exec.step_parent = st_exec
                                 st_exec.save()
-                            if (st_exec.status == 'Approved') and ('PDA' in st_exec.task_config) and (st_exec.get_task_config('PDA')):
+                            if (st_exec.status == 'Approved') and (st_exec.get_task_config('PDA')):
                                 set_action(step_in_db)
                             parent_step = st_exec
                             new_step = True
