@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.http import HttpResponseRedirect
 
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import WaitingStep, StepExecution, InputRequestList, ProductionTask
+from atlas.prodtask.models import WaitingStep, StepExecution, InputRequestList, ProductionTask, ProductionDataset
 from django.shortcuts import render
 from django.utils import timezone
 import logging
@@ -36,6 +36,8 @@ def find_waiting():
             try:
                 check_two_replicas(waiting_step, ddm, max_attempts, delay)
             except Exception,e:
+                print str(e)
+                waiting_step = WaitingStep.objects.get(id=waiting_step)
                 waiting_step.status = 'active'
                 waiting_step.save()
                 _logger.error("Check replicas problem %s" % str(e))
@@ -148,12 +150,29 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
     waiting_step = WaitingStep.objects.get(id=waiting_step_id)
     step = StepExecution.objects.get(id=waiting_step.step)
     approve_step = False
-    if (step.step_parent_id != step.id) and (step.step_parent.status not in ['Skipped','NotCheckedSkipped'] ):
-        waiting_step.status = 'cancelled'
+    if (step.step_parent_id != step.id) and (step.step_parent.status not in ['Skipped','NotCheckedSkipped'] ) and (not ProductionTask.objects.filter(step=step.step_parent).exists()):
+        waiting_step.status = 'active'
+        waiting_step.execution_time = waiting_step.execution_time + timedelta(hours=delay)
         waiting_step.save()
         approve_step = True
     else:
-        datasets = get_slice_input_datasets(step.slice.dataset_id, ddm)
+        datasets = []
+        if ProductionTask.objects.filter(step=step.step_parent).exists():
+            outputs = step.get_task_config('input_format')
+            if outputs:
+                outputs = outputs.split('.')
+            tasks = ProductionTask.objects.filter(step=step.step_parent)
+            for task in tasks:
+                output_datasets = ProductionDataset.objects.filter(task_id=task.id)
+                for current_dataset in output_datasets:
+                    if outputs:
+                        if (current_dataset.name.split('.')[4] in outputs):
+                            datasets.append(current_dataset.name)
+                    else:
+                        if current_dataset.name.split('.')[4] != 'log':
+                            datasets.append(current_dataset.name)
+        else:
+            datasets = get_slice_input_datasets(step.slice.dataset_id, ddm)
         enough_replicas = True
         error_message = ''
         for dataset in datasets:
@@ -165,7 +184,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                 error_message = str(e)
         if enough_replicas:
             waiting_step.status = 'done'
-            waiting_step.message = 'All %s have >=2 replicas' %(str(datasets))
+            waiting_step.message = 'All %s have >=2 replicas' %(str(datasets)[:1000])
             waiting_step.done_time = timezone.now()
             approve_step = True
         else:
@@ -176,8 +195,8 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                 waiting_step.status = 'active'
                 waiting_step.execution_time = waiting_step.execution_time + timedelta(hours=delay)
             if error_message:
-                waiting_step.message = 'Error for of %s: %s ' % (str(datasets),str(e))
-            waiting_step.message = 'Some of %s have <2 replicas' % (str(datasets))
+                waiting_step.message = 'Error for of %s: %s ' % (str(datasets)[:1000],str(e))
+            waiting_step.message = 'Some of %s have <2 replicas' % (str(datasets)[:1000])
         waiting_step.save()
     if approve_step:
         step.status = 'Approved'
