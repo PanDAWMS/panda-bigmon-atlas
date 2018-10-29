@@ -1031,9 +1031,9 @@ class WaitingStep(models.Model):
 
     ACTIONS = {
         1 : {'name':'postpone', 'description': 'Postpone ', 'attempts': 3, 'delay':1},
-        2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 12, 'delay':8},
-        3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':8},
-        4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 90, 'delay':4},
+        2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 12, 'delay':1},
+        3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
+        4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 90, 'delay':1},
     }
 
     ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':4}
