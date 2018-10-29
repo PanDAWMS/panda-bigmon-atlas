@@ -177,7 +177,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
         error_message = ''
         for dataset in datasets:
             try:
-                if ddm.number_of_full_replicas(dataset) < 2:
+                if len(ddm.number_of_full_replicas(dataset)) < 2:
                     enough_replicas = False
             except Exception,e:
                 enough_replicas = False
