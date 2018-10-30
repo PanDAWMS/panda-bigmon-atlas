@@ -1,0 +1,63 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    {% django_js %}
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+    <script type="text/javascript">
+        $(document).foundation();
+
+    </script>
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+
+    <table>
+    <thead>
+    <tr>
+    <th>Dataset</th>
+    <th>Slice</th>
+    <th>Tape</th>
+    <th>Proposed Disk</th>
+    <th>Test</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for dataset in result %}
+        <tr >
+            <td>{{ dataset.dataset }}</td>
+            <td><a href="{% url 'prodtask:input_list_approve' dataset.request.reqid %}#inputList{{ dataset.step.slice.slice }}">{{dataset.request.reqid}}</a></td>
+            <td>{{ dataset.tape }}</td>
+            <td>{{ dataset.disk }}</td>
+            <td> <span style="color: #ff2b1d">{{ dataset.test }}</span></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+{% endblock %}

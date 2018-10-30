@@ -190,7 +190,10 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-
+    def add_replication_rule(self, dataset, rse):
+        _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
+        scope, name = self.rucio_convention(dataset)
+        self.__ddm.add_replication_rule([{'scope':scope, 'name':name}], 1,rse)
 
     def dataset_in_container(self, container_name):
         """

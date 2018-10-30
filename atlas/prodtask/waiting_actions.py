@@ -58,7 +58,6 @@ def find_waiting():
 
 
 def postponed_step(waiting_step_id):
-
     waiting_step = WaitingStep.objects.get(id=waiting_step_id)
     step = StepExecution.objects.get(id=waiting_step.step)
     if waiting_step.attempt>=2:
@@ -245,9 +244,12 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     # make rule
                     waiting_step.status = 'active'
                     disk = ddm.find_disk_for_tape(replicas['tape'][0]['rse'])
-                    step.set_task_config({'PDAParams':{'dataset':dataset,'disk':disk['rse'],'tape':replicas['tape'][0]['rse']}})
+                    temp =  {'datasets':[{'dataset':dataset,'disk':disk['rse'],'tape':replicas['tape'][0]['rse']}]}
+                    waiting_step.set_config(temp)
                     waiting_step.message = '%s should be pre staged from %s to %s'%(dataset,replicas['tape'][0]['rse'],disk['rse'])
                     step.save()
+                    if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
+                        ddm.add_replication_rule(dataset, disk['rse'])
             if waiting_step.attempt > max_attempts:
                 waiting_step.status = 'failed'
             else:

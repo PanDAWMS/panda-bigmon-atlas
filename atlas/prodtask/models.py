@@ -1048,16 +1048,39 @@ class WaitingStep(models.Model):
     message = models.CharField(max_length=2000, db_column='MESSAGE')
     attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
-
+    config = models.CharField(max_length=2000, db_column='CONFIG')
 
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('dev_db',u'T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
         super(WaitingStep, self).save(*args, **kwargs)
 
-    def save_last_update(self, *args, **kwargs):
-        self.last_update = timezone.now()
-        super(WaitingStep, self).save(*args, **kwargs)
+    def set_config(self, update_dict):
+        if not self.config:
+            self.config = ''
+            currrent_dict = {}
+        else:
+            currrent_dict = json.loads(self.config)
+        currrent_dict.update(update_dict)
+        self.config = json.dumps(currrent_dict)
+
+    def remove_config(self, key):
+        if self.config:
+            currrent_dict = json.loads(self.config)
+            if key in currrent_dict:
+                currrent_dict.pop(key)
+                self.config = json.dumps(currrent_dict)
+
+    def get_config(self, field = None):
+        return_dict = {}
+        try:
+            return_dict = json.loads(self.config)
+        except:
+            pass
+        if field:
+            return return_dict.get(field,None)
+        else:
+            return return_dict
 
 
     class Meta:

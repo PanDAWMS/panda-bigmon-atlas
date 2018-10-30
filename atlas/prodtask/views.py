@@ -62,8 +62,6 @@ def create_predefinition_action(step):
             waiting_step.attempt = 0
             waiting_step.action = action
             waiting_step.status = 'active'
-            if step.get_task_config('PDAParams'):
-                waiting_step.config = step.get_task_config('PDAParams')
             waiting_step.save()
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
@@ -2850,3 +2848,39 @@ def fill_request_events(request_from, request_to):
         total_events = sum([int(x['input_events']) for x in slices_events])
         request.set_info_field('request_events',total_events)
         request.save()
+
+
+
+def pre_stage_approve(request):
+    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
+    result = []
+    for waiting_step in waiting_steps:
+        step = StepExecution.objects.get(id=waiting_step.step)
+        production_request = step.request
+        is_test = ''
+        if production_request.cstatus == 'test':
+            is_test = 'Test'
+        if waiting_step.get_config('datasets'):
+            if not (waiting_step.get_config('do_rule')) :
+                for dataset in waiting_step.get_config('datasets'):
+                    result.append({'request':production_request,'dataset':dataset['dataset'],'tape':dataset['tape'],'disk':dataset['disk'],'test':is_test})
+    return render(request, 'prodtask/_prestage_list.html', {
+        'active_app': 'prodtask',
+        'pre_form_text': 'list of dataset to approve',
+        'result': result,
+        'parent_template': 'prodtask/_index.html',
+    })
+
+
+def do_prestage_rule():
+    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
+    for waiting_step in waiting_steps:
+        step = StepExecution.objects.get(id=waiting_step.step)
+        production_request = step.request
+        if production_request.cstatus != 'test':
+            if waiting_step.get_config('datasets'):
+                if not (waiting_step.get_config('do_rule')) :
+                    waiting_step.get_config({'do_rule':'Yes'})
+                    waiting_step.execution_time = timezone.now()
+                    waiting_step.save()
+                    print step.request,step.slice.slice
