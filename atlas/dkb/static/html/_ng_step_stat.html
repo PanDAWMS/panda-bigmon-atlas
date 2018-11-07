@@ -4,7 +4,10 @@
         <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks</td></tr> <tr><td> Input_events</td></tr> <tr><td> Total_Events</td> </tr>
         <tr><td> Running/Pending</td></tr>
         <tr><td> Input_bytes</td></tr>
-        <tr><td> Output_bytes</td></tr></tbody></table>
+        <tr><td> Output_bytes</td></tr>
+        <tr><td> total HS06</td></tr>
+        <tr><td> Average duration</td></tr>
+        </tbody></table>
         </td>
             <td style="margin: 0px;padding: 0px" ng-repeat="step in steps ">
                 <table><tbody>
@@ -16,7 +19,9 @@
                 <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
-                    </tbody></table>
+                <tr><td>{{ step.hs06 | bignumber }}</td></tr>
+                <tr><td>{{ step.duration | number:2 }} days</td></tr>
+                </tbody></table>
             </td>
         </tbody>
     </table>

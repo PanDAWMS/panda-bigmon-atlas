@@ -233,6 +233,7 @@
             }
         }]);
 
+
         /**
          * Filesize Filter
          * @Param length, default is 0
@@ -264,6 +265,18 @@
                     size /= 1024;
 
                     return size.toFixed(2) + ' TB';
+                };
+            });
+
+                DKBApp.filter('bignumber', function () {
+                return function (size) {
+                    if (size<1000) {
+                        return size;
+                    }
+                        var power = size.toString().length;
+                        size = size / Math.pow(10,power-1);
+                        return size.toFixed(2) + 'E'+power.toString();
+
                 };
             });
 

@@ -190,7 +190,8 @@ def keyword_search2(keyword_string, is_analy=False):
                                                 "inner_hits": {"size":20}
 
                                             }}]
-                                          }
+                                          },
+
                                         }, 'size':SIZE_TO_DISPLAY
     })
 
@@ -377,6 +378,24 @@ def statistic_by_step(hashtag):
                     "total_events": {
                           "sum": {"field": "total_events"}
                      },
+                      "hs06":{
+                          "sum": {
+                              "script": {
+                                  "inline": "doc['hs06'].value*doc['total_events'].value"
+                              }
+                          }
+                      },
+                      "ended":{
+                          "filter" : {"exists" : { "field" : "end_time" }},
+                          "aggs":{
+
+                              "duration":{
+                              "avg":{
+                                  "script":{
+                                      "inline":"doc['end_time'].value - doc['start_time'].value"
+                                  }
+                          }}}
+                      },
                     "output": {
                       "children": {"type": "output_dataset"},
                       "aggs": {
@@ -407,7 +426,7 @@ def statistic_by_step(hashtag):
                        'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                        'output_bytes':x.output.not_removed.bytes.value,
                        'output_not_removed_tasks':x.output.not_removed.doc_count,
-                       'total_tasks': x.doc_count}
+                       'total_tasks': x.doc_count, 'hs06':x.hs06.value, 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
 
     return result
 
