@@ -4,7 +4,7 @@ import logging
 
 from atlas.art.models import PackageTest, TestsInTasks
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import ProductionTask, StepTemplate
+from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -54,7 +54,6 @@ def es_task_search_all(search_string, task_type):
             current_hit['output_dataset'] = []
             for hit2 in hit.meta.inner_hits['output_dataset']:
                 current_hit['output_dataset'].append(hit2.to_dict())
-                print hit2.to_dict()
             result.append(current_hit)
     return result, total
 
@@ -272,6 +271,193 @@ def new_derivation_stat(project, ami, output):
         return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
     except:
         return {'total': 0, 'ratio': 0, 'events_ratio': 0}
+
+
+
+def wrong_deriv():
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 1000,
+              "_source": ["taskid", "requested_events", "input_events", "n_files_per_job", "n_events_per_job", "n_files_to_be_used", "primary_input_events", "primary_input_deleted", "task_timestamp", "processed_events", "primary_input"],
+              "query": {
+                "bool": {
+                  "must": [
+                      {"term": {"hashtag_list": "newfastcalosim"}},
+                    {"match": {"step_name": "Deriv"}},
+                    {"script": {"script": {
+                          "inline": "doc['processed_events'].value > doc['input_events'].value",
+                          "lang": "painless"
+                    }}},
+                    {"exists": {"field": "total_events"}}
+                  ]
+                }
+              }
+            }
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    return exexute
+
+
+
+def running_events_stat(hashtags, status):
+
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    {"terms": {"hashtag_list": hashtags}},
+                    {"terms": {"status": status}}
+                  ]
+                }
+              },
+              "aggs": {
+                "steps": {
+                  "terms": {"field": "step_name.keyword"},
+                  "aggs": {
+                    "input_events": {
+                      "sum": {"field": "input_events"}
+                    },
+                    "total_events": {
+                          "sum": {"field": "total_events"}
+                     },
+                    "status": {
+                      "terms": {"field": "status"}
+                    }
+                  }
+                }
+              }
+            }
+    aggregs = es_search.update_from_dict(query)
+    exexute = aggregs.execute()
+    result = {}
+    if exexute.hits.total>0:
+        for x in exexute.aggs.steps.buckets:
+            result[x.key] = {'name': x.key, 'total_events': x.total_events.value,
+                       'input_events': x.input_events.value,
+                       'total_tasks': x.doc_count}
+
+    return result
+
+def statistic_by_step(hashtag):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    {"terms": {"hashtag_list": hashtag}},
+                    {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}}
+                  ]
+                }
+              },
+              "aggs": {
+                "steps": {
+                  "terms": {"field": "step_name.keyword"},
+                  "aggs": {
+                    "input_events": {
+                      "sum": {"field": "input_events"}
+                    },
+
+                  "not_deleted": {
+                      "filter": {"term": {"primary_input_deleted": False}},
+                      "aggs": {
+                          "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                          }
+                      }
+                  },
+                    # "processed_events": {
+                    #   "sum": {"field": "processed_events"}
+                    # # },
+                    # "requested_events": {
+                    #       "sum": {"field": "requested_events"}
+                    # },
+                    "total_events": {
+                          "sum": {"field": "total_events"}
+                     },
+                    "output": {
+                      "children": {"type": "output_dataset"},
+                      "aggs": {
+                        "not_removed": {
+                          "filter": {"term": {"deleted": False}},
+                          "aggs": {
+                            "bytes": {
+                              "sum": {"field": "bytes"}
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "status": {
+                      "terms": {"field": "status"}
+                    }
+                  }
+                }
+              }
+            }
+    aggregs = es_search.update_from_dict(query)
+    exexute = aggregs.execute()
+    result = {}
+    if exexute.hits.total>0:
+        for x in exexute.aggs.steps.buckets:
+            result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                       'input_events': x.input_events.value,
+                       'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                       'output_bytes':x.output.not_removed.bytes.value,
+                       'output_not_removed_tasks':x.output.not_removed.doc_count,
+                       'total_tasks': x.doc_count}
+
+    return result
+
+
+@api_view(['POST'])
+def step_hashtag_stat(request):
+    try:
+        hashtags_raw = request.body
+        hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
+        hashtags = [x.lower() for x in hashtags_split if x]
+        statistics = statistic_by_step(hashtags)
+        running_stat = running_events_stat(hashtags,['running'])
+        finished_stat = running_events_stat(hashtags,['finished','done'])
+        result = []
+        for step in MCPriority.STEPS:
+            if step in statistics:
+                current_stat = statistics[step]
+                percent_done = 0.0
+                percent_runnning = 0.0
+                percent_pending = 0.0
+                if current_stat["input_events"] == 0:
+                    step_status = 'Unknown'
+                else:
+                    percent_done = float(current_stat['total_events']) / float(current_stat['input_events'])
+                    if (percent_done>0.90):
+                       step_status = 'StepDone'
+                    elif (percent_done>0.10):
+                       step_status = 'StepProgressing'
+                    else:
+                       step_status =  'StepNotStarted'
+                    running_events = 0
+                    finished_events = 0
+                    if step in running_stat:
+                        running_events = running_stat[step]['input_events']-running_stat[step]['total_events']
+                    if step in finished_stat:
+                        finished_events = finished_stat[step]['input_events'] - finished_stat[step]['total_events']
+                    percent_runnning = float(running_events) / float(current_stat['input_events'])
+                    percent_pending = float(current_stat['input_events'] - current_stat['total_events'] -running_events - finished_events) / float(current_stat['input_events'])
+                    if percent_pending < 0:
+                        percent_pending = 0
+                current_stat['step_status'] = step_status
+                current_stat['percent_done'] = percent_done*100
+                current_stat['percent_runnning'] = percent_runnning*100
+                current_stat['percent_pending'] = percent_pending*100
+                result.append(current_stat)
+    except Exception,e:
+        return Response({'error':str(e)},status=400)
+    return Response(result)
+
+
 
 
 def derivation_stat(project, ami, output):

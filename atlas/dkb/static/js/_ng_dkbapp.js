@@ -233,6 +233,70 @@
             }
         }]);
 
+        /**
+         * Filesize Filter
+         * @Param length, default is 0
+         * @return string
+         */
+        DKBApp.filter('myfilesize', function () {
+                return function (size) {
+                    if (isNaN(size))
+                        size = 0;
+
+                    if (size < 1024)
+                        return size + ' B';
+
+                    size /= 1024;
+
+                    if (size < 1024)
+                        return size.toFixed(2) + ' KB';
+
+                    size /= 1024;
+
+                    if (size < 1024)
+                        return size.toFixed(2) + ' MB';
+
+                    size /= 1024;
+
+                    if (size < 1024)
+                        return size.toFixed(2) + ' GB';
+
+                    size /= 1024;
+
+                    return size.toFixed(2) + ' TB';
+                };
+            });
+
+        DKBApp.controller('DKBStepStat',['$scope','$http','$routeParams',
+
+        function (scope, http, routeParams) {
+            scope.hashtag = '';
+            scope.is_loading = false;
+            if ('hashtag' in routeParams){
+                scope.hashtag = routeParams.hashtag;
+            }
+
+            if (scope.hashtag != ''){
+                scope.is_loading = true;
+                    var  toSend = scope.hashtag.toString() ;
+                    console.log(toSend);
+                    http.post(Django.url('dkb:step_hashtag_stat'),toSend).
+                     success(function(data, status, headers, config) {
+                        scope.steps= data;
+                        scope.is_loading = false;
+
+                     }).
+                    error(function(data, status, headers, config) {
+                                if (data.message != undefined){
+                                    alert(data.message);
+                                }
+                                 scope.is_loading = false;
+
+                    });
+            }
+
+        }]);
+
     DKBApp.config(function($routeProvider) {
           $routeProvider.
             when('/', {
@@ -254,6 +318,11 @@
           when('/deriv_ratio/', {
               templateUrl: '/static/html/_ng_deriv_ratio.html',
               controller: 'DKBDerivRatio',
+              reloadOnSearch: false
+            }).
+          when('/steps_stat/', {
+              templateUrl: '/static/html/_ng_step_stat.html',
+              controller: 'DKBStepStat',
               reloadOnSearch: false
             }).
             otherwise({

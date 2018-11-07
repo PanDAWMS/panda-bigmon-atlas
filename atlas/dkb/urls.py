@@ -10,7 +10,8 @@ urlpatterns = patterns('',
 
     url(r'^$', 'atlas.dkb.views.index', name='index'),
     url(r'^index2/$', 'atlas.dkb.views.index2', name='index2'),
-    url(r'^test_name/$', 'atlas.dkb.views.test_name', name='test_name')
+    url(r'^test_name/$', 'atlas.dkb.views.test_name', name='test_name'),
+    url(r'^step_hashtag_stat/$', 'atlas.dkb.views.step_hashtag_stat', name='step_hashtag_stat')
 
 
 )

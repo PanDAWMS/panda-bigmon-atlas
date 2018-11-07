@@ -1,0 +1,22 @@
+ <h5>{{  hashtag}}</h5>
+<table>
+        <tbody>
+        <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks</td></tr> <tr><td> Input_events</td></tr> <tr><td> Total_Events</td> </tr>
+        <tr><td> Running/Pending</td></tr>
+        <tr><td> Input_bytes</td></tr>
+        <tr><td> Output_bytes</td></tr></tbody></table>
+        </td>
+            <td style="margin: 0px;padding: 0px" ng-repeat="step in steps ">
+                <table><tbody>
+                <tr><td><b>{{ step.name }} <span class="{{  step.step_status }}">{{ step.percent_done | number:2}}%</span>
+                </b></td></tr>
+                <tr><td>{{ step.total_tasks | number:0 }}</td></tr>
+                <tr><td>{{ step.input_events | number:0 }}</td></tr>
+                <tr><td>{{ step.total_events | number:0 }}</td></tr>
+                <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
+                <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
+                <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
+                    </tbody></table>
+            </td>
+        </tbody>
+    </table>
