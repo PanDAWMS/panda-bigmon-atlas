@@ -335,8 +335,7 @@
             }).
           when('/steps_stat/', {
               templateUrl: '/static/html/_ng_step_stat.html',
-              controller: 'DKBStepStat',
-              reloadOnSearch: false
+              controller: 'DKBStepStat'
             }).
             otherwise({
               redirectTo: '/'
