@@ -172,16 +172,23 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                             datasets.append(current_dataset.name)
         else:
             datasets = get_slice_input_datasets(step.slice.dataset_id, ddm)
-        enough_replicas = True
+        not_full_exists = False
+        good_exists = False
         error_message = ''
         for dataset in datasets:
             try:
-                if len(ddm.number_of_full_replicas(dataset)) < 2:
-                    enough_replicas = False
+                replicas = ddm.number_of_full_replicas(dataset)
+                if len(replicas) >= 2:
+                    _logger.info("Two replicas  %s - %s" % (str(dataset),str(replicas)))
+                    good_exists = True
+                else:
+                    not_full_exists = True
             except Exception,e:
-                enough_replicas = False
                 error_message = str(e)
-        if enough_replicas:
+                not_full_exists = True
+            except:
+                not_full_exists = True
+        if good_exists and (not not_full_exists):
             waiting_step.status = 'done'
             waiting_step.message = 'All %s have >=2 replicas' %(str(datasets)[:1000])
             waiting_step.done_time = timezone.now()
