@@ -1753,7 +1753,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
                         pre_definition_actions_db = []
                         try:
-                            pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing']).values())
+                            pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing','failed']).values())
                         except:
                             pass
                     else:
