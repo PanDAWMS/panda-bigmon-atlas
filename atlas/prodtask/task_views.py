@@ -9,6 +9,7 @@ from django.template.response import TemplateResponse
 from django.core.urlresolvers import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
+from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import StepExecution
 import logging
@@ -219,7 +220,7 @@ def task_details(request, rid=None):
         'hashtags': hashtags,
         'parent_template' : 'prodtask/_index.html',
         }
-
+    print permissions
     for action, perm in permissions.items():
         request_parameters['can_' + action + '_task'] = perm
 
@@ -489,26 +490,6 @@ class ProductionTaskTable(datatables.DataTable):
 @api_view(['POST'])
 def outside_task_action(request, action):
     result = {}
-    try:
-        tasks_ids = json.loads(request.body)
-        tasks = ProductionTask.objects.filter(id__in=tasks_ids)
-        request_statistics = tasks_progress(tasks)
-        ordered_step_statistic = prepare_step_statistic(request_statistics)
-        steps_name = [x['step_name'] for x in ordered_step_statistic]
-        chains = []
-        for chain in request_statistics['chains'].values():
-            current_chain = [{}] * len(steps_name)
-            chain_requests = set()
-            for task_id in chain:
-                i = steps_name.index(request_statistics['processed_tasks'][task_id]['step'])
-                task = {'task_id':task_id}
-                task.update(request_statistics['processed_tasks'][task_id])
-                chain_requests.add(request_statistics['processed_tasks'][task_id]['request'])
-                current_chain[i] = task
-            chains.append({'chain':current_chain,'requests':chain_requests})
-        result.update({'step_statistic':ordered_step_statistic,'chains':chains})
-    except Exception,e:
-        print str(e)
     return Response({"load": result})
 
 def get_status_stat(qs):
@@ -691,11 +672,11 @@ def check_action_allowed(username, tasks, action=None, userfullname=''):
                     if not is_analy:
                         if is_superuser or (username==task_owner):
                                 pass
-                        elif physgroup in allowed_groups:
-                                pass
                         elif "DPD" in allowed_groups:
                                 pass
                         elif "MCCOORD" in  allowed_groups:
+                                pass
+                        elif (physgroup in allowed_groups) and (action not in ['change_priority']):
                                 pass
                         else:
                                 denied_tasks.append(task)
@@ -784,7 +765,18 @@ def create_fake_task(step_id,task_id):
 
 
 
-
+def sync_deft_rucio_nevents(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    ddm = DDM()
+    rucio_nEvents = ddm.dataset_metadata(task.output_dataset)['events']
+    if rucio_nEvents > task.total_events:
+        print task_id, rucio_nEvents, task.total_events
+        if task.status in ProductionTask.NOT_RUNNING:
+            ttask = TTask.objects.get(id=task.id)
+            setattr(ttask,'total_events',rucio_nEvents)
+            ttask.save()
+        setattr(task,'total_events',rucio_nEvents)
+        task.save()
 
 
 def sync_deft_jedi_task(task_id):
