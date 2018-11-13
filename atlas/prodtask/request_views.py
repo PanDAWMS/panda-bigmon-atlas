@@ -16,8 +16,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_protect
+from rucio.common.exception import DataIdentifierNotFound
 
-from atlas.prodtask.ddm_api import number_of_files_in_dataset
+from atlas.prodtask.ddm_api import number_of_files_in_dataset, DDM
 from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, fill_request_events
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
@@ -1424,7 +1425,7 @@ Details:
                sub_campaign=production_request.subcampaign, link = current_uri, manager_name=manager_name,
             project=production_request.project )
     if (production_request.phys_group != 'VALI') and (production_request.request_type == 'MC'):
-        mail_body = "Dear Josh, Frank and Pierre,\n"+mail_body
+        mail_body = "Dear PMG and PC,\n"+mail_body
         mail_from = "atlas.mc-production@cern.ch"
         if need_approve:
             owner_mails += ["atlas-csc-prodman@cern.ch"]
@@ -2208,3 +2209,34 @@ def sizeof_fmt(num):
             return "%3.1f%s%s" % (num, unit)
         num /= 1000
     return "%.1f%s%s" % (num, 'B')
+
+
+def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name):
+    production_request = TRequest.objects.get(reqid = production_request_id)
+    current_campaign = production_request.campaign
+    current_subcampaign = production_request.subcampaign
+    tasks = ProductionTask.objects.filter(request=production_request)
+    datasets = []
+    for task in tasks:
+        if task.status not in (ProductionTask.RED_STATUS+['obsolete']):
+            datasets.append(task.output_dataset)
+    #datasets = ['mc16_13TeV.411044.PowhegPythia8EvtGen_ttbar_169p00_SingleLep.recon.AOD.e6696_e5984_a875_r10201_tid14138065_00']
+    ddm = DDM()
+    changed_datasets = []
+    for dataset in datasets:
+        try:
+            current_dataset_campaign = ddm.dataset_metadata(dataset)['campaign']
+            new_dataset_campaign = current_dataset_campaign.replace(current_subcampaign,newsubcampaign).replace(current_campaign,newcampaign)
+            if new_dataset_campaign!=current_dataset_campaign:
+                ddm.changeDatasetCampaign(dataset,new_dataset_campaign)
+            print dataset, new_dataset_campaign
+            changed_datasets.append(dataset)
+        except DataIdentifierNotFound, e:
+            pass
+        except Exception, e:
+            print e
+    with open(file_name, 'a') as output_file:
+        output_file.writelines((x+'\n' for x in changed_datasets))
+    production_request.campaign = newcampaign
+    production_request.subcampaign = newsubcampaign
+    production_request.save()
