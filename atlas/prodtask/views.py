@@ -2880,7 +2880,7 @@ def do_prestage_rule():
         if production_request.cstatus != 'test':
             if waiting_step.get_config('datasets'):
                 if not (waiting_step.get_config('do_rule')) :
-                    waiting_step.get_config({'do_rule':'Yes'})
+                    waiting_step.set_config({'do_rule':'Yes'})
                     waiting_step.execution_time = timezone.now()
                     waiting_step.save()
                     print step.request,step.slice.slice

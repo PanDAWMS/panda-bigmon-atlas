@@ -199,7 +199,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                 waiting_step.status = 'failed'
             else:
                 waiting_step.status = 'active'
-                waiting_step.execution_time = waiting_step.execution_time + timedelta(hours=delay)
+                waiting_step.execution_time = timezone.now() + timedelta(hours=delay)
             if error_message:
                 waiting_step.message = 'Error for of %s: %s ' % (str(datasets)[:1000],str(e))
             waiting_step.message = 'Some of %s have <2 replicas' % (str(datasets)[:1000])
@@ -240,8 +240,8 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             waiting_step.attempt += 1
             rules = ddm.dataset_active_datadisk_rule(dataset)
             if len(rules) > 0:
-                files = ddm.dataset_metadata(dataset)['files']
-                waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rules['rse_expression'], str(rules['locks_ok_cnt']),str(files))
+                files = ddm.dataset_metadata(dataset)['length']
+                waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rules[0]['rse_expression'], str(rules[0]['locks_ok_cnt']),str(files))
                 waiting_step.status = 'active'
             else:
                 if len(replicas['tape'])==0:
