@@ -241,8 +241,14 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             rules = ddm.dataset_active_datadisk_rule(dataset)
             if len(rules) > 0:
                 files = ddm.dataset_metadata(dataset)['length']
-                waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rules[0]['rse_expression'], str(rules[0]['locks_ok_cnt']),str(files))
-                waiting_step.status = 'active'
+                if (float(rules[0]['locks_ok_cnt']) / float(files)) >=0.9:
+                    waiting_step.status = 'done'
+                    waiting_step.message = '%s has >0.9 files pre staged ' % (str(dataset))
+                    waiting_step.done_time = timezone.now()
+                    approve_step = True
+                else:
+                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rules[0]['rse_expression'], str(rules[0]['locks_ok_cnt']),str(files))
+                    waiting_step.status = 'active'
             else:
                 if len(replicas['tape'])==0:
                     waiting_step.status = 'failed'
