@@ -2697,7 +2697,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="showOwnerChangeModal(event);"><i class="fa fa-edit"></i></a></td>
   <td>{{ trequest.phys_group}}</td>
 {% ifequal trequest.request_type "MC" %}
-  <td id="requestProject">{{ trequest.subcampaign}} {{ trequest.project}}</td>
+  <td id="requestProject">{{ trequest.campaign}}:{{ trequest.subcampaign}} {{ trequest.project}}</td>
     <td>
 
             {{ priorities_str }}
