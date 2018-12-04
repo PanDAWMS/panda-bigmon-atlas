@@ -12,7 +12,7 @@ from atlas.getdatasets.models import TaskProdSys1
 from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
 from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep
-from ..prodtask.spdstodb import fill_template
+#from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
 from ddm_api import dataset_events
@@ -2009,53 +2009,53 @@ def recursive_delete(step_id, do_delete=False):
             step.save()
             step.delete()
 
-
-def find_old_transient(from_id, to_id, gsp_key, sheet):
-    tasks = list(ProductionTask.objects.filter(id__lte=to_id, id__gte=from_id, status__in=['done', 'finished'],
-                                          provenance='AP', name__contains='merge', name__startswith='mc'))
-    full_tasks = []
-    for task in tasks:
-        if task.total_files_finished == task.total_files_tobeused:
-            if task.primary_input.split('.')[-2] in task.output_formats.split('.'):
-                full_tasks.append(task.primary_input)
-    to_delete = []
-    suspicios = []
-    not_in_db = 0
-    deleted = 0
-    ddm = DDM()
-    for dataset in full_tasks:
-        try:
-            metadata = ddm.dataset_metadata(dataset)
-            to_delete.append((dataset,metadata['transient'],metadata['bytes']))
-        except DataIdentifierNotFound:
-            deleted +=1
-            # if 'tid' not in dataset:
-            #     print dataset
-            # else:
-            #     if not ProductionDataset.objects.get(name=dataset).ddm_timestamp:
-            #         not_in_db +=1
-        except Exception,e:
-            print e
-            suspicios.append(dataset)
-    gsp = GSP()
-    print 'Deleted %s/%s/%s'%(len(to_delete),not_in_db,deleted)
-    gsp.update_spreadsheet(gsp_key, sheet, 'A:C', to_delete, True)
-
-
-def set_transient(gsp_key, sheet, start_liftime, increase_delta):
-    gsp = GSP()
-    values =  gsp.get_spreadsheet(gsp_key,sheet,'A:A')
-    datasets = [x[0] for x in values['values']]
-    liftime = start_liftime
-    counter = 0
-    ddm = DDM()
-    for dataset in datasets:
-        counter += 1
-        if counter > increase_delta:
-            liftime += 5
-            counter = 0
-        print dataset,liftime
-        try:
-            ddm.setLifeTimeTransientDataset(dataset,liftime)
-        except Exception,e:
-            print dataset,str(e)
+#
+# def find_old_transient(from_id, to_id, gsp_key, sheet):
+#     tasks = list(ProductionTask.objects.filter(id__lte=to_id, id__gte=from_id, status__in=['done', 'finished'],
+#                                           provenance='AP', name__contains='merge', name__startswith='mc'))
+#     full_tasks = []
+#     for task in tasks:
+#         if task.total_files_finished == task.total_files_tobeused:
+#             if task.primary_input.split('.')[-2] in task.output_formats.split('.'):
+#                 full_tasks.append(task.primary_input)
+#     to_delete = []
+#     suspicios = []
+#     not_in_db = 0
+#     deleted = 0
+#     ddm = DDM()
+#     for dataset in full_tasks:
+#         try:
+#             metadata = ddm.dataset_metadata(dataset)
+#             to_delete.append((dataset,metadata['transient'],metadata['bytes']))
+#         except DataIdentifierNotFound:
+#             deleted +=1
+#             # if 'tid' not in dataset:
+#             #     print dataset
+#             # else:
+#             #     if not ProductionDataset.objects.get(name=dataset).ddm_timestamp:
+#             #         not_in_db +=1
+#         except Exception,e:
+#             print e
+#             suspicios.append(dataset)
+#     gsp = GSP()
+#     print 'Deleted %s/%s/%s'%(len(to_delete),not_in_db,deleted)
+#     gsp.update_spreadsheet(gsp_key, sheet, 'A:C', to_delete, True)
+#
+#
+# def set_transient(gsp_key, sheet, start_liftime, increase_delta):
+#     gsp = GSP()
+#     values =  gsp.get_spreadsheet(gsp_key,sheet,'A:A')
+#     datasets = [x[0] for x in values['values']]
+#     liftime = start_liftime
+#     counter = 0
+#     ddm = DDM()
+#     for dataset in datasets:
+#         counter += 1
+#         if counter > increase_delta:
+#             liftime += 5
+#             counter = 0
+#         print dataset,liftime
+#         try:
+#             ddm.setLifeTimeTransientDataset(dataset,liftime)
+#         except Exception,e:
+#             print dataset,str(e)
