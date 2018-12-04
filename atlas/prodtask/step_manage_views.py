@@ -9,7 +9,8 @@ from django.utils import timezone
 from copy import deepcopy
 
 from atlas.getdatasets.models import TaskProdSys1
-from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm
+from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
+from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep
 from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
@@ -18,6 +19,8 @@ from ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
+from rucio.common.exception import CannotAuthenticate, DataIdentifierNotFound, RucioException
+
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
@@ -1787,6 +1790,12 @@ def change_slice_parent(request,slice,new_parent_slice):
             changed_slice.input_data = step.step_parent.slice.input_data
             changed_slice.input_events = step.step_parent.slice.input_events
             changed_slice.save()
+    else:
+        if int(new_parent_slice) == -1:
+            slice = InputRequestList.objects.get(request=request, slice=slice)
+            slice.dataset = None
+            slice.save()
+            return
 
 def delete_empty_slice(slice):
     steps = list(StepExecution.objects.filter(slice=slice))
@@ -1999,3 +2008,54 @@ def recursive_delete(step_id, do_delete=False):
             step.step_parent=step
             step.save()
             step.delete()
+
+
+def find_old_transient(from_id, to_id, gsp_key, sheet):
+    tasks = list(ProductionTask.objects.filter(id__lte=to_id, id__gte=from_id, status__in=['done', 'finished'],
+                                          provenance='AP', name__contains='merge', name__startswith='mc'))
+    full_tasks = []
+    for task in tasks:
+        if task.total_files_finished == task.total_files_tobeused:
+            if task.primary_input.split('.')[-2] in task.output_formats.split('.'):
+                full_tasks.append(task.primary_input)
+    to_delete = []
+    suspicios = []
+    not_in_db = 0
+    deleted = 0
+    ddm = DDM()
+    for dataset in full_tasks:
+        try:
+            metadata = ddm.dataset_metadata(dataset)
+            to_delete.append((dataset,metadata['transient'],metadata['bytes']))
+        except DataIdentifierNotFound:
+            deleted +=1
+            # if 'tid' not in dataset:
+            #     print dataset
+            # else:
+            #     if not ProductionDataset.objects.get(name=dataset).ddm_timestamp:
+            #         not_in_db +=1
+        except Exception,e:
+            print e
+            suspicios.append(dataset)
+    gsp = GSP()
+    print 'Deleted %s/%s/%s'%(len(to_delete),not_in_db,deleted)
+    gsp.update_spreadsheet(gsp_key, sheet, 'A:C', to_delete, True)
+
+
+def set_transient(gsp_key, sheet, start_liftime, increase_delta):
+    gsp = GSP()
+    values =  gsp.get_spreadsheet(gsp_key,sheet,'A:A')
+    datasets = [x[0] for x in values['values']]
+    liftime = start_liftime
+    counter = 0
+    ddm = DDM()
+    for dataset in datasets:
+        counter += 1
+        if counter > increase_delta:
+            liftime += 5
+            counter = 0
+        print dataset,liftime
+        try:
+            ddm.setLifeTimeTransientDataset(dataset,liftime)
+        except Exception,e:
+            print dataset,str(e)
