@@ -299,8 +299,32 @@ def wrong_deriv():
     return exexute
 
 
+def all_outputs(production_request):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+          "size": 0,
+          "query": {
+            "term": {"pr_id":production_request}
+          },
+          "aggs": {
+            "dataset": {
+              "children": {"type": "output_dataset"},
+              "aggs": {
+                "format": {
+                  "terms": {"field": "data_format"}
+                }
+              }
+            }
+          }
+        }
 
-def running_events_stat(hashtags, status):
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    return exexute
+
+
+
+def running_events_stat(search_dict, status):
 
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = {
@@ -308,7 +332,7 @@ def running_events_stat(hashtags, status):
               "query": {
                 "bool": {
                   "must": [
-                    {"terms": {"hashtag_list": hashtags}},
+                    search_dict,
                     {"terms": {"status": status}}
                   ]
                 }
@@ -341,14 +365,112 @@ def running_events_stat(hashtags, status):
 
     return result
 
-def statistic_by_step(hashtag):
+
+
+def statistic_by_output(search_dict, format):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = {
               "size": 0,
               "query": {
                 "bool": {
                   "must": [
-                    {"terms": {"hashtag_list": hashtag}},
+                      search_dict,
+                      {"term": {"output_formats":format}},
+                    {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}}
+                  ]
+                }
+              },
+              "aggs": {
+                "ami_tag": {
+                  "terms": {"field": "ctag"},
+
+                  "aggs": {
+                    "input_events": {
+                      "sum": {"field": "input_events"}
+                    },
+
+                  "not_deleted": {
+                      "filter": {"term": {"primary_input_deleted": False}},
+                      "aggs": {
+                          "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                          }
+                      }
+                  },
+                    "total_events": {
+                          "sum": {"field": "total_events"}
+                     },
+                      "hs06":{
+                          "sum": {
+                              "script": {
+                                  "inline": "doc['hs06'].value*doc['total_events'].value"
+                              }
+                          }
+                      },
+                      "ended":{
+                          "filter" : {"exists" : { "field" : "end_time" }},
+                          "aggs":{
+
+                              "duration":{
+                              "avg":{
+                                  "script":{
+                                      "inline":"doc['end_time'].value - doc['start_time'].value"
+                                  }
+                          }}}
+                      },
+                    "output": {
+                      "children": {"type": "output_dataset"},
+                      "aggs": {
+                        "not_removed": {
+                          "filter": {"term": {"deleted": False}},
+                          "aggs": {
+                              "formated" : {
+                                  "filter": {"term": {"data_format": format}},
+                                  "aggs": {
+                                        "bytes": {
+                                          "sum": {"field": "bytes"}
+                                        },
+                                        "events":{
+                                            "sum": {"field": "events"}
+                                        }
+                                  }
+                              }
+                          }
+                        }
+                      }
+                    },
+                    "status": {
+                      "terms": {"field": "status"}
+                    }
+                  }
+                }
+              }
+            }
+    aggregs = es_search.update_from_dict(query)
+    exexute = aggregs.execute()
+    result = {}
+    print exexute.hits.total
+    if exexute.hits.total>0:
+        for x in exexute.aggs.ami_tag.buckets:
+            result[x.key] = {'name': x.key,  'total_events':x.output.not_removed.formated.events.value,
+                       'input_events': x.input_events.value,
+                       'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                       'output_bytes':x.output.not_removed.formated.bytes.value,
+                       'output_not_removed_tasks':x.output.not_removed.formated.doc_count,
+                       'total_tasks': x.doc_count, 'hs06':x.hs06.value, 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
+
+    return result
+
+
+
+def statistic_by_step(search_dict):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                      search_dict,
                     {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}}
                   ]
                 }
@@ -431,52 +553,69 @@ def statistic_by_step(hashtag):
     return result
 
 
+
+def form_statistic_per_step(statistics,running_stat, finished_stat):
+    result = []
+    for step in MCPriority.STEPS:
+        if step in statistics:
+            current_stat = statistics[step]
+            percent_done = 0.0
+            percent_runnning = 0.0
+            percent_pending = 0.0
+            if current_stat["input_events"] == 0:
+                step_status = 'Unknown'
+            else:
+                percent_done = float(current_stat['total_events']) / float(current_stat['input_events'])
+                if (percent_done > 0.90):
+                    step_status = 'StepDone'
+                elif (percent_done > 0.10):
+                    step_status = 'StepProgressing'
+                else:
+                    step_status = 'StepNotStarted'
+                running_events = 0
+                finished_events = 0
+                if step in running_stat:
+                    running_events = running_stat[step]['input_events'] - running_stat[step]['total_events']
+                if step in finished_stat:
+                    finished_events = finished_stat[step]['input_events'] - finished_stat[step]['total_events']
+                percent_runnning = float(running_events) / float(current_stat['input_events'])
+                percent_pending = float(current_stat['input_events'] - current_stat[
+                    'total_events'] - running_events - finished_events) / float(current_stat['input_events'])
+                if percent_pending < 0:
+                    percent_pending = 0
+            current_stat['step_status'] = step_status
+            current_stat['percent_done'] = percent_done * 100
+            current_stat['percent_runnning'] = percent_runnning * 100
+            current_stat['percent_pending'] = percent_pending * 100
+            result.append(current_stat)
+    return result
+
+
 @api_view(['POST'])
 def step_hashtag_stat(request):
     try:
         hashtags_raw = request.body
         hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
         hashtags = [x.lower() for x in hashtags_split if x]
-        statistics = statistic_by_step(hashtags)
-        running_stat = running_events_stat(hashtags,['running'])
-        finished_stat = running_events_stat(hashtags,['finished','done'])
-        result = []
-        for step in MCPriority.STEPS:
-            if step in statistics:
-                current_stat = statistics[step]
-                percent_done = 0.0
-                percent_runnning = 0.0
-                percent_pending = 0.0
-                if current_stat["input_events"] == 0:
-                    step_status = 'Unknown'
-                else:
-                    percent_done = float(current_stat['total_events']) / float(current_stat['input_events'])
-                    if (percent_done>0.90):
-                       step_status = 'StepDone'
-                    elif (percent_done>0.10):
-                       step_status = 'StepProgressing'
-                    else:
-                       step_status =  'StepNotStarted'
-                    running_events = 0
-                    finished_events = 0
-                    if step in running_stat:
-                        running_events = running_stat[step]['input_events']-running_stat[step]['total_events']
-                    if step in finished_stat:
-                        finished_events = finished_stat[step]['input_events'] - finished_stat[step]['total_events']
-                    percent_runnning = float(running_events) / float(current_stat['input_events'])
-                    percent_pending = float(current_stat['input_events'] - current_stat['total_events'] -running_events - finished_events) / float(current_stat['input_events'])
-                    if percent_pending < 0:
-                        percent_pending = 0
-                current_stat['step_status'] = step_status
-                current_stat['percent_done'] = percent_done*100
-                current_stat['percent_runnning'] = percent_runnning*100
-                current_stat['percent_pending'] = percent_pending*100
-                result.append(current_stat)
+        statistics = statistic_by_step({"terms": {"hashtag_list": hashtags}})
+        running_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['running'])
+        finished_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['finished','done'])
+        result = form_statistic_per_step(statistics,running_stat, finished_stat)
     except Exception,e:
         return Response({'error':str(e)},status=400)
     return Response(result)
 
-
+@api_view(['POST'])
+def step_request_stat(request):
+    try:
+        production_request = request.body
+        statistics = statistic_by_step({"term": {"pr_id": production_request}})
+        running_stat = running_events_stat({"term": {"pr_id": production_request}},['running'])
+        finished_stat = running_events_stat({"term": {"pr_id": production_request}},['finished','done'])
+        result = form_statistic_per_step(statistics,running_stat, finished_stat)
+    except Exception,e:
+        return Response({'error':str(e)},status=400)
+    return Response(result)
 
 
 def derivation_stat(project, ami, output):

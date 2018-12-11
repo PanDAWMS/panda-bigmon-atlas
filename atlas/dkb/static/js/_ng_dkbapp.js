@@ -287,11 +287,15 @@
             scope.is_loading = false;
             if ('hashtag' in routeParams){
                 scope.hashtag = routeParams.hashtag;
+                var  toSend = scope.hashtag.toString() ;
+                scope.search_string = 'Hashtags: ' + scope.hashtag.toString();
+            } else if('request' in routeParams){
+                console.log('pass');
             }
 
             if (scope.hashtag != ''){
                 scope.is_loading = true;
-                    var  toSend = scope.hashtag.toString() ;
+
                     console.log(toSend);
                     http.post(Django.url('dkb:step_hashtag_stat'),toSend).
                      success(function(data, status, headers, config) {
