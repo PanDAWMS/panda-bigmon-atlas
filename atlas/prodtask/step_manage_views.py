@@ -13,6 +13,7 @@ from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep
 #from ..prodtask.spdstodb import fill_template
+from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
 from ddm_api import dataset_events
