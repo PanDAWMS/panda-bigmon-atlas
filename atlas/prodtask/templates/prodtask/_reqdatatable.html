@@ -3042,7 +3042,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
                          {% else %}
                             <td colspan="15" style="width: 500px" >
-                            <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput"><b>
+                            <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput filterField"><b>
                                 {{ slice_output}}</b></span>
                             </span>
                             </td>
@@ -3062,6 +3062,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput filterField"><b>
                             {{ slice_output}}</b></span>
                         </span>
+                        <span style="display: none" class="filterField">{{ slice_output_full }}</span>
                     </td>
                     <td colspan="2" ></td>
                         <td></td>
@@ -3095,7 +3096,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% endifequal %}
                 {% endfor %}
                     <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">Not running</span>
-                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" class="{{ approved.submitted }} {{ approved.original }} StatusFilter" style="width: 8em;text-align:center">{{ approved.submitted }}<span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
+                    <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="width: 8em;text-align:center"><span class="{{ approved.submitted }} {{ approved.original }} StatusFilter" >{{ approved.submitted }}</span><span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
                 <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
                             edit (saved)
