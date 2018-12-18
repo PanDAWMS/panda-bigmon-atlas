@@ -330,7 +330,7 @@ class ProductionDataset(models.Model):
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
     campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
-
+    ddm_timestamp = models.DateTimeField(db_column='ddm_timestamp')
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
@@ -683,6 +683,9 @@ class TTask(models.Model):
     total_events = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_EVENTS', null=True)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=True)
     current_priority =  models.DecimalField(decimal_places=0, max_digits=5, db_column='CURRENT_PRIORITY', null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
+    vo = models.CharField(max_length=16, db_column='VO', null=True)
+    prodSourceLabel = models.CharField(max_length=20, db_column='PRODSOURCELABEL', null=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
     __params = None
 
