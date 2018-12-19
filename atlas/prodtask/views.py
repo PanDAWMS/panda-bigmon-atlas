@@ -1539,7 +1539,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 task['href'] = BIG_PANDA_TASK_BASE + str(task['id'])
                 task['href_local'] = PRODTASK_TASK_BASE.replace(FAKE_TASK_NUMBER,str(task['id']))
                 return_tasks.append(task)
-                total_events +=  task['total_events']
+                if task['status'] not in ProductionTask.RED_STATUS:
+                    total_events +=  task['total_events']
                 if task['is_extension']:
                     ext_task = deepcopy(task)
                     ext_task['short'] =(' ^'+ 'ext.' + '^ ')
