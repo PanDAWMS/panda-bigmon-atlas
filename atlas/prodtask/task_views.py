@@ -50,6 +50,7 @@ GLOBAL_SHARES = [
     'Express',
     'Validation',
     'Test',
+    'Special',
     'MC 16',
     'MC Other',
     'MC 16 evgen',
