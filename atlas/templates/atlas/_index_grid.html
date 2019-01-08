@@ -154,23 +154,23 @@ this is atlas's atlas/_index_grid
     </script>
     <div class="row">
         <div class="column large-2 ">
-            <label>Task: <input type="text" id="taskID" /> </label>
+            <label>Task: <input type="text" id="taskID" value="" /> </label>
         </div>
         <div class="column large-6">
-            <a class="button" onclick="window.location.href = Django.url('prodtask:task',$('#taskID').val());">ProdSys</a>
-            <a class="button" onclick="window.location.href = 'https://bigpanda.cern.ch/task/'+$('#taskID').val();">BigPanda</a>
-            <a class="button" onclick="window.location.href = Django.url('prodtask:slice_by_task',$('#taskID').val());">Slice</a>
-            <a class="button" onclick="window.location.href = Django.url('prodtask:task_chain_view',$('#taskID').val());">Childes</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:task',$('#taskID').val());}">ProdSys</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = 'https://bigpanda.cern.ch/task/'+$('#taskID').val();}">BigPanda</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:slice_by_task',$('#taskID').val()||'');}">Slice</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:task_chain_view',$('#taskID').val()||'');}">Childes</a>
         </div>
         <div class="column large-4"></div>
     </div>
     <div class="row">
         <div class="column large-2 ">
-            <label>Request: <input type="text" id="RequestID" /> </label>
+            <label>Request: <input type="text" id="RequestID"  value=""  /> </label>
         </div>
         <div class="column large-6">
-            <a class="button" onclick="window.location.href = Django.url('prodtask:input_list_approve_full',$('#RequestID').val());">ProdSys</a>
-            <a class="button" onclick="window.location.href = Django.url('reqtask:request_tasks_rid',$('#RequestID').val());">Tasks</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = Django.url('prodtask:input_list_approve_full',$('#RequestID').val()||'');}">ProdSys</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = Django.url('reqtask:request_tasks_rid',$('#RequestID').val()||'');}">Tasks</a>
         </div>
         <div class="column large-8"></div>
     </div>
