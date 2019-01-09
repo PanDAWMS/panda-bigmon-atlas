@@ -2380,6 +2380,15 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         }
         function showTrainExtendModal(event){
             event.preventDefault();
+            $.ajaxSetup({async: false});
+            $.get("{% url 'prodtask:request_train_patterns' pr_id %}",function(data,status){
+                $('#trainPatternRequest').html('');
+                var patterns = data;
+                for (var i=0;i<patterns.length;i++){
+                    $('#trainPatternRequest').append('<option  value=' +patterns[i].train_id+'>'+patterns[i].name+'</option>');
+                }
+            });
+            $.ajaxSetup({async: true});
             checkParentTrain();
 
             $('#trainModalWindow').foundation('reveal', 'open');
@@ -3939,9 +3948,6 @@ ProjectModeForm.prototype.createForm = function(inputString){
           <div class="large-8 column">
          <label> Pattern:
                     <select id="trainPatternRequest" onchange="changeParentTrainStep();" >
-                    {% for train_pattern in train_pattern_list %}
-                            <option value="{{train_pattern.train_id}}">{{ train_pattern.request_name }}</option>
-                    {% endfor %}
                     </select>
                     </label>
       </div>

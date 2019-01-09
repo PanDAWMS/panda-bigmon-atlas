@@ -11,7 +11,7 @@ from copy import deepcopy
 from atlas.getdatasets.models import TaskProdSys1
 from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
-from atlas.prodtask.models import RequestStatus, WaitingStep
+from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction
 #from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
@@ -21,8 +21,8 @@ from ddm_api import dataset_events
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
 from rucio.common.exception import CannotAuthenticate, DataIdentifierNotFound, RucioException
-
-
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 
@@ -2060,3 +2060,22 @@ def recursive_delete(step_id, do_delete=False):
 #             ddm.setLifeTimeTransientDataset(dataset,liftime)
 #         except Exception,e:
 #             print dataset,str(e)
+@api_view(['GET'])
+def request_train_patterns(request, reqid):
+    train_pattern_list= []
+    try:
+        cur_request = TRequest.objects.get(reqid=reqid)
+        if cur_request.request_type == 'MC':
+            pattern_type = 'mc_pattern'
+        else:
+            pattern_type = 'data_pattern'
+        trains = TrainProduction.objects.filter(status=pattern_type).order_by('id')
+        for train in trains:
+            train_pattern_list.append({'train_id': train.id, 'name': '(' + str(train.pattern_request.reqid) +
+                                                                             ')' +
+                                                                             train.pattern_request.description})
+    except Exception,e:
+        content = str(e)
+        return Response(content,status=500)
+
+    return Response(train_pattern_list)

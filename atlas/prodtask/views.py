@@ -1603,6 +1603,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 pattern_list_name += [('Initial', [{} for step in STEPS_LIST])]
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = list(InputRequestList.objects.filter(request=cur_request).order_by('slice'))
+
             input_list_count = InputRequestList.objects.filter(request=cur_request).count()
             # input_lists - list of tuples for end to form.
             # tuple format:
@@ -1669,18 +1670,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                 use_input_date_for_pattern = True
             else:
                 # choose how to form input data pattern: from jobOption or from input dataset
-                slice_pattern = '*'
                 use_input_date_for_pattern = True
                 if not input_lists_pre[0].input_data:
                         use_input_date_for_pattern = False
-                if input_list_count < 50:
-                    if use_input_date_for_pattern:
-                        slice_pattern = input_lists_pre[0].input_data.split('.')
-                    else:
-                        if input_lists_pre[0].dataset:
-                            slice_pattern = input_lists_pre[0].dataset.name.split('.')
-                        else:
-                            slice_pattern = ''
+
                 failed_slices = set()
                 cloned_slices = []
                 do_all = True
@@ -1796,28 +1789,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         total_slice += 1
                         show_task = False
                         show_action = False
-                        # creating a pattern
-                        # if input_list_count < 50:
-                        #     if use_input_date_for_pattern:
-                        #         if slice.input_data:
-                        #             current_slice_pattern = slice.input_data.split('.')
-                        #         else:
-                        #             current_slice_pattern=''
-                        #     else:
-                        #         if slice.dataset:
-                        #             current_slice_pattern = slice.dataset.name.split('.')
-                        #         else:
-                        #             current_slice_pattern=''
-                        #
-                        #     if current_slice_pattern:
-                        #         for index,token in enumerate(current_slice_pattern):
-                        #             if index >= len(slice_pattern):
-                        #                 slice_pattern.append(token)
-                        #             else:
-                        #                 if token!=slice_pattern[index]:
-                        #                     slice_pattern[index] = os.path.commonprefix([token,slice_pattern[index]])
-                        #                     slice_pattern[index] += '*'
-                        # Creating step dict
+
                         slice_steps_list = []
                         temp_step_list = []
                         another_chain_step = None
@@ -1979,6 +1951,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             jira_problem_link = ''
             if cur_request.jira_reference:
                 jira_problem_link = cur_request.jira_reference
+
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
                 slice_output, real_events, total_events = get_last_step_format(temp_list)
@@ -1997,18 +1970,18 @@ def request_table_view(request, rid=None, show_hidden=False):
                 has_deft_problem = False
             _logger.debug(form_request_log(rid,request,'Finish prepare data fro request page'))
             train_pattern_list = []
-            try:
-                if cur_request.request_type == 'MC':
-                    pattern_type = 'mc_pattern'
-                else:
-                    pattern_type = 'data_pattern'
-                trains = TrainProduction.objects.filter(status=pattern_type).order_by('id')
-                for train in trains:
-                    train_pattern_list.append({'train_id':train.id,'request_name':'('+str(train.pattern_request.reqid)+
-                                                                                  ')'+
-                                                                                  train.pattern_request.description})
-            except:
-                pass
+            # try:
+            #     if cur_request.request_type == 'MC':
+            #         pattern_type = 'mc_pattern'
+            #     else:
+            #         pattern_type = 'data_pattern'
+            #     trains = TrainProduction.objects.filter(status=pattern_type).order_by('id')
+            #     for train in trains:
+            #         train_pattern_list.append({'train_id':train.id,'request_name':'('+str(train.pattern_request.reqid)+
+            #                                                                       ')'+
+            #                                                                       train.pattern_request.description})
+            # except:
+            #     pass
             child_requests = []
             parent_request_id = ''
             try:
@@ -2070,7 +2043,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                'pattern_list': pattern_list_name,
                'pr_id': rid,
                'approvedCount': approved_count,
-               'pattern': '.'.join(list(slice_pattern)),
                'totalSlice':total_slice,
                'edit_mode':edit_mode,
                'show_reprocessing':show_reprocessing,
