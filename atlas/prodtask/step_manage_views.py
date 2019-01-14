@@ -140,10 +140,10 @@ def fill_dataset_names(reqid):
 
 def extend_request_by_train(reqid,request_donor,slices):
             slices_donor = list(InputRequestList.objects.filter(request=request_donor).order_by('slice'))
-            container_name = slices_donor[0].dataset.name
+            container_name = slices_donor[0].dataset
             slices_to_get_info = [slices_donor[0]]
             for index, slice_donor in enumerate(slices_donor[1:]):
-                if (slice_donor.dataset.name == container_name) and (not slice_donor.is_hide):
+                if (slice_donor.dataset == container_name) and (not slice_donor.is_hide):
                     slices_to_get_info.append(slice_donor)
             for slice in slices:
                 for slice_donor in slices_to_get_info:
@@ -360,7 +360,7 @@ def get_slices_bulk_info(request, reqid):
             _logger.debug(form_request_log(reqid,request,'Take slices info: %s' % str(slice_numbers)))
             result_dict = {'multivalues':{},'singlevalue':{}}
             for slice in slices:
-                current_slice_dict = {'datasetName':slice.dataset_id,'comment':slice.comment,'jobOption':slice.input_data,
+                current_slice_dict = {'datasetName':slice.dataset,'comment':slice.comment,'jobOption':slice.input_data,
                                       'eventsNumber':int(slice.input_events),'priority':int(slice.priority)}
 
                 for key in current_slice_dict:
@@ -863,7 +863,7 @@ def slice_steps(request, reqid, slice_number):
 
             dataset = ''
             if input_list.dataset:
-                dataset = input_list.dataset.name
+                dataset = input_list.dataset
             jobOption = ''
             if input_list.input_data:
                 jobOption = input_list.input_data
@@ -1122,9 +1122,9 @@ def split_slice_by_tid(reqid, slice_number):
     slice_to_split = InputRequestList.objects.get(request=production_request, slice=slice_number)
     if not slice_to_split.dataset:
         raise  ValueError("Can't split slice by datasets - container name should be saved")
-    if 'tid' in slice_to_split.dataset_id:
+    if 'tid' in slice_to_split.dataset:
         raise  ValueError("Can't split slice by datasets - container name should be saved")
-    datasets_events = dataset_events(slice_to_split.dataset_id)
+    datasets_events = dataset_events(slice_to_split.dataset)
     datasets_events.sort(key=lambda x:x['events'])
     datasets_events.reverse()
     events_to_proceed = slice_to_split.input_events
@@ -1720,10 +1720,10 @@ def clean_open_request(reqid,starting_slice=0):
     duplicated_slices = []
     slices = []
     for current_slice in inputs:
-        if (current_slice.dataset_id[current_slice.dataset_id.find(':')+1:] in uniq_datasets) and (current_slice.slice>=starting_slice):
+        if (current_slice.dataset[current_slice.dataset.find(':')+1:] in uniq_datasets) and (current_slice.slice>=starting_slice):
             slices.append(current_slice.id)
             duplicated_slices.append(current_slice)
-        uniq_datasets.add(current_slice.dataset_id[current_slice.dataset_id.find(':')+1:])
+        uniq_datasets.add(current_slice.dataset[current_slice.dataset.find(':')+1:])
     slices.sort()
     #print slices[:30]
     if not duplicated_slices:
@@ -1889,7 +1889,7 @@ def dataset_slice_info(request, reqid, slice_number):
 
 def find_slice_dataset_info(reqid, slice_number):
     slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
-    container = slice.dataset_id
+    container = slice.dataset
     dataset_events_list = dataset_events_ddm(container)
     steps = list(StepExecution.objects.filter(slice=slice))
     # ordered_existed_steps, parent_step = form_existed_step_list(steps)
@@ -1968,7 +1968,7 @@ def set_sample_offset(parent_request, child_request, slices=None):
     parent_slice_dict = {}
     for slice in parent_slices:
         if slice.dataset and ProductionTask.objects.filter(step__in=list(StepExecution.objects.filter(slice=slice))).exists():
-            parent_slice_dict[slice.dataset_id] = parent_slice_dict.get(slice.dataset_id,[]) + [slice]
+            parent_slice_dict[slice.dataset] = parent_slice_dict.get(slice.dataset,[]) + [slice]
     for slice in child_slices:
         if not slice.is_hide and not(ProductionTask.objects.filter(step__in=list(StepExecution.objects.filter(slice=slice))).exists()):
             offset = 0
@@ -1981,7 +1981,7 @@ def set_sample_offset(parent_request, child_request, slices=None):
                     first_step_index = index
                     step_to_change = step
                     break
-            for parent_slice in parent_slice_dict.get(slice.dataset_id,[]):
+            for parent_slice in parent_slice_dict.get(slice.dataset,[]):
                 steps = StepExecution.objects.filter(slice=parent_slice)
                 ordered_parent_steps, parent_step = form_existed_step_list(steps)
                 if (first_step_index != -1) and (first_step_index < len(ordered_parent_steps)):

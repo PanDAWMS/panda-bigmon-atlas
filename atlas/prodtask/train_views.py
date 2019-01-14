@@ -44,7 +44,7 @@ def merge_pattern_train(train, requests):
         if len(slices)!=len(steps):
             continue
         for index, step in enumerate(steps):
-            dataset = slices[index].dataset_id
+            dataset = slices[index].dataset
             current_dataset_outputs = dataset_slice.get(dataset,{})
             outputs = step.step_template.output_formats.split('.')
             if outputs[0] not in outputs_lookup:

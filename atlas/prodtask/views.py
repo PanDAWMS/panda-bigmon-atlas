@@ -171,18 +171,22 @@ def approve_existed_step(step, new_status):
 
 #TODO: Change it to real dataset workflow
 def fill_dataset(ds):
-    dataset = None
-    try:
-        dataset = ProductionDataset.objects.all().filter(name=ds)[0]
-    except:
-        pass
-    finally:
-        if dataset:
-            return dataset
-        else:
-            dataset = ProductionDataset.objects.create(name=ds, files=-1, timestamp=timezone.now())
-            dataset.save()
-            return dataset
+    if ds:
+        return ds
+    else:
+        return None
+    # dataset = None
+    # try:
+    #     dataset = ProductionDataset.objects.all().filter(name=ds)[0]
+    # except:
+    #     pass
+    # finally:
+    #     if dataset:
+    #         return dataset
+    #     else:
+    #         dataset = ProductionDataset.objects.create(name=ds, files=-1, timestamp=timezone.now())
+    #         dataset.save()
+    #         return dataset
 
 def form_step_in_page(ordered_existed_steps,STEPS, is_foreign):
     if STEPS[0]:
@@ -2404,7 +2408,7 @@ def create_steps_in_child_pattern(new_request, parent_steps, pattern_request, ou
                     current_output_formats.append(output)
             if current_output_formats:
                 st_sexec_list = []
-                irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset_id,
+                irl = dict(slice=slice_index, brief=current_step_pattern.slice.brief, comment=current_step_pattern.slice.comment, dataset=parent_step.slice.dataset,
                            input_data=parent_step.slice.input_data,
                            project_mode=current_step_pattern.slice.project_mode,
                            priority=int(current_step_pattern.slice.priority),

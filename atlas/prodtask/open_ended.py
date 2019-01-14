@@ -52,7 +52,7 @@ def make_open_ended(request,reqid):
                 HttpResponse(json.dumps({'success': False,'message':'No input'}), content_type='application/json')
 
             first_slice = slices[0]
-            old_name =  slices[0].dataset.name
+            old_name =  slices[0].dataset
             new_name = old_name
             if old_name.find(':') == -1:
                 new_name = old_name[:old_name.find('.')]+':'+old_name
@@ -65,7 +65,7 @@ def make_open_ended(request,reqid):
 
             for slice in slices:
                 if not slice.is_hide:
-                    if slice.dataset.name == old_name:
+                    if slice.dataset == old_name:
                         if new_dataset:
                             slice.dataset = new_dataset
                             slice.save()
@@ -169,15 +169,15 @@ def extend_open_ended_request(reqid):
         request.save()
     slices = list(InputRequestList.objects.filter(Q(request=reqid),~Q(is_hide=True)).order_by('slice'))
     _logger.debug(form_request_log(reqid,None,'Start request extending'))
-    container_name = slices[0].dataset_id
+    container_name = slices[0].dataset
     datasets = []
     slices_to_extend = [0]
     for index, slice in enumerate(slices[1:]):
         if not slice.is_hide:
-            if slice.dataset_id == container_name:
+            if slice.dataset == container_name:
                 slices_to_extend.append(int(slice.slice))
             else:
-                datasets.append(slice.dataset_id)
+                datasets.append(slice.dataset)
     tasks_count_control = False
     if request.request_type == 'EVENTINDEX':
         tasks_count_control = True

@@ -469,7 +469,7 @@ def fix_wrong_jo(request):
     slices = InputRequestList.objects.filter(request=request)
     for slice in slices:
         if '.py' not in slice.input_data:
-            tid = tid_from_container(slice.dataset_id)[0]
+            tid = tid_from_container(slice.dataset)[0]
             parent_slice = ProductionTask.objects.get(id=tid).step.slice
             if '.py' in parent_slice.input_data:
                 slice.input_data = parent_slice.input_data

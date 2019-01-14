@@ -171,7 +171,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                         if current_dataset.name.split('.')[4] != 'log':
                             datasets.append(current_dataset.name)
         else:
-            datasets = get_slice_input_datasets(step.slice.dataset_id, ddm)
+            datasets = get_slice_input_datasets(step.slice.dataset, ddm)
         not_full_exists = False
         good_exists = False
         error_message = ''
@@ -223,7 +223,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
         waiting_step.save()
         approve_step = True
     else:
-        datasets = get_slice_input_datasets(step.slice.dataset_id, ddm)
+        datasets = get_slice_input_datasets(step.slice.dataset, ddm)
         error_message = ''
         dataset = datasets[0]
         try:

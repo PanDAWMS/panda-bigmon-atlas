@@ -385,10 +385,10 @@ def pattern_from_request(reqid):
     :return: [slice_number,outputs]
     """
     slices_donor = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
-    container_name = slices_donor[0].dataset_id
+    container_name = slices_donor[0].dataset
     slices_to_get_info = []
     for index, slice_donor in enumerate(slices_donor):
-        if (slice_donor.dataset_id == container_name) and (not slice_donor.is_hide):
+        if (slice_donor.dataset == container_name) and (not slice_donor.is_hide):
             step_for_pattern = StepExecution.objects.filter(slice=slice_donor)[0]
             slices_to_get_info.append((int(slice_donor.slice),step_for_pattern.step_template.output_formats.split('.')))
     return slices_to_get_info

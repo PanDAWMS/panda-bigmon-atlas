@@ -140,7 +140,7 @@ class TRequest(models.Model):
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
     is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
-
+    #locked = models.DecimalField(decimal_places=0, max_digits=1, db_column='LOCKED', null=True)
 
     def get_next_slice(self):
         if InputRequestList.objects.filter(request=self).count() == 0:
@@ -349,7 +349,8 @@ class ProductionContainer(models.Model):
 
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
-    dataset = models.ForeignKey(ProductionDataset, db_column='INPUTDATASET',null=True)
+    #dataset = models.ForeignKey(ProductionDataset, db_column='INPUTDATASET',null=True)
+    dataset = models.CharField(max_length=160, db_column='INPUTDATASET', null=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID')
     slice = models.DecimalField(decimal_places=0, max_digits=12, db_column='SLICE', null=False)
     brief = models.CharField(max_length=150, db_column='BRIEF')
