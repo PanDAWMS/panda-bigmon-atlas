@@ -325,9 +325,15 @@ def get_steps_bulk_info(request, reqid):
                 task_config = step.get_task_config()
                 for x in StepExecution.TASK_CONFIG_PARAMS:
                     if x in task_config:
-                        current_step_dict[x]=task_config[x]
+                        if (x not in ['PDA']) or task_config[x]:
+                            current_step_dict[x]=task_config[x]
+                        else:
+                            current_step_dict[x] = 'none'
                     else:
-                        current_step_dict[x]=''
+                        if x not in ['PDA']:
+                            current_step_dict[x]=''
+                        else:
+                            current_step_dict[x] = 'none'
                 for key in current_step_dict:
                     if key in result_dict['multivalues']:
                         if current_step_dict[key] not in result_dict['multivalues'][key]:
@@ -426,6 +432,9 @@ def set_steps_bulk_info(request, reqid):
                             step.input_events = new_values['input_events']
                         for x in StepExecution.TASK_CONFIG_PARAMS:
                             if x in new_values:
+                                if x in ['PDA']:
+                                    if new_values[x] == 'none':
+                                        new_values[x] = ''
                                 step_modified = True
                                 if x in StepExecution.INT_TASK_CONFIG_PARAMS:
                                     if new_values[x]:
