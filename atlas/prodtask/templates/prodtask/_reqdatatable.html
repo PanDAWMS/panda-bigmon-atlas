@@ -2346,6 +2346,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         function syncTasksJEDI(event){
             event.preventDefault();
             var sendData = {slices:getCheckedSlices()};
+            $( "#reloadDialog" ).dialog();
             $.ajax({
                         url: "{% url 'prodtask:sync_request_tasks' pr_id %}",
                         type: 'GET',
