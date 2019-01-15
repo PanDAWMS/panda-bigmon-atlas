@@ -2343,6 +2343,24 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         }
                   });
         }
+        function syncTasksJEDI(event){
+            event.preventDefault();
+            var sendData = {slices:getCheckedSlices()};
+            $.ajax({
+                        url: "{% url 'prodtask:sync_request_tasks' pr_id %}",
+                        type: 'GET',
+                        contentType: 'application/json; charset=utf-8',
+                        success: function(data,status) {
+                            location.reload();
+
+                        },
+                        error: function(data,status) {
+                            alert(status);
+
+                        }
+                  });
+        }
+
         function checkParentTrain(){
              $('#errorTrainMessage').html('');
              $('#makeTrainsButton').hide();
@@ -2695,6 +2713,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             {% ifequal trequest.request_type "REPROCESSING" %}
                 <li><a href="#" onclick="createReprocessing(event);">Create base on this</a></li>
             {% endifequal %}
+             <li><a href="#" onclick="syncTasksJEDI(event);">Sync tasks with JEDI</a></li>
         {% else %}
           <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
         {% endif %}

@@ -876,3 +876,16 @@ def create_nucleus_hashtag(nucleus,hashtag):
     for task in selcted_tasks:
         if task not in hashtag_tasks:
             task.set_hashtag(hashtag)
+
+@api_view(['GET'])
+def sync_request_tasks(request, reqid):
+
+    try:
+        tasks = list(ProductionTask.objects.filter(request=reqid))
+        for task in tasks:
+            sync_deft_jedi_task(task.id)
+    except Exception,e:
+        content = str(e)
+        return Response(content,status=500)
+
+    return Response({'success':True})
