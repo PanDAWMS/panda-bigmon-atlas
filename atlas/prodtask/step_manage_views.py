@@ -835,14 +835,16 @@ def slice_steps(request, reqid, slice_number):
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':'',
+                                             'PDA':'','PDAPArams':''}
                         foreign_step_dict_index = 0
                     else:
                         foreign_step_dict = {'step':existed_foreign_step.step_template.ctag,'step_name':existed_foreign_step.step_template.step,'step_type':'foreign',
                                             'nEventsPerJob':'','nEventsPerInputFile':'','nFilesPerJob':'',
                                             'project_mode':'','input_format':'',
                                             'priority':'', 'output_formats':'','input_events':'',
-                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':''}
+                                            'token':'','nGBPerJob':'','maxAttempt':'','maxFailure':'','evntFilterEff':'',
+                                             'PDA':'','PDAPArams':''}
                         foreign_step_dict_index = StepExecution.STEPS.index(existed_foreign_step.step_template.step)
 
             for index,step in enumerate(step_as_in_page):
@@ -2088,3 +2090,7 @@ def request_train_patterns(request, reqid):
         return Response(content,status=500)
 
     return Response(train_pattern_list)
+
+
+
+

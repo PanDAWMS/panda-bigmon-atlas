@@ -46,7 +46,7 @@ def get_object_form_step(step):
     result_object = {"datasetList":"","parentstepshort":"","inputFormat":"","ctag":"","formats":"","eventsperjob":"","totalevents":"",
                "ram":"","cmtconfig":"","projectmode":"","priority":"","nFilesPerJob":"","nGBPerJob":"","maxFailure":"",
                "maxAttempt":"","token":"","jediTag":"","nFilesPerMergeJob":"","nEventsPerMergeJob":"","nGBPerMergeJob":"","nMaxFilesPerMergeJob":"",
-               "datasets":""}
+               "datasets":"","PDA":'',"PDAParams":''}
     result_object["inputFormat"] = step.get_task_config('input_format')
     result_object["ctag"] = step.step_template.ctag
     result_object["formats"] = step.step_template.output_formats
@@ -62,7 +62,7 @@ def get_object_form_step(step):
             project_without_cmt.append(token)
     result_object["projectmode"] = ';'.join(project_without_cmt)
     for x in ["nFilesPerJob","nGBPerJob","maxFailure","maxAttempt","token","nEventsPerMergeJob","nFilesPerMergeJob","nGBPerMergeJob",
-              "nMaxFilesPerMergeJob","spreadsheet_original",'split_events']:
+              "nMaxFilesPerMergeJob","spreadsheet_original",'split_events','PDA','PDAParams']:
         result_object[x] = str(step.get_task_config(x))
     result_object["jediTag"] = str(step.get_task_config('merging_tag'))
     for key in result_object:
@@ -1001,7 +1001,7 @@ def parse_json_slice_dict(json_string):
                              task_config.update({'token':'dst:'+slice['token'].replace('dst:','')})
                         if slice['inputFormat']:
                             task_config.update({'input_format':slice['inputFormat']})
-                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
+                        for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','PDA','PDAParams']:
                             if slice[parameter]:
                                     task_config.update({parameter:slice[parameter]})
                         if slice['jediTag']:
@@ -1037,7 +1037,7 @@ def parse_json_slice_dict(json_string):
                                      task_config.update({'token':'dst:'+step['token'].replace('dst:','')})
                                 if step['inputFormat']:
                                     task_config.update({'input_format':step['inputFormat']})
-                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure']:
+                                for parameter in ['nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','PDA','PDAParams']:
                                     if step[parameter]:
                                         task_config.update({parameter:step[parameter]})
                                 step_name = step_from_tag(step['ctag'])
@@ -1632,7 +1632,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                             task_config.update({'nEventsPerJob':step['task_config']['nEventsPerJob'].get(step['step_name'])})
                                     task_config_options = ['project_mode','input_format','token','nEventsPerMergeJob','nFilesPerMergeJob',
                                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
-                                                           'nGBPerJob','maxAttempt','maxFailure','spreadsheet_original','split_events','evntFilterEff']
+                                                           'nGBPerJob','maxAttempt','maxFailure','spreadsheet_original','split_events','evntFilterEff',
+                                                          'PDA',
+                                                          'PDAParams']
                                     for task_config_option in task_config_options:
                                         if task_config_option in step['task_config']:
                                             task_config.update({task_config_option:step['task_config'][task_config_option]})
