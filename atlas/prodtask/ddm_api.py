@@ -185,15 +185,20 @@ class DDM(object):
         lifetime = 3600
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
+    def setLifeTimeTransientDataset(self, dataset, days):
+        scope, name = self.rucio_convention(dataset)
+        lifetime = 60*24*60*days
+        self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
+
     def changeDatasetCampaign(self, dataset, campaign):
         scope, name = self.rucio_convention(dataset)
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-    def add_replication_rule(self, dataset, rse):
+    def add_replication_rule(self, dataset, rse, activity=None):
         _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
         scope, name = self.rucio_convention(dataset)
-        self.__ddm.add_replication_rule([{'scope':scope, 'name':name}], 1,rse)
+        self.__ddm.add_replication_rule([{'scope':scope, 'name':name}], 1,rse, activity=activity)
 
     def dataset_in_container(self, container_name):
         """
