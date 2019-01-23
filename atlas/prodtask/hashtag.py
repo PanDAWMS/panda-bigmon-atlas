@@ -16,6 +16,7 @@ from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks
 from .models import StepExecution, InputRequestList, TRequest
+from django.utils import timezone
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -451,6 +452,9 @@ def add_hashtag_to_task(hashtag_name, task_id):
     hashtag = HashTag.objects.get(hashtag=hashtag_name)
     if hashtag not in current_hashtags:
         task.set_hashtag(hashtag_name)
+        if task.status in ProductionTask.NOT_RUNNING:
+            task.timestamp = timezone.now()
+            task.save()
 
 def get_key_for_request(reqid):
     print reqid
