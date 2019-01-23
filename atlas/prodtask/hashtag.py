@@ -76,6 +76,24 @@ def hashtag_request_to_tasks():
     all_hashtags = HashTagToRequest.objects.all()
     for request_hashtag in all_hashtags:
         if ' ' not in request_hashtag.hashtag.hashtag:
+            if ProductionTask.objects.filter(request=request_hashtag.request).exists():
+                last_task = ProductionTask.objects.filter(request=request_hashtag.request).order_by('-id').first()
+                if not last_task.hashtag_exists(request_hashtag.hashtag):
+                    tasks = ProductionTask.objects.filter(request=request_hashtag.request)
+                    tasks_to_update = []
+                    for task in tasks:
+                        if not task.hashtag_exists(request_hashtag.hashtag):
+                            tasks_to_update.append(int(task.id))
+                    if tasks_to_update:
+                        _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
+                    map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
+
+
+
+def hashtag_request_to_tasks_full():
+    all_hashtags = HashTagToRequest.objects.all()
+    for request_hashtag in all_hashtags:
+        if ' ' not in request_hashtag.hashtag.hashtag:
             tasks = ProductionTask.objects.filter(request=request_hashtag.request)
             tasks_to_update = []
             for task in tasks:
@@ -84,8 +102,6 @@ def hashtag_request_to_tasks():
             if tasks_to_update:
                 _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
             map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
-
-
 
 @api_view(['POST'])
 def tasks_statistic_steps(request):
