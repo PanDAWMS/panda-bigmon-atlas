@@ -244,6 +244,16 @@ class DDM(object):
         active_rules = [(x) for x in rules if x['rse_expression'] in [y['rse'] for y in self.list_rses('type=DATADISK')] ]
         return active_rules
 
+    def dataset_active_rule_by_rse(self, dataset_name, rse):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        for rule in rules:
+            if rule['rse_expression'] == rse:
+                return rule
+        return []
+
+
+
     def find_disk_for_tape(self, tape_rse):
         rses = filter(lambda x: x['rse'].startswith(tape_rse.split('_')[0]),list(self.list_rses('type=DATADISK')))
         if rses:

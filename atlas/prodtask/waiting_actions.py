@@ -238,16 +238,18 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             approve_step = True
         else:
             waiting_step.attempt += 1
-            rules = ddm.dataset_active_datadisk_rule(dataset)
-            if len(rules) > 0:
+            rse = 'type=DATADISK&datapolicynucleus=1'
+            rule = ddm.dataset_active_rule_by_rse(dataset, rse)
+            if rule:
                 files = ddm.dataset_metadata(dataset)['length']
-                if (float(rules[0]['locks_ok_cnt']) / float(files)) >=0.9:
+                if (float(rule['locks_ok_cnt']) / float(files)) >=0.9:
                     waiting_step.status = 'done'
                     waiting_step.message = '%s has >0.9 files pre staged ' % (str(dataset))
                     waiting_step.done_time = timezone.now()
                     approve_step = True
                 else:
-                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rules[0]['rse_expression'], str(rules[0]['locks_ok_cnt']),str(files))
+                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rule['rse_expression'],
+                                                                               str(rule['locks_ok_cnt']),str(files))
                     waiting_step.status = 'active'
             else:
                 if len(replicas['tape'])==0:
@@ -256,13 +258,14 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                 else:
                     # make rule
                     waiting_step.status = 'active'
-                    disk = ddm.find_disk_for_tape(replicas['tape'][0]['rse'])
-                    temp =  {'datasets':[{'dataset':dataset,'disk':disk['rse'],'tape':replicas['tape'][0]['rse']}]}
+                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'tape':replicas['tape'][0]['rse']}]}
                     waiting_step.set_config(temp)
-                    waiting_step.message = '%s should be pre staged from %s to %s'%(dataset,replicas['tape'][0]['rse'],disk['rse'])
+                    waiting_step.message = '%s should be pre staged from %s by rule %s'%(dataset,
+                                                                                         replicas['tape'][0]['rse'],rse)
                     step.save()
                     if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
-                        ddm.add_replication_rule(dataset, 'type=DATADISK&datapolicynucleus=1',copies=1, lifetime=30*86400, weight='freespace', activity='Staging')
+                        ddm.add_replication_rule(dataset, rse ,copies=1, lifetime=30*86400, weight='freespace',
+                                                 activity='Staging')
             if waiting_step.attempt > max_attempts:
                 waiting_step.status = 'failed'
             else:
