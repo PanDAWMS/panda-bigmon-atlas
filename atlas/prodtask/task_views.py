@@ -229,76 +229,15 @@ def task_details(request, rid=None):
 
 
 def task_clone(request, rid=None):
-    if request.method == 'POST':
-        form = ProductionTaskCreateCloneForm(request.POST)
-        if form.is_valid():
-            # Process the data in form.cleaned_data
-            req = ProductionTask(**form.cleaned_data)
-            req.save()
-            return HttpResponseRedirect(reverse('task', args=(req.id,))) # Redirect after POST
-    else:
-        try:
-            values = ProductionTask.objects.values().get(id=rid)
-        except:
-            return HttpResponseRedirect('/')
-        del values['id']
-        form = ProductionTaskCreateCloneForm(values)
-
-    return render(request, 'prodtask/_form.html', {
-        'active_app' : 'prodtask',
-        'pre_form_text' : 'Clonning of ProductionTask with ID = %s' % rid,
-        'form': form,
-        'submit_url': 'prodtask:task_clone',
-        'url_args'  : rid,
-        'parent_template' : 'prodtask/_index.html',
-        })
+    return HttpResponseRedirect('/')
 
 
 def task_update(request, rid=None):
-    if request.method == 'POST':
-        try:
-            req = ProductionTask.objects.get(id=rid)
-            form = ProductionTaskUpdateForm(request.POST, instance=req) # A form bound to the POST data
-        except:
-            return HttpResponseRedirect('/')
-        if form.is_valid():
-            # Process the data in form.cleaned_data
-            req = ProductionTask(**form.cleaned_data)
-            req.save()
-            return HttpResponseRedirect(reverse('task', args=(req.id,))) # Redirect after POST
-    else:
-        try:
-            req = ProductionTask.objects.get(id=rid)
-            form = ProductionTaskUpdateForm(instance=req)
-        except:
-            return HttpResponseRedirect('/')
-    return render(request, 'prodtask/_form.html', {
-        'active_app' : 'prodtask',
-        'pre_form_text' : 'Updating of ProductionTask with ID = %s' % rid,
-        'form': form,
-        'submit_url': 'prodtask:task_update',
-        'url_args': rid,
-        'parent_template' : 'prodtask/_index.html',
-        })
+    return HttpResponseRedirect('/')
 
 
 def task_create(request):
-    if request.method == 'POST': # If the form has been submitted...
-        form = ProductionTaskCreateCloneForm(request.POST) # A form bound to the POST data
-        if form.is_valid(): # All validation rules pass
-            # Process the data in form.cleaned_data
-            req = ProductionTask(**form.cleaned_data)
-            req.save()
-            return HttpResponseRedirect( reverse('prodtask:task', req.id) ) # Redirect after POST
-    else:
-        form = ProductionTaskCreateCloneForm() # An unbound form
-    return render(request, 'prodtask/_form.html', {
-        'active_app' : 'prodtask',
-        'pre_form_text' : 'Create ProductionTask',
-        'form': form,
-        'submit_url': 'prodtask:task_create',
-        'parent_template' : 'prodtask/_index.html',
-        })
+    return HttpResponseRedirect('/')
 
 
 class ProductionTaskTable(datatables.DataTable):
