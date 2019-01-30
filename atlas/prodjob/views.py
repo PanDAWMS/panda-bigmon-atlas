@@ -1,6 +1,6 @@
 import json
 import requests
-# import logging
+import logging
 # import os
 import re
 
@@ -10,7 +10,7 @@ from django.conf import settings
 import atlas.deftcore.api.client as deft
 
 
-# _logger = logging.getLogger('prodtaskwebui')
+_logger = logging.getLogger('prodtaskwebui')
 
 _deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
 
@@ -63,7 +63,28 @@ def jobs_action(request,action):
 
 def get_jobs(request):
 
-    url = json.loads(request.body)[0]
+    result = ''
+    try:
+        url = json.loads(request.body)[0]
+        _logger.info("Get jobs from bigpanda for: %s" % url)
+        url=re.sub('&display_limit.*(\d+)','',url)
+        url = url.replace('https','http')
+        if 'json' not in url:
+            if url[-1]=='&':
+                url += '&'
+            else:
+                url += '&json'
+
+        headers = {'content-type': 'application/json', 'accept': 'application/json'}
+        resp = requests.get(url, headers=headers)
+        data = resp.json()['jobs']
+        result = json.dumps(data)
+    except Exception, e:
+        _logger.error("Problem during reading job info from bigpanda:%s" % str(e))
+    return HttpResponse(result)
+
+
+def get_jobs_from_url(url):
     url=re.sub('&display_limit.*(\d+)','',url)
     url = url.replace('https','http')
     if 'json' not in url:
@@ -75,9 +96,31 @@ def get_jobs(request):
     headers = {'content-type': 'application/json', 'accept': 'application/json'};
     resp = requests.get(url, headers=headers)
     data = resp.json()['jobs']
+    return data
 
-    return HttpResponse(json.dumps(data))
+def get_job_from_id(id):
+    url = "https://bigpanda.cern.ch/job?pandaid=%s"%(str(id))
+    url = url.replace('https','http')
+    if 'json' not in url:
+        if url[-1]=='&':
+            url += '&'
+        else:
+            url += '&json'
 
+    headers = {'content-type': 'application/json', 'accept': 'application/json'}
+    resp = requests.get(url, headers=headers)
+    data = resp.json()
+    return data
+
+
+def get_outputs_for_jobs(panda_ids):
+    result = {}
+    for id in panda_ids:
+        result[id] = []
+        job=get_job_from_id(id)
+        for file in job['files']:
+            result[id].append(file['lfn'])
+    return result
 
 def _do_deft_job_action(owner, task_id, job_id, action, *args):
     """
