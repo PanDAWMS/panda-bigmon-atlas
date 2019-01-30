@@ -236,6 +236,8 @@ class DDM(object):
         full_replicas = self.number_of_full_replicas(dataset_name)
         data_replicas = [x for x in full_replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
         tape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('type=DATATAPE')]]
+        mctape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('type=MCTAPE')]]
+        tape_replicas = tape_replicas + mctape_replicas
         return {'data':data_replicas,'tape':tape_replicas}
 
     def dataset_active_datadisk_rule(self, dataset_name):
