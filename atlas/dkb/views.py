@@ -491,9 +491,9 @@ def statistic_by_step(search_dict):
                           }
                       }
                   },
-                    # "processed_events": {
-                    #   "sum": {"field": "processed_events"}
-                    # # },
+                     "processed_events": {
+                       "sum": {"field": "processed_events"}
+                     },
                     # "requested_events": {
                     #       "sum": {"field": "requested_events"}
                     # },
@@ -501,12 +501,12 @@ def statistic_by_step(search_dict):
                           "sum": {"field": "total_events"}
                      },
                       "hs06":{
-                          "sum": {
-                              "script": {
-                                  "inline": "doc['hs06'].value*doc['total_events'].value"
-                              }
-                          }
+                          "sum": {"field": "toths06"}
                       },
+                      "cpu_failed":{
+                          "sum": {"field": "toths06_failed"}
+                      },
+
                       "ended":{
                           "filter" : {"exists" : { "field" : "end_time" }},
                           "aggs":{
@@ -548,7 +548,8 @@ def statistic_by_step(search_dict):
                        'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                        'output_bytes':x.output.not_removed.bytes.value,
                        'output_not_removed_tasks':x.output.not_removed.doc_count,
-                       'total_tasks': x.doc_count, 'hs06':x.hs06.value, 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
+                       'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
+                             'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
 
     return result
 

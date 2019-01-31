@@ -6,6 +6,7 @@
         <tr><td> Input_bytes</td></tr>
         <tr><td> Output_bytes</td></tr>
         <tr><td> Total HS06</td></tr>
+        <tr><td> Total Failed HS06</td></tr>
         <tr><td> Duration</td></tr>
         </tbody></table>
         </td>
@@ -20,6 +21,7 @@
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.hs06 | bignumber }}</td></tr>
+                <tr><td>{{ step.cpu_failed | bignumber }}</td></tr>
                 <tr><td>{{ step.duration | number:2 }} days</td></tr>
                 </tbody></table>
             </td>
