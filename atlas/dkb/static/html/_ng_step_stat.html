@@ -15,7 +15,7 @@
                 <tr><td><b>{{ step.name }} <span class="{{  step.step_status }}">{{ step.percent_done | number:2}}%</span>
                 </b></td></tr>
                 <tr><td>{{ step.total_tasks | number:0 }}</td></tr>
-                <tr><td>{{ step.input_events | number:0 }}</td></tr>
+                <tr><td><span  ng-show="step.input_not_removed_tasks!=step.total_tasks">~</span>{{ step.input_events | number:0 }}</td></tr>
                 <tr><td>{{ step.total_events | number:0 }}</td></tr>
                 <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
