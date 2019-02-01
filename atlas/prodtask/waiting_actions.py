@@ -248,7 +248,9 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_step.done_time = timezone.now()
                     approve_step = True
                 else:
-                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (str(dataset),rule['rse_expression'],
+                    link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
+                    rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(rule_id=str(rule['id']),rule_rse=rule['rse_expression'])
+                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (link,rule_link,
                                                                                str(rule['locks_ok_cnt']),str(files))
                     waiting_step.status = 'active'
             else:
