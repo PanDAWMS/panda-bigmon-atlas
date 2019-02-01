@@ -83,6 +83,8 @@ urlpatterns = patterns('',
 
     url(r'^descent_tasks/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.descent_tasks', name='descent_tasks'),
     url(r'^predefinition_action/(?P<wstep_id>\d+)/$', 'atlas.prodtask.waiting_actions.predefinition_action',name='predefinition_action'),
+    url(r'^finish_action/(?P<wstep_id>\d+)/$', 'atlas.prodtask.waiting_actions.finish_action',name='finish_action'),
+    url(r'^cancel_action/(?P<wstep_id>\d+)/$', 'atlas.prodtask.waiting_actions.cancel_action',name='cancel_action'),
     url(r'^task_chain_view/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.task_chain_view', name='task_chain_view'),
     url(r'^form_task_chain/(?P<task_id>\d+)/$', 'atlas.prodtask.task_views.form_task_chain', name='form_task_chain'),
     url(r'^sync_request_tasks/(?P<reqid>\d+)/$', 'atlas.prodtask.task_views.sync_request_tasks', name='sync_request_tasks'),

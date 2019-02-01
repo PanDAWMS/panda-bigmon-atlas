@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
 from atlas.prodtask.ddm_api import DDM
@@ -50,7 +51,6 @@ def find_waiting():
                 do_pre_stage(waiting_step, ddm, max_attempts, delay)
             except Exception,e:
                 _logger.error("Check replicas problem %s" % str(e))
-                print str(e)
                 waiting_step = WaitingStep.objects.get(id=waiting_step)
                 waiting_step.status = 'active'
                 waiting_step.save()
@@ -318,3 +318,41 @@ def predefinition_action(request, wstep_id):
         }
 
     return render(request, 'prodtask/_waiting_step_action.html', request_parameters)
+
+def finish_action(request, wstep_id):
+
+    try:
+        waiting_step = WaitingStep.objects.get(id=wstep_id)
+        step = StepExecution.objects.get(id=waiting_step.step)
+        waiting_step.status = 'done'
+        waiting_step.message = 'Action was finished manually'
+        waiting_step.done_time = timezone.now()
+        waiting_step.save()
+        step.status = 'Approved'
+        step.save()
+        if step.request.cstatus not in ['test','approved']:
+            set_request_status('cron', step.request.reqid, 'approved', 'Automatic pre action approve',
+                               'Request was automatically approved')
+    except Exception,e:
+        _logger.error("Finish action exception %s" % str(e))
+        return HttpResponseRedirect('/')
+
+    return HttpResponseRedirect(
+        reverse('prodtask:input_list_approve_full', args=[step.request_id]) + '#inputList' + str(step.slice.slice))
+
+
+def cancel_action(request, wstep_id):
+
+    try:
+        waiting_step = WaitingStep.objects.get(id=wstep_id)
+        step = StepExecution.objects.get(id=waiting_step.step)
+        waiting_step.status = 'canceled'
+        waiting_step.message = 'Action was canceled manually'
+        waiting_step.done_time = timezone.now()
+        waiting_step.save()
+    except Exception, e:
+        _logger.error("Cancel action exception %s" % str(e))
+        return HttpResponseRedirect('/')
+
+    return HttpResponseRedirect(
+        reverse('prodtask:input_list_approve_full', args=[step.request_id]) + '#inputList' + str(step.slice.slice))
