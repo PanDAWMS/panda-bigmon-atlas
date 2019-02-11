@@ -250,9 +250,14 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                 else:
                     link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
                     rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(rule_id=str(rule['id']),rule_rse=rule['rse_expression'])
-                    waiting_step.message = 'Rules exists for  %s: %s %s/%s' % (link,rule_link,
+                    tape_replica = ''
+                    if replicas['tape']:
+                        tape_replica = replicas['tape'][0]['rse']
+                    waiting_step.message = 'Rules exists for  %s from %s : %s %s/%s' % (link,tape_replica,rule_link,
                                                                                str(rule['locks_ok_cnt']),str(files))
                     waiting_step.status = 'active'
+                    if (int(files) - int(rule['locks_ok_cnt'])>500):
+                        delay = delay * 4
             else:
                 if len(replicas['tape'])==0:
                     waiting_step.status = 'failed'
@@ -262,7 +267,8 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_step.status = 'active'
                     temp =  {'datasets':[{'dataset':dataset,'disk':rse,'tape':replicas['tape'][0]['rse']}]}
                     waiting_step.set_config(temp)
-                    waiting_step.message = '%s should be pre staged from %s by rule %s'%(dataset,
+                    link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
+                    waiting_step.message = '%s should be pre staged from %s by rule %s'%(link,
                                                                                          replicas['tape'][0]['rse'],rse)
                     step.save()
                     if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
