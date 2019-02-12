@@ -313,6 +313,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         })();
 
     (function(){
+           $(".actionProgressBar").each(function(){$(this).progressbar({value: parseInt($(this).attr("my_value")),max:parseInt($(this).attr("my_total"))})})
+        })();
+    (function(){
                 {% autoescape off %}
                     var selected_slices = $.evalJSON('{{ selected_slices }}');
                 {% endautoescape %}
@@ -2470,6 +2473,12 @@ function changeStatusFilter(){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }
                });
+            case 'waiting':
+                $('.StatusFilter').each(function(){
+                  if($(this).html()!='waiting'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
                 break;
         }
 
@@ -2918,7 +2927,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="partially_submitted">partially submitted</option>
                 <option value="not_submitted">not submitted</option>
                 <option value="running_tasks">running tasks</option>
-
+                <option value="waiting">waiting</option>
             </select>
            </label>
         </div>
@@ -3131,11 +3140,15 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             edit (saved)
                         </a></u></td>
             {% if show_action %}
-                        <tr>
+                        <tr class="actionRow">
                         <td>A:</td>
 
                         {% for step in step_exec_dict %}
-                            <td style="padding:0px;margin:0px">
+                            {% if step.merge_spans > 0 %}
+                            <td style="padding:0px;margin:0px" colspan="{{ step.merge_spans }}">
+                            {% if step.progress_bar %}
+                                <a href="{{ step.progress_bar_link }}"> <div class="actionProgressBar" my_value="{{ step.done }}" style="border:1px solid black" my_total="{{ step.total }}">{{ step.done }}/{{ step.total }} </div></a>
+                            {% else %}
                                 <table style="padding:0px;margin:0px">
                             {% for action in step.actions %}
                                 {% if action %}
@@ -3152,8 +3165,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 {% endif %}
                             {% endfor %}
                             </table>
+                             {% endif %}
                             </td>
+                            {% endif %}
                         {% endfor %}
+
                         <td colspan="3"></td>
                         </tr>
             {% endif%}

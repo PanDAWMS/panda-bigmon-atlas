@@ -1460,14 +1460,15 @@ def request_table_view(request, rid=None, show_hidden=False):
         exist_not_approved = False
         exist_spreadsheet_original = False
         exist_to_split = False
+        has_waiting = False
         for step_task in ste_task_list:
             if step_task['step']:
                 if (step_task['step']['status'] == 'Approved')or(step_task['step']['status'] == 'Skipped'):
                     exist_approved = True
                 if (step_task['step']['status'] == 'NotChecked'):
                     exist_not_approved = True
-                # if 'spreadsheet_original' in step_task['step']['task_config']:
-                #     return_status['original'] = 'original'
+                if (step_task['step']['status'] == 'Waiting'):
+                    has_waiting = True
                 if ('split_events' in step_task['step']['task_config']) and (step_task['step']['status'] not in ['Skipped','NotCheckedSkipped']):
                     return_status['split'] = 'split'
 
@@ -1475,6 +1476,8 @@ def request_table_view(request, rid=None, show_hidden=False):
             return_status['submitted'] = 'partially_submitted'
         if exist_approved and not(exist_not_approved):
             return_status['submitted'] = 'submitted'
+        if has_waiting:
+            return_status['submitted'] = 'waiting'
 
         return return_status
 
@@ -1569,13 +1572,37 @@ def request_table_view(request, rid=None, show_hidden=False):
         return_value = ''
         real_events = ''
         total_events = None
-        for step in slice_data[1]:
+        is_action = slice_data[4]
+        progress_bar = False
+        total = 0
+        done = 0
+        merge_spans = 1
+        link = ''
+        for index,step in enumerate(slice_data[1]):
+            if is_action:
+                step['merge_spans'] = merge_spans
+            if progress_bar:
+                progress_bar = False
+                merge_spans = 0
+                step['progress_bar'] = True
+                step['total'] = total
+                step['done'] = done
+                step['progress_bar_link'] = link
             if step.get('step'):
                 if (step['skipped'] not in ['skipped','foreign']) and (not real_events):
                     real_events = step['step']['input_events']
                 if step['total_events'] > 0:
                     total_events = step['total_events']
                 return_value = step['output_format']
+                if step['actions']:
+                    if step['actions'][0]['progress']:
+                        progress_bar = True
+                        total = step['actions'][0]['total']
+                        done = step['actions'][0]['done']
+                        link = step['actions'][0]['link']
+                        merge_spans = len(slice_data[1]) - index - 1
+
+
         return return_value, real_events, total_events
 
     def check_empty_pattern(pattern, default_pattern):
@@ -1768,6 +1795,17 @@ def request_table_view(request, rid=None, show_hidden=False):
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
+                        if current_action['action'] == 4:
+                            current_action['progress'] = True
+                            current_action['total'] = 0
+                            current_action['done'] = 0
+                            try:
+                                parameters = json.loads(current_action['config'])
+                                current_action['total'] = parameters['datasets'][0]['total_files']
+                                current_action['done'] = parameters['datasets'][0]['staged_files']
+                                current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(str(parameters['datasets'][0]['dataset']))
+                            except:
+                                pass
                         pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
 
                     step_templates = {}
@@ -2850,6 +2888,26 @@ def pre_stage_approve(request):
     })
 
 
+def pre_stage_approved(request):
+    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active','done'],action=4)
+    result = []
+    for waiting_step in waiting_steps:
+        step = StepExecution.objects.get(id=waiting_step.step)
+        production_request = step.request
+        is_test = ''
+        if production_request.cstatus == 'test':
+            is_test = 'Test'
+        if waiting_step.get_config('datasets'):
+            if  waiting_step.get_config('do_rule') :
+                for dataset in waiting_step.get_config('datasets'):
+                    result.append({'request':production_request,'dataset':dataset['dataset'],'tape':dataset['tape'],'disk':dataset['disk'],'test':is_test})
+    return render(request, 'prodtask/_prestage_list.html', {
+        'active_app': 'prodtask',
+        'pre_form_text': 'list of dataset to approve',
+        'result': result,
+        'parent_template': 'prodtask/_index.html',
+    })
+
 def do_prestage_rule():
     waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
     for waiting_step in waiting_steps:
@@ -2861,4 +2919,4 @@ def do_prestage_rule():
                     waiting_step.set_config({'do_rule':'Yes'})
                     waiting_step.execution_time = timezone.now()
                     waiting_step.save()
-                    print step.request,step.slice.slice
+                    print step.request_id,step.slice.slice
