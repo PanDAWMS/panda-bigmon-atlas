@@ -13,6 +13,7 @@ from atlas.prodtask.views import set_request_status, make_child_update
 
 _logger = logging.getLogger('prodtaskwebui')
 
+
 def find_waiting():
     waiting_step_todo = WaitingStep.objects.filter(status='active',execution_time__lte=timezone.now())
     for waiting_step in waiting_step_todo:
@@ -240,8 +241,8 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             waiting_step.attempt += 1
             rse = 'type=DATADISK&datapolicynucleus=1'
             rule = ddm.dataset_active_rule_by_rse(dataset, rse)
+            files = ddm.dataset_metadata(dataset)['length']
             if rule:
-                files = ddm.dataset_metadata(dataset)['length']
                 if (float(rule['locks_ok_cnt']) / float(files)) >=0.9:
                     waiting_step.status = 'done'
                     waiting_step.message = '%s has >0.9 files pre staged ' % (str(dataset))
@@ -256,7 +257,10 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_step.message = 'Rules exists for  %s from %s : %s %s/%s' % (link,tape_replica,rule_link,
                                                                                str(rule['locks_ok_cnt']),str(files))
                     waiting_step.status = 'active'
-                    if (int(files) - int(rule['locks_ok_cnt'])>500):
+                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'total_files':int(files),
+                                          'staged_files':int(rule['locks_ok_cnt']),'tape':replicas['tape'][0]['rse']}]}
+                    waiting_step.set_config(temp)
+                    if int(files) - int(rule['locks_ok_cnt']) > 500:
                         delay = delay * 4
             else:
                 if len(replicas['tape'])==0:
@@ -265,7 +269,8 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                 else:
                     # make rule
                     waiting_step.status = 'active'
-                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'tape':replicas['tape'][0]['rse']}]}
+                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'total_files':int(files),'staged_files':0,
+                                          'tape':replicas['tape'][0]['rse']}]}
                     waiting_step.set_config(temp)
                     link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
                     waiting_step.message = '%s should be pre staged from %s by rule %s'%(link,
