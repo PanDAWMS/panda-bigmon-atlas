@@ -1799,6 +1799,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                             current_action['progress'] = True
                             current_action['total'] = 0
                             current_action['done'] = 0
+                            current_action['link'] = ''
                             try:
                                 parameters = json.loads(current_action['config'])
                                 current_action['total'] = parameters['datasets'][0]['total_files']
