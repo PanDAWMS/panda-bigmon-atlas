@@ -1759,7 +1759,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 step_dict.update({'ctag':step.step_template.ctag})
                                 step_dict.update({'slice':input_lists_pre_pattern})
                                 slice_steps_ordered.append(form_step_obj(step_dict,{},[],-1))
-                        slice_steps_ordered += [form_step_obj({},{},[],-1)] * (len(StepExecution.STEPS) - len(pattern_steps))
+                        slice_steps_ordered += [form_step_obj({},{},[],-1) for x in range(len(StepExecution.STEPS) - len(pattern_steps))]
                     if (cur_request.request_type == 'MC'):
                         approved = (total_steps_count >= input_list_count) and ((approve_level(slice_steps_ordered)*input_list_count)==(approved_steps_count))
                     else:
@@ -1968,7 +1968,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],temp_step_list[j][2],slice.slice)))
 
                             edit_mode = True
-                            slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},[],slice.slice)]*(len(STEPS_LIST)-len(slice_steps_list))
+                            slice_steps = [x[1] for x in slice_steps_list] + [form_step_obj({},{},[],slice.slice) for x in range(len(STEPS_LIST) - len(slice_steps_list))]
                             approved = get_approve_status(slice_steps[:len(slice_steps_list)])
                             if (approved['submitted'] == 'submitted')or(approved['submitted'] == 'partially_submitted'):
                                     approved_count += 1
