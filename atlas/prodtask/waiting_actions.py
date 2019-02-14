@@ -276,7 +276,8 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_step.message = '%s should be pre staged from %s by rule %s'%(link,
                                                                                          replicas['tape'][0]['rse'],rse)
                     step.save()
-                    if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
+                    #if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
+                    if step.request.cstatus not in ['test']:
                         ddm.add_replication_rule(dataset, rse ,copies=1, lifetime=30*86400, weight='freespace',
                                                  activity='Staging')
             if waiting_step.attempt > max_attempts:
