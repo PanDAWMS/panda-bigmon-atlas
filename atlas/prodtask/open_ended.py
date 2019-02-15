@@ -13,7 +13,7 @@ from atlas.prodtask.ddm_api import DDM
 from ..prodtask.models import RequestStatus, ProductionTask
 from ..prodtask.spdstodb import fill_template
 
-from atlas.prodtask.views import set_request_status, clone_slices
+from atlas.prodtask.views import set_request_status, clone_slices, create_predefinition_action
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset
@@ -120,6 +120,21 @@ def check_open_ended():
 
 SIMULTANEOUS_TASKS_NUMBER = 300
 
+
+def step_approve_action(step):
+    if step.get_task_config('PDA'):
+            try:
+                create_predefinition_action(step)
+            except Exception, e:
+                _logger.error("Problem with pre defintion action %s" % str(e))
+                step.status = 'Approved'
+                step.save()
+    else:
+        step.status = 'Approved'
+        step.save()
+
+
+
 def do_task_start(reqid):
     not_approved_steps = list(StepExecution.objects.filter(request=reqid,status='NotChecked'))
     is_extended = False
@@ -133,12 +148,10 @@ def do_task_start(reqid):
                 task_to_start = len(not_approved_steps)
             for step in not_approved_steps[:task_to_start]:
                 if step.step_parent == step:
-                    step.status = 'Approved'
-                    step.save()
+                    step_approve_action(step)
                 else:
                     if step.step_parent.status ==  'Approved':
-                        step.status = 'Approved'
-                        step.save()
+                        step_approve_action(step)
     return is_extended
 
 
@@ -214,10 +227,11 @@ def extend_open_ended_request(reqid):
                             step.save()
                     for step in steps:
                         if not tasks_count_control:
-                            step.status = 'Approved'
+                            step_approve_action(step)
                         else:
                             step.status = 'NotChecked'
-                        step.save()
+                            step.save()
+
 
                 except Exception,e:
                     new_slice.dataset = None
@@ -229,7 +243,8 @@ def extend_open_ended_request(reqid):
     request.cstatus = old_status
     request.save()
     if is_extended:
-        set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
+        if request.cstatus not in ['test']:
+            set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
 
     return is_extended
 
