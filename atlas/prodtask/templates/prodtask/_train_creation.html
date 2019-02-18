@@ -245,8 +245,9 @@
 
             editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
         var hasEVNT = editTrainLoad.trainLoad.datasets.indexOf('EVNT')>-1;
-        var hasAOD = editTrainLoad.trainLoad.datasets.indexOf('.AOD.')>-1;
-        hasDAOD = editTrainLoad.trainLoad.datasets.indexOf('DAOD')>-1;
+        var hasAOD = (editTrainLoad.trainLoad.datasets.indexOf('.AOD.')>-1)||(editTrainLoad.trainLoad.datasets.indexOf('.DAOD_RPVLL.')>-1);
+
+        hasDAOD = (editTrainLoad.trainLoad.datasets.indexOf('DAOD')>-1)&&(! hasAOD);
         if ((hasDAOD_TRUTH&&nonTRUTH)||(hasDAOD_TRUTH&&hasAOD)||(nonTRUTH&&hasEVNT)||(hasDAOD&&nonSUSY15)){
             alert('Only EVNT could be used with DAOD_TRUTH*, only xAOD with the rests');
         } else{
