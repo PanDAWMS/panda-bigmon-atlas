@@ -14,8 +14,26 @@ from atlas.prodtask.views import set_request_status, make_child_update
 _logger = logging.getLogger('prodtaskwebui')
 
 
+def _parse_action_options(option_string):
+    project_mode_dict = dict()
+    for option in option_string.replace(' ', '').split(";"):
+        if not option:
+            continue
+        if not '=' in option:
+            raise Exception('The  option \"{0}\" has invalid format. '.format(option) +
+                            'Expected format is \"optionName=optionValue\"')
+        project_mode_dict.update({option.split("=")[0].lower(): option.split("=")[1]})
+    return project_mode_dict
+
+def process_request(production_request_id):
+    waiting_step_todo = WaitingStep.objects.filter(status='active', request=production_request_id)
+    process_actions(waiting_step_todo)
+
 def find_waiting():
     waiting_step_todo = WaitingStep.objects.filter(status='active',execution_time__lte=timezone.now())
+    process_actions(waiting_step_todo)
+
+def process_actions(waiting_step_todo):
     for waiting_step in waiting_step_todo:
         waiting_step.status = 'executing'
         waiting_step.save()
@@ -218,6 +236,18 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
 def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
     waiting_step = WaitingStep.objects.get(id=waiting_step_id)
     step = StepExecution.objects.get(id=waiting_step.step)
+    waiting_parameters = {'level':90}
+    if step.get_task_config('PDAParams'):
+        try:
+            waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
+            if waiting_parameters.get('level'):
+                waiting_parameters['level'] = int(waiting_parameters_from_step.get('level'))
+                if waiting_parameters['level'] > 100:
+                    waiting_parameters['level'] = 100
+                if waiting_parameters['level'] < 0:
+                    waiting_parameters['level'] = 0
+        except Exception, e:
+            _logger.error(" %s" % str(e))
     approve_step = False
     if (step.step_parent_id != step.id) and (step.step_parent.status not in ['Skipped','NotCheckedSkipped'] ):
         waiting_step.status = 'cancelled'
@@ -242,10 +272,11 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             rse = 'type=DATADISK&datapolicynucleus=1'
             rule = ddm.dataset_active_rule_by_rse(dataset, rse)
             files = ddm.dataset_metadata(dataset)['length']
+            level = waiting_parameters['level']
             if rule:
-                if (float(rule['locks_ok_cnt']) / float(files)) >=0.9:
+                if ((level == 100) and (int(rule['locks_ok_cnt'])==int(files)))or((float(rule['locks_ok_cnt']) / float(files)) >= (float(level) / 100.0)):
                     waiting_step.status = 'done'
-                    waiting_step.message = '%s has >0.9 files pre staged ' % (str(dataset))
+                    waiting_step.message = '%s has > %s %%  files pre staged ' % (str(dataset), str(level))
                     waiting_step.done_time = timezone.now()
                     approve_step = True
                 else:
@@ -254,10 +285,10 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     tape_replica = ''
                     if replicas['tape']:
                         tape_replica = replicas['tape'][0]['rse']
-                    waiting_step.message = 'Rules exists for  %s from %s : %s %s/%s' % (link,tape_replica,rule_link,
-                                                                               str(rule['locks_ok_cnt']),str(files))
+                    waiting_step.message = 'Rules exists for  %s from %s : %s %s/%s  (%s %% needed )' % (link,tape_replica,rule_link,
+                                                                               str(rule['locks_ok_cnt']),str(files),str(level))
                     waiting_step.status = 'active'
-                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'total_files':int(files),
+                    temp =  {'datasets':[{'dataset':dataset,'disk':rse,'total_files':int(files), 'level':level,
                                           'staged_files':int(rule['locks_ok_cnt']),'tape':replicas['tape'][0]['rse']}]}
                     waiting_step.set_config(temp)
                     if int(files) - int(rule['locks_ok_cnt']) > 500:
@@ -271,10 +302,12 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_step.status = 'active'
                     temp =  {'datasets':[{'dataset':dataset,'disk':rse,'total_files':int(files),'staged_files':0,
                                           'tape':replicas['tape'][0]['rse']}]}
+                    if level != 0:
+                        temp['level'] = level
                     waiting_step.set_config(temp)
                     link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
-                    waiting_step.message = '%s should be pre staged from %s by rule %s'%(link,
-                                                                                         replicas['tape'][0]['rse'],rse)
+                    waiting_step.message = '%s should be pre staged from %s by rule %s  (%s %% needed )'%(link,
+                                                                                         replicas['tape'][0]['rse'],rse,str(level))
                     step.save()
                     #if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
                     if step.request.cstatus not in ['test']:
@@ -352,6 +385,11 @@ def finish_action(request, wstep_id):
     return HttpResponseRedirect(
         reverse('prodtask:input_list_approve_full', args=[step.request_id]) + '#inputList' + str(step.slice.slice))
 
+
+def push_waiting_step(wstep_id):
+    waiting_step = WaitingStep.objects.get(id=wstep_id)
+    waiting_step.execution_time = timezone.now()
+    waiting_step.save()
 
 def cancel_action(request, wstep_id):
 
