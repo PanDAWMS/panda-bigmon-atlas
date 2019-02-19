@@ -1,0 +1,76 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    {% django_js %}
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+    <script type="text/javascript">
+        $(document).foundation();
+
+    </script>
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+
+    <table>
+    <thead>
+    <tr>
+        <th rowspan="2">Tape</th>
+        <th colspan="2">Cap</th>
+        <th colspan="3">Staging</th>
+        <th colspan="3">Queued</th>
+    </tr>
+    <tr>
+        <th>min</th>
+        <th>max</th>
+        <th>REPROCESSING</th>
+        <th>MC</th>
+        <th>GROUP</th>
+        <th>REPROCESSING</th>
+        <th>MC</th>
+        <th>GROUP</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for tape_name,tape in current_load %}
+        <tr >
+            <td>{{ tape_name }}</td>
+            <td>-1</td>
+            <td>-1</td>
+            <td>{{ tape.in.REPROCESSING }}</td>
+            <td>{{ tape.in.MC }}</td>
+            <td>{{ tape.in.GROUP }}</td>
+            <td>{{ tape.queued.REPROCESSING }}</td>
+            <td>{{ tape.queued.MC }}</td>
+            <td>{{ tape.queued.GROUP }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+{% endblock %}

@@ -60,6 +60,8 @@ urlpatterns = patterns('',
     url(r'^close_open_ended/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.close_open_ended',  name='close_open_ended'),
 
     url(r'^push_check/(?P<reqid>\d+)/$','atlas.prodtask.open_ended.push_check',  name='push_check'),
+    url(r'^tape_load_page/$','atlas.prodtask.waiting_actions.tape_load_page',  name='tape_load_page'),
+
     url(r'^short_hlt_form/$','atlas.prodtask.request_views.short_hlt_form',  name='short_hlt_form'),
     url(r'^hlt_form_prepare_request/$','atlas.prodtask.request_views.hlt_form_prepare_request',  name='hlt_form_prepare_request'),
     url(r'^short_valid_form/$','atlas.prodtask.request_views.short_valid_form',  name='short_valid_form'),

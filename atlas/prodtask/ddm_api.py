@@ -195,11 +195,11 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None):
+    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None, notify='P'):
         _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
         scope, name = self.rucio_convention(dataset)
         self.__ddm.add_replication_rule(dids=[{'scope':scope, 'name':name}], rse_expression=rse, activity=activity, copies=copies,
-                                        lifetime=lifetime, weight=weight)
+                                        lifetime=lifetime, weight=weight, notify=notify)
 
     def dataset_in_container(self, container_name):
         """
@@ -223,6 +223,15 @@ class DDM(object):
                 full_replicas.append(replica)
         return full_replicas
 
+    def only_tape_replica(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        replicas = self.dataset_replicas(dataset_name)
+        if not replicas:
+            return False
+        for replica in replicas:
+            if ('TAPE' not in replica['rse']) and ('RAW' not in replica['rse']):
+                return False
+        return True
 
     def dataset_replicas(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)

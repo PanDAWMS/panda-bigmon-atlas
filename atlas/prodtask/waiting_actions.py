@@ -312,7 +312,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     #if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
                     if step.request.cstatus not in ['test']:
                         ddm.add_replication_rule(dataset, rse ,copies=1, lifetime=30*86400, weight='freespace',
-                                                 activity='Staging')
+                                                 activity='Staging', notify='P')
             if waiting_step.attempt > max_attempts:
                 waiting_step.status = 'failed'
             else:
@@ -384,6 +384,33 @@ def finish_action(request, wstep_id):
 
     return HttpResponseRedirect(
         reverse('prodtask:input_list_approve_full', args=[step.request_id]) + '#inputList' + str(step.slice.slice))
+
+def tape_load_page(request):
+    current_load = tape_current_load()
+
+    request_parameters = {
+        'active_app' : 'prodtask',
+        'pre_form_text' : 'Current tape load',
+        'current_load': current_load.items(),
+        'parent_template' : 'prodtask/_index.html',
+        }
+
+    return render(request, 'prodtask/_tape_load.html', request_parameters)
+
+def tape_current_load():
+    waiting_steps = WaitingStep.objects.filter(status__in=['active','executing'], action=4)
+    tape_stat = {}
+    for waiting_step in waiting_steps:
+        try:
+            metadata = waiting_step.get_config('datasets')[0]
+            if metadata:
+                tape = metadata['tape']
+                if tape not in tape_stat:
+                    tape_stat[tape] = {'in':{'MC':0,'REPROCESSING':0,'GROUP':0},'queued':{'MC':0,'REPROCESSING':0,'GROUP':0}}
+                tape_stat[tape]['in']['REPROCESSING'] += metadata['total_files'] - metadata['staged_files']
+        except:
+            pass
+    return tape_stat
 
 
 def push_waiting_step(wstep_id):
