@@ -11,7 +11,7 @@ from copy import deepcopy
 from atlas.getdatasets.models import TaskProdSys1
 from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
-from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction
+from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern
 #from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices
@@ -286,7 +286,9 @@ def set_parent_step(slices, request, parent_request):
                                 break
                     if parent_found:
                         break
-
+        elif parent_step and  (parent_step.request_id == parent_request) and slice.input_data:
+            if parent_slice_dict.get(slice.input_data,[]):
+                parent_slice_dict[slice.input_data].pop(0)
     return slices_updated
 
 
@@ -2091,6 +2093,32 @@ def request_train_patterns(request, reqid):
 
     return Response(train_pattern_list)
 
+
+def convert_old_patterns(request_id):
+    def unwrap(pattern_dict):
+        return_list = []
+        if type(pattern_dict) == dict:
+            for key in pattern_dict:
+                if key != 'ctag':
+                    return_list.append((key,pattern_dict[key]))
+            return pattern_dict.get('ctag',''), return_list
+        else:
+            return pattern_dict,[('ctag',pattern_dict)]
+    def check_empty_pattern(pattern, default_pattern):
+        for x in pattern.keys():
+            if pattern[x]:
+                return pattern
+        return default_pattern
+    production_request = TRequest.objects.get(reqid=request_id)
+    pattern_list = MCPattern.objects.filter(pattern_status='IN USE').order_by('pattern_name')
+    pattern_list_name = [(x.pattern_name,unwrap(json.loads(x.pattern_dict))) for x in pattern_list]
+    #return pattern_list_name
+    for pattern in pattern_list_name:
+        new_slice_id = clone_slices(request_id,request_id,[0],-1,False)[0]
+        slice = InputRequestList.objects.get(id =new_slice_id)
+        slice.comment = pattern[0]
+        for step in pattern[1]:
+            pass
 
 
 
