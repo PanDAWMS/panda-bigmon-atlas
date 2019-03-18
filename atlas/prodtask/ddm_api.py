@@ -195,7 +195,7 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None, notify='P'):
+    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None, notify='N'):
         _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
         scope, name = self.rucio_convention(dataset)
         self.__ddm.add_replication_rule(dids=[{'scope':scope, 'name':name}], rse_expression=rse, activity=activity, copies=copies,

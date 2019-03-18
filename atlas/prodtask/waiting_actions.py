@@ -269,7 +269,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
             approve_step = True
         else:
             waiting_step.attempt += 1
-            rse = 'type=DATADISK&datapolicynucleus=1'
+            rse = 'type=DATADISK&datapolicynucleus=True'
             rule = ddm.dataset_active_rule_by_rse(dataset, rse)
             files = ddm.dataset_metadata(dataset)['length']
             level = waiting_parameters['level']
@@ -312,7 +312,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     #if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
                     if step.request.cstatus not in ['test']:
                         ddm.add_replication_rule(dataset, rse ,copies=1, lifetime=30*86400, weight='freespace',
-                                                 activity='Staging', notify='P')
+                                                 activity='Staging')
             if waiting_step.attempt > max_attempts:
                 waiting_step.status = 'failed'
             else:
