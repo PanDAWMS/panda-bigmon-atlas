@@ -354,10 +354,16 @@ def running_events_stat(search_dict, status):
                 }
               }
             }
-    aggregs = es_search.update_from_dict(query)
-    exexute = aggregs.execute()
     result = {}
-    if exexute.hits.total>0:
+
+    try:
+        aggregs = es_search.update_from_dict(query)
+        exexute = aggregs.execute()
+    except Exception,e:
+        _logger.error("Problem with es deriv : %s" % (e))
+        aggregs = None
+
+    if aggregs and exexute.hits.total>0:
         for x in exexute.aggs.steps.buckets:
             result[x.key] = {'name': x.key, 'total_events': x.total_events.value,
                        'input_events': x.input_events.value,
@@ -449,19 +455,204 @@ def statistic_by_output(search_dict, format):
     aggregs = es_search.update_from_dict(query)
     exexute = aggregs.execute()
     result = {}
-    print exexute.hits.total
     if exexute.hits.total>0:
         for x in exexute.aggs.ami_tag.buckets:
             result[x.key] = {'name': x.key,  'total_events':x.output.not_removed.formated.events.value,
                        'input_events': x.input_events.value,
                        'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
-                       'output_bytes':x.output.not_removed.formated.bytes.value,
+                       'output_bytes':x.output.not_removed.formated.bytes.value, 'processed_events': x.processed_events.value,
                        'output_not_removed_tasks':x.output.not_removed.formated.doc_count,
                        'total_tasks': x.doc_count, 'hs06':x.hs06.value, 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
 
     return result
 
 
+def get_format_by_request(search_dict):
+    query = {
+          "size": 0,
+          "query": search_dict,
+          "aggs": {
+            "format": {
+              "terms": {
+                "field": "output_formats",
+                "size": 1000
+              }
+            }
+          }
+        }
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    aggregs = es_search.update_from_dict(query)
+    exexute = aggregs.execute()
+    result = []
+    if exexute.hits.total>0:
+        for x in exexute.aggs.format.buckets:
+            result.append(x.key)
+    return result
+
+def running_events_stat_deriv(search_dict, status, formats_dict):
+
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    search_dict,
+                    {"terms": {"status": status}}
+                  ]
+                }
+              },
+              "aggs": {
+                "formats": {
+                  "filters": {
+                    "filters":formats_dict},
+                  "aggs": {
+                    "amitag": {
+                      "terms": {"field": "ctag"},
+                      "aggs": {
+                        "input_events": {
+                          "sum": {"field": "input_events"}
+                        },
+                        "processed_events": {
+                          "sum": {"field": "processed_events"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+    result = {}
+
+    try:
+        aggregs = es_search.update_from_dict(query)
+        exexute = aggregs.execute()
+    except Exception,e:
+        _logger.error("Problem with es deriv : %s" % (e))
+        aggregs = None
+
+    if aggregs and exexute.hits.total>0:
+
+            for f in exexute.aggregations.formats.buckets:
+                for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
+                    result[f+' '+x.key] = {'name': f+' '+x.key, 'processed_events': x.processed_events.value,
+                               'input_events': x.input_events.value,
+                               'total_tasks': x.doc_count}
+
+    return result
+
+def deriv_formats(search_dict):
+    formats = get_format_by_request(search_dict)
+    formats_dict = {}
+    for format in formats:
+        formats_dict.update( { format: {
+                                "has_child": {
+                                  "type": "output_dataset",
+                                  "query": {"term": {"data_format": format}}
+                                }
+                              }})
+    return formats_dict
+
+def statistic_by_request_deriv(search_dict,formats_dict):
+
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                      search_dict,
+                    {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}},
+                  ]
+                }
+              },
+              "aggs": {
+                "formats": {
+                  "filters": {
+                    "filters":formats_dict},
+                  "aggs": {
+                    "amitag": {
+                      "terms": {"field": "ctag"},
+                      "aggs": {
+                        "input_events": {
+                          "sum": {"field": "input_events"}
+                        },
+                        "not_deleted": {
+                          "filter": {"term": {"primary_input_deleted": False}},
+                          "aggs": {
+                            "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                            }
+                          }
+                        },
+                        "processed_events": {
+                          "sum": {"field": "processed_events"}
+                        },
+                        "cpu_total": {
+                          "sum": {"field": "toths06"}
+                        },
+                        "cpu_failed": {
+                          "sum": {"field": "toths06_failed"}
+                        },
+                        "timestamp_defined": {
+                          "filter": {
+                            "bool": {
+                              "must": [
+                                {"exists": {"field": "start_time"}},
+                                {"exists": {"field": "end_time"}},
+                                {"script": {"script": "doc['end_time'].value > doc['start_time'].value"}}
+                              ]
+                            }
+                          },
+                          "aggs": {
+                            "walltime": {
+                              "avg": {"script": {"inline": "doc['end_time'].value - doc['start_time'].value"}}
+                            }
+                          }
+                        },
+                        "output": {
+                          "children": {"type": "output_dataset"},
+                          "aggs": {
+                            "not_removed": {
+                              "filter": {"term": {"deleted": False}},
+                              "aggs": {
+                                "bytes": {
+                                  "sum": {"field": "bytes"}
+                                },
+                                "events":{
+                                    "sum": {"field": "events"}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    result = {}
+
+    try:
+        aggregs = es_search.update_from_dict(query)
+        exexute = aggregs.execute()
+    except Exception,e:
+        _logger.error("Problem with es deriv : %s" % (e))
+        aggregs = None
+
+    if aggregs and exexute.hits.total>0:
+            for f in exexute.aggregations.formats.buckets:
+                for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
+                    result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.output.not_removed.events.value,
+                               'input_events': x.input_events.value,
+                               'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                               'output_bytes':x.output.not_removed.bytes.value,
+                               'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
+                               'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)}
+
+    return result
 
 def statistic_by_step(search_dict):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
@@ -538,26 +729,39 @@ def statistic_by_step(search_dict):
                 }
               }
             }
-    aggregs = es_search.update_from_dict(query)
-    exexute = aggregs.execute()
     result = {}
-    if exexute.hits.total>0:
-        for x in exexute.aggs.steps.buckets:
-            result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
-                       'input_events': x.input_events.value,
-                       'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
-                       'output_bytes':x.output.not_removed.bytes.value,
-                       'output_not_removed_tasks':x.output.not_removed.doc_count,
-                       'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
-                             'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
+
+    try:
+        aggregs = es_search.update_from_dict(query)
+        exexute = aggregs.execute()
+    except Exception,e:
+        _logger.error("Problem with es deriv : %s" % (e))
+        aggregs = None
+
+    if aggregs and exexute.hits.total>0:
+
+            for x in exexute.aggs.steps.buckets:
+                result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                           'input_events': x.input_events.value,
+                           'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                           'output_bytes':x.output.not_removed.bytes.value,
+                           'output_not_removed_tasks':x.output.not_removed.doc_count,
+                           'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
+                                 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
 
     return result
 
 
 
-def form_statistic_per_step(statistics,running_stat, finished_stat):
+def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=True):
     result = []
-    for step in MCPriority.STEPS:
+    if mc_steps:
+        steps = MCPriority.STEPS
+        field = "total_events"
+    else:
+        steps = statistics.keys()
+        field = "processed_events"
+    for step in steps:
         if step in statistics:
             current_stat = statistics[step]
             percent_done = 0.0
@@ -566,7 +770,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat):
             if current_stat["input_events"] == 0:
                 step_status = 'Unknown'
             else:
-                percent_done = float(current_stat['total_events']) / float(current_stat['input_events'])
+                percent_done = float(current_stat[field]) / float(current_stat['input_events'])
                 if (percent_done > 0.90):
                     step_status = 'StepDone'
                 elif (percent_done > 0.10):
@@ -576,12 +780,12 @@ def form_statistic_per_step(statistics,running_stat, finished_stat):
                 running_events = 0
                 finished_events = 0
                 if step in running_stat:
-                    running_events = running_stat[step]['input_events'] - running_stat[step]['total_events']
+                    running_events = running_stat[step]['input_events'] - running_stat[step][field]
                 if step in finished_stat:
-                    finished_events = finished_stat[step]['input_events'] - finished_stat[step]['total_events']
+                    finished_events = finished_stat[step]['input_events'] - finished_stat[step][field]
                 percent_runnning = float(running_events) / float(current_stat['input_events'])
                 percent_pending = float(current_stat['input_events'] - current_stat[
-                    'total_events'] - running_events - finished_events) / float(current_stat['input_events'])
+                    field] - running_events - finished_events) / float(current_stat['input_events'])
                 if percent_pending < 0:
                     percent_pending = 0
             current_stat['step_status'] = step_status
@@ -618,6 +822,20 @@ def step_request_stat(request):
         return Response({'error':str(e)},status=400)
     return Response(result)
 
+@api_view(['POST'])
+def deriv_request_stat(request):
+    try:
+        production_request = request.body
+        format_dict = deriv_formats({"term": {"pr_id": production_request}})
+        statistics = statistic_by_request_deriv({"term": {"pr_id": production_request}}, format_dict)
+        running_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['running'], format_dict)
+        finished_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['finished','done'], format_dict)
+        result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
+    except Exception,e:
+        print str(e)
+
+        return Response({'error':str(e)},status=400)
+    return Response(result)
 
 def derivation_stat(project, ami, output):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')

@@ -313,7 +313,37 @@
             }
 
         }]);
+        DKBApp.controller('DKBDerivOutputStat',['$scope','$http','$routeParams',
 
+        function (scope, http, routeParams) {
+            scope.request_id = '';
+            scope.is_loading = false;
+            if ('request_id' in routeParams){
+                scope.request_id = routeParams.request_id;
+                var  toSend = scope.request_id.toString() ;
+                scope.search_string =  scope.request_id.toString();
+            }
+
+            if (scope.request_id != ''){
+                scope.is_loading = true;
+
+                    console.log(toSend);
+                    http.post(Django.url('dkb:deriv_request_stat'),toSend).
+                     success(function(data, status, headers, config) {
+                        scope.steps= data;
+                        scope.is_loading = false;
+
+                     }).
+                    error(function(data, status, headers, config) {
+                                if (data.message != undefined){
+                                    alert(data.message);
+                                }
+                                 scope.is_loading = false;
+
+                    });
+            }
+
+        }]);
     DKBApp.config(function($routeProvider) {
           $routeProvider.
             when('/', {
@@ -341,6 +371,10 @@
               templateUrl: '/static/html/_ng_step_stat.html',
               controller: 'DKBStepStat'
             }).
+          when('/deriv_outputs_stat/', {
+                  templateUrl: '/static/html/_ng_step_stat.html',
+                  controller: 'DKBDerivOutputStat'
+                }).
             otherwise({
               redirectTo: '/'
             });
