@@ -19,7 +19,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import time
 
-from atlas.getdatasets.models import TRequest
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
@@ -1175,7 +1174,10 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                         removed_input = remove_input(good_slices,reqid)
                     else:
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
-                    make_child_update(reqid,owner,slice_steps)
+                    try:
+                        make_child_update(reqid,owner,slice_steps)
+                    except Exception, e:
+                        _logger.error("Problem with step modifiaction: %s" % e)
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
                     if not owner:
                         owner = req.manager
@@ -1691,6 +1693,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
+            limit_priority = {'min':0,'max':2000}
+            if (cur_request.request_type == 'GROUP') and (cur_request.phys_group != 'VALI'):
+                limit_priority = {'min': 560, 'max': 570}
+                try:
+                    if (request.user.is_superuser) :
+                        limit_priority = {'min': 0, 'max': 2000}
+                except:
+                    pass
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
             if comments:
                 comment_author = comments.owner
@@ -2118,7 +2128,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'priorities_str':','.join([x.replace('-2','0+') for x in slice_priorities]),
                 'project_list':project_list,
                 'parent_request_id':parent_request_id,
-                'bigpanda_base':BIG_PANDA_TASK_BASE
+                'bigpanda_base':BIG_PANDA_TASK_BASE,
+                'limit_priority':limit_priority
                })
         except Exception, e:
             _logger.error("Problem with request list page data forming: %s" % e)
