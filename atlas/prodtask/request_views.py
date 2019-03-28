@@ -1083,11 +1083,14 @@ def dpd_form_prefill(form_data, request):
         form_data['phys_group'] = output_dict['group'][0].replace('GR_', '')
     if 'comment' in output_dict:
         form_data['description'] = output_dict['comment'][0]
+    allow_priority = False
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
     else:
         try:
             form_data['manager'] = request.user.username
+            if request.user.is_superuser:
+                allow_priority = True
         except:
             pass
     if 'project' in output_dict:
@@ -1123,14 +1126,17 @@ def dpd_form_prefill(form_data, request):
                 return {}, error_message
             for slice_index, ds in enumerate(output_dict['ds']):
                 st_sexec_list = []
+                current_priority = int(output_dict.get('priority', [0])[0])
+                if (current_priority > 560) and (not allow_priority):
+                    current_priority = 560
                 irl = dict(slice=slice_index, brief=' ', comment=output_dict.get('comment', [''])[0], dataset=ds,
                            input_data=output_dict.get('joboptions', [''])[0],
                            project_mode=output_dict.get('project_mode', [''])[0],
-                           priority=int(output_dict.get('priority', [0])[0]),
+                           priority=current_priority,
                            input_events=int(output_dict.get('total_num_genev', [-1])[0]))
                 if 'tag' in output_dict:
                     step_name = step_from_tag(output_dict['tag'][0])
-                    sexec = dict(status='NotChecked', priority=int(output_dict.get('priority', [0])[0]),
+                    sexec = dict(status='NotChecked', priority=current_priority,
                                  input_events=int(output_dict.get('total_num_genev', [-1])[0]))
                     st_sexec_list.append({'step_name': step_name, 'tag': output_dict['tag'][0], 'step_exec': sexec,
                                           'memory': output_dict.get('ram', [None])[0],

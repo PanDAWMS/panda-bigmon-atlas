@@ -394,8 +394,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 }
 
         });
+    };
+    function changePriority(input){
+            var limitMax = {{  limit_priority.max }};
+            var limitMin = {{ limit_priority.min }};
+            if (input.value < limitMin) input.value = limitMin;
+            if (input.value > limitMax) input.value = limitMax;
     }
-
 
     function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel){
                 $( "#waitingDialog" ).dialog();
@@ -3561,7 +3566,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 </div>
                                 <div class="large-3 columns">
                                   <label>Priority
-                                    <input type="number" class="priority storeOutput{{forloop.counter0}} storeInput" placeholder=" " />
+                                    <input type="number" class="priority storeOutput{{forloop.counter0}} storeInput" onchange="changePriority(this);" placeholder=" " />
                                   </label>
                                 </div>
                               </div>
@@ -3664,7 +3669,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
         <div class="row">
                     <div class="column large-3">
-                <label> Priority: <input id='priorityModal' type="number" class="priority storeSliceBulk"   /></label>
+                <label> Priority: <input id='priorityModal' type="number" class="priority storeSliceBulk"  onchange="changePriority(this);" /></label>
             </div>
              </div>
     <button id="saveSliceBulkButton" class="btn_is_authenticated" title="Save selected slices" onclick="saveSlicedBulk(event);">Save</button>
@@ -3771,7 +3776,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 </div>
                                 <div class="large-3 columns">
                                   <label>Priority
-                                    <input type="number" class="priority storeBulk" placeholder="" />
+                                    <input type="number" class="priority storeBulk" placeholder="" onchange="changePriority(this);"/>
                                   </label>
                                 </div>
                               </div>

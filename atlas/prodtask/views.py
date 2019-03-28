@@ -645,18 +645,19 @@ MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase
 
 
 def request_approve_status(production_request, request):
-    if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
-        user_name=''
-        is_superuser=False
-        try:
-            user_name = request.user.username
-        except:
-            pass
+    user_name = ''
+    is_superuser = False
+    try:
+        user_name = request.user.username
+    except:
+        pass
 
-        try:
-            is_superuser = request.user.is_superuser
-        except:
-            pass
+    try:
+        is_superuser = request.user.is_superuser
+    except:
+        pass
+    if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
+
         # change to VOMS
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
         if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(request.user.username)) or is_superuser:
@@ -670,6 +671,12 @@ def request_approve_status(production_request, request):
                         patterns = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.filter(hashtag__iexact='PatternToMerge')[0]).values_list('request_id',flat=True))
                         if TrainProduction.objects.get(id=ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id).pattern_request_id in patterns:
                             return 'registered'
+        # if (production_request.request_type == 'GROUP') and (production_request.cstatus == 'waiting') \
+        #         and (production_request.phys_group != 'VALI'):
+        #     if (production_request.phys_group  in egroup_permissions(request.user.username)) or is_superuser:
+        #         return 'approved'
+        # else:
+        #     return 'registered'
         return 'approved'
 
 
@@ -2901,7 +2908,7 @@ def pre_stage_approve(request):
 
 
 def pre_stage_approved(request):
-    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active','done'],action=4)
+    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
     result = []
     for waiting_step in waiting_steps:
         step = StepExecution.objects.get(id=waiting_step.step)
