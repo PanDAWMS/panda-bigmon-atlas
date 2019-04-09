@@ -69,6 +69,8 @@ def get_jobs(request):
         _logger.info("Get jobs from bigpanda for: %s" % url)
         url=re.sub('&display_limit.*(\d+)','',url)
         url = url.replace('https','http')
+        url = url.replace('jobsss', 'jobs')
+        url = url.strip()
         if 'json' not in url:
             if url[-1]=='&':
                 url += '&'
