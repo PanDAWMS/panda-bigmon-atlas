@@ -554,72 +554,84 @@ def deriv_formats(search_dict):
     return formats_dict
 
 def statistic_by_request_deriv(search_dict,formats_dict):
-
-    query = {
-              "size": 0,
-              "query": {
-                "bool": {
-                  "must": [
-                      search_dict,
-                    {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}},
-                  ]
-                }
-              },
-              "aggs": {
-                "formats": {
-                  "filters": {
-                    "filters":formats_dict},
+    total_result = {}
+    formats_splits = []
+    current_format = {}
+    i=0
+    for format in formats_dict.keys():
+        current_format.update({format:formats_dict[format]})
+        if  (i>0)and(i%10==0):
+            formats_splits.append(current_format.copy())
+            current_format = {}
+        i += 1
+    for formats in formats_splits:
+        query = {
+                  "size": 0,
+                  "query": {
+                    "bool": {
+                      "must": [
+                          search_dict,
+                        {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}},
+                      ]
+                    }
+                  },
                   "aggs": {
-                    "amitag": {
-                      "terms": {"field": "ctag"},
+                    "formats": {
+                      "filters": {
+                        "filters":formats},
                       "aggs": {
-                        "input_events": {
-                          "sum": {"field": "input_events"}
-                        },
-                        "not_deleted": {
-                          "filter": {"term": {"primary_input_deleted": False}},
+                        "amitag": {
+                          "terms": {"field": "ctag"},
                           "aggs": {
-                            "input_bytes": {
-                              "sum": {"field": "input_bytes"}
-                            }
-                          }
-                        },
-                        "processed_events": {
-                          "sum": {"field": "processed_events"}
-                        },
-                        "cpu_total": {
-                          "sum": {"field": "toths06"}
-                        },
-                        "cpu_failed": {
-                          "sum": {"field": "toths06_failed"}
-                        },
-                        "timestamp_defined": {
-                          "filter": {
-                            "bool": {
-                              "must": [
-                                {"exists": {"field": "start_time"}},
-                                {"exists": {"field": "end_time"}},
-                                {"script": {"script": "doc['end_time'].value > doc['start_time'].value"}}
-                              ]
-                            }
-                          },
-                          "aggs": {
-                            "walltime": {
-                              "avg": {"script": {"inline": "doc['end_time'].value - doc['start_time'].value"}}
-                            }
-                          }
-                        },
-                        "output": {
-                          "children": {"type": "output_dataset"},
-                          "aggs": {
-                            "not_removed": {
-                              "filter": {"term": {"deleted": False}},
+                            "input_events": {
+                              "sum": {"field": "input_events"}
+                            },
+                            "not_deleted": {
+                              "filter": {"term": {"primary_input_deleted": False}},
                               "aggs": {
-                                "bytes": {
-                                  "sum": {"field": "bytes"}
-                                },
-                                "events":{
-                                    "sum": {"field": "events"}
+                                "input_bytes": {
+                                  "sum": {"field": "input_bytes"}
+                                }
+                              }
+                            },
+                            "processed_events": {
+                              "sum": {"field": "processed_events"}
+                            },
+                            "cpu_total": {
+                              "sum": {"field": "toths06"}
+                            },
+                            "cpu_failed": {
+                              "sum": {"field": "toths06_failed"}
+                            },
+                            "timestamp_defined": {
+                              "filter": {
+                                "bool": {
+                                  "must": [
+                                    {"exists": {"field": "start_time"}},
+                                    {"exists": {"field": "end_time"}},
+                                    {"script": {"script": "doc['end_time'].value > doc['start_time'].value"}}
+                                  ]
+                                }
+                              },
+                              "aggs": {
+                                "walltime": {
+                                  "avg": {"script": {"inline": "doc['end_time'].value - doc['start_time'].value"}}
+                                }
+                              }
+                            },
+                            "output": {
+                              "children": {"type": "output_dataset"},
+                              "aggs": {
+                                "not_removed": {
+                                  "filter": {"term": {"deleted": False}},
+                                  "aggs": {
+                                    "bytes": {
+                                      "sum": {"field": "bytes"}
+                                    },
+                                    "events":{
+                                        "sum": {"field": "events"}
+                                    }
+                                  }
                                 }
                               }
                             }
@@ -629,30 +641,29 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                     }
                   }
                 }
-              }
-            }
 
-    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
-    result = {}
+        es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+        result = {}
 
-    try:
-        aggregs = es_search.update_from_dict(query)
-        exexute = aggregs.execute()
-    except Exception,e:
-        _logger.error("Problem with es deriv : %s" % (e))
-        aggregs = None
+        try:
+            aggregs = es_search.update_from_dict(query)
+            exexute = aggregs.execute()
+        except Exception,e:
+            _logger.error("Problem with es deriv : %s" % (e))
+            aggregs = None
 
-    if aggregs and exexute.hits.total>0:
-            for f in exexute.aggregations.formats.buckets:
-                for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
-                    result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.output.not_removed.events.value,
-                               'input_events': x.input_events.value,
-                               'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
-                               'output_bytes':x.output.not_removed.bytes.value,
-                               'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
-                               'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)}
+        if aggregs and exexute.hits.total>0:
+                for f in exexute.aggregations.formats.buckets:
+                    for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
+                        result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.output.not_removed.events.value,
+                                   'input_events': x.input_events.value,
+                                   'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                                   'output_bytes':x.output.not_removed.bytes.value,
+                                   'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
+                                   'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)}
+        total_result.update(result)
 
-    return result
+    return total_result
 
 def statistic_by_step(search_dict):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
