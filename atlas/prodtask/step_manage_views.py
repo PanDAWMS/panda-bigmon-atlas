@@ -1199,6 +1199,53 @@ def split_slices_by_tid(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+@csrf_protect
+def split_slices_by_output(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Split slices by output: %s' % str(slices)))
+            good_slices = []
+            bad_slices = []
+            for slice_number in slices:
+                try:
+                    split_by_output(reqid,slice_number)
+                    good_slices.append(slice_number)
+                except  Exception,e:
+                    bad_slices.append(slice_number)
+                    _logger.error("Problem with slice splitting : %s"%( e))
+            if len(bad_slices) > 0:
+                results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
+            else:
+                results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
+        except Exception,e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def split_by_output(reqid,slice_number):
+    slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
+    ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice))
+    if not existed_foreign_step and (len(ordered_existed_steps)==2):
+        outputs = ordered_existed_steps[0].step_template.output_formats.split('.')
+        for output in outputs:
+            new_slice = clone_slices(reqid, reqid, [slice.slice], 1, True)[0]
+            step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=reqid,slice=new_slice))
+            step_new_template = fill_template(step.step_template.step, step.step_template.ctag,
+                                              step.step_template.priority, output,
+                                              step.step_template.memory)
+            step.step_template = step_new_template
+            step.set_task_config({'input_format':output})
+            step.status = 'NotChecked'
+            step.save()
+        old_step = ordered_existed_steps[1]
+        old_step.status = 'NotCheckedSkipped'
+        old_step.save()
+
 
 def split_slice(reqid, slice_number, divider):
     """

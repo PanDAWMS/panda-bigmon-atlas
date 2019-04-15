@@ -1917,6 +1917,29 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         }
 
 
+        function splitSlicesByOutputClick(event){
+            event.preventDefault();
+            var sliceList = getCheckedSlices();
+            var i=0;
+            var sendData = {slices:sliceList};
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: Django.url('prodtask:split_slices_by_output',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        }
+
             function findParentClick(event, parentRequestNumber){
                 event.preventDefault();
                 var sliceList = getCheckedSlices();
@@ -3335,8 +3358,14 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  <div class="row">
                      <button id="splitSliceByTID" class="btn_is_authenticated" title="Split slices by tid" onclick="splitSlicesByTIDClick(event);">Split by tid</button>
                  </div>
+
             </div>
         {% endif %}
+                   {% ifequal trequest.request_type "GROUP" %}
+                    <div class="row">
+                     <button id="splitSliceByOutput" class="btn_is_authenticated" title="Split merge by outputs" onclick="splitSlicesByOutputClick(event);">Split merge step</button>
+                 </div>
+                    {% endifequal %}
     </div>
      <div class="large-2 columns"></div>
     </div>

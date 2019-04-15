@@ -144,6 +144,8 @@ urlpatterns = patterns('',
     url(r'^retry_slices/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.retry_slices', name='retry_slices'),
     url(r'^split_slices_in_req/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_in_req', name='split_slices_in_req'),
     url(r'^split_slices_by_tid/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_by_tid', name='split_slices_by_tid'),
+    url(r'^split_slices_by_output/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.split_slices_by_output', name='split_slices_by_output'),
+
     url(r'^add_request_comment/(?P<reqid>\d+)/$', 'atlas.prodtask.step_manage_views.add_request_comment', name='add_request_comment'),
     url(r'^dataset_slice_info/(?P<reqid>\d+)/(?P<slice_number>\d+)/$', 'atlas.prodtask.step_manage_views.dataset_slice_info', name='dataset_slice_info'),
     url(r'^add_request_hashtag/(?P<reqid>\d+)/$', 'atlas.prodtask.hashtag.add_request_hashtag', name='add_request_hashtag'),
