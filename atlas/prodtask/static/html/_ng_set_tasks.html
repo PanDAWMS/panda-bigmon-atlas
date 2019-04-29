@@ -13,7 +13,13 @@
         <input ng-model="hashtag" />
     </label>
     </div>
+    <div class="column large-1">
+        <label> Use container names
+         <input type="checkbox"  ng-model="use_containers">
+            </label>
+    </div>
     <div class="column large-2">
-        <button ng-click="set_hahtag()"> Set</button>
+        <div ng-show="loading"><span>LOADING...</span></div>
+        <button ng-click="set_hahtag()" ng-disabled="loading "> Set</button>
     </div>
 </div>
