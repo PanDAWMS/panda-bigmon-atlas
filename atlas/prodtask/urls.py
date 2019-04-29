@@ -201,6 +201,7 @@ urlpatterns = patterns('',
 
     url(r'^request_hashtags_main/', 'atlas.prodtask.hashtag.request_hashtags_main', name='request_hashtags_main'),
     url(r'^set_hashtag_for_tasks/', 'atlas.prodtask.hashtag.set_hashtag_for_tasks', name='set_hashtag_for_tasks'),
+    url(r'^set_hashtag_for_containers/', 'atlas.prodtask.hashtag.set_hashtag_for_containers',name='set_hashtag_for_containers'),
 
     url(r'^tasks_statistic_steps/', 'atlas.prodtask.hashtag.tasks_statistic_steps', name='tasks_statistic_steps'),
     url(r'^request_hashtag_monk/', 'atlas.prodtask.selection.request_hashtag_monk', name='request_hashtag_monk'),

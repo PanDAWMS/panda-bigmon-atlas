@@ -564,6 +564,8 @@ def statistic_by_request_deriv(search_dict,formats_dict):
             formats_splits.append(current_format.copy())
             current_format = {}
         i += 1
+    if current_format:
+        formats_splits.append(current_format.copy())
     for formats in formats_splits:
         query = {
                   "size": 0,
@@ -847,6 +849,24 @@ def deriv_request_stat(request):
 
         return Response({'error':str(e)},status=400)
     return Response(result)
+
+@api_view(['POST'])
+def output_hashtag_stat(request):
+    try:
+        hashtags_raw = request.body
+        hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
+        hashtags = [x.lower() for x in hashtags_split if x]
+        format_dict = deriv_formats({"terms": {"hashtag_list": hashtags}})
+        statistics = statistic_by_request_deriv({"terms": {"hashtag_list": hashtags}}, format_dict)
+        running_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['running'], format_dict)
+        finished_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['finished','done'], format_dict)
+        result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
+    except Exception,e:
+        print str(e)
+
+        return Response({'error':str(e)},status=400)
+    return Response(result)
+
 
 def derivation_stat(project, ami, output):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')

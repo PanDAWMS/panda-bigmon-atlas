@@ -11,7 +11,7 @@ from rest_framework.response import Response
 import pickle
 
 from atlas.prodtask.check_duplicate import create_task_chain
-from atlas.prodtask.ddm_api import tid_from_container
+from atlas.prodtask.ddm_api import tid_from_container, DDM
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks
@@ -276,12 +276,43 @@ def set_hashtag_for_tasks(request):
         hashtag = add_or_get_request_hashtag(hashtag_name)
         for task in tasks:
             if ProductionTask.objects.filter(id=task).exists():
-                production_task = ProductionTask.objects.get(id=task)
-                production_task.set_hashtag(hashtag)
+                add_hashtag_to_task(hashtag.hashtag, task)
     except Exception,e:
         return Response({'error':str(e)},status=400)
 
     return Response({'success':True})
+
+
+
+def get_tasks_from_containers(containers):
+    ddm = DDM()
+    tasks = []
+    for container in containers:
+        try:
+            current_tids = [int(x[x.rfind('tid')+3:x.rfind('_')]) for x in ddm.dataset_in_container(container) if 'tid' in x]
+            tasks += current_tids
+        except:
+            pass
+    return tasks
+
+
+
+
+@csrf_protect
+@api_view(['POST'])
+def set_hashtag_for_containers(request):
+    try:
+        input_data = json.loads(request.body)
+        hashtag_name, containers = input_data['hashtag'], input_data['containers']
+        hashtag = add_or_get_request_hashtag(hashtag_name)
+        tasks = get_tasks_from_containers(containers)
+        for task in tasks:
+            if ProductionTask.objects.filter(id=task).exists():
+                add_hashtag_to_task(hashtag.hashtag, task)
+    except Exception,e:
+        return Response({'error':str(e)},status=400)
+    return Response({'success':True})
+
 
 @api_view(['GET'])
 def hashtags_campaign_lists(request):

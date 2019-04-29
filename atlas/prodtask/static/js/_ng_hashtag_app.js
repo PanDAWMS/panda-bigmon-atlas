@@ -155,8 +155,8 @@ hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http','$routeParams'
 
 
 
-function extractTaskID(originalText){
-    var parsedText = originalText.replace(/(\r\n|\n|\r|\s|;)/gm,",").split(",");
+function extractTaskID(parsedText){
+
     var resultArray = [];
     for(var i= 0;i<parsedText.length;i++){
         var token=parsedText[i];
@@ -176,20 +176,32 @@ function extractTaskID(originalText){
 hashtagApp.controller('setTasksHashtagCtrl',['$scope','$http','$routeParams',
 
     function (scope, http, routeParams) {
-
+        scope.use_containers = false;
+        scope.loading = false;
 
 
         scope.set_hahtag = function(){
-            var tasks = extractTaskID(scope.tasks_text);
-            message = "Set " + scope.hashtag + " for " + tasks.length.toString() + " tasks.";
-            if(confirm(message)){
+            var parsedText = scope.tasks_text.replace(/(\r\n|\n|\r|\s|;)/gm,",").split(",");
+            if (scope.use_containers){
+                var url = Django.url('prodtask:set_hashtag_for_containers');
+                var containers = parsedText;
+                var sendData = {hashtag:scope.hashtag,containers:containers};
+                var message = "Set " + scope.hashtag + " for " + containers.length.toString() + " containers.";
+            } else {
+                var tasks = extractTaskID(parsedText);
+                var url = Django.url('prodtask:set_hashtag_for_tasks');
+                var message = "Set " + scope.hashtag + " for " + tasks.length.toString() + " tasks.";
                 var sendData = {hashtag:scope.hashtag,tasks:tasks};
-                http.post(Django.url('prodtask:set_hashtag_for_tasks'),sendData).
+            }
+            if(confirm(message)){
+                scope.loading = true;
+                http.post(url,sendData).
                   success(function(data, status, headers, config) {
                         window.location.href = '/reqtask/hashtags/&'+scope.hashtag;
 
                     }).
                   error(function(data, status, headers, config) {
+                      scope.loading = false;
                         alert('Error: '+ data.error);
                   });
             }

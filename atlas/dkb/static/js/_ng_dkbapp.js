@@ -313,6 +313,41 @@
             }
 
         }]);
+
+        DKBApp.controller('DKBHTOutputStat',['$scope','$http','$routeParams',
+
+        function (scope, http, routeParams) {
+            scope.hashtag = '';
+            scope.is_loading = false;
+            if ('hashtag' in routeParams){
+                scope.hashtag = routeParams.hashtag;
+                var  toSend = scope.hashtag.toString() ;
+                scope.search_string = 'Hashtags: ' + scope.hashtag.toString();
+            } else if('request' in routeParams){
+                console.log('pass');
+            }
+
+            if (scope.hashtag != ''){
+                scope.is_loading = true;
+
+                    console.log(toSend);
+                    http.post(Django.url('dkb:output_hashtag_stat'),toSend).
+                     success(function(data, status, headers, config) {
+                        scope.steps= data;
+                        scope.is_loading = false;
+
+                     }).
+                    error(function(data, status, headers, config) {
+                                if (data.message != undefined){
+                                    alert(data.message);
+                                }
+                                 scope.is_loading = false;
+
+                    });
+            }
+
+        }]);
+
         DKBApp.controller('DKBDerivOutputStat',['$scope','$http','$routeParams',
 
         function (scope, http, routeParams) {
@@ -370,6 +405,10 @@
           when('/steps_stat/', {
               templateUrl: '/static/html/_ng_step_stat.html',
               controller: 'DKBStepStat'
+            }).
+          when('/output_stat/', {
+              templateUrl: '/static/html/_ng_step_stat.html',
+              controller: 'DKBHTOutputStat'
             }).
           when('/deriv_outputs_stat/', {
                   templateUrl: '/static/html/_ng_step_stat.html',
