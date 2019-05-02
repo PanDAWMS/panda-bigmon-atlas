@@ -377,7 +377,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 		      if ((joboptions!='')&&(joboptions!=undefined)) {
                 var jo = joboptions.split(".");
                 var dsid = jo[1].substring(0, 3) + "xxx";
-                var link = "https://svnweb.cern.ch/cern/wsvn/atlasoff/Generators/" + jo[0] + "JobOptions/trunk/share/DSID" + dsid + "/" + joboptions
+                var link = "https://gitlab.cern.ch/atlas-physics/pmg/infrastructure/" + jo[0].toLowerCase() + "joboptions/blob/master/share/DSID" + dsid + "/" + joboptions;
                 $(this).attr('href', link);
                 var jo_project = jo[0].substring(0,4).toLowerCase();
                 var request_project = $('#requestProject').html().substring(0,4).toLowerCase();
