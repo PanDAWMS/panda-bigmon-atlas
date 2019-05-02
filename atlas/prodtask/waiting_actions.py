@@ -220,7 +220,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                 waiting_step.status = 'active'
                 waiting_step.execution_time = timezone.now() + timedelta(hours=delay)
             if error_message:
-                waiting_step.message = 'Error for of %s: %s ' % (str(datasets)[:1000],str(e))
+                waiting_step.message = 'Error for of %s: %s ' % (str(datasets)[:1000],str(error_message))
             waiting_step.message = 'Some of %s have <2 replicas' % (str(datasets)[:1000])
         waiting_step.save()
     if approve_step:
@@ -312,7 +312,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     #if waiting_step.get_config('do_rule') and (waiting_step.get_config('do_rule')=='Yes') :
                     if step.request.cstatus not in ['test']:
                         ddm.add_replication_rule(dataset, rse ,copies=1, lifetime=30*86400, weight='freespace',
-                                                 activity='Staging')
+                                                 activity='Staging', notify='P')
             if waiting_step.attempt > max_attempts:
                 waiting_step.status = 'failed'
             else:
