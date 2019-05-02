@@ -63,11 +63,12 @@ allowed_task_actions = {
     'scouting':['set_hashtag','remove_hashtag'],
     'obsolete':['set_hashtag','remove_hashtag'],
     'paused': ['retry'],
+    'staging':['retry'],
     'toretry':['retry']
 }
 
 # Actions for tasks in "active" states
-for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry']:
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry', 'staging']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',

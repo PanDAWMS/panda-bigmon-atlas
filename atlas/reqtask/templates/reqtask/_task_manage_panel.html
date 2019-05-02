@@ -399,7 +399,10 @@
                         </select>
                     </div>
                     <div class="small-4 large-4 columns">
-
+                        <select name="share_mode_select" id="share_mode_select">
+                            <option value="default" selected>Default</option>
+                            <option value="running">Reassign running</option>
+                        </select>
                     </div>
                     <div class="small-2 large-2 columns">
                         <a class="button postfix" id="btn_do_reassign_share">Go</a>
@@ -834,8 +837,12 @@ $(document).ready(function () {
         } else if (action == "reassign_to_nucleus") {
             parameters = [$("#nucleus_select").val(),$("#nucleus_mode_select").val()];
         } else if (action == "reassign_to_share") {
-            parameters = [$("#share_select").val()];
-        } else if ((action == 'increase_priority') || (action=='decrease_priority')) {
+            if ($("#share_mode_select").val() == 'default') {
+                parameters = [$("#share_select").val(), false];
+            } else {
+                parameters = [$("#share_select").val(), true];
+            }
+        }else if ((action == 'increase_priority') || (action=='decrease_priority')) {
             parameters = [20];
         } else if (action == "change_ram_count") {
             parameters = [$("#new_ramcount").val()];
