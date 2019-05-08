@@ -771,7 +771,8 @@ def sync_deft_jedi_task(task_id):
             if (jedi_dataset['masterid'] == None) and (not jedi_dataset['datasetname'].startswith('ddo')) \
                     and (not jedi_dataset['datasetname'].startswith('panda')) and ('.log.' not in jedi_dataset['datasetname']):
                 for nfiles_name in nfiles_stat:
-                    jedi_values[nfiles_name] = jedi_values[nfiles_name] + jedi_dataset[nfiles_name]
+                    if jedi_dataset[nfiles_name]:
+                        jedi_values[nfiles_name] = jedi_values[nfiles_name] + jedi_dataset[nfiles_name]
     for item in jedi_values.keys():
         if jedi_values[item] != deft_task.__getattribute__(item):
             _logger.info("Field %s updated: %s - %s"%(item, jedi_values[item], deft_task.__getattribute__(item)))
