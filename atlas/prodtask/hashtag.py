@@ -401,6 +401,7 @@ def add_request_hashtag(request, reqid):
             input_dict = json.loads(data)
             hashtag = input_dict['hashtag']
             hashtag = hashtag.replace('#','').strip()
+            hashtag = hashtag.replace(" ",'_')
             _logger.debug(form_request_log(reqid,request,'Add hashtag: %s' % str(hashtag)))
             existed_hashtag = add_or_get_request_hashtag(hashtag)
             if not HashTagToRequest.objects.filter(hashtag=existed_hashtag,request=reqid).exists():
