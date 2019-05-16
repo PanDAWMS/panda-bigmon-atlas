@@ -1812,6 +1812,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
+                        current_action['progress'] = False
                         if current_action['action'] == 4:
                             current_action['progress'] = True
                             current_action['total'] = 0
