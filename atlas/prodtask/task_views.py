@@ -57,6 +57,7 @@ GLOBAL_SHARES = [
     'MC Other evgen',
     'MC 16 simul',
     'MC Other simul',
+    'MC merge',
     'Reprocessing default',
     'Heavy Ion',
     'MC Derivations',
