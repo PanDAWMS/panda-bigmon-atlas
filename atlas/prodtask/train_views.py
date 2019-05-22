@@ -427,7 +427,10 @@ def check_slices_for_trains(request):
                     else:
                         step_number = 6
                 else:
-                    step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS),existed_foreign_step)
+                    if req.request_type == 'MC':
+                        step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, None)
+                    else:
+                        step_as_in_page = form_step_in_page(ordered_existed_steps,['']*len(StepExecution.STEPS),existed_foreign_step)
                 if step_as_in_page[step_number]:
                     if step_as_in_page[step_number].status != 'Approved':
                         not_approved.append(slice_number)
