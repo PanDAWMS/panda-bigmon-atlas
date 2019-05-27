@@ -60,14 +60,21 @@ GLOBAL_SHARES = [
     'MC merge',
     'Reprocessing default',
     'Heavy Ion',
+    'Spillover',
     'MC Derivations',
     'Data Derivations',
     'Overlay',
-    'Analysis',
+    'User Analysis',
+    'Group Higgs',
+    'Group SM',
+    'Group Exotics',
+    'Group Susy',
     'Group production',
     'Upgrade',
     'HLT Reprocessing',
-    'Event Index'
+    'Event Index',
+    'Frontier'
+
 ]
 def descent_tasks(request, task_id):
     try:

@@ -218,7 +218,7 @@ def global_share_tree(request):
                     layer.append({'name':share['name'],'parent':parent,'value':int(share['value'])})
                 else:
                    new_rest_shares.append(share)
-            layer.sort(key=lambda x: (x['parent'],x['name']))
+            #layer.sort(key=lambda x: (x['parent'],x['name']))
             tree.append(layer)
             current_parents = [x['name'] for x in layer]
             if (len(new_rest_shares)==len(rest_shares)):
@@ -226,6 +226,19 @@ def global_share_tree(request):
                 break
             rest_shares = new_rest_shares
         levels = len(tree)
+        element_number = {'root':(reduce(lambda x,y:x*100,tree,1))}
+        sorted_tree = []
+        for level_number,layer in enumerate(tree):
+            sorted_layer = []
+            current_number = 1
+            for element in layer:
+                element['order_number'] = element_number[element['parent']] + reduce(lambda x,y:x*100,range(len(tree)-level_number-1),current_number)
+                current_number += 1
+                element_number[element['name']] = element['order_number']
+                sorted_layer.append(element)
+            sorted_layer.sort(key=lambda x: (x['order_number'], x['name']))
+            sorted_tree.append(sorted_layer)
+        tree=sorted_tree
         table_to_show = []
         elements_left = len(all_global_share)
         current_counter = [0 for x in range(levels)]
