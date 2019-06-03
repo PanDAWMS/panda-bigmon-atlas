@@ -65,7 +65,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.admindocs',
     'atlas.auth.voms',
     'rest_framework.authtoken',
-    'djcelery',
+   # 'djcelery',
     'atlas.prodtask',
     'atlas.prodjob',
     'atlas.reqtask',
