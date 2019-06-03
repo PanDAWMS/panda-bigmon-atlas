@@ -1843,7 +1843,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 parameters = json.loads(current_action['config'])
                                 current_action['total'] = parameters['datasets'][0]['total_files']
                                 current_action['done'] = parameters['datasets'][0]['staged_files']
-                                current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(str(parameters['datasets'][0]['dataset']))
+                                link_dataset = str(parameters['datasets'][0]['dataset'])
+                                if ':' not in str(parameters['datasets'][0]['dataset']):
+                                    link_dataset = parameters['datasets'][0]['dataset'].split('.')[0]+':'+parameters['datasets'][0]['dataset']
+                                current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(link_dataset)
                             except:
                                 pass
                         pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
@@ -1864,7 +1867,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                     dataset_staging = staging.dataset_stage
                                     current_action['total'] = dataset_staging.total_files
                                     current_action['done'] = dataset_staging.staged_files
-                                    current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(dataset_staging.dataset)
+                                    link_dataset = dataset_staging.dataset
+                                    if ':' not in dataset_staging.dataset:
+                                        link_dataset = dataset_staging.dataset.split('.')[0] + ':' + dataset_staging.dataset
+                                    current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(link_dataset)
                             except:
                                 pass
                         pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
