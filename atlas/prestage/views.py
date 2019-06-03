@@ -306,6 +306,33 @@ def process_actions(action_step_todo):
         elif action == 7:
             follow_staging(executing_actions[action])
 
+def prestage_by_tape(request):
+
+    try:
+        result = []
+        tape_stat = {}
+        staging_requests = DatasetStaging.objects.filter(status='staging')
+        for staging_request in staging_requests:
+            if staging_request.total_files and staging_request.source:
+                if staging_request.source not in tape_stat:
+                    tape_stat[staging_request.source] = {'requested':0,'staged':0}
+                tape_stat[staging_request.source]['requested'] += staging_request.total_files
+                if staging_request.staged_files:
+                    tape_stat[staging_request.source]['staged'] += staging_request.staged_files
+        for tape in tape_stat:
+            result.append({'name':tape,'requested':tape_stat[tape]['requested'],'staged':tape_stat[tape]['staged']})
+        print result
+    except:
+        return HttpResponseRedirect('/')
+    request_parameters = {
+        'active_app' : 'prodtask',
+        'pre_form_text' : 'Tape stats for active requests',
+        'result_table': result,
+        'parent_template' : 'prodtask/_index.html',
+        }
+
+    return render(request, 'prestage/prestage_by_tape.html', request_parameters)
+
 
 def step_action_in_request(request, reqid):
 

@@ -415,7 +415,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step_in_db.save_with_current_time()
                             if (step_in_db.status == 'Approved') and (step_in_db.get_task_config('PDA')):
                                 set_action(step_in_db)
-                                waiting_level = index
+                               # waiting_level = index
                             parent_step = step_in_db
                     else:
                             status_changed = True
