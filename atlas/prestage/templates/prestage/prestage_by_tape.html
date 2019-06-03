@@ -36,9 +36,14 @@
 
     <table>
     <thead>
+        <tr>
+        <th rowspan="2">Taoe</th>
+        <th colspan="2">Active</th>
+        <th rowspan="2">Done</th>
 
+    </tr>
     <tr>
-        <th>Taoe</th>
+
         <th>Staged</th>
         <th>Requested</th>
 
@@ -47,9 +52,10 @@
     <tbody>
     {%  for tape in result_table %}
         <tr >
-            <td>{{ tape.name }}</td>
+            <td><a  href="https://bigpanda.cern.ch/tasks/?tape=true&stagesource={{ tape.name  }}">{{ tape.name }}</a></td>
             <td>{{ tape.staged }}</td>
             <td>{{ tape.requested }}</td>
+            <td>{{ tape.done }}</td>
         </tr>
     {% endfor %}
     </tbody>

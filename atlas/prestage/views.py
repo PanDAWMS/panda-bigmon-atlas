@@ -306,21 +306,24 @@ def process_actions(action_step_todo):
         elif action == 7:
             follow_staging(executing_actions[action])
 
-def prestage_by_tape(request):
 
+def prestage_by_tape(request):
     try:
         result = []
         tape_stat = {}
-        staging_requests = DatasetStaging.objects.filter(status='staging')
+        staging_requests = DatasetStaging.objects.filter(status__in=['staging','done'])
         for staging_request in staging_requests:
             if staging_request.total_files and staging_request.source:
                 if staging_request.source not in tape_stat:
-                    tape_stat[staging_request.source] = {'requested':0,'staged':0}
+                    tape_stat[staging_request.source] = {'requested':0,'staged':0,'done':0}
+                if staging_request.status == 'done':
+                    tape_stat[staging_request.source]['done'] += staging_request.total_files
                 tape_stat[staging_request.source]['requested'] += staging_request.total_files
                 if staging_request.staged_files:
                     tape_stat[staging_request.source]['staged'] += staging_request.staged_files
         for tape in tape_stat:
-            result.append({'name':tape,'requested':tape_stat[tape]['requested'],'staged':tape_stat[tape]['staged']})
+            result.append({'name':tape,'requested':tape_stat[tape]['requested'],'staged':tape_stat[tape]['staged'],
+                           'done':tape_stat[tape]['done']})
         print result
     except:
         return HttpResponseRedirect('/')
