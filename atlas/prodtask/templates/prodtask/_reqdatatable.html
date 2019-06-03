@@ -3185,7 +3185,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 <tr style="padding:0px;margin:0px;height: 20px">
                                 <td  style="padding: 0px;width: 50px;border:1px solid black" class="action {{ action.status }} " >
                                     <div>
-                                       <a  href="/prodtask/predefinition_action/{{ action.id }}">{{ action.status }}</a>
+                                       <a  href="/{{ action.path }}/{{ action.id }}">{{ action.status }}</a>
                                     </div>
                                 </td>
                                 {% else %}
@@ -3647,6 +3647,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                         <option value="postpone">Postpone</option>
                                         <option value="check2rep">Wait 2 replicas</option>
                                         <option value="preStage">Do Pre Stage</option>
+                                         <option value="preStageWithTask">Pre stage with task</option>
                                     </select>
                                   </label>
                                 </div>
@@ -3858,6 +3859,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                         <option value="postpone">Postpone</option>
                                         <option value="check2rep">Wait 2 replicas</option>
                                         <option value="preStage">Do Pre Stage</option>
+                                        <option value="preStageWithTask">Pre stage with task</option>
+
                                     </select>
                                   </label>
                                 </div>

@@ -65,7 +65,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.admindocs',
     'atlas.auth.voms',
     'rest_framework.authtoken',
-
+    'djcelery',
     'atlas.prodtask',
     'atlas.prodjob',
     'atlas.reqtask',
@@ -73,6 +73,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.gdpconfig',
     'atlas.art',
     'atlas.dkb',
+    'atlas.prestage',
      'djangojs',
     'django_datatables_view',
     ### atlas.todoview: Placeholder for views which need to be implemented

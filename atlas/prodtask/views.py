@@ -22,7 +22,7 @@ import time
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep
+    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep, StepAction, ActionStaging
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -49,19 +49,33 @@ _logger = logging.getLogger('prodtaskwebui')
 def create_predefinition_action(step):
     if not ProductionTask.objects.filter(step=step).exists():
         action = WaitingStep.ACTION_NAME_TYPE[step.get_task_config('PDA')]
-        step.status = 'Waiting'
-        step.save()
-        if not WaitingStep.objects.filter(step=int(step.id), action=action,
-                                          status__in=['active', 'executing']).exists():
-            waiting_step = WaitingStep()
-            waiting_step.step = step.id
-            waiting_step.request = step.request
-            waiting_step.create_time = timezone.now()
-            waiting_step.execution_time = timezone.now()
-            waiting_step.attempt = 0
-            waiting_step.action = action
-            waiting_step.status = 'active'
-            waiting_step.save()
+        if action == 5:
+            if not StepAction.objects.filter(step=int(step.id), action=action,
+                                              status__in=['active', 'executing']).exists():
+                sa = StepAction()
+                sa.action = 5
+                sa.status = 'active'
+                sa.request = step.request
+                sa.step = step.id
+                sa.attempt = 0
+                sa.create_time = timezone.now()
+                sa.execution_time = timezone.now()
+                sa.save()
+
+        else:
+            step.status = 'Waiting'
+            step.save()
+            if not WaitingStep.objects.filter(step=int(step.id), action=action,
+                                              status__in=['active', 'executing']).exists():
+                waiting_step = WaitingStep()
+                waiting_step.step = step.id
+                waiting_step.request = step.request
+                waiting_step.create_time = timezone.now()
+                waiting_step.execution_time = timezone.now()
+                waiting_step.attempt = 0
+                waiting_step.action = action
+                waiting_step.status = 'active'
+                waiting_step.save()
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     if request.method == 'GET':
@@ -1798,8 +1812,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                             pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing','failed']).values())
                         except:
                             pass
+                        pre_definition_new_actions_db = []
+                        try:
+                            pre_definition_new_actions_db = list(StepAction.objects.filter(request=rid, status__in=['active','executing','failed'], action=6))
+                        except:
+                            pass
                     else:
                         pre_definition_actions_db = []
+                        pre_definition_new_actions_db = []
                         steps_db = list(StepExecution.objects.filter(Q(request=rid),Q(slice_id__in=cloned_slices+list(failed_slices))).values())
                     tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
                     step_templates_set = set()
@@ -1813,6 +1833,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
                         current_action['progress'] = False
+                        current_action['path'] = 'prodtask/predefinition_action'
                         if current_action['action'] == 4:
                             current_action['progress'] = True
                             current_action['total'] = 0
@@ -1823,6 +1844,27 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 current_action['total'] = parameters['datasets'][0]['total_files']
                                 current_action['done'] = parameters['datasets'][0]['staged_files']
                                 current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(str(parameters['datasets'][0]['dataset']))
+                            except:
+                                pass
+                        pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
+                    for current_new_action in pre_definition_new_actions_db:
+                        current_action = {}
+                        current_action['progress'] = False
+                        current_action['path'] = 'prestage/step_action'
+                        if current_new_action.action == 6:
+                            current_action['progress'] = True
+                            current_action['total'] = 0
+                            current_action['done'] = 0
+                            current_action['link'] = ''
+                            current_action['id'] = int(current_new_action.id)
+                            current_action['status'] = current_new_action.status
+                            current_action['step'] = current_new_action.step
+                            try:
+                                    staging = ActionStaging.objects.filter(step_action=current_new_action)[0]
+                                    dataset_staging = staging.dataset_stage
+                                    current_action['total'] = dataset_staging.total_files
+                                    current_action['done'] = dataset_staging.staged_files
+                                    current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(dataset_staging.dataset)
                             except:
                                 pass
                         pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]

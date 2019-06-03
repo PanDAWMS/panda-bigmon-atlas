@@ -1,0 +1,66 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    {% django_js %}
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+
+    <table>
+    <thead>
+
+    <tr>
+        <th>ID</th>
+        <th>Action</th>
+        <th>Status</th>
+        <th>Tape</th>
+        <th>Files</th>
+        <th>Dataset</th>
+        <th>rse</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for action in result_table %}
+        <tr >
+            <td> <a  href="/prestage/step_action/{{ action.id }}">{{ action.id }}</a></td>
+            <td>{{ action.action }}</td>
+            <td>{{ action.status }}</td>
+            <td>{{ action.tape }}</td>
+            <td>{{ action.staged_files }}/{{ action.total_files }}</td>
+            <td>{% autoescape off %}{{ action.dataset }}{% endautoescape %}</td>
+            <td>{% autoescape off %}{{ action.rse }}{% endautoescape %}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+
+{% endblock %}

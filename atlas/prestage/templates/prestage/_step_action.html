@@ -1,0 +1,61 @@
+{% extends parent_template %}
+{% load url from future %}
+{% load static from staticfiles %}
+{% load js %}
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    {% django_js %}
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<table>
+<tr><th><label for="Action">Action:</label></th><td>{{ waiting_step.action }}</td></tr>
+<tr><th><label for="status">Status:</label></th><td><span class="wsstat {{ waiting_step.status }}">{{ waiting_step.status }}</span></td></tr>
+<tr><th><label for="step">Step execution:</label></th><td>{% if waiting_step.step.id %}<a href="{% url 'prodtask:step_execution' waiting_step.step.id %}">{{waiting_step.step.step_template.step}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="request">Request:</label></th><td>{% if waiting_step.request.reqid %}<a href="{% url 'prodtask:input_list_approve' waiting_step.request.reqid %}#inputList{{ waiting_step.step.slice.slice }}">{{waiting_step.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
+<tr><th><label for="Submit time">Submit time:</label></th><td>{{ waiting_step.create_time }}</td></tr>
+<tr><th><label for="Task">Task:</label></th><td><a  href="/prodtask/task/{{ task }}">{{ task}}</a></td></tr>
+
+<tr><th><label for="Next attempt time">Next attempt time:</label></th><td>{{ waiting_step.execution_time }}</td></tr>
+<tr><th><label for="Message">Message:</label></th><td>{% autoescape off %}{{ message }}{% endautoescape %}</td></tr>
+
+</table>
+
+    <div class="row">
+
+        <div class="column large-2 ">
+        </div>
+        <div class="column large-6">
+{#            <a class="button alert actionbtn" onclick="$('.actionbtn').addClass('disabled');window.location.href = Django.url('prodtask:finish_action',{{ waiting_step.id }});">Finish</a>#}
+{#            <a class="button alert actionbtn" onclick="$('.actionbtn').addClass('disabled');window.location.href = Django.url('prodtask:cancel_action',{{ waiting_step.id  }});">Cancel</a>#}
+
+        </div>
+        <div class="column large-4"></div>
+    </div>
+
+{% endblock %}

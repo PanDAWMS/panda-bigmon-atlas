@@ -51,7 +51,7 @@ common_patterns = patterns('',
     url(r'^getdatasets/', include('atlas.getdatasets.urls', namespace='getdatasets')),
     url(r'^art/', include('atlas.art.urls', namespace='art')),
     url(r'^dkb/', include('atlas.dkb.urls', namespace='dkb')),
-
+    url(r'^prestage/', include('atlas.prestage.urls', namespace='prestage')),
 #    ### TEST/Playground
 #    url(r'^test_playground/$', common_views.testing, name='testing'),
 #    url(r'^htc4/$', htcondor_views.list3HTCondorJobs, name='htc4'),

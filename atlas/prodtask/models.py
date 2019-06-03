@@ -331,6 +331,7 @@ class ProductionDataset(models.Model):
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
     campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
     ddm_timestamp = models.DateTimeField(db_column='ddm_timestamp')
+    ddm_status = models.CharField(max_length=32, db_column='DDM_STATUS', null=True)
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
@@ -1030,6 +1031,171 @@ def remove_hashtag_from_task(task_id, hashtag):
     return deleted
 
 
+class StepAction(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ACTION_ID', primary_key=True)
+    request = models.ForeignKey(TRequest,  db_column='PR_ID')
+    step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')
+    action = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACTION_TYPE')
+    create_time = models.DateTimeField(db_column='SUBMIT_TIME')
+    execution_time = models.DateTimeField(db_column='EXEC_TIME')
+    done_time = models.DateTimeField(db_column='DONE_TIME')
+    message = models.CharField(max_length=2000, db_column='MESSAGE')
+    attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
+    status = models.CharField(max_length=20, db_column='STATUS', null=True)
+    config = models.CharField(max_length=2000, db_column='CONFIG')
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
+        super(StepAction, self).save(*args, **kwargs)
+
+    def set_config(self, update_dict):
+        if not self.config:
+            self.config = ''
+            currrent_dict = {}
+        else:
+            currrent_dict = json.loads(self.config)
+        currrent_dict.update(update_dict)
+        self.config = json.dumps(currrent_dict)
+
+    def remove_config(self, key):
+        if self.config:
+            currrent_dict = json.loads(self.config)
+            if key in currrent_dict:
+                currrent_dict.pop(key)
+                self.config = json.dumps(currrent_dict)
+
+    def get_config(self, field = None):
+        return_dict = {}
+        try:
+            return_dict = json.loads(self.config)
+        except:
+            pass
+        if field:
+            return return_dict.get(field,None)
+        else:
+            return return_dict
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_STEP_ACTION"'
+
+
+class DatasetStaging(models.Model):
+
+    ACTIVE_STATUS = ['queued','staging']
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DATASET_STAGING_ID', primary_key=True)
+    dataset = models.CharField(max_length=255, db_column='DATASET', null=True)
+    start_time = models.DateTimeField(db_column='START_TIME')
+    end_time = models.DateTimeField(db_column='END_TIME')
+    rse = models.CharField(max_length=100, db_column='RSE')
+    total_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='TOTAL_FILES')
+    staged_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='STAGED_FILES')
+    status = models.CharField(max_length=20, db_column='STATUS', null=True)
+    source = models.CharField(max_length=200, db_column='SOURCE_RSE', null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
+        super(DatasetStaging, self).save(*args, **kwargs)
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_DATASET_STAGING"'
+
+class ActionStaging(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_ST_ID', primary_key=True)
+    step_action = models.ForeignKey(StepAction, db_column='STEP_ACTION_ID')
+    dataset_stage = models.ForeignKey(DatasetStaging, db_column='DATASET_STAGING_ID')
+    task = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID')
+    share_name = models.CharField(max_length=100, db_column='SHARE_NAME')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db','ACTION_STAGING_SEQ',u'T_ACTION_STAGING','ACT_ST_ID')
+        super(ActionStaging, self).save(*args, **kwargs)
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_ACTION_STAGING"'
+
+class ActionDefault(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_DEFAULT_ID', primary_key=True)
+    name = models.CharField(max_length=30, db_column='NAME', null=True)
+    type =  models.CharField(max_length=20, db_column='TYPE', null=True)
+    config = models.CharField(max_length=2000, db_column='CONFIG')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
+        super(ActionDefault, self).save(*args, **kwargs)
+
+    def set_config(self, update_dict):
+        if not self.config:
+            self.config = ''
+            currrent_dict = {}
+        else:
+            currrent_dict = json.loads(self.config)
+        currrent_dict.update(update_dict)
+        self.config = json.dumps(currrent_dict)
+
+    def remove_config(self, key):
+        if self.config:
+            currrent_dict = json.loads(self.config)
+            if key in currrent_dict:
+                currrent_dict.pop(key)
+                self.config = json.dumps(currrent_dict)
+
+    def get_config(self, field = None):
+        return_dict = {}
+        try:
+            return_dict = json.loads(self.config)
+        except:
+            pass
+        if field:
+            return return_dict.get(field,None)
+        else:
+            return return_dict
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
+
+class StorageResource(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='SRS_ID', primary_key=True)
+    name = models.CharField(max_length=30, db_column='DATASET', null=True)
+    timestamp = models.DateTimeField(db_column='LAST_UPDATE')
+    end_time = models.DateTimeField(db_column='END_TIME')
+    state = models.CharField(max_length=2000, db_column='STATE')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_SRS_SEQ',"T_STORAGE_RESOURCE_STATE",'SRS_ID')
+        super(StorageResource, self).save(*args, **kwargs)
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_STORAGE_RESOURCE_STATE"'
+
+
 
 class WaitingStep(models.Model):
 
@@ -1038,9 +1204,10 @@ class WaitingStep(models.Model):
         2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 200, 'delay':1},
         3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
         4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
+        5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1}
     }
 
-    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':4}
+    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':4, 'preStageWithTask':5}
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID')

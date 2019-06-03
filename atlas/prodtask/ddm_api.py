@@ -195,11 +195,24 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None, notify='N'):
+    def get_replica_pre_stage_rule(self, dataset):
+        scope, name = self.rucio_convention(dataset)
+        for lock in self.__ddm.get_dataset_locks(scope, name):
+            if lock['rse'].find('TAPE') > -1:
+                if str(lock['state']) == 'OK':
+                    rse_attr = self.__ddm.list_rse_attributes(lock['rse'])
+                    return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE',lock['rse']
+            elif lock['rse'] == 'CERN-PROD_TEST-CTA':
+                if str(lock['state']) == 'OK':
+                    rse_attr = self.__ddm.list_rse_attributes(lock['rse'])
+                    return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA',lock['rse']
+
+
+    def add_replication_rule(self, dataset, rse, copies=1, lifetime=30*86400, weight='freespace', activity=None, notify='N', source_replica_expression=None):
         _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
         scope, name = self.rucio_convention(dataset)
         self.__ddm.add_replication_rule(dids=[{'scope':scope, 'name':name}], rse_expression=rse, activity=activity, copies=copies,
-                                        lifetime=lifetime, weight=weight, notify=notify)
+                                        lifetime=lifetime, weight=weight, notify=notify,source_replica_expression=source_replica_expression)
 
     def dataset_in_container(self, container_name):
         """

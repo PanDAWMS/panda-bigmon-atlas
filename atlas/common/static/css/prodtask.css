@@ -94,6 +94,14 @@ span.tstat.registered {
     color: blue;
 }
 
+span.rstat.staging {
+    color: darkviolet;
+}
+
+span.tstat.staging {
+    color: darkviolet;
+}
+
 span.dsstat.failed {
     color: magenta;
 }
