@@ -330,10 +330,10 @@ def prestage_by_tape(request):
         for tape in tape_stat:
             result.append({'name':tape,'requested':tape_stat[tape]['requested'],'staged':tape_stat[tape]['staged'],
                            'done':tape_stat[tape]['done'],
-                           'percent':int(100*(1. - float(tape_stat[tape]['staged'])/float(tape_stat[tape]['done']+tape_stat[tape]['requested']) ))})
+                           'percent':int(100*(float(tape_stat[tape]['staged']+tape_stat[tape]['done'])/float(tape_stat[tape]['done']+tape_stat[tape]['requested']) ))})
         result.append({'name':'total','requested':total['requested'],'staged':total['staged'],
                            'done':total['done'],
-                           'percent':int(100*(1. - float(total['staged'])/float(total['done']+total['requested']))) })
+                           'percent':int(100*(float(total['staged']+total['done'])/float(total['done']+total['requested']))) })
         print result
     except:
         return HttpResponseRedirect('/')
