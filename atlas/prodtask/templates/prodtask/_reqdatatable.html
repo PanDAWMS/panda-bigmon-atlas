@@ -294,6 +294,16 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
             })
         })();
+        (function(){
+            $('.actionStatus').each(function(){
+                        var currentID = $(this).attr("id");
+                        var slice = currentID.slice(currentID.indexOf('as')+2);
+                        $('#actionStatusFilter'+slice).html('exists');
+
+
+
+            })
+        })();
     (function(){
             $('.sliceOrigin').each(function(){
                 if($(this).html().endsWith('original')){
@@ -2514,8 +2524,8 @@ function changeStatusFilter(){
                });
                  break;
             case 'waiting':
-                $('.StatusFilter').each(function(){
-                  if($(this).html()!='waiting'){
+                $('.ActionStatusFilter').each(function(){
+                  if($(this).html()!='exists'){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }
                });
@@ -2968,7 +2978,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="not_submitted">not submitted</option>
                 <option value="running_tasks">running tasks</option>
                 <option value="no_tasks">no tasks</option>
-                <option value="waiting">waiting</option>
+                <option value="waiting">actions</option>
             </select>
            </label>
         </div>
@@ -3175,6 +3185,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% endifequal %}
                 {% endfor %}
                     <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">no_tasks</span>
+                    <span id="actionStatusFilter{{ inputList.slice }}" class="ActionStatusFilter" style="display: none;">no_actions</span>
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="width: 8em;text-align:center"><span class="{{ approved.submitted }} {{ approved.original }} StatusFilter" >{{ approved.submitted }}</span><span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
                 <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
@@ -3197,7 +3208,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 <tr style="padding:0px;margin:0px;height: 20px">
                                 <td  style="padding: 0px;width: 50px;border:1px solid black" class="action {{ action.status }} " >
                                     <div>
-                                       <a  href="/{{ action.path }}/{{ action.id }}">{{ action.status }}</a>
+                                       <a class="actionStatus" id="{{ action.id }}as{{ inputList.slice }}" href="/{{ action.path }}/{{ action.id }}">{{ action.status }}</a>
                                     </div>
                                 </td>
                                 {% else %}
