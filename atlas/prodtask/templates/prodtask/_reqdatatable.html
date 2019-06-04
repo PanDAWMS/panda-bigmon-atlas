@@ -285,6 +285,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         var currentID = $(this).attr("id");
                         var slice = currentID.slice(currentID.indexOf('ts')+2);
                         $('#taskStatusFilter'+slice).html('running');
+                } else{
+                        var currentID = $(this).attr("id");
+                        var slice = currentID.slice(currentID.indexOf('ts')+2);
+                        $('#taskStatusFilter'+slice).html('No running');
                 }
 
 
@@ -2502,6 +2506,13 @@ function changeStatusFilter(){
                   }
                });
                  break;
+            case 'no_tasks':
+                $('.TaskStatusFilter').each(function(){
+                  if($(this).html()!='no_tasks'){
+                      $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                  }
+               });
+                 break;
             case 'waiting':
                 $('.StatusFilter').each(function(){
                   if($(this).html()!='waiting'){
@@ -2956,6 +2967,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="partially_submitted">partially submitted</option>
                 <option value="not_submitted">not submitted</option>
                 <option value="running_tasks">running tasks</option>
+                <option value="no_tasks">no tasks</option>
                 <option value="waiting">waiting</option>
             </select>
            </label>
@@ -3162,7 +3174,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
                         {% endifequal %}
                 {% endfor %}
-                    <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">Not running</span>
+                    <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">no_tasks</span>
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="width: 8em;text-align:center"><span class="{{ approved.submitted }} {{ approved.original }} StatusFilter" >{{ approved.submitted }}</span><span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
                 <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
                        <u> <a href="#" id="saveStatus{{ inputList.slice }}" onclick="formSliceInfo(event, this.id);" data-options="is_hover:true" >
