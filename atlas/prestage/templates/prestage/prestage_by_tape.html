@@ -40,13 +40,13 @@
         <th rowspan="2">Tape</th>
         <th colspan="2">Active</th>
         <th rowspan="2">Done</th>
-
+        <th></th>
     </tr>
     <tr>
 
         <th>Staged</th>
         <th>Requested</th>
-
+         <th></th>
     </tr>
     </thead>
     <tbody>
@@ -56,6 +56,7 @@
             <td>{{ tape.staged }}</td>
             <td>{{ tape.requested }}</td>
             <td>{{ tape.done }}</td>
+            <td>{{ tape.percent }}%</td>
         </tr>
     {% endfor %}
     </tbody>

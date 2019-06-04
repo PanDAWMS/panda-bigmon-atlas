@@ -311,6 +311,7 @@ def prestage_by_tape(request):
     try:
         result = []
         tape_stat = {}
+        total = {'requested':0,'staged':0,'done':0}
         staging_requests = DatasetStaging.objects.filter(status__in=['staging','done'])
         for staging_request in staging_requests:
             if staging_request.total_files and staging_request.source:
@@ -318,12 +319,21 @@ def prestage_by_tape(request):
                     tape_stat[staging_request.source] = {'requested':0,'staged':0,'done':0}
                 if staging_request.status == 'done':
                     tape_stat[staging_request.source]['done'] += staging_request.total_files
-                tape_stat[staging_request.source]['requested'] += staging_request.total_files
-                if staging_request.staged_files:
-                    tape_stat[staging_request.source]['staged'] += staging_request.staged_files
+                    total['done'] += staging_request.total_files
+
+                else:
+                    tape_stat[staging_request.source]['requested'] += staging_request.total_files
+                    total['requested'] += staging_request.total_files
+                    if staging_request.staged_files:
+                        tape_stat[staging_request.source]['staged'] += staging_request.staged_files
+                        total['staged'] += staging_request.staged_files
         for tape in tape_stat:
             result.append({'name':tape,'requested':tape_stat[tape]['requested'],'staged':tape_stat[tape]['staged'],
-                           'done':tape_stat[tape]['done']})
+                           'done':tape_stat[tape]['done'],
+                           'percent':int(100*(1. - float(tape_stat[tape]['staged'])/float(tape_stat[tape]['done']+tape_stat[tape]['requested']) ))})
+        result.append({'name':'total','requested':total['requested'],'staged':total['staged'],
+                           'done':total['done'],
+                           'percent':int(100*(1. - float(total['staged'])/float(total['done']+total['requested']))) })
         print result
     except:
         return HttpResponseRedirect('/')
