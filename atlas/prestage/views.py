@@ -420,3 +420,36 @@ def step_action(request, wstep_id):
         }
 
     return render(request, 'prestage/_step_action.html', request_parameters)
+
+
+@api_view(['POST'])
+@login_required(login_url='/prodtask/login/')
+def finish_action(request, action, action_id):
+
+    try:
+        action_step = StepAction.objects.get(id=action_id)
+        if action_step.status in ['active','executing', 'done']:
+            if action == 'cancel':
+                action_step.status = 'canceled'
+                action_step.message = 'Action was canceled manually'
+                action_step.done_time = timezone.now()
+                action_step.save()
+            elif action == 'finish':
+                action_step.status = 'done'
+                action_step.message = 'Action was finish manually'
+                action_step.done_time = timezone.now()
+                action_step.save()
+                if action_step.action == 6:
+                    if ActionStaging.objects.filter(step_action=action_step).exists()\
+                            and (ActionStaging.objects.filter(step_action=action_step)[0].task):
+                        task = ProductionTask.objects.get(id=ActionStaging.objects.filter(step_action=action_step)[0].task)
+                        if task.status not in ProductionTask.NOT_RUNNING + ['to_abort']:
+                            start_stagind_task(task)
+
+            else:
+                raise Exception('action is not supported')
+    except Exception, e:
+            content = str(e)
+            return Response(content, status=500)
+
+    return Response({'success': True})

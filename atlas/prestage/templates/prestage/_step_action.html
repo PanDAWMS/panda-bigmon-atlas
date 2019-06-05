@@ -44,6 +44,32 @@
 <tr><th><label for="Next attempt time">Next attempt time:</label></th><td>{{ waiting_step.execution_time }}</td></tr>
 <tr><th><label for="Message">Message:</label></th><td>{% autoescape off %}{{ message }}{% endautoescape %}</td></tr>
 
+<script>
+
+    function finish_action(event, action,id) {
+        event.preventDefault();
+        var sendData = "";
+        $('.actionbtn').addClass('disabled');
+        $.ajax({
+                        url: '/prestage/finish_action/'+action+'/'+id+'/',
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        dataType: 'text',
+                        success: function(data,status) {
+                                 location.reload();
+                        },
+
+                         error: function(data,status) {
+                                alert(data.responseText);
+                                console.log(data);
+                                 $('.actionbtn').removeClass('disabled');
+                            }
+                        });
+    }
+
+</script>
+
 </table>
 
     <div class="row">
@@ -51,8 +77,8 @@
         <div class="column large-2 ">
         </div>
         <div class="column large-6">
-{#            <a class="button alert actionbtn" onclick="$('.actionbtn').addClass('disabled');window.location.href = Django.url('prodtask:finish_action',{{ waiting_step.id }});">Finish</a>#}
-{#            <a class="button alert actionbtn" onclick="$('.actionbtn').addClass('disabled');window.location.href = Django.url('prodtask:cancel_action',{{ waiting_step.id  }});">Cancel</a>#}
+            <a class="button alert actionbtn" onclick="finish_action(event, 'finish','{{ waiting_step.id }}');">Finish</a>
+            <a class="button alert actionbtn"  onclick="finish_action(event, 'cancel','{{ waiting_step.id }}');">Cancel</a>
 
         </div>
         <div class="column large-4"></div>
