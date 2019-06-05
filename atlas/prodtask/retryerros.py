@@ -32,6 +32,10 @@ def retry_errors_list(request):
                 if retry_error['work_queue']:
                     working_queue = JediWorkQueue.objects.get(id=retry_error['work_queue'])
                     retry_error['work_queue'] = str(working_queue)
+                if retry_error['active'] == 'Y':
+                    retry_error['is_active'] = 'Yes'
+                else:
+                    retry_error['is_active'] = 'No'
                 retry_error['retry_action'] = str(RetryAction.objects.get(id=retry_error['retry_action_id']))
             except:
              pass
