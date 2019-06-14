@@ -61,6 +61,9 @@ def create_predefinition_action(step):
                 sa.create_time = timezone.now()
                 sa.execution_time = timezone.now()
                 sa.save()
+                if ('toStaging=yes') not in step.get_task_config('project_mode'):
+                    step.update_project_mode('toStaging','yes')
+                    step.save()
 
         else:
             step.status = 'Waiting'

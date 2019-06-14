@@ -29,7 +29,6 @@ def test_step_action(step_action_ids):
 
 def check_staging_task(step_action_ids):
     ddm = DDM()
-    #todo name and config
     config = ActionDefault.objects.get(name='stage_creation').get_config()
     delay = config['delay']
     max_waite_time = config['max_waite_time']
@@ -73,14 +72,19 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
 
 def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,lifetime=None):
 
-    #todo name and config
     config = ActionDefault.objects.get(name='active_staging').get_config()
     if not lifetime:
         lifetime = config['lifetime']
     if not DatasetStaging.objects.filter(dataset=input_dataset,status__in=DatasetStaging.ACTIVE_STATUS).exists():
-
-        dataset_staging = DatasetStaging()
-        dataset_staging.dataset = input_dataset
+        if DatasetStaging.objects.filter(dataset=input_dataset,status='done').exists():
+            dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,status='done').first()
+            dataset_staging.update_time = None
+            dataset_staging.rse = None
+            dataset_staging.source = None
+            dataset_staging.end_time = None
+        else:
+            dataset_staging = DatasetStaging()
+            dataset_staging.dataset = input_dataset
         dataset_staging.total_files = ddm.dataset_metadata(input_dataset)['length']
         dataset_staging.staged_files = 0
         dataset_staging.status = 'queued'
@@ -93,7 +97,8 @@ def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,
             dataset_staging.start_time = timezone.now()
             dataset_staging.save()
     else:
-        dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,status__in=DatasetStaging.ACTIVE_STATUS).last()
+        dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
+                                                        status__in=DatasetStaging.ACTIVE_STATUS).last()
     # Create new action
     if StepAction.objects.filter(step=task.step_id,action = 6,status__in=['active','executing']).exists():
         action_step = StepAction.objects.filter(step=task.step_id,action = 6,status__in=['active','executing']).last()
@@ -195,6 +200,8 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
         action_step.message = 'No tasks were defined'
         action_step.done_time = current_time
         action_step.save()
+        step.remove_project_mode('toStaging')
+        step.save()
         return
     finish_action = True
     for task in tasks:
@@ -208,6 +215,8 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
         action_step.status = 'done'
         action_step.message = 'All task checked'
         action_step.done_time = current_time
+        step.remove_project_mode('toStaging')
+        step.save()
     else:
         action_step.execution_time = action_step.execution_time + timedelta(hours=delay)
         action_step.status = 'active'
@@ -218,10 +227,11 @@ def do_staging(action_step_id, ddm):
     action_step = StepAction.objects.get(id=action_step_id)
     action_step.attempt += 1
     level = action_step.get_config('level')
+    current_time = timezone.now()
     if not ActionStaging.objects.filter(step_action=action_step).exists():
         action_step.status = 'failed'
         action_step.message = 'No tasks were defined'
-        action_step.done_time =  timezone.now()
+        action_step.done_time = current_time
         action_step.save()
         return
     action_finished = True
@@ -231,37 +241,44 @@ def do_staging(action_step_id, ddm):
             task = ProductionTask.objects.get(id=action_stage.task)
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
-            existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
-            if existed_rule:
-                if not dataset_stage.rse:
-                    dataset_stage.rse = existed_rule['id']
-                dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
-                if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or (
-                        (float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0)):
-                    task = ProductionTask.objects.get(id=action_stage.task)
-                    start_stagind_task(task)
-                if (dataset_stage.staged_files != dataset_stage.total_files):
-                    action_finished = False
+            no_update = dataset_stage.update_time and \
+                    ((current_time-dataset_stage.update_time) < timedelta(hours=3*int(action_step.get_config('delay'))))
+            if (not dataset_stage.rse) or (not no_update ):
+                existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
+                if existed_rule:
+                        dataset_stage.rse = existed_rule['id']
+                        dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
+                        dataset_stage.update_time = current_time
                 else:
-                    dataset_stage.status = 'done'
-                    dataset_stage.end_time = timezone.now()
-                dataset_stage.save()
-            else:
+                    action_finished = False
+                    if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
+                                            action_step.get_config('lifetime'),
+                                            action_step.get_config('source_replica')):
+                        dataset_stage.start_time = current_time
+
+            if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or (
+                    (float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0)):
+                task = ProductionTask.objects.get(id=action_stage.task)
+                start_stagind_task(task)
+            if dataset_stage.staged_files != dataset_stage.total_files:
                 action_finished = False
-                if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
-                                        action_step.get_config('lifetime'),action_step.get_config('source_replica')):
-                    dataset_stage.start_time = timezone.now()
-                    dataset_stage.save()
+            else:
+                dataset_stage.status = 'done'
+                dataset_stage.update_time = current_time
+                dataset_stage.end_time = current_time
+            dataset_stage.save()
+
         elif dataset_stage.status == 'queued':
             action_finished = False
-            if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'),action_step.get_config('source_replica')):
+            if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
+                                    action_step.get_config('lifetime'), action_step.get_config('source_replica')):
                 dataset_stage.status = 'staging'
-                dataset_stage.start_time = timezone.now()
+                dataset_stage.start_time = current_time
                 dataset_stage.save()
     if action_finished :
         action_step.status = 'done'
         action_step.message = 'All task started'
-        action_step.done_time = timezone.now()
+        action_step.done_time = current_time
     else:
         action_step.execution_time = action_step.execution_time + timedelta(hours=action_step.get_config('delay'))
         action_step.status = 'active'

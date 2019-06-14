@@ -656,6 +656,20 @@ class StepExecution(models.Model):
         new_project_mode = ';'.join(tokens)
         self.set_task_config({'project_mode':new_project_mode})
 
+    def remove_project_mode(self,token):
+        return_value = None
+        if self.get_task_config('project_mode'):
+            current_project_mode = self.get_task_config('project_mode')
+            tokens = []
+            for current_token in current_project_mode.split(';'):
+                if not current_token.strip().startswith(token):
+                    tokens.append(current_token)
+                else:
+                    return_value = current_token
+            new_project_mode = ';'.join(tokens)
+            self.set_task_config({'project_mode': new_project_mode})
+        return return_value
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
@@ -1096,6 +1110,7 @@ class DatasetStaging(models.Model):
     staged_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='STAGED_FILES')
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
     source = models.CharField(max_length=200, db_column='SOURCE_RSE', null=True)
+    update_time = models.DateTimeField(db_column='UPDATE_TIME')
 
     def save(self, *args, **kwargs):
         if not self.id:
