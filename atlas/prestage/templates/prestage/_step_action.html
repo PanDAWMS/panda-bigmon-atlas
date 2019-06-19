@@ -77,9 +77,10 @@
         <div class="column large-2 ">
         </div>
         <div class="column large-6">
+            <a class="button ok actionbtn" onclick="finish_action(event, 'push','{{ waiting_step.id }}');">Push</a>
             <a class="button alert actionbtn" onclick="finish_action(event, 'finish','{{ waiting_step.id }}');">Finish</a>
             <a class="button alert actionbtn"  onclick="finish_action(event, 'cancel','{{ waiting_step.id }}');">Cancel</a>
-
+            <a class="button alert actionbtn"  onclick="finish_action(event, 'remove','{{ waiting_step.id }}');">Delete Rule</a>
         </div>
         <div class="column large-4"></div>
     </div>

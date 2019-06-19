@@ -451,6 +451,22 @@ def finish_action(request, action, action_id):
                 action_step.message = 'Action was canceled manually'
                 action_step.done_time = timezone.now()
                 action_step.save()
+            elif action == 'remove':
+                if (action_step.action == 6) and (ActionStaging.objects.filter(step_action=action_step).exists()):
+                    dataset_staging = ActionStaging.objects.filter(step_action=action_step).last().dataset_stage
+                    if dataset_staging.rse:
+                        ddm = DDM()
+                        ddm.delete_replication_rule(ActionStaging.objects.filter(step_action=action_step).last().dataset_stage.rse)
+                        dataset_staging.status = 'done'
+                        dataset_staging.update_time = timezone.now()
+                        dataset_staging.save()
+                        action_step.status = 'canceled'
+                        action_step.message = 'Action was canceled and rule deleted manually'
+                        action_step.done_time = timezone.now()
+                        action_step.save()
+            elif action == 'push':
+                action_step.execution_time = timezone.now()
+                action_step.save()
             elif action == 'finish':
                 action_step.status = 'done'
                 action_step.message = 'Action was finish manually'

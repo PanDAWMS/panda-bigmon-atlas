@@ -18,11 +18,13 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 import time
+from datetime import timedelta
 
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep, StepAction, ActionStaging
+    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
+    ActionDefault
 
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
@@ -48,7 +50,7 @@ _logger = logging.getLogger('prodtaskwebui')
 
 def create_predefinition_action(step):
     if not ProductionTask.objects.filter(step=step).exists():
-        action = WaitingStep.ACTION_NAME_TYPE[step.get_task_config('PDA')]
+        action = ActionDefault.ACTION_NAME_TYPE[step.get_task_config('PDA')]
         if action == 5:
             if not StepAction.objects.filter(step=int(step.id), action=action,
                                               status__in=['active', 'executing']).exists():
@@ -59,7 +61,7 @@ def create_predefinition_action(step):
                 sa.step = step.id
                 sa.attempt = 0
                 sa.create_time = timezone.now()
-                sa.execution_time = timezone.now()
+                sa.execution_time = timezone.now() + timedelta(minutes=10)
                 sa.save()
                 if ('toStaging=yes') not in step.get_task_config('project_mode'):
                     step.update_project_mode('toStaging','yes')

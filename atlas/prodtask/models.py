@@ -1145,6 +1145,9 @@ class ActionStaging(models.Model):
 
 class ActionDefault(models.Model):
 
+    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':5, 'preStageWithTask':5}
+
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_DEFAULT_ID', primary_key=True)
     name = models.CharField(max_length=30, db_column='NAME', null=True)
     type =  models.CharField(max_length=20, db_column='TYPE', null=True)
@@ -1222,7 +1225,6 @@ class WaitingStep(models.Model):
         5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1}
     }
 
-    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':4, 'preStageWithTask':5}
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID')
