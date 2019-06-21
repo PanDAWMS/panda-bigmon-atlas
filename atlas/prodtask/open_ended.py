@@ -127,11 +127,8 @@ def step_approve_action(step):
                 create_predefinition_action(step)
             except Exception, e:
                 _logger.error("Problem with pre defintion action %s" % str(e))
-                step.status = 'Approved'
-                step.save()
-    else:
-        step.status = 'Approved'
-        step.save()
+    step.status = 'Approved'
+    step.save()
 
 
 
