@@ -114,17 +114,25 @@ def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,
         if step.get_task_config('PDAParams'):
             try:
                 waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
-                if waiting_parameters_from_step.get('special'):
-                    waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
-                    level = int(waiting_parameters_from_step.get('level'))
-                    if level> 100:
-                        level= 100
-                    if level < 0:
-                        level = 0
+                level = int(waiting_parameters_from_step.get('level'))
+                if level> 100:
+                    level= 100
+                elif level < -1:
+                    level = 0
             except Exception, e:
                 _logger.error(" %s" % str(e))
         if not level:
             level = config['level']
+        if level == -1:
+            if dataset_staging.total_files:
+                if dataset_staging.total_files > 1000:
+                    level = 70
+                elif dataset_staging.total_files > 200:
+                    level = 80
+                else:
+                    level = 90
+            else:
+                level = 90
         action_step.set_config({'level':level})
         action_step.set_config({'lifetime':lifetime})
         action_step.set_config({'rule': rule})
