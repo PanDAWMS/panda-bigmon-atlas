@@ -288,7 +288,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 } else{
                         var currentID = $(this).attr("id");
                         var slice = currentID.slice(currentID.indexOf('ts')+2);
-                        $('#taskStatusFilter'+slice).html('No running');
+                        if ($('#taskStatusFilter'+slice).html()!='running'){
+                            $('#taskStatusFilter'+slice).html('No running');
+                        }
+
                 }
 
 
@@ -2513,8 +2516,7 @@ function changeStatusFilter(){
                 $('.TaskStatusFilter').each(function(){
                   if($(this).html()!='running'){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
-                  }
-               });
+                  }});
                  break;
             case 'no_tasks':
                 $('.TaskStatusFilter').each(function(){
