@@ -1,26 +1,24 @@
 import json
 import logging
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 
 from django.views.decorators.csrf import csrf_protect
-from time import sleep
 from django.utils import timezone
 from copy import deepcopy
 
-from atlas.getdatasets.models import TaskProdSys1
-from atlas.prodtask.ddm_api import tid_from_container, dataset_events_ddm, DDM
+from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern
 #from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.spdstodb import fill_template
+from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
 from ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
-from django.db.models import Count, Q
-from rucio.common.exception import CannotAuthenticate, DataIdentifierNotFound, RucioException
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
@@ -1600,45 +1598,6 @@ def find_downstreams_by_task(task_id):
     return current_duplicates
 
 
-def create_skip_used_tag(task_id):
-    """
-    Create a new slice with step from task_id and skipFilesUsedBy set on it
-    :param task_id:
-    :return: new step id if success, exception otherwise
-    """
-    task = ProductionTask.objects.get(id=task_id)
-    slice = task.step.slice
-    if task.status != 'finished':
-        raise ValueError("only finished task can be restarted using skipFilesUsedBy")
-    if StepExecution.objects.filter(slice=slice).count() != 1:
-        raise ValueError("should be single step in a slice")
-    # Clone slice with step with original task
-    new_slice = clone_slices(task.request_id,task.request_id,[slice.slice],-1,False)[0]
-    # Change step skipFilesUsedBy in project mode
-    new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=task.request,slice=new_slice))
-    new_step.update_project_mode('skipFilesUsedBy',task_id)
-    new_step.save()
-    return new_step.id
-
-
-def task_clone_with_skip_used(task_id, user_name):
-    """
-    Clone step with finished task_id to a new slice and approve step and request.
-    :param task_id: task id
-    :param user_name: user name
-    :return: step id of the new step
-    """
-
-    step_id = create_skip_used_tag(task_id)
-    # Approve step
-    step = StepExecution.objects.get(id=step_id)
-    step.status = 'Approved'
-    step.save()
-    if step.request.cstatus not in ['approved']+ TRequest.TERMINATE_STATE:
-        set_request_status(user_name,step.request_id,'approved','Approve for skipUsed', 'Request was approved for skipUsed')
-    return step_id
-
-
 @csrf_protect
 def test_tasks_from_slices(request):
     results = {'success':False}
@@ -2168,4 +2127,15 @@ def convert_old_patterns(request_id):
             pass
 
 
-
+def obsolete_deleted_tasks(production_request):
+    tasks = ProductionTask.objects.filter(request=production_request,status__in = ['finished','done'])
+    ddm = DDM()
+    for task in tasks:
+        output_datasets = ProductionDataset.objects.filter(task_id=task.id)
+        to_delete = True
+        for output_datset in output_datasets:
+            if ('log' not in output_datset.name) and ddm.dataset_exists(output_datset.name):
+                to_delete = False
+        if to_delete:
+            print task.id,task.name
+            _do_deft_action('mborodin', int(task.id), 'obsolete')

@@ -2993,3 +2993,42 @@ def do_prestage_rule():
                     waiting_step.execution_time = timezone.now()
                     waiting_step.save()
                     print step.request_id,step.slice.slice
+
+
+def task_clone_with_skip_used(task_id, user_name):
+    """
+    Clone step with finished task_id to a new slice and approve step and request.
+    :param task_id: task id
+    :param user_name: user name
+    :return: step id of the new step
+    """
+
+    step_id = create_skip_used_tag(task_id)
+    # Approve step
+    step = StepExecution.objects.get(id=step_id)
+    step.status = 'Approved'
+    step.save()
+    if step.request.cstatus not in ['approved']+ TRequest.TERMINATE_STATE:
+        set_request_status(user_name,step.request_id,'approved','Approve for skipUsed', 'Request was approved for skipUsed')
+    return step_id
+
+
+def create_skip_used_tag(task_id):
+    """
+    Create a new slice with step from task_id and skipFilesUsedBy set on it
+    :param task_id:
+    :return: new step id if success, exception otherwise
+    """
+    task = ProductionTask.objects.get(id=task_id)
+    slice = task.step.slice
+    if task.status != 'finished':
+        raise ValueError("only finished task can be restarted using skipFilesUsedBy")
+    if StepExecution.objects.filter(slice=slice).count() != 1:
+        raise ValueError("should be single step in a slice")
+    # Clone slice with step with original task
+    new_slice = clone_slices(task.request_id,task.request_id,[slice.slice],-1,False)[0]
+    # Change step skipFilesUsedBy in project mode
+    new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=task.request,slice=new_slice))
+    new_step.update_project_mode('skipFilesUsedBy',task_id)
+    new_step.save()
+    return new_step.id

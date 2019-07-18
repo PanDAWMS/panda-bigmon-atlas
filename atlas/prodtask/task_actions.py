@@ -9,10 +9,9 @@ from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset
 
 import atlas.deftcore.api.client as deft
 
-from ..prodtask.step_manage_views import task_clone_with_skip_used
+from atlas.prodtask.views import task_clone_with_skip_used
 
-
-_deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
+_deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
 # Mapping between task actions and DEFT task actions
 _deft_actions = {

@@ -341,7 +341,7 @@ class ProductionTaskTable(datatables.DataTable):
         )
 
     provenance = datatables.Column(
-        label='Provenance',
+        label='P-e',
         #bVisible='false',
         )
 
@@ -735,7 +735,7 @@ def sync_request(request_id):
 
 
 def sync_old_tasks(task_number, time_interval = 7200):
-    tasks = ProductionTask.objects.filter(id__lte=task_number,status__in=['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted'], request_id__gte=2000)
+    tasks = ProductionTask.objects.filter(id__lte=task_number,status__in=['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted','waiting'], request_id__gte=2000)
     for task in tasks:
         jedi_task = TTask.objects.get(id=task.id)
         if (task.status != jedi_task.status) or ((datetime.utcnow().replace(tzinfo=pytz.utc) - jedi_task.timestamp).seconds < time_interval):

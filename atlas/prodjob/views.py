@@ -12,7 +12,7 @@ import atlas.deftcore.api.client as deft
 
 _logger = logging.getLogger('prodtaskwebui')
 
-_deft_client = deft.Client(settings.DEFT_AUTH_USER, settings.DEFT_AUTH_KEY)
+_deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
 _deft_job_actions = {
 
