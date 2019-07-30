@@ -494,37 +494,55 @@ class TrainProduction(models.Model):
 
 
 
-class MCPileupOverlayGroupDescription(models.Model):
+class MCJobOptions(models.Model):
 
-    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_GROUP_ID', primary_key=True)
-    description = models.CharField(max_length=255, db_column='DESCRIPTION')
+    dsid =  models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID', primary_key=True)
+    physic_short = models.CharField(max_length=200, db_column='PHYSIC_SHORT',null=False)
+    timestamp = models.DateTimeField(db_column='UPDATE_TIME')
+    events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB')
+    files_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='FILES_PER_JOB')
+    content = models.CharField(max_length=2000, db_column='CONTENT')
 
     def save(self, *args, **kwargs):
-        #self.timestamp = timezone.now()
-        if not self.id:
-            self.id = prefetch_id('dev_db',u'T_MC_PO_PHYS_GROUP_SEQ',"T_MC_PO_PHYS_GROUP",'POG_GROUP_ID')
-        super(MCPileupOverlayGroupDescription, self).save(*args, **kwargs)
+        self.timestamp = timezone.now()
+        super(MCJobOptions, self).save(*args, **kwargs)
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"ATLAS_DEFT"."T_MC_PO_PHYS_GROUP"'
+        db_table = u'"ATLAS_DEFT"."T_MC_JO_PHYS"'
 
-class MCPileupOverlayGroups(models.Model):
 
-    id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_ID', primary_key=True)
-    campaign = models.CharField(max_length=50, db_column='CAMPAIGN')
-    dsid  = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID')
-    group = models.ForeignKey(MCPileupOverlayGroupDescription, db_column='POG_GROUP_ID')
-
-    def save(self, *args, **kwargs):
-        #self.timestamp = timezone.now()
-        if not self.id:
-            self.id = prefetch_id('dev_db',u'T_PILEUP_OVERLAY_GROUPS_SEQ',"T_PILEUP_OVERLAY_GROUPS",'POG_ID')
-        super(MCPileupOverlayGroups, self).save(*args, **kwargs)
-
-    class Meta:
-        app_label = 'dev'
-        db_table = u'"ATLAS_DEFT"."T_PILEUP_OVERLAY_GROUPS"'
+# class MCPileupOverlayGroupDescription(models.Model):
+#
+#     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_GROUP_ID', primary_key=True)
+#     description = models.CharField(max_length=255, db_column='DESCRIPTION')
+#
+#     def save(self, *args, **kwargs):
+#         #self.timestamp = timezone.now()
+#         if not self.id:
+#             self.id = prefetch_id('dev_db',u'T_MC_PO_PHYS_GROUP_SEQ',"T_MC_PO_PHYS_GROUP",'POG_GROUP_ID')
+#         super(MCPileupOverlayGroupDescription, self).save(*args, **kwargs)
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = u'"ATLAS_DEFT"."T_MC_PO_PHYS_GROUP"'
+#
+# class MCPileupOverlayGroups(models.Model):
+#
+#     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_ID', primary_key=True)
+#     campaign = models.CharField(max_length=50, db_column='CAMPAIGN')
+#     dsid  = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID')
+#     group = models.ForeignKey(MCPileupOverlayGroupDescription, db_column='POG_GROUP_ID')
+#
+#     def save(self, *args, **kwargs):
+#         #self.timestamp = timezone.now()
+#         if not self.id:
+#             self.id = prefetch_id('dev_db',u'T_PILEUP_OVERLAY_GROUPS_SEQ',"T_PILEUP_OVERLAY_GROUPS",'POG_ID')
+#         super(MCPileupOverlayGroups, self).save(*args, **kwargs)
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = u'"ATLAS_DEFT"."T_PILEUP_OVERLAY_GROUPS"'
 
 
 
@@ -752,6 +770,7 @@ class TTask(models.Model):
 
 class ProductionTask(models.Model):
 
+    SYNC_STATUS = ['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted','waiting', 'stagein']
     RED_STATUS = ['failed','aborted','broken']
     NOT_RUNNING = RED_STATUS + ['finished','done','obsolete']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)

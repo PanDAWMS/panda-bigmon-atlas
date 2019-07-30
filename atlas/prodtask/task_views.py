@@ -734,32 +734,36 @@ def sync_request(request_id):
             sync_deft_jedi_task(task.id)
 
 
-def sync_old_tasks(task_number, time_interval = 7200):
-    tasks = ProductionTask.objects.filter(id__lte=task_number,status__in=['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted','waiting'], request_id__gte=2000)
+def sync_old_tasks(task_number, time_interval = 14400):
+
+    if task_number>0:
+        tasks = list(ProductionTask.objects.filter(id__lte=task_number,status__in=ProductionTask.SYNC_STATUS, request_id__gte=2000))
+    else:
+        tasks = list(ProductionTask.objects.filter(status__in=ProductionTask.SYNC_STATUS, request_id__gte=2000))
+    task_ids = [task.id for task in tasks]
+    jedi_tasks =  list(TTask.objects.filter(id__in=task_ids).values())
+    jedi_tasks_by_id = {}
+    for jedi_task in jedi_tasks:
+        jedi_tasks_by_id[int(jedi_task['id'])] = jedi_task
+    print datetime.utcnow().replace(tzinfo=pytz.utc)
     for task in tasks:
-        jedi_task = TTask.objects.get(id=task.id)
-        if (task.status != jedi_task.status) or ((datetime.utcnow().replace(tzinfo=pytz.utc) - jedi_task.timestamp).seconds < time_interval):
-            if (task.status != 'toretry') or (jedi_task.status!='finished'):
-                sync_deft_jedi_task(task.id)
+        jedi_task = jedi_tasks_by_id[int(task.id)]
+        if (task.status != jedi_task['status']) or (jedi_task['timestamp'] > task.timestamp):
+            if (task.status != 'toretry') or (jedi_task['status']!='finished'):
+                sync_deft_jedi_task_from_db(task,jedi_task)
 
 
-def sync_deft_jedi_task(task_id):
-    """
-    Sync task between JEDI and DEFT DB.
-    :param task_id: task id for sync
-    :return:
-    """
 
+def sync_deft_jedi_task_from_db(deft_task,t_task):
     jedi_values = {}
-    _logger.info("Sync task between deft and jedi task id:%s"%str(task_id))
-    deft_task = ProductionTask.objects.get(id=task_id)
-    t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
-                                                   'total_events')[0]
-    jedi_values.update(t_task)
+    _logger.info("Sync task between deft and jedi task id:%s"%str(deft_task.id))
+    sync_keys = ['status', 'total_done_jobs', 'start_time', 'total_req_jobs','total_events']
+    for item in sync_keys:
+        jedi_values.update({item:t_task[item]})
     #post production status
     if deft_task.status in ['obsolete']:
         jedi_values['status'] = deft_task.status
-    jedi_task = JediTasks.objects.filter(id=task_id).values('start_time','errordialog')[0]
+    jedi_task = JediTasks.objects.filter(id=deft_task.id).values('start_time','errordialog')[0]
     if not jedi_values['start_time']:
         jedi_values['start_time'] = jedi_task['start_time']
     jedi_values['jedi_info'] = jedi_task['errordialog'][0:255]
@@ -774,7 +778,7 @@ def sync_deft_jedi_task(task_id):
         nfiles_stat = ['total_files_tobeused','total_files_used','total_files_finished','total_files_failed','total_files_onhold']
         for nfiles_name in nfiles_stat:
             jedi_values.update({nfiles_name:0})
-        jedi_datasets = list(JediDatasets.objects.filter(id=task_id,type__in=['input','pseudo_input']).values())
+        jedi_datasets = list(JediDatasets.objects.filter(id=deft_task.id,type__in=['input','pseudo_input']).values())
         for jedi_dataset in jedi_datasets:
             if (jedi_dataset['masterid'] == None) and (not jedi_dataset['datasetname'].startswith('ddo')) \
                     and (not jedi_dataset['datasetname'].startswith('panda')) and ('.log.' not in jedi_dataset['datasetname']):
@@ -788,6 +792,20 @@ def sync_deft_jedi_task(task_id):
     if do_update:
         deft_task.timestamp=timezone.now()
         deft_task.save()
+
+
+def sync_deft_jedi_task(task_id):
+    """
+    Sync task between JEDI and DEFT DB.
+    :param task_id: task id for sync
+    :return:
+    """
+
+
+    deft_task = ProductionTask.objects.get(id=task_id)
+    t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
+                                                   'total_events')[0]
+    sync_deft_jedi_task_from_db(deft_task, t_task)
 
 
 def create_mc_exhausted_hashtag():
