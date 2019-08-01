@@ -1079,11 +1079,9 @@ class StepAction(models.Model):
     config = models.CharField(max_length=2000, db_column='CONFIG')
 
     def save(self, *args, **kwargs):
-        raise NotImplementedError('Read only')
-
-        # if not self.id:
-        #     self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
-        # super(StepAction, self).save(*args, **kwargs)
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
+        super(StepAction, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
         if not self.config:
@@ -1114,7 +1112,6 @@ class StepAction(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = u'"T_STEP_ACTION"'
 
 
@@ -1141,7 +1138,6 @@ class DatasetStaging(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = u'"T_DATASET_STAGING"'
 
 class ActionStaging(models.Model):
@@ -1161,7 +1157,6 @@ class ActionStaging(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = u'"T_ACTION_STAGING"'
 
 class ActionDefault(models.Model):
@@ -1211,7 +1206,6 @@ class ActionDefault(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = u'"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
 
 class StorageResource(models.Model):
