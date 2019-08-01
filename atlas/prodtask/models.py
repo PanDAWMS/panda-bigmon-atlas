@@ -1079,9 +1079,11 @@ class StepAction(models.Model):
     config = models.CharField(max_length=2000, db_column='CONFIG')
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
-        super(StepAction, self).save(*args, **kwargs)
+        raise NotImplementedError('Read only')
+
+        # if not self.id:
+        #     self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
+        # super(StepAction, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
         if not self.config:
