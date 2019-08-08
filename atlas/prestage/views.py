@@ -114,11 +114,12 @@ def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,
         if step.get_task_config('PDAParams'):
             try:
                 waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
-                level = int(waiting_parameters_from_step.get('level'))
-                if level> 100:
-                    level= 100
-                elif level < -1:
-                    level = 0
+                if waiting_parameters_from_step.get('level',None):
+                    level = int(waiting_parameters_from_step.get('level'))
+                    if level> 100:
+                        level= 100
+                    elif level < -1:
+                        level = 0
             except Exception, e:
                 _logger.error(" %s" % str(e))
         if not level:
@@ -332,12 +333,19 @@ def process_actions(action_step_todo):
             follow_staging(executing_actions[action])
 
 
-def prestage_by_tape(request):
+def prestage_by_tape(request, reqid=None):
     try:
         result = []
         tape_stat = {}
         total = {'requested':0,'staged':0,'done':0}
-        staging_requests = DatasetStaging.objects.filter(status__in=['staging','done'])
+        staging_requests = []
+        if reqid:
+            actions = StepAction.objects.filter(request=reqid,action=6 )
+            for action in actions:
+                for action_stage in ActionStaging.objects.filter(step_action=action):
+                    staging_requests.append(action_stage.dataset_stage)
+        else:
+            staging_requests = DatasetStaging.objects.filter(status__in=['staging','done'])
         for staging_request in staging_requests:
             if staging_request.total_files and staging_request.source:
                 if staging_request.source not in tape_stat:
