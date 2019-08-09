@@ -1819,7 +1819,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                             pass
                         pre_definition_new_actions_db = []
                         try:
-                            pre_definition_new_actions_db = list(StepAction.objects.filter(request=rid, status__in=['active','executing','failed'], action=6))
+                            pre_definition_new_actions_db = list(StepAction.objects.filter(request=rid, status__in=['active','executing','failed','paused'], action=6))
                         except:
                             pass
                     else:
