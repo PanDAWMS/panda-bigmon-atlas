@@ -47,7 +47,7 @@ def check_staging_task(step_action_ids):
 
 def start_stagind_task(task):
     #Send resume command
-    if(task.status in ['staging','waiting']):
+    if(task.status in ['staging','waiting','paused']):
         _do_deft_action('mborodin',int(task.id),'resume_task')
     pass
 
