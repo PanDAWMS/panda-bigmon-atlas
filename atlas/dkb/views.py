@@ -205,7 +205,7 @@ def new_derivation_stat(project, ami, output):
       "query": {
         "bool": {
           "must": [
-            {"term": {"primary_input": "aod"}},
+            {"terms": {"primary_input": ["aod","rpvll"]}},
             {"term": {"project": project.lower()}},
             {"terms": {"ctag": ami}},
             {"term": {"status": "done"}},
@@ -270,7 +270,7 @@ def new_derivation_stat(project, ami, output):
         if input_events != 0:
             events_ratio = float(result_events)/float(input_events)
         return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
-    except:
+    except :
         return {'total': 0, 'ratio': 0, 'events_ratio': 0}
 
 
