@@ -708,7 +708,7 @@ def remove_input(good_slices, reqid):
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             if (ordered_existed_steps[0].step_template.step == 'Evgen') and (ordered_existed_steps[0].status in ['NotChecked','Approved']):
                 if input_list.dataset:
-                    if 'EVNT' not in input_list.dataset:
+                    if ('EVNT' not in input_list.dataset) and ('TXT' not in input_list.dataset):
                         input_list.dataset = None
                         input_list.save()
                         removed_input_slices.append(slice_number)
