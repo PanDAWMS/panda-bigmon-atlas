@@ -35,6 +35,8 @@ urlpatterns = patterns('',
 
     url(r'^make_user_as_owner/(?P<reqid>\d+)/$',  'atlas.prodtask.request_views.make_user_as_owner',  name='make_user_as_owner'),
     url(r'^check_user_exists/$',  'atlas.prodtask.request_views.check_user_exists',  name='check_user_exists'),
+    url(r'^request_create_new/$', 'atlas.prodtask.request_views.request_create_new_spds', name='request_create_new_spds'),
+
     url(r'^request_create/$',               'atlas.prodtask.request_views.request_create',  name='request_create'),
     url(r'^find_datasets_by_pattern/$',     'atlas.prodtask.request_views.find_datasets_by_pattern',  name='find_datasets_by_pattern'),
 

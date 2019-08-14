@@ -392,6 +392,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
               var joboptions = $(this).html().replace(/ /g,'');
 		      if ((joboptions!='')&&(joboptions!=undefined)) {
+               if (joboptions.indexOf('/') == -1){
                 var jo = joboptions.split(".");
                 var dsid = jo[1].substring(0, 3) + "xxx";
                 var link = "https://gitlab.cern.ch/atlas-physics/pmg/infrastructure/" + jo[0].toLowerCase() + "joboptions/blob/master/share/DSID" + dsid + "/" + joboptions;
@@ -408,7 +409,15 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                    }
                   }
 
+                } else {
+                    var jo = joboptions.split("/");
+                    var dsid = jo[0].substring(0, 4) + "xxx/";
+                    var link = "https://gitlab.cern.ch/atlas-physics/pmg/mcjoboptions/tree/master/" + dsid + joboptions;
+                    $(this).attr('href', link);
+
                 }
+               }
+
 
         });
     };

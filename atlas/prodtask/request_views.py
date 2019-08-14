@@ -799,7 +799,7 @@ def mcfile_form_prefill(form_data, request):
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
 
-            spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'], '2.0')
+            spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'], form_data['version'])
         elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
@@ -1451,7 +1451,7 @@ Details:
 
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
-                            form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}):
+                            form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}, version='2.0'):
     """
     Fill form for creating request. Create request->slice->steps for POST
     View create two forms: first for request prefill, second for request creation
@@ -1475,6 +1475,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
             # Process the data from request prefill form
             if (form.cleaned_data.get('excellink') or form.cleaned_data.get('excelfile')) or form.cleaned_data.get('hidden_json_slices'):
+                form.cleaned_data['version'] = version
                 file_dict, error_message = form_prefill(form.cleaned_data, request)
 
                 if error_message != '':
@@ -1736,12 +1737,17 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     })
 
 
+@login_required(login_url='/prodtask/login/')
+def request_create_new_spds(request):
+    return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create_new_spds',
+                                   TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'3.0')
 
 @login_required(login_url='/prodtask/login/')
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'})
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'2.0')
 
 
 @login_required(login_url='/prodtask/login/')
