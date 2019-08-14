@@ -6,7 +6,7 @@ Created on Nov 6, 2013
 import logging
 from django.utils import timezone
 import re
-from atlas.prodtask.models import get_default_project_mode_dict
+from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions
 
 import atlas.gspread as gspread
 from datetime import datetime
@@ -42,18 +42,34 @@ TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", 
                              'Reco',
                              'Rec Merge',
                              'Atlfast',
-                             'Atlf Merge'] }
-
-STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
+                             'Atlf Merge'],
+                         '3.0':["ds",'evgen_input',"feff","ecm",'events','type','priority','format','evgen_release',
+                                'comment','Evgen',
+                                'Evgen Merge',
                              'Simul',
                              'Merge',
                              'Digi',
                              'Reco',
                              'Rec Merge',
-                             'Atlfast',
-                             'Atlf Merge' ]
+                             'Deriv',
+                             'Deriv Merge'
+                                ]}
 
-NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2"]
+STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
+                    'Simul',
+                    'Merge',
+                    'Digi',
+                    'Reco',
+                    'Rec Merge',
+                    'Atlfast',
+                    'Atlf Merge',
+                    'evgen_input',
+                    'Deriv',
+                    'Deriv Merge',
+                    'type'
+                    ]
+
+NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2","events","ds"]
 
 def get_key_by_url(url):
         response = urllib2.urlopen(url)
@@ -213,7 +229,9 @@ def format_splitting(format_string, events_number):
     return (result, additional_formats_by_step)
 
 def format_from_jo(job_options):
-    if re.match(r"(Ph)|(Powheg)|(aMcAtNlo)",job_options.split('.')[2]):
+    if ('/' in job_options) and re.match(r"(Ph)|(Powheg)|(aMcAtNlo)",job_options.split('/')[1]):
+        return {'Evgen': ['TXT']}
+    if ('.' in job_options) and re.match(r"(Ph)|(Powheg)|(aMcAtNlo)",job_options.split('.')[2]):
         return {'Evgen':['TXT']}
     return {}
 
@@ -238,7 +256,21 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                            translated_row[translate_list[key]] = excel_dict[row][key]
                     else:
                         translated_row[translate_list[key]] = excel_dict[row][key]
-
+            if ('joboptions' not in translated_row) and ('ds' in translated_row):
+                translated_row['joboptions'] = str(int(translated_row['ds']))
+                try:
+                    if MCJobOptions.objects.filter(dsid=int(translated_row['ds'])).exists():
+                        translated_row['joboptions'] = str(int(translated_row['ds'])) + '/' + MCJobOptions.objects.get(dsid=int(translated_row['ds'])).physic_short
+                except:
+                    pass
+            if ('events' in translated_row):
+                processing_type = translated_row.get('type','')
+                if processing_type == 'AF2':
+                    translated_row['eva2'] = translated_row['events']
+                elif processing_type == 'Evgen':
+                    translated_row['evevgen'] = translated_row['events']
+                else:
+                    translated_row['evfs'] = translated_row['events']
             if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row) or ('evevgen' in translated_row)):
                 try:
                     total_input_events_evgen = int(translated_row.get('evevgen', 0))
@@ -271,9 +303,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                             comment = '(Fullsim)'+translated_row.get('comment', '')
                         else:
                             comment = '(Atlfast)'+translated_row.get('comment', '')
-                        if (translated_row.get('joboptions', '')) and (translated_row.get('ds', '')):
-                            if str(int(translated_row['joboptions'].split('.')[1])) !=  str(int(translated_row['ds'])):
-                                raise RuntimeError("DSID and joboption are different: %s - %s"%(translated_row['joboptions'],int(translated_row['ds'])))
+
 
                         if translated_row.get('priority', 0) == '0+':
                             priority = -2
@@ -281,11 +311,19 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                             priority = translated_row.get('priority', 0)
                         if len(translated_row.get('brief', ' '))>150:
                             raise RuntimeError("Brief description is too big, should be <150 characters")
-                        irl = dict(slice=index, brief=translated_row.get('brief', ' '),
-                                   comment=comment,
-                                   input_data=translated_row.get('joboptions', ''),
-                                   priority=int(priority),
-                                   input_events=int(input_events))
+                        if translated_row.get('evgen_input', ''):
+                            irl = dict(slice=index, brief=translated_row.get('brief', ' '),
+                                       comment=comment,
+                                       input_data=translated_row.get('joboptions', ''),
+                                       priority=int(priority),
+                                       input_events=int(input_events),
+                                       dataset=translated_row.get('evgen_input', ''))
+                        else:
+                            irl = dict(slice=index, brief=translated_row.get('brief', ' '),
+                                       comment=comment,
+                                       input_data=translated_row.get('joboptions', ''),
+                                       priority=int(priority),
+                                       input_events=int(input_events))
 
                         index += 1
                         reduce_input_format = None
