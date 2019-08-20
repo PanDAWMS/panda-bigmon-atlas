@@ -1162,7 +1162,7 @@ class ActionStaging(models.Model):
 class ActionDefault(models.Model):
 
     ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':5, 'preStageWithTask':5}
-
+    FILES_TO_RELEASE = 800
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_DEFAULT_ID', primary_key=True)
     name = models.CharField(max_length=30, db_column='NAME', null=True)

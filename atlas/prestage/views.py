@@ -265,8 +265,9 @@ def do_staging(action_step_id, ddm):
                                             action_step.get_config('source_replica')):
                         dataset_stage.start_time = current_time
 
-            if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or (
-                    (float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0)):
+            if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or \
+                    (((dataset_stage.total_files-dataset_stage.staged_files)<= ActionDefault.FILES_TO_RELEASE) and
+                     ((float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0))):
                 task = ProductionTask.objects.get(id=action_stage.task)
                 start_stagind_task(task)
             if dataset_stage.staged_files != dataset_stage.total_files:
