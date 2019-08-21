@@ -886,7 +886,7 @@ class OpenEndedRequest(models.Model):
         if not self.last_update:
             self.last_update = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
+            self.id = prefetch_id('deft',u'T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
         super(OpenEndedRequest, self).save(*args, **kwargs)
 
     def save_last_update(self, *args, **kwargs):
@@ -894,7 +894,6 @@ class OpenEndedRequest(models.Model):
         super(OpenEndedRequest, self).save(*args, **kwargs)
 
     class Meta:
-        app_label = 'dev'
         db_table = u'"T_OPEN_ENDED"'
 
 
