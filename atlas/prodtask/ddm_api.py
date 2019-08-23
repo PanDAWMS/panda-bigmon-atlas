@@ -2,6 +2,8 @@
 import logging
 import os
 
+from rucio.common.exception import DataIdentifierNotFound
+
 from ..prodtask.models import ProductionDataset, ProductionTask
 from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
 from ..settings import dq2client as dq2_settings
@@ -160,6 +162,16 @@ class DDM(object):
         output_list = list(self.__ddm.list_files(scope, name))
         return output_list
 
+    def dataset_exists(self, dsn):
+        scope, name = self.rucio_convention(dsn)
+        try:
+            self.__ddm.get_did(scope, name)
+            return True
+        except DataIdentifierNotFound:
+            return False
+        except Exception,e:
+            raise e
+
     def find_dataset(self, pattern):
         """
 
@@ -213,6 +225,12 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset)
         self.__ddm.add_replication_rule(dids=[{'scope':scope, 'name':name}], rse_expression=rse, activity=activity, copies=copies,
                                         lifetime=lifetime, weight=weight, notify=notify,source_replica_expression=source_replica_expression)
+
+    def change_rule_lifetime(self, rule_id, lifetime):
+        self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})
+
+    def delete_replication_rule(self, rule_id):
+        self.__ddm.delete_replication_rule(rule_id)
 
     def dataset_in_container(self, container_name):
         """
