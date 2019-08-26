@@ -246,8 +246,8 @@ def do_staging(action_step_id, ddm):
     action_finished = True
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
+        task = ProductionTask.objects.get(id=action_stage.task)
         if dataset_stage.status == 'done':
-            task = ProductionTask.objects.get(id=action_stage.task)
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
             no_update = dataset_stage.update_time and \
@@ -258,6 +258,12 @@ def do_staging(action_step_id, ddm):
                         dataset_stage.rse = existed_rule['id']
                         dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
                         dataset_stage.update_time = current_time
+                        if ((existed_rule['expires_at']-timezone.now().replace(tzinfo=None))<timedelta(days=5)) and \
+                                (task.status not in ['done','finished','broken','aborted']):
+                            try:
+                                ddm.change_rule_lifetime(existed_rule['id'],15*86400)
+                            except Exception,e:
+                                _logger.error("Check replicas problem %s" % str(e))
                 else:
                     action_finished = False
                     if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
@@ -268,7 +274,6 @@ def do_staging(action_step_id, ddm):
             if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or \
                     (((dataset_stage.total_files-dataset_stage.staged_files)<= ActionDefault.FILES_TO_RELEASE) and
                      ((float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0))):
-                task = ProductionTask.objects.get(id=action_stage.task)
                 start_stagind_task(task)
             if dataset_stage.staged_files != dataset_stage.total_files:
                 action_finished = False
