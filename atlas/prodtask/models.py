@@ -1425,23 +1425,42 @@ def get_priority_object(priority_key):
     return mcp
 
 
-def get_default_nEventsPerJob_dict():
-    defult_dict = {
-        'Evgen':5000,
-        'Evgen Merge':10000,
-        'Simul':100,
-        'Merge':1000,
-        'Digi':500,
-        'Reco':500,
-        'Rec Merge':5000,
-        'Rec TAG':25000,
-        'Atlfast':500,
-        'Atlf Merge':5000,
-        'TAG':25000,
-        'Deriv':100000,
-        'Deriv Merge':5000000
-    }
-    return defult_dict
+def get_default_nEventsPerJob_dict(version='2.0'):
+    if version == '2.0':
+        defult_dict = {
+            'Evgen':5000,
+            'Evgen Merge':10000,
+            'Simul':100,
+            'Merge':1000,
+            'Digi':500,
+            'Reco':500,
+            'Rec Merge':5000,
+            'Rec TAG':25000,
+            'Atlfast':500,
+            'Atlf Merge':5000,
+            'TAG':25000,
+            'Deriv':100000,
+            'Deriv Merge':5000000
+        }
+        return defult_dict
+    if version == '3.0':
+        defult_dict = {
+            'Evgen': 10000,
+            'Evgen Merge': 10000,
+            'Simul': 100,
+            'Merge': 1000,
+            'Digi': 500,
+            'Reco': 500,
+            'Rec Merge': 5000,
+            'Rec TAG': 25000,
+            'Atlfast': 500,
+            'Atlf Merge': 5000,
+            'TAG': 25000,
+            'Deriv': 100000,
+            'Deriv Merge': 5000000
+        }
+        return defult_dict
+
 
 def get_default_project_mode_dict():
     default_dict = {

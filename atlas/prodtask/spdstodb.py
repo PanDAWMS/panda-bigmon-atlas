@@ -344,7 +344,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
 
                                 # Store input events only for evgen
                                 if StepExecution.STEPS.index(currentstep)==0:
-                                    sexec = dict(status='NotChecked', input_events=int(input_events))
+                                    sexec = dict(status='NotCheckedSkipped', input_events=int(input_events))
                                     if (total_input_events_evgen != 0):
                                         task_config.update({'split_events': total_input_events_evgen})
                                     if (filter_eff!=0):
@@ -353,13 +353,14 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 if currentstep == 'Evgen':
                                     formats = STEP_FORMAT[currentstep]
+
                                 else:
                                     formats = None
                                 if do_split:
-                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')})
                                 else:
-                                    task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(),
+                                    task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':get_default_project_mode_dict().get(st,'')})
 
                                 if reduce_input_format:

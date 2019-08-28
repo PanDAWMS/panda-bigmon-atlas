@@ -558,6 +558,7 @@ def form_skipped_slice(slice, reqid):
         return {slice:[]}
     processed_tags = []
     last_step_name = ''
+    input_step_format = ''
     for step in ordered_existed_steps:
         if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
@@ -585,8 +586,12 @@ def form_skipped_slice(slice, reqid):
                     input_type = default_input_type_prefix[last_step_name]['prefix'] + default_input_type_prefix[last_step_name]['format']
                 if 'filter' in default_input_type_prefix[last_step_name]:
                     filter_type = default_input_type_prefix[last_step_name]['filter']
-            dsid = input_list.input_data.split('.')[1]
-            job_option_pattern = input_list.input_data.split('.')[2]
+            if ('/' in input_list.input_data) and input_list.input_data.split('/')[0].isdigit():
+                dsid = input_list.input_data.split('/')[0]
+                job_option_pattern = input_list.input_data.split('/')[1].split('.')[1]
+            else:
+                dsid = input_list.input_data.split('.')[1]
+                job_option_pattern = input_list.input_data.split('.')[2]
             dataset_events = find_skipped_dataset(dsid,job_option_pattern,processed_tags,input_type)
 
             # if input_type=='merge.HITS':
