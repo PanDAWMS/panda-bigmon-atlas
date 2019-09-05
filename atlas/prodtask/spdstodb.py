@@ -10,7 +10,7 @@ from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions
 
 import atlas.gspread as gspread
 from datetime import datetime
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttrfconfig, RequestStatus
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttrfconfig, RequestStatus, ETAGRelease
 #from django.core.exceptions import ObjectDoesNotExist
 import urllib2
 
@@ -43,7 +43,7 @@ TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", 
                              'Rec Merge',
                              'Atlfast',
                              'Atlf Merge'],
-                         '3.0':["ds",'evgen_input',"feff","ecm",'events','type','priority','format','evgen_release',
+                         '3.0':["ds",'evgen_input',"ecm",'events','type','priority','format','evgen_release',
                                 'comment','Evgen',
                                 'Evgen Merge',
                              'Simul',
@@ -66,7 +66,7 @@ STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
                     'evgen_input',
                     'Deriv',
                     'Deriv Merge',
-                    'type'
+                    'type', 'evgen_release'
                     ]
 
 NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2","events","ds"]
