@@ -1227,6 +1227,25 @@ class StorageResource(models.Model):
         app_label = 'dev'
         db_table = u'"T_STORAGE_RESOURCE_STATE"'
 
+class ETAGRelease(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TAG_RELASE_ID', primary_key=True)
+    ami_tag = models.CharField(max_length=20, db_column='AMI_TAG')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    sw_release = models.CharField(max_length=200, db_column='SOFTWARE_RELEASE')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db',u'T_ETR_SEQ',"T_ETAG_RELEASE",'TAG_RELEASE_ID')
+        super(ETAGRelease, self).save(*args, **kwargs)
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = u'"T_ETAG_RELEASE"'
+
 
 
 class WaitingStep(models.Model):
