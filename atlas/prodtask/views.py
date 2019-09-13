@@ -22,6 +22,7 @@ from datetime import timedelta
 
 from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.helper import form_request_log
+from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
     HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
     ActionDefault
@@ -1128,6 +1129,23 @@ def make_child_update(parent_request_id, manager, slices):
                             # parent_position[step.id] = {'slice':step.slice.slice,'child_steps':step_relation[step.id]}
                 # find steps which already exist
 
+def check_slice_jos(reqid, slice_steps):
+    update = False
+    for slice_number, steps_status in slice_steps.items():
+        if slice_number != '-1':
+            current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
+            if current_slice.input_data and current_slice.input_data.isdigit():
+                update = True
+                break
+    bad_slice = []
+    if update:
+        sync_request_jos(reqid)
+        for slice_number, steps_status in slice_steps.items():
+            if slice_number != '-1':
+                current_slice = InputRequestList.objects.get(request=reqid, slice=int(slice_number))
+                if current_slice.input_data and current_slice.input_data.isdigit():
+                    bad_slice.append(int(slice_number))
+    return bad_slice
 
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
@@ -1136,7 +1154,11 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         slice_steps = json.loads(data)
         _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
         slices = slice_steps.keys()
+        req = TRequest.objects.get(reqid=reqid)
         fail_slice_save = save_slice_changes(reqid, slice_steps)
+        error_slices = []
+        if (req.request_type == 'MC') and not fail_slice_save:
+            error_slices=check_slice_jos(reqid,slice_steps)
         try:
             fill_request_priority(reqid,reqid)
         except:
@@ -1155,7 +1177,6 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         error_approve_message = False
-        req = TRequest.objects.get(reqid=reqid)
         owner = request.user.username
         if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
             if (not request.user.is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
@@ -1163,7 +1184,9 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message}
-        if (not missing_tags) and (not error_approve_message):
+        removed_input = []
+        no_action_slices = []
+        if (not missing_tags) and (not error_approve_message) and (not error_slices):
 
             _logger.debug("Start steps save/approval")
 
@@ -1173,8 +1196,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                         if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
-            removed_input = []
-            error_slices = []
+
             if ['-1'] == slice_steps.keys():
                 slice_0 = deepcopy(slice_steps['-1'])
                 if req.request_type == 'MC':
@@ -1234,7 +1256,13 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                        'removed_input':removed_input, 'fail_slice_save':'',
                        'error_approve_message': error_approve_message}
         else:
-                _logger.debug("Some tags are missing: %s" % missing_tags)
+            results = {'missing_tags': missing_tags,
+                       'slices': [x for x in map(int, slices) if x not in (error_slices + no_action_slices)],
+                       'wrong_slices': wrong_skipping_slices,
+                       'double_trf': old_double_trf, 'error_slices': error_slices,
+                       'no_action_slices': no_action_slices, 'success': True, 'new_status': req.cstatus,
+                       'removed_input': removed_input, 'fail_slice_save': '',
+                       'error_approve_message': error_approve_message}
     except Exception, e:
             _logger.error("Problem with step modifiaction: %s" % e)
 
