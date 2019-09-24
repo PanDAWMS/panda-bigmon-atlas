@@ -373,7 +373,6 @@ def prestage_by_tape(request, reqid=None):
         result.append({'name':'total','requested':total['requested'],'staged':total['staged'],
                            'done':total['done'],
                            'percent':int(100*(float(total['staged']+total['done'])/float(total['done']+total['requested']))) })
-        print result
     except:
         return HttpResponseRedirect('/')
     request_parameters = {
