@@ -38,6 +38,7 @@ from .settings import APP_SETTINGS
 from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
 from .dpdconfparser import ConfigParser
 from .xls_parser_new import open_tempfile_from_url
+from rest_framework import serializers,generics
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -800,6 +801,7 @@ def mcfile_form_prefill(form_data, request):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
 
             spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'], form_data['version'])
+            print spreadsheet_dict
         elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
@@ -2218,6 +2220,30 @@ def request_table(request):
     return TemplateResponse(request, 'prodtask/_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'table': request.fct,
                              'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
+
+
+def request_table_js(request):
+    """
+    Request table
+    :return: table page or data for it
+    """
+
+    return TemplateResponse(request, 'prodtask/_new_request_table.html',
+                            {'title': 'Production Requests Table', 'active_app': 'prodtask', 'parent_template': 'prodtask/_index.html'})
+
+class ProductionRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TRequest
+        fields = ('reqid', 'cstatus', 'description')
+
+
+
+
+
+class ProductionRequestAPI(generics.ListAPIView):
+    queryset = TRequest.objects.all()
+    serializer_class = ProductionRequestSerializer
 
 
 def sizeof_fmt(num):
