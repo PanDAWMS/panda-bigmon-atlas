@@ -530,7 +530,6 @@ def request_status_update(request_from,request_to):
             for req in requests:
                     #print req.reqid,status
                     if req.cstatus != status and req.cstatus == 'processed':
-                        print req.reqid,status
                         req.cstatus = status
                         req.save()
                         request_status = RequestStatus(request=req,comment='automatic update',owner='default',
@@ -544,7 +543,6 @@ def clean_old_request(do_action=False):
     for request in all_requests:
         task_count = ProductionTask.objects.filter(request=request).count()
         if (task_count == 0):
-            print request.reqid
             if do_action:
                 steps = StepExecution.objects.filter(request=request)
                 for step in steps:
@@ -801,7 +799,6 @@ def mcfile_form_prefill(form_data, request):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
 
             spreadsheet_dict += fill_steptemplate_from_gsprd(form_data['excellink'], form_data['version'])
-            print spreadsheet_dict
         elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
@@ -2272,7 +2269,6 @@ def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name
             new_dataset_campaign = current_dataset_campaign.replace(current_subcampaign,newsubcampaign).replace(current_campaign,newcampaign)
             if new_dataset_campaign!=current_dataset_campaign:
                 ddm.changeDatasetCampaign(dataset,new_dataset_campaign)
-            print dataset, new_dataset_campaign
             changed_datasets.append(dataset)
         except DataIdentifierNotFound, e:
             pass
