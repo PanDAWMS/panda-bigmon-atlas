@@ -24,6 +24,8 @@ from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
 from ..prodtask.views import set_request_status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 #import core.datatables as datatables
 import atlas.datatables as datatables
@@ -1448,6 +1450,38 @@ Details:
 
 
 
+@api_view(['POST'])
+@csrf_protect
+def check_request_group(request):
+    result = False
+    try:
+        group = request.body
+        user = request.user
+        allowed_groups = check_allow_request_create(user)
+        if (user.is_superuser) or ('ALL' in allowed_groups) or ('DPD' in allowed_groups) or (group in allowed_groups):
+            result = True
+    except Exception,e:
+        content = str(e)
+        return Response(content,status=500)
+
+    return Response(result)
+
+
+def check_allow_request_create(current_user):
+        group_permissions = []
+        allowed_groups = ['None']
+        user_groups = current_user.groups.all()
+        if current_user.is_superuser:
+            allowed_groups = ['ALL']
+        for gp in user_groups:
+            group_permissions += list(gp.permissions.all())
+        for gp in group_permissions:
+            if "has_" in gp.name and "_permissions" in gp.name:
+                allowed_groups.append(gp.codename)
+        if not allowed_groups:
+            allowed_groups = ['None']
+        return allowed_groups
+
 
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}, version='2.0'):
@@ -1502,6 +1536,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         inputlists = form_input_list_for_preview(file_dict)
                         # store data from prefill form to http request
                         request.session['file_dict'] = file_dict
+
                         # create request creation form
                         return render(request, 'prodtask/_previewreq.html', {
                             'active_app': 'mcprod',
@@ -1511,7 +1546,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             'url_args': rid,
                             'parent_template': 'prodtask/_index.html',
                             'inputLists': inputlists,
-                            'bigSliceNumber': check_need_split(file_dict)
+                            'bigSliceNumber': check_need_split(file_dict),
                         })
                     except Exception, e:
                         _logger.error("Problem during request form creating: %s" % e)
@@ -1527,9 +1562,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 form2 = TRequestCreateCloneConfirmation(request.POST, request.FILES)
 
                 if not form2.is_valid():
-
                     inputlists = form_input_list_for_preview(file_dict)
                     # store data from prefill form to http request
+                    allowed_groups = check_allow_request_create(request.user)
+
                     return render(request, 'prodtask/_previewreq.html', {
                         'active_app': 'mcprod',
                         'pre_form_text': title,
@@ -1537,7 +1573,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'submit_url': submit_url,
                         'url_args': rid,
                         'parent_template': 'prodtask/_index.html',
-                        'inputLists': inputlists
+                        'inputLists': inputlists,
+                        'allowed_groups':allowed_groups
                     })
 
                 del request.session['file_dict']

@@ -155,8 +155,46 @@ long_description_id:"This will be the body of the mail that will\n" +
 
 
     }
+        function checkGroupPermission(event){
+            event.preventDefault();
+            if($('#'+field_id['request_type']).val() == 'GROUP'){
+                var group = $('#'+field_id['phys_group']).val();
+                $.ajax({
+                    url:"{% url 'prodtask:check_request_group'  %}" ,
+                    type: 'POST',
+                    data: group,
+                    contentType: 'application/json; charset=utf-8',
+                    success: function(data,status) {
+                                if (! data){
+                                    if(confirm("Warning! In the near future DPD request creation will be restricted. " +
+                                        "You don't have rights to create request for "+group+" ." +
+                                        " Please contact atlas-phys-dpd-coordination@cern.ch if " +
+                                        "you think you should have this permission.")){
+                                    $('#mainForm').submit();
+                                    }
+                                } else{
+                            $('#mainForm').submit();
+                                }
+                        }
+                    });
 
-
+            }else{
+                $('#mainForm').submit();
+            }
+        }
+    var csrftoken = $.cookie('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        crossDomain: false, // obviates need for sameOrigin test
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
 $(document).ready(function(){
         (function(){MCCampaignHandling()})();
         $(document).foundation();
@@ -177,11 +215,12 @@ $(document).ready(function(){
  <span>{{ inputLists|length }} slices have been read from the file.</span>
   <p/>
 {% if submit_url %}
-<form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
+<form id='mainForm' action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
 <table>
 {{ form.as_table }}
 </table>
-<input type="submit" value="Submit" id="form_submit" />
+<input type="submit" value="Submit" id="form_submit" style="display: none"/>
+<a class='button' id="checkPermision" onclick="checkGroupPermission(event)">Submit</a>
 </form>
 <h2> Input List </h2>
 <table>

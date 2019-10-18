@@ -37,7 +37,7 @@ urlpatterns = patterns('',
 
     url(r'^request_create/$',               request_views.request_create,  name='request_create'),
     url(r'^find_datasets_by_pattern/$',     request_views.find_datasets_by_pattern,  name='find_datasets_by_pattern'),
-
+    url(r'check_request_group/$',     request_views.check_request_group,  name='check_request_group'),
     url(r'^dpd_request_create/$',               request_views.dpd_request_create,  name='dpd_request_create'),
     url(r'^reprocessing_object_form/(?P<reqid>\d+)/$', request_views.reprocessing_object_form, name='reprocessing_object_form'),
     url(r'^eventindex_request_create/$', request_views.eventindex_request_create,  name='eventindex_request_create'),
