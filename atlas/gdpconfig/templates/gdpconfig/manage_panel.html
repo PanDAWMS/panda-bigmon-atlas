@@ -143,7 +143,7 @@ $(document).ready(function () {
             postData['parameters'] = parameters;
         }
 
-        var ajaxUrl =  Django.url('gdpconfig:config_action', action);
+        var ajaxUrl =  construct_django_url("/gdpconfig/config_action/", action);
 
         $("#req_status_box").remove();
         $("#request_status_container").append(

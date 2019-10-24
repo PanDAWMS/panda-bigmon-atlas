@@ -6,7 +6,6 @@
 {% block extra_css %}
 {{ block.super }}
 
-{%  django_js %}
 
 {% endblock %}
 {% block subtitle %}
@@ -60,6 +59,7 @@
     <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 
 
@@ -136,7 +136,7 @@
 
             var parameters = {}
 
-            var ajaxUrl =  Django.url('gdpconfig:get_config');
+            var ajaxUrl =  "/gdpconfig/get_config/";
             $('#example').dataTable().fnProcessingIndicator();
 
             $.ajax({
@@ -269,30 +269,6 @@
 
         } );
 
-
-
-{#        $("#btn_handle_jobs").click(function(){#}
-{##}
-{##}
-{#            var table = $('#example').DataTable();#}
-{#            var data = table.rows('.selected').data().toArray();#}
-{#            alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );#}
-{#            var ajaxUrl =  Django.url('reqtask:tasks_action');#}
-{##}
-{#            $.ajax({#}
-{#                url: ajaxUrl,#}
-{#                type: "POST",#}
-{#                data: $.toJSON(data),#}
-{#                dataType: "json",#}
-{#                complete: function (jqXHR, textStatus) {#}
-{#                    alert(jqXHR.responseText);#}
-{##}
-{##}
-{#                }#}
-{##}
-{#            });#}
-{##}
-{#        }  );#}
 
 
 

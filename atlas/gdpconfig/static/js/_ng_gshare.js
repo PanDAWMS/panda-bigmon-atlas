@@ -75,7 +75,7 @@
         };
 
         var loadTable = function(){
-            http.get(Django.url('gdpconfig:global_share_tree')).
+            http.get("/gdpconfig/global_share_tree/").
             success(function(data, status, headers, config) {
                 scope.globalShareTable = data;
                 changeTree(['root']);
@@ -139,7 +139,7 @@
                         confirm_message += key+' - ' + toSave[key] + ' - ' + oldValues[key]+';\n';
                     }
                     if(confirm(confirm_message)){
-                        http.post(Django.url('gdpconfig:global_share_change'),toSave).
+                        http.post("/gdpconfig/global_share_change/",toSave).
                                   success(function(data, status, headers, config) {
                                     var result = data.result;
                                     if(result != "OK"){
