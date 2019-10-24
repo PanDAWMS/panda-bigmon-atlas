@@ -38,12 +38,12 @@
               }
           };
         });
-    var requestBaseLink =  Django.url('prodtask:input_list_approve',1).slice(0,-2);
-    var taskBaseLink = Django.url('prodtask:task',1).slice(0,-2);
+    var requestBaseLink = "/prodtask/inputlist_with_request/";
+    var taskBaseLink = "/prodtask/task/";
 
     select_show_tasks = function(http, search_string, is_analy){
         var toSend = {search_string:search_string};
-        var search_url = Django.url('dkb:search_string_to_url');
+        var search_url = "/dkb/search_string_to_url/";
         http.post(search_url,toSend).
           success(function(data, status, headers, config) {
             var url = data.url;
@@ -82,7 +82,7 @@
                     taskIDs.push(scope.tasks[i].taskid)
                 }
                 var toSend = {taskIDs:taskIDs};
-                http.post(Django.url('dkb:tasks_from_list'), toSend).
+                http.post("/dkb/tasks_from_list/", toSend).
                  success(function(data, status, headers, config) {
                      window.location.href = '/reqtask';
 
@@ -95,9 +95,9 @@
                 });
             };
             var toSend = {search_string:routeParams.search_string};
-            var result_url = Django.url('dkb:es_task_search');
+            var result_url = "/dkb/es_task_search/";
             if (is_analy){
-                 result_url = Django.url('dkb:es_task_search_analy');
+                 result_url = "/dkb/es_task_search_analy/";
             }
             http.post(result_url, toSend).
              success(function(data, status, headers, config) {
@@ -112,7 +112,7 @@
                         }
 
             });
-            http.post(Django.url('dkb:search_string_to_url'), toSend).
+            http.post("/dkb/search_string_to_url/", toSend).
              success(function(data, status, headers, config) {
                 scope.query_string = data.query_string;
 
@@ -146,7 +146,7 @@
             scope.query_string  = '';
 
             var toSend = {search_string:routeParams.search_string};
-            http.post(Django.url('dkb:es_task_search'), toSend).
+            http.post("/dkb/es_task_search/", toSend).
              success(function(data, status, headers, config) {
                 scope.tasks = data;
                 console.log(data);
@@ -159,7 +159,7 @@
                         }
 
             });
-            http.post(Django.url('dkb:search_string_to_url'), toSend).
+            http.post("/dkb/search_string_to_url/", toSend).
              success(function(data, status, headers, config) {
                 scope.query_string = data.query_string;
 
@@ -174,7 +174,7 @@
     var output_tasks={};
     function loadRatio(http,ami_tag,project,scope){
             output_tasks={};
-            http.get(Django.url('dkb:deriv_output_proportion',project,ami_tag)).
+            http.get(construct_django_url('/dkb/deriv_output_proportion/',project,ami_tag)).
              success(function(data, status, headers, config) {
                 scope.ratio= data;
                 scope.is_loading = false;
@@ -218,7 +218,7 @@
             scope.showTasks = function (output) {
                     if (output in output_tasks){
                         var toSend = {taskIDs:output_tasks[output]};
-                        http.post(Django.url('dkb:tasks_from_list'), toSend).
+                        http.post("/dkb/tasks_from_list/", toSend).
                          success(function(data, status, headers, config) {
                              window.location.href = '/reqtask';
 
@@ -297,7 +297,7 @@
                 scope.is_loading = true;
 
                     console.log(toSend);
-                    http.post(Django.url('dkb:step_hashtag_stat'),toSend).
+                    http.post("/dkb/step_hashtag_stat/",toSend).
                      success(function(data, status, headers, config) {
                         scope.steps= data;
                         scope.is_loading = false;
@@ -331,7 +331,7 @@
                 scope.is_loading = true;
 
                     console.log(toSend);
-                    http.post(Django.url('dkb:output_hashtag_stat'),toSend).
+                    http.post("/dkb/output_hashtag_stat/",toSend).
                      success(function(data, status, headers, config) {
                         scope.steps= data;
                         scope.is_loading = false;
@@ -363,7 +363,7 @@
                 scope.is_loading = true;
 
                     console.log(toSend);
-                    http.post(Django.url('dkb:deriv_request_stat'),toSend).
+                    http.post("/dkb/deriv_request_stat/",toSend).
                      success(function(data, status, headers, config) {
                         scope.steps= data;
                         scope.is_loading = false;
