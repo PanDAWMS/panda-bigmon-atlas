@@ -2,27 +2,6 @@
 {% load url from future %}
 {% load static from staticfiles %}
 {% load js %}
-{% comment %}  
-{% extends "prodtask/_index.html" %}{% load url from future %}
-{% block urlprefix %}{{ prefix }}{% endblock %}
-{% block subtitle %}Index{% endblock %}
-{% block header-nav-chain-1 %}{% endblock %}{% block header-nav-chain-1-separator %}{{ SEPARATOR_NAVIGATION_ITEM|safe }}{% endblock %}
-{% block header-nav-chain-2 %}{% endblock %}{% block header-nav-chain-2-separator %}{% endblock %}
-{% block header-nav-chain-3 %}{% endblock %}{% block header-nav-chain-3-separator %}{% endblock %}
-{% block header-nav-chain-4 %}{% endblock %}{% block header-nav-chain-4-separator %}{% endblock %}
-{% block header-nav-chain-5 %}{% endblock %}{% block header-nav-chain-5-separator %}{% endblock %}
-{% block header-nav-chain-6 %}{% endblock %}
-
-{% extends "common/_index_grid.html" %}
-
-this is atlas's atlas/_index_grid
-
-{% block title %}ATLAS PanDA{% endblock %}
-{% block bl_page_title %}ATLAS PanDA Monitoring{% endblock %}
-
-{% endcomment %}
-
-
 
 
 
@@ -39,95 +18,7 @@ this is atlas's atlas/_index_grid
 {% block extra_js %}
 {% endblock %}
 
-{% comment %}
-{% block top_menu_all_1 %}
-<li class="has-dropdown">
-	<a href="#">Dashboard</a>
-	<ul class="dropdown">
-		<li><a href="{% url 'dashboard' %}">All</a></li>
-		<li><a href="{% url 'dashAnalysis' %}">Analysis</a></li>
-		<li><a href="{% url 'dashProduction' %}">Production</a></li>
-	</ul>
-</li>
-{% endblock %}
-{% block top_menu_all_2 %}
-<li class="has-dropdown">
-          <a href="#">Jobs</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'jobList' %}">All</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=analysis">Analysis</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=production">Production</a></li>
-            <li><a href="{% url 'jobList' %}?jobtype=test">Test</a></li>
-          </ul>
-</li>
-{% endblock %}
 
-{% block top_menu_all_3 %}
-<li class="has-dropdown">
-          <a href="#">Requests</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:request_create' %}">Create MC Request</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:dpd_request_create' %}">Create DPD Request</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:reprocessing_request_create' %}">Create Reprocessing Request</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:mcpattern_table' %}">MC Pattern</a></li>
-            <li><a href="{% url 'prodtask:mcpriority_table' %}">MC Priority</a></li>
-          </ul>
-</li>
-{% endblock %}
-
-
-{% block top_menu_all_4 %}
-<li class="has-dropdown">
-          <a href="#">Tasks</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'prodtask:task_table' %}">Tasks</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'prodtask:task_create' %}">Create Task</a></li>
-            <li class="divider"></li>
-            <li><a href="{% url 'taskList' %}">All</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=anal">Analysis</a></li>
-            <li><a href="{% url 'taskList' %}?tasktype=prod">Production</a></li>
-          </ul>
-</li>
-<li class="has-dropdown">
-          <a href="#">Datasets</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'prodtask:production_dataset_table' %}">Aborted and Obsolete Datasets</a></li>
-          </ul>
-</li>
-
-<li class="has-dropdown">
-          <a href="#">Users</a>
-          <ul class="dropdown">
-            <li><a href="{% url 'userList' %}?sortby=date&view=database">Usage stats view</a></li>
-            <li><a href="{% url 'userList' %}?sortby=date&view=dynamic">Dynamic view</a></li>
-          </ul>
-</li>
-
-<li>
-          <a href="{% url 'siteList' %}">Sites</a>
-</li>
-
-<li>
-          <a href="http://dashb-atlas-data.cern.ch/ddm2/" target="_blank">DDMDash</a>
-</li>
-
-<li>
-          <a href="http://dashb-atlas-ssb.cern.ch/dashboard/request.py/siteview#currentView=Shifter+view&highlight=false" target="_blank">SSB</a>
-</li>
-{% endblock %}
-
-{% block top_menu_all_5 %}
-<li>
-          <a href="{% url 'index' %}">Quick search</a>
-</li>
-{% endblock %}
-{% endcomment %}
 
 {% block bl_header_title %}ATLAS ProdSys{% endblock %}
 
@@ -144,9 +35,10 @@ this is atlas's atlas/_index_grid
 {% block base_js %}
 {{ block.super }}
 
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 {% endblock %}
 {% block body %}
     <script>
@@ -157,10 +49,10 @@ this is atlas's atlas/_index_grid
             <label>Task: <input type="text" id="taskID" value="" /> </label>
         </div>
         <div class="column large-6">
-            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:task',$('#taskID').val());}">ProdSys</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/task/',$('#taskID').val());}">ProdSys</a>
             <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = 'https://bigpanda.cern.ch/task/'+$('#taskID').val();}">BigPanda</a>
-            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:slice_by_task',$('#taskID').val()||'');}">Slice</a>
-            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = Django.url('prodtask:task_chain_view',$('#taskID').val()||'');}">Childes</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/slice_by_task/',$('#taskID').val()||'');}">Slice</a>
+            <a class="button" onclick="if(($('#taskID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/task_chain_view/',$('#taskID').val()||'');}">Childes</a>
         </div>
         <div class="column large-4"></div>
     </div>
@@ -169,8 +61,8 @@ this is atlas's atlas/_index_grid
             <label>Request: <input type="text" id="RequestID"  value=""  /> </label>
         </div>
         <div class="column large-6">
-            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = Django.url('prodtask:input_list_approve_full',$('#RequestID').val()||'');}">ProdSys</a>
-            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = Django.url('reqtask:request_tasks_rid',$('#RequestID').val()||'');}">Tasks</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/input_list_approve_full/',$('#RequestID').val()||'');}">ProdSys</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/reqtask/',$('#RequestID').val()||'');}">Tasks</a>
         </div>
         <div class="column large-8"></div>
     </div>
