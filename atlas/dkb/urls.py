@@ -1,7 +1,7 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import  url
 from atlas.dkb.views import *
 
-urlpatterns = patterns('',
+urlpatterns = [
 
     url(r'^es_task_search/$', es_task_search, name='es_task_search'),
     url(r'^es_task_search_analy/$',es_task_search_analy, name='es_task_search_analy'),
@@ -15,6 +15,6 @@ urlpatterns = patterns('',
     url(r'^output_hashtag_stat/$', output_hashtag_stat, name='output_hashtag_stat'),
     url(r'^deriv_request_stat/$', deriv_request_stat, name='deriv_request_stat')
 
-)
+]
 
 

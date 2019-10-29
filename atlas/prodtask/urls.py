@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import  url
 
 
 from atlas.auth.views import login,logout
@@ -8,7 +8,7 @@ from ..prodtask.train_views import TrainLoad, TrainLoads, TrainLoadByTrain
 from atlas.prodtask import views,request_views,check_duplicate,open_ended,waiting_actions,task_views,task_manage_views,\
     retryerros,step_manage_views,train_views,report_view,hashtag,selection
 
-urlpatterns = patterns('',
+urlpatterns = [
 
     url(r'^step_template_table/$', views.step_template_table, name='step_template_table'),
     url(r'^step_template/(?P<rid>\d+)/$', views.step_template_details, name='step_template'),
@@ -222,4 +222,4 @@ urlpatterns = patterns('',
     url(r'^userinfo/$', views.userinfo, name='userinfo'),
 
 
-)
+]
