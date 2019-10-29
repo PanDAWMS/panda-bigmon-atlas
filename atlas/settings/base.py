@@ -86,6 +86,19 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
     'django.core.context_processors.request', #django-tables2
 )
+
+
+TEMPLATE = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': TEMPLATE_DIRS,
+        'OPTIONS': {
+            'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+            'loaders': TEMPLATE_LOADERS
+        },
+    },
+
+]
 LANGUAGE_CODE = 'en-us'
 LANGUAGE_NAME = 'English'
 LANGUAGE_NAME_LOCAL = 'English'
