@@ -3,7 +3,8 @@ from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import select_template
 from copy import deepcopy
-from django.utils.datastructures import SortedDict
+#from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.utils.safestring import mark_safe
 from django.db.models import Q
 from django.forms.widgets import Media, media_property
@@ -67,7 +68,7 @@ class DataTableDeclarativeMeta(type):
         columns.sort(key=lambda x: x[1].creation_counter)
         for base in reversed(bases):
             columns = getattr(base, 'base_columns', {}).items() + columns
-        attrs['base_columns'] = SortedDict(columns)
+        attrs['base_columns'] = OrderedDict(columns)
         new_class = super(DataTableDeclarativeMeta, cls).__new__(cls, name, bases, attrs)
         new_class._meta = DataTableOptions()
         for base in reversed(bases):
@@ -83,7 +84,7 @@ class DataTable(object):
     __metaclass__ = DataTableDeclarativeMeta
 
     def __init__(self, data=None, name=''):
-        self.columns = SortedDict(self.base_columns.items())#deepcopy(self.base_columns)
+        self.columns = OrderedDict(self.base_columns.items())#deepcopy(self.base_columns)
 
     @property
     def id(self):
@@ -116,7 +117,7 @@ class DataTable(object):
     @property
     def bound_columns(self):
         if not getattr(self, '_bound_columns', None):
-            self._bound_columns = SortedDict([
+            self._bound_columns = OrderedDict([
                 (name, BoundColumn(self, column, name)) \
                 for name, column in self.columns.items()])
         return self._bound_columns
@@ -147,7 +148,7 @@ class DataTable(object):
         else:
             qs = self.get_queryset()
         for result in qs:
-            d = SortedDict()
+            d = OrderedDict()
             for bcol in self.bound_columns.values():
                 d[bcol.name] = bcol.render_value(result)
             if 'id' not in d:
@@ -158,7 +159,7 @@ class DataTable(object):
         options = deepcopy(self._meta.options)
         columns = self.bound_columns
         aoColumnDefs = options.setdefault('aoColumnDefs', [])
-        colopts = SortedDict()
+        colopts = OrderedDict()
         for index, name in enumerate(columns.keys()):
             column = columns[name]
             for key, value in column.options.items():
