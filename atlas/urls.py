@@ -70,8 +70,6 @@ common_patterns = [
     ### Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls),),
 
-    ### Django.js
-    url(r'^djangojs/', include('djangojs.urls')),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
