@@ -23,6 +23,7 @@ class RequestForm(ModelForm):
     cstatus =  CharField(label='Status', required=False)
 
     class Meta:
+        fields = '__all__'
         model = TRequest
 
 
@@ -265,6 +266,7 @@ class RetryErrorsForm(ModelForm):
 
 
     class Meta:
+        fields = '__all__'
         model = RetryErrors
 
     def clean(self):
@@ -353,6 +355,7 @@ class MCPriorityUpdateForm(MCPriorityForm):
 class RequestUpdateForm(ModelForm):
     class Meta:
         model = TRequest
+        fields = '__all__'
         widgets = {
             'reqid': TextInput(attrs={'readonly': 'readonly'}),
             'info_fields': TextInput(attrs={'readonly': 'readonly'}),
@@ -361,11 +364,13 @@ class RequestUpdateForm(ModelForm):
 
 class StepExecutionForm(ModelForm):
     class Meta:
+        fields = '__all__'
         model = StepExecution
 
 
 class ProductionTaskForm(ModelForm):
     class Meta:
+        fields = '__all__'
         model = ProductionTask
 
 
@@ -374,6 +379,7 @@ class ProductionTaskForm(ModelForm):
 
 class ProductionTaskCreateCloneForm(ModelForm):
     class Meta:
+        fields = '__all__'
         model = ProductionTask
 
 
@@ -425,6 +431,7 @@ class ProductionTrainForm(ModelForm):
 class ProductionTaskUpdateForm(ModelForm):
     class Meta:
         model = ProductionTask
+        fields = '__all__'
         widgets = {
             'id': TextInput(attrs={'readonly': 'readonly'}),
         }
