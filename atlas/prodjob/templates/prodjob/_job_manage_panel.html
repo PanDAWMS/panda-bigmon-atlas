@@ -273,7 +273,7 @@ $(document).ready(function () {
             var table = $('#example').DataTable();
             var data = {'jobs' : table.rows('.selected').data().toArray(), 'parameters' : parameters};
             //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('prodjob:jobs_action',action);
+            var ajaxUrl =  construct_django_url('/prodjob/jobs_action/',action);
 
             $.ajax({
                 url: ajaxUrl,

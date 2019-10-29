@@ -27,7 +27,6 @@
 {{ block.super }}
 
 
-{% django_js %}
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
 
@@ -36,6 +35,8 @@
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 {% endblock %}
 
 
@@ -335,7 +336,7 @@
     {
         $(obj).removeClass('tooltiped');
         $(obj).append( '<br/><span id="req_'+reqid+'_task_stat" ></span>' );
-        $('#req_'+reqid+'_task_stat').load( Django.url('prodtask:task_status_stat_by_request', reqid), function(){ $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
+        $('#req_'+reqid+'_task_stat').load( construct_django_url('/prodtask/task_stat_by_req/', reqid), function(){ $(obj).attr('title', ''); $('#req_'+reqid+'_task_stat .tooltiped').tooltip(); } );
     }
 
     function prepareData( data, textStatus, jqXHR )
@@ -354,7 +355,7 @@
             }
 
             row[7] = '<span class="tooltiped show_tasks" rid="'+row[0]+'" title="Click to show tasks statistics"><span class="rstat '+row[7]+'">'+row[7]+'</span></span>';
-            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ Django.url('prodtask:input_list_approve', row[0])+'">'+row[0]+'</a>';
+            row[0] = '<a class="tooltiped" title="Input list with request" href="'+ construct_django_url('/prodtask/inputlist_with_request/', row[0])+'">'+row[0]+'</a>';
             if (row[12]!=''){
                 row[12] = parseInt(row[12]).toPrecision(2);
             }

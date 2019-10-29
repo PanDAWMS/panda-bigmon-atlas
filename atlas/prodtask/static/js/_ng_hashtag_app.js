@@ -12,7 +12,7 @@ function run($http) {
 }
 hashtagServices.factory('hashtagLists', ['$resource',
   function($resource){
-    return $resource(Django.url('prodtask:hashtagslists'), {}, {
+    return $resource("/prodtask/hashtagslists/", {}, {
       query: {method:'GET',  isArray:true},
         save: {method:'POST'}
     });
@@ -81,15 +81,15 @@ hashtagApp.controller('HashTagCtrl',['$scope','$http','hashtagLists', function (
     scope.showTasks= function(){
 
 
-            window.location.href = Django.url('reqtask:tasks_hashtags',scope.hashtag_formula);
+            window.location.href = construct_django_url('/reqtask/hashtags/',scope.hashtag_formula);
 
     };
     scope.showStatistic= function(){
         var tasks = [];
-        http.post(Django.url('prodtask:tasks_hashtag'),scope.hashtag_formula).
+        http.post("/prodtask/tasks_hashtag/",scope.hashtag_formula).
           success(function(data, status, headers, config) {
             tasks = data;
-            http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+            http.post("/prodtask/tasks_statistic_steps/",tasks).
               success(function(data, status, headers, config) {
                  console.log(data);
                 }).
@@ -117,10 +117,10 @@ hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http','$routeParams'
         scope.search.notequal = {};
         var tasks = [];
         var hashtagFormula = routeParams.hashtags;
-        http.post(Django.url('prodtask:tasks_hashtag'),hashtagFormula).
+        http.post("/prodtask/tasks_hashtag/",hashtagFormula).
           success(function(data, status, headers, config) {
             tasks = data;
-            http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+            http.post("/prodtask/tasks_statistic_steps/",tasks).
               success(function(data, status, headers, config) {
                         requestProgressData.steps = data.load.step_statistic;
                         requestProgressData.chains = data.load.chains;
@@ -183,13 +183,13 @@ hashtagApp.controller('setTasksHashtagCtrl',['$scope','$http','$routeParams',
         scope.set_hahtag = function(){
             var parsedText = scope.tasks_text.replace(/(\r\n|\n|\r|\s|;)/gm,",").split(",");
             if (scope.use_containers){
-                var url = Django.url('prodtask:set_hashtag_for_containers');
+                var url = "/prodtask/set_hashtag_for_containers/";
                 var containers = parsedText;
                 var sendData = {hashtag:scope.hashtag,containers:containers};
                 var message = "Set " + scope.hashtag + " for " + containers.length.toString() + " containers.";
             } else {
                 var tasks = extractTaskID(parsedText);
-                var url = Django.url('prodtask:set_hashtag_for_tasks');
+                var url = "/prodtask/set_hashtag_for_tasks/";
                 var message = "Set " + scope.hashtag + " for " + tasks.length.toString() + " tasks.";
                 var sendData = {hashtag:scope.hashtag,tasks:tasks};
             }

@@ -18,7 +18,6 @@
 {% block base_js %}
 {{ block.super }}
 
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
@@ -46,7 +45,35 @@
         }
 
     }
+        function checkGroupPermission(event){
+            event.preventDefault();
+            if(true){
+                var group = $('#'+field_id['phys_group']).val();
+                $.ajax({
+                    url:"{% url 'prodtask:check_request_group'  %}" ,
+                    type: 'POST',
+                    data: group,
+                    contentType: 'application/json; charset=utf-8',
+                    success: function(data,status) {
+                                if (! data){
+                                    if(confirm("Warning! In the near future DPD request creation will be restricted. " +
+                                        "You don't have rights to create request for "+group+" ." +
+                                        " Please contact atlas-phys-dpd-coordination@cern.ch if " +
+                                        "you think you should have this permission.")){
+                                        $('#mainForm').submit();
+                                    }
+                                } else{
+                                    $('#mainForm').submit();
+                                }
+                        }
+                    });
 
+            }else{
+                 $('#mainForm').submit();
+            }
+
+
+    }
 
     function makeFormFromDict(inputDict){
         var sortedSliceNumbers = [];
@@ -449,14 +476,15 @@ $(document).ready(function(){
 {% endif %}
 {% if submit_url %}
 {% if form.is_multipart %}
-    <form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+    <form id='mainForm' action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" enctype="multipart/form-data" method="post">{% csrf_token %}
 {% else %}
-    <form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
+    <form id='mainForm' action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" method="post">{% csrf_token %}
 {% endif %}
 <table>
 {{ form.as_table }}
 </table>
 <input id="form_submit" type="submit" value="{% if submit_text %}{{submit_text}}{% else %}Submit{% endif %}" />
+
 </form>
 {% else %}
 <table>

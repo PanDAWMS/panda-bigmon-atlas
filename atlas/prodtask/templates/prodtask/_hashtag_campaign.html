@@ -18,7 +18,6 @@
 {% block base_js %}
 {{ block.super }}
 
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
@@ -30,6 +29,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 {% endblock %}
 
@@ -63,7 +63,7 @@
     }
     hashtagServices.factory('hashtagLists', ['$resource',
       function($resource){
-        return $resource(Django.url('prodtask:hashtagslists'), {}, {
+        return $resource("/prodtask/hashtagslists/", {}, {
           query: {method:'GET',  isArray:true},
             save: {method:'POST'}
         });
@@ -71,7 +71,7 @@
 
     hashtagServices.factory('hashtagsCampaignlists', ['$resource',
       function($resource){
-        return $resource(Django.url('prodtask:hashtags_campaign_lists'), {}, {
+        return $resource("/prodtask/hashtags_campaign_lists/", {}, {
           query: {method:'GET',  isArray:true},
             save: {method:'POST'}
         });
@@ -79,7 +79,7 @@
 
         hashtagServices.factory('campaignSteps', ['$resource',
       function($resource){
-        return $resource(Django.url('prodtask:campaign_steps'), {}, {
+        return $resource("/prodtask/campaign_steps/", {}, {
           query: {method:'GET',  isArray:true},
             save: {method:'POST'}
         });
@@ -146,10 +146,10 @@
 
         scope.showTasks= function(){
             var full_formula = scope.hashtag_formula + '&MC16a_CP';
-            http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
+            http.post("/prodtask/tasks_hashtag/",full_formula).
               success(function(data, status, headers, config) {
                 console.log(data);
-                window.location.href = Django.url('reqtask:request_tasks');
+                window.location.href = "/reqtask/";
               }).
               error(function(data, status, headers, config) {
                 console.log(status);
@@ -158,10 +158,10 @@
         scope.showStatistic= function(){
             var tasks = [];
             var full_formula = scope.hashtag_formula + '&MC16a_CP';
-            http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
+            http.post("/prodtask/tasks_hashtag/",full_formula).
               success(function(data, status, headers, config) {
                 tasks = data;
-                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                http.post("/prodtask/tasks_statistic_steps/",tasks).
                   success(function(data, status, headers, config) {
                      console.log(data);
                     }).
@@ -186,10 +186,10 @@
             scope.showTag = false;
             var tasks = [];
             var full_formula = hashtagFormula + '&MC16a_CP';
-            http.post(Django.url('prodtask:tasks_hashtag'),full_formula).
+            http.post("/prodtask/tasks_hashtag/",full_formula).
               success(function(data, status, headers, config) {
                 tasks = data;console.log(data);
-                http.post(Django.url('prodtask:tasks_statistic_steps'),tasks).
+                http.post("/prodtask/tasks_statistic_steps/",tasks).
                   success(function(data, status, headers, config) {
                      console.log(data);
                             requestProgressData.steps = data.load.step_statistic;

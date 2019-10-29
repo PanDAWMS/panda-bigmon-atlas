@@ -34,9 +34,10 @@
 {% block base_js %}
 {{ block.super }}
 
-{% django_js %}
 
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -124,10 +125,9 @@
         {
             var row = data['aaData'][i];
 
-            row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:production_dataset', row[0])+'/">'+row[0]+'</a>';
-            row[1] = '<a href="'+Django.url('prodtask:task', row[1])+'">'+row[1]+'</a>';
-           // row[2] = '<a href="'+Django.url('prodtask:task', row[2])+'/">'+row[2]+'</a>';
-          //  row[3] = '<a href="'+Django.url('prodtask:input_list_approve', row[3])+'/">'+row[3]+'</a>';
+            row[0] = '<a class="breaked_word" href="'+construct_django_url('/prodtask/production_dataset/', row[0])+'/">'+row[0]+'</a>';
+            row[1] = '<a href="'+construct_django_url("/prodtask/task/", row[1])+'">'+row[1]+'</a>';
+
 
             row[7] = '<span class="dsstat '+row[7]+'">'+row[7]+'</span>';
 

@@ -6,7 +6,6 @@
 {% block extra_css %}
 {{ block.super }}
 
-{%  django_js %}
 
 {% endblock %}
 {% block body %}
@@ -38,6 +37,7 @@
     <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 
 
@@ -244,7 +244,7 @@
 
             if (parameters.length == 0) return;
 
-            var ajaxUrl =  Django.url('prodjob:get_jobs');
+            var ajaxUrl =  "/prodjob/get_jobs/";
             $('#example').dataTable().fnProcessingIndicator();
             $.ajax({
                 url: ajaxUrl,
@@ -337,7 +337,7 @@
             var table = $('#example').DataTable();
             var data = table.rows('.selected').data().toArray();
             alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('prodjob:jobs_action');
+            var ajaxUrl =  "/prodjob/jobs_action/";
 
             $.ajax({
                 url: ajaxUrl,

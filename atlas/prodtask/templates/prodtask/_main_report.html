@@ -55,12 +55,13 @@
 
 {% block base_js %}
 {{ block.super }}
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
 <script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 {% endblock %}
 
 
@@ -76,7 +77,7 @@ $(document).ready(function(){
 });
     function showReport(event){
         event.preventDefault();
-        window.location.href = Django.url('prodtask:make_report',$('#selectType').val(),$('#selectDays').val());
+        window.location.href = construct_django_url('/prodtask/make_report/',$('#selectType').val(),$('#selectDays').val());
     }
 
 </script>

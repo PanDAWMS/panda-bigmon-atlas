@@ -98,7 +98,6 @@
 {% block base_js %}
 {{ block.super }}
 
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
@@ -108,7 +107,8 @@
 <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
 <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
+<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 
 {% endblock %}
@@ -669,7 +669,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 $( "#waitingDialog" ).dialog();
                 console.log(splitSliceData);
               $.ajax({
-                          url: Django.url('prodtask:check_slices_for_request_split', "{{ pr_id }}"),
+                          url: construct_django_url('/prodtask/check_slices_for_request_split/', "{{ pr_id }}"),
                           type: 'POST',
                           contentType: 'application/json; charset=utf-8',
                           data: splitSliceData,
@@ -1433,7 +1433,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:slices, step:stepName };
             $.ajaxSetup({async: false});
               $.ajax({
-                    url: Django.url('prodtask:get_ami_tag_list',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/get_ami_tag_list/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1473,7 +1473,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:sliceCheckedList };
             $.ajaxSetup({async: false});
               $.ajax({
-                  url: Django.url('prodtask:get_slices_bulk_info', "{{ pr_id }}"),
+                  url: construct_django_url('/prodtask/get_slices_bulk_info/', "{{ pr_id }}"),
                   type: 'POST',
                   contentType: 'application/json; charset=utf-8',
                   data: $.toJSON(sendData),
@@ -1520,7 +1520,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:slices, step:stepName, amiTag:amiTag };
             $.ajaxSetup({async: false});
               $.ajax({
-                  url: Django.url('prodtask:get_steps_bulk_info', "{{ pr_id }}"),
+                  url: construct_django_url('/prodtask/get_steps_bulk_info/', "{{ pr_id }}"),
                   type: 'POST',
                   contentType: 'application/json; charset=utf-8',
                   data: $.toJSON(sendData),
@@ -1562,7 +1562,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:slices, step:stepName, amiTag:amiTag, newValues:bulkStepChanges };
                  $( "#waitingDialog" ).dialog();
               $.ajax({
-                  url: Django.url('prodtask:set_steps_bulk_info', "{{ pr_id }}"),
+                  url: construct_django_url('/prodtask/set_steps_bulk_info/', "{{ pr_id }}"),
                   type: 'POST',
                   contentType: 'application/json; charset=utf-8',
                   data: $.toJSON(sendData),
@@ -1637,7 +1637,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var step_types = undefined;
             var slice_data = {};
             $.ajaxSetup({async: false});
-            $.get(Django.url('prodtask:slice_steps',"{{ pr_id }}",sliceNumber),function(data,status){
+            $.get(construct_django_url('/prodtask/slice_steps/',"{{ pr_id }}",sliceNumber),function(data,status){
                 step_types = data.step_types;
                 slice_data['datasetName'] = data.dataset;
                 slice_data['jobOption'] = data.jobOption;
@@ -1785,7 +1785,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             } else {
                 $('#loadStatusHistory').spin('small');
               $.ajax({
-                    url:Django.url('prodtask:change_production_request_status',"{{ pr_id }}",$('#chooseNewStatus').val()),
+                    url:construct_django_url('/prodtask/change_production_request_status/',"{{ pr_id }}",$('#chooseNewStatus').val()),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: {},
@@ -1827,7 +1827,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 {#             console.log(sendData);#}
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:request_clone2',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/request_clone2/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1840,7 +1840,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                        var is_good =  $.evalJSON(data).success;
 
                         if(is_good){
-                           window.location.href = Django.url('prodtask:input_list_approve',newRequestID.toString());
+                           window.location.href = construct_django_url('/prodtask/inputlist_with_request/',newRequestID.toString());
                         }
                         }
                     }
@@ -1849,13 +1849,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         }
         function cloneSlicesClick(event, makeLink, cloneFromStepNumber){
             event.preventDefault();
-            var sliceList = getCheckedSlices();;
+            var sliceList = getCheckedSlices();
             var i=0;
 
             var sendData = sliceList;
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:clone_slices_in_req',"{{ pr_id }}",cloneFromStepNumber,makeLink),
+                    url: construct_django_url('/prodtask/clone_slices_in_req/',"{{ pr_id }}",cloneFromStepNumber,makeLink),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1873,12 +1873,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
         function retrySlicesClick(event){
             event.preventDefault();
-            var sliceList = getCheckedSlices();;
+            var sliceList = getCheckedSlices();
             var i=0;
             var sendData = sliceList;
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:retry_slices',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/retry_slices/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1895,7 +1895,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         function showTasksFromSlices(sliceList) {
             $("#waitingDialog").dialog();
             $.ajax({
-                        url: Django.url('prodtask:form_tasks_from_slices', "{{ pr_id }}"),
+                        url: construct_django_url('/prodtask/form_tasks_from_slices/', "{{ pr_id }}"),
                         type: 'POST',
                         contentType: 'application/json; charset=utf-8',
                         data: $.toJSON(sliceList),
@@ -1904,8 +1904,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             $("#waitingDialog").dialog('close');
                             var slices_str =  $.evalJSON(data).slices_range;
                             console.log(data);
-                            console.log( Django.url('reqtask:request_tasks_slices',"{{ pr_id }}",slices_str));
-                            window.location.href = Django.url('reqtask:request_tasks_slices',"{{ pr_id }}",slices_str);
+                            window.location.href = construct_django_url('/reqtask/',"{{ pr_id }}",slices_str);
 
                         }
                     }
@@ -1926,7 +1925,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:sliceList};
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:split_slices_by_tid',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/split_slices_by_tid/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1950,7 +1949,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:sliceList};
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:split_slices_by_output',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/split_slices_by_output/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -1974,7 +1973,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 var sendData = {slices:sliceList};
                   $( "#reloadDialog" ).dialog();
                   $.ajax({
-                        url: Django.url('prodtask:find_parent_slices',"{{ pr_id }}",parentRequestNumber),
+                        url: construct_django_url('/prodtask/find_parent_slices/',"{{ pr_id }}",parentRequestNumber),
                         type: 'POST',
                         contentType: 'application/json; charset=utf-8',
                         data: $.toJSON(sendData),
@@ -1998,7 +1997,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 var sendData = {slices:sliceList};
                   $( "#reloadDialog" ).dialog();
                   $.ajax({
-                        url: Django.url('prodtask:change_parent',"{{ pr_id }}",changeSliceNumber),
+                        url: construct_django_url('/prodtask/change_parent/',"{{ pr_id }}",changeSliceNumber),
                         type: 'POST',
                         contentType: 'application/json; charset=utf-8',
                         data: $.toJSON(sendData),
@@ -2022,7 +2021,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var sendData = {slices:sliceList,divider:splitNumber};
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: Django.url('prodtask:split_slices_in_req',"{{ pr_id }}"),
+                    url: construct_django_url('/prodtask/split_slices_in_req/',"{{ pr_id }}"),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -2054,7 +2053,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             $('#datasetsInfoLoad').show();
              $('#datasetInfoWindow').foundation('reveal', 'open');
             $.ajax({
-                    url: Django.url('prodtask:dataset_slice_info',"{{ pr_id }}",sliceNumber),
+                    url: construct_django_url('/prodtask/dataset_slice_info/',"{{ pr_id }}",sliceNumber),
                     type: 'GET',
                     contentType: 'application/json; charset=utf-8',
                     dataType: 'text',
@@ -2121,7 +2120,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             if (new_priority!=priority){
                 $( "#reloadDialog" ).dialog();
                 $.ajax({
-                    url: Django.url('prodtask:change_request_priority',"{{ pr_id }}",priority,new_priority),
+                    url: construct_django_url('/prodtask/change_request_priority/',"{{ pr_id }}",priority,new_priority),
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: {},
@@ -2353,7 +2352,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             }
         function removeHashTag(hashtag){
 
-            removeUrl = Django.url('prodtask:remove_hashtag_request', {{ pr_id }});
+            removeUrl = construct_django_url('/prodtask/remove_hashtag_request/', {{ pr_id }});
             var sendData = {'hashtag':hashtag};
 
             $.post(removeUrl,$.toJSON(sendData), function(data,status){
@@ -2393,7 +2392,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         success: function(data,status) {
                             var return_status =  $.evalJSON(data).success;
                             if(return_status){
-                                window.location.href = Django.url('prodtask:reprocessing_request_create');
+                                window.location.href = "/prodtask/reprocessing_request_create/";
                             } else{
                                 alert($.evalJSON(data).message);
                             }

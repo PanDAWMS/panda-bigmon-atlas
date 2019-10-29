@@ -34,7 +34,6 @@
 {% block base_js %}
 {{ block.super }}
 
-{% django_js %}
 
     <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
@@ -44,6 +43,8 @@
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 {% endblock %}
 
 
@@ -391,13 +392,10 @@
         {
             var row = data['aaData'][i];
          
-            row[0] = '<a class="breaked_word" href="'+Django.url('prodtask:task', row[4])+'">'+row[0]+'</a>';
-           // row[4] = '<a href="'+Django.url('taskInfo', row[4])+'">'+row[4]+'</a>';
+            row[0] = '<a class="breaked_word" href="'+construct_django_url('/prodtask/task/', row[4])+'">'+row[0]+'</a>';
             row[4] = '<a href="http://bigpanda.cern.ch/task/'+row[4]+'/">'+row[4]+'</a>';
-            //row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[22]+'</a>';
-            row[2] = '<a href="'+Django.url('prodtask:step_execution', row[2])+'">'+row[23]+'</a>';
-            row[1] = '<a href="'+Django.url('prodtask:input_list_approve', row[1])+'">'+row[1]+'</a>';
-            //row[17] = '<a href="'+jira_url_prefix+row[17]+'">'+row[17].slice(11)+'</a>';
+            row[2] = '<a href="'+construct_django_url('/prodtask/stepex/', row[2])+'">'+row[23]+'</a>';
+            row[1] = '<a href="'+construct_django_url('/prodtask/inputlist_with_request/', row[1])+'">'+row[1]+'</a>';
             row[18] = '<a href="'+jira_url_prefix+row[18]+'">'+'JIRA'+'</a>';
 
             //row[5] = row[5]=='None'? row[23] : row[5];

@@ -6,7 +6,6 @@
 {% block extra_css %}
 {{ block.super }}
 
-{%  django_js %}
 
 {% endblock %}
 {% block subtitle %}
@@ -43,6 +42,7 @@
     <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 
 
@@ -162,7 +162,7 @@
             return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+
             '<tr>'+
                 '<td>Task name:</td>'+
-                '<td>'+ '<a href="'+Django.url('prodtask:task', d.id)+'">'+ d.name+ '</a>'+'</td>'+
+                '<td>'+ '<a href="'+construct_django_url("/prodtask/task/", d.id)+'">'+ d.name+ '</a>'+'</td>'+
             '</tr>'+
             '<tr>'+
                 '<td>Input Dataset :</td>'+
@@ -266,13 +266,13 @@
                                             "aTargets": [2],
                                             "mRender": function ( data, type, full ) {
                                                 //return '<a href="http://bigpanda.cern.ch/task/'+data+'/">'+data+'</a>'
-                                                return '<a href="'+Django.url('prodtask:task', data)+'">'+ data+ '</a>'
+                                                return '<a href="'+construct_django_url("/prodtask/task/", data)+'">'+ data+ '</a>'
                                             }
                                         },
                                         {
                                             "aTargets": [4],
                                             "mRender": function ( data, type, full ) {
-                                                return '<a href="'+Django.url('prodtask:input_list_approve', data)+'">'+data+'</a>'
+                                                return '<a href="'+construct_django_url("/prodtask/inputlist_with_request/", data)+'">'+data+'</a>'
                                             }
                                         }
 
@@ -496,7 +496,7 @@
                 if(useInputURL){
                     parameters = {'site':$('#find_tasks_url').val()}
                 }
-            var ajaxUrl =  Django.url('reqtask:get_tasks');
+            var ajaxUrl =  "/reqtask/get_tasks/";
             $('#example').dataTable().fnProcessingIndicator();
             $.ajax({
                 url: ajaxUrl,
@@ -545,7 +545,7 @@
             var table = $('#example').DataTable();
             var data = table.rows('.selected').data().toArray();
             alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('reqtask:tasks_action');
+            var ajaxUrl =  "/reqtask/tasks_action/";
 
             $.ajax({
                 url: ajaxUrl,

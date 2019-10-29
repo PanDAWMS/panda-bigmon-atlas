@@ -18,7 +18,6 @@
 {% block base_js %}
 {{ block.super }}
 
-{%  django_js %}
 <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
 {% endblock %}
@@ -30,6 +29,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 {% endblock %}
 
@@ -113,9 +113,9 @@
         var AP_tasks = [task.id];
         var GP_tasks = [];
         scope.alreadyObsoleted = false;
-        scope.request_base = Django.url('prodtask:input_list_approve', '').slice(0,-1);
-        scope.mainTaskLink = Django.url('prodtask:task', task.id);
-        http.get(Django.url('prodtask:form_task_chain',task.id)).
+        scope.request_base = "/prodtask/inputlist_with_request/";
+        scope.mainTaskLink = construct_django_url('/prodtask/task/', task.id);
+        http.get(construct_django_url('/prodtask/form_task_chain/',task.id)).
               success(function(data, status, headers, config) {
                 // console.log(data);
 
@@ -243,7 +243,7 @@
             } else {
                 sendObj = {tasks:taskToObsolete};
             }
-            http.post(Django.url('prodtask:task_chain_obsolete_action'),sendObj).
+            http.post("/prodtask/task_chain_obsolete_action/",sendObj).
               success(function(data, status, headers, config) {
                 //console.log(data);
                 var result = data.result;

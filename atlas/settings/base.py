@@ -71,7 +71,6 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.reqtask',
     'atlas.datatables',
     'atlas.gdpconfig',
-    'atlas.art',
     'atlas.dkb',
     'atlas.prestage',
      'djangojs',

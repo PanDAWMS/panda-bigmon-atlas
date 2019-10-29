@@ -759,32 +759,7 @@ $(document).ready(function () {
 
     //$("#btn_do_kill_jobs").click(function(){
 
-/*
-    function doTasksActionSelected(action){
 
-
-            //console.log(action);
-            var table = $('#example').DataTable();
-            var data = table.rows('.selected').data().toArray();
-            //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
-            var ajaxUrl =  Django.url('prodjob:jobs_action');
-
-            $.ajax({
-                url: ajaxUrl,
-                type: "POST",
-                data: $.toJSON(data),
-                dataType: "json",
-                complete: function (jqXHR, textStatus) {
-                    alert(jqXHR.responseText);
-
-
-                }
-
-            });
-
-    };
-
-*/
 
     function makeAlertBox(content, box_id, text_id) {
         return $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
@@ -898,7 +873,7 @@ $(document).ready(function () {
             postData['parameters'] = parameters;
         }
 
-        var ajaxUrl =  Django.url('prodtask:tasks_action', action);
+        var ajaxUrl =  construct_django_url("/prodtask/task_manage/actions/", action);
 
         $("#req_status_box").remove();
         $("#request_status_container").append(

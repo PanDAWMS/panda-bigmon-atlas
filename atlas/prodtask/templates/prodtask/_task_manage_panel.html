@@ -786,7 +786,7 @@ function doTasksAction(action, tasks, parameters) {
         postData['parameters'] = parameters;
     }
 
-    var ajaxUrl =  Django.url('prodtask:tasks_action', action);
+    var ajaxUrl =  construct_django_url('/prodtask/task_manage/actions/', action);
 
     $("#req_status_box").remove();
     $("#request_status_container").append(

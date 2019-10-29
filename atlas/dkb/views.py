@@ -2,7 +2,6 @@ import json
 from django.http import HttpResponseForbidden
 import logging
 
-from atlas.art.models import PackageTest, TestsInTasks
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
