@@ -8,3 +8,4 @@ class RequestForm(ModelForm):
 
 	class Meta:
 		model = TRequest
+		fields = '__all__'
