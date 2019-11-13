@@ -2209,10 +2209,14 @@ class Parameters(datatables.Parametrized):
 def check_extend_request(request, reqid):
     if request.method == 'POST':
         try:
-            data = request.body
-            excel_link = json.loads(data)
+            data = json.loads(request.body)
+            excel_link = data['spreadsheet']
+            is_new = data['is_new']
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            version = '2.0'
+            if is_new:
+                version = '3.0'
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             slices_number = len(spreadsheet_dict)
             steps_number = 0
             for current_slice in spreadsheet_dict:
@@ -2228,11 +2232,15 @@ def extend_request(request, reqid):
     if request.method == 'POST':
         results = {'success':False, 'message': 'Not started'}
         try:
-            data = request.body
-            excel_link = json.loads(data)
+            data = json.loads(request.body)
+            excel_link = data['spreadsheet']
+            is_new = data['is_new']
             production_request = TRequest.objects.get(reqid=reqid)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            version = '2.0'
+            if is_new:
+                version = '3.0'
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             if make_slices_from_dict(production_request, spreadsheet_dict):
                 results = {'success':True, 'message': ''}
         except Exception,e:
