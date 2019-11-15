@@ -12,7 +12,7 @@ import atlas.gspread as gspread
 from datetime import datetime
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttrfconfig, RequestStatus, ETAGRelease
 #from django.core.exceptions import ObjectDoesNotExist
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 
 from .xls_parser_new import XlrParser, open_tempfile_from_url
@@ -72,7 +72,7 @@ STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
 NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2","events","ds"]
 
 def get_key_by_url(url):
-        response = urllib2.urlopen(url)
+        response = urllib.request.urlopen(url)
         r = response.url
         format = ''
         if r.find('key')>0:
@@ -402,12 +402,12 @@ def fill_steptemplate_from_gsprd(gsprd_link, version='2.0'):
             excel_parser = XlrParser()
             url, xls_format = get_key_by_url(gsprd_link)
             excel_dict = excel_parser.open_by_key(url,xls_format)[0]
-        except Exception, e:
+        except Exception as e:
             raise RuntimeError("Problem with link openning, \n %s" % e)
         try:
             result = translate_excl_to_dict(excel_dict, version)
             return result
-        except Exception, e:
+        except Exception as e:
             raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format. \n Error: %s"%str(e))
 
 
@@ -415,7 +415,7 @@ def fill_steptemplate_from_file(file_obj):
         try:
             excel_parser = XlrParser()
             excel_dict = excel_parser.open_by_open_file(file_obj)[0]
-        except Exception, e:
+        except Exception as e:
             raise RuntimeError("Problem with file openning, \n %s" % e)
         return translate_excl_to_dict(excel_dict)  
 
@@ -445,7 +445,7 @@ class UrFromSpds:
             else:
                 trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
                 tr = trtf[0]
-                print tr.lparams
+                print(tr.lparams)
                 st = dict(step=stepname, #def_time=timezone.now(),
                            status='Approved',
                                                ctag=tag, priority=priority,
@@ -531,7 +531,7 @@ class UrFromSpds:
                         step['step_exec']['status'] = 'Done'
                         st_exec = StepExecution(**step['step_exec'])
                         st_exec.save_with_current_time()
-            except Exception, e:
+            except Exception as e:
                 #print  "Problem with uploading data from %s" % row['Spreadsheet']
                 pass
 

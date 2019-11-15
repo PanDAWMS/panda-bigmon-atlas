@@ -6,7 +6,7 @@ from django.shortcuts import render, render_to_response, redirect
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
-from django.core.urlresolvers import reverse, resolve
+from django.urls import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM
@@ -81,7 +81,7 @@ def descent_tasks(request, task_id):
         child_tasks = find_downstreams_by_task(task_id)
         request.session['selected_tasks'] = [int(task_id)] + [int(x['id']) for x in child_tasks]
         return render(request, 'reqtask/_task_table.html',{'reqid':None,'title': 'Descent tasks for task %s'%str(task_id)})
-    except Exception,e:
+    except Exception as e:
         _logger.error("Problem with retrieving descends tasks for %s: %s"%(str(task_id),str(e)))
         return HttpResponseRedirect('/')
 
@@ -110,7 +110,7 @@ def form_task_chain(request, task_id):
                 result.update({index:level})
 
         content = result
-    except Exception,e:
+    except Exception as e:
         content = str(e)
         return Response(content,status=500)
     return Response(content)
@@ -229,8 +229,8 @@ def task_details(request, rid=None):
         'hashtags': hashtags,
         'parent_template' : 'prodtask/_index.html',
         }
-    print permissions
-    for action, perm in permissions.items():
+    print(permissions)
+    for action, perm in list(permissions.items()):
         request_parameters['can_' + action + '_task'] = perm
 
     return render(request, 'prodtask/_task_detail.html', request_parameters)
@@ -718,7 +718,7 @@ def sync_deft_rucio_nevents(task_id):
     ddm = DDM()
     rucio_nEvents = ddm.dataset_metadata(task.output_dataset)['events']
     if rucio_nEvents > task.total_events:
-        print task_id, rucio_nEvents, task.total_events
+        print(task_id, rucio_nEvents, task.total_events)
         if task.status in ProductionTask.NOT_RUNNING:
             ttask = TTask.objects.get(id=task.id)
             setattr(ttask,'total_events',rucio_nEvents)
@@ -745,7 +745,7 @@ def sync_old_tasks(task_number, time_interval = 14400):
     jedi_tasks_by_id = {}
     for jedi_task in jedi_tasks:
         jedi_tasks_by_id[int(jedi_task['id'])] = jedi_task
-    print datetime.utcnow().replace(tzinfo=pytz.utc)
+    print(datetime.utcnow().replace(tzinfo=pytz.utc))
     for task in tasks:
         jedi_task = jedi_tasks_by_id[int(task.id)]
         if (task.status != jedi_task['status']) or (jedi_task['timestamp'] > task.timestamp):
@@ -770,7 +770,7 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
     if not jedi_values['jedi_info']:
         jedi_values['jedi_info'] = 'no info from JEDI'
     do_update = False
-    for item in jedi_values.keys():
+    for item in list(jedi_values.keys()):
         if jedi_values[item] != deft_task.__getattribute__(item):
             do_update = True
             break
@@ -785,7 +785,7 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
                 for nfiles_name in nfiles_stat:
                     if jedi_dataset[nfiles_name]:
                         jedi_values[nfiles_name] = jedi_values[nfiles_name] + jedi_dataset[nfiles_name]
-    for item in jedi_values.keys():
+    for item in list(jedi_values.keys()):
         if jedi_values[item] != deft_task.__getattribute__(item):
             _logger.info("Field %s updated: %s - %s"%(item, jedi_values[item], deft_task.__getattribute__(item)))
             setattr(deft_task, item, jedi_values[item])
@@ -850,7 +850,7 @@ def sync_request_tasks(request, reqid):
         tasks = list(ProductionTask.objects.filter(request=reqid))
         for task in tasks:
             sync_deft_jedi_task(task.id)
-    except Exception,e:
+    except Exception as e:
         content = str(e)
         return Response(content,status=500)
 

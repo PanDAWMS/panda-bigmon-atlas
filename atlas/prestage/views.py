@@ -36,7 +36,7 @@ def check_staging_task(step_action_ids):
     for waiting_step in step_action_ids:
         try:
             check_tasks_for_prestage(waiting_step, ddm, rule, delay, max_waite_time)
-        except Exception, e:
+        except Exception as e:
             _logger.error("Check replicas problem %s" % str(e))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
@@ -66,7 +66,7 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
                                     activity='Staging', notify='P',source_replica_expression=replicas)
 
         return True
-    except Exception, e:
+    except Exception as e:
         _logger.error("Can't create rule %s" % str(e))
         return False
 
@@ -120,7 +120,7 @@ def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,
                         level= 100
                     elif level < -1:
                         level = 0
-            except Exception, e:
+            except Exception as e:
                 _logger.error(" %s" % str(e))
         if not level:
             level = config['level']
@@ -198,7 +198,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
             waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
             if waiting_parameters_from_step.get('special'):
                 special = True
-        except Exception, e:
+        except Exception as e:
             _logger.error(" %s" % str(e))
     production_request = step.request
     tasks = ProductionTask.objects.filter(step=step)
@@ -217,7 +217,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
                 create_prestage(task,ddm,rule,special)
-            except Exception, e:
+            except Exception as e:
                 _logger.error("Check replicas problem %s" % str(e))
                 finish_action = False
     if finish_action and (production_request.cstatus != 'approved'):
@@ -262,7 +262,7 @@ def do_staging(action_step_id, ddm):
                                 (task.status not in ['done','finished','broken','aborted']):
                             try:
                                 ddm.change_rule_lifetime(existed_rule['id'],15*86400)
-                            except Exception,e:
+                            except Exception as e:
                                 _logger.error("Check replicas problem %s" % str(e))
                 else:
                     action_finished = False
@@ -307,7 +307,7 @@ def activate_staging(step_action_ids):
     for waiting_step in step_action_ids:
         try:
             do_staging(waiting_step, ddm)
-        except Exception, e:
+        except Exception as e:
             _logger.error("Check replicas problem %s" % str(e))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
@@ -502,7 +502,7 @@ def finish_action(request, action, action_id):
 
             else:
                 raise Exception('action is not supported')
-    except Exception, e:
+    except Exception as e:
             content = str(e)
             return Response(content, status=500)
 

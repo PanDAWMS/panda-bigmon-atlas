@@ -14,7 +14,7 @@ from django.template.response import TemplateResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 import time
@@ -96,7 +96,7 @@ def step_approve(request, stepexid=None, reqid=None, sliceid=None):
             for st in steps_for_approve:
                 st.status = 'Approved'
                 st.save()
-        except Exception, e:
+        except Exception as e:
             #print e
             return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
     return HttpResponseRedirect(reverse('prodtask:step_execution_table'))
@@ -115,9 +115,9 @@ def find_missing_tags(tags):
                         return_list.append(tag)
                     else:
                         pass
-        except ObjectDoesNotExist,e:
+        except ObjectDoesNotExist as e:
                 pass
-        except Exception,e:
+        except Exception as e:
             raise e
 
     return return_list
@@ -249,7 +249,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
     def set_action(step_to_check):
         try:
             create_predefinition_action(step_to_check)
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with pre defintion action %s" % str(e))
 
     def events_per_input_file(index, STEPS, task_config, parent_step):
@@ -271,7 +271,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         error_slices = []
         no_action_slices = []
         cur_request = TRequest.objects.get(reqid=reqid)
-        for slice, steps_status in slice_steps.items():
+        for slice, steps_status in list(slice_steps.items()):
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
             existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
             if input_list.priority is None:
@@ -281,7 +281,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
             # Check steps which already exist in slice, and change them if needed
             try:
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-            except ValueError,e:
+            except ValueError as e:
                 ordered_existed_steps, existed_foreign_step = [],None
 
             parent_step = None
@@ -327,11 +327,11 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                          raise ValueError("Part of child chain before linked step can't be overridden")
                     no_action = False
                     if step_value['changes']:
-                        for key in step_value['changes'].keys():
+                        for key in list(step_value['changes'].keys()):
                             if type(step_value['changes'][key]) != dict:
                                 step_value['changes'][key].strip()
                             else:
-                                for key_second_level in step_value['changes'][key].keys():
+                                for key_second_level in list(step_value['changes'][key].keys()):
                                     step_value['changes'][key][key_second_level].strip()
                     if step_in_db:
                         if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
@@ -492,13 +492,13 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             step.step_parent = step
                             step.save()
                             step.delete()
-            except Exception,e:
+            except Exception as e:
                 _logger.error("Problem step save/approval %s"%str(e))
                 error_slices.append(int(slice))
             else:
                 if no_action:
                     no_action_slices.append(int(slice))
-    except Exception, e:
+    except Exception as e:
         _logger.error("Problem step save/approval %s"%str(e))
         raise e
     return error_slices,no_action_slices
@@ -553,7 +553,7 @@ def form_skipped_slice(slice, reqid):
     # Check steps which already exist in slice
     try:
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-    except ValueError,e:
+    except ValueError as e:
         ordered_existed_steps, existed_foreign_step = [],None
     if ordered_existed_steps[0].status == 'Skipped' and input_list.dataset:
         return {slice:[]}
@@ -603,7 +603,7 @@ def form_skipped_slice(slice, reqid):
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
 
             return {slice:filter_input_datasets(dataset_events, reqid, filter_type)}
-        except Exception,e:
+        except Exception as e:
             logging.error("Can't find skipped dataset: %s" %str(e))
             return {slice:[]}
     return {slice:[]}
@@ -614,7 +614,7 @@ def get_skipped_steps(production_request, slice):
     # Check steps which already exist in slice
     try:
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-    except ValueError,e:
+    except ValueError as e:
         ordered_existed_steps, existed_foreign_step = [],None
     processed_tags = []
     last_step_name = ''
@@ -639,7 +639,7 @@ def find_input_datasets(request, reqid):
         for slice_number in slices:
             try:
                 slice_dataset_dict.update(form_skipped_slice(slice_number,reqid))
-            except Exception,e:
+            except Exception as e:
                 pass
         results.update({'success':True,'data':slice_dataset_dict})
 
@@ -656,7 +656,7 @@ def change_request_priority(request, reqid, old_priority, new_priority):
 
         try:
                 save_slice_changes(reqid, slice_steps)
-        except Exception,e:
+        except Exception as e:
                 logging.error("Can't update slice priority: %s" %str(e))
         results = {}
         results.update({'success':True})
@@ -752,7 +752,7 @@ def fill_all_slices_from_0_slice(reqid):
 
 def save_slice_changes(reqid, slice_steps):
     not_changed = []
-    for slice_number, steps_status in slice_steps.items():
+    for slice_number, steps_status in list(slice_steps.items()):
         if slice_number != '-1':
             if steps_status['changes']:
                 do_action = False
@@ -777,7 +777,7 @@ def save_slice_changes(reqid, slice_steps):
                                     for step in steps_status['sliceSteps']:
                                         if step['value']:
                                             if step['changes']:
-                                                if not step['changes'].has_key('input_events'):
+                                                if 'input_events' not in step['changes']:
                                                     step['changes'].update({'input_events':'-1'})
                                             else:
                                                 step['changes'] = {'input_events':'-1'}
@@ -797,7 +797,7 @@ def save_slice_changes(reqid, slice_steps):
                                 for step in StepExecution.objects.filter(slice=current_slice):
                                         step.priority = priority_dict.priority(step.step_template.step, step.step_template.ctag)
                                         step.save()
-                    except Exception,e:
+                    except Exception as e:
                         not_changed.append(slice)
     return []
 
@@ -814,7 +814,7 @@ def find_input_per_file(dataset_name):
             if current_task.status not in ProductionTask.RED_STATUS:
                 return current_task.step.get_task_config('nEventsPerJob')
         return ''
-    except Exception,e:
+    except Exception as e:
         return ''
 
 
@@ -856,7 +856,7 @@ def check_slices_for_request_split(request, production_request):
                                 do_split = True
                                 break
                 results = {'success':True, 'do_split': do_split, 'no_events': no_events }
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1131,7 +1131,7 @@ def make_child_update(parent_request_id, manager, slices):
 
 def check_slice_jos(reqid, slice_steps):
     update = False
-    for slice_number, steps_status in slice_steps.items():
+    for slice_number, steps_status in list(slice_steps.items()):
         if slice_number != '-1':
             current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
             if current_slice.input_data and current_slice.input_data.isdigit():
@@ -1140,7 +1140,7 @@ def check_slice_jos(reqid, slice_steps):
     bad_slice = []
     if update:
         sync_request_jos(reqid)
-        for slice_number, steps_status in slice_steps.items():
+        for slice_number, steps_status in list(slice_steps.items()):
             if slice_number != '-1':
                 current_slice = InputRequestList.objects.get(request=reqid, slice=int(slice_number))
                 if current_slice.input_data and current_slice.input_data.isdigit():
@@ -1153,7 +1153,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         data = request.body
         slice_steps = json.loads(data)
         _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
-        slices = slice_steps.keys()
+        slices = list(slice_steps.keys())
         req = TRequest.objects.get(reqid=reqid)
         fail_slice_save = save_slice_changes(reqid, slice_steps)
         error_slices = []
@@ -1163,13 +1163,13 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
             fill_request_priority(reqid,reqid)
         except:
             pass
-        for slice, steps_status in slice_steps.items():
+        for slice, steps_status in list(slice_steps.items()):
             slice_steps[slice] = steps_status['sliceSteps']
-        for steps_status in slice_steps.values():
+        for steps_status in list(slice_steps.values()):
             for steps in steps_status[:-2]:
                 steps['value'] = steps['value'].strip()
         slice_new_input = {}
-        for slice, steps_status in slice_steps.items():
+        for slice, steps_status in list(slice_steps.items()):
             if steps_status[-1]:
                 slice_new_input.update({slice:steps_status[-1]['input_dataset']})
             slice_steps[slice]= steps_status[:-1]
@@ -1191,13 +1191,13 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
             _logger.debug("Start steps save/approval")
 
             if req.request_type == 'MC':
-                for steps_status in slice_steps.values():
+                for steps_status in list(slice_steps.values()):
                     for index,steps in enumerate(steps_status[:-2]):
                         if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
                                 if not steps['formats']:
                                     steps['formats'] = 'AOD'
 
-            if ['-1'] == slice_steps.keys():
+            if ['-1'] == list(slice_steps.keys()):
                 slice_0 = deepcopy(slice_steps['-1'])
                 if req.request_type == 'MC':
                     error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level,waiting_level)
@@ -1214,7 +1214,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                             extended_slice_steps.update({str(i):deepcopy(slice_0)})
                         error_slices, no_action_slices = create_steps(extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
             else:
-                if '-1' in  slice_steps.keys():
+                if '-1' in  list(slice_steps.keys()):
                     del slice_steps['-1']
                 if not (req.manager) or (req.manager == 'None'):
                     missing_tags.append('No manager name!')
@@ -1229,7 +1229,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                         error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
                     try:
                         make_child_update(reqid,owner,slice_steps)
-                    except Exception, e:
+                    except Exception as e:
                         _logger.error("Problem with step modifiaction: %s" % e)
             if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
                     if not owner:
@@ -1244,7 +1244,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                 if do_split:
                     split_request(reqid,[x for x in map(int,slices) if x not in error_slices])
                 else:
-                    for slice, new_dataset in slice_new_input.items():
+                    for slice, new_dataset in list(slice_new_input.items()):
                         if new_dataset:
                             change_dataset_in_slice(req, int(slice), new_dataset)
 
@@ -1263,7 +1263,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                        'no_action_slices': no_action_slices, 'success': True, 'new_status': req.cstatus,
                        'removed_input': removed_input, 'fail_slice_save': '',
                        'error_approve_message': error_approve_message}
-    except Exception, e:
+    except Exception as e:
             _logger.error("Problem with step modifiaction: %s" % e)
 
     return HttpResponse(json.dumps(results), content_type='application/json')
@@ -1308,7 +1308,7 @@ def step_validation(slice_steps):
     tags = []
     # Slices with skipped
     wrong_skipping_slices = set()
-    for slice, steps_status in slice_steps.items():
+    for slice, steps_status in list(slice_steps.items()):
         is_skipped = True
         is_not_skipped = False
         for steps in steps_status[:-1]:
@@ -1421,7 +1421,7 @@ def request_reprocessing_steps_create(request, reqid=None):
                                 new_step_exec.set_task_config({'project_mode' : current_slice.project_mode})
                             new_step_exec.save()
                             real_steps_hierarchy[-1].append(new_step_exec)
-        except Exception,e:
+        except Exception as e:
             return HttpResponse(json.dumps(result), content_type='application/json',status=500)
         return HttpResponse(json.dumps(result), content_type='application/json')
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
@@ -1435,7 +1435,7 @@ def make_test_request(request, reqid):
             cur_request = TRequest.objects.get(reqid=reqid)
             cur_request.cstatus = 'test'
             cur_request.save()
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1448,7 +1448,7 @@ def make_request_fast(request, reqid):
             cur_request = TRequest.objects.get(reqid=reqid)
             cur_request.is_fast = True
             cur_request.save()
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1467,7 +1467,7 @@ def step_skipped(step):
 
 def fixPattern(pattern):
     pattern_d = json.loads(pattern.pattern_dict)
-    for step in pattern_d.keys():
+    for step in list(pattern_d.keys()):
         if not pattern_d[step]['ctag']:
             if not pattern_d[step]['project_mode']:
                 pattern_d[step]['project_mode'] = get_default_project_mode_dict()[step]
@@ -1667,7 +1667,7 @@ def request_table_view(request, rid=None, show_hidden=False):
         return return_value, real_events, total_events
 
     def check_empty_pattern(pattern, default_pattern):
-        for x in pattern.keys():
+        for x in list(pattern.keys()):
             if pattern[x]:
                 return pattern
         return default_pattern
@@ -1692,7 +1692,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                       [unwrap(check_empty_pattern(json.loads(x.pattern_dict).get(step,{}),{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
                 pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
-                pattern_list_name += [('Initial', [{} for step in STEPS_LIST])]
+                pattern_list_name += [('Initial', [('','') for step in STEPS_LIST])]
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')
             input_lists_pre = list(InputRequestList.objects.filter(request=cur_request).order_by('slice'))
 
@@ -1800,8 +1800,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                         total_task_dict['blue'] = total_task_dict['total'] - (total_task_dict['red'] +  total_task_dict['done'] + total_task_dict['finished'] + total_task_dict['running'])
                         #Find slices with broken slices
                         if ((total_task_dict['red']+total_task_dict['finished'])>0)and(total_task_dict['red']<600):
-                            map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list)
-                            map(lambda x: failed_slices.add(x.step.slice.id),finished_task_list)
+                            list(map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list))
+                            list(map(lambda x: failed_slices.add(x.step.slice.id),finished_task_list))
                             cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
                             do_cloned_and_failed = True
                     input_lists_pre_pattern = deepcopy(input_lists_pre[0])
@@ -1945,11 +1945,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                             step_action = []
                             try:
                                 step_task = tasks[step['id']]
-                            except Exception,e:
+                            except Exception as e:
                                 step_task = []
                             try:
                                 step_action = pre_definition_actions[step['id']]
-                            except Exception,e:
+                            except Exception as e:
                                 step_action = []
 
                             if step_task:
@@ -2168,14 +2168,14 @@ def request_table_view(request, rid=None, show_hidden=False):
             priorities_list = []
             PMG_PRIORITIES = ['-2','0','1','2','3','4']
             if manage_slice_priorities:
-                for item in manage_slice_priorities.keys():
+                for item in list(manage_slice_priorities.keys()):
                     if item in PMG_PRIORITIES:
                         manage_priorities.append({'slices':manage_slice_priorities[item], 'value':item, 'name':item.replace('-2','0+')})
 
                 priorities_list = [{'value':x,'name':x.replace('-2','0+')} for x in PMG_PRIORITIES]
             try:
                 if 'selected_slices' in request.session:
-                    selected_slices = json.dumps(map(int,request.session['selected_slices']))
+                    selected_slices = json.dumps(list(map(int,request.session['selected_slices'])))
                     del request.session['selected_slices']
             except:
                 pass
@@ -2225,7 +2225,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'bigpanda_base':BIG_PANDA_TASK_BASE,
                 'limit_priority':limit_priority
                })
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with request list page data forming: %s" % e)
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return HttpResponseRedirect(reverse('prodtask:request_table'))
@@ -2702,7 +2702,7 @@ def tasks_progress(all_tasks):
                         chains[processed_tasks[parent_task_id]["chain_id"]] = chains[processed_tasks[parent_task_id]["chain_id"]] + [int(task.id)]
                         chain_id = processed_tasks[parent_task_id]["chain_id"]
                         if task.total_events>task_input_events:
-                            print task.id
+                            print(task.id)
                     else:
                         if task.status == 'done':
                             task_input_events = task.total_events
@@ -2864,7 +2864,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
 
 
 def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):
-        ordered_slices = map(int,slices)
+        ordered_slices = list(map(int,slices))
         ordered_slices.sort()
         #form levels from input text lines
         #create chains for each input
@@ -2879,7 +2879,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
         old_new_step = {}
         for slice_number in ordered_slices:
             current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
-            new_slice = current_slice.values()[0]
+            new_slice = list(current_slice.values())[0]
             new_slice['slice'] = new_slice_number
             new_slice_numbers.append(new_slice_number)
             new_slice_number += 1
@@ -2891,7 +2891,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
             if fill_slice_from:
                 new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
                 new_input_data.save()
-            step_execs = StepExecution.objects.filter(slice=current_slice)
+            step_execs = StepExecution.objects.filter(slice=current_slice[0])
             ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
             if request_source.request_type == 'MC':
                 STEPS = StepExecution.STEPS
@@ -2949,7 +2949,7 @@ def clone_child_slices(parent_request, parent_steps):
             current_child_slice_set = set()
             child_steps =  list(StepExecution.objects.filter(request=child_request))
             for child_step in child_steps:
-                if child_step.step_parent_id in parent_steps.keys():
+                if child_step.step_parent_id in list(parent_steps.keys()):
                     current_child_slice_set.add(child_step.slice.slice)
             clone_slices(child_request, child_request, list(current_child_slice_set), -1, False, False, False, parent_steps)
 
@@ -3025,7 +3025,7 @@ def do_prestage_rule():
                     waiting_step.set_config({'do_rule':'Yes'})
                     waiting_step.execution_time = timezone.now()
                     waiting_step.save()
-                    print step.request_id,step.slice.slice
+                    print(step.request_id,step.slice.slice)
 
 
 def task_clone_with_skip_used(task_id, user_name):

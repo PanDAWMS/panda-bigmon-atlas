@@ -1,6 +1,9 @@
 from django.conf.urls import url
 from atlas.prestage.views import *
 
+app_name='prestage'
+
+
 urlpatterns = [
     url(r'^step_action/(?P<wstep_id>\d+)/$', step_action,name='step_action'),
     url(r'^step_action_in_request/(?P<reqid>\d+)/$', step_action_in_request, name='step_action'),

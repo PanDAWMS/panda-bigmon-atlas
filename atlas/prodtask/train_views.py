@@ -3,7 +3,7 @@ import logging
 
 from datetime import timedelta
 from django.utils import timezone
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
@@ -20,6 +20,7 @@ from ..prodtask.views import form_existed_step_list, form_step_in_page, create_r
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
     ParentToChildRequest
+from django.template import RequestContext
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -79,7 +80,7 @@ def do_merge_requests(train_id, requests):
                         slices_to_skip.append(str(request_to_skip)+','+str(dataset_slices[dataset][pattern_slice]['slices'][index]))
         for request in requests:
             if request not in merge_requests:
-                print request,'approved'
+                print(request,'approved')
                 set_request_status('cron',request,'working','Automatic merged approve', 'Request was approved after merging')
                 set_request_status('cron',request,'approved','Automatic merged approve', 'Request was approved during merging')
         if len(merge_requests)>0:
@@ -92,7 +93,7 @@ def do_merge_requests(train_id, requests):
                     if slice_index not in slices_to_skip:
                         new_slice = clone_slices(request,merged_request,[slice.slice],0,False)
                         step = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=merged_request,slice=new_slice[0]))[0]
-                        if slice_index in dataset_to_merge.keys():
+                        if slice_index in list(dataset_to_merge.keys()):
                             step.step_template = fill_template(step.step_template.step,step.step_template.ctag,
                                                                step.step_template.priority,
                                                                '.'.join(dataset_to_merge[slice_index]))
@@ -106,21 +107,21 @@ def do_merge_requests(train_id, requests):
                 relationship.train = None
                 relationship.relation_type = 'MR'
                 relationship.save()
-                print request,'merged', merged_request
+                print(request,'merged', merged_request)
             set_request_status('cron',merged_request,'working','Automatic merged approve', 'Request was approved after merging')
             set_request_status('cron',merged_request,'approved','Automatic merged approve', 'Request was approved after merging')
 
 
 @api_view(['POST'])
 def merge_trains(request):
-    data = json.loads(request.body)
+    data = request.data
     to_send = {}
     try:
         for train_id in data:
             train = TrainProduction.objects.get(id=train_id)
             dataset_slice, merged, temp = merge_pattern_train(train,data[train_id])
             to_send[train_id]  = dataset_slice
-    except Exception, e:
+    except Exception as e:
         Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
     return Response({"load": to_send})
 
@@ -129,9 +130,9 @@ def trains_to_merge(request):
     to_send = {}
     try:
         result = collect_trains(14)
-        for entry in result.values():
-            to_send[int(entry['train'].id)] = {'train_name':entry['train'].description,'request':map(int,entry['requests']),'request_count':len(entry['requests'])}
-    except Exception, e:
+        for entry in list(result.values()):
+            to_send[int(entry['train'].id)] = {'train_name':entry['train'].description,'request':list(map(int,entry['requests'])),'request_count':len(entry['requests'])}
+    except Exception as e:
         return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
     return Response({"trains": to_send})
 
@@ -204,7 +205,7 @@ def prepare_train_carriages(train_id):
                 group.add(load.group)
                 train_carriages[dataset] = {'outputs':outputs,'loads_id':[load.id], 'groups': group}
     return_value =[]
-    for dataset in train_carriages.keys():
+    for dataset in list(train_carriages.keys()):
         train_carriage = train_carriages[dataset]
         train_carriage.update({'dataset':dataset})
         return_value.append(train_carriage)
@@ -274,7 +275,7 @@ def assembled_train(request,train_id):
                                    'group':list(train_carriage['groups'])})
                 carriage_number += 1
             return HttpResponse(json.dumps(results), content_type='application/json')
-        except Exception,e:
+        except Exception as e:
             _logger.error("Problem with carriage forming  %s" % str(e))
             return HttpResponse(str(e), status=status.HTTP_400_BAD_REQUEST)
 
@@ -356,7 +357,7 @@ def train_create(request):
                     train.outputs = outputs
                     train.save()
                 return HttpResponseRedirect(reverse('prodtask:train_edit', args=(train.id,)))  # Redirect after POST
-            except Exception,e :
+            except Exception as e :
                  _logger.error("Problem with train creation  %s"% e)
     else:
         try:
@@ -408,7 +409,7 @@ def check_slices_for_trains(request):
             train_id = input_dict['train_id']
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             ordered_slices.sort()
             req = TRequest.objects.get(reqid=int(production_request))
             not_approved = []
@@ -446,7 +447,7 @@ def check_slices_for_trains(request):
             else:
                 results = {'success':False,
                            'message': 'All steps should be approved, problem with slices: %s'%str(not_approved)}
-        except Exception,e:
+        except Exception as e:
             results = {'success':False,'message': str(e)}
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -473,7 +474,7 @@ def create_request_as_child(request):
             relationship.save()
             results = {'success':True, 'request':new_request.reqid}
 
-        except Exception,e:
+        except Exception as e:
             results = {'success':False, 'message':str(e)}
             return HttpResponse(json.dumps(results), status=500, content_type='application/json')
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -679,7 +680,7 @@ def add_pattern_to_list(request):
                 train_id = create_pattern_train(pattern_request_id,pattern_type)
                 production_request = TRequest.objects.get(reqid=pattern_request_id)
                 results = {'success':True,'requestName':production_request.description,'trainID':train_id}
-        except Exception,e:
+        except Exception as e:
             results = {'success':False,'message': str(e)}
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -697,7 +698,7 @@ def remove_pattern_in_list(request):
             train.status = 'Cancelled'
             train.save()
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             results = {'success':False,'message': str(e)}
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -705,6 +706,6 @@ def get_pattern_from_request(request,reqid):
     results = {}
     try:
        results =  pattern_from_request(reqid)
-    except Exception,e:
+    except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')

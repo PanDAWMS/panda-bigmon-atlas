@@ -1,5 +1,5 @@
 {% extends parent_template %}
-{% load url from future %}
+
 {% load static from staticfiles %}
 
 
@@ -157,12 +157,11 @@ long_description_id:"This will be the body of the mail that will\n" +
         function checkGroupPermission(event){
             event.preventDefault();
             if($('#'+field_id['request_type']).val() == 'GROUP'){
-                var group = $('#'+field_id['phys_group']).val();
+                var group = {group:$('#'+field_id['phys_group']).val().toString()};
                 $.ajax({
                     url:"{% url 'prodtask:check_request_group'  %}" ,
                     type: 'POST',
                     data: group,
-                    contentType: 'application/json; charset=utf-8',
                     success: function(data,status) {
                                 if (! data){
                                     if(confirm("Warning! In the near future DPD request creation will be restricted. " +

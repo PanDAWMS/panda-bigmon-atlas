@@ -39,7 +39,7 @@ _deft_actions = {
     'obsolete_entity': 'obsolete_entity'
 }
 
-supported_actions = _deft_actions.keys()
+supported_actions = list(_deft_actions.keys())
 # Non-DEFT actions here
 #supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 supported_actions.extend(['increase_priority', 'decrease_priority'])
@@ -140,7 +140,7 @@ def set_hashtag(owner, task_id, hashtag_name):
         task.set_hashtag(hashtag)
         #print hashtag_name[0]
         return {'status':'success'}
-    except Exception,e:
+    except Exception as e:
         return {'exception':str(e)}
 
 
@@ -150,7 +150,7 @@ def remove_hashtag(owner, task_id, hashtag_name):
         hashtag = add_or_get_request_hashtag(hashtag_name[0])
         task.remove_hashtag(hashtag)
         return {'status':'success'}
-    except Exception,e:
+    except Exception as e:
         return {'exception':str(e)}
 
 
@@ -258,7 +258,7 @@ def get_task_priority_levels(task_id):
                 named_priorities = json.loads(prio.priority_dict)
             except:
                 continue
-            for name, priority in named_priorities.items():
+            for name, priority in list(named_priorities.items()):
                 if not levels_.get(name):
                     levels_[name] = {}
                 levels_[name][int(prio.priority_key)] = priority
@@ -284,7 +284,7 @@ def get_task_priority_levels(task_id):
         levels = get_priority_levels()
         step_levels = levels.get(step_name, {})
         result["levels"] = step_levels
-        for level, prio in step_levels.items():
+        for level, prio in list(step_levels.items()):
             if prio == current_priority:
                 result["current_level"] = level
 
@@ -310,7 +310,7 @@ def shift_task_priority(owner, task_id, level_shift, priority_shift=None):
     result = dict()
 
     if levels:
-        levels = levels.values()
+        levels = list(levels.values())
 
     if not levels and (priority_shift is not None):
         return change_task_priority(owner, task_id, current_prio+priority_shift)

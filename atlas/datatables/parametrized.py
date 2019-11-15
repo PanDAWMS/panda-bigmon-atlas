@@ -37,9 +37,9 @@ class Parametrized(object):
     def __init__(self, data=None, name=''):
         self.parameters = self.get_param_list()
         self.context = { 'params': self.parameters }
-        if self.__class__.__dict__.has_key('Meta'):
+        if 'Meta' in self.__class__.__dict__:
             mcls = self.__class__.__dict__['Meta']
-            for k, v in mcls.__dict__.items():
+            for k, v in list(mcls.__dict__.items()):
                 if k[0] != '_' :
                     setattr(self, k, v)
                     self.context[k] = v
@@ -54,7 +54,7 @@ class Parametrized(object):
     def get_param_list(self):
         all = self.__class__.__dict__
         ret = []
-        for n, v in all.items():
+        for n, v in list(all.items()):
             if n[0]=='_' or n == 'Meta':
                 continue
             ret.append( v.update(n) )
@@ -74,7 +74,7 @@ class Parametrized(object):
         :return: filtered queryset
         """
 
-        for param,value in self.parse_parameters(request).items():
+        for param,value in list(self.parse_parameters(request).items()):
             qs = qs.filter(param.get_Q(value))
 
         return qs

@@ -4,7 +4,6 @@ from os.path import dirname, join
 
 import atlas
 
-
 VERSIONS = {
     'atlas': atlas.__versionstr__,
 }
@@ -17,21 +16,17 @@ STATICFILES_FINDERS = (
 )
 
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
 
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
+
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # 'core.auth.CustomSessionMiddleware.CustomSessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',  # for AJAX POST protection with csrf
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-### added
-    'django.contrib.auth.middleware.RemoteUserMiddleware',  # for APIs: htcondorapi
-### END added
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 #### django-debug-toolbar
@@ -52,6 +47,7 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     join(dirname(atlas.__file__), 'templates'),
+    join(dirname(atlas.__file__), 'datatables/templates'),
 
 )
 
@@ -84,17 +80,22 @@ JS_I18N_APPS_EXCLUDE = INSTALLED_APPS_BIGPANDAMON_ATLAS + ('django_tables2',)
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.request', #django-tables2
 )
 
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+#     'django.template.loaders.eggs.Loader',
+)
 
-TEMPLATE = [
+TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': TEMPLATE_DIRS,
         'OPTIONS': {
             'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
-            'loaders': TEMPLATE_LOADERS
+            'loaders': TEMPLATE_LOADERS,
+
         },
     },
 

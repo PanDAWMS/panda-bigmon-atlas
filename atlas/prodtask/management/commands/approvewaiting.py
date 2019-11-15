@@ -12,6 +12,6 @@ class Command(BaseCommand):
         if not args:
             try:
                 check_waiting_steps()
-            except Exception,e:
+            except Exception as e:
                 raise CommandError('Some problem during waiting step approval: %s'%e)
         self.stdout.write('Successfully finished waiting step check: %s'%time.ctime())

@@ -11,10 +11,10 @@ from django.forms import FileField
 from django.forms import DecimalField
 from django.forms import Form
 import json
-from django.forms.extras.widgets import SelectDateWidget
+from django.forms import SelectDateWidget
 import re
 from atlas.prodtask.models import JediWorkQueue, ParentToChildRequest
-from models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
+from .models import TRequest, ProductionTask, StepExecution, MCPattern, MCPriority, TProject, TrainProduction, \
     RetryErrors, RetryAction, InputRequestList
 from django.forms.widgets import TextInput, SplitDateTimeWidget
 from django.forms import widgets
@@ -34,7 +34,7 @@ def energy_to_str(energy):
         return 'pPb8TeV'
     if int(energy)>1000:
         gev = str(int(energy))
-        print gev[-3]
+        print(gev[-3])
         if gev[-3]!='0':
             return gev[0:-3]+'p'+gev[-3:].rstrip('0')+'TeV'
         else:
@@ -306,7 +306,7 @@ class MCPatternForm(ModelForm):
 
     def steps_dict(self):
         return_dict = {}
-        for name, value in self.cleaned_data.items():
+        for name, value in list(self.cleaned_data.items()):
             if name.startswith('custom_'):
                 return_dict.update({self.fields[name].label: value})
         return return_dict
@@ -336,7 +336,7 @@ class MCPriorityForm(ModelForm):
 
     def steps_dict(self):
         return_dict = {}
-        for name, value in self.cleaned_data.items():
+        for name, value in list(self.cleaned_data.items()):
             if name.startswith('custom_'):
                 return_dict.update({self.fields[name].label: int(value)})
         return return_dict
@@ -419,7 +419,7 @@ class ProductionTrainForm(ModelForm):
                 if cleaned_data['pattern_request'].cstatus == 'cancelled':
                     raise ValueError('This pattern was cancelled')
                 cleaned_data['outputs'] = json.dumps(pattern_from_request(cleaned_data.get('pattern_request')))
-            except Exception,e:
+            except Exception as e:
                 del cleaned_data['pattern_request_id']
                 self._errors['pattern_request_id'] = self.error_class([str(e)])
         return cleaned_data

@@ -1,5 +1,5 @@
 {% extends parent_template %}
-{% load url from future %}
+
 {% load static from staticfiles %}
 
 
@@ -98,7 +98,7 @@
          };
         scope.showTasks= function(){
 
-            http.post("/prodtask/tasks_requests/",scope.requestsToShow).
+            http.post("/prodtask/tasks_requests/",{requests:scope.requestsToShow}).
               success(function(data, status, headers, config) {
                 console.log(data);
                 window.location.href = "/reqtask/";
@@ -109,7 +109,7 @@
         };
         scope.showStatistic= function(){
             var tasks = [];
-            http.post("/prodtask/tasks_requests/",scope.requestsToShow).
+            http.post("/prodtask/tasks_requests/",{requests:scope.requestsToShow}).
               success(function(data, status, headers, config) {
                 tasks = data;
                 http.post("/prodtask/tasks_statistic_steps/",tasks).
@@ -158,7 +158,7 @@
             var tasks = [];
             var requestsToShow = routeParams.request;
             console.log(requestsToShow);
-            http.post("/prodtask/tasks_requests/",requestsToShow).
+            http.post("/prodtask/tasks_requests/",{requests:requestsToShow}).
               success(function(data, status, headers, config) {
                 tasks = data;console.log(data);
                 http.post("/prodtask/tasks_statistic_steps/",tasks).

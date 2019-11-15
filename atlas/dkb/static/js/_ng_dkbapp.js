@@ -287,7 +287,7 @@
             scope.is_loading = false;
             if ('hashtag' in routeParams){
                 scope.hashtag = routeParams.hashtag;
-                var  toSend = scope.hashtag.toString() ;
+                var  toSend = {hashtag:scope.hashtag.toString()} ;
                 scope.search_string = 'Hashtags: ' + scope.hashtag.toString();
             } else if('request' in routeParams){
                 console.log('pass');
@@ -321,7 +321,7 @@
             scope.is_loading = false;
             if ('hashtag' in routeParams){
                 scope.hashtag = routeParams.hashtag;
-                var  toSend = scope.hashtag.toString() ;
+                var  toSend = {hashtag:scope.hashtag.toString() };
                 scope.search_string = 'Hashtags: ' + scope.hashtag.toString();
             } else if('request' in routeParams){
                 console.log('pass');
@@ -355,7 +355,7 @@
             scope.is_loading = false;
             if ('request_id' in routeParams){
                 scope.request_id = routeParams.request_id;
-                var  toSend = scope.request_id.toString() ;
+                var  toSend = {production_request:scope.request_id.toString()} ;
                 scope.search_string =  scope.request_id.toString();
             }
 

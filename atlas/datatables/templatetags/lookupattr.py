@@ -15,7 +15,7 @@ class ParametrizedNode(template.Node):
         self.params_name = params_name
     def render(self, context):
         t = select_template(['parametrized/parametrized.html'])
-        return t.render(Context(context.get(self.params_name).context))
+        return t.render(context.get(self.params_name).context)
 
 @register.tag(name="parametrized")
 def parametrized(parser, token):

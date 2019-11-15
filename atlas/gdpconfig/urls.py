@@ -2,6 +2,9 @@ from django.conf.urls import url
 from atlas.gdpconfig.views import *
 from atlas.auth.views import login,logout
 
+app_name='gdpconfig'
+
+
 urlpatterns = [
     url(r'^$', gdpconfig, name='gdpconfig'),
     url(r'^fairshare/$', fairshare, name='fairshare'),

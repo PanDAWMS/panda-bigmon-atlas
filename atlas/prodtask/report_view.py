@@ -7,7 +7,7 @@ from .models import TRequest, ProductionTask, StepExecution
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
 from django.shortcuts import render, render_to_response
 from django.template import Context, Template, RequestContext
@@ -45,15 +45,15 @@ def make_report(request, production_request_type, number_of_days):
             # Optimize by status-time
             if production_request_type not in type_provenance:
                 raise ValueError('Unsupprorted type: %s'%production_request_type)
-            if int(number_of_days) not in range(5):
+            if int(number_of_days) not in list(range(5)):
                 raise ValueError('Wrong day number: %s'%number_of_days)
             requests_ids = list(TRequest.objects.filter(request_type = production_request_type).values('reqid','is_error'))
             requests_list = dict([(x['reqid'],x['is_error']) for x in requests_ids if int(x['reqid']) > 1000 ])
             start_date = datetime.utcnow().replace(tzinfo=pytz.utc) - timedelta(hours=int(number_of_days)*24)
             #end_date = datetime.utcnow().replace(tzinfo=pytz.utc)
-            failed_tasks = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted']),
+            failed_tasks = list(ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted']),
                                                          Q(timestamp__gte = start_date),
-                                                         Q(provenance = type_provenance[production_request_type])).order_by('request__reqid').values()
+                                                         Q(provenance = type_provenance[production_request_type])).order_by('request__reqid').values())
             end_date =  datetime.utcnow().replace(tzinfo=pytz.utc) - timedelta(hours=2)
             approved_steps = list(StepExecution.objects.filter(Q(status='Approved'),Q(step_appr_time__range=[start_date,end_date])).values('id','request_id'))
 
@@ -63,13 +63,13 @@ def make_report(request, production_request_type, number_of_days):
             stale_list = []
             not_started = []
             for step in approved_steps:
-                if (step['request_id'] in requests_list.keys()) and (step['request_id'] not in not_started):
+                if (step['request_id'] in list(requests_list.keys())) and (step['request_id'] not in not_started):
                     if (requests_list[step['request_id']]):
                         tasks_started = ProductionTask.objects.filter(step_id = step['id']).count()
                         if tasks_started == 0:
                             not_started.append(step['request_id'])
             for failed_task in failed_tasks:
-                if failed_task['request_id'] in requests_list.keys():
+                if failed_task['request_id'] in list(requests_list.keys()):
 
                     error_list.append({'request':failed_task['request_id'],'task_id':failed_task['id'],
                                        'status':failed_task['status'],'group':failed_task['phys_group'],
@@ -105,7 +105,7 @@ def make_report(request, production_request_type, number_of_days):
                             'days':number_of_days
 
                          })
-        except Exception,e:
+        except Exception as e:
             _logger.error("Problem with report making  %s"%e)
             return make_default_report(request)
 

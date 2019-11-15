@@ -13,6 +13,6 @@ class Command(BaseCommand):
         if not args:
             try:
                 find_action_to_execute()
-            except Exception,e:
+            except Exception as e:
                 raise CommandError('Some problem during waiting step approval: %s'%e)
         self.stdout.write('Successfully finished waiting step check: %s'%time.ctime())

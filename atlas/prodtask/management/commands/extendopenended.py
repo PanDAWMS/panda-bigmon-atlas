@@ -12,6 +12,6 @@ class Command(BaseCommand):
         if not args:
             try:
                 check_open_ended()
-            except Exception,e:
+            except Exception as e:
                 raise CommandError('Some problem during request extension: %s'%e)
         self.stdout.write('Successfully finished request extension: %s'%time.ctime())

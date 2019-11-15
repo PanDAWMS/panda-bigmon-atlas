@@ -12,6 +12,6 @@ class Command(BaseCommand):
         self.stdout.write('Start sync cvmfs for JOs at %s'%time.ctime())
         try:
             sync_cvmfs_db()
-        except Exception,e:
+        except Exception as e:
             raise CommandError('Some problem during syncing: %s'%str(e))
         self.stdout.write('Successfully finished cvmfs sync: %s'%time.ctime())

@@ -8,6 +8,9 @@ from ..prodtask.train_views import TrainLoad, TrainLoads, TrainLoadByTrain
 from atlas.prodtask import views,request_views,check_duplicate,open_ended,waiting_actions,task_views,task_manage_views,\
     retryerros,step_manage_views,train_views,report_view,hashtag,selection
 
+app_name='prodtask'
+
+
 urlpatterns = [
 
     url(r'^step_template_table/$', views.step_template_table, name='step_template_table'),

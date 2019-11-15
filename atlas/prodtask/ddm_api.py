@@ -19,9 +19,9 @@ def number_of_files_in_dataset(dsn):
 def find_dataset_events(dataset_pattern, ami_tags=None):
         return_list = []
         datasets_prodsys1_db = []
-        datasets_prodsys2_db = list(ProductionDataset.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).filter(status__iexact = u'done').values())
+        datasets_prodsys2_db = list(ProductionDataset.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).filter(status__iexact = 'done').values())
         if not datasets_prodsys2_db:
-            datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = u'deleted').values())
+            datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = 'deleted').values())
         patterns_for_container = set()
         dataset_dict = {}
         for current_dataset in datasets_prodsys1_db:
@@ -68,7 +68,7 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
             is_good = False
             datasets_in_container = ddm.dataset_in_container(container)
             for dataset_name in datasets_in_container:
-                if dataset_name[dataset_name.find(':')+1:] in dataset_dict.keys():
+                if dataset_name[dataset_name.find(':')+1:] in list(dataset_dict.keys()):
                     is_good = True
                     item = dataset_dict.pop(dataset_name[dataset_name.find(':')+1:])
                     event_count += item['events']
@@ -76,7 +76,7 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
             if is_good:
                 return_list.append({'dataset_name':container,'events':str(event_count),'tasks':tasks, 'excluded':False})
         if (not return_list) and dataset_dict:
-            for dataset in dataset_dict.keys():
+            for dataset in list(dataset_dict.keys()):
                 return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events']),'tasks':[dataset_dict[dataset]['taskid']], 'excluded':False})
 
         return return_list
@@ -86,7 +86,7 @@ def tid_from_container(container):
     if container[-1]!='/':
         container = container + '/'
     datasets = ddm.dataset_in_container(container)
-    return map(lambda x: int(x[x.rfind('tid')+3:x.rfind('_')]),datasets)
+    return [int(x[x.rfind('tid')+3:x.rfind('_')]) for x in datasets]
 
 
 def dataset_events(container):
@@ -169,7 +169,7 @@ class DDM(object):
             return True
         except DataIdentifierNotFound:
             return False
-        except Exception,e:
+        except Exception as e:
             raise e
 
     def find_dataset(self, pattern):
@@ -297,7 +297,7 @@ class DDM(object):
 
 
     def find_disk_for_tape(self, tape_rse):
-        rses = filter(lambda x: x['rse'].startswith(tape_rse.split('_')[0]),list(self.list_rses('type=DATADISK')))
+        rses = [x for x in list(self.list_rses('type=DATADISK')) if x['rse'].startswith(tape_rse.split('_')[0])]
         if rses:
             return rses[0]
         return None

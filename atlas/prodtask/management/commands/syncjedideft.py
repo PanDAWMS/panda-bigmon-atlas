@@ -14,6 +14,6 @@ class Command(BaseCommand):
             try:
                 task_id = int(args[0])
                 sync_old_tasks(task_id)
-            except Exception,e:
+            except Exception as e:
                 raise CommandError('Some problem during syncing: %s'%str(e))
         self.stdout.write('Successfully finished tasks sync: %s'%time.ctime())

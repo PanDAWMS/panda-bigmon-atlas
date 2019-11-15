@@ -86,7 +86,7 @@ hashtagApp.controller('HashTagCtrl',['$scope','$http','hashtagLists', function (
     };
     scope.showStatistic= function(){
         var tasks = [];
-        http.post("/prodtask/tasks_hashtag/",scope.hashtag_formula).
+        http.post("/prodtask/tasks_hashtag/",{formula:scope.hashtag_formula}).
           success(function(data, status, headers, config) {
             tasks = data;
             http.post("/prodtask/tasks_statistic_steps/",tasks).
@@ -117,7 +117,7 @@ hashtagApp.controller('progressStatHashtagCtrl',['$scope','$http','$routeParams'
         scope.search.notequal = {};
         var tasks = [];
         var hashtagFormula = routeParams.hashtags;
-        http.post("/prodtask/tasks_hashtag/",hashtagFormula).
+        http.post("/prodtask/tasks_hashtag/",{formula:hashtagFormula}).
           success(function(data, status, headers, config) {
             tasks = data;
             http.post("/prodtask/tasks_statistic_steps/",tasks).

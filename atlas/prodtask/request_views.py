@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import transaction
 from django.db.models import Count
 from django.db.models import Q
@@ -41,6 +41,7 @@ from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemp
 from .dpdconfparser import ConfigParser
 from .xls_parser_new import open_tempfile_from_url
 from rest_framework import serializers,generics
+from functools import reduce
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -72,7 +73,7 @@ def get_object_form_step(step):
         if (result_object[key] == 'None') or not (result_object[key]):
             result_object[key] = ''
     sorted(result_object)
-    compare_str = reduce(lambda x, y: x+y, result_object.itervalues())
+    compare_str = reduce(lambda x, y: x+y, iter(result_object.values()))
     return result_object,compare_str
 
 
@@ -123,13 +124,13 @@ def reprocessing_object_form(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict['slices']
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Make new reprocessing request from slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
             result_dict = gather_form_dict(reqid,ordered_slices)
             request.session['reprocessing_objects'] = result_dict
             return HttpResponse(json.dumps({'success':True}), content_type='application/json')
-       except Exception,e:
+       except Exception as e:
             return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
     return HttpResponse(json.dumps({'success':False,'message':''}),status=500, content_type='application/json')
 
@@ -334,7 +335,7 @@ def short_hlt_form(request):
             request.session['hlt_short_description'] = input_dict['short_description']
             request.session['hlt_ref_link'] = input_dict['ref_link']
 
-        except Exception,e:
+        except Exception as e:
             return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
@@ -371,7 +372,7 @@ def hlt_form_prepare_request(request):
                 'inputLists': inputlists,
                 'bigSliceNumber': False
             })
-        except Exception,e:
+        except Exception as e:
             return short_hlt_form(request)
 
 @login_required(login_url='/prodtask/login/')
@@ -448,7 +449,7 @@ def short_valid_form(request):
             else:
                 request.session['valid_ref_link'] = ''
 
-        except Exception,e:
+        except Exception as e:
             return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
@@ -486,7 +487,7 @@ def valid_form_prepare_request(request):
                 'inputLists': inputlists,
                 'bigSliceNumber': False
             })
-        except Exception,e:
+        except Exception as e:
             return short_valid_form(request)
 
 
@@ -528,7 +529,7 @@ def request_status_update(request_from,request_to):
                 result_dict['finished'].append(req)
             elif is_done_exist and not(is_run_exist or is_fail_exist or is_finished_exist):
                 result_dict['finished'].append(req)
-        for status,requests in result_dict.items():
+        for status,requests in list(result_dict.items()):
             for req in requests:
                     #print req.reqid,status
                     if req.cstatus != status and req.cstatus == 'processed':
@@ -551,7 +552,7 @@ def clean_old_request(do_action=False):
                     step.delete()
                 request.delete()
             total_request +=1
-    print total_request
+    print(total_request)
 
 
 def request_details(request, rid=None):
@@ -582,7 +583,7 @@ def close_deft_ref(request, reqid):
                 production_request.is_error = False
                 production_request.save()
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -597,7 +598,7 @@ def request_comments(request, reqid):
             for comment in comments:
                 str_comments.append(str(comment.timestamp)+'; '+comment.owner+'-'+comment.comment)
             results = {'success':True,'comments':str_comments}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with comments")
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -609,7 +610,7 @@ def check_user_exists(request):
             data = request.body
             input_dict = json.loads(data)
             results = {'user_exists': User.objects.filter(username=input_dict['username']).exists()}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with checking user : %s"%e)
             results = str(e)
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -641,7 +642,7 @@ def make_user_as_owner(request, reqid):
                                          'Request status is changed to %s by WebUI' % 'working')
 
             results = {'success':True,'ownerName':current_manager}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with changing manager #%i: %s"%(reqid,e))
             results = str(e)
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -655,7 +656,7 @@ def request_clone2(request, reqid):
             data = request.body
             input_dict = json.loads(data)
             slices = input_dict['slices']
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             ordered_slices.sort()
             new_short_description = input_dict['description']
             new_ref = input_dict['ref']
@@ -670,7 +671,7 @@ def request_clone2(request, reqid):
             _logger.debug(form_request_log(reqid,request,'Clone request' ))
             new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project)
             results = {'success':True,'new_request':int(new_request_id)}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -684,7 +685,7 @@ def status_history(request, reqid):
             request_status = RequestStatus.objects.filter(request=reqid).order_by('-timestamp')
             result_data = [{'status': x.status,'user': x.owner,'date': str(x.timestamp),'comment': x.comment} for x in request_status]
             results = {'success': True,'data': result_data}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with getting status #%i: %s"%(reqid,e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -707,7 +708,7 @@ def create_tarball_input(production_request_id):
                 result_list.append(dict(group=group,dsid=int(dsid),stats=int(step.input_events),short=short,ecm=int(energy),
                                         jo=step.slice.input_data,etag=step.step_template.ctag))
         result = json.dumps(result_list)
-    except Exception,e:
+    except Exception as e:
         # log error
         pass
     return result
@@ -727,7 +728,7 @@ def request_update(request, reqid=None):
                 req = TRequest(**form.cleaned_data)
                 req.save()
                 return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(req.reqid,)))  # Redirect after POST
-            except Exception,e :
+            except Exception as e :
                  _logger.error("Problem with request update #%i: %s"%(int(reqid), e))
     else:
         try:
@@ -805,7 +806,7 @@ def mcfile_form_prefill(form_data, request):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
             spreadsheet_dict += fill_steptemplate_from_file(input_excel)
-    except Exception, e:
+    except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         return {}, str(e)
     if (spreadsheet_dict == []) and (eroor_message == ''):
@@ -814,10 +815,10 @@ def mcfile_form_prefill(form_data, request):
     for priority in priorities:
         try:
             MCPriority.objects.get(priority_key=int(priority))
-        except ObjectDoesNotExist, e:
+        except ObjectDoesNotExist as e:
             _logger.error("Priority %i doesn't exist in the system" % int(priority))
             return {}, "Priority %i doesn't exist in the system" % int(priority)
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with %i doesn't exist in the system" % int(priority))
             return {}, str(e)
     # Fill default values
@@ -878,7 +879,7 @@ def hlt_form_prefill(form_data, request):
             conf_parser = ConfigParser()
             output_dict = conf_parser.parse_config(file_obj,['formats'])
 
-    except Exception, e:
+    except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         error_message = str(e)
         return {},error_message
@@ -947,13 +948,13 @@ def parse_json_slice_dict(json_string):
     slices_dict = {}
 
 
-    for slice_step in input_dict.keys():
+    for slice_step in list(input_dict.keys()):
         # prepare input
         current_step_dict = {}
-        for key,item in input_dict[slice_step].items():
+        for key,item in list(input_dict[slice_step].items()):
             current_step_dict[key] = str(item).strip()
         current_slice,current_step = slice_step.split('_')
-        if int(current_slice) not in slices_dict.keys():
+        if int(current_slice) not in list(slices_dict.keys()):
             slices_dict[int(current_slice)] = {'steps':{}}
         if current_step == '0':
             slices_dict[int(current_slice)].update(current_step_dict)
@@ -961,7 +962,7 @@ def parse_json_slice_dict(json_string):
         else:
             slices_dict[int(current_slice)]['steps'][int(current_step)] = current_step_dict
             slices_dict[int(current_slice)]['steps'][int(current_step)].update({'step_order':slice_step})
-    slice_numbers = slices_dict.keys()
+    slice_numbers = list(slices_dict.keys())
     slice_numbers.sort()
     for slice_number in slice_numbers:
             slice = slices_dict[slice_number]
@@ -1074,7 +1075,7 @@ def dpd_form_prefill(form_data, request):
             conf_parser = ConfigParser()
             output_dict = conf_parser.parse_config(file_obj,['formats'])
 
-    except Exception, e:
+    except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         error_message = str(e)
         return {},error_message
@@ -1172,7 +1173,7 @@ def reprocessing_form_prefill(form_data, request):
             output_dict = conf_parser.parse_config(file_obj,['formats'])
 
 
-    except Exception, e:
+    except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)
         return {},eroor_message
@@ -1263,7 +1264,7 @@ def eventindex_form_prefill(form_data, request):
             output_dict = conf_parser.parse_config(file_obj,['formats'])
 
 
-    except Exception, e:
+    except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         eroor_message = str(e)
         return {},eroor_message
@@ -1385,7 +1386,7 @@ def find_datasets_by_pattern(request):
             return_list = find_dataset_events(dataset_pattern)
             results = {}
             results.update({'success':True,'data':return_list})
-        except Exception, e:
+        except Exception as e:
             _logger.error('Problem with ddm %s' % e)
             results.update({'success':True,'data':[]})
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -1404,15 +1405,15 @@ def resend_email(request,reqid):
                 current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(reqid,)))
                 form_and_send_email(production_request,owner_mails,'',production_request.info_field('long_description'),
                                     current_uri,production_request.info_field('data_source'),True)
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
         return HttpResponseRedirect('/')
 
 
 
 def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
-    long_description = filter(lambda x: x in string.printable, long_description)
-    short_description = filter(lambda x: x in string.printable, production_request.description).replace('\n','').replace('\r','')
+    long_description = [x for x in long_description if x in string.printable]
+    short_description = [x for x in production_request.description if x in string.printable].replace('\n','').replace('\r','')
     subject = 'Request {group_name} {description} {energy} GeV'.format(group_name=production_request.phys_group,
                                                           description=short_description,
                                                           energy=str(production_request.energy_gev))
@@ -1455,12 +1456,12 @@ Details:
 def check_request_group(request):
     result = False
     try:
-        group = request.body
+        group = request.data['group']
         user = request.user
         allowed_groups = check_allow_request_create(user)
         if (user.is_superuser) or ('ALL' in allowed_groups) or ('DPD' in allowed_groups) or (group in allowed_groups):
             result = True
-    except Exception,e:
+    except Exception as e:
         content = str(e)
         return Response(content,status=500)
 
@@ -1526,7 +1527,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                 else:
                     if form.cleaned_data['excellink']:
                         request.session['excel_link'] = form.cleaned_data['excellink']
-                    if form.cleaned_data.has_key('excelfile'):
+                    if 'excelfile' in form.cleaned_data:
                         del form.cleaned_data['excelfile']
                     del form.cleaned_data['excellink']
                     # if 'tag_hierarchy' in form.cleaned_data:
@@ -1548,7 +1549,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             'inputLists': inputlists,
                             'bigSliceNumber': check_need_split(file_dict),
                         })
-                    except Exception, e:
+                    except Exception as e:
                         _logger.error("Problem during request form creating: %s" % e)
                         return HttpResponseRedirect(reverse('prodtask:request_table'))
             # Process the data from create form form
@@ -1588,7 +1589,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     del request.session['close_train']
                 need_approve = form2.cleaned_data['need_approve']
                 for x in ['excelfile','need_split','split_divider','train']:
-                    if form.cleaned_data.has_key(x):
+                    if x in form.cleaned_data:
                         del form.cleaned_data[x]
                 del form.cleaned_data['long_description'], form.cleaned_data['cc'], form.cleaned_data['excellink'], \
                      form.cleaned_data['need_approve']
@@ -1633,7 +1634,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         _logger.debug("e-mail with link %s" % current_uri)
                         try:
                             form_and_send_email(req,owner_mails,cc,longdesc,current_uri,excel_link,need_approve,manager_name)
-                        except Exception,e:
+                        except Exception as e:
                             _logger.error("Problem during mail sending: %s" % str(e))
                         # Saving slices->steps
                         try:
@@ -1720,7 +1721,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             fill_request_events(req.reqid,req.reqid)
                         except:
                             pass
-                except Exception, e:
+                except Exception as e:
                     _logger.error("Problem during request creat: %s" % str(e))
                     #TODO: Error messsage
                     return HttpResponseRedirect(reverse('prodtask:request_table'))
@@ -1743,9 +1744,9 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         if (rid):
             try:
                 _logger.debug("Clonning request #%s " % rid)
-                values = TRequest.objects.values().get(reqid=rid)
+                values = list(TRequest.objects.values()).get(reqid=rid)
                 form = TRequestCreateCloneForm(values)
-            except Exception, e:
+            except Exception as e:
                 _logger.debug("Problem with clonning request #%s - %s " % (rid,e))
                 return HttpResponseRedirect(reverse('prodtask:request_table'))
         # Create request form
@@ -1846,7 +1847,7 @@ def change_request_status(request, reqid, status, message, comment):
         try:
             set_request_status(request.user.username, reqid, status, message, comment,request)
             results = {'newStatus': status,'message':message }
-        except Exception,e:
+        except Exception as e:
             _logger.error("Problem during request status change: %s" % str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1854,7 +1855,7 @@ def change_request_status(request, reqid, status, message, comment):
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
         try:
-            values = MCPattern.objects.values().get(id=pattern_id)
+            values = list(MCPattern.objects.values()).get(id=pattern_id)
             pattern_dict = json.loads(values['pattern_dict'])
             pattern_step_list = [(step, decompress_pattern(pattern_dict.get(step, ''))) for step in MCPattern.STEPS]
         except:
@@ -1898,7 +1899,7 @@ def decompress_pattern(pattern_dict):
 
 def compress_pattern(form_dict):
     return_dict = {}
-    for step in form_dict.keys():
+    for step in list(form_dict.keys()):
         value_list = json.loads(form_dict[step])
         if value_list:
             if value_list[2] == 'None':
@@ -2014,7 +2015,7 @@ def mcpriority_create(request):
 
 def mcpriority_update(request, pattern_id):
     try:
-        values = MCPriority.objects.values().get(id=pattern_id)
+        values = list(MCPriority.objects.values()).get(id=pattern_id)
         priority_step_list = step_list_from_json(values['priority_dict'],MCPriority.STEPS)
     except:
         return HttpResponseRedirect(reverse('prodtask:mcpriority_table'))
@@ -2218,7 +2219,7 @@ def check_extend_request(request, reqid):
             for current_slice in spreadsheet_dict:
                 steps_number += len(current_slice.get('step_exec_dict'))
             results = {'success':True, 'slices_number':slices_number,'steps_number':steps_number, 'message': ''}
-        except Exception,e:
+        except Exception as e:
             results = {'success':False, 'message': str(e)}
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -2235,7 +2236,7 @@ def extend_request(request, reqid):
             spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
             if make_slices_from_dict(production_request, spreadsheet_dict):
                 results = {'success':True, 'message': ''}
-        except Exception,e:
+        except Exception as e:
             results = {'success':False, 'message': str(e)}
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -2307,10 +2308,10 @@ def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name
             if new_dataset_campaign!=current_dataset_campaign:
                 ddm.changeDatasetCampaign(dataset,new_dataset_campaign)
             changed_datasets.append(dataset)
-        except DataIdentifierNotFound, e:
+        except DataIdentifierNotFound as e:
             pass
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
     with open(file_name, 'a') as output_file:
         output_file.writelines((x+'\n' for x in changed_datasets))
     production_request.campaign = newcampaign

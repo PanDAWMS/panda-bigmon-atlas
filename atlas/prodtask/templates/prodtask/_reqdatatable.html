@@ -1,6 +1,6 @@
 {% extends parent_template %}
 {% load i18n %}
-{% load url from future %}
+
 {% load static from staticfiles %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
@@ -181,7 +181,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
  $("#selectPattern").change(function(){
     {% for pattern, steps  in pattern_list %}
         if ($("#selectPattern").val() == "{{ pattern }}"){
-
             {% for step, fields in steps %}
                 $("#patternform{{forloop.counter0}}").val("{{ step }}");
                 if("{{ step }}" != ""){
@@ -190,11 +189,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#skippedColor").css("background-color")});
                 }
                 i = {{  forloop.counter0 }};
-                {% for field_name, field_value in fields %}
-                    patternDict[i]['{{ field_name }}']='{{ field_value }}';
+                    {% for field_name, field_value in fields %}
+                        patternDict[i]['{{ field_name }}']='{{ field_value }}';
 
-                {% endfor %}
-
+                    {% endfor %}
             {% endfor %}
         }
     {% endfor %}
@@ -230,7 +228,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
     {#Fill pattern table#}
     (function(){
-       {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approve_level, cloned, is_waiting  in inputLists %}
+       {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approve_level, cloned, is_waiting,  slice_output,slice_output_full,real_events, total_events  in inputLists %}
            {% for step in step_exec_dict %}
                         {% ifequal step.skipped 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");

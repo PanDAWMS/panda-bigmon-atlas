@@ -1,5 +1,5 @@
 {% extends parent_template %}
-{% load url from future %}
+
 {% load static from staticfiles %}
 
 
@@ -56,7 +56,7 @@
         return result_pattern
     }
     var groupList = [];
-    var currentUser = '{{ request.user.username }}';
+    var currentUser = '{{ user.username }}';
     var train_id = '{{ train.id }}';
     var createRequestPage = "{%  url 'prodtask:create_request_from_train' train.id %}";
     //var pattern_request = prepare_pattern($.evalJSON('{{ train.pattern_output }}'));

@@ -26,6 +26,7 @@ from django.db.models import Count, Q
 
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
+from functools import reduce
 
 
 
@@ -139,7 +140,7 @@ def  find_duplicates_all_db(same_name_list):
         requests_set = set()
         dataset_ids = []
         if (index % 100)==0:
-            print index,
+            print(index, end=' ')
         container_exist = False
         dataset_exist = False
         for same_task in same_tasks:
@@ -215,7 +216,7 @@ def  find_duplicates_all_db(same_name_list):
                     offset, current_outputs = get_outputs_offset(task['jedi_task'].jedi_task_parameters)
                     for output in current_outputs:
                         output_dict[output] = output_dict.get(output,[]) + [{'offset':int(offset),'task':task['task']}]
-                for tasks_offset in output_dict.values():
+                for tasks_offset in list(output_dict.values()):
                     current_task_offset = sorted(tasks_offset, key=lambda x: x['offset'])
                     current_offset_task = current_task_offset[0]
                     new_series = False
@@ -258,7 +259,7 @@ def  find_same_first_all_db(same_name_list):
         requests_set = set()
         dataset_ids = []
         if (index % 100)==0:
-            print index,
+            print(index, end=' ')
         container_exist = False
         dataset_exist = False
         for same_task in same_tasks:
@@ -320,7 +321,7 @@ def  find_same_first_all_db(same_name_list):
                     offset, current_outputs = get_outputs_offset(task['jedi_task'].jedi_task_parameters)
                     for output in current_outputs:
                         output_dict[output] = output_dict.get(output,[]) + [{'offset':int(offset),'task':task['task']}]
-                for tasks_offset in output_dict.values():
+                for tasks_offset in list(output_dict.values()):
                     current_task_offset = sorted(tasks_offset, key=lambda x: x['offset'])
                     current_offset_task = current_task_offset[0]
                     new_series = False
@@ -385,13 +386,13 @@ def find_simul_duplicates():
     total_events = 0
     requests = set()
     for tasks in bad_list:
-        print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])
+        print(tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks]))
         total_events += sum([x['total_events'] for x in tasks])
         for task in tasks:
             requests.add(task['request_id'])
-    print total_events
-    print len(bad_list)
-    print requests
+    print(total_events)
+    print(len(bad_list))
+    print(requests)
 
 
 def find_simul_split_dupl():
@@ -400,7 +401,7 @@ def find_simul_split_dupl():
         slice_event = task.step.input_events
         if slice_event != -1:
             if task.total_events > slice_event:
-                print task.id
+                print(task.id)
 
 
 def find_all_mc_duplicates():
@@ -454,13 +455,13 @@ def find_all_mc_duplicates():
     total_events = 0
     requests = set()
     for tasks in bad_list:
-        print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])
+        print(tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks]))
         total_events += sum([x['total_events'] for x in tasks])
         for task in tasks:
             requests.add(task['request_id'])
-    print total_events
-    print len(bad_list)
-    print requests
+    print(total_events)
+    print(len(bad_list))
+    print(requests)
 
 
 
@@ -531,15 +532,15 @@ def find_evgen_duplicates():
                 file_for_result_GP.write(str(duplicate)+','+str(duplicates[duplicate][2])+'\n')
                 GP_requests.add(duplicates[duplicate][2])
         if strange:
-            print strange
-    print GP_requests
-    print AP_requests
+            print(strange)
+    print(GP_requests)
+    print(AP_requests)
     file_for_result_AP.close()
     file_for_result_GP.close()
 
 def find_task_by_input(task_ids, task_name, request_id):
     result_duplicate = []
-    print task_ids
+    print(task_ids)
     for task_id in task_ids:
         task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
         similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).filter(Q( status__in=['done','finished'] )).values('id','name','inputdataset','provenance','request_id').order_by('id'))
@@ -558,7 +559,7 @@ def find_task_by_input(task_ids, task_name, request_id):
                             task_chains.append(int(task['id']))
                             current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
                     else:
-                        print 'NOn tid:',task_input,task_name
+                        print('NOn tid:',task_input,task_name)
         result_duplicate.append(current_duplicates)
     first_tasks = result_duplicate[0]
     second_tasks = result_duplicate[1]
@@ -566,7 +567,7 @@ def find_task_by_input(task_ids, task_name, request_id):
     not_duplicate = []
     for task_id in first_tasks:
         name_set.add(first_tasks[task_id][0])
-    for task_id in second_tasks.keys():
+    for task_id in list(second_tasks.keys()):
         if second_tasks[task_id][0] not in name_set:
             not_duplicate.append({task_id:second_tasks[task_id]})
     return second_tasks,not_duplicate
@@ -592,13 +593,13 @@ def create_task_chain(task_id, provenance=''):
             if ('tid' not in task_input) and (int(task['id'])>int(task_id)) and (task_name!=task['name']):
                 tasks_in_container = tid_from_container(task_input)
                 for task_input_id in tasks_in_container:
-                    if task_input_id in chain.keys():
+                    if task_input_id in list(chain.keys()):
                         parent_task_id = task_input_id
                         break
             else:
                 if 'tid' in task_input:
                     task_input_id = int(task_input[task_input.rfind('tid')+3:task_input.rfind('_')])
-                    if (task_input_id in chain.keys()) :
+                    if (task_input_id in list(chain.keys())) :
                         parent_task_id = task_input_id
         if parent_task_id:
             level = chain[parent_task_id]['level'] + 1
@@ -638,14 +639,14 @@ def find_identical_step(step):
 def bulk_obsolete_from_file(file_name):
     with open(file_name,'r') as input_file:
         tasks = (int(line.split(',')[0]) for line in input_file if line)
-        print timezone.now()
+        print(timezone.now())
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.status in ['finished','done']:
                 task.status='obsolete'
                 task.timestamp=timezone.now()
                 task.save()
-                print task.name, task.status
+                print(task.name, task.status)
 
 def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP', start_request=0):
     with open(file_name,'r') as input_file:
@@ -706,7 +707,7 @@ def list_intersection(primary_list, searched_lists, field_name='id'):
     for element in primary_list:
         for search_list_index, search_list in enumerate(searched_lists):
             if indexes[search_list_index] < len(search_list):
-                print indexes[search_list_index],search_list[indexes[search_list_index]]
+                print(indexes[search_list_index],search_list[indexes[search_list_index]])
                 while((search_list[indexes[search_list_index]][field_name]<element[field_name])and(indexes[search_list_index] < len(search_list))):
                     indexes[search_list_index]+=1
                 if search_list[indexes[search_list_index]][field_name]==element[field_name]:
@@ -765,8 +766,8 @@ def make_default_duplicate_page(request):
 
 
                      })
-        except Exception,e:
-            print e
+        except Exception as e:
+            print(e)
             return HttpResponseRedirect('/')
 
 
@@ -791,7 +792,7 @@ def get_event_number_by_ds(ds_name):
     tasks = list(ProductionTask.objects.filter(name=task_name,status__in=['done','finished']).values('id','total_events'))
     total_events = reduce(lambda x,y: x+y,[task['total_events'] for task in tasks])
     tasks_id_str = ' '.join([str(task['id']) for task in tasks])
-    print ds_name+','+tasks_id_str+','+str(total_events)
+    print(ds_name+','+tasks_id_str+','+str(total_events))
 
 
 def find_wrong_simul(request_id):
@@ -803,4 +804,4 @@ def find_wrong_simul(request_id):
             else:
                 ratio = float(task.total_events)/float(task.step.slice.input_events)
             if ((ratio>1) or (ratio < 0.11)):
-                print task.id, ratio
+                print(task.id, ratio)

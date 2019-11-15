@@ -82,7 +82,7 @@ def get_jobs(request):
         data = resp.json()['jobs']
         result = json.dumps(data)
         del resp
-    except Exception, e:
+    except Exception as e:
         _logger.error("Problem during reading job info from bigpanda:%s" % str(e))
     return HttpResponse(result)
 

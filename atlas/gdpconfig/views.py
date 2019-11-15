@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 
 from django.http import HttpResponse
 from django.shortcuts import render
+from functools import reduce
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -73,7 +74,7 @@ def config_action(request,action):
     qs = GDPConfig.objects.filter(app=sRow['app'],component=sRow['component'],key=sRow['key'],vo=sRow['vo'])
 
     _logger.info("GDPConfig: Update user:{user} old data:{old_data}".format(user=request.user.username,
-                                                                 old_data=qs.values()))
+                                                                 old_data=list(qs.values())))
 
 
 
@@ -84,7 +85,7 @@ def config_action(request,action):
         return HttpResponse(json.dumps(result))
 
     _logger.info("GDPConfig: Update user:{user} new data:{old_data}".format(user=request.user.username,
-                                                                 old_data=qs.values()))
+                                                                 old_data=list(qs.values())))
 
     return HttpResponse(json.dumps(result))
 
@@ -122,7 +123,7 @@ def fairshare_action(request,action):
     qs = Cloudconfig.objects.filter(name=sRow['name'])
 
     _logger.info("GDPConfig - Fairshare: Update user:{user} old data:{old_data}".format(user=request.user.username,
-                                                                 old_data=qs.values()))
+                                                                 old_data=list(qs.values())))
 
     try:
         qs.update(fairshare=param)
@@ -131,7 +132,7 @@ def fairshare_action(request,action):
         return HttpResponse(json.dumps(result))
 
     _logger.info("GDPConfig - Fairshare: Update user:{user} new data:{old_data}".format(user=request.user.username,
-                                                                 old_data=qs.values()))
+                                                                 old_data=list(qs.values())))
 
     return HttpResponse(json.dumps(result))
 
@@ -161,7 +162,7 @@ def str_to_type (s):
         return str
 
 def get_config(request):
-    qs_val = GDPConfig.objects.all().values()
+    qs_val = list(GDPConfig.objects.all().values())
     data = json.dumps(list(qs_val))
 
     return HttpResponse(data)
@@ -222,7 +223,7 @@ def global_share_tree(request):
             tree.append(layer)
             current_parents = [x['name'] for x in layer]
             if (len(new_rest_shares)==len(rest_shares)):
-                print rest_shares
+                print(rest_shares)
                 break
             rest_shares = new_rest_shares
         levels = len(tree)
@@ -232,7 +233,7 @@ def global_share_tree(request):
             sorted_layer = []
             current_number = 1
             for element in layer:
-                element['order_number'] = element_number[element['parent']] + reduce(lambda x,y:x*100,range(len(tree)-level_number-1),current_number)
+                element['order_number'] = element_number[element['parent']] + reduce(lambda x,y:x*100,list(range(len(tree)-level_number-1)),current_number)
                 current_number += 1
                 element_number[element['name']] = element['order_number']
                 sorted_layer.append(element)
@@ -278,7 +279,7 @@ def global_share_tree(request):
         #         print element['name'],':',element['percentage'],element['value'],'-',
         #     print ''
         content = table_to_show
-    except Exception, e:
+    except Exception as e:
         return HttpResponse(str(e), content_type='application/json',status=500)
     return Response(content)
 
@@ -303,7 +304,7 @@ def global_share_change(request):
             _logger.info("GDPConfig - global share: Update user:{user} data:{log_str}".format(user=user.username,
                                                              log_str=log_str))
 
-    except Exception,e:
+    except Exception as e:
         error_message.append(str(e))
         _logger.error("GDPConfig - global share: %s"%error_message)
     if not error_message:

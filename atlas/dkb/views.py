@@ -30,7 +30,7 @@ def test_connection():
 
 @api_view(['POST'])
 def es_task_search_analy(request):
-    search_string = json.loads(request.body)
+    search_string = request.data
     result, total = es_task_search_all(search_string, 'analy')
     return Response({'tasks':result,'total':total})
 
@@ -58,7 +58,7 @@ def es_task_search_all(search_string, task_type):
 
 @api_view(['POST'])
 def es_task_search(request):
-    search_string = json.loads(request.body)
+    search_string = request.data
     result, total = es_task_search_all(search_string, 'prod')
     return Response({'tasks':result,'total':total})
 
@@ -76,7 +76,7 @@ def hits_to_tasks(hits):
 
 @api_view(['POST'])
 def search_string_to_url(request):
-    search_string = json.loads(request.body)
+    search_string = request.data
     return Response(key_string_from_input(search_string))
 
 def key_string_from_input(search_string):
@@ -108,7 +108,6 @@ def index2(request):
 
 @api_view(['GET'])
 def test_name(request):
-    print request.user.username
     return Response(request.user.username)
 
 
@@ -257,7 +256,6 @@ def new_derivation_stat(project, ami, output):
     exexute =  aggregs.execute()
     try:
         total = exexute.hits.total
-        #print aggregs['aggregations'].__dict__['output_datasets']['not_removed']['format']['sum_events']['value'].__dict__
         result_events = exexute.aggregations.output_datasets.not_removed.format.sum_events.value
         result_bytes = exexute.aggregations.output_datasets.not_removed.format.sum_bytes.value
         input_bytes = exexute.aggregations.input_bytes.value
@@ -358,7 +356,7 @@ def running_events_stat(search_dict, status):
     try:
         aggregs = es_search.update_from_dict(query)
         exexute = aggregs.execute()
-    except Exception,e:
+    except Exception as e:
         _logger.error("Problem with es deriv : %s" % (e))
         aggregs = None
 
@@ -526,7 +524,7 @@ def running_events_stat_deriv(search_dict, status, formats_dict):
     try:
         aggregs = es_search.update_from_dict(query)
         exexute = aggregs.execute()
-    except Exception,e:
+    except Exception as e:
         _logger.error("Problem with es deriv : %s" % (e))
         aggregs = None
 
@@ -557,7 +555,7 @@ def statistic_by_request_deriv(search_dict,formats_dict):
     formats_splits = []
     current_format = {}
     i=0
-    for format in formats_dict.keys():
+    for format in list(formats_dict.keys()):
         current_format.update({format:formats_dict[format]})
         if  (i>0)and(i%10==0):
             formats_splits.append(current_format.copy())
@@ -649,7 +647,7 @@ def statistic_by_request_deriv(search_dict,formats_dict):
         try:
             aggregs = es_search.update_from_dict(query)
             exexute = aggregs.execute()
-        except Exception,e:
+        except Exception as e:
             _logger.error("Problem with es deriv : %s" % (e))
             aggregs = None
 
@@ -746,7 +744,7 @@ def statistic_by_step(search_dict):
     try:
         aggregs = es_search.update_from_dict(query)
         exexute = aggregs.execute()
-    except Exception,e:
+    except Exception as e:
         _logger.error("Problem with es deriv : %s" % (e))
         aggregs = None
 
@@ -771,7 +769,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
         steps = MCPriority.STEPS
         field = "total_events"
     else:
-        steps = statistics.keys()
+        steps = list(statistics.keys())
         field = "processed_events"
     for step in steps:
         if step in statistics:
@@ -811,40 +809,39 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
 @api_view(['POST'])
 def step_hashtag_stat(request):
     try:
-        hashtags_raw = request.body
+        hashtags_raw = request.data['hashtag']
         hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
         hashtags = [x.lower() for x in hashtags_split if x]
         statistics = statistic_by_step({"terms": {"hashtag_list": hashtags}})
         running_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['running'])
         finished_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['finished','done'])
         result = form_statistic_per_step(statistics,running_stat, finished_stat)
-    except Exception,e:
+    except Exception as e:
         return Response({'error':str(e)},status=400)
     return Response(result)
 
-@api_view(['POST'])
-def step_request_stat(request):
-    try:
-        production_request = request.body
-        statistics = statistic_by_step({"term": {"pr_id": production_request}})
-        running_stat = running_events_stat({"term": {"pr_id": production_request}},['running'])
-        finished_stat = running_events_stat({"term": {"pr_id": production_request}},['finished','done'])
-        result = form_statistic_per_step(statistics,running_stat, finished_stat)
-    except Exception,e:
-        return Response({'error':str(e)},status=400)
-    return Response(result)
+# @api_view(['POST'])
+# def step_request_stat(request):
+#     try:
+#         production_request = request.body
+#         statistics = statistic_by_step({"term": {"pr_id": production_request}})
+#         running_stat = running_events_stat({"term": {"pr_id": production_request}},['running'])
+#         finished_stat = running_events_stat({"term": {"pr_id": production_request}},['finished','done'])
+#         result = form_statistic_per_step(statistics,running_stat, finished_stat)
+#     except Exception as e:
+#         return Response({'error':str(e)},status=400)
+#     return Response(result)
 
 @api_view(['POST'])
 def deriv_request_stat(request):
     try:
-        production_request = request.body
+        production_request = request.data['production_request']
         format_dict = deriv_formats({"term": {"pr_id": production_request}})
         statistics = statistic_by_request_deriv({"term": {"pr_id": production_request}}, format_dict)
         running_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['finished','done'], format_dict)
         result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
-    except Exception,e:
-        print str(e)
+    except Exception as e:
 
         return Response({'error':str(e)},status=400)
     return Response(result)
@@ -852,7 +849,7 @@ def deriv_request_stat(request):
 @api_view(['POST'])
 def output_hashtag_stat(request):
     try:
-        hashtags_raw = request.body
+        hashtags_raw = request.data['hashtag']
         hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
         hashtags = [x.lower() for x in hashtags_split if x]
         format_dict = deriv_formats({"terms": {"hashtag_list": hashtags}})
@@ -860,8 +857,7 @@ def output_hashtag_stat(request):
         running_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['finished','done'], format_dict)
         result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
-    except Exception,e:
-        print str(e)
+    except Exception as e:
 
         return Response({'error':str(e)},status=400)
     return Response(result)
@@ -909,8 +905,8 @@ def derivation_stat(project, ami, output):
                         result_tasks.append({'primary_input':hit.primary_input,'output_bytes':hit2.bytes,
                                              'task_id':hit.taskid,'dataset_name':hit2.datasetname, 'input_bytes':input_bytes,
                                              'input_events':hit.requested_events,'events':events})
-            except Exception,e:
-                print str(e)
+            except Exception as e:
+                pass
     return result_tasks
 
 def count_output_stat(project, ami_tags, outputs=None):
@@ -1024,10 +1020,10 @@ def keyword_search(keyword_string):
 def tasks_from_list(request):
     result_tasks_list = []
     try:
-        input_str = json.loads(request.body)
-        result_tasks_list = map(int, input_str['taskIDs'])
+        input_str = request.data
+        result_tasks_list = list(map(int, input_str['taskIDs']))
         request.session['selected_tasks'] =  result_tasks_list
-    except Exception,e:
+    except Exception as e:
         return Response({'error':str(e)},status=400)
     return Response(result_tasks_list)
 
@@ -1035,7 +1031,6 @@ def tasks_from_list(request):
 def deriv_output_proportion(request,project,ami_tag):
     try:
         result = count_output_stat(project,[x for x in ami_tag.split(',') if x])
-    except Exception,e:
-            print str(e)
+    except Exception as e:
             return Response({'error':str(e)},status=400)
     return Response(result)

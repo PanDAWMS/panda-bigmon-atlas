@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponseRedirect
 
 from atlas.prodtask.ddm_api import DDM
@@ -55,8 +55,8 @@ def process_actions(waiting_step_todo):
         for waiting_step in check2replicas:
             try:
                 check_two_replicas(waiting_step, ddm, max_attempts, delay)
-            except Exception,e:
-                print str(e)
+            except Exception as e:
+                print(str(e))
                 waiting_step = WaitingStep.objects.get(id=waiting_step)
                 waiting_step.status = 'active'
                 waiting_step.save()
@@ -68,7 +68,7 @@ def process_actions(waiting_step_todo):
         for waiting_step in checkPreStage:
             try:
                 do_pre_stage(waiting_step, ddm, max_attempts, delay)
-            except Exception,e:
+            except Exception as e:
                 _logger.error("Check replicas problem %s" % str(e))
                 waiting_step = WaitingStep.objects.get(id=waiting_step)
                 waiting_step.status = 'active'
@@ -202,7 +202,7 @@ def check_two_replicas(waiting_step_id, ddm, max_attempts, delay):
                     good_exists = True
                 else:
                     not_full_exists = True
-            except Exception,e:
+            except Exception as e:
                 error_message = str(e)
                 not_full_exists = True
             except:
@@ -246,7 +246,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
                     waiting_parameters['level'] = 100
                 if waiting_parameters['level'] < 0:
                     waiting_parameters['level'] = 0
-        except Exception, e:
+        except Exception as e:
             _logger.error(" %s" % str(e))
     approve_step = False
     if (step.step_parent_id != step.id) and (step.step_parent.status not in ['Skipped','NotCheckedSkipped'] ):
@@ -259,7 +259,7 @@ def do_pre_stage(waiting_step_id, ddm, max_attempts, delay):
         dataset = datasets[0]
         try:
             replicas = ddm.full_replicas_per_type(dataset)
-        except Exception,e:
+        except Exception as e:
             replicas = {'data':None,'tape':None}
             error_message = str(e)
         if len(replicas['data'])>0:
@@ -378,7 +378,7 @@ def finish_action(request, wstep_id):
         if step.request.cstatus not in ['test','approved']:
             set_request_status('cron', step.request.reqid, 'approved', 'Automatic pre action approve',
                                'Request was automatically approved')
-    except Exception,e:
+    except Exception as e:
         _logger.error("Finish action exception %s" % str(e))
         return HttpResponseRedirect('/')
 
@@ -391,7 +391,7 @@ def tape_load_page(request):
     request_parameters = {
         'active_app' : 'prodtask',
         'pre_form_text' : 'Current tape load',
-        'current_load': current_load.items(),
+        'current_load': list(current_load.items()),
         'parent_template' : 'prodtask/_index.html',
         }
 
@@ -427,7 +427,7 @@ def cancel_action(request, wstep_id):
         waiting_step.message = 'Action was canceled manually'
         waiting_step.done_time = timezone.now()
         waiting_step.save()
-    except Exception, e:
+    except Exception as e:
         _logger.error("Cancel action exception %s" % str(e))
         return HttpResponseRedirect('/')
 

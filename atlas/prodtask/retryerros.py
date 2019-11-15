@@ -1,7 +1,7 @@
 import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.forms import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
@@ -26,7 +26,7 @@ from .models import RetryErrors, JediWorkQueue
 @login_required(login_url='/prodtask/login/')
 def retry_errors_list(request):
     if request.method == 'GET':
-        retry_errors = RetryErrors.objects.all().order_by('id').values()
+        retry_errors = list(RetryErrors.objects.all().order_by('id').values())
         for retry_error in retry_errors:
             try:
                 if retry_error['work_queue']:

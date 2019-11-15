@@ -37,7 +37,7 @@ def request_hashtags(request, hashtags):
         ordered_step_statistic =   prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
         chains = []
-        for chain in request_statistics['chains'].values():
+        for chain in list(request_statistics['chains'].values()):
             current_chain = [{}] * len(steps_name)
             chain_requests = set()
             for task_id in chain:
@@ -48,15 +48,15 @@ def request_hashtags(request, hashtags):
                 current_chain[i] = task
             chains.append({'chain':current_chain,'requests':chain_requests})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     return Response({"load": result})
 
 
 
 def prefilll_tophashtag(hashtags, file_name):
     tasks_ids = set()
-    print time.time()
+    print(time.time())
     for hashtag in hashtags:
         tasks_ids.update(tasks_by_hashtag(hashtag))
     hashtag_dict = {}
@@ -65,9 +65,9 @@ def prefilll_tophashtag(hashtags, file_name):
         hashtag_ids = [int(x.id) for x in task.hashtags]
         for hashtag_id in hashtag_ids:
             hashtag_dict[hashtag_id] = hashtag_dict.get(hashtag_id,0)+1
-    print time.time()
+    print(time.time())
     request_statistics = tasks_progress(tasks)
-    print time.time()
+    print(time.time())
     ordered_step_statistic = prepare_step_statistic(request_statistics)
     result = {'step_statistic':ordered_step_statistic, 'hashtags':hashtag_dict}
     pickle.dump(result,open(file_name,'wb'))
@@ -87,7 +87,7 @@ def hashtag_request_to_tasks():
                             tasks_to_update.append(int(task.id))
                     if tasks_to_update:
                         _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
-                    map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
+                    list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update))
 
 
 
@@ -102,20 +102,20 @@ def hashtag_request_to_tasks_full():
                     tasks_to_update.append(task.id)
             if tasks_to_update:
                 _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
-            map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update)
+            list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update))
 
 @api_view(['POST'])
 def tasks_statistic_steps(request):
     result = {}
     try:
-        tasks_ids = json.loads(request.body)
+        tasks_ids =request.data
         tasks = list(ProductionTask.objects.filter(id__in=tasks_ids).order_by('id'))
         request_statistics = tasks_progress(tasks)
         ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
         chains = []
 
-        for chain in request_statistics['chains'].values():
+        for chain in list(request_statistics['chains'].values()):
             current_chain = [{}] * len(steps_name)
             unequal = {}
             chain_requests = set()
@@ -139,8 +139,8 @@ def tasks_statistic_steps(request):
                 current_chain[i] = task
             chains.append({'chain':current_chain,'requests':chain_requests, 'chain_name':chain_name, 'chain_status':chain_status, 'notequal':unequal})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     return Response({"load": result})
 
 
@@ -158,11 +158,11 @@ def find_child_tasks(parent_hashtag, step_tags, child_provenance):
     requests = set()
     for task in filtered_tasks[:40]:
          child_tasks = create_task_chain(task.id, child_provenance)
-         if len(child_tasks.keys())>1:
-             for task_id in child_tasks.keys():
+         if len(list(child_tasks.keys()))>1:
+             for task_id in list(child_tasks.keys()):
                  if task_id!=int(task.id):
                     requests.add(int(child_tasks[task_id]['task']['request_id']))
-    print list(requests)
+    print(list(requests))
 
 
 def propogate_hashtag_to_child(task_id, hashtag_type):
@@ -189,13 +189,13 @@ def tasks_by_hashtag(hashtag):
 def tasks_requests(request):
     result_tasks_list = []
     try:
-        input_str = request.body
+        input_str = request.data['requests']
         reqid_list = [int(x) for x in input_str.replace(' ',',').replace(';',',').split(',') if x]
         result_tasks_list = list(ProductionTask.objects.filter(request__in=reqid_list).order_by('id').values_list('id',flat=True))
-        result_tasks_list_ids = map(int, result_tasks_list)
+        result_tasks_list_ids = list(map(int, result_tasks_list))
         request.session['selected_tasks'] = result_tasks_list_ids
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     return Response(result_tasks_list)
 
 @csrf_protect
@@ -203,11 +203,11 @@ def tasks_requests(request):
 def tasks_hashtag(request):
     result_tasks_list = []
     try:
-        input_str = request.body
+        input_str = request.data['formula']
         result_tasks_list = tasks_from_string(input_str)
         request.session['selected_tasks'] = result_tasks_list
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     return Response(result_tasks_list)
 
 
@@ -241,17 +241,15 @@ def tasks_from_string(input_str):
 def hashtagslists(request):
     result = []
     try:
-        input_str = request.body
         hashtags = HashTag.objects.all()
         for hashtag in hashtags:
             hashtag_tasks_number = hashtag.tasks_count
             if hashtag_tasks_number >0:
                 result.append({'hashtag':hashtag.hashtag,'tasks':hashtag_tasks_number})
-    except Exception,e:
+    except Exception as e:
         pass
     result.sort(key=lambda x: x['tasks'])
     result.reverse()
-    print result
     return Response(result)
 
 @api_view(['GET'])
@@ -260,7 +258,7 @@ def hashtags_by_request(request, reqid):
     try:
         for hashtag_to_request in HashTagToRequest.objects.filter(request=reqid):
             hashtags.append(hashtag_to_request.hashtag.hashtag)
-    except Exception,e:
+    except Exception as e:
         pass
 
     return Response({'hashtags':hashtags})
@@ -277,7 +275,7 @@ def set_hashtag_for_tasks(request):
         for task in tasks:
             if ProductionTask.objects.filter(id=task).exists():
                 add_hashtag_to_task(hashtag.hashtag, task)
-    except Exception,e:
+    except Exception as e:
         return Response({'error':str(e)},status=400)
 
     return Response({'success':True})
@@ -309,7 +307,7 @@ def set_hashtag_for_containers(request):
         for task in tasks:
             if ProductionTask.objects.filter(id=task).exists():
                 add_hashtag_to_task(hashtag.hashtag, task)
-    except Exception,e:
+    except Exception as e:
         return Response({'error':str(e)},status=400)
     return Response({'success':True})
 
@@ -325,7 +323,7 @@ def hashtags_campaign_lists(request):
             hashtag = HashTag.objects.get(id=hashtag_id).hashtag
             result.append({'hashtag':hashtag,'tasks': hashtags[hashtag_id]})
 
-    except Exception,e:
+    except Exception as e:
         pass
 
     return Response(result)
@@ -338,8 +336,8 @@ def campaign_steps(request):
 
         campaign_summery = pickle.load(open('/data/hashtagscampaign.pkl','rb'))
         result = campaign_summery['step_statistic']
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         pass
 
     return Response(result)
@@ -388,7 +386,7 @@ def remove_hashtag_request(request, reqid):
             remove_hashtag_from_request(reqid, hashtag)
             hashtag_html,hashtag_href = form_hashtag_string(reqid)
             results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -411,7 +409,7 @@ def add_request_hashtag(request, reqid):
                 request_hashtag.save()
             hashtag_html,hashtag_href = form_hashtag_string(reqid)
             results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -427,7 +425,7 @@ def add_task_hashtag(request, taskid):
             existed_hashtag = add_or_get_request_hashtag(hashtag)
             add_hashtag_to_task(existed_hashtag,taskid)
             results = {'success':True,'data':existed_hashtag.hashtag}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -451,7 +449,7 @@ def set_hashtags_keys_by_hahstag(hashtags):
         current_requests = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.get(hashtag=hashtag)).values_list('request_id',flat=True))
         requests.update(current_requests)
     #print requests
-    map(get_key_for_request,list(requests))
+    list(map(get_key_for_request,list(requests)))
 
 def set_mc16_hashtags(hashtags):
     mc16_hashtag = HashTag.objects.get(hashtag='MC16a_CP')
@@ -462,7 +460,7 @@ def set_mc16_hashtags(hashtags):
     for task in new_tasks:
         add_hashtag_to_task(mc16_hashtag.hashtag,task.id)
         unique_requests.add(int(task.request_id))
-    map(get_key_for_request,list(unique_requests))
+    list(map(get_key_for_request,list(unique_requests)))
     #print unique_requests
 
 
@@ -470,7 +468,6 @@ def set_mc16_hashtags(hashtags):
 def remove_hashtag_from_request(reqid, hashtag_name):
     hashtag = HashTag.objects.get(hashtag=hashtag_name)
     if HashTagToRequest.objects.filter(request=reqid,hashtag=hashtag).exists():
-        print 'exists'
         tasks = ProductionTask.objects.filter(request=reqid)
         for task in tasks:
             task.remove_hashtag(hashtag.hashtag)
@@ -489,7 +486,6 @@ def add_hashtag_to_task(hashtag_name, task_id):
             task.save()
 
 def get_key_for_request(reqid):
-    print reqid
     request = TRequest.objects.get(reqid=reqid)
 
     slices = list(InputRequestList.objects.filter(request=request))
@@ -526,7 +522,7 @@ def fix_wrong_jo(request):
             if '.py' in parent_slice.input_data:
                 slice.input_data = parent_slice.input_data
                 slice.save()
-                print slice.input_data, parent_slice.input_data
+                print(slice.input_data, parent_slice.input_data)
 
 
 def get_category(jo_keys, job_option):
@@ -601,8 +597,8 @@ def get_keyword_jo(filename, base_jo_path, common_files_keywords):
                 if include in common_files_keywords:
                     keywords += common_files_keywords[include]
 
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     keywords.append(filename.split('.')[2].split('_')[0])
 
     return keywords

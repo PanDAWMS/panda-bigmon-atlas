@@ -15,7 +15,7 @@ from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
-from ddm_api import dataset_events
+from .ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Q
@@ -23,6 +23,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
+from functools import reduce
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -36,7 +37,7 @@ def tag_info(request, tag_name):
             if trtf:
                 results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
                                 'input':trtf[0].input,'step':trtf[0].step})
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -109,7 +110,7 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             slices = input_dict
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Clone slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
             if make_link_value == '1':
@@ -119,8 +120,8 @@ def clone_slices_in_req(request, reqid, step_from, make_link_value):
             step_from = int(step_from)
             cloned_slices = clone_slices(reqid,reqid,ordered_slices,step_from,make_link,True)
             results = {'success':True}
-            request.session['selected_slices'] = map(int,cloned_slices)
-        except Exception,e:
+            request.session['selected_slices'] = list(map(int,cloned_slices))
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -167,7 +168,7 @@ def extend_by_train_pattern_slices_in_req(request, reqid):
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Extend slices by train: %s' % str(slices)))
             extend_request_by_train(reqid, request_donor, slices)
-        except Exception,e:
+        except Exception as e:
             pass
 
         return HttpResponse(json.dumps(results), content_type='application/json')
@@ -189,7 +190,7 @@ def reject_steps_in_slice(current_slice):
                     pre_definition_action.status = 'cancelled'
                     pre_definition_action.done_time = timezone.now()
                     pre_definition_action.save()
-            except Exception,e:
+            except Exception as e:
                 pass
 
 def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
@@ -228,13 +229,13 @@ def find_parent_slices(request, reqid, parent_request):
             slices = input_dict['slices']
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Find parent slices: %s, parent request %s'% (str(ordered_slices),parent_request)))
             ordered_slices.sort()
             changed_slices = set_parent_step(ordered_slices,int(reqid),int(parent_request))
             results = {'success':True}
-            request.session['selected_slices'] = map(int,changed_slices)
-        except Exception,e:
+            request.session['selected_slices'] = list(map(int,changed_slices))
+        except Exception as e:
             _logger.error(str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -347,7 +348,7 @@ def get_steps_bulk_info(request, reqid):
                             result_dict['singlevalue'][key] = current_step_dict[key]
 
             return HttpResponse(json.dumps({'result':result_dict,'stepsApproved':steps_approved,'stepsToChange':len(steps)-steps_approved}), content_type='application/json')
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
 
@@ -382,7 +383,7 @@ def get_slices_bulk_info(request, reqid):
                             result_dict['singlevalue'][key] = current_slice_dict[key]
 
             return HttpResponse(json.dumps({'result':result_dict}), content_type='application/json')
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
 
@@ -446,7 +447,7 @@ def set_steps_bulk_info(request, reqid):
                         if step_modified:
                             step.save()
                 return HttpResponse(json.dumps({'status':'success'}), content_type='application/json')
-        except Exception,e:
+        except Exception as e:
             return HttpResponse(json.dumps({'status':'failed','error':str(e)}), content_type='application/json')
     return HttpResponse(json.dumps({'status':'failed'}), content_type='application/json')
 
@@ -486,7 +487,7 @@ def find_child_request_slices(production_request_id,parent_slices):
         # find all parent steps
         parent_steps = []
         for slice_number in parent_slices:
-            current_slice = InputRequestList.objects.filter(request=production_request_id,slice=int(slice_number))
+            current_slice = InputRequestList.objects.get(request=production_request_id,slice=int(slice_number))
             parent_steps += StepExecution.objects.filter(slice=current_slice).values_list('id',flat=True)
         # for each child request find linked slices
         for child_request in child_requests:
@@ -512,16 +513,16 @@ def reject_slices_in_req(request, reqid):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Reject slices: %s' % str(slices)))
-            slices_numbers = map(int, slices)
+            slices_numbers = list(map(int, slices))
             for slice_number in slices_numbers:
-                current_slice = InputRequestList.objects.filter(request=reqid,slice=slice_number)
+                current_slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
                 reject_steps_in_slice(current_slice)
             for slice_id in find_child_request_slices(reqid, slices_numbers):
                 current_slice = InputRequestList.objects.get(id=slice_id)
                 reject_steps_in_slice(current_slice)
 
-            request.session['selected_slices'] = map(int,slices)
-        except Exception,e:
+            request.session['selected_slices'] = list(map(int,slices))
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -545,7 +546,7 @@ def hide_slices_in_req(request, reqid):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
-            slices_numbers = map(int, slices)
+            slices_numbers = list(map(int, slices))
             for slice_number in slices_numbers:
                 current_slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
                 hide_slice(current_slice)
@@ -554,7 +555,7 @@ def hide_slices_in_req(request, reqid):
                 current_slice = InputRequestList.objects.get(id=slice_id)
                 hide_slice(current_slice)
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -574,7 +575,7 @@ def add_request_comment(request, reqid):
             new_comment.status = 'comment'
             new_comment.save_with_current_time()
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -703,7 +704,7 @@ def step_params_from_tag(request, reqid):
             results.update({'success':True,'project_mode':project_mode,'input_events':str(input_events),
                             'priority':str(priority),'nEventsPerJob':str(nEventsPerJob),
                             'nEventsPerInputFile':str(nEventsPerInputFile),'destination':destination_token})
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -772,7 +773,7 @@ def update_project_mode(request, reqid):
                                 if slice.slice not in updated_slices:
                                    updated_slices.append(str(slice.slice))
             results.update({'success':True,'slices':updated_slices})
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -807,7 +808,7 @@ def get_tag_formats(request, reqid):
                     if do_update:
                         tag_formats.append((tag_format,project_mode,slice.slice))
             results.update({'success':True,'data':[x[0]+'-'+str(x[2]) for x in tag_formats]})
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -880,7 +881,7 @@ def slice_steps(request, reqid, slice_number):
                 jobOption = input_list.input_data
             results = {'success':True,'step_types':result_list, 'dataset': dataset, 'jobOption':jobOption,
                        'totalEvents':int(input_list.input_events),'comment':input_list.comment}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -903,7 +904,7 @@ def reject_steps(request, reqid, step_filter):
                         step.save()
                         changed_steps += 1
             results = {'success':True,'step_changed':str(changed_steps)}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -945,7 +946,7 @@ def prepare_slices_to_retry(production_request, ordered_slices):
             if previous_tasks:
                 for task in previous_tasks:
                     remove_task_chain(result_dict,tasks_checked,task,tasks_parent)
-            if tasks.has_key(step.id):
+            if step.id in tasks:
                 for task in tasks[step.id]:
                     if task['status'] in ['broken','failed','aborted']:
                         tasks_to_fix.append(task['id'])
@@ -966,11 +967,11 @@ def apply_retry_action(production_request, retry_action):
     old_new_step = {}
     for slice_number in sorted(retry_action):
         if reduce(lambda x,y: x+y,retry_action[slice_number]):
-            current_slice = InputRequestList.objects.filter(request=production_request,slice=int(slice_number))
+            current_slice = InputRequestList.objects.get(request=production_request,slice=int(slice_number))
             step_execs = StepExecution.objects.filter(slice=current_slice)
             ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
             if len(ordered_existed_steps) == len(retry_action[slice_number]):
-                new_slice = current_slice.values()[0]
+                new_slice = list(current_slice.values())[0]
                 new_slice['slice'] = new_slice_number
                 new_slice_number += 1
                 del new_slice['id']
@@ -996,7 +997,7 @@ def apply_retry_action(production_request, retry_action):
                             step.step_exe_time = None
                             step.step_done_time = None
                             step.slice = new_input_data
-                            step.set_task_config({'previous_task_list':map(int,retry_action[slice_number][real_step_index])})
+                            step.set_task_config({'previous_task_list':list(map(int,retry_action[slice_number][real_step_index]))})
                             if step.status == 'Skipped':
                                 step.status = 'NotCheckedSkipped'
                             elif (step.status == 'Approved') or (step.status == 'Waiting'):
@@ -1026,13 +1027,13 @@ def retry_slices(request, reqid):
             slices = input_dict
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Retry slices: %s' % str(ordered_slices)))
             ordered_slices.sort()
             retry_action = prepare_slices_to_retry(reqid, ordered_slices)
             apply_retry_action(reqid, retry_action)
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1185,14 +1186,14 @@ def split_slices_by_tid(request, reqid):
                     splitted_slice.is_hide = True
                     splitted_slice.comment = 'Splitted'
                     splitted_slice.save()
-                except  Exception,e:
+                except  Exception as e:
                     bad_slices.append(slice_number)
                     _logger.error("Problem with slice splitting : %s"%( e))
             if len(bad_slices) > 0:
                 results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
             else:
                 results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1214,14 +1215,14 @@ def split_slices_by_output(request, reqid):
                 try:
                     split_by_output(reqid,slice_number)
                     good_slices.append(slice_number)
-                except  Exception,e:
+                except  Exception as e:
                     bad_slices.append(slice_number)
                     _logger.error("Problem with slice splitting : %s"%( e))
             if len(bad_slices) > 0:
                 results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
             else:
                 results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1256,7 +1257,7 @@ def split_slice(reqid, slice_number, divider):
 
     def prepare_splitted_slice(slice_to_split, new_slice_number, ordered_existed_steps, index,  new_event_number,
                                output_dataset, nEventsPerInputFile=None):
-            new_slice = slice_to_split.values()[0]
+            new_slice = list(slice_to_split.values())[0]
             new_slice['slice'] = new_slice_number
             del new_slice['id']
             new_slice['input_events'] = new_event_number
@@ -1344,14 +1345,14 @@ def split_slices_in_req(request, reqid):
                     splitted_slice.is_hide = True
                     splitted_slice.comment = 'Splitted'
                     splitted_slice.save()
-                except  Exception,e:
+                except  Exception as e:
                     bad_slices.append(slice_number)
                     _logger.error("Problem with slice splitting : %s"%( e))
             if len(bad_slices) > 0:
                 results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
             else:
                 results = {'success':True,'badSlices':bad_slices,'goodSlices':good_slices}
-        except Exception,e:
+        except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1373,18 +1374,18 @@ def fix_dima_error():
             for dataset in datasets:
                 if  dataset.name.find('log')==-1:
                     counter +=1
-                    print dataset.name
+                    print(dataset.name)
                     i.dataset = dataset
                     i.save()
                     step.step_parent = step
                     step.save()
-    print counter
+    print(counter)
 
 def console_bulk_requst_steps_update(requests, new_task_config, add_project_mode=None, remove_project_mode=None):
     for request_id in requests:
 
         steps = StepExecution.objects.filter(request=request_id)
-        print steps
+        print(steps)
         for step in steps:
                 if new_task_config:
                     step.set_task_config(new_task_config)
@@ -1448,13 +1449,13 @@ def find_simul_duplicates():
     total_events = 0
     requests = set()
     for tasks in bad_list:
-        print tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks])
+        print(tasks[0]['name']+ ' - '+','.join([str(x['id']) for x in tasks])+' - '+','.join([str(x['request_id']) for x in tasks]))
         total_events += sum([x['total_events'] for x in tasks])
         for task in tasks:
             requests.add(task['request_id'])
-    print total_events
-    print len(bad_list)
-    print requests
+    print(total_events)
+    print(len(bad_list))
+    print(requests)
 
 
 def find_evgen_duplicates():
@@ -1524,15 +1525,15 @@ def find_evgen_duplicates():
                 file_for_result_GP.write(str(duplicate)+','+str(duplicates[duplicate][2])+'\n')
                 GP_requests.add(duplicates[duplicate][2])
         if strange:
-            print strange
-    print GP_requests
-    print AP_requests
+            print(strange)
+    print(GP_requests)
+    print(AP_requests)
     file_for_result_AP.close()
     file_for_result_GP.close()
 
 def find_task_by_input(task_ids, task_name, request_id):
     result_duplicate = []
-    print task_ids
+    print(task_ids)
     for task_id in task_ids:
         task_pattern = '.'.join(task_name.split('.')[:-2]) + '%'+task_name.split('.')[-1] +'%'
         similare_tasks = list(ProductionTask.objects.extra(where=['taskname like %s'], params=[task_pattern]).filter(Q( status__in=['done','finished'] )).values('id','name','inputdataset','provenance','request_id').order_by('id'))
@@ -1551,7 +1552,7 @@ def find_task_by_input(task_ids, task_name, request_id):
                             task_chains.append(int(task['id']))
                             current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'])})
                     else:
-                        print 'NOn tid:',task_input,task_name
+                        print('NOn tid:',task_input,task_name)
         result_duplicate.append(current_duplicates)
     first_tasks = result_duplicate[0]
     second_tasks = result_duplicate[1]
@@ -1559,7 +1560,7 @@ def find_task_by_input(task_ids, task_name, request_id):
     not_duplicate = []
     for task_id in first_tasks:
         name_set.add(first_tasks[task_id][0])
-    for task_id in second_tasks.keys():
+    for task_id in list(second_tasks.keys()):
         if second_tasks[task_id][0] not in name_set:
             not_duplicate.append({task_id:second_tasks[task_id]})
     return second_tasks,not_duplicate
@@ -1582,7 +1583,7 @@ def find_downstreams_by_task(task_id):
                 task_chains.append(int(task['id']))
                 current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 if (task['request_id'] != original_task.request_id) and (task['provenance']=='AP'):
-                    print 'Simul problem' +'-'+ task_name + '-' + task['name']
+                    print('Simul problem' +'-'+ task_name + '-' + task['name'])
                 #print task_input,int(task['id'])
             else:
                 if 'tid' in task_input:
@@ -1593,7 +1594,7 @@ def find_downstreams_by_task(task_id):
                         task_chains.append(int(task['id']))
                         current_duplicates.update({int(task['id']):(task['name'],task['provenance'],task['request_id'],task['status'])})
                 else:
-                    print 'NOn tid:',task_input,task_name
+                    print('NOn tid:',task_input,task_name)
 
     return current_duplicates
 
@@ -1604,9 +1605,9 @@ def test_tasks_from_slices(request):
     if request.method == 'POST':
         try:
             tasks = request.session['selected_tasks']
-            print tasks
+            print(tasks)
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1640,12 +1641,12 @@ def form_tasks_from_slices(request,request_id):
             slices = input_dict
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             ordered_slices.sort()
 
 
             results = {'success':True, 'slices_range': slices_range_to_str(ordered_slices)}
-        except Exception,e:
+        except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1658,14 +1659,14 @@ def find_identical_step(step):
 def bulk_obsolete_from_file(file_name):
     with open(file_name,'r') as input_file:
         tasks = (int(line.split(',')[0]) for line in input_file if line)
-        print timezone.now()
+        print(timezone.now())
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.status in ['finished','done']:
                 task.status='obsolete'
                 task.timestamp=timezone.now()
                 task.save()
-                print task.name, task.status
+                print(task.name, task.status)
 
 def bulk_find_downstream_from_file(file_name, output_file_name, provenance='AP', start_request=0):
     with open(file_name,'r') as input_file:
@@ -1712,15 +1713,15 @@ def find_retried(file_name):
 
 
 
-            print task_id,task.status,
+            print(task_id,task.status, end=' ')
             slice_ids = [x['id'] for x in request_slices[task.request_id] if x['parent_task']==int(task_id)]
             for slice_id in slice_ids:
                 try:
                     child_task = ProductionTask.objects.get(step=StepExecution.objects.get(slice=slice_id))
-                    print int(child_task.id),child_task.status,
+                    print(int(child_task.id),child_task.status, end=' ')
                 except:
                     pass
-            print ''
+            print('')
 
 def reshuffle_slices(reqid,starting_slice=0):
     inputs = list(InputRequestList.objects.filter(request=reqid,slice__gte=starting_slice).order_by('slice'))
@@ -1756,7 +1757,7 @@ def clean_open_request(reqid,starting_slice=0):
             if (step.status == 'NotChecked') or (step.status == 'NotCheckedSkipped'):
                 step.delete()
                 slice.delete()
-                print slice.slice
+                print(slice.slice)
     reshuffle_slices(reqid,starting_slice)
     return True
 
@@ -1776,14 +1777,14 @@ def change_parent(request, reqid, new_parent):
             slices = input_dict['slices']
             if '-1' in slices:
                 del slices[slices.index('-1')]
-            ordered_slices = map(int,slices)
+            ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Change parent for slices: %s to %s' % (str(ordered_slices),str(new_parent))))
             ordered_slices.sort()
             for slice in ordered_slices:
                 change_slice_parent(reqid,slice,new_parent)
-            request.session['selected_slices'] = map(int,slices)
+            request.session['selected_slices'] = list(map(int,slices))
             results = {'success':True}
-        except Exception,e:
+        except Exception as e:
             _logger.error('Problem with set new parent: %s',str(e))
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1832,7 +1833,7 @@ def remove_dubl_slices(reqid):
     prev_slice = slices[0]
     for slice in slices[1:]:
         if slice.slice == prev_slice.slice:
-            print slice.slice
+            print(slice.slice)
             #delete_empty_slice(prev_slice)
             #delete_empty_slice(slice)
 
@@ -1900,7 +1901,7 @@ def dataset_slice_info(request, reqid, slice_number):
         try:
 
             results = {'success': True,'data': find_slice_dataset_info(reqid, slice_number)}
-        except Exception, e:
+        except Exception as e:
             _logger.error("Problem with getting dataset info #%i %i: %s"%(int(reqid),int(slice_number),e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -2009,7 +2010,7 @@ def set_sample_offset(parent_request, child_request, slices=None):
                             jedi_task = TTask.objects.get(id=task.id)
                             offset += jedi_task.jedi_task_parameters.get('nFiles',0)
             if offset > 0:
-                print step_to_change.step_template.ctag, offset+1, slice.slice
+                print(step_to_change.step_template.ctag, offset+1, slice.slice)
                 step_to_change.update_project_mode('primaryInputOffset',offset+1)
                 step_to_change.save()
 
@@ -2021,7 +2022,7 @@ def recursive_delete(step_id, do_delete=False):
         step_tree.append(step.id)
         step_id = step.step_parent_id
         not_root = not(step.step_parent_id == step.id)
-    print step_tree
+    print(step_tree)
     if do_delete:
         for step_id in step_tree:
             step = StepExecution.objects.get(id=step_id)
@@ -2093,7 +2094,7 @@ def request_train_patterns(request, reqid):
             train_pattern_list.append({'train_id': train.id, 'name': '(' + str(train.pattern_request.reqid) +
                                                                              ')' +
                                                                              train.pattern_request.description})
-    except Exception,e:
+    except Exception as e:
         content = str(e)
         return Response(content,status=500)
 
@@ -2111,7 +2112,7 @@ def convert_old_patterns(request_id):
         else:
             return pattern_dict,[('ctag',pattern_dict)]
     def check_empty_pattern(pattern, default_pattern):
-        for x in pattern.keys():
+        for x in list(pattern.keys()):
             if pattern[x]:
                 return pattern
         return default_pattern
@@ -2137,5 +2138,5 @@ def obsolete_deleted_tasks(production_request):
             if ('log' not in output_datset.name) and ddm.dataset_exists(output_datset.name):
                 to_delete = False
         if to_delete:
-            print task.id,task.name
+            print(task.id,task.name)
             _do_deft_action('mborodin', int(task.id), 'obsolete')

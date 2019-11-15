@@ -1,6 +1,9 @@
 from django.conf.urls import  url
 from atlas.reqtask.views import *
 
+app_name='reqtask'
+
+
 urlpatterns = [
                        url(r'^$', request_tasks,       name='request_tasks'),
                        url(r'^(?P<rid>\d+)/$', request_tasks,       name='request_tasks_rid'),

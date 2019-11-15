@@ -1,6 +1,9 @@
 from django.conf.urls import  url
 from atlas.dkb.views import *
 
+app_name='dkb'
+
+
 urlpatterns = [
 
     url(r'^es_task_search/$', es_task_search, name='es_task_search'),

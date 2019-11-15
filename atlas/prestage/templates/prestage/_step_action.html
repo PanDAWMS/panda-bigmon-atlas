@@ -1,5 +1,5 @@
 {% extends parent_template %}
-{% load url from future %}
+
 {% load static from staticfiles %}
 
 
@@ -44,7 +44,19 @@
 <tr><th><label for="Message">Message:</label></th><td>{% autoescape off %}{{ message }}{% endautoescape %}</td></tr>
 
 <script>
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
 
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+                }
+            }
+        });
     function finish_action(event, action,id) {
         event.preventDefault();
         var sendData = "";

@@ -13,7 +13,7 @@ def parse_jo_file(file_path):
     result = {}
     with file(file_path,'r') as jo_file:
         for jo_file_content_line in jo_file.read().splitlines():
-            for param in JO_PARAMETERS.keys():
+            for param in list(JO_PARAMETERS.keys()):
                 if jo_file_content_line.find(param) >= 0:
                     try:
                         if jo_file_content_line.startswith('#'):
@@ -39,7 +39,7 @@ def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOption
                         dsid_to_update[dsid] = {'physic_short':dsid_file,
                                                 'events_per_job':dsid_jo_content.get('events_per_job',5000),
                                                 'files_per_job':dsid_jo_content.get('files_per_job',1)}
-    for dsid in dsid_to_update.keys():
+    for dsid in list(dsid_to_update.keys()):
         do_update = False
         if MCJobOptions.objects.filter(dsid=int(dsid)).exists():
             new_dsid_jo = MCJobOptions.objects.get(dsid=int(dsid))
@@ -51,7 +51,7 @@ def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOption
             new_dsid_jo.dsid = int(dsid)
             do_update = True
         if do_update:
-            print 'JO updated %s' %  dsid_to_update[dsid]['physic_short']
+            print('JO updated %s' %  dsid_to_update[dsid]['physic_short'])
             new_dsid_jo.physic_short = dsid_to_update[dsid]['physic_short']
             new_dsid_jo.events_per_job = dsid_to_update[dsid]['events_per_job']
             new_dsid_jo.files_per_job = dsid_to_update[dsid]['files_per_job']

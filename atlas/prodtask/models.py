@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import connection
 from django.db import connections
+from django.db.models import CASCADE
 from django.utils import timezone
 from ..prodtask.helper import Singleton
 import logging
@@ -24,7 +25,7 @@ MC_STEPS = ['Evgen',
 
 class sqliteID(Singleton):
     def get_id(self,cursor,id_field_name,table_name):
-        if (id_field_name+table_name) in self.__id_dict.keys():
+        if (id_field_name+table_name) in list(self.__id_dict.keys()):
             self.__id_dict[id_field_name+table_name] = self.__id_dict[id_field_name+table_name] + 1
         else:
             self.__id_dict[id_field_name+table_name] = self.__get_first_id(cursor,id_field_name,table_name)
@@ -84,7 +85,7 @@ class TProject(models.Model):
 
     class Meta:
 
-        db_table = u'T_PROJECTS'
+        db_table = 'T_PROJECTS'
 
 class TRequest(models.Model):
     # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
@@ -135,7 +136,7 @@ class TRequest(models.Model):
     subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
     energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
-    project = models.ForeignKey(TProject,db_column='PROJECT', null=True, blank=False)
+    project = models.ForeignKey(TProject,db_column='PROJECT', on_delete=CASCADE, null=True, blank=False)
     is_error = models.NullBooleanField(db_column='EXCEPTION', null=True, blank=False)
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
@@ -224,12 +225,12 @@ class TRequest(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.reqid:
-            self.reqid = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ','T_PRODMANAGER_REQUEST','PR_ID')
+            self.reqid = prefetch_id('deft','ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ','T_PRODMANAGER_REQUEST','PR_ID')
 
         super(TRequest, self).save(*args, **kwargs)
 
     class Meta:
-        db_table = u'T_PRODMANAGER_REQUEST'
+        db_table = 'T_PRODMANAGER_REQUEST'
 
 
 class RequestStatus(models.Model):
@@ -240,7 +241,7 @@ class RequestStatus(models.Model):
                     ('Approved', 'Approved'),
                     )
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='REQ_S_ID', primary_key=True)
-    request = models.ForeignKey(TRequest, db_column='PR_ID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
     comment = models.CharField(max_length=256, db_column='COMMENT', null=True)
     owner = models.CharField(max_length=32, db_column='OWNER', null=False)
     status = models.CharField(max_length=32, db_column='STATUS', choices=STATUS_TYPES, null=False)
@@ -248,7 +249,7 @@ class RequestStatus(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ','T_PRODMANAGER_REQUEST_STATUS','REQ_S_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ','T_PRODMANAGER_REQUEST_STATUS','REQ_S_ID')
         super(RequestStatus, self).save(*args, **kwargs)
 
     def save_with_current_time(self, *args, **kwargs):
@@ -257,7 +258,7 @@ class RequestStatus(models.Model):
         self.save(*args, **kwargs)
 
     class Meta:
-        db_table = u'T_PRODMANAGER_REQUEST_STATUS'
+        db_table = 'T_PRODMANAGER_REQUEST_STATUS'
 
 class StepTemplate(models.Model):
     id =  models.DecimalField(decimal_places=0, max_digits=12,  db_column='STEP_T_ID', primary_key=True)
@@ -276,12 +277,12 @@ class StepTemplate(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_STEP_TEMPLATE_ID_SEQ','T_STEP_TEMPLATE','STEP_T_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_STEP_TEMPLATE_ID_SEQ','T_STEP_TEMPLATE','STEP_T_ID')
         super(StepTemplate, self).save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_STEP_TEMPLATE'
-        db_table = u'T_STEP_TEMPLATE'
+        db_table = 'T_STEP_TEMPLATE'
 
 class Ttrfconfig(models.Model):
     tag = models.CharField(max_length=1, db_column='TAG', default='-')
@@ -305,7 +306,7 @@ class Ttrfconfig(models.Model):
 
     class Meta:
         app_label = 'grisli'
-        db_table = u'T_TRF_CONFIG'
+        db_table = 'T_TRF_CONFIG'
 
 class TDataFormatAmi(models.Model):
     format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
@@ -315,7 +316,7 @@ class TDataFormatAmi(models.Model):
 
     class Meta:
         app_label = 'grisli'
-        db_table = u'T_DATA_FORMAT_AMI'
+        db_table = 'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=160, db_column='NAME', primary_key=True)
@@ -335,7 +336,7 @@ class ProductionDataset(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'T_PRODUCTION_DATASET'
+        db_table = 'T_PRODUCTION_DATASET'
 
 class ProductionContainer(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
@@ -346,13 +347,13 @@ class ProductionContainer(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
-        db_table = u'T_PRODUCTION_CONTAINER'
+        db_table = 'T_PRODUCTION_CONTAINER'
 
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
     #dataset = models.ForeignKey(ProductionDataset, db_column='INPUTDATASET',null=True)
     dataset = models.CharField(max_length=160, db_column='INPUTDATASET', null=True)
-    request = models.ForeignKey(TRequest, db_column='PR_ID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
     slice = models.DecimalField(decimal_places=0, max_digits=12, db_column='SLICE', null=False)
     brief = models.CharField(max_length=150, db_column='BRIEF')
     phys_comment = models.CharField(max_length=256, db_column='PHYSCOMMENT')
@@ -362,16 +363,16 @@ class InputRequestList(models.Model):
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
     is_hide = models.NullBooleanField(db_column='HIDED', null=True, blank=False)
-    cloned_from = models.ForeignKey('self',db_column='CLONED_FROM', null=True)
+    cloned_from = models.ForeignKey('self',db_column='CLONED_FROM', null=True, on_delete=CASCADE)
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
         super(InputRequestList, self).save(*args, **kwargs)
 
     class Meta:
         #db_table = u'T_INPUT_DATASET'
-        db_table = u'T_INPUT_DATASET'
+        db_table = 'T_INPUT_DATASET'
 
 
 class RetryAction(models.Model):
@@ -392,7 +393,7 @@ class RetryAction(models.Model):
     class Meta:
         app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = u'"ATLAS_PANDA"."RETRYACTIONS"'
+        db_table = '"ATLAS_PANDA"."RETRYACTIONS"'
 
 
 class JediWorkQueue(models.Model):
@@ -409,7 +410,7 @@ class JediWorkQueue(models.Model):
     class Meta:
         app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = u'"ATLAS_PANDA"."JEDI_WORK_QUEUE"'
+        db_table = '"ATLAS_PANDA"."JEDI_WORK_QUEUE"'
 
 
 #   ID NUMBER(10, 0) NOT NULL
@@ -430,7 +431,7 @@ class RetryErrors(models.Model):
     error_source = models.CharField(max_length=256, db_column='ErrorSource',null=False)
     error_code = models.DecimalField(decimal_places=0, max_digits=10, db_column='ErrorCode')
     active = models.CharField(max_length=1, db_column='ACTIVE', null=True)
-    retry_action = models.ForeignKey(RetryAction,db_column='RetryAction')
+    retry_action = models.ForeignKey(RetryAction,db_column='RetryAction', on_delete=CASCADE)
     error_diag =  models.CharField(max_length=256, db_column='ErrorDiag')
     parameters = models.CharField(max_length=256, db_column='PARAMETERS')
     architecture = models.CharField(max_length=256, db_column='Architecture')
@@ -448,13 +449,13 @@ class RetryErrors(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('panda',u'ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
+            self.id = prefetch_id('panda','ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
 
         super(RetryErrors, self).save(*args, **kwargs)
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."RETRYERRORS"'
+        db_table = '"ATLAS_PANDA"."RETRYERRORS"'
 
 
 class TrainProduction(models.Model):
@@ -470,12 +471,12 @@ class TrainProduction(models.Model):
     #ptag = models.CharField(max_length=5, db_column='PTAG', null=False)
     #release = models.CharField(max_length=32, db_column='RELEASE', null=False, blank=True)
     outputs = models.TextField( db_column='OUTPUTS_PATTERN', null=True)
-    pattern_request = models.ForeignKey(TRequest, db_column='PATTERN_REQUEST')
+    pattern_request = models.ForeignKey(TRequest, db_column='PATTERN_REQUEST', on_delete=CASCADE)
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
+            self.id = prefetch_id('dev_db','T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
         super(TrainProduction, self).save(*args, **kwargs)
 
 
@@ -490,7 +491,7 @@ class TrainProduction(models.Model):
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_GROUP_TRAIN"'
+        db_table = '"T_GROUP_TRAIN"'
 
 
 
@@ -509,7 +510,7 @@ class MCJobOptions(models.Model):
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"ATLAS_DEFT"."T_MC_JO_PHYS"'
+        db_table = '"ATLAS_DEFT"."T_MC_JO_PHYS"'
 
 
 # class MCPileupOverlayGroupDescription(models.Model):
@@ -556,22 +557,22 @@ class ParentToChildRequest(models.Model):
                     )
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
-    parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID')
-    child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True)
+    parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID', on_delete=CASCADE)
+    child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True, on_delete=CASCADE)
     relation_type = models.CharField(max_length=2, db_column='RELATION_TYPE', choices=RELATION_TYPE, null=False)
-    train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID', null=True)
+    train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID', null=True, on_delete=CASCADE)
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'PARENT_CHILD_REQUEST_ID_SEQ','T_PARENT_CHILD_REQUEST','PTC_ID')
+            self.id = prefetch_id('dev_db','PARENT_CHILD_REQUEST_ID_SEQ','T_PARENT_CHILD_REQUEST','PTC_ID')
         super(ParentToChildRequest, self).save(*args, **kwargs)
 
 
     class Meta:
         app_label = 'dev'
 
-        db_table = u"T_PARENT_CHILD_REQUEST"
+        db_table = "T_PARENT_CHILD_REQUEST"
 
 
 
@@ -610,10 +611,10 @@ class StepExecution(models.Model):
     TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff', 'PDA', 'PDAParams']
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
-    request = models.ForeignKey(TRequest, db_column='PR_ID')
-    step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID')
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    step_template = models.ForeignKey(StepTemplate, db_column='STEP_T_ID', on_delete=CASCADE)
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
-    slice = models.ForeignKey(InputRequestList, db_column='IND_ID', null=False)
+    slice = models.ForeignKey(InputRequestList, db_column='IND_ID', null=False, on_delete=CASCADE)
     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', null=False)
     step_def_time = models.DateTimeField(db_column='STEP_DEF_TIME', null=False)
     step_appr_time = models.DateTimeField(db_column='STEP_APPR_TIME', null=True)
@@ -621,7 +622,7 @@ class StepExecution(models.Model):
     step_done_time = models.DateTimeField(db_column='STEP_DONE_TIME', null=True)
     input_events = models.DecimalField(decimal_places=0, max_digits=10, db_column='INPUT_EVENTS', null=True)
     task_config = models.CharField(max_length=2000, db_column='TASK_CONFIG')
-    step_parent = models.ForeignKey('self', db_column='STEP_PARENT_ID')
+    step_parent = models.ForeignKey('self', db_column='STEP_PARENT_ID', on_delete=CASCADE)
 
     def set_task_config(self, update_dict):
         if not self.task_config:
@@ -690,7 +691,7 @@ class StepExecution(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
         if not self.step_parent_id:
             self.step_parent_id = self.id
         super(StepExecution, self).save(*args, **kwargs)
@@ -703,7 +704,7 @@ class StepExecution(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'T_PRODUCTION_STEP'
+        db_table = 'T_PRODUCTION_STEP'
 
 
 
@@ -763,7 +764,7 @@ class TTask(models.Model):
     class Meta:
 #        managed = False
 #        db_table =  u'"ATLAS_DEFT"."T_TASK"'
-        db_table =  u"T_TASK"
+        db_table =  "T_TASK"
      #   app_label = 'taskmon'
 
 
@@ -774,8 +775,8 @@ class ProductionTask(models.Model):
     RED_STATUS = ['failed','aborted','broken']
     NOT_RUNNING = RED_STATUS + ['finished','done','obsolete']
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
-    step = models.ForeignKey(StepExecution, db_column='STEP_ID')
-    request = models.ForeignKey(TRequest, db_column='PR_ID')
+    step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=False)
     chain_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=False)
     name = models.CharField(max_length=130, db_column='TASKNAME', null=True)
@@ -868,7 +869,7 @@ class ProductionTask(models.Model):
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
-        db_table = u'T_PRODUCTION_TASK'
+        db_table = 'T_PRODUCTION_TASK'
 
 
 
@@ -877,7 +878,7 @@ class OpenEndedRequest(models.Model):
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='OE_ID', primary_key=True)
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
-    request  = models.ForeignKey(TRequest, db_column='PR_ID')
+    request  = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
     container = models.CharField(max_length=150, db_column='CONTAINER',null=False)
     last_update = models.DateTimeField(db_column='LAST_UPDATE')
 
@@ -886,7 +887,7 @@ class OpenEndedRequest(models.Model):
         if not self.last_update:
             self.last_update = timezone.now()
         if not self.id:
-            self.id = prefetch_id('deft',u'T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
+            self.id = prefetch_id('deft','T_OPEN_ENDED_ID_SEQ',"T_OPEN_ENDED",'OE_ID')
         super(OpenEndedRequest, self).save(*args, **kwargs)
 
     def save_last_update(self, *args, **kwargs):
@@ -894,7 +895,7 @@ class OpenEndedRequest(models.Model):
         super(OpenEndedRequest, self).save(*args, **kwargs)
 
     class Meta:
-        db_table = u'"T_OPEN_ENDED"'
+        db_table = '"T_OPEN_ENDED"'
 
 
 class HashTag(models.Model):
@@ -910,7 +911,7 @@ class HashTag(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
         super(HashTag, self).save(*args, **kwargs)
 
     @property
@@ -933,24 +934,24 @@ class HashTag(models.Model):
         return self.hashtag
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_HASHTAG"'
+        db_table = '"ATLAS_DEFT"."T_HASHTAG"'
 
 
 
 
 
 class HashTagToTask(models.Model):
-    task = models.ForeignKey(ProductionTask,  db_column='TASKID')
-    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+    task = models.ForeignKey(ProductionTask,  db_column='TASKID', on_delete=CASCADE)
+    hashtag = models.ForeignKey(HashTag, db_column='HT_ID', on_delete=CASCADE)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError('Only manual creation')
 
     def create_relation(self):
-        print self._meta.db_table
+        print((self._meta.db_table))
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_HT_TO_TASK"'
+        db_table = '"ATLAS_DEFT"."T_HT_TO_TASK"'
 
 
 
@@ -1066,7 +1067,7 @@ def remove_hashtag_from_task(task_id, hashtag):
 class StepAction(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ACTION_ID', primary_key=True)
-    request = models.ForeignKey(TRequest,  db_column='PR_ID')
+    request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
     step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')
     action = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACTION_TYPE')
     create_time = models.DateTimeField(db_column='SUBMIT_TIME')
@@ -1079,7 +1080,7 @@ class StepAction(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
+            self.id = prefetch_id('dev_db','T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
         super(StepAction, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -1111,7 +1112,7 @@ class StepAction(models.Model):
 
 
     class Meta:
-        db_table = u'"T_STEP_ACTION"'
+        db_table = '"T_STEP_ACTION"'
 
 
 class DatasetStaging(models.Model):
@@ -1131,32 +1132,32 @@ class DatasetStaging(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
+            self.id = prefetch_id('dev_db','T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
         super(DatasetStaging, self).save(*args, **kwargs)
 
 
 
     class Meta:
-        db_table = u'"T_DATASET_STAGING"'
+        db_table = '"T_DATASET_STAGING"'
 
 class ActionStaging(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_ST_ID', primary_key=True)
-    step_action = models.ForeignKey(StepAction, db_column='STEP_ACTION_ID')
-    dataset_stage = models.ForeignKey(DatasetStaging, db_column='DATASET_STAGING_ID')
+    step_action = models.ForeignKey(StepAction, db_column='STEP_ACTION_ID' , on_delete=CASCADE)
+    dataset_stage = models.ForeignKey(DatasetStaging, db_column='DATASET_STAGING_ID', on_delete=CASCADE)
     task = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID')
     share_name = models.CharField(max_length=100, db_column='SHARE_NAME')
 
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','ACTION_STAGING_SEQ',u'T_ACTION_STAGING','ACT_ST_ID')
+            self.id = prefetch_id('dev_db','ACTION_STAGING_SEQ','T_ACTION_STAGING','ACT_ST_ID')
         super(ActionStaging, self).save(*args, **kwargs)
 
 
 
     class Meta:
-        db_table = u'"T_ACTION_STAGING"'
+        db_table = '"T_ACTION_STAGING"'
 
 class ActionDefault(models.Model):
 
@@ -1172,7 +1173,7 @@ class ActionDefault(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
+            self.id = prefetch_id('dev_db','ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
         super(ActionDefault, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -1205,7 +1206,7 @@ class ActionDefault(models.Model):
 
 
     class Meta:
-        db_table = u'"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
+        db_table = '"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
 
 class StorageResource(models.Model):
 
@@ -1218,14 +1219,14 @@ class StorageResource(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_SRS_SEQ',"T_STORAGE_RESOURCE_STATE",'SRS_ID')
+            self.id = prefetch_id('dev_db','T_SRS_SEQ',"T_STORAGE_RESOURCE_STATE",'SRS_ID')
         super(StorageResource, self).save(*args, **kwargs)
 
 
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_STORAGE_RESOURCE_STATE"'
+        db_table = '"T_STORAGE_RESOURCE_STATE"'
 
 class ETAGRelease(models.Model):
 
@@ -1237,14 +1238,14 @@ class ETAGRelease(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_ETR_SEQ',"T_ETAG_RELEASE",'TAG_RELEASE_ID')
+            self.id = prefetch_id('dev_db','T_ETR_SEQ',"T_ETAG_RELEASE",'TAG_RELEASE_ID')
         super(ETAGRelease, self).save(*args, **kwargs)
 
 
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_ETAG_RELEASE"'
+        db_table = '"T_ETAG_RELEASE"'
 
 
 
@@ -1260,7 +1261,7 @@ class WaitingStep(models.Model):
 
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
-    request = models.ForeignKey(TRequest,  db_column='PR_ID')
+    request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
     step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')#models.ForeignKey(StepExecution, db_column='STEP_ID')
     action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
     create_time = models.DateTimeField(db_column='SUBMIT_TIME')
@@ -1273,7 +1274,7 @@ class WaitingStep(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
+            self.id = prefetch_id('dev_db','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
         super(WaitingStep, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -1306,17 +1307,17 @@ class WaitingStep(models.Model):
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_WAITING_STEP"'
+        db_table = '"T_WAITING_STEP"'
 
 class HashTagToRequest(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTR_ID', primary_key=True)
-    request = models.ForeignKey(TRequest,  db_column='PR_ID')
-    hashtag = models.ForeignKey(HashTag, db_column='HT_ID')
+    request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
+    hashtag = models.ForeignKey(HashTag, db_column='HT_ID', on_delete=CASCADE)
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_HT_TO_REQUEST_SEQ',"T_HT_TO_REQUEST",'HTTR_ID')
+            self.id = prefetch_id('dev_db','T_HT_TO_REQUEST_SEQ',"T_HT_TO_REQUEST",'HTTR_ID')
         super(HashTagToRequest, self).save(*args, **kwargs)
 
     def save_last_update(self, *args, **kwargs):
@@ -1326,14 +1327,14 @@ class HashTagToRequest(models.Model):
 
     class Meta:
         app_label = 'dev'
-        db_table = u'"T_HT_TO_REQUEST"'
+        db_table = '"T_HT_TO_REQUEST"'
 
 
 
 class TrainProductionLoad(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TC_ID', primary_key=True)
-    train = models.ForeignKey(TrainProduction,db_column='TRAIN_NUMBER', null=False)
+    train = models.ForeignKey(TrainProduction,db_column='TRAIN_NUMBER', null=False, on_delete=CASCADE)
     group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS)
     datasets = models.TextField( db_column='DATASETS')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
@@ -1358,17 +1359,17 @@ class TrainProductionLoad(models.Model):
                       cleared_datasets_set.add(dataset)
             cleared_datasets = list(cleared_datasets_set)
             self.datasets = '\n'.join([x for x in cleared_datasets if x])
-        except Exception,e:
+        except Exception as e:
             self.datasets=''
             _logger.debug('Problem this loads datastes: %s',str(e))
         if not self.id:
-            self.id = prefetch_id('dev_db',u'T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
+            self.id = prefetch_id('dev_db','T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
 
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:
         app_label = 'dev'
-        db_table = u"T_TRAIN_CARRIAGE"
+        db_table = "T_TRAIN_CARRIAGE"
 
 class MCPattern(models.Model):
     STEPS = MC_STEPS
@@ -1380,11 +1381,11 @@ class MCPattern(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ','T_PRODUCTION_MC_PATTERN','MCP_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ','T_PRODUCTION_MC_PATTERN','MCP_ID')
         super(MCPattern, self).save(*args, **kwargs)
 
     class Meta:
-        db_table = u'T_PRODUCTION_MC_PATTERN'
+        db_table = 'T_PRODUCTION_MC_PATTERN'
 
 
 
@@ -1412,7 +1413,7 @@ class MCPriority(models.Model):
         if self.priority_key == -1:
             return
         if not self.id:
-            self.id = prefetch_id('deft',u'ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ','T_PRODUCTION_MC_PRIORITY','MCPRIOR_ID')
+            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ','T_PRODUCTION_MC_PRIORITY','MCPRIOR_ID')
         super(MCPriority, self).save(*args, **kwargs)
 
     def priority(self, step, tag):
@@ -1426,7 +1427,7 @@ class MCPriority(models.Model):
 
 
     class Meta:
-        db_table = u'T_PRODUCTION_MC_PRIORITY'
+        db_table = 'T_PRODUCTION_MC_PRIORITY'
 
 
 
@@ -1439,7 +1440,7 @@ def get_priority_object(priority_key):
         for step in MCPriority.STEPS:
             priority_py_dict.update({step:int(priority_key)})
         mcp=MCPriority.objects.create(priority_key=-1,priority_dict=json.dumps(priority_py_dict))
-    except Exception,e:
+    except Exception as e:
         raise e
     return mcp
 
@@ -1507,7 +1508,7 @@ class Site(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."SITE"'
+        db_table = '"ATLAS_PANDA"."SITE"'
 
 class GDPConfig(models.Model):
     app = models.CharField(max_length=64, db_column='APP', primary_key=True)
@@ -1524,7 +1525,7 @@ class GDPConfig(models.Model):
     class Meta:
         unique_together = (('app', 'component' , 'key' , 'vo'),)
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."CONFIG"'
+        db_table = '"ATLAS_PANDA"."CONFIG"'
 
 
 class GlobalShare(models.Model):
@@ -1537,7 +1538,7 @@ class GlobalShare(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."GLOBAL_SHARES"'
+        db_table = '"ATLAS_PANDA"."GLOBAL_SHARES"'
 #        db_table = u"GLOBAL_SHARES"
 
 
@@ -1572,7 +1573,7 @@ class Cloudconfig(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDAMETA"."CLOUDCONFIG"'
+        db_table = '"ATLAS_PANDAMETA"."CLOUDCONFIG"'
 
 
 
@@ -1619,7 +1620,7 @@ class JediDatasets(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."JEDI_DATASETS"'
+        db_table = '"ATLAS_PANDA"."JEDI_DATASETS"'
 
 class JediTasks(models.Model):
     id = models.BigIntegerField(primary_key=True, db_column='JEDITASKID')
@@ -1689,7 +1690,7 @@ class JediTasks(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDA"."JEDI_TASKS"'
+        db_table = '"ATLAS_PANDA"."JEDI_TASKS"'
 
 
 class Schedconfig(models.Model):
@@ -1842,7 +1843,7 @@ class Schedconfig(models.Model):
         kys = {}
         for f in self._meta.fields:
             kys[f.name] = f
-        kys1 = kys.keys()
+        kys1 = list(kys.keys())
         kys1.sort()
         for k in kys1:
             f = kys[k]
@@ -1877,4 +1878,4 @@ class Schedconfig(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = u'"ATLAS_PANDAMETA"."SCHEDCONFIG"'
+        db_table = '"ATLAS_PANDAMETA"."SCHEDCONFIG"'

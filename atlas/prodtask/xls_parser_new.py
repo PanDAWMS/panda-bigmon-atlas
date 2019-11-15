@@ -48,7 +48,7 @@ class XlrParser(object):
 
         Returns a dict tuple (result dict, color dict)
         """
-        with open(open_google_ss(google_key,format)) as f:
+        with open(open_google_ss(google_key,format),'rb') as f:
             res = self.__parse_xsl(f)
         return res
             

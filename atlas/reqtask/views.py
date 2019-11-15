@@ -36,7 +36,7 @@ def str_to_slices_range(range_str):
                 chain_start = current_value
             if ch == 'y':
                 if chain_start != -1:
-                    slices += range(chain_start,current_value+1)
+                    slices += list(range(chain_start,current_value+1))
                     chain_start =-1
                 else:
                     slices += [current_value]
@@ -47,8 +47,8 @@ def tasks_hashtags(request, hashtag_formula):
     task_ids = []
     try:
         task_ids = tasks_from_string(hashtag_formula)
-        request.session['selected_tasks'] = map(int,task_ids)
-    except Exception,e:
+        request.session['selected_tasks'] = list(map(int,task_ids))
+    except Exception as e:
         request.session['selected_tasks'] = []
     return render(request, 'reqtask/_task_table.html',
                             {'reqid':None,
@@ -64,7 +64,7 @@ def tasks_hashtags(request, hashtag_formula):
 def request_recent_tasks(request, days=3):
     try:
         task_ids = list(ProductionTask.objects.filter(timestamp__gte=datetime.now() - timedelta(days=int(days)),request_id__gt=1000).values_list('id',flat=True))
-        request.session['selected_tasks'] = map(int,task_ids)
+        request.session['selected_tasks'] = list(map(int,task_ids))
     finally:
         pass
     return render(request, 'reqtask/_task_table.html',
@@ -86,7 +86,7 @@ def request_tasks_slices(request, rid, slices):
             slice_ids = list(InputRequestList.objects.filter(request=rid, slice__in=ordered_slices).values_list('id',flat=True))
             steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
             task_ids = list(ProductionTask.objects.filter(step__in=steps).values_list('id',flat=True))
-            request.session['selected_tasks'] = map(int,task_ids)
+            request.session['selected_tasks'] = list(map(int,task_ids))
     return render(request, 'reqtask/_task_table.html',
                             {'reqid':None,
                              'clouds': get_clouds(),
@@ -254,7 +254,7 @@ def get_tasks(request):
         if status in status_dict:
             status_stat.append({'name':status,'count':status_dict[status],'property':{'active':status not in NOT_RUNNING,'good':status not in FAILED}})
     steps_stat = []
-    if len(steps_dict.keys())>1:
+    if len(list(steps_dict.keys()))>1:
         steps_stat = [{'name': 'total', 'count': len(data_list), 'property': {}}]
         for step in STEPS_ORDER:
             if step in steps_dict:

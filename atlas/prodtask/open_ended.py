@@ -30,7 +30,7 @@ def close_open_ended(request,reqid):
             for open_ended_request in open_ended_requests:
                 open_ended_request.status = 'closed'
                 open_ended_request.save()
-        except Exception,e:
+        except Exception as e:
            return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
         return  HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
@@ -82,7 +82,7 @@ def make_open_ended(request,reqid):
             open_ended_request.save()
             extend_open_ended_request(int(reqid))
 
-        except Exception,e:
+        except Exception as e:
             _logger.error(form_request_log(reqid,None,'Problem with making open ended: %s'%str(e)))
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
         return  HttpResponse(json.dumps({'success':True}), content_type='application/json')
@@ -98,7 +98,7 @@ def push_check(request,reqid):
                     if (datetime.utcnow().replace(tzinfo=pytz.utc) - open_ended_request.last_update).seconds > 600:
                         extend_open_ended_request(reqid)
                         open_ended_request.save_last_update()
-        except Exception,e:
+        except Exception as e:
             return HttpResponse(json.dumps({'success': False,'message':str(e)}), content_type='application/json')
 
 
@@ -114,7 +114,7 @@ def check_open_ended():
             if extend_open_ended_request(open_production_request.request_id):
                 extended_requests.append(open_production_request.request_id)
             open_production_request.save_last_update()
-        except Exception,e:
+        except Exception as e:
             _logger.error('Container extension failed: request:%s %s'%(str(open_production_request.request_id),str(e)))
     return extended_requests
 
@@ -125,7 +125,7 @@ def step_approve_action(step):
     if step.get_task_config('PDA'):
             try:
                 create_predefinition_action(step)
-            except Exception, e:
+            except Exception as e:
                 _logger.error("Problem with pre defintion action %s" % str(e))
     step.status = 'Approved'
     step.save()
@@ -157,7 +157,7 @@ def clean_open_ended(reqid):
     for slice in slices:
         if not slice.is_hide:
             if not StepExecution.objects.filter(slice=slice).exists():
-                print slice.request_id,slice.slice
+                print(slice.request_id,slice.slice)
                 slice.is_hide = True
                 slice.save()
 
@@ -195,7 +195,7 @@ def extend_open_ended_request(reqid):
         ddm = DDM()
         datasets_in_container = ddm.dataset_in_container(container_name)
         _logger.debug(form_request_log(reqid,None,'Datasets in container: %i'%len(datasets_in_container)))
-    except Exception, e:
+    except Exception as e:
         datasets_in_container = []
         _logger.error(form_request_log(reqid, None, 'error during request extension: %s' % str(e)))
 
@@ -230,7 +230,7 @@ def extend_open_ended_request(reqid):
                             step.save()
 
 
-                except Exception,e:
+                except Exception as e:
                     new_slice.dataset = None
                     new_slice.is_hide = True
                     new_slice.save()
@@ -247,4 +247,4 @@ def extend_open_ended_request(reqid):
 
 
 
-    pass
+

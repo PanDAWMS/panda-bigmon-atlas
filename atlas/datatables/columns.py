@@ -6,7 +6,7 @@ from django.template import Context
 from django.template.loader import select_template
 
 # Django-DataTables
-from utils import hungarian_to_python, lookupattr
+from .utils import hungarian_to_python, lookupattr
 
 __all__ = ['Column', 'CheckboxColumn', 'ExpandableColumn']
 
@@ -19,10 +19,8 @@ class ColumnMeta(type):
             new_class.media = media_property(new_class)
         return new_class
 
-class Column(object):
+class Column(object, metaclass=ColumnMeta):
     """Specify options for a Column on a DataTable."""
-
-    __metaclass__ = ColumnMeta
 
     creation_counter = 0
 
@@ -40,13 +38,13 @@ class Column(object):
 
     def __init__(self, **kwargs):
         self.options = {}
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             try:
                 self.options[key] = hungarian_to_python(key, value)
                 kwargs.pop(key)
             except NameError:
                 pass
-        for key, value in self.DEFAULTS.items():
+        for key, value in list(self.DEFAULTS.items()):
             setattr(self, key, kwargs.get(key, value))
         self.classes = set(self.classes or [])
         if self.value_renderer is None:
@@ -134,7 +132,7 @@ class BoundColumn(object):
         self.column = column
         self.name = name
         self.options = deepcopy(self.column.options)
-        for key in self.column.DEFAULTS.keys():
+        for key in list(self.column.DEFAULTS.keys()):
             setattr(self, key, getattr(self.column, key))
         if self.id is None:
             self.id = '%s-%s' % (self.datatable.id, self.name)
@@ -163,21 +161,21 @@ class BoundColumn(object):
         if self.label_renderer:
             try:
                 return self.label_renderer(self)
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 return self.label
         else:
             return self.label
 
     def render_value(self, row, include_hidden=True):
         if not include_hidden and not self.options.get('bVisible', True):
-            return u''
+            return ''
         elif self.value_renderer:
             try:
                 value = self.value_renderer(row, self)
-            except Exception, e:
-                print e
-                value = u''
+            except Exception as e:
+                print(e)
+                value = ''
         else:
-            value = unicode(lookupattr(row, self.display_field))
+            value = str(lookupattr(row, self.display_field))
         return value

@@ -94,7 +94,7 @@ def task_action_ext(request, action=None):
     not_allowed_tasks = []
     params = []
     try:
-        data = json.loads(request.body)
+        data = request.data
         if action not in ALLOWED_FOR_EXTERNAL_API:
             error_message += '%s is not allowed' % action
         action_username = data.get('username')
@@ -112,7 +112,7 @@ def task_action_ext(request, action=None):
         if not error_message:
             denied_tasks, not_allowed_tasks = check_action_allowed(action_username, [int(task_id)], action, userfullname)
             is_permitted = (not denied_tasks) and (not not_allowed_tasks)
-    except Exception,e:
+    except Exception as e:
         error_message.append(str(e))
     if  error_message:
         content = {
@@ -145,7 +145,7 @@ def task_action_ext(request, action=None):
 
                 logger.debug("Action '%s' will be performed  by %s for task %s with parameters %s, response %s" %
                                  (action,action_username,task_id,str(params),str(response)))
-            except Exception,e:
+            except Exception as e:
                     content = {
                         'exception': '; '.join(error_message),
                         'result': 'FAILED'
@@ -160,7 +160,7 @@ def task_action_ext(request, action=None):
 def task_chain_obsolete_action(request):
     error_message = []
     try:
-       data = json.loads(request.body)
+       data = request.data
        tasks_id = data.get('tasks')
        if len(tasks_id)>100:
            raise ValueError('Too much tasks to obsolete. Please contact DPA')
@@ -186,7 +186,7 @@ def task_chain_obsolete_action(request):
                 logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(abort_list),user,"abort",str(params),str(response)))
             #print user, tasks_id, params
 
-    except Exception,e:
+    except Exception as e:
         error_message.append(str(e))
 
     if not error_message:
@@ -231,7 +231,7 @@ def tasks_action(request, action):
     if not tasks:
         response["exception"] = "Tasks list is empty"
         return _http_json_response(response)
-    tasks_ids = map(int, tasks)
+    tasks_ids = list(map(int, tasks))
     params = data.get("parameters", [])
     try:
         denied_tasks, not_allowed_tasks = check_action_allowed(owner, tasks_ids, action)
@@ -246,7 +246,7 @@ def tasks_action(request, action):
         else:
                 response = do_tasks_action(owner, tasks, action, *params)
                 logger.info("Tasks action - tasks:%s user:%s action:%s params:%s"%(str(tasks),owner,action,str(params)))
-    except Exception, e:
+    except Exception as e:
         response["exception"] = str(e)
     return _http_json_response(response)
 

@@ -39,13 +39,13 @@ def request_hashtag_monk(request, hashtags):
             progress = request_progress(entry['requests_ids'])
             ordered_step_statistic = prepare_step_statistic(progress)
             result.append({'hashtags':entry['filter'],'step_statistic':ordered_step_statistic})
-    except Exception,e:
-         print str(e)
+    except Exception as e:
+         print(str(e))
     return Response({"load": result})
 
 @api_view(['GET'])
 def request_progress_general(request, reqids):
-    requests_to_process = map(int,reqids.split(','))
+    requests_to_process = list(map(int,reqids.split(',')))
     request_statistics = request_progress(requests_to_process)
     result = {}
     ordered_step_statistic = []
@@ -53,7 +53,7 @@ def request_progress_general(request, reqids):
         ordered_step_statistic = prepare_step_statistic(request_statistics)
         steps_name = [x['step_name'] for x in ordered_step_statistic]
         chains = []
-        for chain in request_statistics['chains'].values():
+        for chain in list(request_statistics['chains'].values()):
             current_chain = [{}] * len(steps_name)
             chain_requests = set()
             for task_id in chain:
@@ -64,8 +64,8 @@ def request_progress_general(request, reqids):
                 current_chain[i] = task
             chains.append({'chain':current_chain,'requests':chain_requests})
         result.update({'step_statistic':ordered_step_statistic,'chains':chains})
-    except Exception,e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
     return Response({"load": result})
 
 
