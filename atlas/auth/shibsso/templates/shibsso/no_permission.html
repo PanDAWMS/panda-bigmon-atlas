@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block nav-global %}
+
+<div id="user-tools">
+    {% trans 'Welcome,' %}
+    <strong>{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}</strong>.
+    {% block userlinks %}
+    
+    {% url 'django-admindocs-docroot' as docsroot %}
+    {% if docsroot %}
+    <a href="{{ docsroot }}">{% trans 'Documentation' %}</a> /
+    {% endif %}
+    
+    {% url 'logout' as logout_url %}
+    {% if logout_url %}
+    <a href="{{ logout_url }}"> {% trans 'Log out' %}</a>
+    {% else %}
+    <a href="{{ root_path }}logout/"> {% trans 'Log out' %}</a>
+    {% endif %}
+    {% endblock %}
+</div>
+
+{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <p>{% trans "You don't have permission to edit anything." %}</p>
+</div>
+{% endblock %}

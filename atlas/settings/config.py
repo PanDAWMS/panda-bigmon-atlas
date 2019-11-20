@@ -58,7 +58,7 @@ URL_PATH_PREFIX = ''
 MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
-DEBUG=True
+DEBUG=False
 ## init logger
 ## A sample logging configuration. The only tangible logging
 ## performed by this configuration is to send an email to
@@ -68,20 +68,20 @@ DEBUG=True
 from .logconfig import LOGGING
 
 
-MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'shibsso.middleware.ShibSSOMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-)
+# MIDDLEWARE_CLASSES = (
+#     'django.contrib.sessions.middleware.SessionMiddleware',
+#     'django.middleware.common.CommonMiddleware',
+#     'django.middleware.csrf.CsrfViewMiddleware',
+#     'django.contrib.auth.middleware.AuthenticationMiddleware',
+#     'atlas.auth.shibsso.middleware.ShibSSOMiddleware',
+#     'django.contrib.messages.middleware.MessageMiddleware',
+# )
 
 
 AUTHENTICATION_BACKENDS = (
 #   'atlas.auth.fake.backends.LoginAsBackend',
-    'atlas.auth.voms.backends.VomsBackend',
-    'shibsso.backends.ShibSSOBackend',
+#    'atlas.auth.voms.backends.VomsBackend',
+    'atlas.auth.shibsso.backends.ShibSSOBackend',
 )
 
 

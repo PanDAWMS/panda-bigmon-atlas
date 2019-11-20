@@ -21,24 +21,12 @@ STATICFILES_FINDERS = (
 MIDDLEWARE = (
 
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'core.auth.CustomSessionMiddleware.CustomSessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',  # for AJAX POST protection with csrf
-
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-#### django-debug-toolbar
-#    'debug_toolbar.middleware.DebugToolbarMiddleware',
-###
-#    'django.middleware.common.CommonMiddleware',
-#    'django.contrib.sessions.middleware.SessionMiddleware',
-#    'django.middleware.csrf.CsrfViewMiddleware',  # for AJAX POST protection with csrf
-#    'django.contrib.auth.middleware.AuthenticationMiddleware',
-#    'django.contrib.messages.middleware.MessageMiddleware',
-#    # Uncomment the next line for simple clickjacking protection:
-#    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'atlas.auth.shibsso.middleware.ShibSSOMiddleware',
 )
 
 
@@ -72,6 +60,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.getdatasets',
+    'atlas.auth.shibsso',
     'django_tables2',#pip install django_tables2
 )
 INSTALLED_APPS =  INSTALLED_APPS_BIGPANDAMON_ATLAS
@@ -80,6 +69,7 @@ JS_I18N_APPS_EXCLUDE = INSTALLED_APPS_BIGPANDAMON_ATLAS + ('django_tables2',)
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.contrib.messages.context_processors.messages',
+    'django.template.context_processors.request'
 )
 
 TEMPLATE_LOADERS = (

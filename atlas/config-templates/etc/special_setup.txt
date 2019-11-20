@@ -1,0 +1,17 @@
+sudo yum install git
+sudo yum install python3
+sudo yum install gcc
+sudo yum install httpd
+sudo yum install httpd-devel
+sudo yum install mod_ssl
+wget https://www.sqlite.org/2019/sqlite-autoconf-3300100.tar.gz
+tar -zxvf sqlite-autoconf-3300100.tar.gz
+sudo ./configure
+sudo make
+sudo make install
+sudo mv ./sqlite3  /usr/bin/sqlite3
+wget https://github.com/GrahamDumpleton/mod_wsgi/archive/4.6.5.tar.gz
+tar xvfz 4.6.5.tar.gz
+sudo ./configure --with-python=/usr/bin/python3
+sudo make
+sudo make install

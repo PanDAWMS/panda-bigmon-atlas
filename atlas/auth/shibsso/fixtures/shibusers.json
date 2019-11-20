@@ -1,0 +1,90 @@
+[
+    {
+        "pk": "1", 
+        "model": "auth.user", 
+        "fields": {
+            "username": "shib_super",
+            "first_name": "Super",
+            "last_name": "User",
+            "is_active": true, 
+            "is_superuser": true,
+            "is_staff": true,
+            "last_login": "2010-01-01 00:00:00",
+            "groups": [1,2],
+            "user_permissions": [], 
+            "password": "", 
+            "email": "user_super@example.com",
+            "date_joined": "2010-01-01 00:00:00"
+        }
+    },
+    {
+        "pk": "2",
+        "model": "auth.user",
+        "fields": {
+            "username": "shib_nostaff",
+            "first_name": "Test",
+            "last_name": "Client",
+            "is_active": true,
+            "is_superuser": false,
+            "is_staff": false,
+            "last_login": "2010-01-01 00:00:00",
+            "groups": [1,2],
+            "user_permissions": [],
+            "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161",
+            "email": "user_super@example.com",
+            "date_joined": "2010-01-01 00:00:00"
+        }
+    },
+    {
+        "pk": "3",
+        "model": "auth.user",
+        "fields": {
+            "username": "user_super",
+            "first_name": "Test",
+            "last_name": "Client",
+            "is_active": true,
+            "is_superuser": true,
+            "is_staff": true,
+            "last_login": "2010-01-01 00:00:00",
+            "groups": [1,2],
+            "user_permissions": [],
+            "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
+            "email": "user_super@example.com",
+            "date_joined": "2010-01-01 00:00:00"
+        }
+    },
+    {
+        "pk": "4",
+        "model": "auth.user",
+        "fields": {
+            "username": "user_nostaff",
+            "first_name": "Test",
+            "last_name": "Client",
+            "is_active": true,
+            "is_superuser": false,
+            "is_staff": false,
+            "last_login": "2010-01-01 00:00:00",
+            "groups": [],
+            "user_permissions": [],
+            "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161",
+            "email": "user_super@example.com",
+            "date_joined": "2010-01-01 00:00:00"
+        }
+    },
+    {
+        "pk": "1",
+        "model": "auth.group",
+        "fields": {
+            "name": "group_1",
+            "permissions": []
+        }
+    },
+    {
+        "pk": "2",
+        "model": "auth.group",
+        "fields": {
+            "name": "group_2",
+            "permissions": []
+        }
+    }
+]

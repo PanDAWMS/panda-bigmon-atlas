@@ -5,8 +5,8 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.views.decorators.cache import never_cache
 
 import atlas.auth.fake.views
-#import shibsso
-#import shibsso.views
+import atlas.auth.shibsso
+import atlas.auth.shibsso.views
 
 
 @never_cache
@@ -16,7 +16,7 @@ def login(request, redirect_field_name=REDIRECT_FIELD_NAME):
     if hasattr(settings, 'FAKE_LOGIN_AS_USER'):
         login_ = atlas.auth.fake.views.login
     else:
-        #login_ = shibsso.views.login
+        login_ = atlas.auth.shibsso.views.login
         pass
 
     return login_(request, redirect_field_name)
@@ -29,7 +29,7 @@ def logout(request, redirect_field_name=REDIRECT_FIELD_NAME):
     if hasattr(settings, 'FAKE_LOGIN_AS_USER'):
         logout_ = atlas.auth.fake.views.logout
     else:
-        #logout_ = shibsso.views.logout
+        logout_ = atlas.auth.shibsso.views.logout
         pass
     return logout_(request, redirect_field_name)
 
