@@ -329,7 +329,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                         reduce_input_format = None
                         step_index = 0
                         for currentstep in StepExecution.STEPS:
-                            if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0)) and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
+                            if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0) or translated_row.get('evgen_release','') )\
+                                    and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
                                 translated_row[currentstep]='e9999'
                             if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
@@ -344,7 +345,14 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
 
                                 # Store input events only for evgen
                                 if StepExecution.STEPS.index(currentstep)==0:
-                                    sexec = dict(status='NotCheckedSkipped', input_events=int(input_events))
+                                    if tag=='e9999':
+                                        sexec = dict(status='NotChecked', input_events=int(input_events))
+                                        if translated_row.get('evgen_release','') and \
+                                            ETAGRelease.objects.filter(sw_release=translated_row['evgen_release']).exists():
+                                            translated_row[currentstep] = ETAGRelease.objects.filter(sw_release=translated_row['evgen_release'])[0].ami_tag
+                                            tag = translated_row[currentstep]
+                                    else:
+                                        sexec = dict(status='NotCheckedSkipped', input_events=int(input_events))
                                     if (total_input_events_evgen != 0):
                                         task_config.update({'split_events': total_input_events_evgen})
                                     if (filter_eff!=0):

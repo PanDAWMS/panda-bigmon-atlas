@@ -2293,7 +2293,8 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         function checkExtendRequest(event, that){
             event.preventDefault();
             $('#loadExtend').spin('small');
-            var sendData = $('#extendSpreadsheet').val();
+            var sendData = {'spreadsheet':$('#extendSpreadsheet').val(),'is_new':$('#new_extend_workflow').prop('checked')};
+
             if ($(that).html() == 'Check'){
                   $.ajax({
                         url: "{% url 'prodtask:check_extend_request' pr_id %}",
@@ -4022,9 +4023,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
             </div>
         </div>
         <div class="row">
-
-            <div class="large-2 column"><span id="sliceExtend"></span></div>
-            <div class="large-2 column"><span id="stepsExtend"></span></div>
+             <div class="large-2 column"><input type="checkbox" id="new_extend_workflow"/>New</div>
+            <div class="large-1 column"><span id="sliceExtend"></span></div>
+            <div class="large-1 column"><span id="stepsExtend"></span></div>
             <div class="large-2 column">
                 <a href='#' id="checkExtend" class="button btn_is_authorized postfix" onclick="checkExtendRequest(event,this);">Check</a>
             </div>

@@ -1502,6 +1502,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 
     default_object = {}
     do_initialize = False
+    values_list = ['nEventsPerJob','priority','ram','projectmode','priority','nFilesPerJob','maxFailure','maxAttempt']
+    for x in values_list:
+        if x not in default_step_values:
+            default_step_values[x] = ''
     if request.method == 'POST':
         # Check prefill form
         form = TRequestCreateCloneForm(request.POST, request.FILES)
@@ -1548,6 +1552,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             'parent_template': 'prodtask/_index.html',
                             'inputLists': inputlists,
                             'bigSliceNumber': check_need_split(file_dict),
+                            'error_message':''
                         })
                     except Exception as e:
                         _logger.error("Problem during request form creating: %s" % e)
@@ -1575,7 +1580,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'url_args': rid,
                         'parent_template': 'prodtask/_index.html',
                         'inputLists': inputlists,
-                        'allowed_groups':allowed_groups
+                        'allowed_groups':allowed_groups,
+                        'error_message': ''
                     })
 
                 del request.session['file_dict']
@@ -1734,7 +1740,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                     'submit_url': submit_url,
                     'url_args': rid,
                     'parent_template': 'prodtask/_index.html',
-                     'default_step_values': default_step_values
+                     'default_step_values': default_step_values,
+                    'error_message': ''
                 })
 
     # GET request
@@ -1769,7 +1776,8 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
         'parent_template': 'prodtask/_index.html',
         'default_step_values': default_step_values,
         'default_object':default_object,
-        'do_initialize':do_initialize
+        'do_initialize':do_initialize,
+        'error_message': ''
 
     })
 
@@ -2210,10 +2218,14 @@ class Parameters(datatables.Parametrized):
 def check_extend_request(request, reqid):
     if request.method == 'POST':
         try:
-            data = request.body
-            excel_link = json.loads(data)
+            data = json.loads(request.body)
+            excel_link = data['spreadsheet']
+            is_new = data['is_new']
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            version = '2.0'
+            if is_new:
+                version = '3.0'
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             slices_number = len(spreadsheet_dict)
             steps_number = 0
             for current_slice in spreadsheet_dict:
@@ -2229,11 +2241,15 @@ def extend_request(request, reqid):
     if request.method == 'POST':
         results = {'success':False, 'message': 'Not started'}
         try:
-            data = request.body
-            excel_link = json.loads(data)
+            data = json.loads(request.body)
+            excel_link = data['spreadsheet']
+            is_new = data['is_new']
             production_request = TRequest.objects.get(reqid=reqid)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link)
+            version = '2.0'
+            if is_new:
+                version = '3.0'
+            spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             if make_slices_from_dict(production_request, spreadsheet_dict):
                 results = {'success':True, 'message': ''}
         except Exception as e:
