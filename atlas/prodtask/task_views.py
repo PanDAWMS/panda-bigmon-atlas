@@ -624,7 +624,7 @@ def check_action_allowed(username, tasks, action=None, userfullname=''):
                                 pass
                         elif "MCCOORD" in  allowed_groups:
                                 pass
-                        elif (physgroup in allowed_groups) and (action not in ['change_priority']):
+                        elif (physgroup in allowed_groups) and (action not in ['change_priority','increase_priority']):
                                 pass
                         else:
                                 denied_tasks.append(task)
