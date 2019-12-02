@@ -1413,17 +1413,18 @@ def resend_email(request,reqid):
 def resend_mail_console(reqid):
     production_request = TRequest.objects.get(reqid=reqid)
     user = User.objects.get(username=production_request.manager)
+    manager = user.first_name + ' ' + user.last_name
     owner_mails = [user.email]
     current_uri = 'https://prodtask-dev.cern.ch/prodtask/inputlist_with_request/%s/' % reqid
     print(production_request, owner_mails, '', production_request.info_field('long_description'),
-                        current_uri, production_request.info_field('data_source'), True, production_request.manager)
+                        current_uri, production_request.info_field('data_source'), True, manager)
     form_and_send_email(production_request, owner_mails, '', production_request.info_field('long_description'),
-                        current_uri, production_request.info_field('data_source'), True, production_request.manager)
+                        current_uri, production_request.info_field('data_source'), True, manager)
 
 
 
 def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
-    long_description = [x for x in long_description if x in string.printable]
+    long_description = ''.join([x for x in long_description if x in string.printable])
     short_description = ''.join([x for x in production_request.description if x in string.printable]).replace('\n','').replace('\r','')
     subject = 'Request {group_name} {description} {energy} GeV'.format(group_name=production_request.phys_group,
                                                           description=short_description,
