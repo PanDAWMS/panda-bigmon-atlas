@@ -1404,7 +1404,7 @@ def resend_email(request,reqid):
                 owner_mails = []
                 current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(reqid,)))
                 form_and_send_email(production_request,owner_mails,'',production_request.info_field('long_description'),
-                                    current_uri,production_request.info_field('data_source'),True)
+                                    current_uri,production_request.info_field('data_source'),True,production_request.manager)
             except Exception as e:
                 print(e)
         return HttpResponseRedirect('/')
@@ -1413,7 +1413,7 @@ def resend_email(request,reqid):
 
 def form_and_send_email(production_request, owner_mails, cc, long_description,current_uri,excel_link,need_approve,manager_name):
     long_description = [x for x in long_description if x in string.printable]
-    short_description = [x for x in production_request.description if x in string.printable].replace('\n','').replace('\r','')
+    short_description = ''.join([x for x in production_request.description if x in string.printable]).replace('\n','').replace('\r','')
     subject = 'Request {group_name} {description} {energy} GeV'.format(group_name=production_request.phys_group,
                                                           description=short_description,
                                                           energy=str(production_request.energy_gev))
