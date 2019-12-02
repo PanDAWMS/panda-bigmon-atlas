@@ -1401,13 +1401,24 @@ def resend_email(request,reqid):
         if request.user.is_superuser:
             try:
                 production_request = TRequest.objects.get(reqid=reqid)
-                owner_mails = []
-                current_uri = request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(reqid,)))
+                user = User.objects.get(username=production_request.manager)
+                owner_mails = [user.email]
+                current_uri = 'https://prodtask-dev.cern.ch/prodtask/inputlist_with_request/%s/'%reqid
                 form_and_send_email(production_request,owner_mails,'',production_request.info_field('long_description'),
                                     current_uri,production_request.info_field('data_source'),True,production_request.manager)
             except Exception as e:
                 print(e)
         return HttpResponseRedirect('/')
+
+def resend_mail_console(reqid):
+    production_request = TRequest.objects.get(reqid=reqid)
+    user = User.objects.get(username=production_request.manager)
+    owner_mails = [user.email]
+    current_uri = 'https://prodtask-dev.cern.ch/prodtask/inputlist_with_request/%s/' % reqid
+    print(production_request, owner_mails, '', production_request.info_field('long_description'),
+                        current_uri, production_request.info_field('data_source'), True, production_request.manager)
+    form_and_send_email(production_request, owner_mails, '', production_request.info_field('long_description'),
+                        current_uri, production_request.info_field('data_source'), True, production_request.manager)
 
 
 
