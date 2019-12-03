@@ -73,7 +73,7 @@ def get_jobs(request):
         url = url.strip()
         if 'json' not in url:
             if url[-1]=='&':
-                url += '&'
+                url += 'json'
             else:
                 url += '&json'
 
