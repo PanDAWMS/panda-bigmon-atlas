@@ -1875,7 +1875,7 @@ def change_request_status(request, reqid, status, message, comment):
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
         try:
-            values = list(MCPattern.objects.values()).get(id=pattern_id)
+            values = MCPattern.objects.filter(id=pattern_id).values()[0]
             pattern_dict = json.loads(values['pattern_dict'])
             pattern_step_list = [(step, decompress_pattern(pattern_dict.get(step, ''))) for step in MCPattern.STEPS]
         except:
