@@ -110,7 +110,7 @@ def task_action_ext(request, action=None):
             userfullname = data.get('userfullname','')
         is_permitted = False
         if not error_message:
-            denied_tasks, not_allowed_tasks = check_action_allowed(action_username, [int(task_id)], action, userfullname)
+            denied_tasks, not_allowed_tasks = check_action_allowed(action_username, [int(task_id)], action, params, userfullname)
             is_permitted = (not denied_tasks) and (not not_allowed_tasks)
     except Exception as e:
         error_message.append(str(e))
@@ -234,7 +234,7 @@ def tasks_action(request, action):
     tasks_ids = list(map(int, tasks))
     params = data.get("parameters", [])
     try:
-        denied_tasks, not_allowed_tasks = check_action_allowed(owner, tasks_ids, action)
+        denied_tasks, not_allowed_tasks = check_action_allowed(owner, tasks_ids, action, params)
         if denied_tasks or not_allowed_tasks:
                 msg = "User '%s' can't perform %s:"%(owner,action)
                 if denied_tasks:

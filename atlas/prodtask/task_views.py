@@ -582,7 +582,7 @@ def slice_by_task(request, task_id):
 ALWAYS_ALLOWED = ['set_hashtag','remove_hashtag']
 
 
-def check_action_allowed(username, tasks, action=None, userfullname=''):
+def check_action_allowed(username, tasks, action=None, params=None, userfullname=''):
     is_superuser=False
     group_permissions = []
     denied_tasks=[]
@@ -624,8 +624,11 @@ def check_action_allowed(username, tasks, action=None, userfullname=''):
                                 pass
                         elif "MCCOORD" in  allowed_groups:
                                 pass
-                        elif (physgroup in allowed_groups) and (action not in ['change_priority','increase_priority']):
-                                pass
+                        elif (physgroup in allowed_groups) and (action not in ['increase_priority']):
+                                if (action=='change_priority' and int(params[0])>570):
+                                    denied_tasks.append(task)
+                                else:
+                                    pass
                         else:
                                 denied_tasks.append(task)
                     else:
