@@ -1064,10 +1064,14 @@ def dpd_form_prefill(form_data, request):
         if form_data.get('excellink'):
             _logger.debug('Try to read data from %s' % form_data.get('excellink'))
             file_name = open_tempfile_from_url(form_data['excellink'], 'txt')
-            with open(file_name) as open_file:
+            with open(file_name, 'r') as open_file:
                 file_obj = open_file.read().split('\n')
         elif form_data.get('excelfile'):
-            file_obj = request.FILES['excelfile'].read().split('\n')
+            uploaded_file = request.FILES['excelfile']
+            file_strings = ''
+            for line in uploaded_file:
+                file_strings = file_strings + line.decode()
+            file_obj = file_strings.split('\n')
             _logger.debug('Try to read data from %s' % form_data.get('excelfile'))
         elif form_data.get('hidden_json_slices'):
             spreadsheet_dict = parse_json_slice_dict(form_data.get('hidden_json_slices'))
