@@ -421,7 +421,7 @@ def check_slices_for_trains(request):
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
                 if is_mc:
                     step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
-                    if 'Fullsim' not in input_list.comment:
+                    if 'fullsim' not in input_list.comment.lower():
                         step_number = 8
                         if not step_as_in_page[step_number]:
                             step_number = 6

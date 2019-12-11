@@ -1,3 +1,4 @@
+import re
 from _ast import In
 
 from django.core.mail import send_mail
@@ -783,11 +784,9 @@ def save_slice_changes(reqid, slice_steps):
                                                 step['changes'] = {'input_events':'-1'}
                             if steps_status['changes'].get('comment'):
                                 new_comment = steps_status['changes'].get('comment')
-                                if ('(Fullsim)' not in new_comment) and ('(Atlfast)' not in new_comment):
-                                    if '(Fullsim)' in current_slice.comment:
-                                        new_comment = '(Fullsim)' + new_comment
-                                    elif '(Atlfast)' in current_slice.comment:
-                                        new_comment = '(Atlfast)' + new_comment
+                                if not re.match(r'\(\w+\).*',new_comment):
+                                    if re.match(r'\((?P<type>\w+)\).*',current_slice.comment):
+                                        new_comment ='('+re.match(r'\((?P<type>\w+)\).*',current_slice.comment)['type'] +')' + new_comment
                                 current_slice.comment = new_comment
                                 current_slice.save()
                             if steps_status['changes'].get('priority'):
@@ -1048,7 +1047,7 @@ def find_parent_for_train_steps(ordered_slices, parent_request, step_number = -1
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
         if is_mc:
             step_as_in_page = form_step_in_page(ordered_existed_steps,StepExecution.STEPS, None)
-            if 'Fullsim' not in input_list.comment:
+            if 'fullsim' not in input_list.comment.lower():
                 step_number = 8
             else:
                 step_number = 5

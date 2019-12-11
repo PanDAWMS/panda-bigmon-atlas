@@ -299,10 +299,13 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                         sexec = {}
                         checked_rows.append(translated_row)
 
-                        if is_fullsym:
-                            comment = '(Fullsim)'+translated_row.get('comment', '')
+                        if translated_row.get('type', ''):
+                            comment = '(%s)' % translated_row.get('type', '') + translated_row.get('comment', '')
                         else:
-                            comment = '(Atlfast)'+translated_row.get('comment', '')
+                            if is_fullsym:
+                                comment = '(Fullsim)'+translated_row.get('comment', '')
+                            else:
+                                comment = '(Atlfast)'+translated_row.get('comment', '')
 
 
                         if translated_row.get('priority', 0) == '0+':
