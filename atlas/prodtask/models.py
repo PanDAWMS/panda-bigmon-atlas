@@ -1161,7 +1161,7 @@ class ActionStaging(models.Model):
 
 class ActionDefault(models.Model):
 
-    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':5, 'preStageWithTask':5}
+    ACTION_NAME_TYPE = {'postpone':1,'check2rep':2, 'checkEvgen':3, 'preStage':5, 'preStageWithTask':5,'preStageWithTaskArchive':8 }
     FILES_TO_RELEASE = 800
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='ACT_DEFAULT_ID', primary_key=True)
@@ -1256,7 +1256,9 @@ class WaitingStep(models.Model):
         2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 200, 'delay':1},
         3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
         4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
-        5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1}
+        5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
+        8: {'name': 'preStageWithTaskArchive', 'description': 'Check that archive exists and pre-staged it',
+            'attempts': 900, 'delay': 1}
     }
 
 

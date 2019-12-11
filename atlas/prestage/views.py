@@ -1,6 +1,6 @@
 import json
 
-from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction
+from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -27,7 +27,7 @@ _logger = logging.getLogger('prodtaskwebui')
 def test_step_action(step_action_ids):
     pass
 
-def check_staging_task(step_action_ids):
+def check_staging_task(step_action_ids, check_archive=False):
     ddm = DDM()
     config = ActionDefault.objects.get(name='stage_creation').get_config()
     delay = config['delay']
@@ -35,7 +35,7 @@ def check_staging_task(step_action_ids):
     rule = config['rule']
     for waiting_step in step_action_ids:
         try:
-            check_tasks_for_prestage(waiting_step, ddm, rule, delay, max_waite_time)
+            check_tasks_for_prestage(waiting_step, ddm, rule, delay, max_waite_time, check_archive)
         except Exception as e:
             _logger.error("Check replicas problem %s" % str(e))
             waiting_step = StepAction.objects.get(id=waiting_step)
@@ -50,6 +50,10 @@ def start_stagind_task(task):
     if(task.status in ['staging','waiting','paused']):
         _do_deft_action('mborodin',int(task.id),'resume_task')
     pass
+
+def send_use_archive_task(task):
+    #Send resume command
+    _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
 
 
 def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
@@ -70,9 +74,8 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
         _logger.error("Can't create rule %s" % str(e))
         return False
 
-def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,lifetime=None):
+def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None):
 
-    config = ActionDefault.objects.get(name='active_staging').get_config()
     if not lifetime:
         lifetime = config['lifetime']
     if not DatasetStaging.objects.filter(dataset=input_dataset,status__in=DatasetStaging.ACTIVE_STATUS).exists():
@@ -155,8 +158,7 @@ def create_staging_action(input_dataset,task,ddm,rule,replicas=None,source=None,
     action_dataset.save()
 
 
-def create_prestage(task,ddm,rule, special=False):
-    input_dataset = task.primary_input
+def create_prestage(task,ddm,rule, input_dataset,config, special=False):
     #check that's only Tape replica
     replicas = ddm.full_replicas_per_type(input_dataset)
     if (len(replicas['data']) > 0):
@@ -173,7 +175,7 @@ def create_prestage(task,ddm,rule, special=False):
                 input = [x['rse'] for x in replicas['tape']]
                 if len(input) == 1:
                     input = input[0]
-        create_staging_action(input_dataset,task,ddm,rule,source_replicas,input)
+        create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input)
 
 
 def _parse_action_options(option_string):
@@ -188,7 +190,22 @@ def _parse_action_options(option_string):
     return project_mode_dict
 
 
-def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
+def create_follow_prestage_action(task):
+    config =  ActionDefault.objects.get(name='active_archive_staging').get_config()
+    action_step = StepAction()
+    action_step.action = 9
+    action_step.create_time = timezone.now()
+    action_step.set_config({'delay': config['delay']})
+    action_step.set_config({'task': task.id})
+    step = task.step
+    action_step.step = step.id
+    action_step.execution_time = timezone.now() + timedelta(hours=config['delay'])
+    action_step.attempt = 0
+    action_step.status = 'active'
+    action_step.request = task.request
+    action_step.save()
+
+def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, check_archive=False):
     action_step = StepAction.objects.get(id=action_step_id)
     action_step.attempt += 1
     step = StepExecution.objects.get(id=action_step.step)
@@ -213,10 +230,20 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
         step.save()
         return
     finish_action = True
+    fail_action = False
     for task in tasks:
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
-                create_prestage(task,ddm,rule,special)
+                if check_archive:
+                    input_dataset = find_archive_dataset(task.input_dataset,ddm)
+                    if input_dataset:
+                        send_use_archive_task(task)
+                        create_prestage(task, ddm, rule, input_dataset, ActionDefault.objects.get(name='active_archive_staging').get_config(), special)
+                        create_follow_prestage_action(task)
+                    else:
+                        fail_action = True
+                else:
+                    create_prestage(task,ddm,rule,task.input_dataset, ActionDefault.objects.get(name='active_staging').get_config(),special)
             except Exception as e:
                 _logger.error("Check replicas problem %s" % str(e))
                 finish_action = False
@@ -227,9 +254,24 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time):
         step.remove_project_mode('toStaging')
         step.save()
     else:
-        action_step.execution_time = action_step.execution_time + timedelta(hours=delay)
+        action_step.execution_time = current_time + timedelta(hours=delay)
         action_step.status = 'active'
+    if fail_action:
+        action_step.status = 'failed'
+        action_step.message = 'No archive dataset is found'
+        action_step.done_time = current_time
+        step.remove_project_mode('toStaging')
+        step.save()
     action_step.save()
+
+
+def find_archive_dataset(dataset_name,ddm):
+    for task in ProductionTask.objects.filter(primary_input=dataset_name[dataset_name.find(':')+1:],status='done'):
+        if TTask.objects.get(id=task.id).jedi_task_parameters['processingType'] == 'archive':
+            if ddm.dataset_exists(task.output_dataset):
+                return task.output_dataset
+    return None
+
 
 
 def do_staging(action_step_id, ddm):
@@ -295,9 +337,14 @@ def do_staging(action_step_id, ddm):
         action_step.message = 'All task started'
         action_step.done_time = current_time
     else:
-        action_step.execution_time = action_step.execution_time + timedelta(hours=action_step.get_config('delay'))
+        action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay'))
         action_step.status = 'active'
     action_step.save()
+
+
+
+
+
 
 
 
@@ -309,6 +356,36 @@ def activate_staging(step_action_ids):
             do_staging(waiting_step, ddm)
         except Exception as e:
             _logger.error("Check replicas problem %s" % str(e))
+            waiting_step = StepAction.objects.get(id=waiting_step)
+            waiting_step.status = 'active'
+            waiting_step.save()
+    pass
+
+def follow_archive_staging(step_action_ids):
+
+    for step_action in step_action_ids:
+        try:
+            current_time = timezone.now()
+            action = StepAction.objects.get(id=step_action)
+            task = ProductionTask.objects.get(id=action.get_config('task'))
+            finish_action = False
+            if task.status not in ['staging','waiting','registered'] + ProductionTask.NOT_RUNNING:
+                send_use_archive_task(task)
+                finish_action = True
+            elif task.status in ProductionTask.NOT_RUNNING:
+                finish_action = True
+            if finish_action:
+                action.status = 'done'
+                action.message = 'All task started'
+                action.done_time = current_time
+            else:
+                action.execution_time = current_time + timedelta(
+                    hours=action.get_config('delay'))
+                action.status = 'active'
+            action.save()
+
+        except Exception as e:
+            _logger.error("Send use zip problem %s" % str(e))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
             waiting_step.save()
@@ -331,13 +408,16 @@ def process_actions(action_step_todo):
     for action in executing_actions:
         if action == 1:
             test_step_action(executing_actions[action])
-        if action == 6:
+        elif action == 6:
             activate_staging(executing_actions[action])
+        elif action == 8:
+            check_staging_task(executing_actions[action], True)
         elif action == 5:
             check_staging_task(executing_actions[action])
         elif action == 7:
             follow_staging(executing_actions[action])
-
+        elif action == 9:
+            follow_archive_staging(executing_actions[action])
 
 def prestage_by_tape(request, reqid=None):
     try:

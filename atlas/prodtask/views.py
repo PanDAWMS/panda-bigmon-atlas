@@ -52,11 +52,11 @@ _logger = logging.getLogger('prodtaskwebui')
 def create_predefinition_action(step):
     if not ProductionTask.objects.filter(step=step).exists():
         action = ActionDefault.ACTION_NAME_TYPE[step.get_task_config('PDA')]
-        if action == 5:
+        if action in [5, 8]:
             if not StepAction.objects.filter(step=int(step.id), action=action,
                                               status__in=['active', 'executing']).exists():
                 sa = StepAction()
-                sa.action = 5
+                sa.action = action
                 sa.status = 'active'
                 sa.request = step.request
                 sa.step = step.id
