@@ -4,6 +4,8 @@ sudo yum install gcc
 sudo yum install httpd
 sudo yum install httpd-devel
 sudo yum install mod_ssl
+yum install myproxy
+
 wget https://www.sqlite.org/2019/sqlite-autoconf-3300100.tar.gz
 tar -zxvf sqlite-autoconf-3300100.tar.gz
 sudo ./configure
