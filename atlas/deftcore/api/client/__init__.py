@@ -6,7 +6,7 @@ import urllib
 
 
 class Client(object):
-    def __init__(self, auth_user, auth_key, verify_ssl_cert=False, base_url='https://aipanda015.cern.ch'):
+    def __init__(self, auth_user, auth_key, verify_ssl_cert=False, base_url='https://aipanda034.cern.ch'):
         self.base_url = base_url
         self.verify_ssl_cert = verify_ssl_cert
         self.api_url = '/api/v1/request/'
@@ -19,6 +19,14 @@ class Client(object):
         response = requests.get(url, headers=self.headers, verify=self.verify_ssl_cert)
         if response.status_code == requests.codes.ok:
             return json.loads(response.content)['result']
+        else:
+            raise Exception('Invalid HTTP response code: {0}'.format(response.status_code))
+
+    def _get_tags(self,tf,cache):
+        url = '{0}{1}tags/{2}/{3}'.format(self.base_url, self.api_url,tf,cache)
+        response = requests.get(url, headers=self.headers, verify=self.verify_ssl_cert)
+        if response.status_code == requests.codes.ok:
+            return json.loads(response.content)['tags']
         else:
             raise Exception('Invalid HTTP response code: {0}'.format(response.status_code))
 
@@ -56,6 +64,8 @@ class Client(object):
     def create_task_chain(self, owner, step_id, max_number_of_steps=None, debug_mode=False):
         body = {'step_id': step_id, 'max_number_of_steps': max_number_of_steps, 'debug_mode': debug_mode}
         return self._create_request('create_task_chain', owner, body)
+
+
 
     def clone_task(self, owner, task_id):
         body = {'task_id': task_id}

@@ -19,6 +19,12 @@ from .xls_parser_new import XlrParser, open_tempfile_from_url
 #from prodtask.models import get_default_nEventsPerJob_dict
 from .models import get_default_nEventsPerJob_dict
 
+from django.conf import settings
+import atlas.deftcore.api.client as deft
+_deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
+
+
+
 _logger = logging.getLogger('prodtaskwebui')
 
 TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", "eva2", "priority",
@@ -350,10 +356,22 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 if StepExecution.STEPS.index(currentstep)==0:
                                     if tag=='e9999':
                                         sexec = dict(status='NotChecked', input_events=int(input_events))
-                                        if translated_row.get('evgen_release','') and \
-                                            ETAGRelease.objects.filter(sw_release=translated_row['evgen_release']).exists():
-                                            translated_row[currentstep] = ETAGRelease.objects.filter(sw_release=translated_row['evgen_release'])[0].ami_tag
-                                            tag = translated_row[currentstep]
+                                        if translated_row.get('evgen_release','') :
+                                            if  ETAGRelease.objects.filter(sw_release=translated_row['evgen_release']).exists():
+                                                translated_row[currentstep] = ETAGRelease.objects.filter(sw_release=translated_row['evgen_release'])[0].ami_tag
+                                                tag = translated_row[currentstep]
+                                            else:
+                                                try:
+                                                    new_ami_tag = max([ x['AMITAG'] for x in _deft_client._get_tags('Gen_tf.py', translated_row.get('evgen_release',''))])
+                                                    new_etag = ETAGRelease()
+                                                    new_etag.ami_tag = new_ami_tag
+                                                    new_etag.sw_release = translated_row['evgen_release']
+                                                    new_etag.save()
+                                                    translated_row[currentstep] = new_ami_tag
+                                                    tag = translated_row[currentstep]
+                                                except Exception as e:
+                                                    _logger.error('Problem with a new ami tag: %s', str(e))
+
                                     else:
                                         sexec = dict(status='NotCheckedSkipped', input_events=int(input_events))
                                     if (total_input_events_evgen != 0):
