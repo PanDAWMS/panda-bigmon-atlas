@@ -1305,18 +1305,18 @@ def split_slice(reqid, slice_number, divider):
             step.id = None
             step.step_parent = step
     if (slice_to_split[0].input_events != -1) and (slice_to_split[0].input_events > divider) and \
-            ((int(slice_to_split[0].input_events) / divider) < 200):
+            ((int(slice_to_split[0].input_events) // divider) < 200):
         for step_dict in ordered_existed_steps:
             if (step_dict.input_events != slice_to_split[0].input_events) and (step_dict.input_events != -1):
                 raise ValueError("Can't split slice wrong event in step %s" % str(step_dict.input_events))
             if step_dict.status in StepExecution.STEPS_APPROVED_STATUS:
                 raise ValueError("Can't split slice step %s is approved" % str(step_dict.status))
-        for i in range(int(slice_to_split[0].input_events) / int(divider)):
+        for i in range(int(slice_to_split[0].input_events) // int(divider)):
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset, nEventsPerInputFile)
             new_slice_number += 1
         if (slice_to_split[0].input_events % divider) != 0:
             prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
-                                   int(slice_to_split[0].input_events) / int(divider), slice_to_split[0].input_events % divider, output_dataset, nEventsPerInputFile)
+                                   int(slice_to_split[0].input_events) // int(divider), slice_to_split[0].input_events % divider, output_dataset, nEventsPerInputFile)
             new_slice_number += 1
     else:
         raise ValueError("Can't split slice total events: %s on %s" % (str(slice_to_split[0].input_events),str(divider)))
