@@ -44,6 +44,183 @@ def check_staging_task(step_action_ids, check_archive=False):
     pass
 
 
+class ResourceQueue(object):
+    def __init__(self, resource_name):
+        self.queue = []
+        self.total_queued = 0
+        self.resource_name = resource_name
+        pass
+
+    def priorities_queue(self):
+
+        return
+
+    def running_level(self):
+        return 0
+
+    def get_limits(self):
+        self.minimum_level = 0
+        self.maximum_level = 0
+        self.continious_percentage = 0.0
+        pass
+
+    def do_submission(self):
+        pass
+
+    def find_submission(self):
+        running_level = self.running_level()
+        _logger.info("Find queued to submit {resource}: {maximum}/{minimum}/{percent} - running/queued "
+                     "- {running}/{queued}".format(resource=self.resource_name,maximum=self.maximum_level,minimum=self.minimum_level,
+                                                   percent=self.continious_percentage,running=running_level,queued=self.total_queued))
+        if float(running_level) / float(self.maximum_level) < self.continious_percentage:
+            self.priorities_queue()
+            to_submit_list = []
+            to_submit_value = 0
+            required_submission = self.maximum_level - running_level
+            if required_submission + self.minimum_level > self.total_queued:
+                to_submit_list = self.queue
+                to_submit_value = self.total_queued
+            else:
+                i = 0
+                while (to_submit_value < required_submission):
+                    if i > len(self.queue):
+                        break
+                    to_submit_list.append(self.queue[i])
+                    to_submit_value += self.queue[i]['value']
+                    i += 1
+                if (i == (len(self.queue) - 1)) and (self.queue[-1]['value'] < self.minimum_level):
+                    to_submit_list.append(self.queue[-1])
+                    to_submit_value += self.queue[-1]['value']
+            if ((running_level+to_submit_value) < self.minimum_level) and self.to_wait(to_submit_list):
+                return []
+            return to_submit_list
+
+    def to_wait(self, submission_list):
+        return False
+
+
+class TestResource(ResourceQueue):
+
+    def __init__(self, resource_name, test_queue):
+        super().__init__(resource_name)
+        self.__get_test_queue(test_queue)
+        self.running_queue = [x for x in test_queue if x['status']=='running']
+        self.get_limits()
+
+    def __get_test_queue(self,test_queue):
+        self.total_queued = 0
+        for x in test_queue:
+            if x['status'] == 'queued':
+                self.total_queued += x['total']
+                x['value'] =  x['total']
+                self.queue.append(x)
+
+
+    def running_level(self):
+        running_level  = 0
+        for x in self.running_queue :
+            running_level += x['total'] - x['running']
+        return running_level
+
+    def priorities_queue(self):
+        self.queue.sort(key=lambda x: x['value'])
+
+
+    def get_limits(self):
+        self.minimum_level = 5
+        self.maximum_level = 100
+        self.continious_percentage = 40
+
+    def __submit(self, submission_list):
+        ids = [x['id'] for x in submission_list]
+        for x in self.queue:
+            if x['id'] in ids:
+                x['status'] = 'running'
+                print(x)
+
+
+    def do_submission(self):
+        self.__submit(self.find_submission())
+
+
+class TapeResource(ResourceQueue):
+
+    def __init__(self, resource_name):
+        super().__init__(resource_name)
+        self.__get_tape_queue()
+        self.get_limits()
+
+    def __get_tape_queue(self):
+        queued_staging_request = DatasetStaging.objects.filter(source=self.resource_name,status='queued').values()
+        self.total_queued = 0
+        for x in queued_staging_request:
+            x['value'] = x['total_files']
+            self.total_queued += x['value']
+            self.queue.append(x)
+
+    def running_level(self):
+        staing_requests =  DatasetStaging.objects.filter(source=self.resource_name,status__in=['staging']).values()
+        running_level  = 0
+        for x in staing_requests:
+            running_level += x['total_files'] - x['staged_files']
+        return running_level
+
+
+    def get_limits(self):
+        limits_config = ActionDefault.objects.get(type='Tape',name=self.resource_name)
+        self.minimum_level = limits_config.get_config('minimum_level')
+        self.maximum_level = limits_config.get_config('maximum_level')
+        self.continious_percentage =limits_config.get_config('continious_percentage')
+
+    def __submit(self, submission_list):
+        ddm = DDM()
+        #print(submission_list)
+        if submission_list:
+            _logger.info("Submit rules for {resource}: {to_submit}".format(resource=self.resource_name,to_submit=len(submission_list)))
+        for x in submission_list:
+            dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
+            rule = None
+            lifetime = None
+            for dataset_staging in dataset_stagings:
+                if dataset_staging.step_action.status == 'active':
+                    rule = dataset_staging.step_action.get_config('rule')
+                    lifetime = dataset_staging.step_action.get_config('lifetime')
+            if rule and lifetime:
+
+                #print(x['dataset'], rule)
+                try:
+                    _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
+                                                                                       dataset=x['dataset'],
+                                                                                       rule=rule))
+                    ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                            activity='Staging', notify='P')
+                    staging =  DatasetStaging.objects.get(id=x['id'])
+                    staging.status = 'staging'
+                    staging.save()
+                except Exception as e:
+                    _logger.error("Problem during submission {resource}: {error}".format(resource=self.resource_name,
+                                                               error=str(e)))
+
+
+    def to_wait(self, submission_list):
+        oldest = min(submission_list,key=lambda x:x['start_time'])['start_time']
+        return (timezone.now() - oldest) < timedelta(days=1)
+
+    def do_submission(self):
+        self.__submit(self.find_submission())
+
+
+class TestTapeResource(TapeResource):
+    def __init__(self, resource_name, limits):
+        self.limits = limits
+        super().__init__(resource_name)
+
+
+    def get_limits(self):
+        self.minimum_level = self.limits['minimum_level']
+        self.maximum_level = self.limits['maximum_level']
+        self.continious_percentage = self.limits['continious_percentage']
+
 
 def start_stagind_task(task):
     #Send resume command
@@ -93,12 +270,13 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
         dataset_staging.status = 'queued'
         if source:
             dataset_staging.source = source
+        dataset_staging.start_time = timezone.now()
         dataset_staging.save()
 
-        if perfom_dataset_stage(input_dataset,ddm,rule,lifetime,replicas):
-            dataset_staging.status = 'staging'
-            dataset_staging.start_time = timezone.now()
-            dataset_staging.save()
+        # if perfom_dataset_stage(input_dataset,ddm,rule,lifetime,replicas):
+        #     dataset_staging.status = 'staging'
+        #     dataset_staging.start_time = timezone.now()
+        #     dataset_staging.save()
     else:
         dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
@@ -169,7 +347,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=False):
         source_replicas = None
         input = None
         if special:
-            rule, source_replicas, input =ddm.get_replica_pre_stage_rule(input_dataset)
+            rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
         else:
             if replicas['tape']:
                 input = [x['rse'] for x in replicas['tape']]
@@ -464,11 +642,52 @@ def prestage_by_tape(request, reqid=None):
 
     return render(request, 'prestage/prestage_by_tape.html', request_parameters)
 
+def prestage_by_tape_with_limits(request, reqid=None):
+    try:
+
+        total = {'files_queued':0,'files_staged':0, 'files_staging':0}
+        result = []
+        tapes = list(ActionDefault.objects.filter(type='Tape').order_by('id'))
+        for tape in tapes:
+            files_queued = 0
+            files_staged = 0
+            files_staging = 0
+
+            datasets = DatasetStaging.objects.filter(source=tape.name,status__in=['staging', 'queued'])
+            for dataset in datasets:
+                if dataset.status == 'queued':
+                    files_queued += dataset.total_files
+                else:
+                    files_staged += dataset.staged_files
+                    files_staging += dataset.total_files - dataset.staged_files
+            result.append({'name':tape.name,'minimum_level':tape.get_config('minimum_level'),
+                           'maximum_level':tape.get_config('maximum_level'),
+                           'continious_percentage':tape.get_config('continious_percentage'),
+                           'files_queued':files_queued,'files_staged':files_staged,'files_staging':files_staging})
+            total['files_queued'] += files_queued
+            total['files_staged'] += files_staged
+            total['files_staging'] += files_staged
+
+        result.append({'name':'total','files_queued':total['files_queued'],'files_staged':total['files_staged'],
+                           'files_staging':total['files_staging'] })
+    except Exception as e:
+        _logger.error("problem %s" % str(e))
+
+        return HttpResponseRedirect('/')
+    request_parameters = {
+        'active_app' : 'prodtask',
+        'pre_form_text' : 'Tape stats for active requests',
+        'result_table': result,
+        'parent_template' : 'prodtask/_index.html',
+        }
+
+    return render(request, 'prestage/prestage_by_tape_queued.html', request_parameters)
+
 
 def step_action_in_request(request, reqid):
 
     try:
-        action_steps = StepAction.objects.filter(request=reqid)
+        action_steps = StepAction.objects.filter(request=reqid).order_by('id')
         result = []
         for action_step in action_steps:
             current_action = action_step.__dict__
@@ -516,14 +735,24 @@ def step_action(request, wstep_id):
                 link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
                 rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(
                     rule_id=rse, rule_rse=action_step.get_config('rule'))
+
                 if action_step.get_config('tape'):
                     tape_replica = str(action_step.get_config('tape'))
                 else:
                     tape_replica = 'tape'
-                message = 'Rules exists for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, rule_link,
-                                                                                                     str(staged_files),
-                                                                                                     str(total_files),
-                                                                                        str(action_step.get_config('level')))
+                if staging.dataset_stage.status in ['staging','done']:
+                    if rse:
+                        message = 'Rules exists for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, rule_link,
+                                                                                                             str(staged_files),
+                                                                                                             str(total_files),
+                                                                                                str(action_step.get_config('level')))
+                    else:
+                        message = 'Rules submitted for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, action_step.get_config('rule'),
+                                                                                                             str(staged_files),
+                                                                                                             str(total_files),
+                                                                                                str(action_step.get_config('level')))
+                else:
+                    message = 'Staging request is queued for {link_dataset} from {source}'.format(link_dataset=link,source=staging.dataset_stage.source)
 
     except:
         return HttpResponseRedirect('/')
@@ -558,13 +787,13 @@ def finish_action(request, action, action_id):
                     if dataset_staging.rse:
                         ddm = DDM()
                         ddm.delete_replication_rule(ActionStaging.objects.filter(step_action=action_step).last().dataset_stage.rse)
-                        dataset_staging.status = 'done'
-                        dataset_staging.update_time = timezone.now()
-                        dataset_staging.save()
-                        action_step.status = 'canceled'
-                        action_step.message = 'Action was canceled and rule deleted manually'
-                        action_step.done_time = timezone.now()
-                        action_step.save()
+                    dataset_staging.status = 'done'
+                    dataset_staging.update_time = timezone.now()
+                    dataset_staging.save()
+                    action_step.status = 'canceled'
+                    action_step.message = 'Action was canceled and rule deleted manually'
+                    action_step.done_time = timezone.now()
+                    action_step.save()
             elif action == 'push':
                 action_step.execution_time = timezone.now()
                 action_step.save()
