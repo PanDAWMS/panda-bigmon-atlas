@@ -288,7 +288,7 @@ def global_share_tree(request):
 def global_share_change(request):
     error_message = []
     try:
-       data = json.loads(request.body)
+       data = request.data
        old_shares = {}
        for share in data:
            old_share = GlobalShare.objects.get(name=share)
