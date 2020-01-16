@@ -69,7 +69,7 @@ GLOBAL_SHARES = [
     'Group SM',
     'Group Exotics',
     'Group Susy',
-    'Group production',
+    'Group Analysis',
     'Upgrade',
     'HLT Reprocessing',
     'Event Index',
