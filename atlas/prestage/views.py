@@ -181,25 +181,36 @@ class TapeResource(ResourceQueue):
             dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
             rule = None
             lifetime = None
+            source_replica = None
             for dataset_staging in dataset_stagings:
                 if dataset_staging.step_action.status == 'active':
                     rule = dataset_staging.step_action.get_config('rule')
                     lifetime = dataset_staging.step_action.get_config('lifetime')
+                    source_replica =  dataset_staging.step_action.get_config('source_replica')
             if rule and lifetime:
 
                 #print(x['dataset'], rule)
                 try:
-                    _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
-                                                                                       dataset=x['dataset'],
-                                                                                       rule=rule))
-                    ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
-                                            activity='Staging', notify='P')
+                    if not source_replica:
+                        _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
+                                                                                           dataset=x['dataset'],
+                                                                                           rule=rule))
+                        ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                activity='Staging', notify='P')
+                    else:
+                        _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
+                                                                                           dataset=x['dataset'],
+                                                                                           rule=rule, source=source_replica))
+                        ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                activity='Staging', notify='P', source_replica_expression=source_replica)
                     staging =  DatasetStaging.objects.get(id=x['id'])
                     staging.status = 'staging'
                     staging.save()
                 except Exception as e:
                     _logger.error("Problem during submission {resource}: {error}".format(resource=self.resource_name,
                                                                error=str(e)))
+            else:
+                _logger.error("Problem during submission for dataset {dataset_staging}".format(dataset_staging=x['id']))
 
 
     def to_wait(self, submission_list):
