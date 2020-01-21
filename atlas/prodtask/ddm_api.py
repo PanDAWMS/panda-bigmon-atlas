@@ -224,7 +224,7 @@ class DDM(object):
         _logger.debug('Create rule for dataset: %s to %s' % (dataset,rse))
         scope, name = self.rucio_convention(dataset)
         self.__ddm.add_replication_rule(dids=[{'scope':scope, 'name':name}], rse_expression=rse, activity=activity, copies=copies,
-                                        lifetime=lifetime, weight=weight, notify=notify,source_replica_expression=source_replica_expression)
+                                        lifetime=lifetime, weight=weight, notify=notify,source_replica_expression=source_replica_expression, asynchronous=True)
 
     def change_rule_lifetime(self, rule_id, lifetime):
         self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})

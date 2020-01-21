@@ -1,5 +1,7 @@
 import json
 
+from django.db.models import Q
+
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask
 from datetime import timedelta
 
@@ -72,7 +74,7 @@ class ResourceQueue(object):
         _logger.info("Find queued to submit {resource}: {maximum}/{minimum}/{percent} - running/queued "
                      "- {running}/{queued}".format(resource=self.resource_name,maximum=self.maximum_level,minimum=self.minimum_level,
                                                    percent=self.continious_percentage,running=running_level,queued=self.total_queued))
-        if float(running_level) / float(self.maximum_level) < self.continious_percentage:
+        if (float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0):
             self.priorities_queue()
             to_submit_list = []
             to_submit_value = 0
@@ -145,10 +147,12 @@ class TestResource(ResourceQueue):
 
 class TapeResource(ResourceQueue):
 
-    def __init__(self, resource_name):
+    def __init__(self, resource_name, ddm):
         super().__init__(resource_name)
+        self.ddm = ddm
         self.__get_tape_queue()
         self.get_limits()
+
 
     def __get_tape_queue(self):
         queued_staging_request = DatasetStaging.objects.filter(source=self.resource_name,status='queued').values()
@@ -173,44 +177,46 @@ class TapeResource(ResourceQueue):
         self.continious_percentage =limits_config.get_config('continious_percentage')
 
     def __submit(self, submission_list):
-        ddm = DDM()
         #print(submission_list)
         if submission_list:
-            _logger.info("Submit rules for {resource}: {to_submit}".format(resource=self.resource_name,to_submit=len(submission_list)))
-        for x in submission_list:
-            dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
-            rule = None
-            lifetime = None
-            source_replica = None
-            for dataset_staging in dataset_stagings:
-                if dataset_staging.step_action.status == 'active':
-                    rule = dataset_staging.step_action.get_config('rule')
-                    lifetime = dataset_staging.step_action.get_config('lifetime')
-                    source_replica =  dataset_staging.step_action.get_config('source_replica')
-            if rule and lifetime:
+            total = sum([x['value'] for x in submission_list ])
+            _logger.info("Submit rules for {resource}: {to_submit}, {total}".format(resource=self.resource_name,to_submit=len(submission_list),total=total))
+            for x in submission_list:
+                dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
+                rule = None
+                lifetime = None
+                source_replica = None
+                for dataset_staging in dataset_stagings:
+                    if dataset_staging.step_action.status == 'active':
+                        rule = dataset_staging.step_action.get_config('rule')
+                        lifetime = dataset_staging.step_action.get_config('lifetime')
+                        source_replica =  dataset_staging.step_action.get_config('source_replica')
+                if rule and lifetime:
 
-                #print(x['dataset'], rule)
-                try:
-                    if not source_replica:
-                        _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
-                                                                                           dataset=x['dataset'],
-                                                                                           rule=rule))
-                        ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
-                                                activity='Staging', notify='P')
-                    else:
-                        _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
-                                                                                           dataset=x['dataset'],
-                                                                                           rule=rule, source=source_replica))
-                        ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
-                                                activity='Staging', notify='P', source_replica_expression=source_replica)
-                    staging =  DatasetStaging.objects.get(id=x['id'])
-                    staging.status = 'staging'
-                    staging.save()
-                except Exception as e:
-                    _logger.error("Problem during submission {resource}: {error}".format(resource=self.resource_name,
-                                                               error=str(e)))
-            else:
-                _logger.error("Problem during submission for dataset {dataset_staging}".format(dataset_staging=x['id']))
+                    #print(x['dataset'], rule)
+                    try:
+                        existed_rule = self.ddm.dataset_active_rule_by_rse(x['dataset'], rule)
+                        if not existed_rule:
+                            if not source_replica:
+                                _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
+                                                                                                   dataset=x['dataset'],
+                                                                                                   rule=rule))
+                                self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                        activity='Staging', notify='P')
+                            else:
+                                _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
+                                                                                                   dataset=x['dataset'],
+                                                                                                   rule=rule, source=source_replica))
+                                self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                        activity='Staging', notify='P', source_replica_expression=source_replica)
+                        staging =  DatasetStaging.objects.get(id=x['id'])
+                        staging.status = 'staging'
+                        staging.save()
+                    except Exception as e:
+                        _logger.error("Problem during submission {resource}: {error}".format(resource=self.resource_name,
+                                                                   error=str(e)))
+                else:
+                    _logger.error("Problem during submission for dataset {dataset_staging}".format(dataset_staging=x['id']))
 
 
     def to_wait(self, submission_list):
@@ -236,6 +242,7 @@ class TestTapeResource(TapeResource):
 def start_stagind_task(task):
     #Send resume command
     if(task.status in ['staging','waiting','paused']):
+        _logger.info('Resume task after pre stage %s ' % (str(task.id)))
         _do_deft_action('mborodin',int(task.id),'resume_task')
     pass
 
@@ -318,14 +325,12 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
             level = config['level']
         if level == -1:
             if dataset_staging.total_files:
-                if dataset_staging.total_files > 1000:
-                    level = 70
-                elif dataset_staging.total_files > 200:
-                    level = 80
-                else:
+                if dataset_staging.total_files < 1000:
                     level = 90
+                else:
+                    level = 95
             else:
-                level = 90
+                level = 95
         action_step.set_config({'level':level})
         action_step.set_config({'lifetime':lifetime})
         action_step.set_config({'rule': rule})
@@ -343,9 +348,15 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     action_dataset.task = task.id
     action_dataset.dataset_stage = dataset_staging
     action_dataset.step_action = action_step
-    #todo add share
     action_dataset.save()
 
+def submit_all_tapes():
+    ddm = DDM()
+    for tape in ActionDefault.objects.filter(type='Tape'):
+        if tape.get_config('active'):
+            if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
+                resource_tape = TapeResource(tape.name,ddm)
+                resource_tape.do_submission()
 
 def create_prestage(task,ddm,rule, input_dataset,config, special=False):
     #check that's only Tape replica
@@ -358,7 +369,13 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=False):
         source_replicas = None
         input = None
         if special:
-            rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
+            special_datasets = list(InputRequestList.objects.filter(~Q(is_hide=True),request=29036).values_list('dataset',flat=True))
+            if ddm.rucio_convention(input_dataset)[1] in special_datasets:
+                rule, source_replicas, input = 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+            else:
+                rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
+            if input == 'INFN-T1_DATATAPE':
+                source_replicas = 'INFN-T1_DATATAPE'
         else:
             if replicas['tape']:
                 input = [x['rse'] for x in replicas['tape']]
@@ -482,7 +499,7 @@ def do_staging(action_step_id, ddm):
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
             no_update = dataset_stage.update_time and \
-                    ((current_time-dataset_stage.update_time) < timedelta(hours=3*int(action_step.get_config('delay'))))
+                    ((current_time-dataset_stage.update_time) < timedelta(hours=2*int(action_step.get_config('delay'))))
             if (not dataset_stage.rse) or (not no_update ):
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
                 if existed_rule:
@@ -516,11 +533,11 @@ def do_staging(action_step_id, ddm):
 
         elif dataset_stage.status == 'queued':
             action_finished = False
-            if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
-                                    action_step.get_config('lifetime'), action_step.get_config('source_replica')):
-                dataset_stage.status = 'staging'
-                dataset_stage.start_time = current_time
-                dataset_stage.save()
+            # if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
+            #                         action_step.get_config('lifetime'), action_step.get_config('source_replica')):
+            #     dataset_stage.status = 'staging'
+            #     dataset_stage.start_time = current_time
+            #     dataset_stage.save()
     if action_finished :
         action_step.status = 'done'
         action_step.message = 'All task started'
@@ -807,6 +824,8 @@ def finish_action(request, action, action_id):
                     action_step.save()
             elif action == 'push':
                 action_step.execution_time = timezone.now()
+                if action_step.status == 'executing':
+                    action_step.status = 'active'
                 action_step.save()
             elif action == 'finish':
                 action_step.status = 'done'
