@@ -694,7 +694,7 @@ def prestage_by_tape_with_limits(request, reqid=None):
                            'files_queued':files_queued,'files_staged':files_staged,'files_staging':files_staging})
             total['files_queued'] += files_queued
             total['files_staged'] += files_staged
-            total['files_staging'] += files_staged
+            total['files_staging'] += files_staging
 
         result.append({'name':'total','files_queued':total['files_queued'],'files_staged':total['files_staged'],
                            'files_staging':total['files_staging'] })
