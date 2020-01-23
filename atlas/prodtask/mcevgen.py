@@ -11,7 +11,7 @@ JO_PARAMETERS = {'evgenConfig.minevents':'events_per_job','evgenConfig.inputFile
 
 def parse_jo_file(file_path):
     result = {}
-    with file(file_path,'r') as jo_file:
+    with open(file_path,'r') as jo_file:
         for jo_file_content_line in jo_file.read().splitlines():
             for param in list(JO_PARAMETERS.keys()):
                 if jo_file_content_line.find(param) >= 0:
