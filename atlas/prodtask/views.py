@@ -1018,7 +1018,7 @@ def find_child_steps(parent_request_id, slice_steps):
 def create_request_for_pattern(parent_request_id, short_description, manager):
             parent_request = TRequest.objects.get(reqid=parent_request_id)
             new_request = TRequest()
-            new_request.campaign = parent_request.project
+            new_request.campaign = parent_request.project.project
             new_request.project = parent_request.project
             new_request.description = short_description
             new_request.phys_group = 'PHYS'
