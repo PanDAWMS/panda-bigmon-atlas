@@ -654,12 +654,16 @@ def statistic_by_request_deriv(search_dict,formats_dict):
         if aggregs and exexute.hits.total>0:
                 for f in exexute.aggregations.formats.buckets:
                     for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
+                        if x.timestamp_defined.walltime.value:
+                            duration = float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)
+                        else:
+                            duration = None
                         result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.output.not_removed.events.value,
                                    'input_events': x.input_events.value,
                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                    'output_bytes':x.output.not_removed.bytes.value,
                                    'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
-                                   'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)}
+                                   'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':duration}
         total_result.update(result)
 
     return total_result
@@ -751,13 +755,22 @@ def statistic_by_step(search_dict):
     if aggregs and exexute.hits.total>0:
 
             for x in exexute.aggs.steps.buckets:
-                result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
-                           'input_events': x.input_events.value,
-                           'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
-                           'output_bytes':x.output.not_removed.bytes.value,
-                           'output_not_removed_tasks':x.output.not_removed.doc_count,
-                           'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
-                                 'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
+                if x.ended.duration.value:
+                    result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                               'input_events': x.input_events.value,
+                               'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                               'output_bytes':x.output.not_removed.bytes.value,
+                               'output_not_removed_tasks':x.output.not_removed.doc_count,
+                               'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
+                                     'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
+                else:
+                    result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                               'input_events': x.input_events.value,
+                               'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+                               'output_bytes':x.output.not_removed.bytes.value,
+                               'output_not_removed_tasks':x.output.not_removed.doc_count,
+                               'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
+                                     'duration':None}
 
     return result
 
@@ -803,6 +816,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             current_stat['percent_runnning'] = percent_runnning * 100
             current_stat['percent_pending'] = percent_pending * 100
             result.append(current_stat)
+    result.sort(key=lambda x: -x['input_events'])
     return result
 
 

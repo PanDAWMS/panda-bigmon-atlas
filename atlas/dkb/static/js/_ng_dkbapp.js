@@ -264,7 +264,13 @@
 
                     size /= 1024;
 
-                    return size.toFixed(2) + ' TB';
+                    if (size < 1024)
+                        return size.toFixed(2) + ' TB';
+
+                    size /= 1024;
+
+                    return size.toFixed(2) + ' PB';
+
                 };
             });
 
