@@ -3,7 +3,10 @@
   <div  > Tasks with at least 'ready' status('staging' and 'registered' are not included):</div>
 <table>
         <tbody>
-        <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks</td></tr> <tr><td> Input events</td></tr> <tr><td> Output events</td> </tr>
+        <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks</td></tr>
+        <tr><td> Input events</td></tr>
+        <tr><td> Processed events</td></tr>
+        <tr><td> Output events</td> </tr>
         <tr><td> Running/Pending</td></tr>
         <tr><td> Input bytes</td></tr>
         <tr><td> Output bytes</td></tr>
@@ -18,6 +21,7 @@
                 </b></td></tr>
                 <tr><td>{{ step.total_tasks | number:0 }}</td></tr>
                 <tr><td><span  ng-show="step.input_not_removed_tasks!=step.total_tasks">~</span>{{ step.input_events | number:0 }}</td></tr>
+                <tr><td>{{ step.processed_events | number:0 }}</td></tr>
                 <tr><td>{{ step.total_events | number:0 }}</td></tr>
                 <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
