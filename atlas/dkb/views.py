@@ -599,6 +599,9 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                             "cpu_total": {
                               "sum": {"field": "toths06"}
                             },
+                              "total_events": {
+                                  "sum": {"field": "total_events"}
+                              },
                             "cpu_failed": {
                               "sum": {"field": "toths06_failed"}
                             },
@@ -658,7 +661,7 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                             duration = float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)
                         else:
                             duration = None
-                        result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.output.not_removed.events.value,
+                        result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.total_events.value,
                                    'input_events': x.input_events.value,
                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                    'output_bytes':x.output.not_removed.bytes.value,
@@ -731,7 +734,10 @@ def statistic_by_step(search_dict):
                           "aggs": {
                             "bytes": {
                               "sum": {"field": "bytes"}
-                            }
+                            },
+                              "events": {
+                                  "sum": {"field": "events"}
+                              }
                           }
                         }
                       }
@@ -756,7 +762,7 @@ def statistic_by_step(search_dict):
 
             for x in exexute.aggs.steps.buckets:
                 if x.ended.duration.value:
-                    result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                    result[x.key] = {'name': x.key,  'processed_events': x.not_deleted.events.value,
                                'input_events': x.input_events.value,
                                'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                'output_bytes':x.output.not_removed.bytes.value,
@@ -764,7 +770,7 @@ def statistic_by_step(search_dict):
                                'total_tasks': x.doc_count, 'hs06':x.hs06.value, "cpu_failed":x.cpu_failed.value,
                                      'duration':float(x.ended.duration.value)/(3600.0*1000*24)}
                 else:
-                    result[x.key] = {'name': x.key,  'total_events': x.total_events.value,
+                    result[x.key] = {'name': x.key,  'processed_events': x.not_deleted.events.value,
                                'input_events': x.input_events.value,
                                'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                'output_bytes':x.output.not_removed.bytes.value,
