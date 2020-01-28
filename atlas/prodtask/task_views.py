@@ -21,7 +21,6 @@ from .models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, JediTasks, JediDatasets
-from .task_actions import allowed_task_actions
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -76,6 +75,46 @@ GLOBAL_SHARES = [
     'Frontier'
 
 ]
+# Allowed task actions per status
+allowed_task_actions = {
+    'waiting': ['set_hashtag','remove_hashtag','abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs','sync_jedi'],
+    'registered': ['kill_job','retry'],
+    'assigning': ['kill_job','retry'],
+    'submitting': ['kill_job','retry'],
+    'ready': ['kill_job','retry'],
+    'running': ['kill_job','retry'],
+    'exhausted': ['kill_job','retry','retry_new', 'reassign'],
+    'done': ['obsolete', 'delete_output', 'obsolete_entity','set_hashtag','remove_hashtag','ctrl','reassign'],
+    'finished': ['set_hashtag','remove_hashtag','retry', 'retry_new', 'change_parameters', 'obsolete', 'ctrl', 'delete_output','change_priority', 'obsolete_entity'],
+    'broken': ['set_hashtag','remove_hashtag','sync_jedi'],
+    'failed': ['set_hashtag','remove_hashtag','sync_jedi'],
+    'scouting':['set_hashtag','remove_hashtag','sync_jedi'],
+    'obsolete':['set_hashtag','remove_hashtag','sync_jedi'],
+    'paused': ['retry'],
+    'staging':['retry'],
+    'toretry':['retry']
+}
+
+# Actions for tasks in "active" states
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry', 'staging']:
+    allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
+                                          'change_parameters', 'reassign',
+                                          'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
+                                          'ctrl','sync_jedi'])
+
+
+
+# Extending actions by groups of them
+for _status in allowed_task_actions:
+    if 'change_priority' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['increase_priority', 'decrease_priority'])
+    if 'change_parameters' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
+    if 'reassign' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share'])
+    if 'ctrl' in allowed_task_actions[_status]:
+        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input'])
+
 def descent_tasks(request, task_id):
     try:
         child_tasks = find_downstreams_by_task(task_id)
@@ -228,6 +267,7 @@ def task_details(request, rid=None):
         'extasks': same_tasks,
         'hashtags': hashtags,
         'parent_template' : 'prodtask/_index.html',
+        'show_sync': True
         }
     print(permissions)
     for action, perm in list(permissions.items()):
@@ -806,10 +846,22 @@ def sync_deft_jedi_task(task_id):
 
 
     deft_task = ProductionTask.objects.get(id=task_id)
-    t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
-                                                   'total_events')[0]
-    sync_deft_jedi_task_from_db(deft_task, t_task)
+    if deft_task.request_id != 300:
+        t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
+                                                       'total_events')[0]
+        sync_deft_jedi_task_from_db(deft_task, t_task)
+    else:
+        sync_deft_user_task(task_id)
 
+
+def sync_deft_user_task(task_id):
+    deft_task = ProductionTask.objects.get(id=task_id)
+    if deft_task.request.reqid == 300:
+        t_task = TTask.objects.get(id=task_id)
+        if t_task.status != deft_task.status:
+            deft_task.status = t_task.status
+            deft_task.timestamp = timezone.now()
+            deft_task.save()
 
 def create_mc_exhausted_hashtag():
     tasks = ProductionTask.objects.filter(status__in=['assigning','running','ready','submitting','registered','exhausted','waiting'],provenance='AP',project__startswith='mc')

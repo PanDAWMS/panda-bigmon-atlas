@@ -8,6 +8,7 @@ from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset
 
 import atlas.deftcore.api.client as deft
+from atlas.prodtask.task_views import sync_deft_jedi_task
 
 from atlas.prodtask.views import task_clone_with_skip_used
 
@@ -44,47 +45,8 @@ supported_actions = list(_deft_actions.keys())
 #supported_actions.extend(['obsolete', 'increase_priority', 'decrease_priority'])
 supported_actions.extend(['increase_priority', 'decrease_priority'])
 supported_actions.extend(['retry_new'])
-supported_actions.extend(['set_hashtag','remove_hashtag'])
+supported_actions.extend(['set_hashtag','remove_hashtag','sync_jedi'])
 
-# Allowed task actions per status
-allowed_task_actions = {
-    'waiting': ['set_hashtag','remove_hashtag','abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs'],
-    'registered': ['kill_job','retry'],
-    'assigning': ['kill_job','retry'],
-    'submitting': ['kill_job','retry'],
-    'ready': ['kill_job','retry'],
-    'running': ['kill_job','retry'],
-    'exhausted': ['kill_job','retry','retry_new', 'reassign'],
-    'done': ['obsolete', 'delete_output', 'obsolete_entity','set_hashtag','remove_hashtag','ctrl','reassign'],
-    'finished': ['set_hashtag','remove_hashtag','retry', 'retry_new', 'change_parameters', 'obsolete', 'ctrl', 'delete_output','change_priority', 'obsolete_entity'],
-    'broken': ['set_hashtag','remove_hashtag'],
-    'failed': ['set_hashtag','remove_hashtag'],
-    'scouting':['set_hashtag','remove_hashtag'],
-    'obsolete':['set_hashtag','remove_hashtag'],
-    'paused': ['retry'],
-    'staging':['retry'],
-    'toretry':['retry']
-}
-
-# Actions for tasks in "active" states
-for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry', 'staging']:
-    allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
-                                          'change_parameters', 'reassign',
-                                          'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
-                                          'ctrl'])
-
-
-
-# Extending actions by groups of them
-for _status in allowed_task_actions:
-    if 'change_priority' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['increase_priority', 'decrease_priority'])
-    if 'change_parameters' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['change_ram_count', 'change_wall_time', 'change_cpu_time', 'change_core_count', 'change_split_rule'])
-    if 'reassign' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share'])
-    if 'ctrl' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input'])
 
 def do_action(owner, task_id, action, *args):
 
@@ -119,6 +81,8 @@ def do_action(owner, task_id, action, *args):
         result.update(decrease_task_priority(owner, task_id, *args))
     elif action == 'set_hashtag':
         result.update(set_hashtag(owner, task_id, args))
+    elif action == 'sync_jedi':
+        result.update(sync_jedi(owner, task_id))
     elif action == 'remove_hashtag':
         result.update(remove_hashtag(owner, task_id, args))
     #elif action == 'obsolete':
@@ -139,6 +103,14 @@ def set_hashtag(owner, task_id, hashtag_name):
         hashtag = add_or_get_request_hashtag(hashtag_name[0])
         task.set_hashtag(hashtag)
         #print hashtag_name[0]
+        return {'status':'success'}
+    except Exception as e:
+        return {'exception':str(e)}
+
+def sync_jedi(owner, task_id):
+    try:
+        task = ProductionTask.objects.get(id=task_id)
+        sync_deft_jedi_task(task_id)
         return {'status':'success'}
     except Exception as e:
         return {'exception':str(e)}

@@ -710,7 +710,20 @@
                 </div>
 
             </div>
+            {% if show_sync %}
+                <div class="small-12 large-12 columns panel" id="ctrl_panel3">
+                    <div class="row">
+                                <div class="small-6 large-6 columns">
+                                    <p> <label class="inline"> Sync DEFT-JEDI </label> </p>
+                                </div>
+                                <div class="small-3 large-3 columns">
+                                    <a class="button postfix" id="btn_do_sync_jedi">Go</a>
+                                </div>
 
+                    </div>
+
+            </div>
+             {% endif %}
          </div>
 
                <div class="row">
@@ -946,7 +959,8 @@ $(document).ready(function () {
         "pause":"pause_task", "resume":"resume_task", "trigger":"trigger_task", "avalanche":"avalanche_task", "ctrl":"task_ctrl",
         "set_hashtag":"set_hashtag",
         "remove_hashtag":"remove_hashtag",
-        "reload_input":"reload_input"
+        "reload_input":"reload_input",
+        "sync_jedi":"sync_jedi"
     };
 
     $.each(button_action_map, function(name, action) {
