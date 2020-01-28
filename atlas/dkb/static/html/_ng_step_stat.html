@@ -10,8 +10,8 @@
         <tr><td> Running/Pending</td></tr>
         <tr><td> Input bytes</td></tr>
         <tr><td> Output bytes</td></tr>
-        <tr><td> Total HS06</td></tr>
-        <tr><td> Total Failed HS06</td></tr>
+        <tr><td> Average HS06 per event</td></tr>
+  <!--   <tr><td> Total Failed HS06</td></tr> -->
         <tr><td> Duration (finished tasks)</td></tr>
         </tbody></table>
         </td>
@@ -26,8 +26,8 @@
                 <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
-                <tr><td>{{ step.hs06 | bignumber }}</td></tr>
-                <tr><td>{{ step.cpu_failed | bignumber }}</td></tr>
+                <tr><td>{{ step.hs06  }}</td></tr>
+<!--              <tr><td>{{ step.cpu_failed | bignumber }}</td></tr> -->
                 <tr><td>{{ step.duration | number:2 }} days</td></tr>
                 </tbody></table>
             </td>

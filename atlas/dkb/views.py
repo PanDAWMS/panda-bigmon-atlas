@@ -597,14 +597,14 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                               "sum": {"field": "processed_events"}
                             },
                             "cpu_total": {
-                              "sum": {"field": "toths06"}
+                              "avg": {"field": "hs06"}
                             },
                               "total_events": {
                                   "sum": {"field": "total_events"}
                               },
-                            "cpu_failed": {
-                              "sum": {"field": "toths06_failed"}
-                            },
+                            # "cpu_failed": {
+                            #   "sum": {"field": "toths06_failed"}
+                            # },
                             "timestamp_defined": {
                               "filter": {
                                 "bool": {
@@ -666,7 +666,7 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                    'output_bytes':x.output.not_removed.bytes.value,
                                    'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
-                                   'total_tasks': x.doc_count, 'hs06':x.cpu_total.value,'cpu_failed':x.cpu_failed.value, 'duration':duration}
+                                   'total_tasks': x.doc_count, 'hs06':int(x.cpu_total.value), 'duration':duration}
         total_result.update(result)
 
     return total_result
