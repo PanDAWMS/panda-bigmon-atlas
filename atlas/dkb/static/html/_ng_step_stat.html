@@ -1,5 +1,16 @@
- <h5>{{ search_string }}</h5>
+
+<h5>{{ search_string }}</h5>
   <div  ng-show="is_loading"> Loading...</div>
+<a href="{{ manage_url }}">
+<table>
+     <thead>
+     <tr> <td ng-repeat="status in status_stat " ><span class=" rstat tstat {{ status.name }}">{{ status.name }}</span></td></tr>
+     </thead>
+     <tbody>
+     <tr> <td ng-repeat="status in status_stat " >{{ status.count }}</td></tr>
+     </tbody>
+    </table>
+</a>
   <div  > Tasks with at least 'ready' status('staging' and 'registered' are not included):</div>
 <table>
         <tbody>

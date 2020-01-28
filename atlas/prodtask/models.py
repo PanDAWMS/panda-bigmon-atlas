@@ -770,7 +770,9 @@ class TTask(models.Model):
 
 
 class ProductionTask(models.Model):
-
+    STATUS_ORDER = ['total', 'waiting','staging','registered', 'assigning', 'submitting', 'ready', 'running',
+                    'paused', 'exhausted', 'done', 'finished', 'toretry', 'toabort', 'failed', 'broken', 'aborted',
+                    'obsolete']
     SYNC_STATUS = ['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted','waiting', 'stagein']
     RED_STATUS = ['failed','aborted','broken']
     NOT_RUNNING = RED_STATUS + ['finished','done','obsolete']

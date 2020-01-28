@@ -186,7 +186,7 @@ def  get_tasks_by_url(url):
 
 
 def get_tasks(request):
-    STATUS_ORDER = ['total','running','waiting','ready','registered','assigning','submitting','paused','exhausted','done','finished','toretry','toabort','failed','broken','aborted','obsolete']
+
     FAILED = ['failed','broken','aborted','obsolete']
     NOT_RUNNING = ['done','finished','failed','broken','aborted','obsolete']
     STEPS_ORDER = ['Evgen',
@@ -250,7 +250,7 @@ def get_tasks(request):
 
     status_stat.append({'name':'active','count':running_count,'property':{'active':False,'good':False}})
     status_stat.append({'name':'good','count':not_failed_count,'property':{'active':False,'good':False}})
-    for status in STATUS_ORDER:
+    for status in ProductionTask.STATUS_ORDER:
         if status in status_dict:
             status_stat.append({'name':status,'count':status_dict[status],'property':{'active':status not in NOT_RUNNING,'good':status not in FAILED}})
     steps_stat = []

@@ -1,8 +1,11 @@
 import json
+
+from django.db.models import Count
 from django.http import HttpResponseForbidden
 import logging
 
 from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.hashtag import tasks_from_string
 from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -870,13 +873,21 @@ def deriv_request_stat(request):
 def output_hashtag_stat(request):
     try:
         hashtags_raw = request.data['hashtag']
+        task_ids = tasks_from_string(hashtags_raw)
+        status_dict = dict([(x['status'], x['count']) for x in
+              ProductionTask.objects.filter(id__in=task_ids).values('status').annotate(count=Count('id'))])
+        status_stat = []
+        for status in ProductionTask.STATUS_ORDER:
+            if status in status_dict:
+                status_stat.append({'name': status, 'count': status_dict[status]})
         hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
         hashtags = [x.lower() for x in hashtags_split if x]
         format_dict = deriv_formats({"terms": {"hashtag_list": hashtags}})
         statistics = statistic_by_request_deriv({"terms": {"hashtag_list": hashtags}}, format_dict)
         running_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['finished','done'], format_dict)
-        result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
+        result = {'steps':
+                      form_statistic_per_step(statistics,running_stat, finished_stat, False),'status':status_stat}
     except Exception as e:
 
         return Response({'error':str(e)},status=400)

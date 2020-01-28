@@ -56,8 +56,12 @@
 	span.taskheader.done 		{ background-color : darkgreen;}
     span.taskheader.finished 		{ background-color : darkgreen;	}
     span.taskheader.registered {  background-color : blue;}
-  </style>
 
+
+  </style>
+<style type="text/css">
+     @import "{% static "css/prodtask.css" %}";
+</style>
 <script type="text/javascript" src="{% static "js/_ng_dkbapp.js" %}"></script>
 <div ng-app="DKBApp">
     <div ng-view></div>

@@ -339,7 +339,10 @@
                     console.log(toSend);
                     http.post("/dkb/output_hashtag_stat/",toSend).
                      success(function(data, status, headers, config) {
-                        scope.steps= data;
+                        scope.steps= data.steps;
+                        scope.status_stat = data.status;
+                        scope.manage_url = '/reqtask/hashtags/'+scope.hashtag+'/';
+                        console.log(scope.status_stat);
                         scope.is_loading = false;
 
                      }).
