@@ -876,7 +876,7 @@ def output_hashtag_stat(request):
         task_ids = tasks_from_string(hashtags_raw)
         status_dict = dict([(x['status'], x['count']) for x in
               ProductionTask.objects.filter(id__in=task_ids).values('status').annotate(count=Count('id'))])
-        status_stat = []
+        status_stat = [{'name':'total','count':sum(status_dict.values())}]
         for status in ProductionTask.STATUS_ORDER:
             if status in status_dict:
                 status_stat.append({'name': status, 'count': status_dict[status]})
