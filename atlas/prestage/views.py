@@ -776,6 +776,8 @@ def todelete_action_in_request(request, reqid):
         #result = {'a':{'rses':[1,2],'size':1234566789}}
         to_display = [{'tape':x,'size':result[x]['size'],'total':len(result[x]['rses'])} for x in result.keys()]
         to_display.sort(key=lambda x:x['tape'])
+        total = {'tape': 'total', 'size': sum([x['size'] for x in to_display]), 'total': sum([x['total'] for x in to_display])}
+        to_display.append(total)
     except:
         return HttpResponseRedirect('/')
     request_parameters = {
