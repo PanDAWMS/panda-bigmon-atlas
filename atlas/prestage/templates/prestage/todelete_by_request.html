@@ -81,5 +81,25 @@ function formatBytes(bytes, decimals = 2) {
     </tbody>
     </table>
 
+    <table>
+    <thead>
+        <tr>
+        <th >Tape</th>
+        <th >Rules to delete</th>
+        <th >Size</th>
+    </tr>
+
+    </thead>
+    <tbody>
+    {%  for tape in result_table_dest %}
+        <tr >
+            <td>{{ tape.tape }}</td>
+            <td>{{ tape.total }}</td>
+            <td class="FormatSize">{{ tape.size }}</td>
+
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
 
 {% endblock %}

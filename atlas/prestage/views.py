@@ -764,26 +764,68 @@ def replica_to_delete(reqid):
                         result[dataset_stage.source]['rses'] = []
                     result[dataset_stage.source]['size'] += ddm.dataset_size(dataset_stage.dataset)
                     result[dataset_stage.source]['rses'].append(dataset_stage.rse)
+
                 except:
                     pass
     return result
 
 
+def replica_to_delete_dest(reqid):
+    action_steps = StepAction.objects.filter(request=reqid,action=6,status='done')
+    ddm = DDM()
+    result = {}
+    result_destination = {}
+    for action_step in action_steps:
+        for action_stage in ActionStaging.objects.filter(step_action=action_step):
+            dataset_stage = action_stage.dataset_stage
+            task = ProductionTask.objects.get(id=action_stage.task)
+            if dataset_stage.status == 'done' and task.status == 'done':
+                try:
+                    ddm.get_rule(dataset_stage.rse)
+                    if dataset_stage.source not in result:
+                        result[dataset_stage.source] = {}
+                        result[dataset_stage.source]['size'] = 0
+                        result[dataset_stage.source]['rses'] = []
+                    replica = ddm.dataset_replicas(dataset_stage.dataset)
+                    result[dataset_stage.source]['size'] += ddm.dataset_size(dataset_stage.dataset)
+                    result[dataset_stage.source]['rses'].append(dataset_stage.rse)
+                    for x in replica:
+                        if 'DATADISK' in x['rse']:
+                            site = x['rse']
+                            if site not in result_destination:
+                                result_destination[site] = {}
+                                result_destination[site]['size'] = 0
+                                result_destination[site]['rses'] = []
+                            result_destination[site]['size'] += ddm.dataset_size(dataset_stage.dataset)
+                            result_destination[site]['rses'].append(dataset_stage.rse)
+                            break
+
+                except:
+                    pass
+    return result, result_destination
+
+
 def todelete_action_in_request(request, reqid):
 
     try:
-        result = replica_to_delete(reqid)
+        result, result_dest = replica_to_delete_dest(reqid)
         #result = {'a':{'rses':[1,2],'size':1234566789}}
         to_display = [{'tape':x,'size':result[x]['size'],'total':len(result[x]['rses'])} for x in result.keys()]
         to_display.sort(key=lambda x:x['tape'])
         total = {'tape': 'total', 'size': sum([x['size'] for x in to_display]), 'total': sum([x['total'] for x in to_display])}
         to_display.append(total)
+        to_display_dest = [{'tape':x,'size':result_dest[x]['size'],'total':len(result_dest[x]['rses'])} for x in result_dest.keys()]
+        to_display_dest.sort(key=lambda x:x['tape'])
+        total2 = {'tape': 'total', 'size': sum([x['size'] for x in to_display_dest]), 'total': sum([x['total'] for x in to_display_dest])}
+        to_display_dest.append(total2)
+
     except:
         return HttpResponseRedirect('/')
     request_parameters = {
         'active_app' : 'prodtask',
         'pre_form_text' : 'Rules to delete for request ID = %s' % reqid,
         'result_table': to_display,
+        'result_table_dest': to_display_dest,
         'parent_template' : 'prodtask/_index.html',
         }
     return render(request, 'prestage/todelete_by_request.html', request_parameters)
