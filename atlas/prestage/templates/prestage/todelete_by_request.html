@@ -1,0 +1,85 @@
+{% extends parent_template %}
+
+{% load static from staticfiles %}
+
+
+{% block extra_css %}
+{{ block.super }}
+	<style type="text/css" title="currentStyle">
+	    @import "{% static "css/prodtask.css" %}";
+        {% include 'prodtask/_prodtask_css.html' %}
+    </style>
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+<script>
+
+$(document).ready(function(){
+
+        console.log('here');
+        $(".FormatSize").each(function(){
+            oldValue=$(this).html();
+            console.log($(this).html());
+            $(this).html(formatBytes(oldValue),3)
+        });
+});
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+</script>
+    <table>
+    <thead>
+        <tr>
+        <th >Tape</th>
+        <th >Rules to delete</th>
+        <th >Size</th>
+    </tr>
+
+    </thead>
+    <tbody>
+    {%  for tape in result_table %}
+        <tr >
+            <td>{{ tape.tape }}</td>
+            <td>{{ tape.total }}</td>
+            <td class="FormatSize">{{ tape.size }}</td>
+
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+
+{% endblock %}

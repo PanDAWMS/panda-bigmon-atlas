@@ -229,6 +229,11 @@ class DDM(object):
     def change_rule_lifetime(self, rule_id, lifetime):
         self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})
 
+    def get_rule(self, rule_id):
+        self.__ddm.get_replication_rule(rule_id)
+
+
+
     def delete_replication_rule(self, rule_id):
         self.__ddm.delete_replication_rule(rule_id)
 

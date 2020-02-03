@@ -746,6 +746,47 @@ def step_action_in_request(request, reqid):
 
     return render(request, 'prestage/step_action_in_request.html', request_parameters)
 
+
+def replica_to_delete(reqid):
+    action_steps = StepAction.objects.filter(request=reqid,action=6,status='done')
+    ddm = DDM()
+    result = {}
+    for action_step in action_steps:
+        for action_stage in ActionStaging.objects.filter(step_action=action_step):
+            dataset_stage = action_stage.dataset_stage
+            task = ProductionTask.objects.get(id=action_stage.task)
+            if dataset_stage.status == 'done' and task.status == 'done':
+                try:
+                    ddm.get_rule(dataset_stage.rse)
+                    if dataset_stage.source not in result:
+                        result[dataset_stage.source] = {}
+                        result[dataset_stage.source]['size'] = 0
+                        result[dataset_stage.source]['rses'] = []
+                    result[dataset_stage.source]['size'] += ddm.dataset_size(dataset_stage.dataset)
+                    result[dataset_stage.source]['rses'].append(dataset_stage.rse)
+                except:
+                    pass
+    return result
+
+
+def todelete_action_in_request(request, reqid):
+
+    try:
+        result = replica_to_delete(reqid)
+        #result = {'a':{'rses':[1,2],'size':1234566789}}
+        to_display = [{'tape':x,'size':result[x]['size'],'total':len(result[x]['rses'])} for x in result.keys()]
+        to_display.sort(key=lambda x:x['tape'])
+    except:
+        return HttpResponseRedirect('/')
+    request_parameters = {
+        'active_app' : 'prodtask',
+        'pre_form_text' : 'Rules to delete for request ID = %s' % reqid,
+        'result_table': to_display,
+        'parent_template' : 'prodtask/_index.html',
+        }
+    return render(request, 'prestage/todelete_by_request.html', request_parameters)
+
+
 def step_action(request, wstep_id):
 
     try:
