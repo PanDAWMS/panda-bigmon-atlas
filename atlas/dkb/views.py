@@ -515,7 +515,10 @@ def running_events_stat_deriv(search_dict, status, formats_dict):
                         },
                         "processed_events": {
                           "sum": {"field": "processed_events"}
-                        }
+                        },
+                          "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                          }
                       }
                     }
                   }
@@ -537,7 +540,7 @@ def running_events_stat_deriv(search_dict, status, formats_dict):
                 for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
                     result[f+' '+x.key] = {'name': f+' '+x.key, 'processed_events': x.processed_events.value,
                                'input_events': x.input_events.value,
-                               'total_tasks': x.doc_count}
+                               'total_tasks': x.doc_count, 'input_bytes': x.input_bytes.value }
 
     return result
 
@@ -799,6 +802,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             percent_done = 0.0
             percent_runnning = 0.0
             percent_pending = 0.0
+            current_stat['finished_tasks'] = 0
+            current_stat['finished_bytes'] = 0
             if current_stat["input_events"] == 0:
                 step_status = 'Unknown'
             else:
@@ -815,6 +820,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
                     running_events = running_stat[step]['input_events'] - running_stat[step][field]
                 if step in finished_stat:
                     finished_events = finished_stat[step]['input_events'] - finished_stat[step][field]
+                    current_stat['finished_tasks'] = finished_stat[step]['total_tasks']
+                    current_stat['finished_bytes'] = finished_stat[step]['input_bytes']
                 percent_runnning = float(running_events) / float(current_stat['input_events'])
                 percent_pending = float(current_stat['input_events'] - current_stat[
                     field] - running_events - finished_events) / float(current_stat['input_events'])
