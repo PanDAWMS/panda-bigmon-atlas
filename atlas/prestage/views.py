@@ -485,6 +485,7 @@ def do_staging(action_step_id, ddm):
     action_step.attempt += 1
     level = action_step.get_config('level')
     current_time = timezone.now()
+    create_follow_action = False
     if not ActionStaging.objects.filter(step_action=action_step).exists():
         action_step.status = 'failed'
         action_step.message = 'No tasks were defined'
@@ -495,6 +496,8 @@ def do_staging(action_step_id, ddm):
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
+        if task.status not in ProductionTask.NOT_RUNNING:
+            create_follow_action = True
         if dataset_stage.status == 'done':
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
@@ -542,16 +545,33 @@ def do_staging(action_step_id, ddm):
         action_step.status = 'done'
         action_step.message = 'All task started'
         action_step.done_time = current_time
+
     else:
         action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay'))
         action_step.status = 'active'
     action_step.save()
+    if action_finished and create_follow_action:
+        current_id = action_step.id
+        new_follow_step = action_step
+        new_follow_step.id = None
+        new_follow_step.action = 7
+        new_follow_step.status = 'active'
+        new_follow_step.set_config({'stage_action': current_id})
+        new_follow_step.save()
 
 
 
 
-
-
+def delete_done_staging_rules(reqids):
+    for reqid in reqids:
+        to_delete_per_tape, res2 = replica_to_delete_dest(reqid)
+        ddm = DDM()
+        rses = []
+        for x in to_delete_per_tape:
+            rses += to_delete_per_tape[x]['rses']
+        for rse in rses:
+            _logger.info("Rule %s will be deleted" % str(rse))
+            ddm.delete_replication_rule(rse)
 
 
 def activate_staging(step_action_ids):
@@ -597,8 +617,59 @@ def follow_archive_staging(step_action_ids):
             waiting_step.save()
     pass
 
+
+def follow_staged(waiting_step, ddm):
+    current_time = timezone.now()
+    action_step = StepAction.objects.get(id=waiting_step)
+    done_staging_action = StepAction.objects.get(id=int(action_step.get_config('stage_action')))
+    if not ActionStaging.objects.filter(step_action=done_staging_action).exists():
+        action_step.status = 'failed'
+        action_step.message = 'Somrthing wrong'
+        action_step.done_time = current_time
+        action_step.save()
+        return
+    action_finished = True
+    for action_stage in ActionStaging.objects.filter(step_action=done_staging_action):
+        dataset_stage = action_stage.dataset_stage
+        task = ProductionTask.objects.get(id=action_stage.task)
+        if dataset_stage.status != 'done':
+            _logger.error("Follow staging action problem %s" % str(action_step.id))
+            action_step.status = 'failed'
+            action_step.message = 'Somrthing wrong'
+            action_step.done_time = current_time
+            action_step.save()
+        if task.status not in ProductionTask.NOT_RUNNING:
+            action_finished = False
+            existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
+            if existed_rule:
+                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=5):
+                    try:
+                        ddm.change_rule_lifetime(existed_rule['id'], 15 * 86400)
+                    except Exception as e:
+                        _logger.error("Check replicas problem %s" % str(e))
+
+    if action_finished :
+        action_step.status = 'done'
+        action_step.message = 'All task started'
+        action_step.done_time = current_time
+    else:
+        action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay')*4)
+        action_step.status = 'active'
+    action_step.save()
+
+
+
 def follow_staging(step_action_ids):
-    pass
+    ddm = DDM()
+    for waiting_step in step_action_ids:
+        try:
+            follow_staged(waiting_step, ddm)
+        except Exception as e:
+            _logger.error("Check replicas problem %s" % str(e))
+            waiting_step = StepAction.objects.get(id=waiting_step)
+            waiting_step.status = 'active'
+            waiting_step.save()
+
 
 def find_action_to_execute():
     action_step_todo = StepAction.objects.filter(status='active',execution_time__lte=timezone.now())
@@ -750,7 +821,17 @@ def step_action_in_request(request, reqid):
 def replica_to_delete(reqid):
     action_steps = StepAction.objects.filter(request=reqid,action=6,status='done')
     ddm = DDM()
-    result = {}
+    slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
+    slices_done = {}
+    for slice in slices:
+        steps = list(StepExecution.objects.filter(request=reqid,slice=slice).values_list('id',flat=True))
+        if ProductionTask.objects.filter(request=reqid,step__id__in=steps,status='done').count() == ProductionTask.objects.filter(request=reqid,step__id__in=steps).count():
+            slices_done[slice.dataset]=True
+        else:
+            if slice.dataset in slices_done:
+                slices_done.pop(slice.dataset)
+    print(slices_done)
+    rse_to_delete = []
     for action_step in action_steps:
         for action_stage in ActionStaging.objects.filter(step_action=action_step):
             dataset_stage = action_stage.dataset_stage
@@ -758,16 +839,12 @@ def replica_to_delete(reqid):
             if dataset_stage.status == 'done' and task.status == 'done':
                 try:
                     ddm.get_rule(dataset_stage.rse)
-                    if dataset_stage.source not in result:
-                        result[dataset_stage.source] = {}
-                        result[dataset_stage.source]['size'] = 0
-                        result[dataset_stage.source]['rses'] = []
-                    result[dataset_stage.source]['size'] += ddm.dataset_size(dataset_stage.dataset)
-                    result[dataset_stage.source]['rses'].append(dataset_stage.rse)
+                    if task.step.slice.dataset in slices_done:
+                        rse_to_delete.append(dataset_stage.rse)
 
                 except:
                     pass
-    return result
+    return rse_to_delete
 
 
 def replica_to_delete_dest(reqid):
