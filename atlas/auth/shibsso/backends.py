@@ -20,6 +20,10 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
+import logging
+
+
+_logger = logging.getLogger('prodtaskwebui')
 
 def get_group(group_name):
     """Get the group instance present in the database.
@@ -52,24 +56,27 @@ class ShibSSOBackend(ModelBackend):
          authentication credentials are invalid.
          
         """
+        try:
+            username = request.META.get(settings.META_USERNAME)
 
-        username = request.META.get(settings.META_USERNAME)
+            if not username:
+                return
 
-        if not username:
-            return
+            email = request.META.get(settings.META_EMAIL, '')
+            firstname = request.META.get(settings.META_FIRSTNAME, '')
+            lastname = request.META.get(settings.META_LASTNAME, '')
+            groups = request.META.get(settings.META_GROUP) or ''
 
-        email = request.META.get(settings.META_EMAIL, '')
-        firstname = request.META.get(settings.META_FIRSTNAME, '')
-        lastname = request.META.get(settings.META_LASTNAME, '')
-        groups = request.META.get(settings.META_GROUP) or ''
+            #groups = map(str.strip, filter(None, groups.split(';')))
 
-        #groups = map(str.strip, filter(None, groups.split(';')))
+            groups_arr = groups.split(';')
+            groups = [ x.strip() for x in groups_arr if x ]
 
-        groups_arr = groups.split(';')
-        groups = [ x.strip() for x in groups_arr if x ]
-
-        user = ShibSSOBackend._get_updated_user(username, email,
-                                                firstname, lastname, groups)
+            user = ShibSSOBackend._get_updated_user(username, email,
+                                                        firstname, lastname, groups)
+            _logger.info("User %s authenticated"%username)
+        except Exception as e:
+            _logger.error("Problem with authentication %s" % str(e))
 
         return user
 
