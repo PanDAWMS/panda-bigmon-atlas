@@ -400,6 +400,9 @@ def statistic_by_output(search_dict, format):
                       "aggs": {
                           "input_bytes": {
                               "sum": {"field": "input_bytes"}
+                          },
+                          "input_events_datasets": {
+                              "sum": {"field": "events"}
                           }
                       }
                   },
@@ -534,7 +537,7 @@ def running_events_stat_deriv(search_dict, status, formats_dict):
         _logger.error("Problem with es deriv : %s" % (e))
         aggregs = None
 
-    if aggregs and exexute.hits.total>0:
+    if aggregs and exexute.hits.total and exexute.hits.total>0:
 
             for f in exexute.aggregations.formats.buckets:
                 for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
@@ -596,7 +599,10 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                               "aggs": {
                                 "input_bytes": {
                                   "sum": {"field": "input_bytes"}
-                                }
+                                },
+                                  "input_events_datasets": {
+                                      "sum": {"field": "primary_input_events"}
+                                  }
                               }
                             },
                             "processed_events": {
@@ -667,12 +673,18 @@ def statistic_by_request_deriv(search_dict,formats_dict):
                             duration = float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)
                         else:
                             duration = None
+                        cpu_total = 0
+                        if x.cpu_total.value:
+                            cpu_total = x.cpu_total.value
+                        input_events = x.input_events.value
+                        # if x.not_deleted.input_events_datasets.value and input_events and (x.not_deleted.input_events_datasets.value>input_events):
+                        #     input_events = x.not_deleted.input_events_datasets.value
                         result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.total_events.value,
-                                   'input_events': x.input_events.value,
+                                   'input_events': input_events,
                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                    'output_bytes':x.output.not_removed.bytes.value,
                                    'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
-                                   'total_tasks': x.doc_count, 'hs06':int(x.cpu_total.value), 'duration':duration}
+                                   'total_tasks': x.doc_count, 'hs06':int(cpu_total), 'duration':duration}
         total_result.update(result)
 
     return total_result
