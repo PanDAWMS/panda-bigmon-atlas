@@ -145,13 +145,16 @@ class TestResource(ResourceQueue):
         self.__submit(self.find_submission())
 
 
+
+
 class TapeResource(ResourceQueue):
 
-    def __init__(self, resource_name, ddm):
+    def __init__(self, resource_name, ddm, test=False):
         super().__init__(resource_name)
         self.ddm = ddm
         self.__get_tape_queue()
         self.get_limits()
+        self.is_test = test
 
 
     def __get_tape_queue(self):
@@ -196,22 +199,25 @@ class TapeResource(ResourceQueue):
                     #print(x['dataset'], rule)
                     try:
                         existed_rule = self.ddm.dataset_active_rule_by_rse(x['dataset'], rule)
-                        if not existed_rule:
-                            if not source_replica:
-                                _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
-                                                                                                   dataset=x['dataset'],
-                                                                                                   rule=rule))
-                                self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
-                                                        activity='Staging', notify='P')
-                            else:
-                                _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
-                                                                                                   dataset=x['dataset'],
-                                                                                                   rule=rule, source=source_replica))
-                                self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
-                                                        activity='Staging', notify='P', source_replica_expression=source_replica)
-                        staging =  DatasetStaging.objects.get(id=x['id'])
-                        staging.status = 'staging'
-                        staging.save()
+                        if not self.is_test:
+                            if not existed_rule:
+                                if not source_replica:
+                                    _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
+                                                                                                       dataset=x['dataset'],
+                                                                                                       rule=rule))
+                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                            activity='Staging', notify='P')
+                                else:
+                                    _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
+                                                                                                       dataset=x['dataset'],
+                                                                                                       rule=rule, source=source_replica))
+                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                                            activity='Staging', notify='P', source_replica_expression=source_replica)
+                            staging =  DatasetStaging.objects.get(id=x['id'])
+                            staging.status = 'staging'
+                            staging.save()
+                        else:
+                            print(x['dataset'], rule, source_replica)
                     except Exception as e:
                         _logger.error("Problem during submission {resource}: {error}".format(resource=self.resource_name,
                                                                    error=str(e)))
@@ -227,16 +233,31 @@ class TapeResource(ResourceQueue):
         self.__submit(self.find_submission())
 
 
+class TapeResourceProcessed(TapeResource):
+    def __init__(self, resource_name, ddm, running_level_processed, test=False):
+        super().__init__(resource_name, ddm, test)
+        self.running_level_processed = running_level_processed
+
+    def running_level(self):
+        return self.running_level_processed
+
 class TestTapeResource(TapeResource):
-    def __init__(self, resource_name, limits):
+    def __init__(self, resource_name, ddm, limits):
         self.limits = limits
-        super().__init__(resource_name)
+        super().__init__(resource_name, ddm)
 
 
     def get_limits(self):
-        self.minimum_level = self.limits['minimum_level']
-        self.maximum_level = self.limits['maximum_level']
-        self.continious_percentage = self.limits['continious_percentage']
+        limits_config = ActionDefault.objects.get(type='Tape',name=self.resource_name)
+        self.minimum_level = limits_config.get_config('minimum_level')
+        self.maximum_level = limits_config.get_config('maximum_level')
+        self.continious_percentage =limits_config.get_config('continious_percentage')
+        if self.limits.get('minimum_level'):
+            self.minimum_level = self.limits['minimum_level']
+        if self.limits.get('maximum_level'):
+            self.maximum_level = self.limits['maximum_level']
+        if self.limits.get('continious_percentage'):
+            self.continious_percentage = self.limits['continious_percentage']
 
 
 def start_stagind_task(task):
@@ -270,7 +291,19 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
         return False
 
 def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None):
-
+    step = task.step
+    waiting_parameters_from_step = None
+    if step.get_task_config('PDAParams'):
+        try:
+            waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
+            if waiting_parameters_from_step.get('level', None):
+                level = int(waiting_parameters_from_step.get('level'))
+                if level > 100:
+                    level = 100
+                elif level < -1:
+                    level = 0
+        except Exception as e:
+            _logger.error(" %s" % str(e))
     if not lifetime:
         lifetime = config['lifetime']
     if not DatasetStaging.objects.filter(dataset=input_dataset,status__in=DatasetStaging.ACTIVE_STATUS).exists():
@@ -285,16 +318,19 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
             dataset_staging.dataset = input_dataset
         dataset_staging.total_files = ddm.dataset_metadata(input_dataset)['length']
         dataset_staging.staged_files = 0
-        dataset_staging.status = 'queued'
+        if waiting_parameters_from_step and waiting_parameters_from_step.get('nowait',False):
+            perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas)
+            dataset_staging.status = 'staging'
+            dataset_staging.start_time = timezone.now()
+            dataset_staging.save()
+        else:
+            dataset_staging.status = 'queued'
         if source:
             dataset_staging.source = source
         dataset_staging.start_time = timezone.now()
         dataset_staging.save()
 
-        # if perfom_dataset_stage(input_dataset,ddm,rule,lifetime,replicas):
-        #     dataset_staging.status = 'staging'
-        #     dataset_staging.start_time = timezone.now()
-        #     dataset_staging.save()
+
     else:
         dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
@@ -307,20 +343,8 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
         #todo add config
         action_step.create_time = timezone.now()
         action_step.set_config({'delay':config['delay']})
-        step = task.step
         action_step.step = step.id
         level = None
-        if step.get_task_config('PDAParams'):
-            try:
-                waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
-                if waiting_parameters_from_step.get('level',None):
-                    level = int(waiting_parameters_from_step.get('level'))
-                    if level> 100:
-                        level= 100
-                    elif level < -1:
-                        level = 0
-            except Exception as e:
-                _logger.error(" %s" % str(e))
         if not level:
             level = config['level']
         if level == -1:
@@ -356,6 +380,31 @@ def submit_all_tapes():
         if tape.get_config('active'):
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 resource_tape = TapeResource(tape.name,ddm)
+                resource_tape.do_submission()
+
+def submit_all_tapes_processed():
+    ddm = DDM()
+    active_staged = find_active_staged()
+    for tape in ActionDefault.objects.filter(type='Tape'):
+        if tape.get_config('active'):
+            if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
+                active_for_tape = [active_staged[x] for x in active_staged.keys() if
+                                   active_staged[x]['tape'] == tape.name]
+                total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
+                resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted)
+                resource_tape.do_submission()
+
+
+def test_tape_processed(tape_name, test):
+    ddm = DDM()
+    active_staged = find_active_staged()
+    for tape in ActionDefault.objects.filter(type='Tape'):
+        if tape.get_config('active') and tape.name==tape_name:
+            if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
+                active_for_tape = [active_staged[x] for x in active_staged.keys() if
+                                   active_staged[x]['tape'] == tape.name]
+                total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
+                resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted,test)
                 resource_tape.do_submission()
 
 def create_prestage(task,ddm,rule, input_dataset,config, special=False):
@@ -573,6 +622,28 @@ def delete_done_staging_rules(reqids):
             _logger.info("Rule %s will be deleted" % str(rse))
             ddm.delete_replication_rule(rse)
 
+def find_active_staged():
+    active_stage_actions = list(StepAction.objects.filter(action=6,status='active'))
+    followed_actions = StepAction.objects.filter(action=7,status='active')
+    not_done_action_ids = [x.get_config('stage_action') for x in followed_actions]
+    not_done_action = list(StepAction.objects.filter(id__in=not_done_action_ids))
+    all_action =  active_stage_actions + not_done_action
+    result = {}
+    for action in all_action:
+        for action_stage in ActionStaging.objects.filter(step_action=action):
+            dataset_stage = action_stage.dataset_stage
+            task = ProductionTask.objects.get(id=action_stage.task)
+            if (dataset_stage.status not in ['queued']) and dataset_stage.source:
+                if dataset_stage.dataset not in result:
+                    result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source, 'total':dataset_stage.total_files}
+                if task.total_files_finished is None:
+                    files_finished = 0
+                else:
+                    files_finished = task.total_files_finished
+                result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],dataset_stage.staged_files,files_finished])
+    return result
+
+
 
 def activate_staging(step_action_ids):
     ddm = DDM()
@@ -744,14 +815,17 @@ def prestage_by_tape(request, reqid=None):
 def prestage_by_tape_with_limits(request, reqid=None):
     try:
 
-        total = {'files_queued':0,'files_staged':0, 'files_staging':0}
+        total = {'files_queued':0,'files_staged':0, 'files_staging':0, 'files_processed':0,'files_total_submitted':0}
         result = []
         tapes = list(ActionDefault.objects.filter(type='Tape').order_by('id'))
+        active_staged = find_active_staged()
         for tape in tapes:
             files_queued = 0
             files_staged = 0
             files_staging = 0
-
+            active_for_tape = [active_staged[x] for x in active_staged.keys() if active_staged[x]['tape']==tape.name]
+            processed = sum([x['value'] for x in active_for_tape])
+            total_submitted = sum([x['total'] for x in active_for_tape])
             datasets = DatasetStaging.objects.filter(source=tape.name,status__in=['staging', 'queued'])
             for dataset in datasets:
                 if dataset.status == 'queued':
@@ -762,11 +836,14 @@ def prestage_by_tape_with_limits(request, reqid=None):
             result.append({'name':tape.name,'minimum_level':tape.get_config('minimum_level'),
                            'maximum_level':tape.get_config('maximum_level'),
                            'continious_percentage':tape.get_config('continious_percentage'),
-                           'files_queued':files_queued,'files_staged':files_staged,'files_staging':files_staging})
+                           'files_queued':files_queued,'files_staged':files_staged,'files_staging':files_staging,
+                           'active':tape.get_config('active'),
+                           'files_processed':processed,'files_total_submitted':total_submitted})
             total['files_queued'] += files_queued
             total['files_staged'] += files_staged
             total['files_staging'] += files_staging
-
+            total['files_processed'] += processed
+            total['files_total_submitted'] += total_submitted
         result.append({'name':'total','files_queued':total['files_queued'],'files_staged':total['files_staged'],
                            'files_staging':total['files_staging'] })
     except Exception as e:

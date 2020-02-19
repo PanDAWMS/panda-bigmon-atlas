@@ -2140,3 +2140,51 @@ def obsolete_deleted_tasks(production_request):
         if to_delete:
             print(task.id,task.name)
             _do_deft_action('mborodin', int(task.id), 'obsolete')
+
+
+def fix_fahui_error(request_id, tasks):
+    request = TRequest.objects.get(reqid=request_id)
+    cloned_slices = [x.cloned_from_id for x in InputRequestList.objects.filter(request=request) if not(x.is_hide)]
+    request_to_approve = False
+    tasks.sort()
+    fixed_slices  = []
+    print('Request:',request_id)
+    for task_id in tasks:
+        task = ProductionTask.objects.get(request=request, id=task_id)
+        slice = task.step.slice
+        if slice.id in cloned_slices:
+            print('Aready cloned:',request.reqid)
+            continue
+        if slice.id in fixed_slices:
+            continue
+        step_execs = StepExecution.objects.filter(request=request, slice=slice)
+        ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+        if request.request_type == 'MC':
+            STEPS = StepExecution.STEPS
+        else:
+            STEPS = [''] * len(StepExecution.STEPS)
+        step_as_in_page = form_step_in_page(ordered_existed_steps, STEPS, parent_step)
+        step_index = step_as_in_page.index(task.step)
+        # print(slice.slice,step_index)
+        fixed_slices.append(slice.id)
+        new_slice = clone_slices(request.reqid,request.reqid,[slice.slice],step_index,True, True)[0]
+        new_steps = StepExecution.objects.filter(request=request, slice=InputRequestList.objects.get(request=request,slice=new_slice))
+        for new_step in new_steps:
+            new_step.status = 'Approved'
+            new_step.save()
+        request_to_approve = True
+    if request_to_approve:
+        set_request_status('cron', request.reqid, 'approved', 'Automatic openended approve',
+                           'Request was automatically approved')
+
+
+def fix_clone_for_step(request):
+    for slice in InputRequestList.objects.filter(request=request):
+        if not slice.is_hide:
+            step_execs = StepExecution.objects.filter(request=request, slice=slice)
+            ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+            if not slice.cloned_from and parent_step:
+                if(parent_step.request==slice.request):
+                    print(slice.slice,parent_step.slice.slice)
+                    slice.cloned_from = parent_step.slice
+                    slice.save()
