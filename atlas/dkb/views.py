@@ -877,6 +877,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             percent_done = 0.0
             percent_runnning = 0.0
             percent_pending = 0.0
+            percent_not_started = 100.0
             current_stat['finished_tasks'] = 0
             current_stat['finished_bytes'] = 0
             if current_stat["input_events"] == 0:
@@ -897,9 +898,10 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
                     finished_events = finished_stat[step]['input_events'] - finished_stat[step][field]
                     current_stat['finished_tasks'] = finished_stat[step]['total_tasks']
                     current_stat['finished_bytes'] = finished_stat[step]['input_bytes']
-                percent_runnning = float(running_events) / float(current_stat['input_events'])
-                percent_pending = float(current_stat['input_events'] - current_stat[
+                percent_runnning = coeff * float(running_events) / float(current_stat['input_events'])
+                percent_pending = coeff *  float(current_stat['input_events'] - current_stat[
                     field] - running_events - finished_events) / float(current_stat['input_events'])
+                percent_not_started = (1 - coeff)
                 if percent_pending < 0:
                     percent_pending = 0
 
@@ -908,6 +910,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             current_stat['percent_done'] = percent_done * 100
             current_stat['percent_runnning'] = percent_runnning * 100
             current_stat['percent_pending'] = percent_pending * 100
+            current_stat['not_started'] = percent_not_started * 100
             result.append(current_stat)
     result.sort(key=lambda x: -x['input_events'])
     return result

@@ -18,7 +18,7 @@
         <tr><td> Input events (running tasks)</td></tr>
         <tr><td> Processed events</td></tr>
         <tr><td> Output events</td> </tr>
-        <tr><td> Running/Pending</td></tr>
+        <tr><td> Running/Pending/Not started</td></tr>
         <tr><td> Input bytes (running tasks)</td></tr>
         <tr><td> Input bytes (done tasks)</td></tr>
         <tr><td> Output bytes</td></tr>
@@ -35,7 +35,7 @@
                 <tr><td><span  ng-show="step.input_not_removed_tasks!=step.total_tasks">~</span>{{ step.input_events | number:0 }}</td></tr>
                 <tr><td>{{ step.processed_events | number:0 }}</td></tr>
                 <tr><td>{{ step.total_events | number:0 }}</td></tr>
-                <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%</td></tr>
+                <tr><td>{{ step.percent_runnning | number:0 }}%/{{ step.percent_pending | number:0 }}%/{{ step.not_started | number:0 }}%</td></tr>
                 <tr><td>{{ step.input_bytes | myfilesize }}  ( {{ step.input_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.finished_bytes | myfilesize }}  ( {{ step.finished_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
