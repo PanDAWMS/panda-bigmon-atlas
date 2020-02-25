@@ -492,6 +492,61 @@ def get_format_by_request(search_dict):
             result.append(x.key)
     return result
 
+
+def number_of_tasks(search_dict, formats_dict):
+
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    search_dict                  ]
+                }
+              },
+              "aggs": {
+                "formats": {
+                  "filters": {
+                    "filters":formats_dict},
+                  "aggs": {
+                    "amitag": {
+                      "terms": {"field": "ctag"},
+                      "aggs": {
+                        "input_events": {
+                          "sum": {"field": "input_events"}
+                        },
+                        "processed_events": {
+                          "sum": {"field": "processed_events"}
+                        },
+                          "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                          }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+    result = {}
+
+    try:
+        aggregs = es_search.update_from_dict(query)
+        exexute = aggregs.execute()
+    except Exception as e:
+        _logger.error("Problem with es deriv : %s" % (e))
+        aggregs = None
+
+    if aggregs and exexute.hits.total and exexute.hits.total>0:
+
+            for f in exexute.aggregations.formats.buckets:
+                for x in exexute.aggregations.formats.buckets[f].amitag.buckets:
+                    result[f+' '+x.key] = {'name': f+' '+x.key, 'processed_events': x.processed_events.value,
+                               'input_events': x.input_events.value,
+                               'total_tasks': x.doc_count, 'input_bytes': x.input_bytes.value }
+
+    return result
+
+
 def running_events_stat_deriv(search_dict, status, formats_dict):
 
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
@@ -800,7 +855,7 @@ def statistic_by_step(search_dict):
 
 
 
-def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=True):
+def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=True, steps_tasks={}):
     result = []
     if mc_steps:
         steps = MCPriority.STEPS
@@ -810,7 +865,15 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
         field = "processed_events"
     for step in steps:
         if step in statistics:
+            coeff = 1.0
             current_stat = statistics[step]
+            if steps_tasks and (step in steps_tasks):
+                    current_stat['total_tasks_db'] = sum([steps_tasks[step][x] for x in steps_tasks[step]])
+                    coeff = current_stat['total_tasks'] / current_stat['total_tasks_db']
+                    if coeff > 1:
+                        coeff = 1
+            else:
+                current_stat['total_tasks_db'] = current_stat['total_tasks']
             percent_done = 0.0
             percent_runnning = 0.0
             percent_pending = 0.0
@@ -819,7 +882,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             if current_stat["input_events"] == 0:
                 step_status = 'Unknown'
             else:
-                percent_done = float(current_stat[field]) / float(current_stat['input_events'])
+                percent_done = coeff * float(current_stat[field]) / float(current_stat['input_events'])
                 if (percent_done > 0.90):
                     step_status = 'StepDone'
                 elif (percent_done > 0.10):
@@ -839,6 +902,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
                     field] - running_events - finished_events) / float(current_stat['input_events'])
                 if percent_pending < 0:
                     percent_pending = 0
+
+
             current_stat['step_status'] = step_status
             current_stat['percent_done'] = percent_done * 100
             current_stat['percent_runnning'] = percent_runnning * 100
@@ -893,6 +958,15 @@ def output_hashtag_stat(request):
     try:
         hashtags_raw = request.data['hashtag']
         task_ids = tasks_from_string(hashtags_raw)
+        steps={}
+        tasks = list(ProductionTask.objects.filter(id__in=task_ids).values('status','ami_tag','output_formats'))
+        for task in tasks:
+            step_name = task['output_formats']+' '+task['ami_tag']
+            if step_name not in steps:
+                steps[step_name] = {}
+            if task['status'] not in steps[step_name]:
+                steps[step_name][task['status']] = 0
+            steps[step_name][task['status']] += 1
         status_dict = dict([(x['status'], x['count']) for x in
               ProductionTask.objects.filter(id__in=task_ids).values('status').annotate(count=Count('id'))])
         status_stat = [{'name':'total','count':sum(status_dict.values())}]
@@ -906,7 +980,7 @@ def output_hashtag_stat(request):
         running_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['finished','done'], format_dict)
         result = {'steps':
-                      form_statistic_per_step(statistics,running_stat, finished_stat, False),'status':status_stat}
+                      form_statistic_per_step(statistics,running_stat, finished_stat, False, steps),'status':status_stat}
     except Exception as e:
 
         return Response({'error':str(e)},status=400)

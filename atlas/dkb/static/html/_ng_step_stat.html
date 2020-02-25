@@ -11,15 +11,15 @@
      </tbody>
     </table>
 </a>
-  <div  > Tasks with at least 'ready' status('staging' and 'registered' are not included):</div>
+  <!-- <div  > Tasks with at least 'ready' status('staging' and 'registered' are not included):</div> -->
 <table>
         <tbody>
-        <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks</td></tr>
-        <tr><td> Input events</td></tr>
+        <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks total (running)</td></tr>
+        <tr><td> Input events (running tasks)</td></tr>
         <tr><td> Processed events</td></tr>
         <tr><td> Output events</td> </tr>
         <tr><td> Running/Pending</td></tr>
-        <tr><td> Input bytes</td></tr>
+        <tr><td> Input bytes (running tasks)</td></tr>
         <tr><td> Input bytes (done tasks)</td></tr>
         <tr><td> Output bytes</td></tr>
         <tr><td> Average HS06 per event</td></tr>
@@ -31,7 +31,7 @@
                 <table><tbody>
                 <tr><td><b>{{ step.name }} <span class="{{  step.step_status }}">{{ step.percent_done | number:2}}%</span>
                 </b></td></tr>
-                <tr><td>{{ step.total_tasks | number:0 }}</td></tr>
+                <tr><td>{{ step.total_tasks_db | number:0 }} ({{ step.total_tasks | number:0 }})</td></tr>
                 <tr><td><span  ng-show="step.input_not_removed_tasks!=step.total_tasks">~</span>{{ step.input_events | number:0 }}</td></tr>
                 <tr><td>{{ step.processed_events | number:0 }}</td></tr>
                 <tr><td>{{ step.total_events | number:0 }}</td></tr>
