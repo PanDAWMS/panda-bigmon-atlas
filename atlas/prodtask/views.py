@@ -1514,9 +1514,10 @@ def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
 
     def get_approve_status(ste_task_list,slice=None):
+        return_status = {'submitted': 'not_submitted', 'original': 'changed', 'split': 'no'}
         if slice:
             if slice.is_hide:
-                return 'hidden'
+                return {'submitted': 'hidden'}
         return_status = {'submitted':'not_submitted','original':'changed','split':'no'}
         exist_approved = False
         exist_not_approved = False
