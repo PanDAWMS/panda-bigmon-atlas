@@ -800,7 +800,7 @@ def sync_old_tasks(task_number, time_interval = 14400):
 def sync_deft_jedi_task_from_db(deft_task,t_task):
     jedi_values = {}
     _logger.info("Sync task between deft and jedi task id:%s"%str(deft_task.id))
-    sync_keys = ['status', 'total_done_jobs', 'start_time', 'total_req_jobs','total_events']
+    sync_keys = ['status', 'total_done_jobs', 'start_time', 'total_req_jobs','total_events','current_priority']
     for item in sync_keys:
         jedi_values.update({item:t_task[item]})
     #post production status
@@ -848,7 +848,7 @@ def sync_deft_jedi_task(task_id):
     deft_task = ProductionTask.objects.get(id=task_id)
     if deft_task.request_id != 300:
         t_task =  TTask.objects.filter(id=task_id).values('status','total_done_jobs','start_time','total_req_jobs',
-                                                       'total_events')[0]
+                                                       'total_events','current_priority')[0]
         sync_deft_jedi_task_from_db(deft_task, t_task)
     else:
         sync_deft_user_task(task_id)

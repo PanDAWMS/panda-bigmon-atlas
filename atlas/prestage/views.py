@@ -69,6 +69,9 @@ class ResourceQueue(object):
     def do_submission(self):
         pass
 
+    def print_queue(self):
+        pass
+
     def find_submission(self):
         running_level = self.running_level()
         _logger.info("Find queued to submit {resource}: {maximum}/{minimum}/{percent} - running/queued "
@@ -161,7 +164,16 @@ class TapeResource(ResourceQueue):
         queued_staging_request = DatasetStaging.objects.filter(source=self.resource_name,status='queued').values()
         self.total_queued = 0
         for x in queued_staging_request:
+            dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
+            priority = 0
+            for dataset_staging in dataset_stagings:
+                if dataset_staging.step_action.status == 'active':
+                    task = ProductionTask.objects.get(id=dataset_staging.task)
+                    priority = task.current_priority
+                    if not priority:
+                        priority = task.priority
             x['value'] = x['total_files']
+            x['priority'] = priority
             self.total_queued += x['value']
             self.queue.append(x)
 
@@ -178,6 +190,10 @@ class TapeResource(ResourceQueue):
         self.minimum_level = limits_config.get_config('minimum_level')
         self.maximum_level = limits_config.get_config('maximum_level')
         self.continious_percentage =limits_config.get_config('continious_percentage')
+
+
+    def priorities_queue(self):
+        self.queue.sort(key=lambda x:-x['priority'])
 
     def __submit(self, submission_list):
         #print(submission_list)
@@ -232,6 +248,11 @@ class TapeResource(ResourceQueue):
     def do_submission(self):
         self.__submit(self.find_submission())
 
+
+    def print_queue(self):
+        self.priorities_queue()
+        for x in self.queue:
+            print(x)
 
 class TapeResourceProcessed(TapeResource):
     def __init__(self, resource_name, ddm, running_level_processed, test=False):
@@ -405,7 +426,7 @@ def test_tape_processed(tape_name, test):
                                    active_staged[x]['tape'] == tape.name]
                 total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted,test)
-                resource_tape.do_submission()
+                resource_tape.print_queue()
 
 def create_prestage(task,ddm,rule, input_dataset,config, special=False):
     #check that's only Tape replica
