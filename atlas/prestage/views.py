@@ -1020,6 +1020,8 @@ def step_action(request, wstep_id):
                 staged_files = staging.dataset_stage.staged_files
                 rse = staging.dataset_stage.rse
                 task = staging.task
+                if ':' not in dataset:
+                    dataset = '{0}:{1}'.format(dataset.split('.')[0],dataset)
                 link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
                 rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(
                     rule_id=rse, rule_rse=action_step.get_config('rule'))
