@@ -884,6 +884,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
                 step_status = 'Unknown'
             else:
                 percent_done = coeff * float(current_stat[field]) / float(current_stat['input_events'])
+                if percent_done>=00.9999 and (current_stat[field] < current_stat['input_events']):
+                    percent_done=00.9999
                 if (percent_done > 0.90):
                     step_status = 'StepDone'
                 elif (percent_done > 0.10):
