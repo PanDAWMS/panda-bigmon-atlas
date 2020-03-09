@@ -24,7 +24,7 @@ from ..prodtask.helper import form_request_log
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
 
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
+from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 from functools import reduce
 
