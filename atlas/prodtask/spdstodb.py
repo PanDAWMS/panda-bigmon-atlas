@@ -10,7 +10,7 @@ from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions
 
 import atlas.gspread as gspread
 from datetime import datetime
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, Ttrfconfig, RequestStatus, ETAGRelease
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, RequestStatus, ETAGRelease
 #from django.core.exceptions import ObjectDoesNotExist
 import urllib.request, urllib.error, urllib.parse
 
@@ -131,7 +131,7 @@ def fill_template(step_name, tag, priority, formats=None, ram=None):
                 if (st.status == 'Approved') or (st.status == 'dummy'):
                     return st
 
-            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+            trtf = None
             if trtf:
                 tr = trtf[0]
                 if(formats):
@@ -460,30 +460,6 @@ class UrFromSpds:
 
         
               
-   
-    @staticmethod
-    def create_template(stepname, tag, priority):
-        st = {}
-        try:
-            st = StepTemplate.objects.all().filter(ctag=tag)[0]
-        except:
-            pass
-        finally:
-            if st:
-                return st
-            else:
-                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
-                tr = trtf[0]
-                print(tr.lparams)
-                st = dict(step=stepname, #def_time=timezone.now(),
-                           status='Approved',
-                                               ctag=tag, priority=priority,
-                                               cpu_per_event=int(tr.cpu_per_event), memory=int(tr.memory),
-                                               output_formats=tr.formats, trf_name=tr.trf,
-                                               lparams=tr.lparams, vparams=tr.vparams, swrelease=tr.trfv)
-                return st 
-
- 
 
     
     

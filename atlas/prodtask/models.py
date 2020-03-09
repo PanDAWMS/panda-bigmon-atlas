@@ -283,40 +283,40 @@ class StepTemplate(models.Model):
     class Meta:
         #db_table = u'T_STEP_TEMPLATE'
         db_table = 'T_STEP_TEMPLATE'
+#
+# class Ttrfconfig(models.Model):
+#     tag = models.CharField(max_length=1, db_column='TAG', default='-')
+#     cid = models.DecimalField(decimal_places=0, max_digits=5, db_column='CID', primary_key=True, default=0)
+#     trf = models.CharField(max_length=80, db_column='TRF', null=True, default='transformation')
+#     lparams = models.CharField(max_length=1024, db_column='LPARAMS', null=True, default='parameter list')
+#     vparams = models.CharField(max_length=4000, db_column='VPARAMS', null=True, default='')
+#     trfv = models.CharField(max_length=40, db_column='TRFV', null=True)
+#     status = models.CharField(max_length=12, db_column='STATUS', null=True)
+#     ami_flag = models.DecimalField(decimal_places=0, max_digits=10, db_column='AMI_FLAG', null=True)
+#     createdby = models.CharField(max_length=60, db_column='CREATEDBY', null=True)
+#     input = models.CharField(max_length=20, db_column='INPUT', null=True)
+#     step = models.CharField(max_length=12, db_column='STEP', null=True)
+#     formats = models.CharField(max_length=256, db_column='FORMATS', null=True)
+#     cache = models.CharField(max_length=32, db_column='CACHE', null=True)
+#     cpu_per_event = models.DecimalField(decimal_places=0, max_digits=5, db_column='CPU_PER_EVENT', null=True, default=1)
+#     memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY', default=1000)
+#     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', default=100)
+#     events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB', default=1000)
+#
+#
+#     class Meta:
+#         app_label = 'grisli'
+#         db_table = 'T_TRF_CONFIG'
 
-class Ttrfconfig(models.Model):
-    tag = models.CharField(max_length=1, db_column='TAG', default='-')
-    cid = models.DecimalField(decimal_places=0, max_digits=5, db_column='CID', primary_key=True, default=0)
-    trf = models.CharField(max_length=80, db_column='TRF', null=True, default='transformation')
-    lparams = models.CharField(max_length=1024, db_column='LPARAMS', null=True, default='parameter list')
-    vparams = models.CharField(max_length=4000, db_column='VPARAMS', null=True, default='')
-    trfv = models.CharField(max_length=40, db_column='TRFV', null=True)
-    status = models.CharField(max_length=12, db_column='STATUS', null=True)
-    ami_flag = models.DecimalField(decimal_places=0, max_digits=10, db_column='AMI_FLAG', null=True)
-    createdby = models.CharField(max_length=60, db_column='CREATEDBY', null=True)
-    input = models.CharField(max_length=20, db_column='INPUT', null=True)
-    step = models.CharField(max_length=12, db_column='STEP', null=True)
-    formats = models.CharField(max_length=256, db_column='FORMATS', null=True)
-    cache = models.CharField(max_length=32, db_column='CACHE', null=True)
-    cpu_per_event = models.DecimalField(decimal_places=0, max_digits=5, db_column='CPU_PER_EVENT', null=True, default=1)
-    memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY', default=1000)
-    priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', default=100)
-    events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB', default=1000)
-
-
-    class Meta:
-        app_label = 'grisli'
-        db_table = 'T_TRF_CONFIG'
-
-class TDataFormatAmi(models.Model):
-    format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
-    description = models.CharField(max_length=256, db_column='DESCRIPTION')
-    status = models.CharField(max_length=8, db_column='STATUS')
-    last_modified = models.DateTimeField(db_column='LASTMODIFIED')
-
-    class Meta:
-        app_label = 'grisli'
-        db_table = 'T_DATA_FORMAT_AMI'
+# class TDataFormatAmi(models.Model):
+#     format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
+#     description = models.CharField(max_length=256, db_column='DESCRIPTION')
+#     status = models.CharField(max_length=8, db_column='STATUS')
+#     last_modified = models.DateTimeField(db_column='LASTMODIFIED')
+#
+#     class Meta:
+#         app_label = 'grisli'
+#         db_table = 'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=160, db_column='NAME', primary_key=True)

@@ -21,7 +21,7 @@ from .views import form_existed_step_list, form_step_in_page, fill_dataset, make
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .models import StepExecution, InputRequestList, TRequest, Ttrfconfig, ProductionTask, ProductionDataset, \
+from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 from functools import reduce
 
@@ -33,7 +33,7 @@ def tag_info(request, tag_name):
     if request.method == 'GET':
         results = {'success':False}
         try:
-            trtf = Ttrfconfig.objects.all().filter(tag=tag_name[0], cid=int(tag_name[1:]))
+            trtf = None
             if trtf:
                 results.update({'success':True,'name':tag_name,'output':trtf[0].formats,'transformation':trtf[0].trf,
                                 'input':trtf[0].input,'step':trtf[0].step})

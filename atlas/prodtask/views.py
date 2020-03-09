@@ -37,7 +37,7 @@ from ..prodtask.ddm_api import find_dataset_events
 
 import atlas.datatables as datatables
 
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, Ttrfconfig, ProductionTask, \
+from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
     OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
 from .spdstodb import fill_template
@@ -112,7 +112,7 @@ def find_missing_tags(tags):
             if int(tag[1:])==9999:
                 return_list.append(tag)
             else:
-                trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
+                trtf = None
                 if not trtf:
                     if (tag[0]=='r') and (int(tag[1:])<6000):
                         return_list.append(tag)
@@ -507,9 +507,6 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
     return error_slices,no_action_slices
 
 
-def get_step_input_type(ctag):
-    trtf = Ttrfconfig.objects.all().filter(tag=ctag.strip()[0], cid=int(ctag.strip()[1:]))[0]
-    return trtf.input
 
 
 def filter_mc_campaign(cur_request, tasks):
@@ -1294,15 +1291,8 @@ def find_skipped_dataset(DSID,job_option,tags,data_type):
 
 
 def find_old_double_trf(tags):
-    double_trf_tags = set()
-    for tag in tags:
-        try:
-            trtf = Ttrfconfig.objects.all().filter(tag=tag.strip()[0], cid=int(tag.strip()[1:]))
-            if ',' in trtf[0].trf:
-                double_trf_tags.add(tag)
-        except:
-            pass
-    return list(double_trf_tags)
+
+    return None
 
 
 def step_validation(slice_steps):
