@@ -339,13 +339,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
             dataset_staging.dataset = input_dataset
         dataset_staging.total_files = ddm.dataset_metadata(input_dataset)['length']
         dataset_staging.staged_files = 0
-        if waiting_parameters_from_step and waiting_parameters_from_step.get('nowait',False):
-            perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas)
-            dataset_staging.status = 'staging'
-            dataset_staging.start_time = timezone.now()
-            dataset_staging.save()
-        else:
-            dataset_staging.status = 'queued'
+        dataset_staging.status = 'queued'
         if source:
             dataset_staging.source = source
         dataset_staging.start_time = timezone.now()
@@ -355,6 +349,11 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     else:
         dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
+    if dataset_staging.status == 'queued' and waiting_parameters_from_step and waiting_parameters_from_step.get('nowait', False):
+        perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas)
+        dataset_staging.status = 'staging'
+        dataset_staging.start_time = timezone.now()
+        dataset_staging.save()
     # Create new action
     if StepAction.objects.filter(step=task.step_id,action = 6,status__in=['active','executing']).exists():
         action_step = StepAction.objects.filter(step=task.step_id,action = 6,status__in=['active','executing']).last()
@@ -486,11 +485,14 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
     action_step.attempt += 1
     step = StepExecution.objects.get(id=action_step.step)
     special = False
+    idds = False
     if step.get_task_config('PDAParams'):
         try:
             waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
             if waiting_parameters_from_step.get('special'):
                 special = True
+            if waiting_parameters_from_step.get('idds'):
+                idds = True
         except Exception as e:
             _logger.error(" %s" % str(e))
     production_request = step.request
@@ -511,15 +513,21 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
                 if check_archive:
+                    config = ActionDefault.objects.get(name='active_archive_staging').get_config()
+                else:
+                    ActionDefault.objects.get(name='active_staging').get_config()
+                if idds:
+                    config['level'] = 1
+                if check_archive:
                     input_dataset = find_archive_dataset(task.input_dataset,ddm)
                     if input_dataset:
                         send_use_archive_task(task)
-                        create_prestage(task, ddm, rule, input_dataset, ActionDefault.objects.get(name='active_archive_staging').get_config(), special)
+                        create_prestage(task, ddm, rule, input_dataset, config, special)
                         create_follow_prestage_action(task)
                     else:
                         fail_action = True
                 else:
-                    create_prestage(task,ddm,rule,task.input_dataset, ActionDefault.objects.get(name='active_staging').get_config(),special)
+                    create_prestage(task,ddm,rule,task.input_dataset,config,special)
             except Exception as e:
                 _logger.error("Check replicas problem %s" % str(e))
                 finish_action = False
@@ -660,7 +668,7 @@ def find_active_staged():
                 if task.total_files_finished is None:
                     files_finished = 0
                 else:
-                    files_finished = task.total_files_finished
+                    files_finished = task.total_files_used
                 result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],dataset_stage.staged_files,files_finished])
     return result
 
