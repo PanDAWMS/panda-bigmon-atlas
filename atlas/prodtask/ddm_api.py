@@ -5,7 +5,7 @@ import os
 from rucio.common.exception import DataIdentifierNotFound
 
 from ..prodtask.models import ProductionDataset, ProductionTask
-from ..getdatasets.models import ProductionDatasetsExec, TaskProdSys1
+from ..getdatasets.models import  TaskProdSys1
 from ..settings import dq2client as dq2_settings
 from rucio.client import Client
 
@@ -20,8 +20,8 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
         return_list = []
         datasets_prodsys1_db = []
         datasets_prodsys2_db = list(ProductionDataset.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).filter(status__iexact = 'done').values())
-        if not datasets_prodsys2_db:
-            datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = 'deleted').values())
+        #if not datasets_prodsys2_db:
+        #    datasets_prodsys1_db = list(ProductionDatasetsExec.objects.extra(where=['name like %s'], params=[dataset_pattern.replace('*','%')]).exclude(status__iexact = 'deleted').values())
         patterns_for_container = set()
         dataset_dict = {}
         for current_dataset in datasets_prodsys1_db:
@@ -299,7 +299,13 @@ class DDM(object):
                 return rule
         return []
 
-
+    def active_staging_rule(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        for rule in rules:
+            if rule['activity'] == 'Staging':
+                return rule['id']
+        return None
 
     def find_disk_for_tape(self, tape_rse):
         rses = [x for x in list(self.list_rses('type=DATADISK')) if x['rse'].startswith(tape_rse.split('_')[0])]
