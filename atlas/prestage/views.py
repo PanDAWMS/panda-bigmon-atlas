@@ -515,7 +515,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
                 if check_archive:
                     config = ActionDefault.objects.get(name='active_archive_staging').get_config()
                 else:
-                    ActionDefault.objects.get(name='active_staging').get_config()
+                    config = ActionDefault.objects.get(name='active_staging').get_config()
                 if idds:
                     config['level'] = 1
                 if check_archive:
