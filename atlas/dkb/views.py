@@ -857,6 +857,8 @@ def statistic_by_step(search_dict):
 
 def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=True, steps_tasks={}):
     result = []
+    total_percent_with_hs06 = []
+
     if mc_steps:
         steps = MCPriority.STEPS
         field = "total_events"
@@ -914,8 +916,13 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             current_stat['percent_pending'] = percent_pending * 100
             current_stat['not_started'] = percent_not_started * 100
             result.append(current_stat)
+            if current_stat['hs06']:
+                total_percent_with_hs06.append((percent_done,current_stat['hs06']))
     result.sort(key=lambda x: -x['input_events'])
-    return result
+    total_campaign = None
+    if len(total_percent_with_hs06) == len(statistics.keys()):
+        total_campaign = sum([x[0]*x[1] for x in total_percent_with_hs06]) * 100 / sum([x[1] for x in total_percent_with_hs06])
+    return result, total_campaign
 
 
 @api_view(['POST'])
@@ -927,7 +934,7 @@ def step_hashtag_stat(request):
         statistics = statistic_by_step({"terms": {"hashtag_list": hashtags}})
         running_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['running'])
         finished_stat = running_events_stat({"terms": {"hashtag_list": hashtags}},['finished','done'])
-        result = form_statistic_per_step(statistics,running_stat, finished_stat)
+        result, total = form_statistic_per_step(statistics,running_stat, finished_stat)
     except Exception as e:
         return Response({'error':str(e)},status=400)
     return Response(result)
@@ -952,7 +959,7 @@ def deriv_request_stat(request):
         statistics = statistic_by_request_deriv({"term": {"pr_id": production_request}}, format_dict)
         running_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"term": {"pr_id": production_request}},['finished','done'], format_dict)
-        result = form_statistic_per_step(statistics,running_stat, finished_stat, False)
+        result, total = form_statistic_per_step(statistics,running_stat, finished_stat, False)
     except Exception as e:
 
         return Response({'error':str(e)},status=400)
@@ -984,8 +991,10 @@ def output_hashtag_stat(request):
         statistics = statistic_by_request_deriv({"terms": {"hashtag_list": hashtags}}, format_dict)
         running_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['running'], format_dict)
         finished_stat = running_events_stat_deriv({"terms": {"hashtag_list": hashtags}},['finished','done'], format_dict)
+        step_resut, total = form_statistic_per_step(statistics,running_stat, finished_stat, False, steps)
         result = {'steps':
-                      form_statistic_per_step(statistics,running_stat, finished_stat, False, steps),'status':status_stat}
+                      step_resut,'status':status_stat, 'total_campaign': total}
+
     except Exception as e:
 
         return Response({'error':str(e)},status=400)

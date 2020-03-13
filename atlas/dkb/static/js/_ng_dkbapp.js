@@ -341,6 +341,7 @@
                      success(function(data, status, headers, config) {
                         scope.steps= data.steps;
                         scope.status_stat = data.status;
+                        scope.total_cmapaign = data.total_campaign;
                         scope.manage_url = '/reqtask/hashtags/'+scope.hashtag+'/';
                         console.log(scope.status_stat);
                         scope.is_loading = false;
