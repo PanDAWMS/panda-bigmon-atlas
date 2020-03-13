@@ -917,7 +917,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             current_stat['not_started'] = percent_not_started * 100
             result.append(current_stat)
             if current_stat['hs06']:
-                total_percent_with_hs06.append((percent_done,current_stat['hs06']))
+                total_percent_with_hs06.append((percent_done,current_stat['hs06']*current_stat['input_events']))
     result.sort(key=lambda x: -x['input_events'])
     total_campaign = None
     if len(total_percent_with_hs06) == len(statistics.keys()):
