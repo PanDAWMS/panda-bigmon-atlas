@@ -413,6 +413,9 @@ def submit_all_tapes_processed():
                 total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted)
                 resource_tape.do_submission()
+                if tape.get_config('is_slow'):
+                    resource_tape = TapeResource(tape.name,ddm)
+                    resource_tape.do_submission()
 
 
 def test_tape_processed(tape_name, test):
