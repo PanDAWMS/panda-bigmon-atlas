@@ -5,8 +5,7 @@ from django.http import HttpResponseForbidden
 import logging
 
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.hashtag import tasks_from_string
-from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority
+from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority, HashTag
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -148,7 +147,25 @@ def es_by_field(field, value):
     search = es_search.update_from_dict(query)
     return search.execute()
 
-
+def es_by_keys(values, size=2000):
+    search_dict = []
+    for x in values:
+        search_dict.append({'term':{x:values[x]}})
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+        "query": {
+            "bool": {
+                    "must": search_dict
+           }
+        }, 'size':size
+    }
+    search = es_search.update_from_dict(query)
+    response = search.execute()
+    result = []
+    for hit in response:
+        current_hit = hit.to_dict()
+        result.append(current_hit)
+    return result
 
 def keyword_search2(keyword_string, is_analy=False):
     keyword_wildcard = []
@@ -1172,3 +1189,45 @@ def deriv_output_proportion(request,project,ami_tag):
     except Exception as e:
             return Response({'error':str(e)},status=400)
     return Response(result)
+
+
+def find_jo_by_dsid(dsid):
+    tasks = es_by_keys({'run_number':dsid,'step_name':'evgen'},1)
+    if tasks:
+        task = ProductionTask.objects.get(id=tasks[0]['taskid'])
+        return task.step.slice.input_data
+    return str(dsid)
+
+
+def tasks_from_string(input_str):
+    input_str.replace('#','')
+    input_str = input_str.replace('&','#&').replace('|','#|').replace('!','#!')
+    tokens = input_str.split('#')
+    hashtags_operations = {'and':[],'or':[],'not':[]}
+    operators = {'&':'and','|':'or','!':'not'}
+    for token in tokens:
+        if token:
+            hashtags_operations[operators[token[0:1]]].append(token[1:])
+    result_tasks = set()
+    for hashtag in hashtags_operations['or']:
+        result_tasks.update(tasks_by_hashtag(hashtag))
+    for hashtag in hashtags_operations['and']:
+        current_tasks = tasks_by_hashtag(hashtag)
+        if not result_tasks:
+            result_tasks.update(current_tasks)
+        else:
+            temp_task_set = [x for x in current_tasks if x in result_tasks]
+            result_tasks = set(temp_task_set)
+    if result_tasks:
+        for hashtag in hashtags_operations['not']:
+            current_tasks = tasks_by_hashtag(hashtag)
+            temp_task_set = [x for x in result_tasks if x not in current_tasks]
+            result_tasks = set(temp_task_set)
+    return list(result_tasks)
+
+
+def tasks_by_hashtag(hashtag):
+    if HashTag.objects.filter(hashtag__iexact=hashtag).exists():
+        tasks_hashtags = HashTag.objects.filter(hashtag__iexact=hashtag)[0].tasks_ids
+        return tasks_hashtags
+    return []

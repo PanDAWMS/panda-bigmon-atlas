@@ -11,9 +11,9 @@ from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern
 #from ..prodtask.spdstodb import fill_template
-from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices
+from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
 from .ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action

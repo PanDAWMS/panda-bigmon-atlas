@@ -11,9 +11,9 @@ from copy import deepcopy
 import pytz
 from atlas.prodtask.ddm_api import DDM
 from ..prodtask.models import RequestStatus, ProductionTask
-from ..prodtask.spdstodb import fill_template
 
 from atlas.prodtask.views import set_request_status, clone_slices, create_predefinition_action
+from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
 from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset

@@ -4,7 +4,7 @@ import re
 import requests
 from django.core import serializers
 
-from atlas.prodtask.hashtag import tasks_from_string
+from atlas.dkb.views import tasks_from_string
 from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, InputRequestList
 # import logging
 # import os

@@ -1,6 +1,7 @@
 import logging
 from os import listdir
 
+from atlas.dkb.views import find_jo_by_dsid
 from atlas.prodtask.models import  MCJobOptions
 from .models import InputRequestList
 _logger = logging.getLogger('prodtaskwebui')
@@ -62,6 +63,12 @@ def sync_request_jos(production_request):
     slices = InputRequestList.objects.filter(request=production_request)
     for slice in slices:
         if slice.input_data and slice.input_data.isdigit():
-            if MCJobOptions.objects.filter(dsid=int(slice.input_data)).exists():
-                slice.input_data = slice.input_data + '/' + MCJobOptions.objects.get(dsid=int(slice.input_data)).physic_short
+            if slice.input_data.startswith('421') or int(slice.input_data) >= 500000:
+                if MCJobOptions.objects.filter(dsid=int(slice.input_data)).exists():
+                    slice.input_data = slice.input_data + '/' + MCJobOptions.objects.get(
+                        dsid=int(slice.input_data)).physic_short
+                    slice.save()
+            else:
+                slice.input_data =  find_jo_by_dsid(slice.input_data )
                 slice.save()
+

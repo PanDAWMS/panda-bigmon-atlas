@@ -6,16 +6,19 @@ Created on Nov 6, 2013
 import logging
 from django.utils import timezone
 import re
-from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions
+
+from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions, StepTemplate
 
 import atlas.gspread as gspread
 from datetime import datetime
-from .models import StepTemplate, StepExecution, InputRequestList, TRequest, RequestStatus, ETAGRelease
+
+from atlas.dkb.views import find_jo_by_dsid
+from .models import StepExecution, InputRequestList, TRequest, RequestStatus, ETAGRelease
 #from django.core.exceptions import ObjectDoesNotExist
 import urllib.request, urllib.error, urllib.parse
 
 
-from .xls_parser_new import XlrParser, open_tempfile_from_url
+from .xls_parser_new import XlrParser
 #from prodtask.models import get_default_nEventsPerJob_dict
 from .models import get_default_nEventsPerJob_dict
 
@@ -102,83 +105,6 @@ STEP_FORMAT = { 'Evgen':'EVNT','Simul':'HITS','Merge':'HITS','Rec TAG':'TAG',
 
 }
 
-def fill_template(step_name, tag, priority, formats=None, ram=None):
-
-        st = None
-        try:
-            if not step_name:
-                if(not formats)and(not ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag)[0]
-                if (not formats) and (ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
-                if (formats) and (not ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
-                if (formats) and (ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]
-            else:
-                if(formats==None)and(not ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, step=step_name)[0]
-                if (formats==None) and (ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram, step=step_name)[0]
-                if (formats!=None) and (not ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
-                if (formats!=None) and (ram):
-                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
-        except:
-            pass
-        finally:
-            if st:
-                if (st.status == 'Approved') or (st.status == 'dummy'):
-                    return st
-
-            trtf = None
-            if trtf:
-                tr = trtf[0]
-                if(formats):
-                    output_formats = formats
-                else:
-                    output_formats = tr.formats
-                if(ram):
-                    memory = ram
-                else:
-                    memory = int(tr.memory)
-                if not step_name:
-                    step_name = tr.step
-                if st:
-                    st.status = 'Approved'
-                    st.output_formats = output_formats
-                    st.memory = memory
-                    st.cpu_per_event = int(tr.cpu_per_event)
-                else:
-                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
-                                                   ctag=tag, priority=priority,
-                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
-                                                   output_formats=output_formats, trf_name=tr.trf,
-                                                   lparams='', vparams='', swrelease=tr.trfv)
-                st.save()
-                _logger.debug('Created step template: %i' % st.id)
-                return st
-            else:
-                if not tag:
-                    raise ValueError("Can't create an empty step")
-                if not step_name:
-                    step_name = 'Reco'
-                if st:
-                   return st
-                output_formats = STEP_FORMAT.get(step_name,'')
-                if formats:
-                    output_formats = formats
-                memory = 0
-                if ram:
-                    memory = ram
-                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
-                           ctag=tag, priority=0,
-                           cpu_per_event=0, memory=memory,
-                           output_formats=output_formats, trf_name='',
-                           lparams='', vparams='', swrelease='')
-                st.save()
-                return st
-
 
 def format_check(format):
     #TODO: implement regular expression for format
@@ -264,11 +190,14 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                         translated_row[translate_list[key]] = excel_dict[row][key]
             if ('joboptions' not in translated_row) and ('ds' in translated_row):
                 translated_row['joboptions'] = str(int(translated_row['ds']))
-                try:
-                    if MCJobOptions.objects.filter(dsid=int(translated_row['ds'])).exists():
-                        translated_row['joboptions'] = str(int(translated_row['ds'])) + '/' + MCJobOptions.objects.get(dsid=int(translated_row['ds'])).physic_short
-                except:
-                    pass
+                if translated_row['joboptions'].startswith('421') or int(translated_row['ds']) >= 500000:
+                    try:
+                        if MCJobOptions.objects.filter(dsid=int(translated_row['ds'])).exists():
+                            translated_row['joboptions'] = str(int(translated_row['ds'])) + '/' + MCJobOptions.objects.get(dsid=int(translated_row['ds'])).physic_short
+                    except:
+                        pass
+                else:
+                    translated_row['joboptions'] =  find_jo_by_dsid(translated_row['joboptions'])
             if ('events' in translated_row):
                 processing_type = translated_row.get('type','')
                 if processing_type == 'AF2':
@@ -548,5 +477,81 @@ class UrFromSpds:
         
     def __init__(self):
                 pass
-            
-        
+
+
+def fill_template(step_name, tag, priority, formats=None, ram=None):
+
+        st = None
+        try:
+            if not step_name:
+                if(not formats)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag)[0]
+                if (not formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram)[0]
+                if (formats) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats)[0]
+                if (formats) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram)[0]
+            else:
+                if(formats==None)and(not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, step=step_name)[0]
+                if (formats==None) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, memory=ram, step=step_name)[0]
+                if (formats!=None) and (not ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, step=step_name)[0]
+                if (formats!=None) and (ram):
+                    st = StepTemplate.objects.all().filter(ctag=tag, output_formats=formats, memory=ram, step=step_name)[0]
+        except:
+            pass
+        finally:
+            if st:
+                if (st.status == 'Approved') or (st.status == 'dummy'):
+                    return st
+
+            trtf = None
+            if trtf:
+                tr = trtf[0]
+                if(formats):
+                    output_formats = formats
+                else:
+                    output_formats = tr.formats
+                if(ram):
+                    memory = ram
+                else:
+                    memory = int(tr.memory)
+                if not step_name:
+                    step_name = tr.step
+                if st:
+                    st.status = 'Approved'
+                    st.output_formats = output_formats
+                    st.memory = memory
+                    st.cpu_per_event = int(tr.cpu_per_event)
+                else:
+                    st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='Approved',
+                                                   ctag=tag, priority=priority,
+                                                   cpu_per_event=int(tr.cpu_per_event), memory=memory,
+                                                   output_formats=output_formats, trf_name=tr.trf,
+                                                   lparams='', vparams='', swrelease=tr.trfv)
+                st.save()
+                _logger.debug('Created step template: %i' % st.id)
+                return st
+            else:
+                if not tag:
+                    raise ValueError("Can't create an empty step")
+                if not step_name:
+                    step_name = 'Reco'
+                if st:
+                   return st
+                output_formats = STEP_FORMAT.get(step_name,'')
+                if formats:
+                    output_formats = formats
+                memory = 0
+                if ram:
+                    memory = ram
+                st = StepTemplate.objects.create(step=step_name, def_time=timezone.now(), status='dummy',
+                           ctag=tag, priority=0,
+                           cpu_per_event=0, memory=memory,
+                           output_formats=output_formats, trf_name='',
+                           lparams='', vparams='', swrelease='')
+                st.save()
+                return st

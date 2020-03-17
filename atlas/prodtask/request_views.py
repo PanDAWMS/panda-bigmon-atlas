@@ -19,7 +19,9 @@ from django.views.decorators.csrf import csrf_protect
 from rucio.common.exception import DataIdentifierNotFound
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset, DDM
-from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, fill_request_events
+from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, \
+    fill_request_events
+from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
@@ -37,7 +39,7 @@ from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_pr
     ProductionTask, OpenEndedRequest, TrainProduction, ParentToChildRequest
 from .models import MCPriority
 from .settings import APP_SETTINGS
-from .spdstodb import fill_template, fill_steptemplate_from_gsprd, fill_steptemplate_from_file
+from .spdstodb import fill_steptemplate_from_gsprd, fill_steptemplate_from_file
 from .dpdconfparser import ConfigParser
 from .xls_parser_new import open_tempfile_from_url
 from rest_framework import serializers,generics

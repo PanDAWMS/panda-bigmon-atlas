@@ -15,6 +15,7 @@ from atlas.prodtask.ddm_api import tid_from_container, DDM
 from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks
+from atlas.dkb.views import tasks_from_string, tasks_by_hashtag
 from .models import StepExecution, InputRequestList, TRequest
 from django.utils import timezone
 
@@ -176,14 +177,6 @@ def propogate_hashtag_to_child(task_id, hashtag_type):
                 add_hashtag_to_task(hashtag,task.id)
 
 
-
-def tasks_by_hashtag(hashtag):
-    if HashTag.objects.filter(hashtag__iexact=hashtag).exists():
-        tasks_hashtags = HashTag.objects.filter(hashtag__iexact=hashtag)[0].tasks_ids
-        return tasks_hashtags
-    return []
-
-
 @csrf_protect
 @api_view(['POST'])
 def tasks_requests(request):
@@ -210,32 +203,6 @@ def tasks_hashtag(request):
         print(str(e))
     return Response(result_tasks_list)
 
-
-def tasks_from_string(input_str):
-    input_str.replace('#','')
-    input_str = input_str.replace('&','#&').replace('|','#|').replace('!','#!')
-    tokens = input_str.split('#')
-    hashtags_operations = {'and':[],'or':[],'not':[]}
-    operators = {'&':'and','|':'or','!':'not'}
-    for token in tokens:
-        if token:
-            hashtags_operations[operators[token[0:1]]].append(token[1:])
-    result_tasks = set()
-    for hashtag in hashtags_operations['or']:
-        result_tasks.update(tasks_by_hashtag(hashtag))
-    for hashtag in hashtags_operations['and']:
-        current_tasks = tasks_by_hashtag(hashtag)
-        if not result_tasks:
-            result_tasks.update(current_tasks)
-        else:
-            temp_task_set = [x for x in current_tasks if x in result_tasks]
-            result_tasks = set(temp_task_set)
-    if result_tasks:
-        for hashtag in hashtags_operations['not']:
-            current_tasks = tasks_by_hashtag(hashtag)
-            temp_task_set = [x for x in result_tasks if x not in current_tasks]
-            result_tasks = set(temp_task_set)
-    return list(result_tasks)
 
 @api_view(['GET'])
 def hashtagslists(request):

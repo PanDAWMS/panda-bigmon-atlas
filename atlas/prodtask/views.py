@@ -1,15 +1,12 @@
 import re
-from _ast import In
 
-from django.core.mail import send_mail
 from django.forms import model_to_dict
 import json
 import logging
-import os
 from copy import deepcopy
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, render_to_response, redirect
-from django.template import Context, Template, RequestContext
+from django.shortcuts import render, redirect
+from django.template import Context
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.views.decorators.cache import never_cache
@@ -18,19 +15,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
-import time
 from datetime import timedelta
 
-from atlas.prodtask.ddm_api import tid_from_container
-from atlas.prodtask.helper import form_request_log
 from atlas.prodtask.mcevgen import sync_request_jos
-from atlas.prodtask.models import TRequest, RequestStatus, InputRequestList, StepExecution, get_priority_object, \
-    HashTagToRequest, ProductionTask, MCPattern, ParentToChildRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
+from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
     ActionDefault
+from atlas.prodtask.spdstodb import _logger, fill_template
 
-from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
-from ..prodtask.settings import APP_SETTINGS
 from ..prodtask.ddm_api import find_dataset_events
 
 
@@ -40,10 +32,8 @@ import atlas.datatables as datatables
 from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, ProductionTask, \
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
     OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
-from .spdstodb import fill_template
 
-from django.db.models import Count, Q
-from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -388,7 +378,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 change_template = True
                                 memory = step_value['changes']['memory']
                             if change_template:
-                                step_in_db.step_template = fill_template(step_in_db.step_template.step,ctag, step_in_db.step_template.priority, output_formats, memory)
+                                step_in_db.step_template = fill_template(step_in_db.step_template.step, ctag, step_in_db.step_template.priority, output_formats, memory)
                             if 'priority' in step_value['changes']:
                                 step_in_db.priority = step_value['changes']['priority']
                             if parent_step:
@@ -1399,7 +1389,7 @@ def request_reprocessing_steps_create(request, reqid=None):
                         if current_tag['ctag'] == '':
                             real_steps_hierarchy[-1].append(real_steps_hierarchy[current_tag['level']][current_tag['step_number']])
                         else:
-                            step_template = fill_template('',current_tag['ctag'],current_slice.priority,current_tag['formats'])
+                            step_template = fill_template('', current_tag['ctag'], current_slice.priority, current_tag['formats'])
                             new_step_exec = StepExecution(request=cur_request, step_template=step_template,status='NotChecked',
                                                           slice=current_slice,priority=current_slice.priority,
                                                           input_events=-1)
@@ -3060,3 +3050,5 @@ def create_skip_used_tag(task_id):
     new_step.update_project_mode('skipFilesUsedBy',task_id)
     new_step.save()
     return new_step.id
+
+
