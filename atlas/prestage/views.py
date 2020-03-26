@@ -584,7 +584,7 @@ def do_staging(action_step_id, ddm):
         if dataset_stage.status == 'staging':
             no_update = dataset_stage.update_time and \
                     ((current_time-dataset_stage.update_time) < timedelta(hours=2*int(action_step.get_config('delay'))))
-            if (not dataset_stage.rse) or (not no_update ):
+            if (not dataset_stage.rse) or (not no_update ) or (level == 1):
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
                 if existed_rule:
                         dataset_stage.rse = existed_rule['id']
@@ -605,7 +605,7 @@ def do_staging(action_step_id, ddm):
 
             if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or \
                     (((dataset_stage.total_files-dataset_stage.staged_files)<= ActionDefault.FILES_TO_RELEASE) and
-                     ((float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0))):
+                     ((float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0))) or ((level == 1) and (dataset_stage.staged_files >0) ):
                 start_stagind_task(task)
             if dataset_stage.staged_files != dataset_stage.total_files:
                 action_finished = False
