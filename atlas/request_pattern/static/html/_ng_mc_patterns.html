@@ -1,0 +1,40 @@
+<div class="row">
+
+    <label> Filter:
+<input type="text" ng-model="pattern_filter" />
+</label>
+    </div>
+
+<div class="row">
+<table id="mcpatternTable">
+    <thead>
+    <tr>
+        <th></th>
+        <th></th>
+        <th>Pattern name</th>
+        <th>Evgen</th>
+        <th>Evgen Merge</th>
+        <th>Simul</th>
+        <th>Merge</th>
+        <th>Digi</th>
+        <th>Reco</th>
+        <th>Rec Merge</th>
+        <th>Atlfast</th>
+        <th>Atlf Merge</th>
+        <th>TAG</th>
+        <th>Deriv</th>
+        <th>Deriv Merge</th>
+
+    </tr>
+    </thead>
+    <tbody>
+        <tr  ng-repeat="element in patterns | filter: pattern_filter " >
+            <td><a href="#/pattern/{{element.slice}}">Update</a> </td><td><a href="#/clone/{{element.slice}}">Clone</a> </td><td><span ng-show="element.obsolete" style="color: #5aebff">Obsolete </span>{{ element.name }} </td><td  ng-repeat="tag in element.tags track by $index " >{{  tag}} </td>
+
+    </tbody>
+    </table>
+    </div>
+<div class="row">
+
+<div class="large-3 column"><a href="#/all/" class="button">Show obsolete</a> </div>
+        </div>

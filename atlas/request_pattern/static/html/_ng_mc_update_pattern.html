@@ -1,0 +1,92 @@
+<div class="row">
+<label> pattern name:
+    <input type="text" ng-model="pattern_name">
+</label>
+
+</div>
+<div class="row">
+<label> Pattern in use:
+    <input type="checkbox" ng-model="pattern_in_use">
+</label>
+
+</div>
+<div ng-repeat="step in steps track by step.id" >
+     <div class="row">
+    <button class="accordion" ng-click="showStep(step)">{{ step.step_name }} - {{ step.amitag }}</button>
+ </div>
+    <div   ng-show="step.show">
+                        <div class="row">
+                                <div class="large-2 columns">
+                                  <label> AMI tag
+                                    <input type="text" ng-model="step.tag" ng-change="changeStepValue(step,'tag')" ng-style="step.style.tag"/>
+                                  </label>
+                                </div>
+                                <div class="large-2 columns">
+
+
+                                </div>
+                                 <div class="large-3 columns">
+                               <!--       <label>Events per Input file
+                                    <input type="number" ng-model="step.nEventsPerInputFile" ng-change="changeStepValue(step,'nEventsPerInputFile')"
+                                            ng-style="step.style.nEventsPerInputFile" placeholder=""  />
+                                  </label>-->
+
+                                </div>
+                                 <div class="large-3 columns">
+                                  <label>Events per job
+                                    <input type="number" ng-model="step.nEventsPerJob" ng-change="changeStepValue(step,'nEventsPerJob')" ng-style="step.style.nEventsPerJob" placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+
+                                </div>
+                               </div>
+                               <div class="row">
+                                <div class="large-2 columns">
+                                  <label>Files per job
+                                    <input type="number" ng-model="step.nFilesPerJob" ng-change="changeStepValue(step,'nFilesPerJob')" ng-style="step.style.nFilesPerJob" placeholder=""  />
+                                  </label>
+                                </div>
+                                 <div class="large-2 columns">
+                                  <label>nGB per job
+                                    <input type="number" ng-model="step.nGBPerJob" ng-change="changeStepValue(step,'nGBPerJob')" ng-style="step.style.nGBPerJob" placeholder=""  />
+                                  </label>
+                                </div>
+                                   <div class="large-2 columns">
+
+                                       </div>
+                                    <div class="large-1 columns">
+                                      </div>
+
+
+                                <div class="large-2 columns">
+                                  <label>max failure attempt
+                                    <input type="number" ng-model="step.maxFailure" ng-change="changeStepValue(step,'maxFailure')" ng-style="step.style.maxFailure" placeholder=""  />
+                                  </label>
+                                </div>
+                                </div>
+                    <!--            <div class="row">
+                                <div class="large-5 columns">
+                                  <label>Output formats
+                                    <input type="text" ng-model="step.output_formats" ng-change="changeStepValue(step,'output_formats')" ng-style="step.style.output_formats" placeholder=" "  />
+                                  </label>
+                                </div>
+
+                                 <div class="large-5 columns">
+                                  <label>Input format
+                                    <input type="text" ng-model="step.input_format" ng-change="changeStepValue(step,'input_format')" ng-style="step.style.input_format"  placeholder=" "  />
+                                  </label>
+                                </div>
+                                 </div>-->
+                                <div class="row">
+                                <div class="large-12 columns">
+                                  <label>project mode
+                                    <input type="text" ng-model="step.project_mode" ng-change="changeStepValue(step,'project_mode')" ng-style="step.style.project_mode" placeholder=" " />
+                                  </label>
+                                </div>
+
+                              </div>
+
+            </div>
+</div></div>
+<div class="row"><div class="large-3 column"><button ng-click="savePattern()" class="btn btn-primary">Save</button> </div><div class="large-3 column"><a href="#/" class="button cancel-link">Back</a> </div> </div>

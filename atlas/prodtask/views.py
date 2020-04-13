@@ -353,7 +353,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                       'PDA',
                                       'PDAParams']:
                                 if x in step_value['changes']:
-                                    task_config[x] = step_value['changes'][x]
+                                    if step_value['changes'][x] and x in StepExecution.INT_TASK_CONFIG_PARAMS:
+                                        task_config[x] = int(step_value['changes'][x])
+                                    else:
+                                        task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
                                 if x in step_value['changes']:
                                     if step_value['changes'][x]:
@@ -432,7 +435,10 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                       'PDA',
                                       'PDAParams']:
                                 if x in step_value['changes']:
-                                    task_config[x] = step_value['changes'][x]
+                                    if step_value['changes'][x] and x in StepExecution.INT_TASK_CONFIG_PARAMS:
+                                        task_config[x] = int(step_value['changes'][x])
+                                    else:
+                                        task_config[x] = step_value['changes'][x]
                             for x in ['nEventsPerInputFile']:
                                 if x in step_value['changes']:
                                     if step_value['changes'][x]:
@@ -1489,6 +1495,31 @@ def egroup_permissions(username):
     return return_list
 
 
+def get_full_patterns():
+    result = []
+    task_configs = {}
+    patterns = list(InputRequestList.objects.filter(request=29269).order_by('slice'))
+    steps = list(StepExecution.objects.filter(request=29269).order_by('id'))
+    CHANGABLE = ['nEventsPerJob', 'project_mode', 'nFilesPerJob', 'nGBPerJob',
+                 'maxFailure']
+    for step in steps:
+        task_config = step.get_task_config()
+        if task_config.get('tag') == 'x9999':
+            task_config['tag'] = ''
+        task_configs[int(step.slice_id)] = task_configs.get(int(step.slice_id), []) + [task_config]
+    for pattern in patterns[1:]:
+        if not pattern.is_hide:
+            task_config_steps = task_configs[int(pattern.id)]
+            tag_step = []
+            for task_config in task_config_steps:
+                parameters = []
+                for x in CHANGABLE:
+                    parameters.append((x,task_config.get(x,'')))
+                tag_step.append((task_config['tag'],parameters))
+            result.append((pattern.brief,tag_step))
+    result.sort(key=lambda x:x[0])
+    return result
+
 
 def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
@@ -1669,10 +1700,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                 pattern_list_name = []
                 STEPS_LIST = StepExecution.STEPS
                 # Load patterns which are currently in use
-                pattern_list = MCPattern.objects.filter(pattern_status='IN USE').order_by('pattern_name')
-                pattern_list_name = [(x.pattern_name,
-                                      [unwrap(check_empty_pattern(json.loads(x.pattern_dict).get(step,{}),{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
+                #pattern_list = MCPattern.objects.filter(pattern_status='IN USE').order_by('pattern_name')
+                # pattern_list_name = [(x.pattern_name,
+                #                       [unwrap(check_empty_pattern(json.loads(x.pattern_dict).get(step,{}),{'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]})) for step in StepExecution.STEPS]) for x in pattern_list]
                 # Create an empty pattern for color only pattern
+                pattern_list_name = get_full_patterns()
                 pattern_list_name += [('Empty', [unwrap({'ctag':'','project_mode':get_default_project_mode_dict()[step],'nEventsPerJob':get_default_nEventsPerJob_dict()[step]}) for step in StepExecution.STEPS])]
                 pattern_list_name += [('Initial', [('','') for step in STEPS_LIST])]
             show_reprocessing = (cur_request.request_type == 'REPROCESSING') or (cur_request.request_type == 'HLT')

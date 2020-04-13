@@ -1,0 +1,102 @@
+{% extends parent_template %}
+
+{% load static from staticfiles %}
+
+
+{% block extra_css %}
+{{ block.super }}
+    <style type="text/css" title="currentStyle">
+	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	</style>
+	<style type="text/css" title="currentStyle">
+	</style>
+{% endblock %}
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+{% block base_js %}
+{{ block.super }}
+
+<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
+
+{% endblock %}
+
+{% block body %}
+
+   <style type="text/css">
+ 	span.StepDone	{ background-color : forestgreen;}
+	span.Unknown 	{ background-color : gray;	}
+	span.StepProgressing	{ background-color : yellowgreen;		}
+	span.StepNotStarted	{ background-color : orangered;		}
+ 	span.taskheader.obsolete	{ background-color : lightblue}
+	span.taskheader.holding 	{ background-color : black;	}
+	span.taskheader.pending	{ background-color : blue;		}
+	span.taskheader.waiting	{ background-color : blue;	}
+	span.taskheader.submitting	{ background-color : blue;	}
+	span.taskheader.archived 	{ background-color : magenta;	}
+	span.taskheader.failed 	{ background-color : red;	}
+	span.taskheader.aborted 	{ background-color : red;	}
+	span.taskheader.broken		{ background-color : red;	}
+
+	span.taskheader.running 	{ background-color : LightGreen;	}
+
+	span.taskheader.done 		{ background-color : darkgreen;}
+    span.taskheader.finished 		{ background-color : darkgreen;	}
+    span.taskheader.registered {  background-color : blue;}
+
+
+  </style>
+<style type="text/css">
+     @import "{% static "css/prodtask.css" %}";
+</style>
+
+    <style>
+/* Style the buttons that are used to open and close the accordion panel */
+.accordion {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  outline: none;
+  transition: 0.4s;
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .accordion:hover {
+  background-color: #ccc;
+}
+
+/* Style the accordion panel. Note: hidden by default */
+.panel {
+  padding: 0 18px;
+  background-color: white;
+  overflow: hidden;
+}
+</style>
+<script>
+
+
+</script>
+<script type="text/javascript" src="{% static "js/_ng_slice_pattern.js" %}"></script>
+<div ng-app="MCPatternApp">
+    <div ng-view></div>
+
+</div>
+
+{% endblock %}

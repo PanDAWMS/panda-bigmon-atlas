@@ -1,0 +1,13 @@
+
+<div class="row">
+  <label> Pattern:
+    <input type="text" ng-model="origin_pattern" id="search_keywords" disabled>
+</label>
+</div>
+<div class="row">
+<label> New pattern name:
+    <input type="text" ng-model="new_pattern">
+</label>
+    <div class="large-3 column"><button ng-click="clonePattern()" class="btn btn-primary" ng-disabled="new_pattern==origin_pattern">Clone</button> </div>
+    <div class="large-3 column"><a href="#/" class="button cancel-link">Back</a> </div>
+</div>

@@ -28,6 +28,7 @@ common_patterns = [
     url(r'^getdatasets/', include(('atlas.getdatasets.urls','getdatasets'), namespace='getdatasets')),
     url(r'^dkb/', include(('atlas.dkb.urls','dkb'), namespace='dkb')),
     url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
+    url(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
 
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 

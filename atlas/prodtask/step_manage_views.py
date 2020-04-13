@@ -2188,3 +2188,34 @@ def fix_clone_for_step(request):
                     print(slice.slice,parent_step.slice.slice)
                     slice.cloned_from = parent_step.slice
                     slice.save()
+
+
+
+def compare_two_slices(production_request, slice1, slice2):
+    steps1 = StepExecution.objects.filter(request=production_request, slice=InputRequestList.objects.get(request=production_request,slice=slice1))
+    ordered_existed_steps1, parent_step = form_existed_step_list(steps1)
+    steps2 = StepExecution.objects.filter(request=production_request, slice=InputRequestList.objects.get(request=production_request,slice=slice2))
+    ordered_existed_steps2, parent_step = form_existed_step_list(steps2)
+    if len(ordered_existed_steps1)!=len(ordered_existed_steps2):
+        print('different step number')
+        return False
+    is_equael = True
+    for index, step1 in enumerate(ordered_existed_steps1):
+        step1_dict = step1.__dict__
+        step2_dict =  ordered_existed_steps2[index].__dict__
+        for x in step1_dict.keys():
+            if x not in ['id','task_config','_state','slice_id','step_def_time','step_parent_id']:
+                if step1_dict[x] != step2_dict[x]:
+                   print('%s different for %i step'%(x,index))
+                   is_equael = False
+        task_config1 = step1.get_task_config()
+        task_config2 = ordered_existed_steps2[index].get_task_config()
+        if len(task_config1.keys()) !=  len(task_config2.keys()) :
+             print('different task config length for step %i,%i,%i'%(index,step1_dict['id'],step2_dict['id']))
+             is_equael = False
+        for x in   task_config1.keys():
+            if (x not in task_config2) or ( task_config1[x] !=   task_config2[x] ) :
+                print('%s different for %i step %i,%i'%(x,index, step1_dict['id'],step2_dict['id']))
+                is_equael = False
+    return   is_equael
+
