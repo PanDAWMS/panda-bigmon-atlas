@@ -12,10 +12,13 @@ from atlas.prodtask.models import StepTemplate, StepExecution, InputRequestList,
     get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
     OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
 from atlas.prodtask.views import form_existed_step_list, clone_slices
+from django.contrib.auth.decorators import login_required
+
 
 _logger = logging.getLogger('prodtaskwebui')
 
 
+@login_required(login_url='/prodtask/login/')
 def index(request):
     if request.method == 'GET':
 
@@ -123,15 +126,20 @@ def slice_pattern_save_steps(request,slice):
         for step in steps:
             step_dict[int(step['id'])] = step
         steps = StepExecution.objects.filter(request=29269, slice=slice)
+        message = []
         for step in steps:
             if int(step.id) in step_dict:
-                task_config = step.get_task_config()
                 step_changed = False
                 for x in CHANGABLE:
                     if step.get_task_config(x) != step_dict[int(step.id)][x]:
-                        step.set_task_config({x:step_dict[int(step.id)][x]})
+                        message.append('{'+str(x) + ':' + str(step.get_task_config(x))+'} => {'+str(x) + ':' + str(step_dict[int(step.id)][x])+'}')
+                        if step_dict[int(step.id)][x] is None:
+                            step.set_task_config({x:''})
+                        else:
+                            step.set_task_config({x:step_dict[int(step.id)][x]})
                         step_changed = True
                 if step_changed:
+                    _logger.info('Pattern %i changed: %s'%(int(slice.slice),' '.join(message)))
                     step.save()
 
     except Exception as e:
