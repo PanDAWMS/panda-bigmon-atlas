@@ -17,6 +17,7 @@ _deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.
 _deft_job_actions = {
 
     'kill_jobs': 'kill_job',
+    'kill_job_by_task': 'kill_jobs',
     'set_debug_jobs': 'set_job_debug_mode',
     'reassign_jobs': 'reassign_jobs',
 
@@ -54,9 +55,17 @@ def jobs_action(request,action):
         return HttpResponse(json.dumps(result))
 
     #do actions here
-    for job in jobs:
-        result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
-        fin_res.append(result)
+    if action == 'kill_jobs':
+        tasks = {}
+        for job in jobs:
+            tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+        for task in tasks.keys():
+            result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
+            fin_res.append(result)
+    else:
+        for job in jobs:
+            result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
+            fin_res.append(result)
 
     return HttpResponse(json.dumps(fin_res))
 

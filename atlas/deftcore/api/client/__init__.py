@@ -171,6 +171,13 @@ class Client(object):
         body = {'task_id': task_id, 'job_id': job_id, 'code': code, 'keep_unmerged': keep_unmerged}
         return self._create_request('kill_job', owner, body)
 
+    def kill_jobs(self, owner, task_id, jobs, code=None, keep_unmerged=False):
+        body = {'task_id': task_id,
+                'jobs': ','.join([str(e) for e in jobs]),
+                'code': code,
+                'keep_unmerged': keep_unmerged}
+        return self._create_request('kill_jobs', owner, body)
+
     def set_job_debug_mode(self, owner, task_id, job_id, debug_mode=True):
         body = {'task_id': task_id, 'job_id': job_id, 'debug_mode': debug_mode}
         return self._create_request('set_job_debug_mode', owner, body)
