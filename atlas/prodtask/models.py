@@ -1082,7 +1082,7 @@ class StepAction(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
+            self.id = prefetch_id('deft','T_STEP_ACTION_SQ',"T_STEP_ACTION",'STEP_ACTION_ID')
         super(StepAction, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -1134,7 +1134,7 @@ class DatasetStaging(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
+            self.id = prefetch_id('deft','T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
         super(DatasetStaging, self).save(*args, **kwargs)
 
 
@@ -1153,7 +1153,7 @@ class ActionStaging(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','ACTION_STAGING_SEQ','T_ACTION_STAGING','ACT_ST_ID')
+            self.id = prefetch_id('deft','ACTION_STAGING_SEQ','T_ACTION_STAGING','ACT_ST_ID')
         super(ActionStaging, self).save(*args, **kwargs)
 
 
@@ -1175,7 +1175,7 @@ class ActionDefault(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
+            self.id = prefetch_id('deft','ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
         super(ActionDefault, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
