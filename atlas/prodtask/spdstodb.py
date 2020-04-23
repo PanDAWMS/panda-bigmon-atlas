@@ -310,7 +310,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 else:
                                     sexec = dict(status='NotChecked', input_events=-1)
                                 if currentstep == 'Evgen':
-                                    if translated_row.get('type') == 'LHE':
+                                    if translated_row.get('type','') == 'LHE':
                                         formats = 'TXT'
                                     else:
                                         formats = STEP_FORMAT[currentstep]
