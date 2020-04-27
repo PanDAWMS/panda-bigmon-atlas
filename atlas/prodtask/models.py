@@ -509,8 +509,8 @@ class MCJobOptions(models.Model):
         super(MCJobOptions, self).save(*args, **kwargs)
 
     class Meta:
-        app_label = 'dev'
-        db_table = '"ATLAS_DEFT"."T_MC_JO_PHYS"'
+        #app_label = 'deft'
+        db_table = "T_MC_JO_PHYS"
 
 
 # class MCPileupOverlayGroupDescription(models.Model):
