@@ -1666,7 +1666,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                                 train_id = close_train
                                 train = TrainProduction.objects.get(id=train_id)
                                 train.status = 'Started'
-                                train.request = req
+                                train.request = req.reqid
                                 train.save()
                             if train:
                                 new_relation = ParentToChildRequest()
