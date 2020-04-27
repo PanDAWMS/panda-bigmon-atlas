@@ -476,7 +476,7 @@ class TrainProduction(models.Model):
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
+            self.id = prefetch_id('deft','T_GROUP_TRAIN_ID_SEQ',"T_GROUP_TRAIN",'GPT_ID')
         super(TrainProduction, self).save(*args, **kwargs)
 
 
@@ -490,7 +490,7 @@ class TrainProduction(models.Model):
         return "%i - %s"%(self.pattern_request.reqid,self.pattern_request.description)
 
     class Meta:
-        app_label = 'dev'
+      #  app_label = 'dev'
         db_table = '"T_GROUP_TRAIN"'
 
 
@@ -557,20 +557,20 @@ class ParentToChildRequest(models.Model):
                     )
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
-    parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID', on_delete=CASCADE)
-    child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True, on_delete=CASCADE)
+    parent_request = models.ForeignKey(TRequest, db_column='PARENT_PR_ID', on_delete=CASCADE, related_name='+')
+    child_request = models.ForeignKey(TRequest, db_column='CHILD_PR_ID', null=True, on_delete=CASCADE, related_name='+')
     relation_type = models.CharField(max_length=2, db_column='RELATION_TYPE', choices=RELATION_TYPE, null=False)
     train = models.ForeignKey(TrainProduction, db_column='TRAIN_ID', null=True, on_delete=CASCADE)
     status = models.CharField(max_length=12, db_column='STATUS', null=False)
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','PARENT_CHILD_REQUEST_ID_SEQ','T_PARENT_CHILD_REQUEST','PTC_ID')
+            self.id = prefetch_id('deft','PARENT_CHILD_REQUEST_ID_SEQ','T_PARENT_CHILD_REQUEST','PTC_ID')
         super(ParentToChildRequest, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
+        #app_label = 'dev'
 
         db_table = "T_PARENT_CHILD_REQUEST"
 
@@ -1240,13 +1240,13 @@ class ETAGRelease(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_ETR_SEQ',"T_ETAG_RELEASE",'TAG_RELEASE_ID')
+            self.id = prefetch_id('deft','T_ETR_SEQ',"T_ETAG_RELEASE",'TAG_RELEASE_ID')
         super(ETAGRelease, self).save(*args, **kwargs)
 
 
 
     class Meta:
-        app_label = 'dev'
+      #  app_label = 'dev'
         db_table = '"T_ETAG_RELEASE"'
 
 
@@ -1278,7 +1278,7 @@ class WaitingStep(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
+            self.id = prefetch_id('deft','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
         super(WaitingStep, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -1321,7 +1321,7 @@ class HashTagToRequest(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_HT_TO_REQUEST_SEQ',"T_HT_TO_REQUEST",'HTTR_ID')
+            self.id = prefetch_id('deft','T_HT_TO_REQUEST_SEQ',"T_HT_TO_REQUEST",'HTTR_ID')
         super(HashTagToRequest, self).save(*args, **kwargs)
 
     def save_last_update(self, *args, **kwargs):
@@ -1330,7 +1330,7 @@ class HashTagToRequest(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
+        #app_label = 'dev'
         db_table = '"T_HT_TO_REQUEST"'
 
 
@@ -1367,12 +1367,12 @@ class TrainProductionLoad(models.Model):
             self.datasets=''
             _logger.debug('Problem this loads datastes: %s',str(e))
         if not self.id:
-            self.id = prefetch_id('dev_db','T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
+            self.id = prefetch_id('deft','T_TRAIN_CARRIAGE_ID_SEQ',"T_TRAIN_CARRIAGE",'TC_ID')
 
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:
-        app_label = 'dev'
+        #app_label = 'dev'
         db_table = "T_TRAIN_CARRIAGE"
 
 class MCPattern(models.Model):
