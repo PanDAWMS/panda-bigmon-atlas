@@ -55,24 +55,29 @@ def jobs_action(request,action):
         return HttpResponse(json.dumps(result))
 
     #do actions here
-    if action == 'kill_jobs':
-        tasks = {}
-        without_taskid = []
-        for job in jobs:
-            if job.get('taskid'):
-                tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
-            else:
-                without_taskid.append(job['pandaid'])
-        for task in tasks.keys():
-            result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
-            fin_res.append(result)
-        if without_taskid:
-            result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
-            fin_res.append(result)
-    else:
-        for job in jobs:
-            result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
-            fin_res.append(result)
+    try:
+        if action == 'kill_jobs':
+            tasks = {}
+            without_taskid = []
+            for job in jobs:
+                if job.get('taskid'):
+                    tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+                else:
+                    without_taskid.append(job['pandaid'])
+            for task in tasks.keys():
+                result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
+                fin_res.append(result)
+            if without_taskid:
+                result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
+                fin_res.append(result)
+        else:
+            for job in jobs:
+                result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
+                fin_res.append(result)
+    except Exception as e:
+        _logger.error("Problem during jobs action :%s" % str(e))
+        result['exception'] = "Error"
+        return HttpResponse(json.dumps(result))
 
     return HttpResponse(json.dumps(fin_res))
 
