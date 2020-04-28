@@ -57,10 +57,17 @@ def jobs_action(request,action):
     #do actions here
     if action == 'kill_jobs':
         tasks = {}
+        without_taskid = []
         for job in jobs:
-            tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+            if job.get('taskid'):
+                tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+            else:
+                without_taskid.append(job['pandaid'])
         for task in tasks.keys():
             result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
+            fin_res.append(result)
+        if without_taskid:
+            result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
             fin_res.append(result)
     else:
         for job in jobs:
