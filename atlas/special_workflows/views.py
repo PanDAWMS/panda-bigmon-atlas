@@ -1,0 +1,119 @@
+import logging
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+
+from django.shortcuts import render
+import json
+
+from atlas.messaging.consumer import Payload
+from atlas.prodtask.models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, ProductionTask, \
+    get_priority_object, ProductionDataset, RequestStatus, get_default_project_mode_dict, get_default_nEventsPerJob_dict, \
+    OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
+from atlas.prodtask.views import form_existed_step_list, clone_slices, set_request_status
+from django.contrib.auth.decorators import login_required
+
+
+_logger = logging.getLogger('prodtaskwebui')
+
+@login_required(login_url='/prodtask/login/')
+def index(request):
+    if request.method == 'GET':
+
+        return render(request, 'special_workflows/_index_special_workflows.html', {
+                'active_app': 'special_workflows',
+                'pre_form_text': 'Special workflows',
+                'title': 'Special workflows',
+                'parent_template': 'prodtask/_index.html',
+            })
+
+@api_view(['GET'])
+def idds_postproc(request,production_request):
+    slices = InputRequestList.objects.filter(request=production_request).order_by('-slice')
+    last_slice = None
+    for slice in slices:
+        if not slice.is_hide:
+            last_slice = slice
+            break
+
+    step = StepExecution.objects.get(request=production_request, slice=last_slice)
+    # Check steps which already exist in slice, and change them if needed
+    step_submitted = step.status in StepExecution.STEPS_APPROVED_STATUS
+    return Response({'step':{'submitted':step_submitted,'ami_tag':step.step_template.ctag,'step_id':step.id},'outputPostProcessing':step.get_task_config('outputPostProcessing'),
+                     'template_input':step.get_task_config('template_input')})
+
+
+@api_view(['GET'])
+def idds_tasks(request,production_request):
+    slices = InputRequestList.objects.filter(request=production_request).order_by('slice')
+    tasks = []
+    for slice in slices:
+        if not slice.is_hide:
+            step = StepExecution.objects.get(request=production_request, slice=slice)
+            if ProductionTask.objects.filter(step=step,request=production_request).exists():
+                task = ProductionTask.objects.get(step=step,request=production_request)
+                parameter = ''
+                value = ''
+                if step.get_task_config('template_input'):
+                    parameter = step.get_task_config('template_input')['name']
+                    value = step.get_task_config('template_input')['value']
+                tasks.append({'id':task.id,'status':task.status,'parameter':parameter,'value':value ,'started':task.submit_time})
+    return Response({'tasks':tasks})
+
+
+
+@api_view(['GET'])
+def idds_get_patterns(request):
+    slices = InputRequestList.objects.filter(request=30687).order_by('slice')
+    patterns = []
+    for slice in slices:
+        if not slice.is_hide:
+            step = StepExecution.objects.get(request=30687, slice=slice)
+            patterns.append({'name':slice.brief,'outputPostProcessing':step.get_task_config('outputPostProcessing'),
+                     'template_input':step.get_task_config('template_input')})
+    return Response({'patterns':patterns})
+
+
+@api_view(['POST'])
+def idds_postproc_save(request,step_id):
+    try:
+        step = StepExecution.objects.get(id=step_id)
+        outputPostProcessing = request.data['outputPostProcessing']
+        template_input = request.data['template_input']
+        step.set_task_config({'outputPostProcessing':outputPostProcessing})
+        step.set_task_config({'template_input':template_input})
+        step.save()
+    except Exception as e:
+        _logger.error("Problem with saving idds postprocessing %s" % str(e))
+        return Response({'error': str(e)}, status=400)
+    return Response({'sucess':True})
+
+
+def idds_action_on_message(task_id, output):
+    task = ProductionTask.objects.get(id = task_id)
+    step = task.step
+    template_input = step.get_task_config('template_input')
+    template_input['value'] = output
+    slice = step.slice
+    new_slice = clone_slices(step.request_id, step.request_id, [slice.slice], -1, False)[0]
+    new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=step.request_id,slice=new_slice))
+    new_step.set_task_config({'template_input':template_input})
+    new_step.status = 'Approved'
+    new_step.save()
+    production_request = step.request
+    if production_request.cstatus != 'test':
+        set_request_status('auto', production_request.reqid, 'approved', 'Automatic idds approve',
+                           'Request was automatically approved')
+
+
+def idds_recive_message(payload: Payload) -> None:
+
+    _logger.info( str(payload.body))
+    try:
+        if payload.body['msg_type'] ==  "collection_activelearning":
+            task_id = payload.body['workload_id']
+            output = payload.body['output']
+            idds_action_on_message(int(task_id),output)
+        payload.ack()
+    except Exception as e:
+        _logger.error("Problem during iDDS message consumption: %s"%e)
+        payload.nack()

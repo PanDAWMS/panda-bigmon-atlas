@@ -11,3 +11,6 @@ pytz==2019.3
 rucio-clients==1.20.8
 rucio-clients-atlas==0.0.6
 xlrd==1.2.0
+stomp.py==6.0.0
+daemonize==2.5.0
+dataclasses==0.7

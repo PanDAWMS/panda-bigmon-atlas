@@ -58,6 +58,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.dkb',
     'atlas.prestage',
     'atlas.request_pattern',
+    'atlas.special_workflows',
     ### atlas.todoview: Placeholder for views which need to be implemented
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.getdatasets',

@@ -1,0 +1,72 @@
+<div class="row">
+    <h6>Request {{ request_id }}</h6>
+</div>
+<div class="row">
+    <div class="large-3 columns">Step:  {{ step.ami_tag }}</div>
+    <div class="large-3 columns"><button ng-click="saveStep()" ng-show="!(step.submitted)">Save</button></div>
+
+</div>
+<div ng-show="!(step.submitted)" class="row">
+    <div class="large-3 columns">Patterns:
+        <select ng-model="choosenPattern" ng-change="changePattern()">
+             <option ng-repeat="element in patterns" value="{{$index}}">{{element.name}}</option>
+        </select>
+
+    </div>
+</div>
+<div ng-show="step.submitted" class="row">
+    <table>
+        <thead>
+        <tr>
+            <th>Task</th><th>Status</th><th>Parameter</th><th>Value</th><th>Started</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="task in tasks">
+            <td class="{{ task.status }}"><a href="https://bigpanda.cern.ch/task/{{ task.id }}/">{{ task.id }}</a></td>
+            <td>{{ task.status }}</td>
+            <td>{{ task.parameter }}</td>
+            <td>{{ task.value }}</td>
+            <td>{{ task.started }}</td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+<div class="row">
+  <fieldset>
+    <legend>outputPostProcessing</legend>
+      <label> system:
+        <input type="text" ng-model="outputPostProcessing.system" ng-disabled="step.submitted" />
+      </label>
+      <label> type:
+        <input type="text" ng-model="outputPostProcessing.type" ng-disabled="step.submitted" />
+      </label>
+      <fieldset>
+          <legend>data</legend>
+          <label> sandbox:
+            <input type="text" ng-model="outputPostProcessing.data.sandbox" ng-disabled="step.submitted"/>
+          </label>
+          <label> executable:
+            <input type="text" ng-model="outputPostProcessing.data.executable" ng-disabled="step.submitted" />
+          </label>
+          <label> arguments:
+            <input type="text" ng-model="outputPostProcessing.data.arguments" ng-disabled="step.submitted" />
+          </label>
+          <label> output_json:
+            <input type="text" ng-model="outputPostProcessing.data.output_json"  ng-disabled="step.submitted"/>
+          </label>
+      </fieldset>
+      <fieldset>
+          <legend>Template parameter</legend>
+          <label> name:
+            <input type="text" ng-model="template_input.name" ng-disabled="step.submitted" />
+          </label>
+          <label> value:
+            <input type="text" ng-model="template_input.value" ng-disabled="step.submitted"/>
+          </label>
+      </fieldset>
+  </fieldset>
+
+
+</div>

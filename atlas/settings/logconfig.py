@@ -218,6 +218,7 @@ appendLogger('prodtaskwebui')
 ### postproduction
 appendLogger('postproduction')
 
+appendLogger('prodtask_messaging')
 
 
 

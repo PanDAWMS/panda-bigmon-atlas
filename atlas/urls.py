@@ -30,6 +30,8 @@ common_patterns = [
     url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     url(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
 
+    url(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
+
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     ### Uncomment the next line to enable the admin:
