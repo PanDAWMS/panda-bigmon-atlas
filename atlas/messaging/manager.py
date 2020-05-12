@@ -1,5 +1,6 @@
 import logging
 import uuid
+from copy import deepcopy
 from time import sleep
 from typing import Optional
 import ssl
@@ -8,12 +9,34 @@ from atlas.messaging.consumer import Listener
 from atlas.messaging.consumer import Payload, build_listener
 from django.utils.module_loading import import_string
 from stomp import connect
+import socket
+import threading
 logger = logging.getLogger("prodtask_messaging")
 
 wait_to_connect = int(getattr(settings, "STOMP_WAIT_TO_CONNECT", 10))
 
 
 
+def start_bunch( destination_name: str,
+    callback_str: str,
+    connection_settings: dict,
+    is_testing=False,
+    testing_disconnect=True,
+    param_to_callback=None,
+    return_listener=False,):
+    i = 0
+    for info in socket.getaddrinfo(connection_settings['host'], connection_settings['port'], 0, 0, socket.IPPROTO_TCP):
+        if info[0] == socket.AF_INET6:
+            continue
+        hostname = info[4][0]
+        new_connection = deepcopy(connection_settings)
+        new_connection['host'] = hostname
+        new_connection['prefix_name'] = socket.getfqdn(hostname).split('.')[0] + '-'
+        i+=1
+        x = threading.Thread(target=start_processing, args=(destination_name,callback_str,new_connection,is_testing,testing_disconnect,param_to_callback,return_listener,), daemon=True)
+        x.start()
+    while True:
+        sleep(10)
 
 
 def start_processing(

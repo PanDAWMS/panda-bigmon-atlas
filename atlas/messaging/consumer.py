@@ -42,13 +42,14 @@ class Listener(stomp.ConnectionListener):
         connection_configuration: Dict,
         is_testing: bool = False,
         subscription_id=None,
+        prefix_name=''
     ) -> None:
         self._subscription_configuration = subscription_configuration
         self._connection_configuration = connection_configuration
         self._connection = connection
         self._callback = callback
         self._subscription_id = f"{subscription_id if subscription_id else str(uuid.uuid4())}-listener"
-        self._listener_id = str(uuid.uuid4())
+        self._listener_id = prefix_name+str(uuid.uuid4())
         self._is_testing = is_testing
 
         if self._is_testing:
@@ -61,8 +62,8 @@ class Listener(stomp.ConnectionListener):
     def on_message(self, headers, message):
         message_id = headers["message-id"]
         logger.info(f"Message ID: {message_id}")
-        logger.debug("Received headers: %s", headers)
-        logger.debug("Received message: %s", message)
+        logger.debug("Listener %s Received headers: %s"%(self._listener_id, headers))
+        logger.debug("Listener %s Received message: %s"%(self._listener_id, message))
 
         # https://jasonrbriggs.github.io/stomp.py/api.html#acks-and-nacks
         def ack_logic():
@@ -93,18 +94,19 @@ class Listener(stomp.ConnectionListener):
             headers=self._connection_configuration["headers"],
             **self._subscription_configuration,
         )
-        logger.info("Connected")
+        logger.info(f"{self._listener_id} Connected")
         if wait_forever:
             while True:
                 if not self.is_open():
-                    logger.info("It is not open. Starting...")
+                    logger.info(f"{self._listener_id} is not open. Starting...")
                     self.start(self._callback, wait_forever=False)
                 time.sleep(1)
 
     def close(self):
         disconnect_receipt = str(uuid.uuid4())
         self._connection.disconnect(receipt=disconnect_receipt)
-        logger.info("Disconnected")
+        logger.info(f"{self._listener_id} Disconnected")
+
 
 def build_listener(connection_settings, callback, destination_name ,ack_type=Acknowledgements.CLIENT,
                     durable_topic_subscription=False,
@@ -112,6 +114,7 @@ def build_listener(connection_settings, callback, destination_name ,ack_type=Ack
 
     logger.info("Building listener...")
     hosts, vhost = [(connection_settings.get("host"), connection_settings.get("port"))], connection_settings.get("vhost")
+    prefix_name = connection_settings.get("prefix_name",'')
     if connection_settings.get("hostStandby") and connection_settings.get("portStandby"):
         hosts.append((connection_settings.get("hostStandby"), connection_settings.get("portStandby")))
     use_ssl = connection_settings.get("use_ssl", False)
@@ -165,6 +168,7 @@ def build_listener(connection_settings, callback, destination_name ,ack_type=Ack
         connection_configuration,
         is_testing=is_testing,
         subscription_id=connection_settings.get("subscriptionId"),
+        prefix_name=prefix_name,
     )
     return listener
 

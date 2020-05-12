@@ -15,20 +15,19 @@ def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'atlas.settings')
     import django
     django.setup()
-    from atlas.messaging.manager import start_processing
+    from atlas.messaging.manager import start_processing, start_bunch
     from atlas.settings.messaging import TEST_CONFIG, IDDS_PRODUCTION_CONFIG
     if args.is_test:
         config = TEST_CONFIG['connection']
         logger.info('Starting messaging waiting for test')
         start_processing(TEST_CONFIG['queue'], 'atlas.special_workflows.views.idds_recive_message', config)
         while True:
-            time.sleep(5)
+            time.sleep(10)
     else:
         config = IDDS_PRODUCTION_CONFIG['connection']
         logger.info('Starting messaging waiting for idds')
-        start_processing(IDDS_PRODUCTION_CONFIG['queue'], 'atlas.special_workflows.views.idds_recive_message', config)
-        while True:
-            time.sleep(5)
+        start_bunch(IDDS_PRODUCTION_CONFIG['queue'], 'atlas.special_workflows.views.idds_recive_message', config)
+
 
 
 if __name__ == "__main__":
