@@ -107,11 +107,15 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
         form = RetryErrorsForm(request.POST)
         if form.is_valid():
             # Process the data in form.cleaned_data
-            retry_errors = RetryErrors(**form.cleaned_data)
-            retry_errors.id = None
-            retry_errors.save()
-            _logger.info("created user:{user} data:{old_data}".format(user=request.user.username,
-                                                                         old_data=model_to_dict(retry_errors)))
+            try:
+                retry_errors = RetryErrors(**form.cleaned_data)
+                retry_errors.id = None
+                retry_errors.save()
+                _logger.info("created user:{user} data:{old_data}".format(user=request.user.username,
+                                                                             old_data=model_to_dict(retry_errors)))
+            except Exception as e:
+                _logger.error("Problem during error save: %s" % str(e))
+
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
