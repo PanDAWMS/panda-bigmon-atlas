@@ -38,8 +38,13 @@ def idds_postproc(request,production_request):
     step = StepExecution.objects.get(request=production_request, slice=last_slice)
     # Check steps which already exist in slice, and change them if needed
     step_submitted = step.status in StepExecution.STEPS_APPROVED_STATUS
-    return Response({'step':{'submitted':step_submitted,'ami_tag':step.step_template.ctag,'step_id':step.id},'outputPostProcessing':step.get_task_config('outputPostProcessing'),
-                     'template_input':step.get_task_config('template_input')})
+    terminations = step.get_task_config('terminations')
+    if not terminations:
+        terminations = [{'name':'','comparison':'gt','value':0}]
+
+    return Response({'step':{'submitted':step_submitted,'ami_tag':step.step_template.ctag,'step_id':step.id},
+                     'outputPostProcessing':step.get_task_config('outputPostProcessing'),
+                     'template_input':step.get_task_config('template_input'),'terminations':terminations})
 
 
 @api_view(['GET'])
@@ -69,7 +74,7 @@ def idds_get_patterns(request):
         if not slice.is_hide:
             step = StepExecution.objects.get(request=30687, slice=slice)
             patterns.append({'name':slice.brief,'outputPostProcessing':step.get_task_config('outputPostProcessing'),
-                     'template_input':step.get_task_config('template_input')})
+                     'template_input':step.get_task_config('template_input'),'terminations':step.get_task_config('terminations')})
     return Response({'patterns':patterns})
 
 
@@ -79,8 +84,14 @@ def idds_postproc_save(request,step_id):
         step = StepExecution.objects.get(id=step_id)
         outputPostProcessing = request.data['outputPostProcessing']
         template_input = request.data['template_input']
+        terminations = []
+        for termination in request.data['terminations']:
+            if termination.get('name'):
+                terminations.append(termination)
         step.set_task_config({'outputPostProcessing':outputPostProcessing})
         step.set_task_config({'template_input':template_input})
+        if terminations:
+            step.set_task_config({'terminations': terminations})
         step.save()
     except Exception as e:
         _logger.error("Problem with saving idds postprocessing %s" % str(e))
@@ -89,20 +100,39 @@ def idds_postproc_save(request,step_id):
 
 
 def idds_action_on_message(task_id, output):
-    task = ProductionTask.objects.get(id = task_id)
-    step = task.step
-    template_input = step.get_task_config('template_input')
-    template_input['value'] = output
-    slice = step.slice
-    new_slice = clone_slices(step.request_id, step.request_id, [slice.slice], -1, False)[0]
-    new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=step.request_id,slice=new_slice))
-    new_step.set_task_config({'template_input':template_input})
-    new_step.status = 'Approved'
-    new_step.save()
-    production_request = step.request
-    if production_request.cstatus != 'test':
-        set_request_status('auto', production_request.reqid, 'approved', 'Automatic idds approve',
-                           'Request was automatically approved')
+    try:
+
+        task = ProductionTask.objects.get(id = task_id)
+        step = task.step
+        terminations = step.get_task_config('terminations')
+        to_continue = True
+        _logger.info("Extending active learning task: %s %s" %(task_id, str(output)))
+        for condition in terminations:
+            if condition['name'] in output:
+                if condition['comparison'] == 'gt':
+                    to_continue &= (condition['value'] > output[condition['name']])
+                if condition['comparison'] == 'lte':
+                    to_continue &= (condition['value'] <= output[condition['name']])
+            else:
+                to_continue = False
+                break
+        if to_continue:
+                template_input = step.get_task_config('template_input')
+                template_input['value'] = output[template_input['name']]
+                slice = step.slice
+                new_slice = clone_slices(step.request_id, step.request_id, [slice.slice], -1, False)[0]
+                new_step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=step.request_id,slice=new_slice))
+                new_step.set_task_config({'template_input':template_input})
+                new_step.status = 'Approved'
+                new_step.save()
+                production_request = step.request
+                if production_request.cstatus != 'test':
+                    set_request_status('auto', production_request.reqid, 'approved', 'Automatic idds approve',
+                                       'Request was automatically approved')
+        else:
+            _logger.info("Finish workflow for task: %s" % (task_id))
+    except Exception as e:
+        _logger.error("Problem during action applying: %s" % e)
 
 
 def idds_recive_message(payload: Payload) -> None:

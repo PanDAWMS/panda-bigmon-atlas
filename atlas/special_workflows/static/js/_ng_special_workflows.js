@@ -30,7 +30,8 @@
 
         function (scope, http, routeParams) {
                 scope.saveStep = () => {
-                var sendData = {'outputPostProcessing':scope.outputPostProcessing,'template_input':scope.template_input};
+                var sendData = {'outputPostProcessing':scope.outputPostProcessing,'template_input':scope.template_input,
+                'terminations': scope.terminations};
                 http.post(construct_django_url('/special_workflows/idds_postproc_save/',scope.step.step_id),sendData).
                     success(function(data, status, headers, config) {
                             alert('Step is saved');
@@ -46,6 +47,10 @@
             scope.changePattern = () => {
               scope.outputPostProcessing = scope.patterns[scope.choosenPattern].outputPostProcessing;
               scope.template_input = scope.patterns[scope.choosenPattern].template_input;
+              scope.terminations = scope.patterns[scope.choosenPattern].terminations;
+            };
+            scope.addTermination = () => {
+              scope.terminations.push({'comparison':'gt','value':0});
             };
             scope.request_id =routeParams.request_id;
             scope.outputPostProcessing = {data:{}};
@@ -55,8 +60,11 @@
                              scope.step = data.step;
                              scope.outputPostProcessing = data.outputPostProcessing;
                              scope.template_input = data.template_input;
+                             scope.terminations = data.terminations;
                              scope.patterns[0]['outputPostProcessing'] =  data.outputPostProcessing;
                              scope.patterns[0]['template_input'] =  data.template_input;
+                             scope.patterns[0]['terminations'] =  data.terminations;
+
                              if (scope.step.submitted){
                                  http.get(construct_django_url('/special_workflows/idds_tasks/',scope.request_id)).
                                      success(function(data, status, headers, config) {
