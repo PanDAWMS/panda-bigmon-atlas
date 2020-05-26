@@ -1,7 +1,7 @@
 
 from os.path import dirname, join
 
-
+from .local import MY_CELERY
 import atlas
 
 VERSIONS = {
@@ -64,6 +64,10 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.getdatasets',
     'atlas.auth.shibsso',
     'django_tables2',#pip install django_tables2
+    'atlas.celerybackend',
+    'django_celery_results',
+    'django_celery_beat'
+
 )
 INSTALLED_APPS =  INSTALLED_APPS_BIGPANDAMON_ATLAS
 JS_I18N_APPS_EXCLUDE = INSTALLED_APPS_BIGPANDAMON_ATLAS + ('django_tables2',)
@@ -110,3 +114,5 @@ SITE_ID = 2
 EMAIL_SUBJECT_PREFIX = 'bigpandamon-atlas: '
 
 
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = MY_CELERY
