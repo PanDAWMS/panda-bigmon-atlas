@@ -1,0 +1,54 @@
+{% extends parent_template %}
+
+{% load static from staticfiles %}
+
+
+{% block extra_css %}
+{{ block.super }}
+
+{% endblock %}
+
+{% block base_js %}
+{{ block.super }}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+
+
+{% endblock %}
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+{% block body %}
+    <h1>{{ error }}</h1>
+    <span>AMI: <a href="http://ami.in2p3.fr/app?subapp=tagsShow&userdata={{ amitag }}">{{ amitag }}</a></span>
+    <span>DKB: <a href="/dkb/#/task_keywords/{{ amitag }}">{{ amitag }}</a></span>
+    <table>
+    <thead>
+
+    <tr>
+        <th>Parameter</th>
+        <th>Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for key,value in ami_tag_dict.items %}
+        <tr >
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+
+
+{% endblock %}

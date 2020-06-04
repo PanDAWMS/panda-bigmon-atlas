@@ -64,5 +64,15 @@
         </div>
         <div class="column large-8"></div>
     </div>
-
+    <div class="row">
+        <div class="column large-2 ">
+            <label>AMI tag: <input type="text" id="AMITag"  value=""  /> </label>
+        </div>
+        <div class="column large-6">
+            <a class="button" onclick="if(($('#AMITag').val()||'')!=''){window.location.href = construct_django_url('/ami/ami_tag/',$('#AMITag').val()||'');}">ProdSys</a>
+            <a class="button" onclick="if(($('#AMITag').val()||'')!=''){window.location.href = 'http://ami.in2p3.fr/app?subapp=tagsShow&userdata='+($('#AMITag').val()||'')}">AMI</a>
+            <a class="button" onclick="if(($('#AMITag').val()||'')!=''){window.location.href = construct_django_url('/dkb/#/task_keywords/',$('#AMITag').val()||'');}">DKB</a>
+        </div>
+        <div class="column large-8"></div>
+    </div>
 {% endblock %}

@@ -63,6 +63,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     ### as part of cross-linking between jobs and tasks monitoring
     'atlas.getdatasets',
     'atlas.auth.shibsso',
+    'atlas.ami',
     'django_tables2',#pip install django_tables2
     'atlas.celerybackend',
     'django_celery_results',

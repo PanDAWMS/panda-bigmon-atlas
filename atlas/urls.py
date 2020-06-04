@@ -27,6 +27,7 @@ common_patterns = [
     url(r'^gdpconfig/', include(('atlas.gdpconfig.urls','gdpconfig'), namespace='gdpconfig')),
     url(r'^getdatasets/', include(('atlas.getdatasets.urls','getdatasets'), namespace='getdatasets')),
     url(r'^dkb/', include(('atlas.dkb.urls','dkb'), namespace='dkb')),
+    url(r'^ami/', include(('atlas.ami.urls','ami'), namespace='ami')),
     url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     url(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
 
