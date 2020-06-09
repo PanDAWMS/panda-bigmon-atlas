@@ -207,6 +207,16 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
+    def get_replica_pre_stage_rule_by_rse(self, rse):
+        rse_attr = self.__ddm.list_rse_attributes(rse)
+        if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
+                return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
+        elif rse == 'CERN-PROD_TEST-CTA':
+                rse_attr = self.__ddm.list_rse_attributes(rse)
+                return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
+        elif rse == 'CERN-PROD_RAW':
+            return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+
     def get_replica_pre_stage_rule(self, dataset):
         scope, name = self.rucio_convention(dataset)
         for lock in self.__ddm.get_dataset_locks(scope, name):

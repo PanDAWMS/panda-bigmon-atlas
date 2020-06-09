@@ -20,7 +20,7 @@ from datetime import timedelta
 from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
     ActionDefault
-from atlas.prodtask.spdstodb import _logger, fill_template
+from atlas.prodtask.spdstodb import fill_template
 
 from ..prodtask.helper import form_request_log
 from ..prodtask.ddm_api import find_dataset_events
@@ -57,6 +57,9 @@ def create_predefinition_action(step):
                 sa.save()
                 if ('toStaging=yes') not in step.get_task_config('project_mode'):
                     step.update_project_mode('toStaging','yes')
+                    step.save()
+                if ('inputPreStaging') not in step.get_task_config('project_mode'):
+                    step.update_project_mode('inputPreStaging','yes')
                     step.save()
                 if (action in [8]) and  ('useZipToPin=yes') not in step.get_task_config('project_mode'):
                     step.update_project_mode('useZipToPin','yes')

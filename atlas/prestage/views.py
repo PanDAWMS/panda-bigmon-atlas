@@ -430,7 +430,9 @@ def test_tape_processed(tape_name, test):
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted,test)
                 resource_tape.print_queue()
 
-def create_prestage(task,ddm,rule, input_dataset,config, special=False):
+
+
+def create_prestage(task,ddm,rule, input_dataset,config, special=None):
     #check that's only Tape replica
     replicas = ddm.full_replicas_per_type(input_dataset)
     if (len(replicas['data']) > 0):
@@ -441,13 +443,10 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=False):
         source_replicas = None
         input = None
         if special:
-            special_datasets = list(InputRequestList.objects.filter(~Q(is_hide=True),request=29036).values_list('dataset',flat=True))
-            if ddm.rucio_convention(input_dataset)[1] in special_datasets:
-                rule, source_replicas, input = 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+            if special in [x['rse'] for x in replicas['tape']]:
+                rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(special)
             else:
                 rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
-            if input == 'INFN-T1_DATATAPE':
-                source_replicas = 'INFN-T1_DATATAPE'
         else:
             if replicas['tape']:
                 input = [x['rse'] for x in replicas['tape']]
@@ -483,19 +482,25 @@ def create_follow_prestage_action(task):
     action_step.request = task.request
     action_step.save()
 
+def make_rule_from_google(dataset):
+    ddm= DDM()
+    ddm.add_replication_rule(dataset,'type=DATADISK&GCSEnable=True',copies=1, lifetime=30*86400, weight='freespace',
+                                    activity='Staging', source_replica_expression='GOOGLE_EU')
+
+
 def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, check_archive=False):
     action_step = StepAction.objects.get(id=action_step_id)
     action_step.attempt += 1
     step = StepExecution.objects.get(id=action_step.step)
     special = False
-    idds = False
+    noidds = False
     if step.get_task_config('PDAParams'):
         try:
             waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
             if waiting_parameters_from_step.get('special'):
-                special = True
-            if waiting_parameters_from_step.get('idds'):
-                idds = True
+                special = waiting_parameters_from_step.get('special')
+            if waiting_parameters_from_step.get('noidds'):
+                noidds = True
         except Exception as e:
             _logger.error(" %s" % str(e))
     production_request = step.request
@@ -508,6 +513,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
         action_step.done_time = current_time
         action_step.save()
         step.remove_project_mode('toStaging')
+        step.remove_project_mode('inputPreStaging')
         step.save()
         return
     finish_action = True
@@ -519,7 +525,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
                     config = ActionDefault.objects.get(name='active_archive_staging').get_config()
                 else:
                     config = ActionDefault.objects.get(name='active_staging').get_config()
-                if idds:
+                if not noidds:
                     config['level'] = 1
                 if check_archive:
                     input_dataset = find_archive_dataset(task.input_dataset,ddm)
@@ -539,6 +545,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
         action_step.message = 'All task checked'
         action_step.done_time = current_time
         step.remove_project_mode('toStaging')
+        step.remove_project_mode('inputPreStaging')
         step.save()
     else:
         action_step.execution_time = current_time + timedelta(hours=delay)
@@ -548,6 +555,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
         action_step.message = 'No archive dataset is found'
         action_step.done_time = current_time
         step.remove_project_mode('toStaging')
+        step.remove_project_mode('inputPreStaging')
         step.save()
     action_step.save()
 
