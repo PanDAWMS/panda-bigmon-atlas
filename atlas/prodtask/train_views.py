@@ -539,13 +539,13 @@ def create_request_from_train(request,train_id):
             step_pattern = {}
             for  pattern_slice_number in pattern_slices:
                 pattern_slice = InputRequestList.objects.get(request=train.pattern_request,slice=int(pattern_slice_number))
-                step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0]
+                step_pattern[pattern_slice_number] = list(StepExecution.objects.filter(slice=pattern_slice).order_by('id'))
             slice_index = 0
             spreadsheet_dict = []
             merged_trains = prepare_merged_train_carriages(train_id)
-            for dataset_slice in merged_trains:
+            for slice_index, dataset_slice in enumerate(merged_trains):
                 dataset = dataset_slice[0]
-                current_parent_step = step_pattern[dataset_slice[1]]
+                current_parent_step = step_pattern[dataset_slice[1]][0]
                 current_output_formats = merged_trains[dataset_slice]
                 if current_output_formats:
                             st_sexec_list = []
@@ -555,16 +555,21 @@ def create_request_from_train(request,train_id):
                                        priority=int(current_parent_step.slice.priority),
                                        input_events=-1)
                             slice_index += 1
-                            sexec = dict(status='NotChecked', priority=int(current_parent_step.priority),
-                                         input_events=-1)
-                            task_config =  current_parent_step.get_task_config()
-                            nEventsPerJob = task_config.get('nEventsPerJob','')
-                            task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-                            st_sexec_list.append({'step_name': current_parent_step.step_template.step, 'tag': current_parent_step.step_template.ctag
-                                                     , 'step_exec': sexec,
-                                              'memory': int(current_parent_step.step_template.memory),
-                                              'formats': '.'.join(current_output_formats),
-                                              'task_config':task_config})
+                            for step_index,current_parent_step in enumerate(step_pattern[dataset_slice[1]]):
+                                sexec = dict(status='NotChecked', priority=int(current_parent_step.priority),
+                                             input_events=-1)
+                                task_config =  current_parent_step.get_task_config()
+                                nEventsPerJob = task_config.get('nEventsPerJob','')
+                                task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+                                if step_index>0:
+                                    step_parent = '%i_%i'%(slice_index,step_index-1)
+                                else:
+                                    step_parent = '%i_%i' % (slice_index, step_index )
+                                st_sexec_list.append({'step_name': current_parent_step.step_template.step, 'tag': current_parent_step.step_template.ctag
+                                                         , 'step_exec': sexec,
+                                                  'memory': int(current_parent_step.step_template.memory),
+                                                  'formats': '.'.join(current_output_formats),
+                                                  'task_config':task_config,'step_order':'%i_%i' % (slice_index, step_index ),'step_parent':step_parent})
                             spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
                         
             form_data = {}
