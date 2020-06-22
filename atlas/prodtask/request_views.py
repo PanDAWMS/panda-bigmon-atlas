@@ -131,7 +131,10 @@ def reprocessing_object_form(request, reqid):
             ordered_slices.sort()
             result_dict = gather_form_dict(reqid,ordered_slices)
             request.session['reprocessing_objects'] = result_dict
-            return HttpResponse(json.dumps({'success':True}), content_type='application/json')
+            url = "/prodtask/reprocessing_request_create/"
+            if TRequest.objects.get(reqid=reqid).request_type == 'GROUP':
+                url = "/prodtask/dpd_request_create/"
+            return HttpResponse(json.dumps({'success':True,'url':url}), content_type='application/json')
        except Exception as e:
             return HttpResponse(json.dumps({'success':False,'message':str(e)}),status=500, content_type='application/json')
     return HttpResponse(json.dumps({'success':False,'message':''}),status=500, content_type='application/json')

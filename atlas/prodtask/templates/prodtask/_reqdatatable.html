@@ -2390,8 +2390,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         dataType: 'text',
                         success: function(data,status) {
                             var return_status =  $.evalJSON(data).success;
+                            var return_url = $.evalJSON(data).url;
                             if(return_status){
-                                window.location.href = "/prodtask/reprocessing_request_create/";
+                                window.location.href = return_url;
                             } else{
                                 alert($.evalJSON(data).message);
                             }
@@ -2779,9 +2780,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             {% else %}
                 <li><a href="#" onclick="closeOpenEnded(event);">Close Open Ended</a></li>
             {% endif  %}
-            {% ifequal trequest.request_type "REPROCESSING" %}
                 <li><a href="#" onclick="createReprocessing(event);">Create base on this</a></li>
-            {% endifequal %}
              <li><a href="#" onclick="syncTasksJEDI(event);">Sync tasks with JEDI</a></li>
         {% else %}
           <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
