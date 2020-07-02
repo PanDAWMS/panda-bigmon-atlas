@@ -48,7 +48,26 @@
         </tr>
     {% endfor %}
     </tbody>
+
     </table>
+        <table>
+    <thead>
 
+    <tr>
+        <th>SW tag</th>
+        <th>Image Name</th>
+        <th>Image Type</th>
+    </tr>
+    </thead>
+    <tbody>
+    {%  for sw,image,image_type in sw_containers %}
+        <tr >
+            <td><a href="http://ami.in2p3.fr/app?subapp=tagsShow&userdata={{ sw }}">{{ sw }}</a></td>
+            <td>{{ image }}</td>
+            <td>{{ image_type }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
 
+    </table>
 {% endblock %}

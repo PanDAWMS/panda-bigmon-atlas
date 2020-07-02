@@ -82,3 +82,24 @@ class AMIClient(object):
 
     def get_ami_tag(self, tag_name):
         return self._post_command('AMIGetAMITagInfo', 'amiTagInfo', amiTag=tag_name)[0]
+
+
+
+    def ami_sw_tag_by_cache(self, cache):
+        query = \
+            "SELECT * WHERE `SWRELEASE` = '{0}'".format(cache)
+
+        return self._post_command('SearchQuery',
+                                  catalog='Container:production',
+                                  entity='SWTAG_VIEW',
+                                  mql='{0}'.format(query))
+
+
+    def ami_image_by_sw(self, swtag):
+        query = \
+            "SELECT * WHERE `IMAGEREPOSITORYSWTAG` = '{0}'".format(swtag)
+
+        return self._post_command('SearchQuery',
+                                  catalog='Container:production',
+                                  entity='IMAGE_VIEW',
+                                  mql='{0}'.format(query))
