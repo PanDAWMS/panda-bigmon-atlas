@@ -28,7 +28,8 @@ common_patterns = [
     url(r'^getdatasets/', include(('atlas.getdatasets.urls','getdatasets'), namespace='getdatasets')),
     url(r'^dkb/', include(('atlas.dkb.urls','dkb'), namespace='dkb')),
     url(r'^ami/', include(('atlas.ami.urls','ami'), namespace='ami')),
-    url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
+  url(r'^api/', include(('atlas.prodtask_api.urls', 'prodtask_api'), namespace='prodtask_api')),
+  url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     url(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
 
     url(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
@@ -37,9 +38,10 @@ common_patterns = [
 
     ### Uncomment the next line to enable the admin:
     url(r'^admin/',  admin.site.urls),
+   #                   url(r'^ng/',
+   #                       include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
 
-
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+                  ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 
 urlpatterns = common_patterns

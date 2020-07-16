@@ -11,7 +11,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == "taskmon":
             return "deft_adcr"
         if model._meta.app_label == 'authtoken':
-            return 'dev_db'
+            return 'default'
         if model._meta.app_label == 'dev':
             return 'dev_db'
         if model._meta.app_label == 'panda_dev':
@@ -34,7 +34,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'dev':
             return 'dev_db_wr'
         if model._meta.app_label == 'authtoken':
-            return 'dev_db_wr'
+            return 'default'
         if model._meta.app_label == 'panda':
             return 'panda_wr'
         if model._meta.app_label == 'django_celery_results':

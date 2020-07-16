@@ -7,33 +7,28 @@ import atlas
 VERSIONS = {
     'atlas': atlas.__versionstr__,
 }
-# List of finder classes that know how to find static files in
-# various locations.
+
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-# List of callables that know how to import templates from various sources.
 
 
 MIDDLEWARE = (
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # for AJAX POST protection with csrf
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'atlas.auth.shibsso.middleware.ShibSSOMiddleware',
 )
 
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+
     join(dirname(atlas.__file__), 'templates'),
     join(dirname(atlas.__file__), 'datatables/templates'),
 
@@ -49,7 +44,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.admindocs',
     'atlas.auth.voms',
     'rest_framework.authtoken',
-   # 'djcelery',
+    'rest_framework',
     'atlas.prodtask',
     'atlas.prodjob',
     'atlas.reqtask',
@@ -59,15 +54,17 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.prestage',
     'atlas.request_pattern',
     'atlas.special_workflows',
-    ### atlas.todoview: Placeholder for views which need to be implemented
-    ### as part of cross-linking between jobs and tasks monitoring
     'atlas.getdatasets',
     'atlas.auth.shibsso',
     'atlas.ami',
-    'django_tables2',#pip install django_tables2
+    'django_tables2',
     'atlas.celerybackend',
     'django_celery_results',
-    'django_celery_beat'
+    'django_celery_beat',
+    #'atlas.frontendjs',
+    #'atlas.frontenddjango',
+    'atlas.prodtask_api'
+
 
 )
 INSTALLED_APPS =  INSTALLED_APPS_BIGPANDAMON_ATLAS
