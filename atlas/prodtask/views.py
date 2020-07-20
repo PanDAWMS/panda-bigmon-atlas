@@ -1,5 +1,6 @@
 import re
 
+from django.contrib.auth.decorators import login_required
 from django.forms import model_to_dict
 import json
 import logging
@@ -24,6 +25,7 @@ from atlas.prodtask.spdstodb import fill_template
 
 from ..prodtask.helper import form_request_log
 from ..prodtask.ddm_api import find_dataset_events
+from rest_framework.authtoken.models import Token
 
 
 
@@ -2524,13 +2526,18 @@ def production_dataset_table(request):
     return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
 
-
+@login_required(login_url='/prodtask/login/')
+@csrf_protect
 @never_cache
 def userinfo(request):
+    token = None
+    if Token.objects.filter(user=request.user).exists():
+        token = Token.objects.get(user=request.user)
     return TemplateResponse(request, "prodtask/_userinfo.html",
             {
                  'title': 'User info',
                  'active_app' : 'prodtask',
+                  'token' : token,
                  'parent_template': 'prodtask/_index.html',
             })
 
