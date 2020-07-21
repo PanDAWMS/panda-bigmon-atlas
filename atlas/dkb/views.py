@@ -110,6 +110,7 @@ def index2(request):
 
 @api_view(['GET'])
 def test_name(request):
+    """Return name of the user"""
     return Response(request.user.username)
 
 
@@ -289,6 +290,32 @@ def new_derivation_stat(project, ami, output):
         return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
     except :
         return {'total': 0, 'ratio': 0, 'events_ratio': 0}
+
+
+
+def task_in_dkb(task_id):
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+      "size": 1,
+      "query": {
+        "bool": {
+          "must": [
+            {"term": {"taskid":str(task_id)}},
+
+          ]
+        }
+      },
+
+    }
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    current_hit = None
+    for hit in exexute:
+        current_hit = hit.to_dict()
+
+    return current_hit
+
+
 
 
 
@@ -935,6 +962,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             result.append(current_stat)
             if current_stat['hs06']:
                 total_percent_with_hs06.append((percent_done,current_stat['hs06']*current_stat['input_events']))
+            elif current_stat['finished_tasks']>0:
+                total_percent_with_hs06.append((percent_done,  current_stat['input_events']))
     result.sort(key=lambda x: -x['input_events'])
     total_campaign = None
     if len(total_percent_with_hs06) == len(statistics.keys()):
