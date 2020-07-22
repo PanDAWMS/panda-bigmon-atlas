@@ -31,6 +31,11 @@ def request_jobs(request):
     return render(request, 'prodjob/_job_table.html',{ 'params_for_bigpanda':  params_for_bigpanda  })
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 def jobs_action(request,action):
     """
 
@@ -57,19 +62,23 @@ def jobs_action(request,action):
     #do actions here
     try:
         if action == 'kill_jobs':
-            tasks = {}
-            without_taskid = []
-            for job in jobs:
-                if job.get('taskid'):
-                    tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
-                else:
-                    without_taskid.append(job['pandaid'])
-            for task in tasks.keys():
-                result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
-                fin_res.append(result)
-            if without_taskid:
-                result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
-                fin_res.append(result)
+
+            for chunk in chunks(jobs,400):
+                tasks = {}
+                without_taskid = []
+                for job in chunk:
+
+                    if job.get('taskid'):
+                        tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+                    else:
+                        without_taskid.append(job['pandaid'])
+                _logger.info("Send DEFT job kills for %s jobs for %s tasks" % (str(len(chunk)),str(len(tasks.keys()))))
+                for task in tasks.keys():
+                    result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
+                    fin_res.append(result)
+                if without_taskid:
+                    result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
+                    fin_res.append(result)
         else:
             for job in jobs:
                 result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
