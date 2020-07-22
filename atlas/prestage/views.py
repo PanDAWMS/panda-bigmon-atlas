@@ -428,7 +428,7 @@ def test_tape_processed(tape_name, test):
                                    active_staged[x]['tape'] == tape.name]
                 total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted,test)
-                resource_tape.print_queue()
+                resource_tape.do_submission()
 
 
 
@@ -652,6 +652,7 @@ def do_staging(action_step_id, ddm):
 
 
 def delete_done_staging_rules(reqids):
+    _logger.info("Find replica to delete for %s" % str(reqids))
     for reqid in reqids:
         to_delete_per_tape, res2 = replica_to_delete_dest(reqid)
         ddm = DDM()
