@@ -608,7 +608,8 @@ class StepExecution(models.Model):
     STEPS_APPROVED_STATUS = ['Skipped','Approved']
     INT_TASK_CONFIG_PARAMS = ['nEventsPerJob','nEventsPerMergeJob','nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob',
                               'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile','maxFailure','split_slice']
-    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff', 'PDA', 'PDAParams']
+    TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff',
+                                                   'PDA', 'PDAParams', 'container_name', 'onlyTagsForFC']
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)

@@ -325,12 +325,14 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                          raise ValueError("Part of child chain before linked step can't be overridden")
                     no_action = False
                     if step_value['changes']:
+
                         for key in list(step_value['changes'].keys()):
-                            if type(step_value['changes'][key]) != dict:
-                                step_value['changes'][key].strip()
-                            else:
-                                for key_second_level in list(step_value['changes'][key].keys()):
-                                    step_value['changes'][key][key_second_level].strip()
+                            if type(step_value['changes'][key]) != bool:
+                                if (type(step_value['changes'][key]) != dict):
+                                    step_value['changes'][key].strip()
+                                else:
+                                    for key_second_level in list(step_value['changes'][key].keys()):
+                                        step_value['changes'][key][key_second_level].strip()
                     if step_in_db:
                         if (len(to_delete)==0)and(step_in_db.step_template.ctag == step_value['value']) and \
                                 (not step_value['changes']) and (total_events==step_in_db.input_events) and \
@@ -355,8 +357,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode',
                                       'nFilesPerJob','nGBPerJob','maxAttempt','maxFailure','evntFilterEff',
-                                      'PDA',
-                                      'PDAParams']:
+                                      'PDA','PDAParams','container_name', 'onlyTagsForFC']:
                                 if x in step_value['changes']:
                                     if step_value['changes'][x] and x in StepExecution.INT_TASK_CONFIG_PARAMS:
                                         task_config[x] = int(step_value['changes'][x])
@@ -437,8 +438,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             for x in ['input_format','nEventsPerJob','token','merging_tag','nEventsPerMergeJob',
                                       'nFilesPerMergeJob','nGBPerMergeJob','nMaxFilesPerMergeJob','project_mode','nFilesPerJob',
                                       'nGBPerJob','maxAttempt','maxFailure','evntFilterEff',
-                                      'PDA',
-                                      'PDAParams']:
+                                      'PDA','PDAParams','container_name', 'onlyTagsForFC']:
                                 if x in step_value['changes']:
                                     if step_value['changes'][x] and x in StepExecution.INT_TASK_CONFIG_PARAMS:
                                         task_config[x] = int(step_value['changes'][x])
@@ -2628,7 +2628,7 @@ def make_slices_from_dict(req, file_dict):
                     task_config_options = ['project_mode','input_format','token','nFilesPerMergeJob','nEventsPerMergeJob',
                                            'nGBPerMergeJob','nMaxFilesPerMergeJob','merging_tag','nFilesPerJob',
                                            'nGBPerJob','maxAttempt','maxFailure','split_slice','evntFilterEff','PDA',
-                                           'PDAParams']
+                                           'PDAParams','container_name', 'onlyTagsForFC']
                     for task_config_option in task_config_options:
                         if task_config_option in step['task_config']:
                             task_config.update({task_config_option:step['task_config'][task_config_option]})

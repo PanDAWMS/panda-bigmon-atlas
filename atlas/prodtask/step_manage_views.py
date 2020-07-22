@@ -870,7 +870,8 @@ def slice_steps(request, reqid, slice_number):
                                         'maxFailure':task_config.get('maxFailure',''),'nEventsPerMergeJob':task_config.get('nEventsPerMergeJob',''),
                                         'evntFilterEff':task_config.get('evntFilterEff',''),
                                         'PDA':task_config.get('PDA',''),
-                                         'PDAParams':task_config.get('PDAParams',''),
+                                         'PDAParams':task_config.get('PDAParams',''),'container_name':task_config.get('container_name',''),
+                                         'onlyTagsForFC':task_config.get('onlyTagsForFC',''),
                                         'previousTasks':','.join(map(str,task_config.get('previous_task_list',[])))})
 
             dataset = ''

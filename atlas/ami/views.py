@@ -10,10 +10,11 @@ from django.shortcuts import render
 def amitag(request, amitag):
     error_message = ''
     tag = None
+    sw_containers = []
     try:
         ami = AMIClient()
         tag = ami.get_ami_tag(amitag)
-        sw_containers = []
+
         if tag['tagType'] != 'sw':
             sw_tags = ami.ami_sw_tag_by_cache(tag['baseRelease'])
         else:

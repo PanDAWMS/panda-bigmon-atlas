@@ -1314,7 +1314,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                 }
                                 if (!notUpdateFromDB) {
                                     $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).parent().css({'color': 'initial'});
-                                    $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).val(check_steps.db_step_type[i][fieldName]);
+                                    if(fieldName=='onlyTagsForFC'){
+                                        $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).prop({'checked':check_steps.db_step_type[i][fieldName]});
+                                    } else {
+
+                                        $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).val(check_steps.db_step_type[i][fieldName]);
+                                    }
+
                                 }
                             }
 
@@ -2644,6 +2650,7 @@ function changeSliceChanges(that){
             if (currentField=='jobOption'){
                 makeJobOptionURL();
             }
+
         } else {
 
             if (changesList[currentSlice].stepsInSlice.length < (parseInt(currentStepNumber) + 1)) {
@@ -2653,7 +2660,12 @@ function changeSliceChanges(that){
                 }
             }
             var currentChangeStep = changesList[currentSlice].getStepByNumber(parseInt(currentStepNumber));
-            currentChangeStep[currentField] = $(that).val();
+            if (currentField=='onlyTagsForFC'){
+                currentChangeStep[currentField] = $(that).prop('checked');
+            } else{
+                currentChangeStep[currentField] = $(that).val();
+            }
+
         }
         {#        console.log(currentChangeStep,currentField,$(that).val());#}
     }
@@ -3698,6 +3710,18 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 <div class="large-12 columns">
                                   <label>Previous tasks
                                     <input type="text" class="previousTasks storeOutput{{forloop.counter0}}"  placeholder=" " readonly/>
+                                  </label>
+                                </div>
+                              </div>
+                            <div class="row">
+                                <div class="large-9 columns">
+                                  <label>Container name
+                                    <input type="text" class="container_name storeOutput{{forloop.counter0}} storeInput"  placeholder=" " />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Use only tags for FC
+                                    <input type="checkbox" class="onlyTagsForFC storeOutput{{forloop.counter0}} storeInput"  />
                                   </label>
                                 </div>
                               </div>
