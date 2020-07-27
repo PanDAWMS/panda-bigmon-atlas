@@ -87,6 +87,7 @@ allowed_task_actions = {
     'done': ['obsolete', 'delete_output', 'obsolete_entity','set_hashtag','remove_hashtag','ctrl','reassign'],
     'finished': ['set_hashtag','remove_hashtag','retry', 'retry_new', 'change_parameters', 'obsolete', 'ctrl', 'delete_output','change_priority', 'obsolete_entity'],
     'broken': ['set_hashtag','remove_hashtag','sync_jedi'],
+    'aborted': ['set_hashtag','remove_hashtag','sync_jedi'],
     'failed': ['set_hashtag','remove_hashtag','sync_jedi'],
     'scouting':['set_hashtag','remove_hashtag','sync_jedi'],
     'obsolete':['set_hashtag','remove_hashtag','sync_jedi'],
@@ -664,7 +665,7 @@ def check_action_allowed(username, tasks, action=None, params=None, userfullname
                                 pass
                         elif "MCCOORD" in  allowed_groups:
                                 pass
-                        elif (physgroup in allowed_groups) and (action not in ['increase_priority']):
+                        elif (physgroup in allowed_groups) and (action not in ['increase_priority','reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share']):
                                 if (action=='change_priority' and int(params[0])>570):
                                     denied_tasks.append(task)
                                 else:
