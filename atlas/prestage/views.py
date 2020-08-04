@@ -443,7 +443,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None):
         source_replicas = None
         input = None
         if special:
-            if special in [x['rse'] for x in replicas['tape']]:
+            if special in ([x['rse'] for x in replicas['tape']]+['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']):
                 rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(special)
             else:
                 rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
