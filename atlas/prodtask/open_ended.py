@@ -118,7 +118,7 @@ def check_open_ended():
             _logger.error('Container extension failed: request:%s %s'%(str(open_production_request.request_id),str(e)))
     return extended_requests
 
-SIMULTANEOUS_TASKS_NUMBER = 300
+SIMULTANEOUS_TASKS_NUMBER = 700
 
 
 def step_approve_action(step):
@@ -162,6 +162,24 @@ def clean_open_ended(reqid):
                 slice.save()
 
 
+def clean_obsolete_openended(reqid, container):
+    ddm = DDM()
+    datasets_in_container = ddm.dataset_in_container(container)
+    slices = list(InputRequestList.objects.filter(Q(request=reqid), ~Q(is_hide=True)).order_by('slice'))
+    slice_to_delete = []
+    for slice in slices:
+        if 'tid' in slice.dataset:
+            task_id = int(slice.dataset[slice.dataset.rfind('tid')+3:slice.dataset.rfind('_')])
+            if (ProductionTask.objects.get(id=task_id) in ['obsolete']+ProductionTask.RED_STATUS) or (slice.dataset not in datasets_in_container):
+                slice_to_delete.append((slice.id,task_id))
+                for step in StepExecution.objects.filter(slice=slice):
+                    step.status = 'NotChecked'
+                    step.save()
+                slice.is_hide = True
+                slice.save()
+
+    return slice_to_delete
+
 def extend_open_ended_request(reqid):
     """
     To extend request by adding dataset which are not yet processed. Container is taken from first slice,
@@ -202,8 +220,12 @@ def extend_open_ended_request(reqid):
     is_extended = False
     for dataset in datasets_in_container:
         if (dataset not in datasets) and (dataset[dataset.find(':')+1:] not in datasets):
+            if tasks_count_control and ('tid' in dataset):
+                task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
+                if ProductionTask.objects.get(id=task_id) in ['obsolete'] + ProductionTask.RED_STATUS:
+                    continue
             is_extended = True
-            _logger.debug(form_request_log(reqid,None,'New dataset %s'%dataset))
+            _logger.debug(form_request_log(reqid, None, 'New dataset %s' % dataset))
             for slice_number in slices_to_extend:
                 new_slice_number = clone_slices(reqid,reqid,[slice_number],-1,False)[0]
                 new_slice = InputRequestList.objects.get(request=reqid,slice=new_slice_number)
@@ -240,7 +262,7 @@ def extend_open_ended_request(reqid):
     request.cstatus = old_status
     request.save()
     if is_extended:
-        if request.cstatus not in ['test']:
+        if request.cstatus not in ['test', 'approved']:
             set_request_status('cron',reqid,'approved','Automatic openended approve', 'Request was automatically extended')
 
     return is_extended
