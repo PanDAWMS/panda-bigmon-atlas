@@ -788,7 +788,17 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                   }
                                 var currentStep = changesList[sliceIDint].getStepByNumber(i);
                                 for (field in patternDict[i]){
-                                    currentStep[field] = patternDict[i][field];
+                                    if(field=='onlyTagsForFC'){
+                                        if(patternDict[i][field] == 'True'){
+                                            currentStep[field] = true;
+                                        } else if (patternDict[i][field] == 'False'){
+                                            currentStep[field] = false;
+                                        }else{
+                                             currentStep[field] = '';
+                                        }
+                                    } else {
+                                        currentStep[field] = patternDict[i][field];
+                                    }
                                 }
                             }
                    }
@@ -1304,8 +1314,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                         if (changesList[sliceID].getStepByNumber(i)[fieldName] != undefined) {
                                             if (changesList[sliceID].getStepByNumber(i)[fieldName] != check_steps.db_step_type[i][fieldName]) {
                                                 notUpdateFromDB = true;
-                                                $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).val(changesList[sliceID].getStepByNumber(i)[fieldName]);
-                                                $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).parent().css({'color': 'red'});
+                                                if(fieldName=='onlyTagsForFC'){
+                                                    $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).prop({'checked':changesList[sliceID].getStepByNumber(i)[fieldName]});
+                                                } else {
+                                                    $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).val(changesList[sliceID].getStepByNumber(i)[fieldName]);
+                                                }
+                                                    $('#sliceModal .storeOutput' + i.toString() + '.' + fieldName).parent().css({'color': 'red'});
+
                                                 stepHasChanges = true;
 
                                             }
@@ -1514,7 +1529,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 $('.'+className+'.'+multiValueElement).parent().css({'color': 'initial'});
             }
             for (singleValueElement in input_dict['singlevalue']){
-                $('.'+className+'.'+singleValueElement).val(input_dict['singlevalue'][singleValueElement]);
+                if(singleValueElement == 'onlyTagsForFC'){
+                    $('.'+className+'.'+singleValueElement).prop({'checked':input_dict['singlevalue'][singleValueElement]});
+                } else {
+                    $('.'+className+'.'+singleValueElement).val(input_dict['singlevalue'][singleValueElement]);
+                }
                 $('.'+className+'.'+singleValueElement).attr('placeholder','');
                 $('.'+className+'.'+singleValueElement).parent().css({'color': 'initial'});
             }
@@ -1743,7 +1762,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 $(".bulkSelect").prop('disabled', 'disabled');
                 var currentClass = $(that).attr("class").replace("storeBulk", '').replace(' ','');
                 $(that).parent().css({'color': 'red'});
-                bulkStepChanges[currentClass.replace(",",'')] = $(that).val();
+                if(currentClass.replace(",",'') != 'onlyTagsForFC'){
+                    bulkStepChanges[currentClass.replace(",",'')] = $(that).val();
+                } else{
+                    bulkStepChanges[currentClass.replace(",",'')] = $(that).prop('checked');
+                }
+
             }
         }
 
@@ -3929,6 +3953,18 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 <div class="large-8 columns">
                                   <label>Parameters
                                     <input type="text" class="PDAParams storeBulk"  placeholder=" " />
+                                  </label>
+                                </div>
+                              </div>
+                            <div class="row">
+                                <div class="large-9 columns">
+                                  <label>Container name
+                                    <input type="text" class="container_name storeBulk"  placeholder=" " />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Use only tags for FC
+                                    <input type="checkbox" class="onlyTagsForFC storeBulk"  />
                                   </label>
                                 </div>
                               </div>

@@ -443,7 +443,10 @@ def set_steps_bulk_info(request, reqid):
                                     else:
                                         step.set_task_config({x:new_values[x]})
                                 else:
-                                    step.set_task_config({x:new_values[x].strip()})
+                                    if type(new_values[x]) is not bool:
+                                        step.set_task_config({x:new_values[x].strip()})
+                                    else:
+                                        step.set_task_config({x: new_values[x]})
                         if step_modified:
                             step.save()
                 return HttpResponse(json.dumps({'status':'success'}), content_type='application/json')

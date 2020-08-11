@@ -1,11 +1,7 @@
 import logging
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import parser_classes
-from rest_framework.parsers import JSONParser
+
 from django.shortcuts import render
 import json
 from atlas.prodtask.models import StepTemplate, StepExecution, InputRequestList, TRequest, MCPattern, ProductionTask, \
@@ -103,7 +99,8 @@ def slice_pattern_steps(request,slice):
              'maxFailure': task_config.get('maxFailure', ''),
              'nEventsPerMergeJob': task_config.get('nEventsPerMergeJob', ''),
              'PDA': task_config.get('PDA', ''),
-             'PDAParams': task_config.get('PDAParams', ''),
+             'PDAParams': task_config.get('PDAParams', ''),'container_name':task_config.get('container_name',''),
+             'onlyTagsForFC':task_config.get('onlyTagsForFC',None)
              })
 
     return Response({'steps':result_list,'pattern_name':pattern.brief,'pattern_in_use':not(pattern.is_hide or False)})
@@ -111,7 +108,7 @@ def slice_pattern_steps(request,slice):
 @api_view(['POST'])
 def slice_pattern_save_steps(request,slice):
     result = {'sucess':True}
-    CHANGABLE = ['tag','nEventsPerJob','project_mode','nFilesPerJob','nGBPerJob','maxFailure']
+    CHANGABLE = ['tag','nEventsPerJob','project_mode','nFilesPerJob','nGBPerJob','maxFailure','container_name','onlyTagsForFC']
     slice = InputRequestList.objects.get(request=29269, slice=slice)
     if request.data['pattern_in_use']:
         slice.is_hide = False
@@ -138,6 +135,9 @@ def slice_pattern_save_steps(request,slice):
                         else:
                             step.set_task_config({x:step_dict[int(step.id)][x]})
                         step_changed = True
+                if (not step.get_task_config('container_name')) and (step.get_task_config('onlyTagsForFC') is not None):
+                    step.remove_task_config('onlyTagsForFC')
+                    step_changed = True
                 if step_changed:
                     _logger.info('Pattern %i changed: %s'%(int(slice.slice),' '.join(message)))
                     step.save()

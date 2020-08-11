@@ -84,7 +84,17 @@
                                     <input type="text" ng-model="step.project_mode" ng-change="changeStepValue(step,'project_mode')" ng-style="step.style.project_mode" placeholder=" " />
                                   </label>
                                 </div>
-
+                                <div class="row">
+                                <div class="large-9 columns">
+                                  <label> Container name
+                                    <input type="text" ng-model="step.container_name" ng-change="changeStepValue(step,'container_name')" ng-style="step.style.container_name" placeholder=" " />
+                                  </label>
+                                </div>
+                                <div class="large-3 columns">
+                                  <label>Use only tags for FC
+                                    <input type="checkbox" ng-model="step.onlyTagsForFC" ng-change="changeStepValue(step,'onlyTagsForFC')" ng-style="step.style.onlyTagsForFC"   />
+                                  </label>
+                                </div>
                               </div>
 
             </div>

@@ -1506,7 +1506,7 @@ def get_full_patterns():
     patterns = list(InputRequestList.objects.filter(request=29269).order_by('slice'))
     steps = list(StepExecution.objects.filter(request=29269).order_by('id'))
     CHANGABLE = ['nEventsPerJob', 'project_mode', 'nFilesPerJob', 'nGBPerJob',
-                 'maxFailure']
+                 'maxFailure','container_name','onlyTagsForFC']
     for step in steps:
         task_config = step.get_task_config()
         if task_config.get('tag') == 'x9999':
