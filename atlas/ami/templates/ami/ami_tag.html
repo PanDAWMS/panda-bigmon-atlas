@@ -56,15 +56,15 @@
     <tr>
         <th>SW tag</th>
         <th>Image Name</th>
-        <th>Image Type</th>
+        <th>cmtconfig</th>
     </tr>
     </thead>
     <tbody>
-    {%  for sw,image,image_type in sw_containers %}
+    {%  for sw in sw_containers %}
         <tr >
-            <td><a href="http://ami.in2p3.fr/app?subapp=tagsShow&userdata={{ sw }}">{{ sw }}</a></td>
-            <td>{{ image }}</td>
-            <td>{{ image_type }}</td>
+            <td><a href="http://ami.in2p3.fr/app?subapp=tagsShow&userdata={{ sw.tagname }}">{{ sw.tagname }}</a></td>
+            <td>{{ sw.container_name }}</td>
+            <td>{{ sw.cmtconfig }}</td>
         </tr>
     {% endfor %}
     </tbody>

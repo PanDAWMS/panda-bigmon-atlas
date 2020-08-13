@@ -103,3 +103,33 @@ class AMIClient(object):
                                   catalog='Container:production',
                                   entity='IMAGE_VIEW',
                                   mql='{0}'.format(query))
+
+    def ami_image_by_name(self, image_name):
+        query = \
+            "SELECT * WHERE `IMAGENAME` = '{0}'".format(image_name)
+
+        return self._post_command('SearchQuery',
+                                  catalog='Container:production',
+                                  entity='IMAGE_VIEW',
+                                  mql='{0}'.format(query))
+
+    def ami_cmtconfig_by_image_by_name(self, image_name):
+        query = \
+            "SELECT * WHERE `IMAGENAME` = '{0}'".format(image_name)
+
+        container =  self._post_command('SearchQuery',
+                                  catalog='Container:production',
+                                  entity='IMAGE_VIEW',
+                                  mql='{0}'.format(query))[0]
+
+        sw_tag = container['IMAGEREPOSITORYSWTAG']
+
+        query = \
+            "SELECT * WHERE `TAGNAME` = '{0}'".format(sw_tag)
+
+        sw_tag_dict = self._post_command('SearchQuery',
+                                  catalog='Container:production',
+                                  entity='SWTAG_VIEW',
+                                  mql='{0}'.format(query))[0]
+
+        return  sw_tag_dict['IMAGEARCH'] + '-' + sw_tag_dict['IMAGEPLATFORM'] + '-' + sw_tag_dict['IMAGECOMPILER']

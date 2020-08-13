@@ -1,9 +1,15 @@
 
 from atlas.ami.client import AMIClient
 from django.contrib.auth.decorators import login_required
+import logging
+
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+
+_logger = logging.getLogger('prodtaskwebui')
 
 
 @login_required()
@@ -14,17 +20,10 @@ def amitag(request, amitag):
     try:
         ami = AMIClient()
         tag = ami.get_ami_tag(amitag)
-
         if tag['tagType'] != 'sw':
-            sw_tags = ami.ami_sw_tag_by_cache(tag['baseRelease'])
+            sw_containers = sw_by_amitag(ami,tag['baseRelease'])
         else:
-            sw_tags = ami.ami_sw_tag_by_cache(tag['swRelease'])
-        for sw_tag in sw_tags:
-            if sw_tag['STATE'] == 'USED':
-                images = ami.ami_image_by_sw(sw_tag['TAGNAME'])
-                for image in images:
-                    sw_containers.append((sw_tag['TAGNAME'],image['IMAGENAME'],image['IMAGETYPE']))
-
+            sw_containers = sw_by_amitag(ami,tag['swRelease'])
     except Exception as e:
         error_message = str(e)
     request_parameters = {
@@ -38,3 +37,30 @@ def amitag(request, amitag):
         }
 
     return render(request, 'ami/ami_tag.html', request_parameters)
+
+
+
+def sw_by_amitag(ami, amitag):
+    sw_containers = []
+    sw_tags = ami.ami_sw_tag_by_cache(amitag)
+    for sw_tag in sw_tags:
+        if sw_tag['STATE'] == 'USED':
+            images = ami.ami_image_by_sw(sw_tag['TAGNAME'])
+            for image in images:
+                sw_containers.append({'container_name':image['IMAGENAME'],
+                                      'cmtconfig':sw_tag['IMAGEARCH'] + '-' + sw_tag['IMAGEPLATFORM'] + '-' + sw_tag['IMAGECOMPILER'],
+                                      'tagname':sw_tag['TAGNAME']})
+    return sw_containers
+
+
+@api_view(['GET'])
+def sw_containers_by_amitag(request,amitag):
+    try:
+        ami = AMIClient()
+        tag = ami.get_ami_tag(amitag)
+        result = sw_by_amitag(ami,tag['baseRelease'])
+
+    except Exception as e:
+        _logger.error("Problem with pattern cloning %s" % str(e))
+        return Response(str(e), status=400)
+    return Response(result)

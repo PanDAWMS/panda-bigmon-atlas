@@ -123,7 +123,9 @@
     <input type="hidden" id="foreignColor" />
 </div>
 <script>
-var step_bc=["#FFB734","#FFFFFF","#ffff00"]
+
+
+var step_bc=["#FFB734","#FFFFFF","#ffff00"];
 $("#doColor").css({'background-color':step_bc[0]});
 $("#skippedColor").css({'background-color':step_bc[1]});
 $("#foreignColor").css({'background-color':step_bc[2]});
@@ -1379,7 +1381,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                    $('#'+sliceField+'Modal').val(check_steps[sliceField]);
                 }
             }
-
+            $('.containerSelectForm').hide();
             $('#sliceModalSlice').html(sliceID);
             $('#sliceModal').foundation('reveal', 'open');
             changeMode = true;
@@ -1574,6 +1576,48 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 setStepBulkChange(sliceList, $('#chooseStepBulk').val(), amiTag);
             }
         }
+        function selectContainer(event, that, step_class) {
+                 event.preventDefault();
+                $('.container_name.'+step_class).val($(that).val());
+                $('.container_name.'+step_class).trigger('change');
+
+        }
+        function findContainers(event, step_class) {
+                 event.preventDefault();
+                 ami_tag =  $('.step.'+step_class).val();
+                 $.ajax({
+                    url: construct_django_url('/ami/sw_containers_by_amitag/', ami_tag),
+                    type: 'GET',
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'text',
+                    success: function(data,status) {
+                            var containers = $.evalJSON(data);
+                            if (containers.length == 1){
+                                $('.container_name.'+step_class).val(containers[0]['container_name']);
+                                $('.container_name.'+step_class).trigger('change');
+                            }
+                            if (containers.length == 0){
+                                alert('No containers were found for this tag');
+                            }
+                            if (containers.length > 1){
+                                $('.container_name.'+step_class).val(containers[0]['container_name']);
+                                $('.container_name.'+step_class).trigger('change');
+                                $('.containerSelectForm.'+step_class).show();
+                                $('.containerSelect.'+step_class).html('');
+                                for (var i=0;i<containers.length;i++){
+                                      $('.containerSelect.'+step_class).append('<option  value=' +containers[i].container_name+'>'+containers[i].container_name+' (cmtconfig'+containers[i].cmtconfig+')'+'</option>');
+                                }
+                            }
+
+
+                    },
+                     error:function(data, status, error) {
+                        alert("Error: can't retrieve info from AMI");
+                     }
+
+                });
+        }
+
 
         function discardChangesBulk(event){
             event.preventDefault();
@@ -3737,8 +3781,20 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                   </label>
                                 </div>
                               </div>
+
+                            <div class="containerSelectForm storeOutput{{forloop.counter0}} row" style="display: none">
+                                <div class="large-12 columns" >
+                                  <label>Possible containers
+                                    <select  class="containerSelect storeOutput{{forloop.counter0}} " onchange="selectContainer(event,this,'storeOutput{{forloop.counter0}}');"  > </select>
+                                  </label>
+                              </div>
+                             </div>
+
                             <div class="row">
-                                <div class="large-9 columns">
+                                <div class="large-1 columns">
+                                       <button id="findButton" class="btn_is_authenticated" title="Find containers for this ami tag" onclick="findContainers(event,'storeOutput{{forloop.counter0}}');">Find</button>
+                                </div>
+                                <div class="large-8 columns">
                                   <label>Container name
                                     <input type="text" class="container_name storeOutput{{forloop.counter0}} storeInput"  placeholder=" " />
                                   </label>
@@ -4054,6 +4110,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
   <a  class="close-reveal-modal">&#215;</a>
 </div>
+
 
 
 
