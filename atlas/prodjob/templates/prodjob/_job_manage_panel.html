@@ -306,6 +306,9 @@ $(document).ready(function () {
                         }
                     }
 
+                },
+                error: function (jqXHR, textStatus) {
+                     $("#req_status_text").html("Request status: Error, reason: " + textStatus);
                 }
 
             });
