@@ -271,7 +271,12 @@ $(document).ready(function () {
 
             //console.log(action);
             var table = $('#example').DataTable();
-            var data = {'jobs' : table.rows('.selected').data().toArray(), 'parameters' : parameters};
+            var jobs = table.rows('.selected').data().toArray();
+            var jobs_to_send = [];
+            for(var i=0;i<jobs.length;i++){
+                jobs_to_send.push({pandaid:jobs[i].pandaid,taskid:jobs[i].taskid});
+            }
+            var data = {'jobs' : jobs_to_send, 'parameters' : parameters};
             //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
             var ajaxUrl =  construct_django_url('/prodjob/jobs_action/',action);
 
