@@ -46,7 +46,7 @@
         <tr>
         <th rowspan="2">Tape</th>
             <th rowspan="2">State</th>
-        <th colspan="3">Limits</th>
+        <th colspan="4">Limits</th>
         <th rowspan="2">Queued</th>
         <th colspan="2">Active</th>
             <th colspan="2">Active Processed</th>
@@ -56,6 +56,7 @@
         <th>Maximum</th>
         <th>Minimum</th>
          <th>% to cont.</th>
+        <th>Bunch</th>
          <th>Staged</th>
          <th>Submitted</th>
         <th>Processed</th>
@@ -70,6 +71,7 @@
             <td>{{ tape.maximum_level }}</td>
             <td>{{ tape.minimum_level }}</td>
             <td>{{ tape.continious_percentage }}</td>
+            <td>{{ tape.current_bunch }}</td>
             <td>{{ tape.files_queued }}</td>
             <td>{{ tape.files_staged }}</td>
             <td>{{ tape.files_staging }}</td>

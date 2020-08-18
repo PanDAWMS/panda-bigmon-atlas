@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q
 
+from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask
 from datetime import timedelta
 
@@ -197,6 +198,7 @@ class TapeResource(ResourceQueue):
 
     def __submit(self, submission_list):
         #print(submission_list)
+        total_submitted = 0
         if submission_list:
             total = sum([x['value'] for x in submission_list ])
             _logger.info("Submit rules for {resource}: {to_submit}, {total}".format(resource=self.resource_name,to_submit=len(submission_list),total=total))
@@ -232,6 +234,7 @@ class TapeResource(ResourceQueue):
                             staging =  DatasetStaging.objects.get(id=x['id'])
                             staging.status = 'staging'
                             staging.save()
+                            total_submitted += x['value']
                         else:
                             print(x['dataset'], rule, source_replica)
                     except Exception as e:
@@ -239,14 +242,14 @@ class TapeResource(ResourceQueue):
                                                                    error=str(e)))
                 else:
                     _logger.error("Problem during submission for dataset {dataset_staging}".format(dataset_staging=x['id']))
-
+        return total_submitted
 
     def to_wait(self, submission_list):
         oldest = min(submission_list,key=lambda x:x['start_time'])['start_time']
         return (timezone.now() - oldest) < timedelta(days=1)
 
     def do_submission(self):
-        self.__submit(self.find_submission())
+        return self.__submit(self.find_submission())
 
 
     def print_queue(self):
@@ -412,23 +415,47 @@ def submit_all_tapes_processed():
                                    active_staged[x]['tape'] == tape.name]
                 total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted)
-                resource_tape.do_submission()
-                if tape.get_config('is_slow'):
+                files_submitted = resource_tape.do_submission()
+                if tape.get_config('is_slow') and (files_submitted == 0):
                     resource_tape = TapeResource(tape.name,ddm)
                     resource_tape.do_submission()
+                elif tape.get_config('bunch_size') is not None:
+                    if files_submitted > 0:
+                        bunch_size = tape.get_config('bunch_size')
+                        tape.set_config({'current_bunch': bunch_size})
+                        tape.save()
+                    elif tape.get_config('current_bunch') > 0:
+                        resource_tape = TapeResource(tape.name,ddm)
+                        files_submitted = resource_tape.do_submission()
+                        if files_submitted > 0:
+                            current_bunch = tape.get_config('current_bunch')
+                            tape.set_config({'current_bunch': current_bunch - files_submitted})
+                            tape.save()
 
 
 def test_tape_processed(tape_name, test):
     ddm = DDM()
     active_staged = find_active_staged()
     for tape in ActionDefault.objects.filter(type='Tape'):
-        if tape.get_config('active') and tape.name==tape_name:
+        if tape.name == tape_name:
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 active_for_tape = [active_staged[x] for x in active_staged.keys() if
                                    active_staged[x]['tape'] == tape.name]
                 total_submitted = sum([x['total']- x['value'] for x in active_for_tape])
                 resource_tape = TapeResourceProcessed(tape.name,ddm,total_submitted,test)
-                resource_tape.do_submission()
+                files_submitted = resource_tape.do_submission()
+                if files_submitted > 0 :
+                    bunch_size = tape.get_config('bunch_size')
+                    tape.set_config({'current_bunch':bunch_size})
+                    tape.save()
+                elif tape.get_config('current_bunch') >0:
+                    resource_tape = TapeResource(tape.name,ddm, test)
+                    files_submitted = resource_tape.do_submission()
+                    if files_submitted>0:
+                        current_bunch = tape.get_config('current_bunch')
+                        tape.set_config({'current_bunch':current_bunch-files_submitted})
+                        tape.save()
+
 
 
 
@@ -876,6 +903,7 @@ def prestage_by_tape_with_limits(request, reqid=None):
                     files_staging += dataset.total_files - dataset.staged_files
             result.append({'name':tape.name,'minimum_level':tape.get_config('minimum_level'),
                            'maximum_level':tape.get_config('maximum_level'),
+                           'current_bunch':tape.get_config('current_bunch'),
                            'continious_percentage':tape.get_config('continious_percentage'),
                            'files_queued':files_queued,'files_staged':files_staged,'files_staging':files_staging,
                            'active':tape.get_config('active'),
@@ -1128,3 +1156,31 @@ def finish_action(request, action, action_id):
             return Response(content, status=500)
 
     return Response({'success': True})
+
+
+def sync_cric_deft():
+    try:
+        cric_client = CRICClient()
+        storage_units = cric_client.get_storageunit()
+        for su in storage_units.values():
+            if su['type'] == 'TAPE' and su['stagingprofiles'] and su['stagingprofiles']['default']:
+                ad,changed = ActionDefault.objects.get_or_create(name=su['name'],type='PHYSICAL_TAPE')
+                if ad.get_config('minimum_level') != su['stagingprofiles']['default']['min_bulksize']:
+                    ad.set_config({'minimum_level':su['stagingprofiles']['default']['min_bulksize']})
+                    changed = True
+                    _logger.info("Changed tape profile {resource}: minimum_level to {value}".format(resource=su['name'],
+                                                                                            value=su['stagingprofiles']['default']['min_bulksize']))
+                if ad.get_config('maximum_level') != (su['stagingprofiles']['default']['max_bulksize']or 100000):
+                    ad.set_config({'maximum_level': su['stagingprofiles']['default']['max_bulksize'] or 100000})
+                    _logger.info("Changed tape profile {resource}: maximum_level to {value}".format(resource=su['name'],
+                                                                                            value=su['stagingprofiles']['default']['max_bulksize']))
+                    changed = True
+                if not ad.get_config('continious_percentage'):
+                    ad.set_config({'continious_percentage': 50})
+                    _logger.info("Changed tape profile {resource}: continious_percentage to {value}".format(resource=su['name'],
+                                                                                            value=ad.get_config('continious_percentage')))
+                    changed = True
+                if changed:
+                    ad.save()
+    except Exception as e:
+        _logger.error("Problem during cric syncing: %s" % str(e))
