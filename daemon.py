@@ -6,7 +6,7 @@ import time
 from daemonize import Daemonize
 
 
-pid = '/tmp/prodtask-messaging.pid'
+pid = '/var/log/prodtasklog/prodtask-messaging.pid'
 
 
 
