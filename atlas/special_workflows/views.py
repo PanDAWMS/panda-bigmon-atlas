@@ -137,7 +137,7 @@ def idds_action_on_message(task_id, output):
 
 def idds_recive_message(payload: Payload) -> None:
 
-    _logger.info( str(payload.body))
+    #_logger.info( str(payload.body))
     try:
         if payload.body['msg_type'] ==  "collection_activelearning":
             task_id = payload.body['workload_id']
