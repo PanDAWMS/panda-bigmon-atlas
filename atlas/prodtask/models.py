@@ -490,7 +490,6 @@ class TrainProduction(models.Model):
         return "%i - %s"%(self.pattern_request.reqid,self.pattern_request.description)
 
     class Meta:
-      #  app_label = 'dev'
         db_table = '"T_GROUP_TRAIN"'
 
 
@@ -570,8 +569,6 @@ class ParentToChildRequest(models.Model):
 
 
     class Meta:
-        #app_label = 'dev'
-
         db_table = "T_PARENT_CHILD_REQUEST"
 
 
@@ -1247,7 +1244,6 @@ class ETAGRelease(models.Model):
 
 
     class Meta:
-      #  app_label = 'dev'
         db_table = '"T_ETAG_RELEASE"'
 
 
@@ -1331,7 +1327,6 @@ class HashTagToRequest(models.Model):
 
 
     class Meta:
-        #app_label = 'dev'
         db_table = '"T_HT_TO_REQUEST"'
 
 
@@ -1373,7 +1368,6 @@ class TrainProductionLoad(models.Model):
         super(TrainProductionLoad, self).save(*args, **kwargs)
 
     class Meta:
-        #app_label = 'dev'
         db_table = "T_TRAIN_CARRIAGE"
 
 class MCPattern(models.Model):

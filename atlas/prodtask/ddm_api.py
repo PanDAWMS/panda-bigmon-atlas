@@ -151,7 +151,7 @@ class DDM(object):
         os.environ['RUCIO_ACCOUNT'] = account
         os.environ['X509_USER_PROXY'] = certificate_path
         _logger.debug('Try to auth with account %s and certificate %s'%(certificate_path, account))
-        self.__ddm = Client(account=account, ca_cert=certificate_path, auth_type='x509_proxy')
+        self.__ddm = Client(account=account, ca_cert=False, auth_type='x509_proxy')
 
 
     def ping(self):
@@ -290,9 +290,7 @@ class DDM(object):
     def full_replicas_per_type(self, dataset_name):
         full_replicas = self.number_of_full_replicas(dataset_name)
         data_replicas = [x for x in full_replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
-        tape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('type=DATATAPE')]]
-        mctape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('type=MCTAPE')]]
-        tape_replicas = tape_replicas + mctape_replicas
+        tape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('rse_type=TAPE')]]
         return {'data':data_replicas,'tape':tape_replicas}
 
     def dataset_active_datadisk_rule(self, dataset_name):
@@ -341,3 +339,6 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset_name)
         events = self.__ddm.get_metadata(scope=scope,name=name)
         return events
+
+    def rse_attr(self, rse):
+        return self.__ddm.list_rse_attributes(rse)

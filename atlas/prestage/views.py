@@ -1,4 +1,5 @@
 import json
+import random
 
 from django.db.models import Q
 
@@ -187,7 +188,7 @@ class TapeResource(ResourceQueue):
 
 
     def get_limits(self):
-        limits_config = ActionDefault.objects.get(type='Tape',name=self.resource_name)
+        limits_config = ActionDefault.objects.get(name=self.resource_name)
         self.minimum_level = limits_config.get_config('minimum_level')
         self.maximum_level = limits_config.get_config('maximum_level')
         self.continious_percentage =limits_config.get_config('continious_percentage')
@@ -272,7 +273,7 @@ class TestTapeResource(TapeResource):
 
 
     def get_limits(self):
-        limits_config = ActionDefault.objects.get(type='Tape',name=self.resource_name)
+        limits_config = ActionDefault.objects.get(name=self.resource_name)
         self.minimum_level = limits_config.get_config('minimum_level')
         self.maximum_level = limits_config.get_config('maximum_level')
         self.continious_percentage =limits_config.get_config('continious_percentage')
@@ -399,7 +400,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
 
 def submit_all_tapes():
     ddm = DDM()
-    for tape in ActionDefault.objects.filter(type='Tape'):
+    for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
         if tape.get_config('active'):
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 resource_tape = TapeResource(tape.name,ddm)
@@ -408,7 +409,7 @@ def submit_all_tapes():
 def submit_all_tapes_processed():
     ddm = DDM()
     active_staged = find_active_staged()
-    for tape in ActionDefault.objects.filter(type='Tape'):
+    for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
         if tape.get_config('active'):
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 active_for_tape = [active_staged[x] for x in active_staged.keys() if
@@ -436,7 +437,7 @@ def submit_all_tapes_processed():
 def test_tape_processed(tape_name, test):
     ddm = DDM()
     active_staged = find_active_staged()
-    for tape in ActionDefault.objects.filter(type='Tape'):
+    for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
         if tape.name == tape_name:
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 active_for_tape = [active_staged[x] for x in active_staged.keys() if
@@ -448,7 +449,7 @@ def test_tape_processed(tape_name, test):
                     bunch_size = tape.get_config('bunch_size')
                     tape.set_config({'current_bunch':bunch_size})
                     tape.save()
-                elif tape.get_config('current_bunch') >0:
+                elif (tape.get_config('current_bunch') or 0)>0:
                     resource_tape = TapeResource(tape.name,ddm, test)
                     files_submitted = resource_tape.do_submission()
                     if files_submitted>0:
@@ -457,6 +458,17 @@ def test_tape_processed(tape_name, test):
                         tape.save()
 
 
+def convert_input_to_physical_tape(input):
+    if ActionDefault.objects.filter(name=input[:30],type='Tape').exists():
+        ad = ActionDefault.objects.get(name=input[:30],type='Tape')
+    else:
+        cric_client = CRICClient()
+        ddm_endpoints = cric_client.get_ddmendpoint()
+        physical_tape = ddm_endpoints[input]['su']
+        ad,_ = ActionDefault.objects.get_or_create(name=input[:30], type='Tape')
+        ad.set_config({'su':physical_tape})
+        ad.save()
+    return ad.get_config('su')
 
 
 def create_prestage(task,ddm,rule, input_dataset,config, special=None):
@@ -479,6 +491,13 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None):
                 input = [x['rse'] for x in replicas['tape']]
                 if len(input) == 1:
                     input = input[0]
+                else:
+                    input_without_cern = [x for x in input if 'CERN'  not in x ]
+                    if input_without_cern:
+                        input = random.choice(input_without_cern)
+                    else:
+                        input = random.choice(input)
+        input=convert_input_to_physical_tape(input)
         create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input)
 
 
@@ -885,7 +904,7 @@ def prestage_by_tape_with_limits(request, reqid=None):
 
         total = {'files_queued':0,'files_staged':0, 'files_staging':0, 'files_processed':0,'files_total_submitted':0}
         result = []
-        tapes = list(ActionDefault.objects.filter(type='Tape').order_by('id'))
+        tapes = list(ActionDefault.objects.filter(type__in=['Tape','PHYSICAL_TAPE']).order_by('id'))
         active_staged = find_active_staged()
         for tape in tapes:
             files_queued = 0
@@ -1184,3 +1203,37 @@ def sync_cric_deft():
                     ad.save()
     except Exception as e:
         _logger.error("Problem during cric syncing: %s" % str(e))
+
+
+
+
+
+def change_replica_by_task(task_id, replica=None):
+    if ActionStaging.objects.filter(task=task_id).exists():
+        action_stage = ActionStaging.objects.filter(task=task_id).last()
+        action_step = action_stage.step_action
+        dataset_stage = action_stage.dataset_stage
+        if dataset_stage.status != 'queued':
+            return False
+        ddm = DDM()
+        replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
+        if replica is not None and replica not in [x['rse'] for x in replicas['tape']]:
+            return False
+
+        else:
+            for new_replica in replicas['tape']:
+              if new_replica['rse'] != dataset_stage.source:
+                replica = new_replica['rse']
+                break
+            if replica is None:
+                return  False
+        rule, source_replicas, source = ddm.get_replica_pre_stage_rule_by_rse(replica)
+        print(rule, source_replicas, source)
+        action_step.set_config({'rule': rule})
+        action_step.set_config({'tape': source})
+        action_step.set_config({'source_replica': source_replicas})
+        action_step.save()
+        dataset_stage.source = source
+        dataset_stage.save()
+    else:
+        return False
