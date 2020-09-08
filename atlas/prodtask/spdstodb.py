@@ -336,6 +336,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                         formats = 'AOD'
                                 if currentstep in additional_formats:
                                     formats = '.'.join(additional_formats[currentstep]+[STEP_FORMAT[currentstep]])
+                                    format = None
 
                                 if step_index != 0:
                                     step_index_parent = step_index - 1
