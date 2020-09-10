@@ -494,7 +494,11 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None):
                 else:
                     input_without_cern = [x for x in input if 'CERN'  not in x ]
                     if input_without_cern:
-                        input = random.choice(input_without_cern)
+                        #Create rule because it could be recovered from CERN
+                        if len(input_without_cern) == 1:
+                            rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input_without_cern))
+                        else:
+                            input = random.choice(input_without_cern)
                     else:
                         input = random.choice(input)
         input=convert_input_to_physical_tape(input)
@@ -1204,6 +1208,34 @@ def sync_cric_deft():
     except Exception as e:
         _logger.error("Problem during cric syncing: %s" % str(e))
 
+
+def recover_stale(task_id, replica=None):
+    if ActionStaging.objects.filter(task=task_id).exists():
+        action_stage = ActionStaging.objects.filter(task=task_id).last()
+        dataset_stage = action_stage.dataset_stage
+        if dataset_stage.status != 'staging':
+            return False
+        ddm = DDM()
+        data_replica = ddm.biggest_datadisk(dataset_stage.dataset)
+        replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
+        if replica is not None and replica not in [x['rse'] for x in replicas['tape']]:
+            return False
+
+        else:
+            for new_replica in replicas['tape']:
+                new_replica_storage = convert_input_to_physical_tape(new_replica['rse'])
+                if (new_replica_storage != dataset_stage.source) and (new_replica['rse'] != dataset_stage.source ):
+                    replica = new_replica['rse']
+                    break
+                if replica is None:
+                    return  False
+        _logger.info("Create recovery replica for dataset {dataset}: from {source} to  {destinattion}".format(dataset=dataset_stage.dataset,
+                                                                                                source=replica,destinattion=data_replica['rse']))
+        ddm.add_replication_rule(dataset_stage.dataset, data_replica['rse'],
+                                 activity='Staging', source_replica_expression=replica)
+        return (data_replica['rse'], replica)
+    else:
+        return False
 
 
 
