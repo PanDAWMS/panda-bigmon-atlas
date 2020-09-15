@@ -107,12 +107,13 @@ def find_missing_tags(tags):
             if int(tag[1:])==9999:
                 return_list.append(tag)
             else:
-                trtf = None
-                if not trtf:
-                    if (tag[0]=='r') and (int(tag[1:])<6000):
-                        return_list.append(tag)
-                    else:
-                        pass
+                pass
+                # trtf = None
+                # if not trtf:
+                #     if (tag[0]=='r') and (int(tag[1:])<6000):
+                #         return_list.append(tag)
+                #     else:
+                #         pass
         except ObjectDoesNotExist as e:
                 pass
         except Exception as e:
