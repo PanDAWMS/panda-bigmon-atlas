@@ -623,6 +623,7 @@ def do_staging(action_step_id, ddm):
     action_step = StepAction.objects.get(id=action_step_id)
     action_step.attempt += 1
     level = action_step.get_config('level')
+    delay = int(action_step.get_config('delay'))
     current_time = timezone.now()
     create_follow_action = False
     if not ActionStaging.objects.filter(step_action=action_step).exists():
@@ -640,14 +641,15 @@ def do_staging(action_step_id, ddm):
         if dataset_stage.status == 'done':
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
-            no_update = dataset_stage.update_time and \
-                    ((current_time-dataset_stage.update_time) < timedelta(hours=2*int(action_step.get_config('delay'))))
-            if (not dataset_stage.rse) or (not no_update ) or (level == 1):
+            if (not dataset_stage.rse) or (level == 1):
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
                 if existed_rule:
                         dataset_stage.rse = existed_rule['id']
-                        dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
-                        dataset_stage.update_time = current_time
+                        if dataset_stage.staged_files != int(existed_rule['locks_ok_cnt']):
+                            dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
+                            dataset_stage.update_time = current_time
+                        else:
+                            delay = 2*int(action_step.get_config('delay'))
                         if ((existed_rule['expires_at']-timezone.now().replace(tzinfo=None))<timedelta(days=5)) and \
                                 (task.status not in ['done','finished','broken','aborted']):
                             try:
@@ -675,18 +677,14 @@ def do_staging(action_step_id, ddm):
 
         elif dataset_stage.status == 'queued':
             action_finished = False
-            # if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
-            #                         action_step.get_config('lifetime'), action_step.get_config('source_replica')):
-            #     dataset_stage.status = 'staging'
-            #     dataset_stage.start_time = current_time
-            #     dataset_stage.save()
+
     if action_finished :
         action_step.status = 'done'
         action_step.message = 'All task started'
         action_step.done_time = current_time
 
     else:
-        action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay'))
+        action_step.execution_time = current_time + timedelta(hours=delay)
         action_step.status = 'active'
     action_step.save()
     if action_finished and create_follow_action:
