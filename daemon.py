@@ -61,6 +61,8 @@ if __name__ == "__main__":
         action=main,
         verbose=True,
         logger=logger,
+        user='apache',
+        group='apache'
 
     )
 
