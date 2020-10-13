@@ -22,6 +22,12 @@ def change_step_from_dict(step, changes_dict):
         task_config = json.loads(step.task_config)
     else:
         task_config = {}
+    change_project_mode = {}
+    remove_project_mode =[]
+    if 'update_project_mode' in changes_dict:
+        change_project_mode = changes_dict.pop('update_project_mode')
+    if 'remove_project_mode' in changes_dict:
+        remove_project_mode = changes_dict.pop('remove_project_mode')
     for x in StepExecution.TASK_CONFIG_PARAMS:
         if x in changes_dict:
             if changes_dict[x] and x in StepExecution.INT_TASK_CONFIG_PARAMS:
@@ -29,6 +35,10 @@ def change_step_from_dict(step, changes_dict):
             else:
                 task_config[x] = changes_dict[x]
     step.set_task_config(task_config)
+    for project_mode_addition in change_project_mode:
+        step.update_project_mode(project_mode_addition,change_project_mode[project_mode_addition])
+    for project_mode_key in remove_project_mode:
+        step.remove_project_mode(project_mode_key)
     change_template = False
     ctag = step.step_template.ctag
     if 'ami_tag' in changes_dict:
