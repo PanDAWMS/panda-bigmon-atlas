@@ -332,6 +332,9 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                         format_check(format)
                                         formats = 'AOD'+'.'+format
                                         reduce_input_format = 'AOD'
+                                        if int(input_events) != -1:
+                                            sexec.update({'input_events':int(input_events)})
+
                                     else:
                                         formats = 'AOD'
                                 if currentstep in additional_formats:
@@ -342,10 +345,11 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                     step_index_parent = step_index - 1
                                 else:
                                     step_index_parent = 0
-                                if re.match('\w(\d\d\d\d|\d\d\d)$',tag):
+                                if re.match('\w(\d\d\d\d\d|\d\d\d\d|\d\d\d)$',tag):
                                     st_sexec_list.append({'step_name' :st, 'tag': tag, 'formats': formats, 'step_exec': sexec,
                                                           'task_config':task_config,'step_order':str(index)+'_'+str(step_index),
                                                           'step_parent':str(index)+'_'+str(step_index_parent)})
+
                                     step_index += 1
                         return_list.append({'input_dict':irl, 'step_exec_dict':st_sexec_list})
         return  return_list  
