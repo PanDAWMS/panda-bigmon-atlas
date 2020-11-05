@@ -287,6 +287,15 @@ class DDM(object):
     def list_rses(self, filter = ''):
         return self.__ddm.list_rses(filter)
 
+    def biggest_datadisk(self, dataset_name):
+        replicas = self.dataset_replicas(dataset_name)
+        data_replicas = [x for x in replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
+        if not data_replicas:
+            return None
+        biggest_replica = max(data_replicas, key= lambda x: x['available_length'])
+        return biggest_replica
+
+
     def full_replicas_per_type(self, dataset_name):
         full_replicas = self.number_of_full_replicas(dataset_name)
         data_replicas = [x for x in full_replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
@@ -321,6 +330,8 @@ class DDM(object):
             return rses[0]
         return None
 
+    def list_locks(self,rule_id):
+        return self.__ddm.list_replica_locks(rule_id)
 
     def dataset_size(self, dataset_name):
         """

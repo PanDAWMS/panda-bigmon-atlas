@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from atlas.celerybackend.celery import app
-from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed, delete_done_staging_rules, \
+from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, delete_done_staging_rules, \
     sync_cric_deft
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
@@ -30,7 +30,7 @@ def step_actions():
 
 @app.task(ignore_result=True)
 def data_carousel():
-    submit_all_tapes_processed()
+    submit_all_tapes_processed_with_shares()
     return None
 
 

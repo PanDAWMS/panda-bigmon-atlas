@@ -53,6 +53,8 @@ class ResourceQueue(object):
         self.queue = []
         self.total_queued = 0
         self.resource_name = resource_name
+        self.shares_penalty = {}
+        self.queued_shares = set()
         pass
 
     def priorities_queue(self):
@@ -79,25 +81,36 @@ class ResourceQueue(object):
         _logger.info("Find queued to submit {resource}: {maximum}/{minimum}/{percent} - running/queued "
                      "- {running}/{queued}".format(resource=self.resource_name,maximum=self.maximum_level,minimum=self.minimum_level,
                                                    percent=self.continious_percentage,running=running_level,queued=self.total_queued))
-        if (float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0):
+        shares_to_search = []
+        if self.shares_penalty:
+            _logger.info("Shares penalties {resource}: {penalties} ".format(resource=self.resource_name,
+                                                       penalties=str(self.shares_penalty)))
+            for share in self.queued_shares:
+                if ((float(running_level) + float(self.shares_penalty.get(share,0)))/ float(self.maximum_level)) < (self.continious_percentage / 100.0):
+                    shares_to_search.append(share)
+        if shares_to_search and ('any' not in shares_to_search):
+            shares_to_search.append('any')
+        if shares_to_search or (not self.shares_penalty and (float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0)):
             self.priorities_queue()
             to_submit_list = []
             to_submit_value = 0
+            skipped_list = []
+            skipped_value = 0
             required_submission = self.maximum_level - running_level
             if required_submission + self.minimum_level > self.total_queued:
                 to_submit_list = self.queue
                 to_submit_value = self.total_queued
             else:
-                i = 0
-                while (to_submit_value < required_submission):
-                    if i > len(self.queue):
-                        break
-                    to_submit_list.append(self.queue[i])
-                    to_submit_value += self.queue[i]['value']
-                    i += 1
-                if (i == (len(self.queue) - 1)) and (self.queue[-1]['value'] < self.minimum_level):
-                    to_submit_list.append(self.queue[-1])
-                    to_submit_value += self.queue[-1]['value']
+                for element in self.queue:
+                    if (to_submit_value < required_submission) and (not(shares_to_search) or (element['share'] in shares_to_search)):
+                        to_submit_list.append(element)
+                        to_submit_value += element['value']
+                    else:
+                        skipped_list.append(element)
+                        skipped_value += element['value']
+                if (skipped_value < self.minimum_level):
+                    to_submit_list+= skipped_list
+                    to_submit_value += skipped_value
             if ((running_level+to_submit_value) < self.minimum_level) and self.to_wait(to_submit_list):
                 return []
             return to_submit_list
@@ -168,14 +181,22 @@ class TapeResource(ResourceQueue):
         for x in queued_staging_request:
             dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
             priority = 0
+            dataset_shares = []
             for dataset_staging in dataset_stagings:
                 if dataset_staging.step_action.status == 'active':
                     task = ProductionTask.objects.get(id=dataset_staging.task)
                     priority = task.current_priority
                     if not priority:
                         priority = task.priority
+                    dataset_shares.append(task.request.request_type)
+            if len(dataset_shares)>1:
+                dataset_share = 'any'
+            else:
+                dataset_share = dataset_shares[0]
             x['value'] = x['total_files']
             x['priority'] = priority
+            x['share'] = dataset_share
+            self.queued_shares.add(dataset_share)
             self.total_queued += x['value']
             self.queue.append(x)
 
@@ -265,6 +286,14 @@ class TapeResourceProcessed(TapeResource):
 
     def running_level(self):
         return self.running_level_processed
+
+
+class TapeResourceProcessedWithShare(TapeResource):
+    def __init__(self, resource_name, ddm, shares_penalty, test=False):
+        super().__init__(resource_name, ddm, test)
+        self.shares_penalty = shares_penalty
+
+
 
 class TestTapeResource(TapeResource):
     def __init__(self, resource_name, ddm, limits):
@@ -433,6 +462,34 @@ def submit_all_tapes_processed():
                             tape.set_config({'current_bunch': current_bunch - files_submitted})
                             tape.save()
 
+def submit_all_tapes_processed_with_shares():
+    ddm = DDM()
+    active_staged = find_active_staged_with_share()
+    for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
+        if tape.get_config('active'):
+            if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
+                active_for_tape = [active_staged[x] for x in active_staged.keys() if
+                                   active_staged[x]['tape'] == tape.name]
+                shares_penalty = {}
+                for dataset in active_for_tape:
+                    shares_penalty[dataset['share']] = shares_penalty.get(dataset['share'],0) + dataset['value']
+                resource_tape = TapeResourceProcessedWithShare(tape.name,ddm,shares_penalty)
+                files_submitted = resource_tape.do_submission()
+                if tape.get_config('is_slow') and (files_submitted == 0):
+                    resource_tape = TapeResource(tape.name,ddm)
+                    resource_tape.do_submission()
+                elif tape.get_config('bunch_size') is not None:
+                    if files_submitted > 0:
+                        bunch_size = tape.get_config('bunch_size')
+                        tape.set_config({'current_bunch': bunch_size})
+                        tape.save()
+                    elif tape.get_config('current_bunch') > 0:
+                        resource_tape = TapeResource(tape.name,ddm)
+                        files_submitted = resource_tape.do_submission()
+                        if files_submitted > 0:
+                            current_bunch = tape.get_config('current_bunch')
+                            tape.set_config({'current_bunch': current_bunch - files_submitted})
+                            tape.save()
 
 def test_tape_processed(tape_name, test):
     ddm = DDM()
@@ -732,6 +789,30 @@ def find_active_staged():
                 result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],dataset_stage.staged_files,files_finished])
     return result
 
+def find_active_staged_with_share():
+    active_stage_actions = list(StepAction.objects.filter(action=6,status='active'))
+    followed_actions = StepAction.objects.filter(action=7,status='active')
+    not_done_action_ids = [x.get_config('stage_action') for x in followed_actions]
+    not_done_action = list(StepAction.objects.filter(id__in=not_done_action_ids))
+    all_action =  active_stage_actions + not_done_action
+    result = {}
+    for action in all_action:
+        for action_stage in ActionStaging.objects.filter(step_action=action):
+            dataset_stage = action_stage.dataset_stage
+            task = ProductionTask.objects.get(id=action_stage.task)
+            share = task.request.request_type
+            if (dataset_stage.status not in ['queued']) and dataset_stage.source:
+                if dataset_stage.dataset not in result:
+                    result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
+                                                     'total':dataset_stage.total_files,'share': share}
+                if task.total_files_finished is None:
+                    files_finished = 0
+                else:
+                    files_finished = task.total_files_used
+                result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],max([0,dataset_stage.staged_files-files_finished])])
+                if(result[dataset_stage.dataset]['share']!=share):
+                    result[dataset_stage.dataset]['share'] = 'any'
+    return result
 
 
 def activate_staging(step_action_ids):
@@ -1237,6 +1318,117 @@ def recover_stale(task_id, replica=None):
 
 
 
+def replica_to_be_submitted():
+    action_steps = StepAction.objects.filter(action=5,status='verify')
+    ddm = DDM()
+    big_steps = {}
+    used_steps = set()
+    for action_step in action_steps:
+        if (action_step.step not in used_steps) and (not action_step.get_config('checked')):
+            tasks = ProductionTask.objects.filter(step=action_step.step)
+            tapes_number = 0
+            tapes_stat = []
+            for task in tasks:
+                replicas = ddm.full_replicas_per_type(task.primary_input)
+                if len(replicas['data']) == 0:
+                    input_without_cern = [x for x in replicas['tape'] if 'CERN'  not in x ]
+                    if input_without_cern:
+                        tape = random.choice(input_without_cern)
+                    else:
+                        tape = random.choice(replicas['tape'])
+                    tapes_number = len(replicas['tape'])
+                    tapes_stat.append({'number': tapes_number, 'task_status':task.status,
+                                                               'tape': convert_input_to_physical_tape(
+                                                                   tape['rse']),
+                                                               'files': tape['length'],'bytes':tape['bytes']})
+            action_step.set_config({'tape_replicas': tapes_stat})
+            action_step.set_config({'checked':True})
+            print(action_step.id, tapes_number, len(tapes_stat))
+            if len(tapes_stat)<14:
+                action_step.save()
+                used_steps.add(action_step.step)
+            else:
+                action_step.set_config({'special': True})
+                if action_step.step not in big_steps:
+                    big_steps[action_step.step] = 0
+                offset = big_steps[action_step.step]
+                action_step.set_config({'tape_replicas': []})
+                if offset < len(tapes_stat):
+                    action_step.set_config({'tape_replicas': tapes_stat[offset:offset+10]})
+                    big_steps[action_step.step] = offset+10
+                else:
+                    action_step.set_config({'repeated': True})
+                    used_steps.add(action_step.step)
+                print(action_step.id, tapes_number, len(tapes_stat),offset)
+                action_step.save()
+        else:
+            action_step.set_config({'checked': True})
+            action_step.set_config({'repeated': True})
+            action_step.save()
+
+def remove_repeated_steps():
+    action_steps = StepAction.objects.filter(action=5,status='verify')
+    used_steps = set()
+    for action_step in action_steps:
+        if (action_step.get_config('checked')) and (not action_step.get_config('special'))and (not action_step.get_config('repeated')):
+            if action_step not in used_steps:
+                used_steps.add(action_step.step)
+            else:
+                action_step.set_config({'repeated': True})
+                action_step.save()
+
+def get_stats_replica_to_submitted():
+    action_steps = StepAction.objects.filter(action=5,status='verify')
+    replicas = {}
+    max_days = 0
+    current_time = timezone.now()
+    for action_step in action_steps:
+        if (action_step.get_config('checked')) and (not action_step.get_config('repeated')):
+            tape_replica = action_step.get_config('tape_replicas')
+            for replica in tape_replica:
+                if replica['tape'] not in replicas:
+                    replicas[replica['tape']] = {'files':0,'by_day':{},'tasks_by_day':{},'tasks':0,'bytes':0,'tasks_done':0,'task_aborted':0}
+                day = (timezone.now() - action_step.create_time).days
+                if day > max_days:
+                    max_days = day
+                if day not in replicas[replica['tape']]['by_day']:
+                    replicas[replica['tape']]['by_day'][day] = 0
+                    replicas[replica['tape']]['tasks_by_day'][day] = 0
+                replicas[replica['tape']]['by_day'][day] += replica['files']
+                if replica['task_status'] not in ProductionTask.NOT_RUNNING:
+                    replicas[replica['tape']]['tasks_by_day'][day] += 1
+                replicas[replica['tape']]['files'] += replica['files']
+                replicas[replica['tape']]['bytes'] += replica['bytes']
+                replicas[replica['tape']]['tasks'] += 1
+                if replica['task_status'] in ['done','finished']:
+                    replicas[replica['tape']]['tasks_done'] += 1
+                if replica['task_status'] in ProductionTask.RED_STATUS:
+                    replicas[replica['tape']]['task_aborted'] += 1
+    for x in replicas:
+        stat_by_day = []
+        stat_tasks_not_finished = []
+        for day in range(max_days+1):
+            if day in replicas[x]['by_day']:
+                stat_by_day.append(replicas[x]['by_day'][day])
+                stat_tasks_not_finished.append(replicas[x]['tasks_by_day'][day])
+            else:
+                stat_by_day.append(0)
+                stat_tasks_not_finished.append(0)
+        replicas[x]['stat_by_day'] = stat_by_day
+        replicas[x]['stat_tasks_not_finished'] = stat_tasks_not_finished
+    result = [{'tape':x,'files_to_stage':replicas[x]['files'],'size':replicas[x]['bytes'],'tasks':replicas[x]['tasks'],
+               'done':replicas[x]['tasks_done'],'aborted':replicas[x]['task_aborted'],
+              'stat_by_day':replicas[x]['stat_by_day'],'tasks_by_day':replicas[x]['stat_tasks_not_finished']} for x in replicas.keys()]
+    return result
+
+
+@api_view(['GET'])
+def derivation_requests(request):
+    try:
+        result = get_stats_replica_to_submitted()
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
+    return Response(result)
 
 def change_replica_by_task(task_id, replica=None):
     if ActionStaging.objects.filter(task=task_id).exists():
