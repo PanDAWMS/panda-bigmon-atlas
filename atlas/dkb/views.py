@@ -21,7 +21,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from atlas.settings.local import ESLogin
 
-connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=500)
+connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=5000)
 _logger = logging.getLogger('prodtaskwebui')
 
 SIZE_TO_DISPLAY = 2000
@@ -148,15 +148,48 @@ def es_by_field(field, value):
     search = es_search.update_from_dict(query)
     return search.execute()
 
-def es_by_keys(values, size=2000):
-    search_dict = []
-    for x in values:
-        search_dict.append({'term':{x:values[x]}})
+def es_by_fields(field, value, field2, value2):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
     query = {
         "query": {
             "bool": {
-                    "must": search_dict
+                    "must": [
+                        {"term": { field : value}},
+                        {"term": {field2: value2}},
+
+
+                        {"has_child": {
+                            "type": "output_dataset",
+                            "score_mode": "sum",
+                            "query": {
+                                "match_all": {}
+                            },
+                            "inner_hits": {}
+                        }}    ]
+
+    }
+        }, 'size':2000
+    }
+    search = es_search.update_from_dict(query)
+    return search.execute()
+
+def es_by_keys(values, size=2000):
+    search_dict = []
+    for x in values:
+        search_dict.append({'term':{x:values[x]}})
+    search_dict.append({"has_child": {
+                            "type": "output_dataset",
+                            "score_mode": "sum",
+                            "query": {
+                                "match_all": {}
+                            },
+                            "inner_hits": {}
+                        }})
+    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    query = {
+        "query": {
+            "bool": {
+                    "must": search_dict,
            }
         }, 'size':size
     }
@@ -165,6 +198,9 @@ def es_by_keys(values, size=2000):
     result = []
     for hit in response:
         current_hit = hit.to_dict()
+        current_hit['output_dataset'] = []
+        for hit2 in hit.meta.inner_hits['output_dataset']:
+            current_hit['output_dataset'].append(hit2.to_dict())
         result.append(current_hit)
     return result
 
@@ -1260,3 +1296,356 @@ def tasks_by_hashtag(hashtag):
         tasks_hashtags = HashTag.objects.filter(hashtag__iexact=hashtag)[0].tasks_ids
         return tasks_hashtags
     return []
+#
+# def task_in_new_dkb(task_id):
+#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+#     query = {
+#       "size": 1,
+#       "query": {
+#         "bool": {
+#           "must": [
+#             {"term": {"taskid":str(task_id)}},
+#
+#           ]
+#         }
+#       },
+#
+#     }
+#     aggregs = es_search.update_from_dict(query)
+#     exexute =  aggregs.execute()
+#     current_hit = None
+#     for hit in exexute:
+#         current_hit = hit.to_dict()
+#
+#     return current_hit
+#
+#
+# def statistic_by_step_new(search_dict):
+#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+#     query = {
+#               "size": 0,
+#               "query": {
+#                 "bool": {
+#                   "must": [
+#                       search_dict,
+#                     {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}}
+#                   ]
+#                 }
+#               },
+#               "aggs": {
+#                 "steps": {
+#                   "terms": {"field": "step_name.keyword"},
+#                   "aggs": {
+#                     "input_events": {
+#                       "sum": {"field": "input_events"}
+#                     },
+#
+#                   "not_deleted": {
+#                       "filter": {"term": {"primary_input_deleted": False}},
+#                       "aggs": {
+#                           "input_bytes": {
+#                               "sum": {"field": "input_bytes"}
+#                           }
+#                       }
+#                   },
+#                      "processed_events": {
+#                        "sum": {"field": "processed_events"}
+#                      },
+#                     "total_events": {
+#                           "sum": {"field": "total_events"}
+#                      },
+#                       "hs06":{
+#                           "sum": {"field": "toths06"}
+#                       },
+#                       "cpu_failed":{
+#                           "sum": {"field": "toths06_failed"}
+#                       },
+#
+#                       "ended":{
+#                           "filter" : {"exists" : { "field" : "end_time" }},
+#                           "aggs":{
+#
+#                               "duration":{
+#                               "avg":{
+#                                   "script":{
+#                                       "inline":"doc['end_time'].value - doc['start_time'].value"
+#                                   }
+#                           }}}
+#                       },
+#                       "output": {
+#                           "nested": {"path": "output_dataset"},
+#                           "aggs": {
+#                               "bytes": {
+#                                   "sum": {"field": "output_dataset.bytes"}
+#                               }
+#                           }
+#                       },
+#                     "status": {
+#                       "terms": {"field": "status"}
+#                     }
+#                   }
+#                 }
+#               }
+#             }
+#     result = {}
+#
+#     try:
+#         aggregs = es_search.update_from_dict(query)
+#         exexute = aggregs.execute()
+#     except Exception as e:
+#         print("Problem with es deriv : %s" % (e))
+#         aggregs = None
+#
+#
+#     return exexute
+#
+#
+# def new_derivation_stat_new(project, ami, output):
+#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+#     query = {
+#           "size": 0,
+#           "query": {
+#             "bool": {
+#               "must": [
+#                 {"terms": {"primary_input": ["aod","rpvll"]}},
+#                 {"term": {"project": project.lower()}},
+#                 {"terms": {"ctag": ami}},
+#                 {"term": {"status": "done"}},
+#                 {"range": {"input_bytes": {"gt": 0}}},
+#                 {"nested": {
+#                     "path": "output_dataset",
+#                     "query": {"range": {"output_dataset.bytes": {"gt": 0}}}
+#                 }}
+#               ]
+#             }
+#           },
+#           "aggs": {
+#             "output": {
+#               "nested": {"path": "output_dataset"},
+#               "aggs": {
+#                 "not_deleted": {
+#                   "filter": {"term": {"output_dataset.deleted": False}},
+#                   "aggs": {
+#                     "format": {
+#                       "filter": {"term": {"output_dataset.data_format.keyword": output}},
+#                       "aggs": {
+#                         "sum_bytes": {
+#                            "sum": {"field": "output_dataset.bytes"}
+#                         },
+#                         "sum_events": {
+#                           "sum": {"field": "output_dataset.events"}
+#                         },
+#                         "task": {
+#                           "reverse_nested": {},
+#                           "aggs": {
+#                             "input_bytes": {
+#                               "sum": {"field": "input_bytes"}
+#                             },
+#                             "input_events": {
+#                               "sum": {"field": "requested_events"}
+#                             },
+#                             "ids": {
+#                               "terms" : {
+#                                 "field" : "_uid",
+#                                 "size": 100
+#                               }
+#                             }
+#                           }
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }
+#               }
+#             }
+#           }
+#         }
+#     aggregs = es_search.update_from_dict(query)
+#     exexute =  aggregs.execute()
+#     total = exexute.hits.total
+#     print(total)
+#     result_events = exexute.aggregations.output.not_deleted.format.sum_events.value
+#     result_bytes = exexute.aggregations.output.not_deleted.format.sum_bytes.value
+#     print(result_events,result_bytes)
+#     input_bytes = exexute.aggregations.output.not_deleted.format.task.input_bytes.value
+#     input_events =  exexute.aggregations.output.not_deleted.format.task.input_events.value
+#     print(result_events,result_bytes,input_bytes,input_events)
+#     ratio = 0
+#     if input_bytes != 0:
+#         ratio = float(result_bytes)/float(input_bytes)
+#     events_ratio = 0
+#     if input_events != 0:
+#         events_ratio = float(result_events)/float(input_events)
+#     return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
+#
+#
+# def es_by_field_new(field, value):
+#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+#     query = {
+#         "query": {
+#             "bool": {
+#                     "must": {
+#                                 "term": { field : value}
+#                             }
+#
+#
+#             }
+#         }, 'size':2000
+#     }
+#     aggregs = es_search.update_from_dict(query)
+#     exexute =  aggregs.execute()
+#     current_hit = []
+#     for hit in exexute:
+#         current_hit.append(hit.to_dict())
+#
+#     return current_hit
+#
+#
+#
+# def deriv_formats_new(search_dict):
+#     formats = get_format_by_request(search_dict)
+#     formats_dict = {}
+#     for format in formats:
+#         formats_dict.update( { format: {
+#                                         "query": {"term": {"output_dataset.data_format.keyword": format}}
+#                                 }
+#
+#                               })
+#     return formats_dict
+#
+# def statistic_by_request_deriv_new(search_dict):
+#     total_result = {}
+#     formats_splits = []
+#     current_format = {}
+#     i=0
+#     formats_dict = deriv_formats_new(search_dict)
+#     for format in list(formats_dict.keys()):
+#         current_format.update({format:formats_dict[format]})
+#         if  (i>0)and(i%10==0):
+#             formats_splits.append(current_format.copy())
+#             current_format = {}
+#         i += 1
+#     if current_format:
+#         formats_splits.append(current_format.copy())
+#     for formats in formats_splits:
+#         print(formats)
+#         query = {
+#                   "size": 0,
+#                   "query": {
+#                     "bool": {
+#                       "must": [
+#                           search_dict,
+#                         {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}},
+#                       ]
+#                     }
+#                   },
+#
+#                   "aggs": {
+#
+#                     "formats": {
+#                         "nested": {"path": "output_dataset"},
+#                         "aggs":{
+#                             "formats": {
+#                         "terms": {"field": "output_dataset.data_format.keyword"},
+#                       "aggs": {
+#                         "amitag": {
+#                           "terms": {"field": "ctag"},
+#                           "aggs": {
+#                             "input_events": {
+#                               "sum": {"field": "input_events"}
+#                             },
+#                             "not_deleted": {
+#                               "filter": {"term": {"primary_input_deleted": False}},
+#                               "aggs": {
+#                                 "input_bytes": {
+#                                   "sum": {"field": "input_bytes"}
+#                                 },
+#                                   "input_events_datasets": {
+#                                       "sum": {"field": "primary_input_events"}
+#                                   }
+#                               }
+#                             },
+#                             "processed_events": {
+#                               "sum": {"field": "processed_events"}
+#                             },
+#                             "cpu_total": {
+#                               "avg": {"field": "hs06"}
+#                             },
+#                               "total_events": {
+#                                   "sum": {"field": "total_events"}
+#                               },
+#                             # "cpu_failed": {
+#                             #   "sum": {"field": "toths06_failed"}
+#                             # },
+#                             "timestamp_defined": {
+#                               "filter": {
+#                                 "bool": {
+#                                   "must": [
+#                                     {"exists": {"field": "start_time"}},
+#                                     {"exists": {"field": "end_time"}},
+#                                     {"script": {"script": "doc['end_time'].value > doc['start_time'].value"}}
+#                                   ]
+#                                 }
+#                               },
+#                               "aggs": {
+#                                 "walltime": {
+#                                   "avg": {"script": {"inline": "doc['end_time'].value - doc['start_time'].value"}}
+#                                 }
+#                               }
+#                             },
+#                             "output": {
+#                                 "nested": {"path": "output_dataset"},
+#                                 "aggs": {
+#                                     "not_removed": {
+#                                         "filter": {"term": {"deleted": False}},
+#                                         "aggs": {
+#                                             "bytes": {
+#                                                 "sum": {"field": "bytes"}
+#                                             },
+#                                             "events": {
+#                                                 "sum": {"field": "events"}
+#                                             }
+#                                         }
+#                                     }
+#                                 }
+#                             }
+#                           }
+#                         }
+#                       }
+#                     }
+#                   }
+#                 }}}
+#
+#         es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+#         result = {}
+#
+#         try:
+#             aggregs = es_search.update_from_dict(query)
+#             exexute = aggregs.execute()
+#         except Exception as e:
+#             print("Problem with es deriv : %s" % (e))
+#             aggregs = None
+#         print(exexute.hits.total)
+#         return exexute
+#         if aggregs and exexute.hits.total>0:
+#                 for f in exexute.aggregations.formats.formats.buckets:
+#                     for x in exexute.aggregations.formats.formats.buckets[f].amitag.bucket:
+#                         if x.timestamp_defined.walltime.value:
+#                             duration = float(x.timestamp_defined.walltime.value)/(3600.0*1000*24)
+#                         else:
+#                             duration = None
+#                         cpu_total = 0
+#                         if x.cpu_total.value:
+#                             cpu_total = x.cpu_total.value
+#                         input_events = x.input_events.value
+#                         # if x.not_deleted.input_events_datasets.value and input_events and (x.not_deleted.input_events_datasets.value>input_events):
+#                         #     input_events = x.not_deleted.input_events_datasets.value
+#                         result[f+' '+x.key] = {'name':f+' '+x.key,  'total_events':x.total_events.value,
+#                                    'input_events': input_events,
+#                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
+#                                    'output_bytes':x.output.not_removed.bytes.value,
+#                                    'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
+#                                    'total_tasks': x.doc_count, 'hs06':int(cpu_total), 'duration':duration}
+#         total_result.update(result)
+#
+#     return total_result
