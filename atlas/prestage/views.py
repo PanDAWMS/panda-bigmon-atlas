@@ -693,8 +693,6 @@ def do_staging(action_step_id, ddm):
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
-        if task.status not in ProductionTask.NOT_RUNNING:
-            create_follow_action = True
         if dataset_stage.status == 'done':
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
@@ -730,6 +728,8 @@ def do_staging(action_step_id, ddm):
                 dataset_stage.status = 'done'
                 dataset_stage.update_time = current_time
                 dataset_stage.end_time = current_time
+                if task.status not in ProductionTask.NOT_RUNNING:
+                    create_follow_action = True
             dataset_stage.save()
 
         elif dataset_stage.status == 'queued':
@@ -744,14 +744,20 @@ def do_staging(action_step_id, ddm):
         action_step.execution_time = current_time + timedelta(hours=delay)
         action_step.status = 'active'
     action_step.save()
-    if action_finished and create_follow_action:
-        current_id = action_step.id
-        new_follow_step = action_step
-        new_follow_step.id = None
-        new_follow_step.action = 7
-        new_follow_step.status = 'active'
-        new_follow_step.set_config({'stage_action': current_id})
-        new_follow_step.save()
+    if create_follow_action:
+        if not StepAction.objects.filter(action=7,step=action_step.step).exists():
+            current_id = action_step.id
+            new_follow_step = action_step
+            new_follow_step.id = None
+            new_follow_step.action = 7
+            new_follow_step.status = 'active'
+            new_follow_step.set_config({'stage_action': current_id})
+            new_follow_step.save()
+        else:
+            new_follow_step = StepAction.objects.filter(action=7,step=action_step.step).last()
+            if new_follow_step.status == 'done':
+                new_follow_step.status = 'active'
+                new_follow_step.save()
 
 
 
@@ -814,6 +820,26 @@ def find_active_staged_with_share():
                     result[dataset_stage.dataset]['share'] = 'any'
     return result
 
+def find_repeated_tasks_to_follow():
+    actions = StepAction.objects.filter(action=6, status='done', create_time__gte=timezone.now().replace(tzinfo=None)-timedelta(days=7))
+    total = []
+    for action in actions:
+        if ActionStaging.objects.filter(step_action=action).exists():
+                for action_stage in ActionStaging.objects.filter(step_action=action):
+                    task = TTask.objects.get(id=action_stage.task)
+                    if 'inputPreStaging' in task._jedi_task_parameters:
+                        total.append((action, task, action_stage.dataset_stage.start_time))
+    to_repeat = []
+    for x in total:
+        task = ProductionTask.objects.get(id=x[1].id)
+        dataset = task.primary_input
+        repeated_tasks = ProductionTask.objects.filter(id__gt=x[1].id, primary_input=dataset)
+        ami_tags = set()
+        ami_tags.add(task.ami_tag)
+        for rep_task in repeated_tasks:
+            if rep_task.status not in ProductionTask.NOT_RUNNING and rep_task.ami_tag not in ami_tags:
+                to_repeat.append(rep_task.id)
+    return to_repeat
 
 def activate_staging(step_action_ids):
     ddm = DDM()
@@ -865,7 +891,7 @@ def follow_staged(waiting_step, ddm):
     done_staging_action = StepAction.objects.get(id=int(action_step.get_config('stage_action')))
     if not ActionStaging.objects.filter(step_action=done_staging_action).exists():
         action_step.status = 'failed'
-        action_step.message = 'Somrthing wrong'
+        action_step.message = 'Something wrong'
         action_step.done_time = current_time
         action_step.save()
         return
@@ -874,11 +900,7 @@ def follow_staged(waiting_step, ddm):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
         if dataset_stage.status != 'done':
-            _logger.error("Follow staging action problem %s" % str(action_step.id))
-            action_step.status = 'failed'
-            action_step.message = 'Somrthing wrong'
-            action_step.done_time = current_time
-            action_step.save()
+            continue
         if task.status not in ProductionTask.NOT_RUNNING:
             action_finished = False
             existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
@@ -899,8 +921,97 @@ def follow_staged(waiting_step, ddm):
     action_step.save()
 
 
+def create_replica_extension(task_id, ddm):
+    task = ProductionTask.objects.get(id=task_id)
+    if task.status not in ProductionTask.NOT_RUNNING:
+        input_dataset = task.input_dataset
+        replicas = ddm.full_replicas_per_type(input_dataset)
+        if (len(replicas['data']) == 1) and (DatasetStaging.objects.filter(dataset=input_dataset).exists()):
+            dataset_stage = DatasetStaging.objects.get(dataset=input_dataset)
+            if ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse):
+                if StepAction.objects.filter(step=task.step.id,action=10).exists():
+                    for step_action in StepAction.objects.filter(step=task.step.id,action=10):
+                        for action_staging in ActionStaging.objects.filter(step_action=step_action):
+                            if action_staging.task == task_id:
+                                return False
+
+                step_action = StepAction()
+                step_action.step = task.step.id
+                step_action.action = 10
+                config = ActionDefault.objects.get(name='active_archive_staging').get_config()
+                step_action.status = 'active'
+                step_action.create_time = timezone.now()
+                step_action.set_config({'delay': config['delay']})
+                step_action.set_config({'task': task.id})
+                step_action.set_config({'rule': dataset_stage.rse})
+                step_action.execution_time = timezone.now() + timedelta(hours=config['delay'])
+                step_action.attempt = 0
+                step_action.request = task.request
+                step_action.save()
+                action_staging = ActionStaging()
+                action_staging.step_action = step_action
+                action_staging.dataset_stage = dataset_stage
+                action_staging.task = task_id
+                action_staging.save()
+                follow_repeated_staged(step_action.id, ddm)
+                return True
+        return False
+
+
+
+def follow_repeated_staged(waiting_step, ddm):
+    current_time = timezone.now()
+    action_step = StepAction.objects.get(id=waiting_step)
+    if not ActionStaging.objects.filter(step_action=action_step).exists():
+        action_step.status = 'failed'
+        action_step.message = 'Something wrong'
+        action_step.done_time = current_time
+        action_step.save()
+        return
+    action_finished = True
+    for action_stage in ActionStaging.objects.filter(step_action=action_step):
+        dataset_stage = action_stage.dataset_stage
+        task = ProductionTask.objects.get(id=action_stage.task)
+        if dataset_stage.status != 'done':
+            _logger.error("Follow staging action problem %s" % str(action_step.id))
+            action_step.status = 'failed'
+            action_step.message = 'Something wrong'
+            action_step.done_time = current_time
+            action_step.save()
+        if task.status not in ProductionTask.NOT_RUNNING:
+            action_finished = False
+            existed_rule = ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse)
+            if existed_rule:
+                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=5):
+                    try:
+                        ddm.change_rule_lifetime(existed_rule['id'], 15 * 86400)
+                    except Exception as e:
+                        _logger.error("Check replicas problem %s" % str(e))
+            else:
+                action_finished = True
+
+    if action_finished :
+        action_step.status = 'done'
+        action_step.message = 'All task started'
+        action_step.done_time = current_time
+    else:
+        action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay')*4)
+        action_step.status = 'active'
+    action_step.save()
 
 def follow_staging(step_action_ids):
+    ddm = DDM()
+    for waiting_step in step_action_ids:
+        try:
+            follow_staged(waiting_step, ddm)
+        except Exception as e:
+            _logger.error("Check replicas problem %s" % str(e))
+            waiting_step = StepAction.objects.get(id=waiting_step)
+            waiting_step.status = 'active'
+            waiting_step.save()
+
+
+def follow_repeated_staging(step_action_ids):
     ddm = DDM()
     for waiting_step in step_action_ids:
         try:
@@ -936,6 +1047,8 @@ def process_actions(action_step_todo):
             follow_staging(executing_actions[action])
         elif action == 9:
             follow_archive_staging(executing_actions[action])
+        elif action == 10:
+            follow_repeated_staging(executing_actions[action])
 
 def prestage_by_tape(request, reqid=None):
     try:

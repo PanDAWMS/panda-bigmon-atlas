@@ -316,6 +316,14 @@ class DDM(object):
                 return rule
         return []
 
+    def dataset_active_rule_by_rule_id(self, dataset_name, rule_id):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        for rule in rules:
+            if rule['id'] == rule_id:
+                return rule
+        return []
+
     def active_staging_rule(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
         rules = self.__ddm.list_did_rules(scope, name)
