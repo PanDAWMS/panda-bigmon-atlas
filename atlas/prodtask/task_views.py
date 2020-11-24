@@ -114,7 +114,7 @@ for _status in allowed_task_actions:
     if 'reassign' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share'])
     if 'ctrl' in allowed_task_actions[_status]:
-        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input'])
+        allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input','sync_jedi'])
 
 def descent_tasks(request, task_id):
     try:
@@ -572,7 +572,7 @@ def task_table(request):
                                                                     'table': request.datatable,
                                                                     'parametrized': request.parametrized,
                                                                     'parent_template': 'prodtask/_index.html',
-                                                                    'last_task_submit_time' : last_task_submit_time,
+                                                                    'last_task_submit_time' : last_task_submit_time
                                                                     })
 
 

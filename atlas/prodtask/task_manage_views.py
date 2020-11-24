@@ -320,7 +320,9 @@ def task_manage(request):
                              'shares': GLOBAL_SHARES,
                              'nucleus': get_nucleus(),
                              'edit_mode': True,
-                            })
+                             'show_sync': True
+
+                             })
 
 
 
