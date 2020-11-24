@@ -821,24 +821,31 @@ def find_active_staged_with_share():
     return result
 
 def find_repeated_tasks_to_follow():
-    actions = StepAction.objects.filter(action=6, status='done', create_time__gte=timezone.now().replace(tzinfo=None)-timedelta(days=7))
-    total = []
+    staged_tasks = []
+    actions = StepAction.objects.filter(action=6, status='done', create_time__gte=timezone.now()-timedelta(days=30))
     for action in actions:
         if ActionStaging.objects.filter(step_action=action).exists():
-                for action_stage in ActionStaging.objects.filter(step_action=action):
-                    task = TTask.objects.get(id=action_stage.task)
-                    if 'inputPreStaging' in task._jedi_task_parameters:
-                        total.append((action, task, action_stage.dataset_stage.start_time))
+            for action_stage in ActionStaging.objects.filter(step_action=action):
+                    staged_tasks.append(action_stage.task)
+    actions = StepAction.objects.filter(action=10, create_time__gte=timezone.now()-timedelta(days=30))
+    for action in actions:
+        if ActionStaging.objects.filter(step_action=action).exists():
+            for action_stage in ActionStaging.objects.filter(step_action=action):
+                    staged_tasks.append(action_stage.task)
     to_repeat = []
-    for x in total:
-        task = ProductionTask.objects.get(id=x[1].id)
+    used_input = []
+    for task_id in staged_tasks:
+        task = ProductionTask.objects.get(id=task_id)
         dataset = task.primary_input
-        repeated_tasks = ProductionTask.objects.filter(id__gt=x[1].id, primary_input=dataset)
-        ami_tags = set()
-        ami_tags.add(task.ami_tag)
-        for rep_task in repeated_tasks:
-            if rep_task.status not in ProductionTask.NOT_RUNNING and rep_task.ami_tag not in ami_tags:
-                to_repeat.append(rep_task.id)
+        if dataset not in used_input:
+            used_input.append(dataset)
+            repeated_tasks = ProductionTask.objects.filter(id__gt=task_id, submit_time__gte=timezone.now()-timedelta(days=7), primary_input=dataset)
+            for rep_task in repeated_tasks:
+                if rep_task.status not in ProductionTask.NOT_RUNNING:
+                    ttask = TTask.objects.get(id=rep_task.id)
+                    if 'inputPreStaging' not  in ttask._jedi_task_parameters and not ActionStaging.objects.filter(task=rep_task.id).exists():
+                        to_repeat.append(rep_task.id)
+
     return to_repeat
 
 def activate_staging(step_action_ids):
@@ -1273,39 +1280,42 @@ def step_action(request, wstep_id):
 
     try:
         action_step = StepAction.objects.get(id=wstep_id)
-        message = ''
+        tasks_messages = []
         task = None
         if action_step.action == 6:
             if ActionStaging.objects.filter(step_action=action_step).exists():
-                staging = ActionStaging.objects.filter(step_action=action_step)[0]
-                dataset = staging.dataset_stage.dataset
-                total_files = staging.dataset_stage.total_files
-                staged_files = staging.dataset_stage.staged_files
-                rse = staging.dataset_stage.rse
-                task = staging.task
-                if ':' not in dataset:
-                    dataset = '{0}:{1}'.format(dataset.split('.')[0],dataset)
-                link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
-                rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(
-                    rule_id=rse, rule_rse=action_step.get_config('rule'))
+                for staging in ActionStaging.objects.filter(step_action=action_step):
+                    dataset = staging.dataset_stage.dataset
+                    total_files = staging.dataset_stage.total_files
+                    staged_files = staging.dataset_stage.staged_files
+                    rse = staging.dataset_stage.rse
+                    task = staging.task
+                    if ':' not in dataset:
+                        dataset = '{0}:{1}'.format(dataset.split('.')[0],dataset)
+                    link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
+                    rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(
+                        rule_id=rse, rule_rse=action_step.get_config('rule'))
 
-                if action_step.get_config('tape'):
-                    tape_replica = str(action_step.get_config('tape'))
-                else:
-                    tape_replica = 'tape'
-                if staging.dataset_stage.status in ['staging','done']:
-                    if rse:
-                        message = 'Rules exists for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, rule_link,
-                                                                                                             str(staged_files),
-                                                                                                             str(total_files),
-                                                                                                str(action_step.get_config('level')))
+                    if action_step.get_config('tape'):
+                        tape_replica = str(action_step.get_config('tape'))
                     else:
-                        message = 'Rules submitted for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, action_step.get_config('rule'),
-                                                                                                             str(staged_files),
-                                                                                                             str(total_files),
-                                                                                                str(action_step.get_config('level')))
-                else:
-                    message = 'Staging request is queued for {link_dataset} from {source}'.format(link_dataset=link,source=staging.dataset_stage.source)
+                        tape_replica = 'tape'
+                    if staging.dataset_stage.source:
+                        tape_replica = staging.dataset_stage.source
+                    if staging.dataset_stage.status in ['staging','done']:
+                        if rse:
+                            message = 'Rules exists for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, rule_link,
+                                                                                                                 str(staged_files),
+                                                                                                                 str(total_files),
+                                                                                                    str(action_step.get_config('level')))
+                        else:
+                            message = 'Rules submitted for  %s from %s : %s %s/%s  (%s %% needed )' % (link, tape_replica, action_step.get_config('rule'),
+                                                                                                                 str(staged_files),
+                                                                                                                 str(total_files),
+                                                                                                    str(action_step.get_config('level')))
+                    else:
+                        message = 'Staging request is queued for {link_dataset} from {source}'.format(link_dataset=link,source=staging.dataset_stage.source)
+                    tasks_messages.append((task,message))
 
     except:
         return HttpResponseRedirect('/')
@@ -1314,7 +1324,7 @@ def step_action(request, wstep_id):
         'active_app' : 'prodtask',
         'pre_form_text' : 'action with ID = %s' % wstep_id,
         'waiting_step': action_step,
-        'message': message,
+        'tasks_messages': tasks_messages,
         'task' : task,
         'parent_template' : 'prodtask/_index.html',
         }

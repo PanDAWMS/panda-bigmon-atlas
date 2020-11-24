@@ -38,10 +38,12 @@
 <tr><th><label for="step">Step execution:</label></th><td>{% if waiting_step.step.id %}<a href="{% url 'prodtask:step_execution' waiting_step.step.id %}">{{waiting_step.step.step_template.step}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="request">Request:</label></th><td>{% if waiting_step.request.reqid %}<a href="{% url 'prodtask:input_list_approve' waiting_step.request.reqid %}#inputList{{ waiting_step.step.slice.slice }}">{{waiting_step.request.reqid}}</a>{% else %}None{% endif %}</td></tr>
 <tr><th><label for="Submit time">Submit time:</label></th><td>{{ waiting_step.create_time }}</td></tr>
-<tr><th><label for="Task">Task:</label></th><td><a  href="/prodtask/task/{{ task }}">{{ task}}</a></td></tr>
 
 <tr><th><label for="Next attempt time">Next attempt time:</label></th><td>{{ waiting_step.execution_time }}</td></tr>
-<tr><th><label for="Message">Message:</label></th><td>{% autoescape off %}{{ message }}{% endautoescape %}</td></tr>
+   {% for task,message in tasks_messages %}
+       <tr><th><label for="Task">Task:</label></th><td><a  href="/prodtask/task/{{ task }}">{{ task}}</a></td></tr>
+       <tr><th><label for="Message">Message:</label></th><td>{% autoescape off %}{{ message }}{% endautoescape %}</td></tr>
+   {% endfor %}
 
 <script>
         function csrfSafeMethod(method) {

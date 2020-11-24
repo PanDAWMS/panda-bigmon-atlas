@@ -1921,17 +1921,28 @@ def request_table_view(request, rid=None, show_hidden=False):
                             current_action['status'] = current_new_action.status
                             current_action['step'] = current_new_action.step
                             try:
-                                    staging = ActionStaging.objects.filter(step_action=current_new_action)[0]
-                                    dataset_staging = staging.dataset_stage
-                                    if dataset_staging.status == 'queued':
-                                        current_action['total'] = -1
+                                    if  ActionStaging.objects.filter(step_action=current_new_action).count() == 1:
+                                        staging = ActionStaging.objects.filter(step_action=current_new_action)[0]
+                                        dataset_staging = staging.dataset_stage
+                                        if dataset_staging.status == 'queued':
+                                            current_action['total'] = -1
+                                        else:
+                                            current_action['total'] = dataset_staging.total_files
+                                            current_action['done'] = dataset_staging.staged_files
+                                        link_dataset = dataset_staging.dataset
+                                        if ':' not in dataset_staging.dataset:
+                                            link_dataset = dataset_staging.dataset.split('.')[0] + ':' + dataset_staging.dataset
+                                        current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(link_dataset)
                                     else:
-                                        current_action['total'] = dataset_staging.total_files
-                                        current_action['done'] = dataset_staging.staged_files
-                                    link_dataset = dataset_staging.dataset
-                                    if ':' not in dataset_staging.dataset:
-                                        link_dataset = dataset_staging.dataset.split('.')[0] + ':' + dataset_staging.dataset
-                                    current_action['link'] = "https://rucio-ui.cern.ch/did?name=%s"%(link_dataset)
+                                        total = 0
+                                        done = 0
+                                        for staging in ActionStaging.objects.filter(step_action=current_new_action):
+                                            dataset_staging = staging.dataset_stage
+                                            total += dataset_staging.total_files
+                                            done += dataset_staging.staged_files
+                                        current_action['total'] = total
+                                        current_action['done'] = done
+                                        current_action['link'] = reverse('prestage:step_action',args=[current_action['id']])
                             except:
                                 pass
                         pre_definition_actions[current_action['step']] = pre_definition_actions.get(current_action['step'], []) + [current_action]
