@@ -1028,7 +1028,7 @@ def follow_repeated_staging(step_action_ids):
     ddm = DDM()
     for waiting_step in step_action_ids:
         try:
-            follow_staged(waiting_step, ddm)
+            follow_repeated_staged(waiting_step, ddm)
         except Exception as e:
             _logger.error("Check replicas problem %s" % str(e))
             waiting_step = StepAction.objects.get(id=waiting_step)
