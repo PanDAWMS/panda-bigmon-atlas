@@ -221,60 +221,66 @@ def get_permission_analy(action_username, tasks, userfullname):
 def task_details(request, rid=None):
     if rid:
         try:
-            task = ProductionTask.objects.get(id=rid)
-            ttask = TTask.objects.get(id=rid)
-            output_datasets = ProductionDataset.objects.filter(task_id=rid)
-            output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
-
             same_tasks = []
-            if task.is_extension:
-                dataset_pat=output_datasets[0].name.split("tid")[0]
-                datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
-                same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
-            #    ds_pattern=re.search('/.+?(?=tid)/',dataset.name)
+            output_datasets = []
+            output_formats = []
+            if ProductionTask.objects.filter(id=rid).exists():
+                task = ProductionTask.objects.get(id=rid)
+                output_datasets = ProductionDataset.objects.filter(task_id=rid)
+                output_formats = [x.get('name').split('.')[4] for x in output_datasets.values('name')]
+                if task.is_extension:
+                    dataset_pat=output_datasets[0].name.split("tid")[0]
+                    datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
+                    same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
+            else:
+                task = TTask.objects.get(id=rid)
+            ttask = TTask.objects.get(id=rid)
+
+
+
+            tasks = []
+            tasks.append(rid)
+            # is_permitted,denied_task = get_permissions(request.user.username,tasks)
+            denied_task, tmp = check_action_allowed(request.user.username, tasks)
+            is_permitted = denied_task == []
+            permissions = {}
+            if task.status in allowed_task_actions:
+                for action in allowed_task_actions[task.status]:
+                    permissions[action] = is_permitted
+
+            # TODO: these actions are needed from DEFT and JEDI (SB)
+            for action in ['edit', 'clone']:
+                permissions[action] = False
+            try:
+                hashtags = [str(x) for x in task.hashtags]
+            except:
+                hashtags = []
+            request_parameters = {
+                'active_app': 'prodtask',
+                'pre_form_text': 'ProductionTask details with ID = %s' % rid,
+                'task': task,
+                'ttask': ttask,
+                'output_datasets': output_datasets,
+                'clouds': get_clouds(),
+                'sites': get_sites(),
+                'nucleus': get_nucleus(),
+                'shares': GLOBAL_SHARES,
+                'outputs': output_formats,
+                'extasks': same_tasks,
+                'hashtags': hashtags,
+                'parent_template': 'prodtask/_index.html',
+                'show_sync': True
+            }
+            for action, perm in list(permissions.items()):
+                request_parameters['can_' + action + '_task'] = perm
+
+            return render(request, 'prodtask/_task_detail.html', request_parameters)
         except:
             return HttpResponseRedirect('/')
     else:
         return HttpResponseRedirect('/')
 
-    tasks=[]
-    tasks.append(rid)
-    #is_permitted,denied_task = get_permissions(request.user.username,tasks)
-    denied_task,tmp = check_action_allowed(request.user.username, tasks)
-    is_permitted = denied_task == []
-    permissions = {}
-    if task.status in allowed_task_actions:
-        for action in allowed_task_actions[task.status]:
-            permissions[action] = is_permitted
 
-    # TODO: these actions are needed from DEFT and JEDI (SB)
-    for action in ['edit', 'clone']:
-        permissions[action] = False
-    try:
-        hashtags = [str(x) for x in task.hashtags]
-    except:
-        hashtags = []
-    request_parameters = {
-        'active_app' : 'prodtask',
-        'pre_form_text' : 'ProductionTask details with ID = %s' % rid,
-        'task': task,
-        'ttask': ttask,
-        'output_datasets': output_datasets,
-        'clouds': get_clouds(),
-        'sites': get_sites(),
-        'nucleus': get_nucleus(),
-        'shares': GLOBAL_SHARES,
-        'outputs': output_formats,
-        'extasks': same_tasks,
-        'hashtags': hashtags,
-        'parent_template' : 'prodtask/_index.html',
-        'show_sync': True
-        }
-    print(permissions)
-    for action, perm in list(permissions.items()):
-        request_parameters['can_' + action + '_task'] = perm
-
-    return render(request, 'prodtask/_task_detail.html', request_parameters)
 
 
 def task_clone(request, rid=None):

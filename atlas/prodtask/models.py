@@ -719,6 +719,8 @@ class TTask(models.Model):
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
     vo = models.CharField(max_length=16, db_column='VO', null=True)
     prodSourceLabel = models.CharField(max_length=20, db_column='PRODSOURCELABEL', null=True)
+    name = models.CharField(max_length=128, db_column='TASKNAME', null=True)
+    username = models.CharField(max_length=128, db_column='USERNAME', null=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
     __params = None
 
@@ -1246,6 +1248,75 @@ class ETAGRelease(models.Model):
     class Meta:
         db_table = '"T_ETAG_RELEASE"'
 
+
+class GroupProductionAMITag(models.Model):
+
+    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG', primary_key=True)
+    status = models.CharField(max_length=20, db_column='STATUS',null=False)
+    skim = models.CharField(max_length=1, db_column='SKIM', null=False)
+    real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
+    cache = models.CharField(max_length=100, db_column='CACHE',null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
+    comment = models.CharField(max_length=1000, db_column='TAG_COMMENT')
+
+    def save(self, *args, **kwargs):
+        if not self.timestamp:
+            self.timestamp = timezone.now()
+        super(GroupProductionAMITag, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_AMI_TAG"'
+
+
+class GroupProductionDeletion(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_DELETION_ID', primary_key=True)
+    container = models.CharField(max_length=255, db_column='CONTAINER', null=False)
+    dsid = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID', null=False)
+    output_format = models.CharField(max_length=20, db_column='OUTPUT_FORMAT', null=False)
+    update_time = models.DateTimeField(db_column='UPDATE_TIMESTAMP', null=False)
+    version = models.DecimalField(decimal_places=0, max_digits=12, db_column='VERSION', null=False)
+    status = models.CharField(max_length=20, db_column='STATUS',null=False)
+    size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
+    skim = models.CharField(max_length=1, db_column='SKIM', null=False)
+    input_key = models.CharField(max_length=200, db_column='INPUT_KEY', null=False)
+    datasets_number = models.DecimalField(decimal_places=0, max_digits=12, db_column='DATASETS', null=False)
+    events = models.DecimalField(decimal_places=0, max_digits=12, db_column='EVENTS', null=False)
+    available_tags = models.CharField(max_length=200, db_column='AVALIABLE_TAGS', null=True)
+    previous_container = models.ForeignKey('self', db_column='PREVIOUS_CONTAINER_ID', on_delete=CASCADE, null=True)
+    extensions_number = models.DecimalField(decimal_places=0, max_digits=12, db_column='EXTNSIONS', null=True)
+    last_extension_time = models.DateTimeField(db_column='EXTENSION_TIME', null=True)
+    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_GP_DELETION_SEQ',"T_GP_DELETION",'GP_DELETION_ID')
+        super(GroupProductionDeletion, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_DELETION"'
+
+
+class GroupProductionDeletionExtension(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_DELETION_EXT_ID', primary_key=True)
+    container = models.ForeignKey(GroupProductionDeletion, db_column='DELETION_CONTAINER_ID', on_delete=CASCADE)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
+    user = models.CharField(max_length=200, db_column='USER_NAME')
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_GP_DELETION_EXT_SEQ',"T_GP_DELETION_EXT",'GP_DELETION_EXT_ID')
+        super(GroupProductionDeletionExtension, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_DELETION_EXT"'
 
 
 class WaitingStep(models.Model):
