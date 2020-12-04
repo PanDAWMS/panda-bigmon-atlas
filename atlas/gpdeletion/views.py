@@ -66,9 +66,8 @@ def collect_stats(format_base, is_real_data):
                 current_stat.save()
 
 
-def get_existing_datastes(output, ami_tag):
+def get_existing_datastes(output, ami_tag, ddm):
     tasks = es_by_keys({'ctag': ami_tag, 'output_formats': output})
-    ddm = DDM()
     if(len(tasks)>0):
         print(ami_tag, len(tasks))
     result = []
@@ -134,17 +133,21 @@ def collect_datasets(format_base, data, only_new = False):
 
 def collect_datasets_per_output(output, data, is_skim):
     print(output, data, is_skim)
+
     if is_skim:
         skim = 's'
     else:
         skim = 'n'
+    _logger.info(
+        'Start collecting containers for {output} {skim}) '.format(output=output, skim=skim))
     ami_tags_cache = list(
         GroupProductionAMITag.objects.filter(real_data=data, skim=skim).values_list('ami_tag', 'cache'))
     ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
     ami_tags = [x[0] for x in ami_tags_cache]
     result = {}
+    ddm = DDM()
     for ami_tag in ami_tags:
-        for dataset in get_existing_datastes(output, ami_tag):
+        for dataset in get_existing_datastes(output, ami_tag, ddm):
             dataset_name = get_container_name(dataset['dataset'])
             dataset_key = dataset_name[:dataset_name.rfind('_')] + '.' + skim
             if dataset_key not in result:
@@ -317,6 +320,7 @@ def fill_db(output, data, is_skim, test=True):
         current_key = None
         last_id = None
         changed_containers = []
+        _logger.info('Store {total} to DB '.format(total=len(to_db)))
         for index, item in enumerate(to_db):
             try:
                 if (item['input_key'] == current_key) and last_id:
@@ -326,7 +330,7 @@ def fill_db(output, data, is_skim, test=True):
                 current_key = item['input_key']
                 changed_containers.append(item['container'])
             except Exception as e:
-                print(str(e))
+                _logger.error('Error during storing container {error} to DB '.format(error=str(e)))
                 print(index)
                 return to_db
         clean_containers(changed_containers, output, data, is_skim )
