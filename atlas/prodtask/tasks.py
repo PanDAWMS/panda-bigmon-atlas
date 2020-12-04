@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from atlas.celerybackend.celery import app
+from atlas.gpdeletion.views import collect_datasets
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
     sync_cric_deft, find_repeated_tasks_to_follow
@@ -68,3 +69,9 @@ def cric_profile_sync():
 def find_DC_existsed_replica_tasks():
     find_repeated_tasks_to_follow()
     return None
+
+
+@app.task()
+def collect_gp(format_base, data):
+    collect_datasets(format_base, data, True)
+    return True

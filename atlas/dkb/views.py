@@ -173,7 +173,7 @@ def es_by_fields(field, value, field2, value2):
     search = es_search.update_from_dict(query)
     return search.execute()
 
-def es_by_keys(values, size=2000):
+def es_by_keys(values, size=10000):
     search_dict = []
     for x in values:
         search_dict.append({'term':{x:values[x]}})

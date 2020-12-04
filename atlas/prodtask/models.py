@@ -511,6 +511,12 @@ class MCJobOptions(models.Model):
         #app_label = 'deft'
         db_table = "T_MC_JO_PHYS"
 
+class TDataFormat(models.Model):
+    name = models.CharField(max_length=64, db_column='NAME', primary_key=True)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION', null=True)
+
+    class Meta:
+        db_table = "T_DATA_FORMAT"
 
 # class MCPileupOverlayGroupDescription(models.Model):
 #
@@ -1268,6 +1274,29 @@ class GroupProductionAMITag(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = '"T_GP_AMI_TAG"'
+
+
+class GroupProductionStats(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_STATS_ID', primary_key=True)
+    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG', primary_key=True)
+    output_format = models.CharField(max_length=20, db_column='OUTPUT_FORMAT', null=False)
+    real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
+    size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
+    containers = models.DecimalField(decimal_places=0, max_digits=20, db_column='CONTAINERS')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
+
+    def save(self, *args, **kwargs):
+        if not self.timestamp:
+            self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_GP_STATS_SEQ',"T_GP_STATS",'GP_STATS_ID')
+        super(GroupProductionStats, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_STATS"'
 
 
 class GroupProductionDeletion(models.Model):

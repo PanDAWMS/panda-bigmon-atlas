@@ -35,11 +35,12 @@ common_patterns = [
     url(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
 
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^gpdeletion/', include(('atlas.gpdeletion.urls', 'gpdeletion'), namespace='gpdeletion')),
 
-    ### Uncomment the next line to enable the admin:
+                      ### Uncomment the next line to enable the admin:
     url(r'^admin/',  admin.site.urls),
-   #                   url(r'^ng/',
-   #                       include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
+   #  url(r'^ng/',
+   #      include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
 
                   ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
