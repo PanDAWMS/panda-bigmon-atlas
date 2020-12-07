@@ -1284,6 +1284,8 @@ class GroupProductionStats(models.Model):
     real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
     size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
     containers = models.DecimalField(decimal_places=0, max_digits=20, db_column='CONTAINERS')
+    to_delete_containers =  models.DecimalField(decimal_places=0, max_digits=20, db_column='TD_CONTAINERS')
+    to_delete_size =  models.DecimalField(decimal_places=0, max_digits=20, db_column='TD_BYTES')
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
 
     def save(self, *args, **kwargs):
