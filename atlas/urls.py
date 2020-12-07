@@ -39,8 +39,8 @@ common_patterns = [
 
                       ### Uncomment the next line to enable the admin:
     url(r'^admin/',  admin.site.urls),
-   #  url(r'^ng/',
-   #      include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
+     url(r'^ng/',
+         include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
 
                   ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

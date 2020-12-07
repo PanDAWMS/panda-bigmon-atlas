@@ -1,0 +1,56 @@
+{% extends parent_template %}
+
+{% load static from staticfiles %}
+
+
+
+
+{% block subtitle %}
+{{pre_form_text|safe}}
+{% endblock %}
+
+
+
+
+{% block body %}
+   <style type="text/css">
+
+ 	td.obsolete	{ background-color : lightblue}
+	td.holding 	{ background-color : black;	}
+	td.pending	{ background-color : blue;		}
+	td.waiting	{ background-color : blue;	}
+	td.submitting	{ background-color : blue;	}
+	td.archived 	{ background-color : magenta;	}
+	td.failed 	{ background-color : red;	}
+	td.aborted 	{ background-color : red;	}
+	td.broken		{ background-color : red;	}
+
+	td.running 	{ background-color : LightGreen;	}
+
+	td.done 		{ background-color : darkgreen;}
+    td.finished 		{ background-color : darkgreen;	}
+    td.registered {  background-color : blue;}
+
+
+  </style>
+
+<script>
+
+
+</script>
+     <base href="/#/">
+      <app-root></app-root>
+        <script type="text/javascript" src="{% static "js/polyfills.js" %}"></script>
+
+        <script type="text/javascript" src="{% static "js/zone.js" %}"></script>
+        <script type="text/javascript" src="{% static "js/styles.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/vendor.js" %}"></script>
+
+    <script type="text/javascript" src="{% static "js/main.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/runtime.js" %}"></script>
+
+
+
+
+
+{% endblock %}

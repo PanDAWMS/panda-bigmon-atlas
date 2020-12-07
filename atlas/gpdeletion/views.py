@@ -6,7 +6,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats
 from atlas.dkb.views import es_by_fields, es_by_keys
 from atlas.prodtask.ddm_api import DDM
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from rest_framework import serializers, generics
 from django.forms.models import model_to_dict
@@ -31,6 +31,8 @@ def get_all_formats(format_base):
     return list(TDataFormat.objects.filter(name__startswith='DAOD_' + format_base).values_list('name', flat=True))
 
 
+LIFE_TIME_DAYS = 60
+
 def collect_stats(format_base, is_real_data):
     formats = get_all_formats(format_base)
     version = 1
@@ -42,16 +44,23 @@ def collect_stats(format_base, is_real_data):
         for sample in samples:
             if GroupProductionAMITag.objects.get(ami_tag=sample.ami_tag).real_data == is_real_data:
                 if sample.ami_tag not in by_tag_stats:
-                    by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0}
+                    by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0, 'to_delete_containers': 0, 'to_delete_bytes':0}
                 if sample.version >= version:
                     by_tag_stats[sample.ami_tag]['containers'] += 1
                     by_tag_stats[sample.ami_tag]['bytes'] += sample.size
+                    if (timezone.now() - sample.last_extension_time) > timedelta(days=LIFE_TIME_DAYS):
+                        by_tag_stats[sample.ami_tag]['to_delete_containers'] += 1
+                        by_tag_stats[sample.ami_tag]['to_delete_bytes'] += sample.size
+
+
         current_stats = GroupProductionStats.objects.filter(output_format=format, real_data=is_real_data)
         updated_tags = []
         for current_stat in current_stats:
             if current_stat.ami_tag in by_tag_stats.keys():
                 current_stat.size = by_tag_stats[current_stat.ami_tag]['bytes']
                 current_stat.containers = by_tag_stats[current_stat.ami_tag]['containers']
+                current_stat.to_delete_size = by_tag_stats[current_stat.ami_tag]['to_delete_bytes']
+                current_stat.to_delete_containers = by_tag_stats[current_stat.ami_tag]['to_delete_containers']
                 current_stat.save()
                 updated_tags.append(current_stat.ami_tag)
             else:
@@ -63,6 +72,8 @@ def collect_stats(format_base, is_real_data):
                 current_stat = GroupProductionStats(ami_tag=tag, output_format=format, real_data=is_real_data)
                 current_stat.size = by_tag_stats[tag]['bytes']
                 current_stat.containers = by_tag_stats[tag]['containers']
+                current_stat.to_delete_size = by_tag_stats[tag]['to_delete_bytes']
+                current_stat.to_delete_containers = by_tag_stats[tag]['to_delete_containers']
                 current_stat.save()
 
 
@@ -119,9 +130,13 @@ def get_container_name(dataset_name):
 
 
 def collect_datasets(format_base, data, only_new = False):
+    if data:
+        prefix = 'data'
+    else:
+        prefix = 'mc'
     for output in get_all_formats(format_base):
         if only_new:
-            if GroupProductionDeletion.objects.filter(output_format=output).exists():
+            if GroupProductionDeletion.objects.filter(output_format=output, container__startswith=prefix).exists():
                 continue
         if data:
             fill_db(output, True, True, False)
@@ -363,6 +378,8 @@ def gpdetails(request):
         return HttpResponseBadRequest(e)
 
 
+
+
 @api_view(['POST'])
 def extension(request):
     try:
@@ -394,10 +411,14 @@ class GroupProductionDeletionSerializer(serializers.ModelSerializer):
         model = GroupProductionDeletion
         fields = '__all__'
 
+class GroupProductionStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProductionStats
+        fields = '__all__'
 
-class ListGroupProductionDeletionView(generics.ListAPIView):
-    serializer_class = GroupProductionDeletionSerializer
-    lookup_fields = ['dsid', 'output_format', 'version', 'status', 'skim', 'ami_tag']
+class ListGroupProductionStatsView(generics.ListAPIView):
+    serializer_class = GroupProductionStatsSerializer
+    lookup_fields = ['id', 'ami_tag', 'output_format', 'real_data']
 
     def get_queryset(self):
         """
@@ -406,7 +427,39 @@ class ListGroupProductionDeletionView(generics.ListAPIView):
         """
         filter = {}
         for field in self.lookup_fields:
-            if self.request.query_params.get(field, None):  # Ignore empty fields.
+            if field == 'real_data' and self.request.query_params.get(field, None):
+                if self.request.query_params[field] == '1':
+                    filter['real_data'] = True
+                else:
+                    filter['real_data'] = False
+            elif self.request.query_params.get(field, None):  # Ignore empty fields.
+                filter[field] = self.request.query_params[field]
+        queryset = GroupProductionStats.objects.filter(**filter)
+        return queryset
+
+def version_from_format(output_format):
+    for base_format in CP_FORMATS:
+        if base_format in output_format:
+            return 2
+    return 1
+
+
+class ListGroupProductionDeletionView(generics.ListAPIView):
+    serializer_class = GroupProductionDeletionSerializer
+    lookup_fields = ['dsid', 'output_format', 'version', 'status', 'skim', 'ami_tag','data_type']
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        filter = {}
+        for field in self.lookup_fields:
+            if field == 'data_type' and self.request.query_params.get(field, None):
+                filter['container__startswith'] = self.request.query_params[field]
+            elif field == 'version' and self.request.query_params.get(field, None) and self.request.query_params.get('output_format', None):
+                filter['version__gte'] = version_from_format(self.request.query_params[field])
+            elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
         queryset = GroupProductionDeletion.objects.filter(**filter)
 

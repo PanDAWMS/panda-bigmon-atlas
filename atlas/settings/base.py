@@ -61,8 +61,8 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.celerybackend',
     'django_celery_results',
     'django_celery_beat',
-    #'atlas.frontendjs',
-    #'atlas.frontenddjango',
+    'atlas.frontendjs',
+    'atlas.frontenddjango',
     'atlas.prodtask_api',
     'atlas.gpdeletion'
 

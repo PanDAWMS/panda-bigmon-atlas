@@ -227,11 +227,11 @@ select {
     position: relative;
     margin-left: 83.33333%; }
 
-  [class*="column"] + [class*="column"]:last-child {
-    float: right; }
+  /*[class*="column"] + [class*="column"]:last-child {*/
+  /*  float: right; }*/
 
-  [class*="column"] + [class*="column"].end {
-    float: left; }
+  /*[class*="column"] + [class*="column"].end {*/
+  /*  float: left; }*/
 
   .column.small-centered,
   .columns.small-centered {
