@@ -1,0 +1,131 @@
+<mat-sidenav-container
+    class="example-container" >
+  <mat-sidenav #sidenav  >
+<p>Total selected: {{totalSelected}}</p>
+          <p>Size:{{totalSelectedSize | datasetSize }}</p>
+
+
+ <mat-form-field class="send-size-form">
+
+    <mat-label>Message </mat-label>
+     <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" placeholder="Put a reason or a JIRA ticket"></textarea>
+
+
+    <mat-hint align="end">{{extentMessage.value.length}} / 256</mat-hint>
+  </mat-form-field>
+    <p><button mat-button (click)="sendExtension()">Send</button></p>
+    <p><button mat-button (click)="sidenav.close()">Close</button></p>
+
+
+
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+
+
+   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back</button></p>
+<p>Superseded datasets {{outputType}}</p>
+
+
+<div class="links">
+  <ul>
+    <li *ngFor="let containerByTag of containersByTagTables">
+      <a [routerLink]='"."' [queryParamsHandling]="'merge'" [fragment]="containerByTag.amiTag">{{containerByTag.amiTag}}</a>
+    </li>
+  </ul>
+</div>
+
+
+
+  <section>
+
+<div class="section" *ngFor="let containerByTag of containersByTagTables" [attr.id]='containerByTag.amiTag' >
+  <h5>{{containerByTag.amiTag}}</h5>
+
+<table mat-table [dataSource]="containerByTag.dataSource"  multiTemplateDataRows >
+  <!-- Checkbox Column -->
+  <ng-container matColumnDef="select">
+    <th mat-header-cell *matHeaderCellDef>
+      <mat-checkbox (change)="$event ? masterToggle(containerByTag.dataSource, containerByTag.selection) : null"
+                    [checked]="containerByTag.selection.hasValue() && isAllSelected(containerByTag.dataSource, containerByTag.selection)"
+                    [indeterminate]="containerByTag.selection.hasValue() && !isAllSelected(containerByTag.dataSource, containerByTag.selection)"
+                    [aria-label]="checkboxLabel(containerByTag.dataSource, containerByTag.selection)">
+      </mat-checkbox>
+    </th>
+    <td mat-cell *matCellDef="let row">
+      <mat-checkbox (click)="$event.stopPropagation()"
+                    (change)="$event ? selectRowWithCounting(containerByTag.selection, row) : null"
+                    [checked]="containerByTag.selection.isSelected(row)"
+                    [aria-label]="checkboxLabel(containerByTag.dataSource, containerByTag.selection, row)">
+      </mat-checkbox>
+    </td>
+  </ng-container>
+    <!-- Container Column -->
+  <ng-container matColumnDef="container">
+    <th mat-header-cell *matHeaderCellDef > Container </th>
+    <td mat-cell *matCellDef="let element" [attr.id]='element.id'> {{element.container}} </td>
+  </ng-container>
+
+   <!-- Version Column -->
+  <ng-container matColumnDef="available_tags">
+    <th mat-header-cell *matHeaderCellDef > Available tags </th>
+    <td mat-cell *matCellDef="let element"> {{element.available_tags}} </td>
+  </ng-container>
+
+    <ng-container matColumnDef="age">
+    <th mat-header-cell *matHeaderCellDef > Age </th>
+    <td mat-cell *matCellDef="let element"  [ngClass]="element.is_expired" > {{element.age | number:'1.0-0'}} </td>
+  </ng-container>
+
+  <ng-container matColumnDef="extended_till">
+    <th mat-header-cell *matHeaderCellDef > Extended  </th>
+    <td mat-cell *matCellDef="let element"> {{element.expended_till| date}} </td>
+  </ng-container>
+
+    <ng-container matColumnDef="expandedDetail">
+    <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
+      <div class="example-element-detail"
+           [@detailExpand]="element == expandedElement ? 'expanded' : 'collapsed'">
+
+        <table mat-table [dataSource]="selectedContainerDetailsDataSource" class="mat-elevation-z8">
+
+          <ng-container matColumnDef="container">
+            <th mat-header-cell *matHeaderCellDef> Container </th>
+            <td mat-cell *matCellDef="let element"> {{element.container}} </td>
+          </ng-container>
+
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Size </th>
+            <td mat-cell *matCellDef="let element"> {{element.size| datasetSize}} </td>
+          </ng-container>
+
+          <ng-container matColumnDef="rucio">
+            <th mat-header-cell *matHeaderCellDef> Rucio </th>
+            <td mat-cell *matCellDef="let element"> <a href="{{element.container | rucioURL}}" >rucio</a> </td>
+          </ng-container>
+
+
+          <tr mat-header-row *matHeaderRowDef="['container', 'name', 'rucio']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['container', 'name', 'rucio'];"></tr>
+        </table>
+      </div>
+
+    </td>
+
+  </ng-container>
+
+
+
+  <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+  <tr mat-row *matRowDef="let row; columns: columnsToDisplay;"
+        class="example-element-row"
+      [class.example-expanded-row]="expandedElement === row"
+      (click)="extend(row)"></tr>
+  <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="example-detail-row"></tr>
+</table>
+</div>
+</section>
+
+<button class="sticked" mat-fab color="primary" (click)="sidenav.open()" >Extend</button>
+  </mat-sidenav-content>
+</mat-sidenav-container>
