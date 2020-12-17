@@ -82,7 +82,7 @@ def slice_pattern_steps(request,slice):
     for index, step in enumerate(ordered_existed_steps):
         task_config = json.loads(step.task_config)
         ctag = task_config.get('tag','')
-        if step.step_template.ctag == 'x9999':
+        if not ctag and step.step_template.ctag == 'x9999':
             ctag = ''
         result_list.append(
             {'tag': ctag, 'id':step.id, 'step_name': step.step_template.step,
