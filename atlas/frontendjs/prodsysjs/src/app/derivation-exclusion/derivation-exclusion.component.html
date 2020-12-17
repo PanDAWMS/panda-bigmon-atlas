@@ -1,18 +1,21 @@
 <mat-sidenav-container
     class="example-container" >
-  <mat-sidenav #sidenav  >
+  <mat-sidenav #sidenav  [(opened)]="opened">
 <p>Total selected: {{totalSelected}}</p>
           <p>Size:{{totalSelectedSize | datasetSize }}</p>
-
-
+<form *ngIf="opened">
  <mat-form-field class="send-size-form">
+   <mat-label>Number of extensions      </mat-label>
+     <input matInput type="number" [(ngModel)]="extendNumbers"  placeholder="1">
+ </mat-form-field>
 
+  <mat-form-field class="send-size-form">
     <mat-label>Message </mat-label>
      <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" placeholder="Put a reason or a JIRA ticket"></textarea>
-
-
     <mat-hint align="end">{{extentMessage.value.length}} / 256</mat-hint>
   </mat-form-field>
+  </form>
+
     <p><button mat-button (click)="sendExtension()">Send</button></p>
     <p><button mat-button (click)="sidenav.close()">Close</button></p>
 
@@ -23,7 +26,7 @@
   <mat-sidenav-content>
 
 
-   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back</button></p>
+   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</button></p>
 <p>Superseded datasets {{outputType}}</p>
 
 
@@ -36,7 +39,7 @@
 </div>
 
 
-
+<button mat-raised-button  color="primary" (click)="sidenav.open()" >Extend selected</button>
   <section>
 
 <div class="section" *ngFor="let containerByTag of containersByTagTables" [attr.id]='containerByTag.amiTag' >

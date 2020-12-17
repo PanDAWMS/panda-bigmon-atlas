@@ -24,11 +24,15 @@ import { RucioURLPipe } from './derivation-exclusion/rucio-url.pipe';
 import {MatListModule} from "@angular/material/list";
 import { GpStatsComponent } from './derivation-exclusion/gp-stats/gp-stats.component';
 import {GPStatsResolver} from './derivation-exclusion/gp-stats/gp-stats.resolve';
+import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
+import {MatRadioModule} from "@angular/material/radio";
+import { GpStatsMatrixComponent } from './derivation-exclusion/gp-stats-matrix/gp-stats-matrix.component';
 
 
 const routerOptions: ExtraOptions = {
   scrollPositionRestoration: 'enabled',
   anchorScrolling: 'enabled',
+  onSameUrlNavigation: 'reload',
   scrollOffset: [0, 64],
 };
 
@@ -41,6 +45,11 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
           gpStats: GPStatsResolver,
         },
       },
+        {path: 'gp-stats-matrix', component: GpStatsMatrixComponent,
+        resolve: {
+          gpStats: GPStatsResolver,
+        }
+        },
       {path: 'request', component: ProductionRequestComponent},
  {path: 'carousel', component: DataCarouselComponent}];
 
@@ -53,6 +62,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DatasetSizePipe,
     RucioURLPipe,
     GpStatsComponent,
+    GpStatsMatrixComponent,
   ],
   imports: [
     BrowserModule,
@@ -73,6 +83,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatInputModule,
     FormsModule,
     MatListModule,
+    MatProgressSpinnerModule,
+    MatRadioModule,
 
 
   ],

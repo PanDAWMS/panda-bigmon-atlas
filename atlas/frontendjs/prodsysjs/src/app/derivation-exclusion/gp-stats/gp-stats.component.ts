@@ -36,8 +36,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   statsByOutputBases: StatsByOutputBase[] = [];
   formatsOnPage: string[] = [];
   dataType: string;
-  activeMC: string;
-  activeData: string;
   constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller, ) { }
 
   ngOnInit(): void {
@@ -46,13 +44,9 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
     const URLdataType = paramMap.get('type');
     if (URLdataType === 'data'){
       this.fetchData(true);
-      this.activeMC = '';
-      this.activeData = 'primary';
       this.dataType = 'data';
     } else {
       this.fetchData(false);
-      this.activeMC = 'primary';
-      this.activeData = '';
       this.dataType = 'mc';
     }
 
@@ -101,5 +95,10 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
       currentDataSource.data = statsForBase;
       this.statsByOutputBases.push({outputFormatBase: formatBase, dataSource: currentDataSource});
     }
+  }
+
+  changeType(): void {
+    // console.log(this.dataType);
+    this.router.navigate(['/gp-stats'], { queryParams: {type: this.dataType} });
   }
 }

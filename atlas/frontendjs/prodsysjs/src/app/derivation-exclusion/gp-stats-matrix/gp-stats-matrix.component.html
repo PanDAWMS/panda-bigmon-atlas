@@ -1,0 +1,38 @@
+   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</button></p>
+
+<mat-radio-group  [(ngModel)]="dataType"  (ngModelChange)="changeType()"  aria-label="Select">
+  <mat-radio-button [value]="'mc'">MC</mat-radio-button>
+  <mat-radio-button [value]="'data'" style="padding-left: 10px">Data</mat-radio-button>
+</mat-radio-group>
+
+   <mat-divider></mat-divider>
+<h5>Number of datasets/ Size marked for deletion versus format and ptag ({{dataType}})</h5>
+  <mat-divider></mat-divider>
+
+   <mat-radio-group  [(ngModel)]="showNumbers"  (ngModelChange)="changeType()"  aria-label="Select">
+  <mat-radio-button [value]="0">Datasets</mat-radio-button>
+  <mat-radio-button [value]="1" style="padding-left: 10px">Size</mat-radio-button>
+     <div *ngIf="chosenFormat!==null"> <span>Format chosen: {{chosenFormat}}</span>
+       <a  [routerLink]='"."' [queryParamsHandling]="'merge'" [queryParams]="{base: null}" >  Show all</a></div>
+</mat-radio-group>
+   <table class="gp-matrix" mat-table [dataSource]="statMatrix"  multiTemplateDataRows  (mouseleave)="hoverTable=false" >
+    <ng-container matColumnDef="firstColumn" [sticky]="true">
+    <th mat-header-cell *matHeaderCellDef > Format </th>
+    <td class="gp-matrix-element"  mat-cell *matCellDef="let element" [ngClass] = "{'highlight' : hoverTable && (element['firstColumn'] == hoveredFormat)}">
+      <a [routerLink]='"."' [queryParamsHandling]="'merge'" [queryParams]="{base: getBaseFormat(element['firstColumn'])}" >{{element['firstColumn']}}</a> </td>
+  </ng-container>
+
+  <ng-container *ngFor="let amiTag of availableAMITags"  matColumnDef="{{amiTag}}">
+    <th class="gp-matrix-element" mat-header-cell *matHeaderCellDef [ngClass] = "{'highlight' :hoverTable &&  (amiTag == hoveredAMITag)}" > {{amiTag}} </th>
+    <td class="gp-matrix-element" mat-cell *matCellDef="let element" (mouseover)="highlightRowAndColumn(amiTag, element['firstColumn'])"
+        [ngClass] = "{'highlight' :hoverTable && ((amiTag == hoveredAMITag) || (element['firstColumn'] == hoveredFormat)) }">
+
+      <a [routerLink]="['/gp-deletion', dataType, 'DAOD_' + element['firstColumn'] ]"
+                                               [fragment]="amiTag" *ngIf="element[amiTag][showNumbers]>0"  style="color: red">
+        <div  *ngIf="showNumbers==0">{{element[amiTag][showNumbers]}}</div><div  *ngIf="showNumbers==1">{{element[amiTag][showNumbers]|datasetSize}}</div></a>
+      <span *ngIf="element[amiTag][showNumbers]==0">0</span></td>
+  </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayColumns;  sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayColumns;"></tr>
+</table>

@@ -1,4 +1,12 @@
-import {AfterContentChecked, AfterContentInit, AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterContentChecked,
+  AfterContentInit,
+  AfterViewChecked,
+  AfterViewInit,
+  Component,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 
@@ -47,6 +55,8 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   expandedElement: GroupProductionDeletionContainer| null;
   selectedContainerDetails: GroupProductionDeletionContainer[] = [];
   selectedContainerDetailsDataSource: MatTableDataSource<GroupProductionDeletionContainer>;
+  extendNumbers: number;
+  opened: boolean;
 
 
   constructor(private route: ActivatedRoute, private gpDeletionContainerService: GPDeletionContainerService, private router: Router,
@@ -104,10 +114,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   }
 
   ngAfterViewInit(): void {
-      this.route.fragment.subscribe(f => {
-        this.viewportScroller.scrollToAnchor(f);
-    });
-
+        setTimeout(() => this.viewportScroller.scrollToAnchor(this.currentFragment), 100);
    }
 
   getContainers(): void{

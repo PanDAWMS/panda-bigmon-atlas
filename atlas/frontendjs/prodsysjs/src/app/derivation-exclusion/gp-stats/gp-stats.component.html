@@ -1,8 +1,9 @@
 
 <section>
-
-  <p><button mat-raised-button [routerLink]="['/gp-stats']" [queryParams]="{type:'mc'}" color="{{activeMC}}"  >MC</button>
-    <button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type:'data'}" color="{{activeData}}" >Data</button></p>
+<mat-radio-group  [(ngModel)]="dataType"  (ngModelChange)="changeType()"  aria-label="Select">
+  <mat-radio-button [value]="'mc'">MC</mat-radio-button>
+  <mat-radio-button [value]="'data'" style="padding-left: 10px">Data</mat-radio-button>
+</mat-radio-group>
 
 
 <mat-divider></mat-divider>
@@ -15,6 +16,8 @@
   </ul>
 </div>
 <mat-divider></mat-divider>
+ <h3> <a [routerLink]="['/gp-stats-matrix']" [queryParams]="{type: dataType}"> Full table of formats and ptags </a></h3>
+  <mat-divider></mat-divider>
 
 <div class="section" *ngFor="let statsByOutput of statsByOutputBases" [attr.id]='statsByOutput.outputFormatBase' >
   <h5>{{statsByOutput.outputFormatBase}}</h5>

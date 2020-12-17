@@ -2,15 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import {catchError, map, shareReplay, tap} from 'rxjs/operators';
 import {GroupProductionStats} from './gp-stats';
 
+const CACHE_SIZE = 1;
 
 @Injectable({
   providedIn: 'root'
 })
 export class GPStatsService {
     private gpStatsUrl = '/gpdeletion/gpstats';
+    private cache$: Observable<GroupProductionStats[]>;
   constructor(
     private http: HttpClient){}
 
@@ -18,13 +20,22 @@ export class GPStatsService {
 
 
   getGPStats(): Observable<GroupProductionStats[]> {
-    return this.http.get<GroupProductionStats[]>(this.gpStatsUrl)
-      .pipe(
-        tap(_ => this.log(`fetched stats `)),
-        catchError(this.handleError<GroupProductionStats[]>('getGPStats', []))
-      );
+      if (!this.cache$) {
+        this.cache$ = this.requestGPStats().pipe(
+          shareReplay(CACHE_SIZE)
+        );
+      }
+
+      return this.cache$;
   }
 
+    private requestGPStats(): Observable<GroupProductionStats[]>  {
+          return this.http.get<GroupProductionStats[]>(this.gpStatsUrl)
+        .pipe(
+          tap(_ => this.log(`fetched stats `)),
+          catchError(this.handleError<GroupProductionStats[]>('getGPStats', []))
+        );
+    }
     private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
 

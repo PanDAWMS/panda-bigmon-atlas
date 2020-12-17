@@ -1,0 +1,17 @@
+.highlight {
+    background-color: rgba(168, 173, 15, 0.32) !important;
+    color: #ffffff;
+}
+
+table.gp-matrix {
+  border: 1px solid black;
+}
+th.gp-matrix-element {
+  border: 1px solid black;
+  text-align: center;
+}
+td.gp-matrix-element {
+  border: 1px solid black;
+  text-align: center;
+
+}
