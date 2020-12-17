@@ -1508,6 +1508,7 @@ def get_full_patterns():
     steps = list(StepExecution.objects.filter(request=29269).order_by('id'))
     CHANGABLE = ['nEventsPerJob', 'project_mode', 'nFilesPerJob', 'nGBPerJob',
                  'maxFailure','container_name','onlyTagsForFC']
+    NON_DEFAULT = ['input_format', 'output_formats']
     for step in steps:
         task_config = step.get_task_config()
         if task_config.get('tag') == 'x9999':
@@ -1521,6 +1522,9 @@ def get_full_patterns():
                 parameters = []
                 for x in CHANGABLE:
                     parameters.append((x,task_config.get(x,'')))
+                for x in NON_DEFAULT:
+                    if task_config.get(x,''):
+                        parameters.append((x, task_config.get(x, '')))
                 tag_step.append((task_config['tag'],parameters))
             result.append((pattern.brief,tag_step))
     result.sort(key=lambda x:x[0])

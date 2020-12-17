@@ -90,7 +90,7 @@ def slice_pattern_steps(request,slice):
              'nEventsPerInputFile': task_config.get('nEventsPerInputFile', ''),
              'project_mode': task_config.get('project_mode', ''),
              'input_format': task_config.get('input_format', ''),
-              'output_formats': step.step_template.output_formats,
+              'output_formats': task_config.get('output_formats', ''),
               'merging_tag': task_config.get('merging_tag', ''),
              'nFilesPerMergeJob': task_config.get('nFilesPerMergeJob', ''),
              'nGBPerMergeJob': task_config.get('nGBPerMergeJob', ''),
@@ -108,7 +108,7 @@ def slice_pattern_steps(request,slice):
 @api_view(['POST'])
 def slice_pattern_save_steps(request,slice):
     result = {'sucess':True}
-    CHANGABLE = ['tag','nEventsPerJob','project_mode','nFilesPerJob','nGBPerJob','maxFailure','container_name','onlyTagsForFC']
+    CHANGABLE = ['input_format', 'output_formats', 'tag','nEventsPerJob','project_mode','nFilesPerJob','nGBPerJob','maxFailure','container_name','onlyTagsForFC']
     slice = InputRequestList.objects.get(request=29269, slice=slice)
     if request.data['pattern_in_use']:
         slice.is_hide = False
