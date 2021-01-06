@@ -1,7 +1,8 @@
 import json
 import logging
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden
 
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
@@ -12,7 +13,7 @@ from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern
 #from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.task_actions import _do_deft_action
-from atlas.prodtask.views import set_request_status, clone_slices
+from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log
 from .ddm_api import dataset_events
@@ -2156,11 +2157,11 @@ def fix_fahui_error(request_id, tasks):
     for task_id in tasks:
         task = ProductionTask.objects.get(request=request, id=task_id)
         slice = task.step.slice
-        if slice.id in cloned_slices:
-            print('Aready cloned:',request.reqid)
-            continue
-        if slice.id in fixed_slices:
-            continue
+        # if slice.id in cloned_slices:
+        #     print('Aready cloned:',request.reqid)
+        #     continue
+        # if slice.id in fixed_slices:
+        #     continue
         step_execs = StepExecution.objects.filter(request=request, slice=slice)
         ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
         if request.request_type == 'MC':
@@ -2178,7 +2179,7 @@ def fix_fahui_error(request_id, tasks):
             new_step.save()
         request_to_approve = True
     if request_to_approve:
-        set_request_status('cron', request.reqid, 'approved', 'Automatic openended approve',
+        set_request_status('cron', request.reqid, 'approved', 'Automatic fix approve',
                            'Request was automatically approved')
 
 
@@ -2223,3 +2224,64 @@ def compare_two_slices(production_request, slice1, slice2):
                 is_equael = False
     return   is_equael
 
+
+def obsolete_old_task_for_slice(request_id, slice_number, ddm):
+    slice = InputRequestList.objects.get(slice=slice_number, request=request_id)
+    input_container = slice.dataset
+    step_execs = StepExecution.objects.filter(request=request_id, slice=slice)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    first_step_tag = None
+    number_of_obsolete_tasks = 0
+    for step in ordered_existed_steps:
+        if step.status in ['NotChecked','Approved']:
+            if ProductionTask.objects.filter(request=request_id, step=step).exists():
+                return 0
+            first_step_tag = step.step_template.ctag
+            break
+    datasets = ddm.dataset_in_container(input_container)
+    tasks = []
+    if first_step_tag:
+        tasks = list(ProductionTask.objects.filter(primary_input=input_container, ami_tag=first_step_tag))
+        for dataset in datasets:
+            tasks += list(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
+    for task in tasks:
+        if task.status in ['finished','done']:
+            number_of_outputs = len(task.output_formats.split('.'))
+            output_datasets = ProductionDataset.objects.filter(task_id=task.id)
+            to_delete = True
+            for output_datset in output_datasets:
+                if '.log.' not in output_datset.name:
+                    number_of_outputs -= 1
+                    if ddm.dataset_exists(output_datset.name):
+                        to_delete = False
+            if to_delete and number_of_outputs == 0:
+                _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                number_of_obsolete_tasks += 1
+                _do_deft_action('mborodin', int(task.id), 'obsolete')
+    return number_of_obsolete_tasks
+
+@csrf_protect
+def obsolete_old_deleted_tasks(request, reqid):
+    if request.method == 'POST':
+        try:
+            if ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser :
+                data = request.body
+                input_dict = json.loads(data)
+                slices = input_dict['slices']
+                if '-1' in slices:
+                    del slices[slices.index('-1')]
+                _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
+                ddm = DDM()
+                number_of_tasks = 0
+                for slice_number in slices:
+                    try:
+                        number_of_tasks+= obsolete_old_task_for_slice(reqid,slice_number,ddm)
+                    except Exception as e:
+                        _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
+                results = {'success':True,'tasksObsolete':number_of_tasks}
+            else:
+                return HttpResponseForbidden('This action is only for MC COORD')
+        except Exception as e:
+            _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
+            return HttpResponseBadRequest(e)
+        return HttpResponse(json.dumps(results), content_type='application/json')

@@ -1265,6 +1265,39 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
               return false;
         };
 
+        function obsoleteOldTasks(event){
+
+            event.preventDefault();
+            var sliceCheckedList = getCheckedSlices();
+            var sendData = {slices:sliceCheckedList };
+            $( "#waitingDialog" ).dialog();
+            $.ajax({
+                    url: construct_django_url('/prodtask/obsolete_old_deleted_tasks/',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#waitingDialog" ).dialog('close');
+                        alert('Number of "obsolete" tasks: '+$.evalJSON(data).tasksObsolete);
+                    },
+                        error: function (data,status,error) {
+                            $("#waitingDialog").dialog('close');
+
+                            if (status == '403'){
+                                alert("Not enough rights for this action");
+
+                            } else {
+                                alert('Some problems occured: ' +error);
+
+                            }
+
+                        },
+                    }
+            )
+            return false;
+        };
+
         function prepareSliceInfo(check_steps,sliceID){
             changeMode = false;
                 for(var i=0;i<check_steps.db_step_type.length;i++) {
@@ -3483,8 +3516,13 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  </div>
                     {% endifequal %}
     </div>
-     <div class="large-2 columns"></div>
-    </div>
+     <div class="large-1 columns">
+
+        <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event);">Prepare to recreate</button>
+     </div>
+        <div class="large-1 columns">
+
+        </div>
     <div class="row">
         <div class="large-3 columns">
             <a class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</a>
