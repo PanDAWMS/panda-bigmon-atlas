@@ -2225,6 +2225,17 @@ def compare_two_slices(production_request, slice1, slice2):
     return   is_equael
 
 
+def check_all_outputs_deleted(task, ddm):
+    number_of_outputs = len(task.output_formats.split('.'))
+    output_datasets = ProductionDataset.objects.filter(task_id=task.id)
+    to_delete = True
+    for output_datset in output_datasets:
+        if '.log.' not in output_datset.name:
+            number_of_outputs -= 1
+            if ddm.dataset_exists(output_datset.name):
+                to_delete = False
+    return to_delete and number_of_outputs == 0
+
 def obsolete_old_task_for_slice(request_id, slice_number, ddm):
     slice = InputRequestList.objects.get(slice=slice_number, request=request_id)
     input_container = slice.dataset
@@ -2245,19 +2256,24 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm):
         for dataset in datasets:
             tasks += list(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
     for task in tasks:
-        if task.status in ['finished','done']:
-            number_of_outputs = len(task.output_formats.split('.'))
-            output_datasets = ProductionDataset.objects.filter(task_id=task.id)
-            to_delete = True
-            for output_datset in output_datasets:
-                if '.log.' not in output_datset.name:
-                    number_of_outputs -= 1
-                    if ddm.dataset_exists(output_datset.name):
-                        to_delete = False
-            if to_delete and number_of_outputs == 0:
-                _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
-                number_of_obsolete_tasks += 1
-                _do_deft_action('mborodin', int(task.id), 'obsolete')
+        if task.status in ['finished','done','obsolete']:
+            to_delete = check_all_outputs_deleted(task, ddm)
+            if to_delete:
+                merge_is_empty = True
+                for child_task in ProductionTask.objects.filter(parent_id=task.id):
+                    if child_task.status in ['finished','done'] and '.merge.' in child_task.name:
+                        if check_all_outputs_deleted(child_task, ddm):
+                            _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                            number_of_obsolete_tasks += 1
+                            _do_deft_action('mborodin', int(child_task.id), 'obsolete')
+                        else:
+                            merge_is_empty = False
+                            break
+                if merge_is_empty:
+                    if task.status != 'obsolete':
+                        _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                        number_of_obsolete_tasks += 1
+                        _do_deft_action('mborodin', int(task.id), 'obsolete')
     return number_of_obsolete_tasks
 
 @csrf_protect
