@@ -1190,7 +1190,7 @@ def count_output_stat(project, ami_tags, outputs=None):
     result = []
     # ddm = DDM()
     for output in outputs:
-        current_input_tasks = new_derivation_stat(project, ami_tags, output)
+        current_input_tasks = derivation_stat_nested(project, ami_tags, output)
         if current_input_tasks['total'] >0:
             result.append({'output': output, 'ratio': current_input_tasks['ratio'],'events_ratio': current_input_tasks['events_ratio'],
                            'tasks': current_input_tasks['total'],'tasks_ids':[]})
@@ -1496,83 +1496,80 @@ def task_in_new_dkb(task_id):
 #     return exexute
 #
 #
-# def new_derivation_stat_new(project, ami, output):
-#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
-#     query = {
-#           "size": 0,
-#           "query": {
-#             "bool": {
-#               "must": [
-#                 {"terms": {"primary_input": ["aod","rpvll"]}},
-#                 {"term": {"project": project.lower()}},
-#                 {"terms": {"ctag": ami}},
-#                 {"term": {"status": "done"}},
-#                 {"range": {"input_bytes": {"gt": 0}}},
-#                 {"nested": {
-#                     "path": "output_dataset",
-#                     "query": {"range": {"output_dataset.bytes": {"gt": 0}}}
-#                 }}
-#               ]
-#             }
-#           },
-#           "aggs": {
-#             "output": {
-#               "nested": {"path": "output_dataset"},
-#               "aggs": {
-#                 "not_deleted": {
-#                   "filter": {"term": {"output_dataset.deleted": False}},
-#                   "aggs": {
-#                     "format": {
-#                       "filter": {"term": {"output_dataset.data_format.keyword": output}},
-#                       "aggs": {
-#                         "sum_bytes": {
-#                            "sum": {"field": "output_dataset.bytes"}
-#                         },
-#                         "sum_events": {
-#                           "sum": {"field": "output_dataset.events"}
-#                         },
-#                         "task": {
-#                           "reverse_nested": {},
-#                           "aggs": {
-#                             "input_bytes": {
-#                               "sum": {"field": "input_bytes"}
-#                             },
-#                             "input_events": {
-#                               "sum": {"field": "requested_events"}
-#                             },
-#                             "ids": {
-#                               "terms" : {
-#                                 "field" : "_uid",
-#                                 "size": 100
-#                               }
-#                             }
-#                           }
-#                         }
-#                       }
-#                     }
-#                   }
-#                 }
-#               }
-#             }
-#           }
-#         }
-#     aggregs = es_search.update_from_dict(query)
-#     exexute =  aggregs.execute()
-#     total = exexute.hits.total
-#     print(total)
-#     result_events = exexute.aggregations.output.not_deleted.format.sum_events.value
-#     result_bytes = exexute.aggregations.output.not_deleted.format.sum_bytes.value
-#     print(result_events,result_bytes)
-#     input_bytes = exexute.aggregations.output.not_deleted.format.task.input_bytes.value
-#     input_events =  exexute.aggregations.output.not_deleted.format.task.input_events.value
-#     print(result_events,result_bytes,input_bytes,input_events)
-#     ratio = 0
-#     if input_bytes != 0:
-#         ratio = float(result_bytes)/float(input_bytes)
-#     events_ratio = 0
-#     if input_events != 0:
-#         events_ratio = float(result_events)/float(input_events)
-#     return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
+def derivation_stat_nested(project, ami, output):
+    es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+    query = {
+          "size": 0,
+          "query": {
+            "bool": {
+              "must": [
+                {"terms": {"primary_input": ["aod","rpvll"]}},
+                {"term": {"project": project.lower()}},
+                {"terms": {"ctag": ami}},
+                {"term": {"status": "done"}},
+                {"range": {"input_bytes": {"gt": 0}}},
+                {"nested": {
+                    "path": "output_dataset",
+                    "query": {"range": {"output_dataset.bytes": {"gt": 0}}}
+                }}
+              ]
+            }
+          },
+          "aggs": {
+            "output": {
+              "nested": {"path": "output_dataset"},
+              "aggs": {
+                "not_deleted": {
+                  "filter": {"term": {"output_dataset.deleted": False}},
+                  "aggs": {
+                    "format": {
+                      "filter": {"term": {"output_dataset.data_format.keyword": output}},
+                      "aggs": {
+                        "sum_bytes": {
+                           "sum": {"field": "output_dataset.bytes"}
+                        },
+                        "sum_events": {
+                          "sum": {"field": "output_dataset.events"}
+                        },
+                        "task": {
+                          "reverse_nested": {},
+                          "aggs": {
+                            "input_bytes": {
+                              "sum": {"field": "input_bytes"}
+                            },
+                            "input_events": {
+                              "sum": {"field": "requested_events"}
+                            },
+                            "ids": {
+                              "terms" : {
+                                "field" : "_uid",
+                                "size": 100
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    total = exexute.aggregations.output.not_deleted.format.doc_count
+    result_events = exexute.aggregations.output.not_deleted.format.sum_events.value
+    result_bytes = exexute.aggregations.output.not_deleted.format.sum_bytes.value
+    input_bytes = exexute.aggregations.output.not_deleted.format.task.input_bytes.value
+    input_events = exexute.aggregations.output.not_deleted.format.task.input_events.value
+    ratio = 0
+    if input_bytes != 0:
+        ratio = float(result_bytes)/float(input_bytes)
+    events_ratio = 0
+    if input_events != 0:
+        events_ratio = float(result_events)/float(input_events)
+    return {'total':total,'ratio':ratio,'events_ratio':events_ratio}
 #
 #
 # def es_by_field_new(field, value):
