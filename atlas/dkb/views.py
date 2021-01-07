@@ -48,13 +48,15 @@ def es_task_search_all(search_string, task_type):
     result = []
     total = 0
     for search_value in search_values:
-        response = keyword_search2(key_string_from_input(search_string)['query_string'], search_value).execute()
+        #response = keyword_search2(key_string_from_input(search_string)['query_string'], search_value).execute()
+        response = keyword_search_nested(key_string_from_input(search_string)['query_string'], search_value).execute()
         total += response.hits.total
         for hit in response:
             current_hit = hit.to_dict()
-            current_hit['output_dataset'] = []
-            for hit2 in hit.meta.inner_hits['output_dataset']:
-                current_hit['output_dataset'].append(hit2.to_dict())
+            if 'output_dataset' not in current_hit:
+                current_hit['output_dataset'] = []
+            # for hit2 in hit.meta.inner_hits['output_dataset']:
+            #     current_hit['output_dataset'].append(hit2.to_dict())
             result.append(current_hit)
     return result, total
 
@@ -252,6 +254,52 @@ def keyword_search2(keyword_string, is_analy=False):
 
     return query
 
+
+def keyword_search_nested(keyword_string, is_analy=False):
+    keyword_wildcard = []
+    keyword_non_wildcard = []
+    keywords = keyword_string.split(' AND ')
+    for keyword in keywords:
+        if ('?' in keyword) or ('*' in keyword):
+            tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
+            if keyword[-1] != '*':
+                tokens[-1] = tokens[-1][:-2]+'"'
+            keyword_wildcard+=tokens
+        else:
+            keyword_non_wildcard.append(keyword)
+    query_string = []
+    if keyword_wildcard:
+        query_string.append({
+            "query_string": {
+                "query": ' AND '.join(keyword_wildcard),
+                "analyze_wildcard": True,
+                "fields":['taskname']
+            }})
+    if keyword_non_wildcard:
+        query_string.append({
+            "query_string": {
+                "query": ' AND '.join(keyword_non_wildcard),
+            }})
+    if is_analy:
+        es_search = Search(index="apinestedanalysis_tasks", doc_type='task')
+    else:
+        es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+    query = es_search.update_from_dict({"query": {
+        "bool": {
+            "must":query_string,
+            'should': {
+                'nested': {
+                    'path': 'output_dataset',
+                    'score_mode': 'sum',
+                    'query': {'match_all': {}},
+                }
+            }
+        },
+
+    }, 'size':SIZE_TO_DISPLAY
+    })
+
+    return query
 
 def new_derivation_stat(project, ami, output):
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
@@ -1297,27 +1345,75 @@ def tasks_by_hashtag(hashtag):
         return tasks_hashtags
     return []
 #
-# def task_in_new_dkb(task_id):
-#     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
-#     query = {
-#       "size": 1,
-#       "query": {
-#         "bool": {
-#           "must": [
-#             {"term": {"taskid":str(task_id)}},
-#
-#           ]
-#         }
-#       },
-#
-#     }
-#     aggregs = es_search.update_from_dict(query)
-#     exexute =  aggregs.execute()
-#     current_hit = None
-#     for hit in exexute:
-#         current_hit = hit.to_dict()
-#
-#     return current_hit
+def es_by_keys_new(values, size=10000):
+    search_dict = []
+    for x in values:
+        search_dict.append({'term':{x:values[x]}})
+    # search_dict.append({"has_child": {
+    #     "type": "output_dataset",
+    #     "score_mode": "sum",
+    #     "query": {
+    #         "match_all": {}
+    #     },
+    #     "inner_hits": {}
+    # }})
+    es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+    query = {
+        "query": {
+            "bool": {
+                "must": search_dict,
+                'should': {
+                    'nested': {
+                        'path': 'output_dataset',
+                        'score_mode': 'sum',
+                        'query': {'match_all': {}},
+                    }
+                }
+            }
+        }, 'size':size
+    }
+    search = es_search.update_from_dict(query)
+    response = search.execute()
+    result = []
+    for hit in response:
+        current_hit = hit.to_dict()
+        # current_hit['output_dataset'] = []
+        # for hit2 in hit.meta.inner_hits['output_dataset']:
+        #     current_hit['output_dataset'].append(hit2.to_dict())
+        result.append(current_hit)
+    return result
+
+
+def task_in_new_dkb(task_id):
+    es_search = Search(index="apinestedproduction_tasks", doc_type='task')
+    query = {
+      "size": 1,
+      "query": {
+        "bool": {
+          "must": [
+            {"term": {"taskid":str(task_id)}},
+
+
+          ],
+            'should': {
+                'nested': {
+                    'path': 'output_dataset',
+                    'score_mode': 'sum',
+                    'query': {'match_all': {}},
+                }
+            }
+        }
+      },
+
+    }
+    aggregs = es_search.update_from_dict(query)
+    exexute =  aggregs.execute()
+    return exexute
+    current_hit = None
+    for hit in exexute:
+        current_hit = hit.to_dict()
+
+    return current_hit
 #
 #
 # def statistic_by_step_new(search_dict):
