@@ -77,7 +77,8 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
                 return_list.append({'dataset_name':container,'events':str(event_count),'tasks':tasks, 'excluded':False})
         if (not return_list) and dataset_dict:
             for dataset in list(dataset_dict.keys()):
-                return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events']),'tasks':[dataset_dict[dataset]['taskid']], 'excluded':False})
+                if ddm.dataset_exists(dataset):
+                    return_list.append({'dataset_name':dataset,'events':str(dataset_dict[dataset]['events']),'tasks':[dataset_dict[dataset]['taskid']], 'excluded':False})
 
         return return_list
 
@@ -194,7 +195,7 @@ class DDM(object):
 
     def deleteDataset(self, dataset):
         scope, name = self.rucio_convention(dataset)
-        lifetime = 3600
+        lifetime = 0
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
     def setLifeTimeTransientDataset(self, dataset, days):
@@ -255,10 +256,15 @@ class DDM(object):
         """
         _logger.debug('Return dataset list from container: %s' % container_name)
         scope, name = self.rucio_convention(container_name)
-        if self.dataset_metadata(container_name)['did_type'] == 'CONTAINER':
-            output_datasets = list(self.__ddm.list_content(scope=scope, name=name))
-        else:
-             output_datasets =[{'scope':scope,'name': name}]
+        try:
+            if self.dataset_metadata(container_name)['did_type'] == 'CONTAINER':
+                output_datasets = list(self.__ddm.list_content(scope=scope, name=name))
+            else:
+                 output_datasets =[{'scope':scope,'name': name}]
+        except DataIdentifierNotFound:
+                 return []
+        except Exception as e:
+            raise e
         return [x['scope']+':'+x['name'] for x in output_datasets]
 
     def number_of_full_replicas(self, dataset_name):
