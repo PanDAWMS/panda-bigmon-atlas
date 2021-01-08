@@ -1798,6 +1798,11 @@ def change_slice_parent(request,slice,new_parent_slice):
     step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     step = ordered_existed_steps[0]
+    if  int(new_parent_slice) == -2:
+        slice = InputRequestList.objects.get(request=request, slice=slice)
+        slice.dataset = None
+        slice.save()
+        return
     if parent_step and (step.status not in StepExecution.STEPS_APPROVED_STATUS):
         if int(new_parent_slice) == -1:
             step.step_parent = step
