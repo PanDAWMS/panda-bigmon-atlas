@@ -41,22 +41,28 @@ def jobs_action(request,action):
 
     :type request: object
     """
+    result = {}
+    try:
 
-    user = request.user.username
+        user = request.user.username
 
-    is_superuser = request.user.is_superuser
-    data = json.loads(request.body)
-    jobs= data.get('jobs')
-    args= data.get('parameters', [])
+        is_superuser = request.user.is_superuser
+        data = json.loads(request.body)
+        jobs= data.get('jobs')
+        args= data.get('parameters', [])
 
-    fin_res=[]
+        fin_res=[]
 
-    result = dict(owner=user, job=None, task=None, action=action, args=args,
-                  status=None, accepted=False, registered=False,
-                  exception=None, exception_source=None)
+        result = dict(owner=user, job=None, task=None, action=action, args=args,
+                      status=None, accepted=False, registered=False,
+                      exception=None, exception_source=None)
 
-    if not is_superuser:
-        result['exception'] = "Permission denied"
+        if not is_superuser:
+            result['exception'] = "Permission denied"
+            return HttpResponse(json.dumps(result))
+    except Exception as e:
+        _logger.error("Problem during jobs action :%s" % str(e))
+        result['exception'] = "Error"
         return HttpResponse(json.dumps(result))
 
     #do actions here
@@ -79,10 +85,19 @@ def jobs_action(request,action):
                 if without_taskid:
                     result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
                     fin_res.append(result)
+        elif action == 'reassign_jobs':
+            tasks = {}
+            for job in jobs:
+                if job.get('taskid'):
+                    tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
+            for task in tasks.keys():
+                _logger.info("Send DEFT job reassing  %s task" % (str(task)))
+                result.update(_do_deft_job_action(user, task, tasks[task][0], 'reassign_jobs', *args))
+                fin_res.append(result)
         else:
             for job in jobs:
-                result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
-                fin_res.append(result)
+                    result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
+                    fin_res.append(result)
     except Exception as e:
         _logger.error("Problem during jobs action :%s" % str(e))
         result['exception'] = "Error"
