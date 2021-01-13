@@ -41,7 +41,7 @@ def check_staging_task(step_action_ids, check_archive=False):
         try:
             check_tasks_for_prestage(waiting_step, ddm, rule, delay, max_waite_time, check_archive)
         except Exception as e:
-            _logger.error("Check replicas problem %s" % str(e))
+            _logger.error("Check staging task problem %s %s" % (str(e), str(step_action_ids)))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
             waiting_step.save()
@@ -645,7 +645,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
                 else:
                     create_prestage(task,ddm,rule,task.input_dataset,config,special)
             except Exception as e:
-                _logger.error("Check replicas problem %s" % str(e))
+                _logger.error("Check task for prestage problem %s %s" % (str(e),str(action_step_id)))
                 finish_action = False
     if finish_action and (production_request.cstatus != 'approved'):
         action_step.status = 'done'
@@ -710,7 +710,7 @@ def do_staging(action_step_id, ddm):
                             try:
                                 ddm.change_rule_lifetime(existed_rule['id'],15*86400)
                             except Exception as e:
-                                _logger.error("Check replicas problem %s" % str(e))
+                                _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
                 else:
                     action_finished = False
                     if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
@@ -861,7 +861,7 @@ def activate_staging(step_action_ids):
         try:
             do_staging(waiting_step, ddm)
         except Exception as e:
-            _logger.error("Check replicas problem %s" % str(e))
+            _logger.error("Check activate staging problem %s %s" % (str(e),waiting_step))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
             waiting_step.save()
@@ -922,7 +922,7 @@ def follow_staged(waiting_step, ddm):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 15 * 86400)
                     except Exception as e:
-                        _logger.error("Check replicas problem %s" % str(e))
+                        _logger.error("Check follow staged problem %s %s" % (str(e), str(waiting_step)))
 
     if action_finished :
         action_step.status = 'done'
@@ -999,7 +999,7 @@ def follow_repeated_staged(waiting_step, ddm):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 15 * 86400)
                     except Exception as e:
-                        _logger.error("Check replicas problem %s" % str(e))
+                        _logger.error("Check replicas extension problem %s %s" % (str(e), str(waiting_step)))
             else:
                 action_finished = True
 
@@ -1018,7 +1018,7 @@ def follow_staging(step_action_ids):
         try:
             follow_staged(waiting_step, ddm)
         except Exception as e:
-            _logger.error("Check replicas problem %s" % str(e))
+            _logger.error("Check replicas follow problem %s %s" % (str(e), str(waiting_step)))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
             waiting_step.save()
@@ -1030,10 +1030,14 @@ def follow_repeated_staging(step_action_ids):
         try:
             follow_repeated_staged(waiting_step, ddm)
         except Exception as e:
-            _logger.error("Check replicas problem %s" % str(e))
+            _logger.error("Check replicas follow repeated problem %s actionid %s" % (str(e), str(waiting_step)))
             waiting_step = StepAction.objects.get(id=waiting_step)
             waiting_step.status = 'active'
             waiting_step.save()
+
+def process_all_action_by_type(action):
+    action_step_todo = StepAction.objects.filter(status='active',action=action)
+    process_actions(action_step_todo)
 
 
 def find_action_to_execute():
