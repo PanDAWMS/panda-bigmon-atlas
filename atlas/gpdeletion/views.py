@@ -3,8 +3,8 @@ from rest_framework.generics import get_object_or_404
 
 from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
-    GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats
-from atlas.dkb.views import es_by_fields, es_by_keys
+    GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest
+from atlas.dkb.views import es_by_fields, es_by_keys, es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
 import pytz
@@ -17,6 +17,7 @@ from atlas.settings import defaultDatetimeFormat
 import logging
 from django.utils import timezone
 
+#from django.core.cache import cache
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -78,22 +79,22 @@ def collect_stats(format_base, is_real_data):
 
 
 def get_existing_datastes(output, ami_tag, ddm):
-    tasks = es_by_keys({'ctag': ami_tag, 'output_formats': output})
+    tasks = es_by_keys_nested({'ctag': ami_tag, 'output_formats': output})
     if(len(tasks)>0):
         print(ami_tag, len(tasks))
     result = []
     for task in tasks:
-        if task['status'] not in ProductionTask.RED_STATUS:
+        if 'valid' not in task['taskname'] and task['status'] not in ProductionTask.RED_STATUS:
             for dataset in task['output_dataset']:
                 deleted = False
                 try:
                     deleted = dataset['deleted']
                 except:
                     print('no deleted', task['taskid'])
-                if output in dataset['data_format'] and not deleted and ddm.dataset_exists(dataset['datasetname']):
+                if output == dataset['data_format'] and not deleted and ddm.dataset_exists(dataset['name']):
                     if ('events' not in dataset) or (not dataset['events']):
                         print('no events', task['taskid'])
-                        metadata = ddm.dataset_metadata(dataset['datasetname'])
+                        metadata = ddm.dataset_metadata(dataset['name'])
                         events = metadata['events']
                         if not events:
                             events = 0
@@ -106,15 +107,18 @@ def get_existing_datastes(output, ami_tag, ddm):
                         if production_task.status != task['status']:
                             print('wrong status', task['taskid'])
                             task['status'] = production_task.status
-                    result.append({'task': task['taskid'], 'dataset': dataset['datasetname'], 'size': dataset['bytes'],
+                    result.append({'task': task['taskid'], 'dataset': dataset['name'], 'size': dataset['bytes'],
                                    'task_status': task['status'], 'events': events, 'end_time': task['task_timestamp']})
-                break
+                    break
     return result
 
 
-def ami_tags_reduction(postfix):
+
+def ami_tags_reduction_w_data(postfix, data=False):
     if 'tid' in postfix:
         postfix = postfix[:postfix.find('_tid')]
+    if data:
+        return postfix
     new_postfix = []
     first_letter = ''
     for token in postfix.split('_')[:-1]:
@@ -124,9 +128,8 @@ def ami_tags_reduction(postfix):
     new_postfix.append(postfix.split('_')[-1])
     return '_'.join(new_postfix)
 
-
 def get_container_name(dataset_name):
-    return '.'.join(dataset_name.split('.')[:-1] + [ami_tags_reduction(dataset_name.split('.')[-1])])
+    return '.'.join(dataset_name.split('.')[:-1] + [ami_tags_reduction_w_data(dataset_name.split('.')[-1])])
 
 
 def collect_datasets(format_base, data, only_new = False):
@@ -147,7 +150,6 @@ def collect_datasets(format_base, data, only_new = False):
     return True
 
 def collect_datasets_per_output(output, data, is_skim):
-    print(output, data, is_skim)
 
     if is_skim:
         skim = 's'
@@ -221,14 +223,7 @@ def check_container(container_name, ddm, additional_datasets = None, warning_exi
     events = 0
     bytes = 0
     is_running = False
-    tasks = es_by_keys({'ctag': gp_container.ami_tag, 'output_formats': gp_container.output_format,
-                        'run_number': gp_container.dsid})
-    for task in tasks:
-        if task['status'] not in ProductionTask.RED_STATUS:
-            for dataset in task['output_dataset']:
-                if (unify_dataset(dataset['datasetname']) not in datasets) and (gp_container.output_format in dataset['data_format'] and not dataset['deleted']) and \
-                        (get_container_name(dataset['datasetname']) == gp_container.container) and ddm.dataset_exists(dataset['datasetname']):
-                    datasets.append(unify_dataset(dataset['datasetname']))
+    datasets += datassets_from_es(gp_container.ami_tag, gp_container.output_format, gp_container.dsid,container_name,ddm,datasets)
     if datasets:
         if warning_exists:
             _logger.warning(
@@ -258,17 +253,134 @@ def check_container(container_name, ddm, additional_datasets = None, warning_exi
             'Container {container} has been deleted from group production lists '.format(container=container_name))
     range_containers(container_key)
 
-def store_dataset(item, parent_id=None):
+def store_dataset(item):
     for x in ['update_time', 'last_extension_time']:
         if item.get(x):
             item[x] = datetime.strptime(item[x], "%d-%m-%Y %H:%M:%S").replace(tzinfo=pytz.utc)
     gp_container = GroupProductionDeletion(**item)
     if GroupProductionDeletion.objects.filter(container=item['container']).exists():
         gp_container.id = GroupProductionDeletion.objects.get(container=item['container']).id
-    if parent_id:
-        gp_container.previous_container = GroupProductionDeletion.objects.get(id=parent_id)
     gp_container.save()
     return gp_container.id
+
+def update_for_period(time_since, time_till):
+    tasks = ProductionTask.objects.filter(timestamp__gte=time_since, timestamp__lte=time_till, provenanc='GP')
+    for task in tasks:
+        if  (task.phys_group not in ['SOFT','VALI']) and ('valid' not in task.name) and (task.status in ['finished','done']):
+            pass
+
+def redo_all(is_data, exclude_list):
+    for base in FORMAT_BASES:
+        if base not in exclude_list:
+            redo_whole_output(base, is_data)
+
+def redo_whole_output(format_base, is_data):
+    if is_data:
+        prefix = 'data'
+    else:
+        prefix = 'mc'
+    for output in get_all_formats(format_base):
+        _logger.info(
+            'Redo {output} for {prefix} '.format(output=output,prefix=prefix))
+        print('Redo {output} for {prefix} '.format(output=output,prefix=prefix))
+        group_containers = list(GroupProductionDeletion.objects.filter(output_format=output, container__startswith=prefix))
+        for group_container in group_containers:
+            group_container.previous_container = None
+            group_container.save()
+            group_container.delete()
+        if is_data:
+            fill_db(output, True, True, False)
+        else:
+            fill_db(output, False, True, False)
+            fill_db(output, False, False, False)
+
+
+def datassets_from_es(ami_tag, output_formats, run_number, container, ddm, checked_datasets = []):
+    tasks = es_by_keys_nested({'ctag': ami_tag, 'output_formats': output_formats,
+                        'run_number': run_number})
+    es_datatses = []
+    for task in tasks:
+        if task['status'] not in ProductionTask.RED_STATUS:
+            for dataset in task['output_dataset']:
+                if (unify_dataset(dataset['name']) not in checked_datasets) and (
+                        output_formats in dataset['data_format'] and not dataset[
+                    'deleted']) and \
+                        (get_container_name(dataset[
+                                                'name']) == container) and ddm.dataset_exists(
+                    dataset['name']):
+                    es_datatses.append(dataset['name'])
+    return es_datatses
+
+
+def rerange_after_deletion(gp_delete_container):
+    gp_containers = GroupProductionDeletion.objects.filter(input_key=gp_delete_container.input_key)
+    if gp_containers.count() > 1:
+        by_amitag = {}
+        for gp_container in gp_containers:
+            if gp_container != gp_delete_container:
+                by_amitag[gp_container.ami_tag] = gp_container
+        if len(by_amitag.keys()) == 1:
+            ami_tag, gp_container = by_amitag.popitem()
+            gp_container.version = 0
+            gp_container.save()
+        else:
+            ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache) for x in by_amitag.keys()]
+            ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
+            ami_tags = [x[0] for x in ami_tags_cache]
+            latest = by_amitag[ami_tags[0]]
+            version = 0
+            for ami_tag in ami_tags[1:]:
+                if latest.status == 'finished':
+                    version += 1
+                if version != by_amitag[ami_tag].version:
+                    by_amitag[ami_tag].last_extension_time = latest.update_time
+                    by_amitag[ami_tag].version = version
+                    by_amitag[ami_tag].save()
+                latest = by_amitag[ami_tag]
+    gp_delete_container.delete()
+
+
+# def clean_superceeded(do_es_check=True, format_base = None):
+#     # for base_format in FORMAT_BASES:
+#     ddm = DDM()
+#     if not format_base:
+#         format_base = FORMAT_BASES
+#         cache_key = 'ALL'
+#     else:
+#         if format_base in FORMAT_BASES:
+#             cache_key = format_base
+#         else:
+#             return False
+#     existed_datasets = []
+#     for base_format in format_base:
+#         superceed_version = 1
+#         if base_format in CP_FORMATS:
+#             superceed_version = 2
+#         formats = get_all_formats(base_format)
+#         for output_format in formats:
+#             existed_containers = GroupProductionDeletion.objects.filter(output_format=output_format, version__gte=superceed_version)
+#             print(output_format, existed_containers.count())
+#             for gp_container in existed_containers:
+#                 container_name = gp_container.container
+#                 datasets = ddm.dataset_in_container(container_name)
+#                 delete_container = False
+#                 if len(datasets) == 0:
+#                     delete_container = True
+#                     if do_es_check:
+#                         es_datasets = datassets_from_es(gp_container.ami_tag, gp_container.output_format, gp_container.dsid, gp_container.container, ddm )
+#                         if len(es_datasets) > 0:
+#                             delete_container = False
+#                             existed_datasets += es_datasets
+#                             print('ERROR: {container} is empty but something is found'.format(container=container_name))
+#                 else:
+#                     existed_datasets += datasets
+#                 if delete_container:
+#                     print('{container} is empty and will be deleted'.format(container=container_name))
+#                     #rerange_after_deletion(gp_container)
+#                     # _logger.info(
+#                     #     'Container {container} has been deleted from group production lists '.format(
+#                     #         container=container_name))
+#     cache.set('dataset_to_delete_'+cache_key,existed_datasets,None)
 
 
 def clean_containers(changed_containers, output, data, is_skim):
@@ -339,7 +451,7 @@ def fill_db(output, data, is_skim, test=True):
         for index, item in enumerate(to_db):
             try:
                 if (item['input_key'] == current_key) and last_id:
-                    last_id = store_dataset(item, last_id)
+                    last_id = store_dataset(item)
                 else:
                     last_id = store_dataset(item)
                 current_key = item['input_key']
@@ -464,3 +576,15 @@ class ListGroupProductionDeletionView(generics.ListAPIView):
         queryset = GroupProductionDeletion.objects.filter(**filter)
 
         return queryset
+
+
+def collect_tags(start_requests):
+    requests = TRequest.objects.filter(request_type='GROUP', reqid__gte=start_requests)
+    for request in requests:
+        if request.phys_group not in ['VALI', 'SOFT']:
+            if 'valid' not in str(request.project):
+                if ProductionTask.objects.filter(request=request).exists():
+                    task = ProductionTask.objects.filter(request=request).last()
+                    if not GroupProductionAMITag.objects.filter(ami_tag=task.ami_tag).exists():
+                        print(task.ami_tag)
+                        update_tag_from_ami(task.ami_tag,task.name.startswith('data'))

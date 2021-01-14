@@ -1345,18 +1345,11 @@ def tasks_by_hashtag(hashtag):
         return tasks_hashtags
     return []
 #
-def es_by_keys_new(values, size=10000):
+def es_by_keys_nested(values, size=10000):
     search_dict = []
     for x in values:
         search_dict.append({'term':{x:values[x]}})
-    # search_dict.append({"has_child": {
-    #     "type": "output_dataset",
-    #     "score_mode": "sum",
-    #     "query": {
-    #         "match_all": {}
-    #     },
-    #     "inner_hits": {}
-    # }})
+
     es_search = Search(index="apinestedproduction_tasks", doc_type='task')
     query = {
         "query": {
@@ -1377,9 +1370,8 @@ def es_by_keys_new(values, size=10000):
     result = []
     for hit in response:
         current_hit = hit.to_dict()
-        # current_hit['output_dataset'] = []
-        # for hit2 in hit.meta.inner_hits['output_dataset']:
-        #     current_hit['output_dataset'].append(hit2.to_dict())
+        if 'output_dataset' not in current_hit:
+            current_hit['output_dataset'] = []
         result.append(current_hit)
     return result
 
