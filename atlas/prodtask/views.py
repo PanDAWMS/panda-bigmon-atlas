@@ -60,7 +60,7 @@ def create_predefinition_action(step):
                 if ('toStaging=yes') not in step.get_task_config('project_mode'):
                     step.update_project_mode('toStaging','yes')
                     step.save()
-                if ('inputPreStaging') not in step.get_task_config('project_mode'):
+                if ('inputPreStaging') not in step.get_task_config('project_mode') and (action not in [8]):
                     step.update_project_mode('inputPreStaging','yes')
                     step.save()
                 if (action in [8]) and  ('useZipToPin=yes') not in step.get_task_config('project_mode'):

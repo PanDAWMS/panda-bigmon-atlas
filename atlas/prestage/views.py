@@ -189,16 +189,17 @@ class TapeResource(ResourceQueue):
                     if not priority:
                         priority = task.priority
                     dataset_shares.append(task.request.request_type)
-            if len(dataset_shares)>1:
-                dataset_share = 'any'
-            else:
-                dataset_share = dataset_shares[0]
-            x['value'] = x['total_files']
-            x['priority'] = priority
-            x['share'] = dataset_share
-            self.queued_shares.add(dataset_share)
-            self.total_queued += x['value']
-            self.queue.append(x)
+            if len(dataset_shares) >0:
+                if len(dataset_shares)>1:
+                    dataset_share = 'any'
+                else:
+                    dataset_share = dataset_shares[0]
+                x['value'] = x['total_files']
+                x['priority'] = priority
+                x['share'] = dataset_share
+                self.queued_shares.add(dataset_share)
+                self.total_queued += x['value']
+                self.queue.append(x)
 
     def running_level(self):
         staing_requests =  DatasetStaging.objects.filter(source=self.resource_name,status__in=['staging']).values()
@@ -632,7 +633,7 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
                     config = ActionDefault.objects.get(name='active_archive_staging').get_config()
                 else:
                     config = ActionDefault.objects.get(name='active_staging').get_config()
-                if not noidds:
+                if not noidds and not check_archive:
                     config['level'] = 1
                 if check_archive:
                     input_dataset = find_archive_dataset(task.input_dataset,ddm)
