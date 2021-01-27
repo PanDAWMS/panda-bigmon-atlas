@@ -254,7 +254,7 @@ class DDM(object):
         :param container_name:
         :return:
         """
-        _logger.debug('Return dataset list from container: %s' % container_name)
+        #_logger.debug('Return dataset list from container: %s' % container_name)
         scope, name = self.rucio_convention(container_name)
         try:
             if self.dataset_metadata(container_name)['did_type'] == 'CONTAINER':
@@ -367,3 +367,25 @@ class DDM(object):
 
     def rse_attr(self, rse):
         return self.__ddm.list_rse_attributes(rse)
+
+    def register_container(self, container_name, datasets=None):
+        if container_name.endswith('/'):
+            container_name = container_name[:-1]
+        scope, name = self.rucio_convention(container_name)
+        self.__ddm.add_container(scope=scope, name=name)
+        if datasets:
+            datasets_with_scopes = list()
+            for dataset in datasets:
+                dataset_scope, dataset_name = self.rucio_convention(dataset)
+                datasets_with_scopes.append({'scope': dataset_scope, 'name': dataset_name})
+            self.__ddm.add_datasets_to_container(scope=scope, name=name, dsns=datasets_with_scopes)
+
+    def register_datasets_in_container(self, container_name, datasets):
+        if container_name.endswith('/'):
+            dsn = container_name[:-1]
+        scope, name = self.rucio_convention(container_name)
+        datasets_with_scopes = list()
+        for dataset in datasets:
+            dataset_scope, dataset_name =self.rucio_convention(dataset)
+            datasets_with_scopes.append({'scope': dataset_scope, 'name': dataset_name})
+        self.__ddm.add_datasets_to_container(scope=scope, name=name, dsns=datasets_with_scopes)

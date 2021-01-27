@@ -4,7 +4,7 @@ from rest_framework.generics import get_object_or_404
 from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
-    ProductionDataset
+    ProductionDataset, GroupProductionDeletionExtension
 from atlas.dkb.views import es_by_fields, es_by_keys, es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -40,20 +40,26 @@ def collect_stats(format_base, is_real_data):
     version = 1
     if format_base in CP_FORMATS:
         version = 2
+    if is_real_data:
+        data_postfix = 'data'
+    else:
+        data_postfix = 'mc'
     for format in formats:
         by_tag_stats = {}
         samples = GroupProductionDeletion.objects.filter(output_format=format)
+        samples_list = []
         for sample in samples:
             if GroupProductionAMITag.objects.get(ami_tag=sample.ami_tag).real_data == is_real_data:
                 if sample.ami_tag not in by_tag_stats:
                     by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0, 'to_delete_containers': 0, 'to_delete_bytes':0}
                 if sample.version >= version:
+                    samples_list.append(GroupProductionDeletionSerializer(sample).data)
                     by_tag_stats[sample.ami_tag]['containers'] += 1
                     by_tag_stats[sample.ami_tag]['bytes'] += sample.size
                     if (timezone.now() - sample.last_extension_time) > timedelta(days=LIFE_TIME_DAYS):
                         by_tag_stats[sample.ami_tag]['to_delete_containers'] += 1
                         by_tag_stats[sample.ami_tag]['to_delete_bytes'] += sample.size
-
+        #cache.set('GPD'+format+data_postfix,samples_list,None)
 
         current_stats = GroupProductionStats.objects.filter(output_format=format, real_data=is_real_data)
         updated_tags = []
@@ -77,6 +83,25 @@ def collect_stats(format_base, is_real_data):
                 current_stat.to_delete_size = by_tag_stats[tag]['to_delete_bytes']
                 current_stat.to_delete_containers = by_tag_stats[tag]['to_delete_containers']
                 current_stat.save()
+
+
+def apply_extension(container, number_of_extension, user):
+    gp = GroupProductionDeletion.objects.get(container=container)
+    gp_extension = GroupProductionDeletionExtension()
+    gp_extension.container = gp
+    gp_extension.user = user
+    gp_extension.timestamp = timezone.now()
+    gp_extension.save()
+    gp.extensions_number = number_of_extension
+    gp.update_time = timezone.now()
+    gp.save()
+
+
+def remove_extension(container):
+    gp = GroupProductionDeletion.objects.get(container=container)
+    gp.extensions_number = 0
+    gp.update_time = timezone.now()
+    gp.save()
 
 def form_gp_from_dataset(dataset):
     gp = GroupProductionDeletion()
@@ -109,6 +134,8 @@ def get_existing_datastes(output, ami_tag, ddm):
                             metadata = ddm.dataset_metadata(dataset.name)
                             events = metadata['events']
                             bytes = metadata['bytes']
+                            if bytes is None:
+                                break
                             result.append({'task': task['taskid'], 'dataset': dataset.name, 'size': bytes,
                                            'task_status': task['status'], 'events': events, 'end_time': task['task_timestamp']})
                         break
@@ -134,6 +161,8 @@ def get_existing_datastes(output, ami_tag, ddm):
                         if production_task.status != task['status']:
                             print('wrong status', task['taskid'])
                             task['status'] = production_task.status
+                    if dataset['bytes'] is None:
+                        break
                     result.append({'task': task['taskid'], 'dataset': dataset['name'], 'size': dataset['bytes'],
                                    'task_status': task['status'], 'events': events, 'end_time': task['task_timestamp']})
                     break
@@ -211,6 +240,21 @@ def collect_datasets_per_output(output, data, is_skim):
                 result[dataset_key][ami_tag]['status'] = 'running'
     return result
 
+def create_single_tag_container(container_name):
+    container_name = container_name[container_name.find(':')+1:]
+    gp_container =  GroupProductionDeletion.objects.get(container=container_name)
+    ddm = DDM()
+    if not ddm.dataset_exists(container_name):
+        datasets = datassets_from_es(gp_container.ami_tag, gp_container.output_format, gp_container.dsid,container_name,ddm)
+        if datasets:
+            empty_replica = True
+            for es_dataset in datasets:
+                if len(ddm.dataset_replicas(es_dataset))>0:
+                    empty_replica = False
+                    break
+            if not empty_replica:
+                print(str(datasets),' will be added to ',container_name)
+                ddm.register_container(container_name,datasets)
 
 def range_containers(container_key):
     gp_containers = GroupProductionDeletion.objects.filter(input_key=container_key)
@@ -239,6 +283,11 @@ def unify_dataset(dataset):
         return dataset.split('.')[0]+':'+dataset
 
 def check_container(container_name, ddm, additional_datasets = None, warning_exists = False):
+    container_name = container_name[container_name.find(':')+1:]
+    if GroupProductionDeletion.objects.filter(container=container_name).count() >1:
+        gp_to_delete =  list(GroupProductionDeletion.objects.filter(container=container_name))
+        for gp in gp_to_delete:
+            gp.delete()
     if GroupProductionDeletion.objects.filter(container=container_name).exists():
         gp_container =  GroupProductionDeletion.objects.get(container=container_name)
         is_new = False
@@ -274,19 +323,22 @@ def check_container(container_name, ddm, additional_datasets = None, warning_exi
         gp_container.events = events
         gp_container.datasets_number = len(datasets)
         gp_container.size = bytes
-        if gp_container.status == 'running':
-            gp_container.update_time = timezone.now()
         if is_running:
             gp_container.status = 'running'
+            gp_container.update_time = timezone.now()
         else:
             gp_container.status = 'finished'
             if is_new:
                 gp_container.update_time = timezone.now()
+                _logger.info(
+                    'Container {container} has been added to group production lists '.format(
+                        container=gp_container.container))
         gp_container.save()
+        range_containers(container_key)
     else:
         _logger.info(
             'Container {container} has been deleted from group production lists '.format(container=container_name))
-    range_containers(container_key)
+        rerange_after_deletion(gp_container)
 
 def store_dataset(item):
     for x in ['update_time', 'last_extension_time']:
@@ -298,11 +350,32 @@ def store_dataset(item):
     gp_container.save()
     return gp_container.id
 
+def do_gp_deletion_update():
+    update_for_period(timezone.now()-timedelta(days=2), timezone.now()+timedelta(hours=3))
+    for f in FORMAT_BASES:
+        collect_stats(f,False)
+        collect_stats(f,True)
+
+
 def update_for_period(time_since, time_till):
-    tasks = ProductionTask.objects.filter(timestamp__gte=time_since, timestamp__lte=time_till, provenanc='GP')
+    tasks = ProductionTask.objects.filter(timestamp__gte=time_since, timestamp__lte=time_till, provenance='GP')
+    containers = {}
     for task in tasks:
-        if  (task.phys_group not in ['SOFT','VALI']) and ('valid' not in task.name) and (task.status in ['finished','done']):
-            pass
+        if (task.phys_group not in ['SOFT','VALI']) and ('valid' not in task.name) and (task.status in ['finished','done']):
+            datasets = ProductionDataset.objects.filter(task_id=task.id)
+            for dataset in datasets:
+                if '.log.' not in dataset.name:
+                    container_name = get_container_name(unify_dataset(dataset.name))
+                    if container_name not in containers:
+                        containers[container_name] = []
+                    containers[container_name].append(unify_dataset(dataset.name))
+    ddm = DDM()
+    for container, datasets in containers.items():
+        try:
+            check_container(container,ddm,datasets)
+        except Exception as e:
+            _logger.error("problem during gp container check %s" % str(e))
+    return True
 
 def redo_all(is_data, exclude_list):
     for base in FORMAT_BASES:
@@ -413,7 +486,6 @@ def clean_superceeded(do_es_check=True, format_base = None):
         formats = get_all_formats(base_format)
         for output_format in formats:
             existed_containers = GroupProductionDeletion.objects.filter(output_format=output_format, version__gte=superceed_version)
-            print(output_format, existed_containers.count())
             for gp_container in existed_containers:
                 container_name = gp_container.container
                 datasets = ddm.dataset_in_container(container_name)
@@ -422,14 +494,22 @@ def clean_superceeded(do_es_check=True, format_base = None):
                     delete_container = True
                     if do_es_check:
                         es_datasets = datassets_from_es(gp_container.ami_tag, gp_container.output_format, gp_container.dsid, gp_container.container, ddm )
-                        if len(es_datasets) > 0:
+                        empty_replica = True
+                        if('TRUTH' not in output_format):
+                            for es_dataset in es_datasets:
+                                if len(ddm.dataset_replicas(es_dataset))>0:
+                                    empty_replica = False
+                                    break
+                        else:
+                            empty_replica = False
+                        if len(es_datasets) > 0 and not empty_replica:
                             delete_container = False
                             existed_datasets += es_datasets
-                            print('ERROR: {container} is empty but something is found'.format(container=container_name))
+                            if('TRUTH' not in output_format):
+                                _logger.error('{container} is empty but something is found'.format(container=container_name))
                 else:
                     existed_datasets += datasets
                 if delete_container:
-                    print('{container} is empty and will be deleted'.format(container=container_name))
                     rerange_after_deletion(gp_container)
                     _logger.info(
                         'Container {container} has been deleted from group production lists '.format(

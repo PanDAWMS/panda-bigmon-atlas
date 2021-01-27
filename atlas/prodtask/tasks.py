@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from atlas.celerybackend.celery import app
-from atlas.gpdeletion.views import collect_datasets, redo_all
+from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_update, clean_superceeded
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
     sync_cric_deft, find_repeated_tasks_to_follow
@@ -74,4 +74,16 @@ def find_DC_existsed_replica_tasks():
 @app.task(time_limit=86400)
 def collect_gp(data, exclude_list):
     redo_all(data, exclude_list)
+    return True
+
+
+@app.task(time_limit=7200)
+def gp_deletion_update():
+    do_gp_deletion_update()
+    return True
+
+@app.task(time_limit=10800)
+def gp_deletion_update_with_cleaning():
+    do_gp_deletion_update()
+    clean_superceeded()
     return True

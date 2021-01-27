@@ -20,6 +20,9 @@ class ProdMonDBRouter(object):
             return 'dev_db'
         if model._meta.app_label == 'django_celery_beat':
             return 'dev_db'
+        if model._meta.app_label == 'django_cache':
+            return 'dev_db'
+
         return None
 
     def db_for_write(self, model, **hints):
@@ -40,6 +43,8 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'django_celery_results':
             return 'dev_db_wr'
         if model._meta.app_label == 'django_celery_beat':
+            return 'dev_db_wr'
+        if model._meta.app_label == 'django_cache':
             return 'dev_db_wr'
         return None
 

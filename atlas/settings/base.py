@@ -95,6 +95,14 @@ TEMPLATES = [
     },
 
 ]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'prodtask_cache',
+    }
+}
+
 LANGUAGE_CODE = 'en-us'
 LANGUAGE_NAME = 'English'
 LANGUAGE_NAME_LOCAL = 'English'
