@@ -20,6 +20,7 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 import logging
 
 from django.utils import timezone
@@ -110,9 +111,6 @@ class ShibSSOBackend(ModelBackend):
             user.is_staff = settings.SHIB_SSO_CREATE_STAFF
             user.is_superuser = settings.SHIB_SSO_CREATE_SUPERUSER
             user.last_login = timezone.now()
-
-        #            user.save()
-
         user.email = email
         user.first_name = firstname
         user.last_name = lastname
@@ -120,10 +118,6 @@ class ShibSSOBackend(ModelBackend):
         user.save()
         current_groups = [_f for _f in map(get_group, groups) if _f]
         user.groups.set(current_groups)
-
         user.save()
-
+        Token.objects.get_or_create(user=user)
         return user
-
-#    _get_updated_user = staticmethod(_get_updated_user)
-    
