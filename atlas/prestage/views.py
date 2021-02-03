@@ -697,9 +697,11 @@ def do_staging(action_step_id, ddm):
         if dataset_stage.status == 'done':
             start_stagind_task(task)
         if dataset_stage.status == 'staging':
-            if (not dataset_stage.rse) or (level == 1):
+            if True :
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
                 if existed_rule:
+                        if dataset_stage.rse and dataset_stage.rse != existed_rule['id']:
+                            _logger.error("do staging change rule from %s to %s for " % (str(dataset_stage.rse), str(existed_rule['id'],dataset_stage.dataset)))
                         dataset_stage.rse = existed_rule['id']
                         if dataset_stage.staged_files != int(existed_rule['locks_ok_cnt']):
                             dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
