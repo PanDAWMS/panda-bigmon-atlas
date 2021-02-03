@@ -1,3 +1,4 @@
+from django.contrib.messages.context_processors import messages
 from django.http.response import HttpResponseBadRequest
 from rest_framework.generics import get_object_or_404
 
@@ -11,12 +12,15 @@ from datetime import datetime, timedelta
 import pytz
 from rest_framework import serializers, generics
 from django.forms.models import model_to_dict
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework import status
 from atlas.settings import defaultDatetimeFormat
 import logging
 from django.utils import timezone
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import parser_classes
 
 from django.core.cache import cache
 
@@ -85,16 +89,23 @@ def collect_stats(format_base, is_real_data):
                 current_stat.save()
 
 
-def apply_extension(container, number_of_extension, user):
+def apply_extension(container, number_of_extension, user, message):
     gp = GroupProductionDeletion.objects.get(container=container)
     gp_extension = GroupProductionDeletionExtension()
-    gp_extension.container = gp
+    gp_extension.container = gp.container
     gp_extension.user = user
     gp_extension.timestamp = timezone.now()
+    gp_extension.message = message
     gp_extension.save()
-    gp.extensions_number = number_of_extension
+    if gp.extensions_number:
+        gp.extensions_number += number_of_extension
+    else:
+        gp.extensions_number = number_of_extension
     gp.update_time = timezone.now()
     gp.save()
+    _logger.info(
+        'GP extension by {user} for {container} on {number_of_extension} '.format(user=user, container=container,
+                                                                                   number_of_extension=number_of_extension))
 
 
 def remove_extension(container):
@@ -624,14 +635,62 @@ def gpdetails(request):
         return HttpResponseBadRequest(e)
 
 
+@api_view(['GET'])
+def ami_tags_details(request):
+    try:
+        ami_tags = request.query_params.get('ami_tags').split(',')
+        result = {}
+        for ami_tag in ami_tags:
+            if GroupProductionAMITag.objects.filter(ami_tag=ami_tag).exists():
+                ami_tag_details = GroupProductionAMITag.objects.get(ami_tag=ami_tag)
+                result.update({ami_tag_details.ami_tag:{'cache': ami_tag_details.cache, 'skim':  ami_tag_details.skim}})
+        return Response(result)
+    except Exception as e:
+        return HttpResponseBadRequest(e)
+
+@api_view(['GET'])
+def gp_container_details(request):
+    try:
+        result = {}
+        container_name = request.query_params.get('container')
+        if not GroupProductionDeletion.objects.filter(container=container_name).exists():
+            return Response(None)
+        ddm = DDM()
+        gp_main_container = GroupProductionDeletion.objects.get(container=container_name)
+        extensions = GroupProductionDeletionExtension.objects.filter(container=gp_main_container).order_by('id')
+        result['extension'] = [ GroupProductionDeletionExtensionSerializer(x).data for x in extensions]
+        gp_same_key_containers = GroupProductionDeletion.objects.filter(input_key=gp_main_container.input_key)
+        same_key_containers = []
+        for gp_container in gp_same_key_containers:
+            datasets = ddm.dataset_in_container(gp_container.container)
+            datasets += datassets_from_es(gp_container.ami_tag, gp_container.output_format, gp_container.dsid, gp_container.container, ddm,datasets )
+            datasets_info = []
+            for dataset in datasets:
+                metadata = ddm.dataset_metadata(dataset)
+                datasets_info.append( {'name':dataset,'events':metadata['events'],'bytes':metadata['bytes'],'task_id':metadata['task_id'] })
+            if gp_container == gp_main_container:
+                result['main_container'] = {'container': gp_container.container, 'datasets':datasets_info,
+                                            'details': GroupProductionDeletionSerializer(gp_container).data}
+            else:
+                same_key_containers.append({'container': gp_container.container, 'datasets':datasets_info,
+                                            'details': GroupProductionDeletionSerializer(gp_container).data})
+        result['same_input'] = same_key_containers
+        return Response(result)
+    except Exception as e:
+        return HttpResponseBadRequest(e)
 
 
 @api_view(['POST'])
 def extension(request):
     try:
-        print(request.data)
-        print(request.user.username)
+        username = request.user.username
+        containers = request.data['containers']
+        message = request.data['message']
+        number_of_extensions = request.data['number_of_extensions']
+        for container in containers:
+            apply_extension(container['container'],number_of_extensions,username,message)
     except Exception as e:
+
         return HttpResponseBadRequest(e)
     return Response({'message': 'OK'})
 
@@ -649,6 +708,11 @@ class UnixEpochDateField(serializers.DateTimeField):
         import datetime
         return datetime.datetime.fromtimestamp(int(value))
 
+class GroupProductionDeletionExtensionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GroupProductionDeletionExtension
+        fields = '__all__'
 
 class GroupProductionDeletionSerializer(serializers.ModelSerializer):
     epoch_last_update_time = UnixEpochDateField(source='last_extension_time')
@@ -656,6 +720,13 @@ class GroupProductionDeletionSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupProductionDeletion
         fields = '__all__'
+
+class GroupProductionDeletionUserSerializer(serializers.ModelSerializer):
+    epoch_last_update_time = UnixEpochDateField(source='last_extension_time')
+
+    class Meta:
+        model = GroupProductionDeletion
+        fields = ['container','events','available_tags','version','extensions_number','size','epoch_last_update_time']
 
 class GroupProductionStatsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -688,6 +759,41 @@ def version_from_format(output_format):
         if base_format in output_format:
             return 2
     return 1
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def all_datasests_to_delete(request):
+    return Response(cache.get('dataset_to_delete_ALL'))
+
+
+class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
+    serializer_class = GroupProductionDeletionUserSerializer
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    lookup_fields = [ 'output_format', 'skim', 'ami_tag','data_type']
+    fields = ['container']
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        filter = {}
+        if not self.request.query_params.get('output_format', None):
+            return []
+        for field in self.lookup_fields:
+            if field == 'data_type' and self.request.query_params.get(field, None):
+                filter['container__startswith'] = self.request.query_params[field]
+            elif field == 'output_format' and self.request.query_params.get(field, None) :
+                filter['version__gte'] = version_from_format(self.request.query_params[field])
+                filter[field] = self.request.query_params[field]
+            elif self.request.query_params.get(field, None):  # Ignore empty fields.
+                filter[field] = self.request.query_params[field]
+        queryset = GroupProductionDeletion.objects.filter(**filter)
+
+        return queryset
 
 
 class ListGroupProductionDeletionView(generics.ListAPIView):

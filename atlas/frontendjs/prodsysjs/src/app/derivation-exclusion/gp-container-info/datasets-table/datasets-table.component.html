@@ -1,0 +1,10 @@
+
+<mat-grid-list  *ngFor="let element of datasetsDataSource" cols="4"  [rowHeight]="'2em'">
+  <mat-grid-tile [colspan]=4>
+    {{element.name}}
+  </mat-grid-tile>
+  <mat-grid-tile >Size: {{element.bytes| datasetSize}}</mat-grid-tile>
+  <mat-grid-tile >Events: {{element.events}}</mat-grid-tile>
+  <mat-grid-tile ><a href="{{element.name | rucioURL}}" >rucio</a></mat-grid-tile>
+  <mat-grid-tile >Task: <a href="https://bigpanda.cern.ch/task/{{element.task_id}}/">{{element.task_id}}</a></mat-grid-tile>
+</mat-grid-list>

@@ -1338,6 +1338,7 @@ class GroupProductionDeletionExtension(models.Model):
     container = models.ForeignKey(GroupProductionDeletion, db_column='DELETION_CONTAINER_ID', on_delete=CASCADE)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
     user = models.CharField(max_length=200, db_column='USER_NAME')
+    message  = models.CharField(max_length=256, db_column='MESSAGE', null=True)
 
     def save(self, *args, **kwargs):
         if not self.id:

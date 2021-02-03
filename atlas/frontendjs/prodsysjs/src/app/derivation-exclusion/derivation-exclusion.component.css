@@ -77,3 +77,7 @@ tr.example-element-row:not(.example-expanded-row):active {
 .mat-cell.not_expired{
   background-color: green;
 }
+.mat-form-field {
+  font-size: 14px;
+  width: 100%;
+}

@@ -1,0 +1,23 @@
+<button [routerLink]="['/gp-deletion', dataType, outputFormat]" [fragment]="amiTag" > To all containers </button>
+<p></p>
+{{containerFullInfo.main_container.container}} - version: {{containerFullInfo.main_container.details.version}}
+- extensions {{containerFullInfo.main_container.details.extensions_number}} - {{containerFullInfo.main_container.details.status}}
+<p><b>Datasets:</b></p>
+<app-datasets-table [datasetsDataSource]="containerFullInfo.main_container.datasets"></app-datasets-table>
+
+<p><b>Extensions:</b></p>
+  <mat-grid-list cols="7"  *ngFor="let element of containerFullInfo.extension" [rowHeight]="'2em'">
+    <mat-grid-tile [colspan]="2" >Time: {{element.timestamp}}</mat-grid-tile>
+    <mat-grid-tile >By: {{element.user}}</mat-grid-tile>
+    <mat-grid-tile [colspan]="4" >Message: {{element.message}}</mat-grid-tile>
+  </mat-grid-list>
+
+<p><b>Same input containers:</b></p>
+<div *ngFor="let sameInputContainer of containerFullInfo.same_input">
+  <hr class="dashed">
+
+  {{sameInputContainer.container}} - version: {{sameInputContainer.details.version}}
+  - extensions {{sameInputContainer.details.extensions_number}} - {{sameInputContainer.details.status}}
+  <p>Datasets:</p>
+  <app-datasets-table [datasetsDataSource]="sameInputContainer.datasets"></app-datasets-table>
+</div>

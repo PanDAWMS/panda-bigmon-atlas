@@ -17,3 +17,4 @@ tar xvfz 4.6.5.tar.gz
 sudo ./configure --with-python=/usr/bin/python3
 sudo make
 sudo make install
+docker run -d  -p 8080:15672 -p 5672:5672 prodtaskceleryrabbitmq

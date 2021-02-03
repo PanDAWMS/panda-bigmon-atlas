@@ -1,17 +1,17 @@
 <mat-sidenav-container
-    class="example-container" >
+  class="example-container" xmlns="http://www.w3.org/1999/html">
   <mat-sidenav #sidenav  [(opened)]="opened">
 <p>Total selected: {{totalSelected}}</p>
           <p>Size:{{totalSelectedSize | datasetSize }}</p>
 <form *ngIf="opened">
  <mat-form-field class="send-size-form">
    <mat-label>Number of extensions      </mat-label>
-     <input matInput type="number" [(ngModel)]="extendNumbers"  placeholder="1">
+     <input matInput type="number" [(ngModel)]="extendNumbers"  [ngModelOptions]="{standalone: true}" placeholder="1">
  </mat-form-field>
 
   <mat-form-field class="send-size-form">
     <mat-label>Message </mat-label>
-     <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" placeholder="Put a reason or a JIRA ticket"></textarea>
+     <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" [ngModelOptions]="{standalone: true}" placeholder="Put a reason or a JIRA ticket"></textarea>
     <mat-hint align="end">{{extentMessage.value.length}} / 256</mat-hint>
   </mat-form-field>
   </form>
@@ -39,11 +39,19 @@
 </div>
 
 
-<button mat-raised-button  color="primary" (click)="sidenav.open()" >Extend selected</button>
+<button mat-raised-button  color="primary" (click)="sidenav.open()" >Extend selected</button><p>
+    <mat-form-field>
+      <mat-label>Filter</mat-label>
+      <input matInput (keyup)="applyFilter($event)" placeholder="" #input>
+    </mat-form-field>
   <section>
 
+
 <div class="section" *ngFor="let containerByTag of containersByTagTables" [attr.id]='containerByTag.amiTag' >
-  <h5>{{containerByTag.amiTag}}</h5>
+   <div *ngIf="amiTagsDescription[containerByTag.amiTag] as value; else elseBlock"><h5>{{containerByTag.amiTag}}
+     {{value.cache}},
+     <span *ngIf="value.skim === 's'; else elseBlock2">skim</span><ng-template #elseBlock2><span>no skim</span></ng-template></h5></div>
+  <ng-template #elseBlock><h5> {{containerByTag.amiTag}}</h5></ng-template>
 
 <table mat-table [dataSource]="containerByTag.dataSource"  multiTemplateDataRows >
   <!-- Checkbox Column -->
@@ -66,7 +74,7 @@
     <!-- Container Column -->
   <ng-container matColumnDef="container">
     <th mat-header-cell *matHeaderCellDef > Container </th>
-    <td mat-cell *matCellDef="let element" [attr.id]='element.id'> {{element.container}} </td>
+    <td mat-cell *matCellDef="let element" [attr.id]='element.id'> <a [routerLink]="['/gp-container-details', element.container ]" > {{element.container}} </a></td>
   </ng-container>
 
    <!-- Version Column -->
@@ -94,7 +102,7 @@
 
           <ng-container matColumnDef="container">
             <th mat-header-cell *matHeaderCellDef> Container </th>
-            <td mat-cell *matCellDef="let element"> {{element.container}} </td>
+            <td mat-cell *matCellDef="let element">  <a [routerLink]="['/gp-container-details', element.container ]" >{{element.container}} </a></td>
           </ng-container>
 
           <ng-container matColumnDef="name">

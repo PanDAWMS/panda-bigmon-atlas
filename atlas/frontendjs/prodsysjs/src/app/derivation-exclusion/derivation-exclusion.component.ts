@@ -16,6 +16,7 @@ import {SelectionModel} from '@angular/cdk/collections';
 import {MatTableDataSource} from '@angular/material/table';
 import {ViewportScroller} from '@angular/common';
 import {GpContainerDetailsService} from './gp-container-details.service';
+import {AMITag, AmiTagService} from "./ami-tag.service";
 
 
 export interface ContainerByTag{
@@ -57,10 +58,11 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   selectedContainerDetailsDataSource: MatTableDataSource<GroupProductionDeletionContainer>;
   extendNumbers: number;
   opened: boolean;
-
+  amiTagsDescription: Map<string, AMITag>;
 
   constructor(private route: ActivatedRoute, private gpDeletionContainerService: GPDeletionContainerService, private router: Router,
-              private viewportScroller: ViewportScroller, private gpContainerDetailsService: GpContainerDetailsService) { }
+              private viewportScroller: ViewportScroller, private gpContainerDetailsService: GpContainerDetailsService,
+              private amiTagService: AmiTagService) { }
 
   ngOnInit(): void {
     this.outputType = this.route.snapshot.paramMap.get('output');
@@ -85,7 +87,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
                selection: SelectionModel<GroupProductionDeletionContainer>): void {
     this.isAllSelected(dataSource, selection) ?
         selection.clear() :
-        dataSource.data.forEach(row => selection.select(row));
+        dataSource.filteredData.forEach(row => selection.select(row));
     this.recountSelected();
   }
   selectRowWithCounting(selection: SelectionModel<GroupProductionDeletionContainer>, row: GroupProductionDeletionContainer): void{
@@ -131,17 +133,22 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
         this.containersByTag.set(container.ami_tag, [container]);
       }
     }
-
+    const amiTags: string[] = [];
     for (const [amiTag, containerByTag] of this.containersByTag.entries()){
       const dataSource = new MatTableDataSource<GroupProductionDeletionContainer>();
       dataSource.data = containerByTag;
       const selection =  new SelectionModel<GroupProductionDeletionContainer>(true, []);
       this.containersByTagTables.push({amiTag, dataSource, selection});
+      amiTags.push(amiTag);
     }
-
+    this.amiTagsDescription = new Map<string, AMITag>();
+    this.amiTagService.getAMITagDetails(amiTags.join(',')).subscribe(amiTagsDetails =>{
+      this.amiTagsDescription = amiTagsDetails;
+    });
     this.route.fragment.subscribe(f => {
           this.viewportScroller.scrollToAnchor(f);
       });
+
   }
 
   extend(row: GroupProductionDeletionContainer): void {
@@ -172,6 +179,14 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
         });
       }
     this.gpDeletionContainerService.askExtension({message: this.extendMessage,
-      containers: selectedContainers, number_of_extensions: 0}).subscribe();
+      containers: selectedContainers, number_of_extensions: this.extendNumbers}).subscribe();
   }
+
+  applyFilter($event: KeyboardEvent): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    for (const GPAMIContainers of this.containersByTagTables) {
+        GPAMIContainers.dataSource.filter = filterValue.trim().toLowerCase();
+    }
+  }
+
 }

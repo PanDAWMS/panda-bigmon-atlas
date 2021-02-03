@@ -10,6 +10,10 @@ urlpatterns = [
         url(r'^extension/$', extension, name='extension'),
         url(r'^gpdetails/$', gpdetails,
             name='gpdetails'),
+        url(r'^ami_tags_details/$', ami_tags_details,name='ami_tags_details'),
+        url(r'^gp_container_details/$', gp_container_details,name='gp_container_details')
+
+
 
 ]
 
