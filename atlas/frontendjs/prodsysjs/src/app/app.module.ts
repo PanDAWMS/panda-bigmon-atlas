@@ -30,6 +30,8 @@ import { GpStatsMatrixComponent } from './derivation-exclusion/gp-stats-matrix/g
 import { GpContainerInfoComponent } from './derivation-exclusion/gp-container-info/gp-container-info.component';
 import { DatasetsTableComponent } from './derivation-exclusion/gp-container-info/datasets-table/datasets-table.component';
 import {GpContainerInfoResolver} from "./derivation-exclusion/gp-container-info/datasets-table/gp-container-info.resolve";
+import { GpApiInstructionComponent } from './derivation-exclusion/gp-api-instruction/gp-api-instruction.component';
+import {MatCardModule} from "@angular/material/card";
 
 
 const routerOptions: ExtraOptions = {
@@ -59,7 +61,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
           }
         },
       {path: 'request', component: ProductionRequestComponent},
- {path: 'carousel', component: DataCarouselComponent}];
+  {path: 'gp-api', component: GpApiInstructionComponent},
+
+  {path: 'carousel', component: DataCarouselComponent}];
 
 @NgModule({
   declarations: [
@@ -73,6 +77,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     GpStatsMatrixComponent,
     GpContainerInfoComponent,
     DatasetsTableComponent,
+    GpApiInstructionComponent,
   ],
   imports: [
     BrowserModule,
@@ -95,6 +100,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatListModule,
     MatProgressSpinnerModule,
     MatRadioModule,
+    MatCardModule,
 
 
   ],

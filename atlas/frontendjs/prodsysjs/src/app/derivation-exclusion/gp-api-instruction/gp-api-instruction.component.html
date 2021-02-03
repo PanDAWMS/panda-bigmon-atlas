@@ -1,0 +1,55 @@
+The Prodtask is using Token based authentication for its RestFull API. You can find your personal token on this page:
+<p><a href="https://prodtask-dev.cern.ch/prodtask/userinfo/">https://prodtask-dev.cern.ch/prodtask/userinfo/</a></p>
+
+and set it "Token your_token" as an authorisation Header.
+
+Example for curl:
+<mat-card>
+  <mat-card-title>
+    CURL example
+  </mat-card-title>
+  <mat-card-content>
+<code>
+  curl  -X POST -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"   https://prodtask-dev.cern.ch/api/test_api/
+</code>
+  </mat-card-content>
+</mat-card>
+<p>
+Or for python the code could look like that:
+</p>
+<mat-card>
+  <mat-card-title>
+    Python
+  </mat-card-title>
+  <mat-card-content>
+<code>
+import requests, json<br>
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;<br>
+response = requests.post('https://prodtask-dev.cern.ch/api/test_api/', headers=headers)<br>
+json.loads(response.content)<br>
+</code>
+  </mat-card-content>
+</mat-card>
+<mat-divider></mat-divider>
+<p>
+For Derivation superseded container management following APIs are avalaible:
+</p>
+<ul>
+  <li>
+    A list of containers per an output with versions and number of extensions:
+    <p>
+    <code>
+     GET https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc
+    </code>
+    </p>
+  </li>
+  <li>
+    A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily:
+    <p>
+
+    <code>
+      GET https://prodtask-dev.cern.ch/api/datasests_to_delete/
+    </code>
+    </p>
+  </li>
+</ul>

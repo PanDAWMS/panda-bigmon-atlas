@@ -765,10 +765,19 @@ def version_from_format(output_format):
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def all_datasests_to_delete(request):
+    """
+        Return list of all datasets which are marked to deletion. List is taken from the cache, the cache is updated once a day
+    """
     return Response(cache.get('dataset_to_delete_ALL'))
 
 
 class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
+    """
+        Return the list of containers for selected output_format and selected data_type\n
+        * output_format: Output format. Example: "DAOD_BPHY1". Required\n
+        * data_type: 'mc' or 'data'. Example: "data". Requied
+    """
+
     serializer_class = GroupProductionDeletionUserSerializer
     authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
