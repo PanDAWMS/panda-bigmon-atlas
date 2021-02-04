@@ -90,7 +90,7 @@ def collect_stats(format_base, is_real_data):
 def apply_extension(container, number_of_extension, user, message):
     gp = GroupProductionDeletion.objects.get(container=container)
     gp_extension = GroupProductionDeletionExtension()
-    gp_extension.container = gp.container
+    gp_extension.container = gp
     gp_extension.user = user
     gp_extension.timestamp = timezone.now()
     gp_extension.message = message
