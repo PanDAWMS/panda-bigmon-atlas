@@ -1,6 +1,7 @@
 from django.contrib.messages.context_processors import messages
 from django.http.response import HttpResponseBadRequest
 from rest_framework.generics import get_object_or_404
+from rest_framework.parsers import JSONParser
 
 from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
@@ -732,10 +733,10 @@ def extension(request):
         return HttpResponseBadRequest(e)
     return Response({'message': 'OK'})
 
-
+@api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
-@api_view(['POST'])
+@parser_classes((JSONParser,))
 def extension_api(request):
     """
     Increase by 1 number of extension for each container in "containers" list with "message"
