@@ -1,4 +1,6 @@
 import json
+from datetime import timedelta
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import connection
@@ -1303,6 +1305,9 @@ class GroupProductionStats(models.Model):
 
 class GroupProductionDeletion(models.Model):
 
+    EXTENSIONS_DAYS = 30
+    LIFE_TIME_DAYS = 60
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_DELETION_ID', primary_key=True)
     container = models.CharField(max_length=255, db_column='CONTAINER', null=False)
     dsid = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID', null=False)
@@ -1320,6 +1325,13 @@ class GroupProductionDeletion(models.Model):
     extensions_number = models.DecimalField(decimal_places=0, max_digits=12, db_column='EXTNSIONS', null=True)
     last_extension_time = models.DateTimeField(db_column='EXTENSION_TIME', null=True)
     ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
+
+    @property
+    def days_to_delete(self):
+        extensions_number = self.extensions_number
+        if not extensions_number:
+            extensions_number = 0
+        return ((self.last_extension_time + timedelta(extensions_number * self.EXTENSIONS_DAYS)) - timezone.now()).days
 
     def save(self, *args, **kwargs):
         if not self.id:

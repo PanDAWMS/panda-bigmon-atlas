@@ -45,26 +45,22 @@ def collect_stats(format_base, is_real_data):
     if format_base in CP_FORMATS:
         version = 2
     if is_real_data:
-        data_postfix = 'data'
+        data_prefix = 'data'
     else:
-        data_postfix = 'mc'
+        data_prefix = 'mc'
     for format in formats:
         by_tag_stats = {}
         samples = GroupProductionDeletion.objects.filter(output_format=format)
-        samples_list = []
         for sample in samples:
-            if GroupProductionAMITag.objects.get(ami_tag=sample.ami_tag).real_data == is_real_data:
+            if sample.container.startswith(data_prefix):
                 if sample.ami_tag not in by_tag_stats:
                     by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0, 'to_delete_containers': 0, 'to_delete_bytes':0}
                 if sample.version >= version:
-                    samples_list.append(GroupProductionDeletionSerializer(sample).data)
                     by_tag_stats[sample.ami_tag]['containers'] += 1
                     by_tag_stats[sample.ami_tag]['bytes'] += sample.size
-                    if (timezone.now() - sample.last_extension_time) > timedelta(days=LIFE_TIME_DAYS):
+                    if sample.days_to_delete <0:
                         by_tag_stats[sample.ami_tag]['to_delete_containers'] += 1
                         by_tag_stats[sample.ami_tag]['to_delete_bytes'] += sample.size
-        #cache.set('GPD'+format+data_postfix,samples_list,None)
-
         current_stats = GroupProductionStats.objects.filter(output_format=format, real_data=is_real_data)
         updated_tags = []
         for current_stat in current_stats:
@@ -78,6 +74,8 @@ def collect_stats(format_base, is_real_data):
             else:
                 current_stat.size = 0
                 current_stat.containers = 0
+                current_stat.to_delete_size = 0
+                current_stat.to_delete_containers = 0
                 current_stat.save()
         for tag in by_tag_stats.keys():
             if tag not in updated_tags:
@@ -125,7 +123,11 @@ def form_gp_from_dataset(dataset):
     gp.container = container_name
     gp.dsid = container_name.split('.')[1]
     gp.output_format = container_name.split('.')[4]
-    gp.input_key = '.'.join([str(gp.dsid), gp.output_format, '_'.join(container_name.split('.')[-1].split('_')[:-1]), gp.skim])
+    if gp.container.startswith('data'):
+        key_postfix = container_name.split('.')[2]
+    else:
+        key_postfix = 'mc'
+    gp.input_key = '.'.join([str(gp.dsid), gp.output_format, '_'.join(container_name.split('.')[-1].split('_')[:-1]), gp.skim,key_postfix])
     gp.ami_tag = ami_tag
     gp.version = 0
     return gp
@@ -276,16 +278,31 @@ def range_containers(container_key):
         ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache) for x in by_amitag.keys()]
         ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
         ami_tags = [x[0] for x in ami_tags_cache]
+        available_tags = ','.join(ami_tags)
         latest = by_amitag[ami_tags[0]]
         version = 0
+        if latest.version !=0 or latest.available_tags != available_tags:
+            latest.version = 0
+            latest.last_extension_time = None
+            latest.available_tags = available_tags
+            latest.save()
         for ami_tag in ami_tags[1:]:
             if latest.status == 'finished':
                 version += 1
-            if version != by_amitag[ami_tag].version:
+            if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags:
                 by_amitag[ami_tag].last_extension_time  = latest.update_time
                 by_amitag[ami_tag].version = version
+                by_amitag[ami_tag].available_tags = available_tags
                 by_amitag[ami_tag].save()
             latest = by_amitag[ami_tag]
+    else:
+        gp_container = GroupProductionDeletion.objects.get(input_key=container_key)
+        if gp_container.version != 0 or gp_container.available_tags:
+            gp_container.version = 0
+            gp_container.last_extension_time = None
+            gp_container.available_tags = None
+            gp_container.save()
+
 
 def unify_dataset(dataset):
     if(':' in dataset):
@@ -465,16 +482,26 @@ def rerange_after_deletion(gp_delete_container):
             ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache) for x in by_amitag.keys()]
             ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
             ami_tags = [x[0] for x in ami_tags_cache]
+            available_tags = ','.join(ami_tags)
             latest = by_amitag[ami_tags[0]]
             version = 0
+            if latest.version !=0 or latest.available_tags != available_tags:
+                latest.version = 0
+                latest.last_extension_time = None
+                latest.available_tags = available_tags
+                latest.save()
             for ami_tag in ami_tags[1:]:
                 if latest.status == 'finished':
                     version += 1
-                if version != by_amitag[ami_tag].version:
+                if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags:
                     by_amitag[ami_tag].last_extension_time = latest.update_time
                     by_amitag[ami_tag].version = version
+                    by_amitag[ami_tag].previous_container = None
                     by_amitag[ami_tag].save()
                 latest = by_amitag[ami_tag]
+    gp_extensions = GroupProductionDeletionExtension.objects.filter(container=gp_delete_container)
+    for gp_extension in gp_extensions:
+        gp_extension.delete()
     gp_delete_container.delete()
 
 
@@ -515,16 +542,23 @@ def clean_superceeded(do_es_check=True, format_base = None):
                             empty_replica = False
                         if len(es_datasets) > 0 and not empty_replica:
                             delete_container = False
-                            existed_datasets += es_datasets
+                            if gp_container.days_to_delete <0 and (gp_container.version >= version_from_format(gp_container.output_format)):
+                                existed_datasets += es_datasets
                             if('TRUTH' not in output_format):
                                 _logger.error('{container} is empty but something is found'.format(container=container_name))
                 else:
-                    existed_datasets += datasets
+                    if (gp_container.days_to_delete < 0) and (gp_container.version >= version_from_format(gp_container.output_format)):
+                        existed_datasets += datasets
                 if delete_container:
-                    rerange_after_deletion(gp_container)
-                    _logger.info(
-                        'Container {container} has been deleted from group production lists '.format(
+                    try:
+                        rerange_after_deletion(gp_container)
+                        _logger.info(
+                            'Container {container} has been deleted from group production lists '.format(
+                                container=container_name))
+                    except Exception as e:
+                        _logger.error('Container {container} has problem during deletion from group production lists '.format(
                             container=container_name))
+
     cache.set('dataset_to_delete_'+cache_key,existed_datasets,None)
 
 
@@ -575,8 +609,12 @@ def fill_db(output, data, is_skim, test=True):
             db_sample['dsid'] = sample_key.split('.')[1]
             db_sample['output_format'] = sample_key.split('.')[4]
             db_sample['skim'] = sample_key.split('.')[-1]
+            if data:
+                key_postfix = sample_key.split('.')[2]
+            else:
+                key_postfix = 'mc'
             db_sample['input_key'] = '.'.join([str(db_sample['dsid']), db_sample['output_format'],
-                                               sample_key.split('.')[-2], db_sample['skim']])
+                                               sample_key.split('.')[-2], db_sample['skim'],key_postfix])
             db_sample_collection.append(db_sample)
         available_tags = ','.join(existed_ami_tags)
         for db_sample in db_sample_collection:
@@ -695,6 +733,32 @@ def extension(request):
     return Response({'message': 'OK'})
 
 
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@api_view(['POST'])
+def extension_api(request):
+    """
+    Increase by 1 number of extension for each container in "containers" list with "message"
+    Post data must contain two fields message and containers, e.g.:
+    {"message":"Test","containers":['container1','container2']}\n
+    :return is {'containers_extented': number of containers extented,'containers_with_problems': list of containers with problems}
+"""
+    containers_extended = 0
+    containers_with_problems = []
+    try:
+        username = request.user.username
+        containers = request.data['containers']
+        message = request.data['message']
+        for container in containers:
+            try:
+                apply_extension(container['container'],1,username,message)
+            except Exception as e:
+                containers_with_problems.append((container, str(e)))
+    except Exception as e:
+        return HttpResponseBadRequest(e)
+    return Response({'containers_extented': containers_extended,'containers_with_problems': containers_with_problems})
+
+
 class UnixEpochDateField(serializers.DateTimeField):
     def to_representation(self, value):
         """ Return epoch time for a datetime object or ``None``"""
@@ -726,7 +790,7 @@ class GroupProductionDeletionUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupProductionDeletion
-        fields = ['container','events','available_tags','version','extensions_number','size','epoch_last_update_time']
+        fields = ['container','events','available_tags','version','extensions_number','size','epoch_last_update_time','days_to_delete']
 
 class GroupProductionStatsSerializer(serializers.ModelSerializer):
     class Meta:
