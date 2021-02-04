@@ -36,20 +36,64 @@ For Derivation superseded container management following APIs are avalaible:
 </p>
 <ul>
   <li>
-    A list of containers per an output with versions and number of extensions:
-    <p>
+    A list of containers per an output with versions and number of extensions (GET method):
+    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/">gp_deletions_containers</a>
+      <mat-card>
+        <mat-card-title>
+          CURL example
+        </mat-card-title>
+        <mat-card-content>
     <code>
-     GET https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc
     </code>
-    </p>
+        </mat-card-content>
+      </mat-card>
+
+
   </li>
   <li>
-    A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily:
-    <p>
-
+    A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily (GET method):
+      <mat-card>
+        <mat-card-title>
+          CURL example
+        </mat-card-title>
+        <mat-card-content>
     <code>
-      GET https://prodtask-dev.cern.ch/api/datasests_to_delete/
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json" https://prodtask-dev.cern.ch/api/datasests_to_delete/ https://prodtask-dev.cern.ch/api/datasests_to_delete/
     </code>
-    </p>
+        </mat-card-content>
+      </mat-card>
   </li>
+  <li>
+    Request extensions for a list of containers (POST method):
+    <a href="https://prodtask-dev.cern.ch/api/gp_extension/">gp_extension</a>
+    <p>Python code which requests extension for containers from the file which contains container name one by line could look like that: </p>
+    <mat-card>
+      <mat-card-title>
+        Python example
+      </mat-card-title>
+      <mat-card-content>
+        <code>
+          <pre>
+import requests, json
+input_file_name = "./containers.txt"
+message = "Extension due to (JIRA ticket for ananlysys)"
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;
+with open(input_file_name,"r") as f:
+  containers = [line.strip() for line in f.read().split('\n') if line ]
+post_data = &#123;"message":message,"containers":containers}
+response = requests.post('https://prodtask-dev.cern.ch/api/gp_extension/', data=json.dumps(post_data),  headers=headers, verify=False)
+if response.status_code != requests.codes.ok:
+  print(response.content)
+result = json.loads(response.content)
+if result['containers_extented'] != len(containers):
+  for container_with_problem in result['containers_with_problems']:
+     print("Container &#123;container&#125; has problem: &#123;problem&#125;".format(container=container_with_problem[0],problem=container_with_problem[1])
+        </pre>
+
+        </code>
+      </mat-card-content>
+    </mat-card>
+  </li>
+
 </ul>
