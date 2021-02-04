@@ -751,7 +751,7 @@ def extension_api(request):
         message = request.data['message']
         for container in containers:
             try:
-                apply_extension(container['container'],1,username,message)
+                apply_extension(container,1,username,message)
             except Exception as e:
                 containers_with_problems.append((container, str(e)))
     except Exception as e:
