@@ -753,6 +753,7 @@ def extension_api(request):
         for container in containers:
             try:
                 apply_extension(container,1,username,message)
+                containers_extended += 1
             except Exception as e:
                 containers_with_problems.append((container, str(e)))
     except Exception as e:
