@@ -8,6 +8,7 @@
 {% block subtitle %}
 {% if title %}{{ title }}{% else %}Datatable{% endif %}
 {% endblock %}
+{% csrf_token %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -32,6 +33,8 @@
 
 {% block extra_js %}
 {{ block.super }}
+    <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
@@ -50,7 +53,22 @@
 }
 </style>
     <script>
-    (function(factory) {
+
+        var csrftoken = $.cookie('csrftoken');
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+            (function(factory) {
 
   if (typeof exports == 'object') {
     // CommonJS
