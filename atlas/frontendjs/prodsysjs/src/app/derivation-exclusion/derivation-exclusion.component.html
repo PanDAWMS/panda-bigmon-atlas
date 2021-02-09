@@ -11,7 +11,8 @@
 
   <mat-form-field class="send-size-form">
     <mat-label>Message </mat-label>
-     <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" [ngModelOptions]="{standalone: true}" placeholder="Put a reason or a JIRA ticket"></textarea>
+     <textarea matInput  #extentMessage [(ngModel)]="extendMessage" maxlength="256" [ngModelOptions]="{standalone: true}"
+               placeholder="Put a reason or a JIRA ticket"></textarea>
     <mat-hint align="end">{{extentMessage.value.length}} / 256</mat-hint>
   </mat-form-field>
   </form>
@@ -26,9 +27,10 @@
   <mat-sidenav-content>
 
 
-   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</button></p>
+   <p><a mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</a></p>
 <p>Superseded datasets {{outputType}}</p>
-
+    <p>Total: {{totalFiltered}} containers, {{totalFilteredSize|datasetSize}};
+      Expired:  {{totalFilteredExpired}} containers, {{totalFilteredExpiredSize|datasetSize}} </p>
 
 <div class="links">
   <ul>
@@ -38,11 +40,15 @@
   </ul>
 </div>
 
-
 <button mat-raised-button  color="primary" (click)="sidenav.open()" >Extend selected</button><p>
+    <span>Show: </span>
+    <mat-radio-group  [(ngModel)]="expiredFilter"  (ngModelChange)="changeExpiredFilter()"  aria-label="Select">
+      <mat-radio-button [value]="null">All</mat-radio-button>
+      <mat-radio-button [value]="'expired'" style="padding-left: 10px">Expired</mat-radio-button>
+    </mat-radio-group><br>
     <mat-form-field>
       <mat-label>Filter</mat-label>
-      <input matInput (keyup)="applyFilter($event)" placeholder="" #input>
+      <input matInput [ngModel]="mainFilter" (keyup)="applyFilterEvent($event)" placeholder="" #input>
     </mat-form-field>
   <section>
 

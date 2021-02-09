@@ -1,4 +1,4 @@
-   <p><button mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</button></p>
+   <p><a mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</a></p>
 
 <mat-radio-group  [(ngModel)]="dataType"  (ngModelChange)="changeType()"  aria-label="Select">
   <mat-radio-button [value]="'mc'">MC</mat-radio-button>

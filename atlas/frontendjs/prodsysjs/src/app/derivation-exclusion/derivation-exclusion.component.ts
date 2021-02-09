@@ -49,6 +49,10 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   extendMessage = '';
   totalSelected = 0;
   totalSelectedSize = 0;
+  totalFiltered = 0;
+  totalFilteredSize = 0;
+  totalFilteredExpired = 0;
+  totalFilteredExpiredSize = 0;
   columnsToDisplay = [ 'select', 'container', 'available_tags', 'age', 'extended_till'];
   containersByTag = new Map<string, GroupProductionDeletionContainer[]>();
   // selection = new SelectionModel<GroupProductionDeletionContainer>(true, []);
@@ -59,6 +63,8 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   extendNumbers: number;
   opened: boolean;
   amiTagsDescription: Map<string, AMITag>;
+  mainFilter = '';
+  expiredFilter = '';
 
   constructor(private route: ActivatedRoute, private gpDeletionContainerService: GPDeletionContainerService, private router: Router,
               private viewportScroller: ViewportScroller, private gpContainerDetailsService: GpContainerDetailsService,
@@ -67,6 +73,10 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   ngOnInit(): void {
     this.outputType = this.route.snapshot.paramMap.get('output');
     this.dataType = this.route.snapshot.paramMap.get('data_type');
+    this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
+      this.mainFilter = paramMap.get('main_filter');
+      this.expiredFilter = paramMap.get('expired');
+    });
     this.route.fragment.subscribe(params => {
         this.currentFragment = params;
       });
@@ -137,6 +147,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
     for (const [amiTag, containerByTag] of this.containersByTag.entries()){
       const dataSource = new MatTableDataSource<GroupProductionDeletionContainer>();
       dataSource.data = containerByTag;
+      dataSource.filterPredicate = this.filterDeletionTablePredicate;
       const selection =  new SelectionModel<GroupProductionDeletionContainer>(true, []);
       this.containersByTagTables.push({amiTag, dataSource, selection});
       amiTags.push(amiTag);
@@ -148,7 +159,15 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
     this.route.fragment.subscribe(f => {
           this.viewportScroller.scrollToAnchor(f);
       });
+    this.applyFilter(this.mainFilter);
+    this.recountFiltered();
 
+  }
+
+  filterDeletionTablePredicate(data: GroupProductionDeletionContainer, filter: string): boolean{
+    const searchTerms = JSON.parse(filter);
+    return (!searchTerms[0] || searchTerms[0] === '' || data.container.toLowerCase().includes(searchTerms[0].trim().toLowerCase())) &&
+      (!searchTerms[1] || searchTerms[1] === '' || searchTerms[1] === data.is_expired);
   }
 
   extend(row: GroupProductionDeletionContainer): void {
@@ -181,12 +200,51 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
     this.gpDeletionContainerService.askExtension({message: this.extendMessage,
       containers: selectedContainers, number_of_extensions: this.extendNumbers}).subscribe();
   }
-
-  applyFilter($event: KeyboardEvent): void {
-    const filterValue = (event.target as HTMLInputElement).value;
+  applyFilter(filterValue): void{
     for (const GPAMIContainers of this.containersByTagTables) {
-        GPAMIContainers.dataSource.filter = filterValue.trim().toLowerCase();
+      GPAMIContainers.dataSource.filter = JSON.stringify([filterValue, this.expiredFilter]);
+
+    }
+  }
+  recountFiltered(): void{
+    this.totalFiltered = 0;
+    this.totalFilteredSize = 0;
+    this.totalFilteredExpired = 0;
+    this.totalFilteredExpiredSize = 0;
+    for (const GPAMIContainers of this.containersByTagTables) {
+      GPAMIContainers.dataSource.data.forEach(row => {
+        this.totalFiltered += 1;
+        this.totalFilteredSize += Number(row.size);
+        if (row.is_expired === 'expired'){
+          this.totalFilteredExpired += 1;
+          this.totalFilteredExpiredSize += Number(row.size);
+        }
+      });
     }
   }
 
+  applyFilterEvent($event: KeyboardEvent): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    if (filterValue !== ''){
+      this.router.navigate(['.'],
+        { queryParams: {main_filter: filterValue}, queryParamsHandling: 'merge' , relativeTo: this.route });
+    } else {
+      this.router.navigate(['.'],
+        { queryParams: {main_filter: null}, queryParamsHandling: 'merge' , relativeTo: this.route });
+    }
+    this.applyFilter(filterValue);
+  }
+
+  changeExpiredFilter(): void {
+    if (this.expiredFilter !== ''){
+      this.router.navigate(['.'],
+        { queryParams: {expired: this.expiredFilter}, queryParamsHandling: 'merge' , relativeTo: this.route });
+    } else {
+      this.router.navigate(['.'],
+        { queryParams: {expired: null}, queryParamsHandling: 'merge' , relativeTo: this.route });
+    }
+    this.applyFilter(this.mainFilter);
+
+
+  }
 }
