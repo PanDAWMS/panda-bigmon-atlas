@@ -282,7 +282,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
     (function(){
             $('.taskStatus').each(function(){
-                if (NOTRUNNING.indexOf($(this).html())==-1){
+                if (!NOTRUNNING.includes($(this).html())){
                         var currentID = $(this).attr("id");
                         var slice = currentID.slice(currentID.indexOf('ts')+2);
                         $('#taskStatusFilter'+slice).html('running');
@@ -293,6 +293,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             $('#taskStatusFilter'+slice).html('No running');
                         }
 
+                }
+                if(REDTASKSTATUS.includes($(this).html())){
+                    var currentID = $(this).attr("id");
+                    var slice = currentID.slice(currentID.indexOf('ts')+2);
+                    $('#redTaskFilter'+slice).html('exists');
                 }
 
 
@@ -2657,6 +2662,12 @@ function changeStatusFilter(){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }});
                  break;
+            case 'aborted_tasks':
+                $('.RedStatusFilter').each(function(){
+                    if($(this).html()!='exists'){
+                        $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                    }});
+                break;
             case 'no_tasks':
                 $('.TaskStatusFilter').each(function(){
                   if($(this).html()!='no_tasks'){
@@ -2854,6 +2865,7 @@ var suspectSplit = [];
 var workingOnSlices = [];
 var fromPreviousSlice = false;
 var NOTRUNNING = ['finished','done','obsolete','aborted','failed','broken'];
+var REDTASKSTATUS = ['aborted','failed','broken'];
 function ProjectModeForm(parentDiv, inputField){
     this.parentDiv = parentDiv;
     this.inputField = inputField;
@@ -3126,6 +3138,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="running_tasks">running tasks</option>
                 <option value="no_tasks">no tasks</option>
                 <option value="waiting">actions</option>
+                <option value="aborted_tasks">aborted/broken/failed</option>
             </select>
            </label>
         </div>
@@ -3332,6 +3345,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% endifequal %}
                 {% endfor %}
                     <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">no_tasks</span>
+                    <span id="redTaskFilter{{ inputList.slice }}" class="RedStatusFilter" style="display: none;">no_tasks</span>
                     <span id="actionStatusFilter{{ inputList.slice }}" class="ActionStatusFilter" style="display: none;">no_actions</span>
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="width: 8em;text-align:center"><span class="{{ approved.submitted }} {{ approved.original }} StatusFilter" >{{ approved.submitted }}</span><span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
                 <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
