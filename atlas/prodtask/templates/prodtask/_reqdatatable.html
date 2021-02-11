@@ -137,6 +137,7 @@ $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,tem
     $("#patternTable").hide();
     $("#approveButton").hide();
     $("#saveButton").hide();
+    $("#saveButtonSlice").hide();
     $("#approveEvgenButton").hide();
     $(".hiddenNonEdit").hide();
     $("#updateStepParams").hide();
@@ -1425,7 +1426,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
           if(event != undefined){
               event.preventDefault();
           }
-
+          if(!fromPreviousSlice){
+              $("#saveButtonSlice").html('Save');
+              workingOnSlices = [];
+          }
           var sliceID = id.slice(10);
           $("#sliceInfo").attr({'class':'small content f-dropdown'});
           $("#sliceInfo").html('');
@@ -1441,6 +1445,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var previous = undefined;
             var newSlice = undefined;
             var getNext = false;
+
             $(".checkboxSlice").each(function () {
                         {#                   8 = "checkbox".length#}
                         var sliceID = $(this).attr("id").slice(8);
@@ -1461,9 +1466,23 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         previous = sliceID;
                     });
             if (newSlice !=  undefined){
+                var numberToSave = 0;
+                if (!workingOnSlices.includes(id) &&(id  in changesList) ) {
+                    workingOnSlices.push(id);
+                }
+                if(workingOnSlices.includes(newSlice) ){
+                    numberToSave = workingOnSlices.length;
+                } else {
+                    numberToSave = workingOnSlices.length+1;
+                }
+                console.log(workingOnSlices);
+                if(numberToSave === 1){
+                    $('#saveButtonSlice').html('Save');
+                } else {
+                    $('#saveButtonSlice').html('Save ('+(numberToSave).toString()+' slices)');
+                }
                 $('#closeReveal').click();
-
-{#                console.log(newSlice);#}
+                fromPreviousSlice = true;
                 setTimeout(function(){
                     formSliceInfo(undefined,'0123456789'+newSlice);
                  }, 1000);
@@ -1727,9 +1746,11 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
         function saveOneSlice(event){
             event.preventDefault();
-            var slices = [];
+            var slices = workingOnSlices;
             var sliceID=$('#sliceModalSlice').html();
-            slices.push(sliceID);
+            if (!slices.includes((sliceID))){
+                slices.push(sliceID);
+            }
             approveSlices(false,99,99,slices);
         }
         function checkSliceIsSaved(sliceNumber){
@@ -1880,6 +1901,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             }else{
                 $("#saveStatus"+sliceNumber).html("edit (saved)");
             }
+            fromPreviousSlice = false;
+
+
             return sliceDBInfo;
         }
 
@@ -2827,6 +2851,8 @@ var lastCheckedSlice = -1;
 var lastChecked = true;
 var splitSlices = [];
 var suspectSplit = [];
+var workingOnSlices = [];
+var fromPreviousSlice = false;
 var NOTRUNNING = ['finished','done','obsolete','aborted','failed','broken'];
 function ProjectModeForm(parentDiv, inputField){
     this.parentDiv = parentDiv;
@@ -3519,7 +3545,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
      <div class="large-1 columns">
 
         <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event);">Prepare to recreate</button>
-     </div>
+     </div></div>
         <div class="large-1 columns">
 
         </div>
@@ -3850,7 +3876,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
 </div>
 </div>
-   <button id="saveButton" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
+   <button id="saveButtonSlice" class="btn_is_authenticated" title="Save selected slice without approval" onclick="saveOneSlice(event);$('#closeReveal').click()">Save</button>
   <a id='closeReveal' class="close-reveal-modal" onclick="changeSliceSaveStatus($('#sliceModalSlice').html());">&#215;</a>
 </div>
 
