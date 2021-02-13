@@ -458,9 +458,13 @@ def datassets_from_es(ami_tag, output_formats, run_number, container, ddm, check
     for task in tasks:
         if task['status'] not in ProductionTask.RED_STATUS:
             for dataset in task['output_dataset']:
+                deleted = False
+                try:
+                    deleted = dataset['deleted']
+                except:
+                    _logger.warning('task {taskid} has no deleted in es'.format(taskid=task['taskid']))
                 if (unify_dataset(dataset['name']) not in checked_datasets) and (
-                        output_formats in dataset['data_format'] and not dataset[
-                    'deleted']) and \
+                        output_formats in dataset['data_format'] and not deleted) and \
                         (get_container_name(dataset[
                                                 'name']) == container) and ddm.dataset_exists(
                     dataset['name']):
