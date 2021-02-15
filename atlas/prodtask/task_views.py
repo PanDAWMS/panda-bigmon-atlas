@@ -646,12 +646,14 @@ def check_action_allowed(username, tasks, action=None, params=None, userfullname
                 allowed_groups.append(gp.codename)
     for task in tasks:
             physgroup = ''
+            request_phys_group = ''
             if ProductionTask.objects.filter(id=task).exists():
-                task_dict = ProductionTask.objects.values('username','name','status','request_id','phys_group').get(id=task)
+                task_dict = ProductionTask.objects.values('username','name','status','request_id','phys_group','request__phys_group').get(id=task)
                 task_owner =task_dict.get('username')
                 task_name = task_dict.get('name')
                 task_status = task_dict.get('status')
                 physgroup = task_dict.get('phys_group')
+                request_phys_group = task_dict.get('request__phys_group')
                 is_analy = task_dict.get('request_id') == 300
             else:
                 task_dict = JediTasks.objects.values('username','taskname','status').get(id=task)
@@ -671,7 +673,7 @@ def check_action_allowed(username, tasks, action=None, params=None, userfullname
                                 pass
                         elif "MCCOORD" in  allowed_groups:
                                 pass
-                        elif (physgroup in allowed_groups) and (action not in ['increase_priority','reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share']):
+                        elif ((physgroup in allowed_groups) or (request_phys_group in allowed_groups)) and (action not in ['increase_priority','reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share']):
                                 if (action=='change_priority' and int(params[0])>570):
                                     denied_tasks.append(task)
                                 else:
