@@ -15,7 +15,7 @@ from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, M
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions
 from atlas.prodtask.spdstodb import fill_template
-from ..prodtask.helper import form_request_log
+from ..prodtask.helper import form_request_log, form_json_request_dict
 from .ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
@@ -25,8 +25,11 @@ from rest_framework.decorators import api_view
 from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 from functools import reduce
+from time import time
+
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 @csrf_protect
@@ -227,6 +230,7 @@ def find_parent_slices(request, reqid, parent_request):
         try:
             data = request.body
             input_dict = json.loads(data)
+            start_time = time()
             slices = input_dict['slices']
             if '-1' in slices:
                 del slices[slices.index('-1')]
@@ -236,6 +240,8 @@ def find_parent_slices(request, reqid, parent_request):
             changed_slices = set_parent_step(ordered_slices,int(reqid),int(parent_request))
             results = {'success':True}
             request.session['selected_slices'] = list(map(int,changed_slices))
+            _jsonLogger.info('Finish parent steps for MC slices', extra=form_json_request_dict(reqid,request,
+                                                                                                      {'duration':time()-start_time,'slices':slices}))
         except Exception as e:
             _logger.error(str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')

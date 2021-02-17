@@ -25,6 +25,8 @@ from .task_views import get_permissions
 from .task_actions import do_action
 
 logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
+
 
 def do_tasks_action(owner, tasks, action, *args):
     """
@@ -42,6 +44,7 @@ def do_tasks_action(owner, tasks, action, *args):
     result = []
 
     for task in tasks:
+        _jsonLogger.info("Tasks action executed",extra={'task':str(task),'user':owner,'action':action,'params':args})
         req_info = do_action(owner, task, action, *args)
         #if req_info['exception']:
             #return req_info
@@ -120,6 +123,7 @@ def task_action_ext(request, action=None):
             'result': 'FAILED'
         }
         logger.error( "Task action problems: %s" % ('; '.join(error_message)))
+        _jsonLogger.info( "Task action problems: %s" % ('; '.join(error_message)),extra={'user':action_username,'action':action})
 
     else:
         if not is_permitted:
@@ -133,6 +137,7 @@ def task_action_ext(request, action=None):
                 'result': 'FAILED'
              }
             logger.error(msg)
+            _jsonLogger.info(msg,extra={'user':action_username,'action':action})
         else:
             try:
                 response = do_tasks_action(action_username, [int(task_id)], action, *params)
@@ -243,6 +248,8 @@ def tasks_action(request, action):
                     msg += " action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
                 logger.error(msg)
                 response["exception"] = msg
+                _jsonLogger.info(msg,extra={'user':owner,'action':action})
+
         else:
                 response = do_tasks_action(owner, tasks, action, *params)
                 logger.info("Tasks action - tasks:%s user:%s action:%s params:%s"%(str(tasks),owner,action,str(params)))

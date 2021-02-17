@@ -4,6 +4,16 @@
 
 from .local import LOG_ROOT
 LOG_SIZE = 1000000000
+import logging, socket
+
+class ContextFilter(logging.Filter):
+    hostname = socket.gethostname()
+
+    def filter(self, record):
+        record.hostname = ContextFilter.hostname
+        record.logName = '.'.join(record.pathname.split('/')[-2:])
+        record.logName = record.logName[:record.logName.rfind('.')]
+        return True
 
 LOGGING = {
     'version': 1,
@@ -12,6 +22,9 @@ LOGGING = {
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
+        },
+        'context_filter':{
+            '()': 'atlas.settings.logconfig.ContextFilter'
         }
     },
     'handlers': {
@@ -153,6 +166,8 @@ LOGGING = {
         'simple': {
             'format': '%(levelname)s %(name)-12s:%(lineno)d %(message)s'
         },
+        "json": {"()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                 'format': '%(asctime)s %(levelname)s %(hostname)s %(logName)s %(funcName)s %(lineno)d %(message)s'}
     },
     'logfile': {
         'level':'DEBUG',
@@ -193,6 +208,34 @@ def appendLogger(loggername, loggerlevel='DEBUG', \
         'level': loggerlevel, \
     }
 
+def appendJsonLogger(loggername, loggerlevel='DEBUG', \
+                 loggerclass='logging.handlers.RotatingFileHandler'):
+    """
+        appendLogger - append new logger properties
+
+        :param loggername: name of the logger, e.g. 'bigpandamon'
+        :type loggername: string
+    """
+    global LOGGING, LOG_SIZE, LOG_ROOT
+
+    handler = 'logfile-' + str(loggername)
+    filename = LOG_ROOT + '/json/logfile.' + str(loggername)
+
+    LOGGING['handlers'][handler] = \
+        {
+            'level':loggerlevel,
+            'class':loggerclass,
+            'filename': filename,
+            'maxBytes': LOG_SIZE,
+            'backupCount': 2,
+            'formatter': 'json',
+            'filters':['context_filter']
+            }
+    LOGGING['loggers'][loggername] = \
+        {
+            'handlers': [handler], \
+            'level': loggerlevel, \
+            }
 
 # init logger
 # A sample logging configuration. The only tangible logging
@@ -220,5 +263,5 @@ appendLogger('postproduction')
 
 appendLogger('prodtask_messaging')
 
-
+appendJsonLogger('prodtask_ELK')
 

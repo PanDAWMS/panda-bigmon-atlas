@@ -17,13 +17,14 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from time import time
 
 from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
     ActionDefault
 from atlas.prodtask.spdstodb import fill_template
 
-from ..prodtask.helper import form_request_log
+from ..prodtask.helper import form_request_log, form_json_request_dict
 from ..prodtask.ddm_api import find_dataset_events
 from rest_framework.authtoken.models import Token
 
@@ -38,7 +39,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 from django.db.models import Q
 
 _logger = logging.getLogger('prodtaskwebui')
-
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 
@@ -635,6 +636,7 @@ def get_skipped_steps(production_request, slice):
 def find_input_datasets(request, reqid):
     if request.method == 'POST':
         results = {'success':False}
+        start_time = time()
         slice_dataset_dict = {}
         data = request.body
         slices = json.loads(data)
@@ -644,7 +646,8 @@ def find_input_datasets(request, reqid):
             except Exception as e:
                 pass
         results.update({'success':True,'data':slice_dataset_dict})
-
+        _jsonLogger.info('Finish find input datasets for MC slices', extra=form_json_request_dict(reqid,request,
+                                                                                   {'duration':time()-start_time,'slices':slices}))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
@@ -1153,6 +1156,9 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         data = request.body
         slice_steps = json.loads(data)
         _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
+        start_time = time()
+        _jsonLogger.debug('Steps modification',extra=form_json_request_dict(reqid,request,{'steps':slice_steps}))
+        _jsonLogger.info('Start steps modification',extra=form_json_request_dict(reqid,request))
         slices = list(slice_steps.keys())
         req = TRequest.objects.get(reqid=reqid)
         fail_slice_save = save_slice_changes(reqid, slice_steps)
@@ -1263,8 +1269,12 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                        'no_action_slices': no_action_slices, 'success': True, 'new_status': req.cstatus,
                        'removed_input': removed_input, 'fail_slice_save': '',
                        'error_approve_message': error_approve_message}
+        _jsonLogger.info('Finish step modification, saved slices {slices}, problem slices {error_slices}'.format(slices=len(results.get('slices',[])),
+                                                                                                                 error_slices=len(results.get('error_slices',[]))),
+                         extra=form_json_request_dict(reqid,request,{'duration':time()-start_time}))
     except Exception as e:
-            _logger.error("Problem with step modifiaction: %s" % e)
+        _logger.error("Problem with step modifiaction: %s" % e)
+        _jsonLogger.error('Problem with step modifiaction',extra=form_json_request_dict(reqid,request,{'error':str(e)}))
 
     return HttpResponse(json.dumps(results), content_type='application/json')
 
