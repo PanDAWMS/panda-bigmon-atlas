@@ -32,6 +32,7 @@ import { DatasetsTableComponent } from './derivation-exclusion/gp-container-info
 import {GpContainerInfoResolver} from "./derivation-exclusion/gp-container-info/datasets-table/gp-container-info.resolve";
 import { GpApiInstructionComponent } from './derivation-exclusion/gp-api-instruction/gp-api-instruction.component';
 import {MatCardModule} from "@angular/material/card";
+import { SliceComponent } from './production-request/slice/slice.component';
 
 
 const routerOptions: ExtraOptions = {
@@ -78,6 +79,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     GpContainerInfoComponent,
     DatasetsTableComponent,
     GpApiInstructionComponent,
+    SliceComponent,
   ],
   imports: [
     BrowserModule,
