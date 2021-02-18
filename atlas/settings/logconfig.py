@@ -1,6 +1,8 @@
 """
     atlas logconfig
 """
+import datetime
+from logging.handlers import TimedRotatingFileHandler
 
 from .local import LOG_ROOT
 LOG_SIZE = 1000000000
@@ -208,42 +210,24 @@ def appendLogger(loggername, loggerlevel='DEBUG', \
         'level': loggerlevel, \
     }
 
-def appendJsonLogger(loggername, loggerlevel='DEBUG', \
-                 loggerclass='logging.handlers.RotatingFileHandler'):
-    """
-        appendLogger - append new logger properties
+def appendJsonLogger(loggername, loggerlevel='DEBUG',  loggerclass='logging.handlers.TimedRotatingFileHandler'):
 
-        :param loggername: name of the logger, e.g. 'bigpandamon'
-        :type loggername: string
-    """
     global LOGGING, LOG_SIZE, LOG_ROOT
 
     handler = 'logfile-' + str(loggername)
     filename = LOG_ROOT + '/json/logfile.' + str(loggername)
 
-    LOGGING['handlers'][handler] = \
-        {
+    LOGGING['handlers'][handler] = {
             'level':loggerlevel,
             'class':loggerclass,
             'filename': filename,
-            'maxBytes': LOG_SIZE,
-            'backupCount': 2,
+            'when':"midnight",
+            'backupCount':5,
             'formatter': 'json',
             'filters':['context_filter']
             }
-    LOGGING['loggers'][loggername] = \
-        {
-            'handlers': [handler], \
-            'level': loggerlevel, \
-            }
+    LOGGING['loggers'][loggername] = {'handlers': [handler], 'level': loggerlevel}
 
-# init logger
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-#LOG_ROOT = '/data/bigpandamon_virtualhosts/atlas/logs/'
 
 
 ### More Django related logging
