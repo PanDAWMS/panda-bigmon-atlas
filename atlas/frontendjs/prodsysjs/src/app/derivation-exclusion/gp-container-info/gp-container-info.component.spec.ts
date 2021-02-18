@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { GpContainerInfoComponent } from './gp-container-info.component';
 
@@ -6,7 +6,7 @@ describe('GpContainerInfoComponent', () => {
   let component: GpContainerInfoComponent;
   let fixture: ComponentFixture<GpContainerInfoComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ GpContainerInfoComponent ]
     })

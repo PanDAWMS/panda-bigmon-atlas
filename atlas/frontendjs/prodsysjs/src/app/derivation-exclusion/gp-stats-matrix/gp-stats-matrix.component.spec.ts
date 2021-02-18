@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { GpStatsMatrixComponent } from './gp-stats-matrix.component';
 
@@ -6,7 +6,7 @@ describe('GpStatsMatrixComponent', () => {
   let component: GpStatsMatrixComponent;
   let fixture: ComponentFixture<GpStatsMatrixComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ GpStatsMatrixComponent ]
     })

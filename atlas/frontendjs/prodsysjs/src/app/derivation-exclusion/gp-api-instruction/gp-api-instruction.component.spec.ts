@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { GpApiInstructionComponent } from './gp-api-instruction.component';
 
@@ -6,7 +6,7 @@ describe('GpApiInstructionComponent', () => {
   let component: GpApiInstructionComponent;
   let fixture: ComponentFixture<GpApiInstructionComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ GpApiInstructionComponent ]
     })

@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { DerivationExclusionComponent } from './derivation-exclusion.component';
 
@@ -6,7 +6,7 @@ describe('DerivationExclusionComponent', () => {
   let component: DerivationExclusionComponent;
   let fixture: ComponentFixture<DerivationExclusionComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DerivationExclusionComponent ]
     })

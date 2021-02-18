@@ -36,10 +36,17 @@ import { SliceComponent } from './production-request/slice/slice.component';
 
 
 const routerOptions: ExtraOptions = {
-  scrollPositionRestoration: 'enabled',
-  anchorScrolling: 'enabled',
-  onSameUrlNavigation: 'reload',
-  scrollOffset: [0, 64],
+    scrollPositionRestoration: 'enabled',
+    anchorScrolling: 'enabled',
+    onSameUrlNavigation: 'reload',
+    scrollOffset: [0, 64],
+    relativeLinkResolution: 'legacy'
+}{
+    scrollPositionRestoration: 'enabled',
+    anchorScrolling: 'enabled',
+    onSameUrlNavigation: 'reload',
+    scrollOffset: [0, 64],
+    relativeLinkResolution: 'legacy'
 };
 
 const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: DerivationExclusionComponent,
