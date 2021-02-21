@@ -41,12 +41,6 @@ const routerOptions: ExtraOptions = {
     onSameUrlNavigation: 'reload',
     scrollOffset: [0, 64],
     relativeLinkResolution: 'legacy'
-}{
-    scrollPositionRestoration: 'enabled',
-    anchorScrolling: 'enabled',
-    onSameUrlNavigation: 'reload',
-    scrollOffset: [0, 64],
-    relativeLinkResolution: 'legacy'
 };
 
 const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: DerivationExclusionComponent,

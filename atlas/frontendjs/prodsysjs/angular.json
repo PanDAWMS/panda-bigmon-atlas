@@ -14,10 +14,11 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
             "outputPath": "../static/js",
-            "index": "src/index.html",
+            "indexTransform": "src/index-html-transform.ts",
+            "index": {"input":"src/index.html","output": "../../templates/frontendjs/_ng_template.html"},
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
