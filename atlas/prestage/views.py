@@ -294,7 +294,23 @@ class TapeResourceProcessedWithShare(TapeResource):
         super().__init__(resource_name, ddm, test)
         self.shares_penalty = shares_penalty
 
+class TestTapeResourceWithShare(TapeResourceProcessedWithShare):
+    def __init__(self, resource_name, ddm, shares_penalty, test, limits):
+        self.limits = limits
+        super().__init__(resource_name, ddm, shares_penalty,test)
 
+
+    def get_limits(self):
+        limits_config = ActionDefault.objects.get(name=self.resource_name)
+        self.minimum_level = limits_config.get_config('minimum_level')
+        self.maximum_level = limits_config.get_config('maximum_level')
+        self.continious_percentage =limits_config.get_config('continious_percentage')
+        if self.limits.get('minimum_level'):
+            self.minimum_level = self.limits['minimum_level']
+        if self.limits.get('maximum_level'):
+            self.maximum_level = self.limits['maximum_level']
+        if self.limits.get('continious_percentage'):
+            self.continious_percentage = self.limits['continious_percentage']
 
 class TestTapeResource(TapeResource):
     def __init__(self, resource_name, ddm, limits):
@@ -515,6 +531,31 @@ def test_tape_processed(tape_name, test):
                         tape.set_config({'current_bunch':current_bunch-files_submitted})
                         tape.save()
 
+def test_tape_shares(tape_name, test):
+    ddm = DDM()
+    active_staged = find_active_staged_with_share()
+    for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
+        if tape.name == tape_name:
+            if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
+                active_for_tape = [active_staged[x] for x in active_staged.keys() if
+                                   active_staged[x]['tape'] == tape.name]
+                shares_penalty = {}
+                for dataset in active_for_tape:
+                    shares_penalty[dataset['share']] = shares_penalty.get(dataset['share'],0) + dataset['value']
+                resource_tape = TestTapeResourceWithShare(tape.name,ddm,shares_penalty,test, {'minimum_level':1})
+                files_submitted = resource_tape.do_submission()
+                if files_submitted > 0 :
+                    bunch_size = tape.get_config('bunch_size')
+                    tape.set_config({'current_bunch':bunch_size})
+                    tape.save()
+                elif (tape.get_config('current_bunch') or 0)>0:
+                    resource_tape = TapeResource(tape.name,ddm, test)
+                    files_submitted = resource_tape.do_submission()
+                    if files_submitted>0:
+                        current_bunch = tape.get_config('current_bunch')
+                        tape.set_config({'current_bunch':current_bunch-files_submitted})
+                        tape.save()
+
 
 def convert_input_to_physical_tape(input):
     if ActionDefault.objects.filter(name=input[:30],type='Tape').exists():
@@ -529,10 +570,10 @@ def convert_input_to_physical_tape(input):
     return ad.get_config('su')
 
 
-def create_prestage(task,ddm,rule, input_dataset,config, special=None):
+def create_prestage(task,ddm,rule, input_dataset,config, special=None, destination=None):
     #check that's only Tape replica
     replicas = ddm.full_replicas_per_type(input_dataset)
-    if (len(replicas['data']) > 0):
+    if (len(replicas['data']) > 0) and not destination:
         start_stagind_task(task)
         return True
     else:
@@ -540,10 +581,13 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None):
         source_replicas = None
         input = None
         if special:
-            if special in ([x['rse'] for x in replicas['tape']]+['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']):
-                rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(special)
+            if destination:
+                rule, source_replicas, input = destination, special, special
             else:
-                rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
+                if special in ([x['rse'] for x in replicas['tape']]+['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']):
+                    rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(special)
+                else:
+                    rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
         else:
             if replicas['tape']:
                 input = [x['rse'] for x in replicas['tape']]
@@ -601,14 +645,20 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
     action_step.attempt += 1
     step = StepExecution.objects.get(id=action_step.step)
     special = False
+    destination = None
     noidds = False
+    level = None
     if step.get_task_config('PDAParams'):
         try:
             waiting_parameters_from_step = _parse_action_options(step.get_task_config('PDAParams'))
             if waiting_parameters_from_step.get('special'):
                 special = waiting_parameters_from_step.get('special')
+            if waiting_parameters_from_step.get('destination'):
+                destination = waiting_parameters_from_step.get('destination')
             if waiting_parameters_from_step.get('noidds'):
                 noidds = True
+            if waiting_parameters_from_step.get('level'):
+                level = waiting_parameters_from_step.get('level')
         except Exception as e:
             _logger.error(" %s" % str(e))
     production_request = step.request
@@ -644,7 +694,9 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
                     else:
                         fail_action = True
                 else:
-                    create_prestage(task,ddm,rule,task.input_dataset,config,special)
+                    if level:
+                        config['level'] = level
+                    create_prestage(task,ddm,rule,task.input_dataset,config,special,destination)
             except Exception as e:
                 _logger.error("Check task for prestage problem %s %s" % (str(e),str(action_step_id)))
                 finish_action = False
@@ -810,14 +862,19 @@ def find_active_staged_with_share():
             dataset_stage = action_stage.dataset_stage
             task = ProductionTask.objects.get(id=action_stage.task)
             share = task.request.request_type
+            if task.request.phys_group == 'VALI':
+                share = 'VALI'
             if (dataset_stage.status not in ['queued']) and dataset_stage.source:
                 if dataset_stage.dataset not in result:
                     result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
                                                      'total':dataset_stage.total_files,'share': share}
-                if task.total_files_finished is None:
-                    files_finished = 0
+                if share == 'VALI':
+                    files_finished = dataset_stage.staged_files
                 else:
-                    files_finished = task.total_files_used
+                    if task.total_files_finished is None:
+                        files_finished = 0
+                    else:
+                        files_finished = task.total_files_used
                 result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],max([0,dataset_stage.staged_files-files_finished])])
                 if(result[dataset_stage.dataset]['share']!=share):
                     result[dataset_stage.dataset]['share'] = 'any'
