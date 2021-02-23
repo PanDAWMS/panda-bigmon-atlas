@@ -6,55 +6,37 @@
 
 
 {% block subtitle %}
-{{pre_form_text|safe}}
+    {{pre_form_text|safe}}
 {% endblock %}
 
 
 
 
 {% block body %}
-   <style type="text/css">
+    <style >
 
- 	td.obsolete	{ background-color : lightblue}
-	td.holding 	{ background-color : black;	}
-	td.pending	{ background-color : blue;		}
-	td.waiting	{ background-color : blue;	}
-	td.submitting	{ background-color : blue;	}
-	td.archived 	{ background-color : magenta;	}
-	td.failed 	{ background-color : red;	}
-	td.aborted 	{ background-color : red;	}
-	td.broken		{ background-color : red;	}
+        td.obsolete	{ background-color : lightblue}
+        td.holding 	{ background-color : black;	}
+        td.pending	{ background-color : blue;		}
+        td.waiting	{ background-color : blue;	}
+        td.submitting	{ background-color : blue;	}
+        td.archived 	{ background-color : magenta;	}
+        td.failed 	{ background-color : red;	}
+        td.aborted 	{ background-color : red;	}
+        td.broken		{ background-color : red;	}
 
-	td.running 	{ background-color : LightGreen;	}
+        td.running 	{ background-color : LightGreen;	}
 
-	td.done 		{ background-color : darkgreen;}
-    td.finished 		{ background-color : darkgreen;	}
-    td.registered {  background-color : blue;}
-
-
-  </style>
-
-<script>
+        td.done 		{ background-color : darkgreen;}
+        td.finished 		{ background-color : darkgreen;	}
+        td.registered {  background-color : blue;}
 
 
-</script>
+    </style>
+
     <base href="/ng/">  <meta name="viewport" content="width=device-width, initial-scale=1">
-    <app-root></app-root>
-        <script type="text/javascript" src="{% static "js/polyfills.a4021de53358bb0fec14.js" %}"></script>
 
-        <script type="text/javascript" src="{% static "js/styles.5c922cfe0f04a8946d20.js" %}"></script>
-
-    <script type="text/javascript" src="{% static "js/main.7f414340f5c7f3914dae.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/runtime.0591f79c37ce1315314d.js" %}"></script>
-{#            <script type="text/javascript" src="{% static "js/polyfills.js" %}"></script>#}
-{##}
-{#            <script type="text/javascript" src="{% static "js/styles.js" %}"></script>#}
-{##}
-{#        <script type="text/javascript" src="{% static "js/main.js" %}"></script>#}
-{#        <script type="text/javascript" src="{% static "js/runtime.js" %}"></script>#}
-{#    <script type="text/javascript" src="{% static "js/vendor.js" %}"></script>#}
-
-
+    {% include "frontendjs/_ng_template.html" %}
 
 
 
