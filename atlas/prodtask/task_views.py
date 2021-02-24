@@ -97,7 +97,7 @@ allowed_task_actions = {
 }
 
 # Actions for tasks in "active" states
-for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry', 'staging']:
+for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exhausted', 'paused', 'scouting', 'toretry', 'staging', 'pending']:
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
