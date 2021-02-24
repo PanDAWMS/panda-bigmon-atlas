@@ -255,6 +255,7 @@ def tasks_action(request, action):
                 logger.info("Tasks action - tasks:%s user:%s action:%s params:%s"%(str(tasks),owner,action,str(params)))
     except Exception as e:
         response["exception"] = str(e)
+        logger.error("Tasks action error: %s" % (str(e)))
     return _http_json_response(response)
 
 
