@@ -93,7 +93,8 @@ allowed_task_actions = {
     'obsolete':['set_hashtag','remove_hashtag','sync_jedi'],
     'paused': ['retry'],
     'staging':['retry'],
-    'toretry':['retry']
+    'toretry':['retry'],
+    'pending':['retry'],
 }
 
 # Actions for tasks in "active" states
