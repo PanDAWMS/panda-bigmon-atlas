@@ -36,7 +36,7 @@ For Derivation superseded container management following APIs are avalaible:
 </p>
 <ul>
   <li>
-    A list of containers per an output with versions and number of extensions (GET method) taken from cache:
+    A list of containers per an output with versions and number of extensions (GET method) taken from cache:<br/>
     <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc">gp_deletions_containers</a>
     <mat-card>
       <mat-card-title>
@@ -53,7 +53,7 @@ For Derivation superseded container management following APIs are avalaible:
   </li>
   <li>
     A list of containers per an output with versions and number of extensions (GET method). Format could be specified by concrete format(output_format='DAOD_BPHY1')
-    by base format(base_format='BHPY') or without output_format and base_format API will return all formats for a data_type(default data_type is 'mc')
+    by base format(base_format='BHPY') or without output_format and base_format API will return all formats for a data_type(default data_type is 'mc')<br/>
     <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc">gp_deletions_containers_cached</a>
       <mat-card>
         <mat-card-title>
@@ -79,20 +79,23 @@ For Derivation superseded container management following APIs are avalaible:
 
   </li>
   <li>
-    A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily (GET method):
-      <mat-card>
+    A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily (GET method).
+    Two optional parameters: filter, return dataset wtih 'filter' in the dataset name. data_type - returns datasets of this data type(mc or data):
+    <a href="https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3">datasests_to_delete</a>
+
+    <mat-card>
         <mat-card-title>
           CURL example
         </mat-card-title>
         <mat-card-content>
     <code>
-      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json" https://prodtask-dev.cern.ch/api/datasests_to_delete/
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json" "https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3"
     </code>
         </mat-card-content>
       </mat-card>
   </li>
   <li>
-    Request extensions for a list of containers (POST method):
+    Request extensions for a list of containers (POST method):<br/>
     <a href="https://prodtask-dev.cern.ch/api/gp_extension/">gp_extension</a>
     <p>Python code which requests extension for containers from the file which contains container name one by line could look like that: </p>
     <mat-card>

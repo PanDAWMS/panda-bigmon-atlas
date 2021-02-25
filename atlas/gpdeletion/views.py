@@ -894,9 +894,16 @@ def group_production_datasets_full(request):
 @permission_classes((IsAuthenticated,))
 def all_datasests_to_delete(request):
     """
-        Return list of all datasets which are marked to deletion. List is taken from the cache, the cache is updated once a day
+        Return list of all datasets which are marked to deletion. List is taken from the cache, the cache is updated once a day.\n
+        * filter: return datasets with 'filter' value in the name. Example: "DAOD_BPHY1" \n
+        * data_type: 'mc' or 'data'. Example: "data".
     """
-    return Response(cache.get('dataset_to_delete_ALL'))
+    result = cache.get('dataset_to_delete_ALL')
+    if request.query_params.get('data_type'):
+        result = [x for x in result if x.startswith(request.query_params.get('data_type'))]
+    if request.query_params.get('filter'):
+        result = [x for x in result if request.query_params.get('filter') in x]
+    return Response(result)
 
 
 class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
