@@ -37,7 +37,7 @@ For Derivation superseded container management following APIs are avalaible:
 <ul>
   <li>
     A list of containers per an output with versions and number of extensions (GET method) taken from cache:
-    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/">gp_deletions_containers</a>
+    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc">gp_deletions_containers</a>
     <mat-card>
       <mat-card-title>
         CURL example
@@ -54,14 +54,14 @@ For Derivation superseded container management following APIs are avalaible:
   <li>
     A list of containers per an output with versions and number of extensions (GET method). Format could be specified by concrete format(output_format='DAOD_BPHY1')
     by base format(base_format='BHPY') or without output_format and base_format API will return all formats for a data_type(default data_type is 'mc')
-    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/">gp_deletions_containers_cached</a>
+    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc">gp_deletions_containers_cached</a>
       <mat-card>
         <mat-card-title>
           CURL example
         </mat-card-title>
         <mat-card-content>
     <code>
-      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_EGAM3&data_type=mc"
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc"
     </code>
         </mat-card-content>
       </mat-card>
