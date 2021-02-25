@@ -49,44 +49,68 @@ def collect_stats(format_base, is_real_data):
         data_prefix = 'data'
     else:
         data_prefix = 'mc'
-    for format in formats:
-        by_tag_stats = {}
-        samples = GroupProductionDeletion.objects.filter(output_format=format)
-        for sample in samples:
-            if sample.container.startswith(data_prefix):
-                if sample.ami_tag not in by_tag_stats:
-                    by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0, 'to_delete_containers': 0, 'to_delete_bytes':0}
-                if sample.version >= version:
-                    by_tag_stats[sample.ami_tag]['containers'] += 1
-                    by_tag_stats[sample.ami_tag]['bytes'] += sample.size
-                    if sample.days_to_delete <0:
-                        by_tag_stats[sample.ami_tag]['to_delete_containers'] += 1
-                        by_tag_stats[sample.ami_tag]['to_delete_bytes'] += sample.size
-        current_stats = GroupProductionStats.objects.filter(output_format=format, real_data=is_real_data)
-        updated_tags = []
-        for current_stat in current_stats:
-            if current_stat.ami_tag in by_tag_stats.keys():
-                current_stat.size = by_tag_stats[current_stat.ami_tag]['bytes']
-                current_stat.containers = by_tag_stats[current_stat.ami_tag]['containers']
-                current_stat.to_delete_size = by_tag_stats[current_stat.ami_tag]['to_delete_bytes']
-                current_stat.to_delete_containers = by_tag_stats[current_stat.ami_tag]['to_delete_containers']
-                current_stat.save()
-                updated_tags.append(current_stat.ami_tag)
-            else:
-                current_stat.size = 0
-                current_stat.containers = 0
-                current_stat.to_delete_size = 0
-                current_stat.to_delete_containers = 0
-                current_stat.save()
-        for tag in by_tag_stats.keys():
-            if tag not in updated_tags:
-                current_stat = GroupProductionStats(ami_tag=tag, output_format=format, real_data=is_real_data)
-                current_stat.size = by_tag_stats[tag]['bytes']
-                current_stat.containers = by_tag_stats[tag]['containers']
-                current_stat.to_delete_size = by_tag_stats[tag]['to_delete_bytes']
-                current_stat.to_delete_containers = by_tag_stats[tag]['to_delete_containers']
-                current_stat.save()
+    for output_format in formats:
+        to_cache = get_stats_per_format(output_format, version, is_real_data)
+        result = []
+        for ami_tag in to_cache.keys():
+            if to_cache[ami_tag]:
+                ami_tag_info = GroupProductionAMITag.objects.get(ami_tag=ami_tag)
+                skim='noskim'
+                if ami_tag_info.skim == 's':
+                    skim='skim'
+                result.append({'ami_tag':ami_tag,'cache':','.join([ami_tag_info.cache,skim]),
+                                                    'containers':to_cache[ami_tag]})
 
+        cache.delete('gp_del_%s_%s_'%(data_prefix,output_format))
+        if result:
+            cache.set('gp_del_%s_%s_'%(data_prefix,output_format),result,None)
+
+
+def get_stats_per_format(output_format, version, is_real_data):
+    by_tag_stats = {}
+    to_cache = {}
+    if is_real_data:
+        data_prefix = 'data'
+    else:
+        data_prefix = 'mc'
+    samples = GroupProductionDeletion.objects.filter(output_format=output_format)
+    for sample in samples:
+        if sample.container.startswith(data_prefix):
+            if sample.ami_tag not in by_tag_stats:
+                by_tag_stats[sample.ami_tag] = {'containers': 0, 'bytes': 0, 'to_delete_containers': 0, 'to_delete_bytes':0}
+                to_cache[sample.ami_tag] = []
+            if sample.version >= version:
+                to_cache[sample.ami_tag].append(GroupProductionDeletionUserSerializer(sample).data)
+                by_tag_stats[sample.ami_tag]['containers'] += 1
+                by_tag_stats[sample.ami_tag]['bytes'] += sample.size
+                if sample.days_to_delete <0:
+                    by_tag_stats[sample.ami_tag]['to_delete_containers'] += 1
+                    by_tag_stats[sample.ami_tag]['to_delete_bytes'] += sample.size
+    current_stats = GroupProductionStats.objects.filter(output_format=output_format, real_data=is_real_data)
+    updated_tags = []
+    for current_stat in current_stats:
+        if current_stat.ami_tag in by_tag_stats.keys():
+            current_stat.size = by_tag_stats[current_stat.ami_tag]['bytes']
+            current_stat.containers = by_tag_stats[current_stat.ami_tag]['containers']
+            current_stat.to_delete_size = by_tag_stats[current_stat.ami_tag]['to_delete_bytes']
+            current_stat.to_delete_containers = by_tag_stats[current_stat.ami_tag]['to_delete_containers']
+            current_stat.save()
+            updated_tags.append(current_stat.ami_tag)
+        else:
+            current_stat.size = 0
+            current_stat.containers = 0
+            current_stat.to_delete_size = 0
+            current_stat.to_delete_containers = 0
+            current_stat.save()
+    for tag in by_tag_stats.keys():
+        if tag not in updated_tags:
+            current_stat, is_created = GroupProductionStats.objects.get_or_create(ami_tag=tag, output_format=output_format, real_data=is_real_data)
+            current_stat.size = by_tag_stats[tag]['bytes']
+            current_stat.containers = by_tag_stats[tag]['containers']
+            current_stat.to_delete_size = by_tag_stats[tag]['to_delete_bytes']
+            current_stat.to_delete_containers = by_tag_stats[tag]['to_delete_containers']
+            current_stat.save()
+    return to_cache
 
 def apply_extension(container, number_of_extension, user, message):
     gp = GroupProductionDeletion.objects.get(container=container)
@@ -381,6 +405,7 @@ def store_dataset(item):
 
 def do_gp_deletion_update():
     update_for_period(timezone.now()-timedelta(days=2), timezone.now()+timedelta(hours=3))
+    cache.set('gp_deletion_update_time',timezone.now(),None)
     for f in FORMAT_BASES:
         collect_stats(f,False)
         collect_stats(f,True)
@@ -830,6 +855,39 @@ def version_from_format(output_format):
             return 2
     return 1
 
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def group_production_datasets_full(request):
+    """
+        Return the list of containers from cache. If no output_format or base_format are set it returns all containers for  \n
+        the data_type. \n
+        * output_format: Output format. Example: "DAOD_BPHY1". \n
+        * base_format: Base format. Example: "BPHY". \n
+        * data_type: 'mc' or 'data', default is 'mc'. Example: "data".
+    """
+
+    data_prefix = 'mc'
+    if request.query_params.get('data_type'):
+        data_prefix = request.query_params.get('data_type')
+    formats = []
+    if request.query_params.get('output_format'):
+        formats = [request.query_params.get('output_format')]
+    else:
+        if request.query_params.get('base_format'):
+            formats = get_all_formats(request.query_params.get('base_format'))
+        else:
+            for output_format in FORMAT_BASES:
+                formats += get_all_formats(output_format)
+
+    result = {'timestamp':str(cache.get('gp_deletion_update_time', timezone.now())),'formats':[]}
+    for output_format in formats:
+        format_data = cache.get('gp_del_%s_%s_'%(data_prefix,output_format), None)
+        if format_data:
+            result['formats'].append({'output_format':output_format,'data':format_data})
+    return Response(result)
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
