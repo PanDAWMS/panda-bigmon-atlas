@@ -10,7 +10,8 @@ Example for curl:
   </mat-card-title>
   <mat-card-content>
 <code>
-  curl  -X POST -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"   https://prodtask-dev.cern.ch/api/test_api/
+  <pre>
+  curl  -X POST -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"   https://prodtask-dev.cern.ch/api/test_api/</pre>
 </code>
   </mat-card-content>
 </mat-card>
@@ -23,28 +24,31 @@ Or for python the code could look like that:
   </mat-card-title>
   <mat-card-content>
 <code>
-import requests, json<br>
-headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;<br>
-response = requests.post('https://prodtask-dev.cern.ch/api/test_api/', headers=headers)<br>
-json.loads(response.content)<br>
+    <pre>
+import requests, json
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;
+response = requests.post('https://prodtask-dev.cern.ch/api/test_api/', headers=headers)
+json.loads(response.content)</pre>
 </code>
   </mat-card-content>
 </mat-card>
 <mat-divider></mat-divider>
+<h3>APIs</h3>
 <p>
 For Derivation superseded container management following APIs are avalaible:
 </p>
 <ul>
   <li>
+   <h5> <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc">gp_deletions_containers</a></h5>
+
     A list of containers per an output with versions and number of extensions (GET method) taken from cache:<br/>
-    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc">gp_deletions_containers</a>
     <mat-card>
       <mat-card-title>
         CURL example
       </mat-card-title>
       <mat-card-content>
-        <code>
-          curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc"
+        <code><pre>
+          curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc"</pre>
         </code>
       </mat-card-content>
     </mat-card>
@@ -52,16 +56,17 @@ For Derivation superseded container management following APIs are avalaible:
 
   </li>
   <li>
+    <h5> <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc">gp_deletions_containers_cached</a></h5>
+
     A list of containers per an output with versions and number of extensions (GET method). Format could be specified by concrete format(output_format='DAOD_BPHY1')
     by base format(base_format='BHPY') or without output_format and base_format API will return all formats for a data_type(default data_type is 'mc')<br/>
-    <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc">gp_deletions_containers_cached</a>
       <mat-card>
         <mat-card-title>
           CURL example
         </mat-card-title>
         <mat-card-content>
-    <code>
-      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc"
+    <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/gp_deletions_containers_cached/?output_format=DAOD_EGAM3&data_type=mc"</pre>
     </code>
         </mat-card-content>
       </mat-card>
@@ -79,24 +84,24 @@ For Derivation superseded container management following APIs are avalaible:
 
   </li>
   <li>
+    <h5>   <a href="https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3">datasests_to_delete</a></h5>
+
     A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily (GET method).
-    Two optional parameters: filter, return dataset wtih 'filter' in the dataset name. data_type - returns datasets of this data type(mc or data):
-    <a href="https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3">datasests_to_delete</a>
+    Two optional parameters: filter, return dataset wtih 'filter' in the dataset name. data_type - returns datasets of this data type(mc or data):<br/>
 
     <mat-card>
         <mat-card-title>
           CURL example
         </mat-card-title>
         <mat-card-content>
-    <code>
-      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json" "https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3"
-    </code>
+    <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json" "https://prodtask-dev.cern.ch/api/datasests_to_delete/?filter=DAOD_EGAM3"</pre></code>
         </mat-card-content>
       </mat-card>
   </li>
   <li>
+    <h5> <a href="https://prodtask-dev.cern.ch/api/gp_extension/">gp_extension</a></h5>
     Request extensions for a list of containers (POST method):<br/>
-    <a href="https://prodtask-dev.cern.ch/api/gp_extension/">gp_extension</a>
     <p>Python code which requests extension for containers from the file which contains container name one by line could look like that: </p>
     <mat-card>
       <mat-card-title>
@@ -118,8 +123,7 @@ if response.status_code != requests.codes.ok:
 result = json.loads(response.content)
 if result['containers_extented'] != len(containers):
   for container_with_problem in result['containers_with_problems']:
-     print("Container &#123;container&#125; has problem: &#123;problem&#125;".format(container=container_with_problem[0],problem=container_with_problem[1])
-        </pre>
+     print("Container &#123;container&#125; has problem: &#123;problem&#125;".format(container=container_with_problem[0],problem=container_with_problem[1])</pre>
 
         </code>
       </mat-card-content>
