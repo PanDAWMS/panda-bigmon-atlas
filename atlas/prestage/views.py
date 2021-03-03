@@ -188,7 +188,10 @@ class TapeResource(ResourceQueue):
                     priority = task.current_priority
                     if not priority:
                         priority = task.priority
-                    dataset_shares.append(task.request.request_type)
+                    if task.request.phys_group == 'VALI':
+                        dataset_shares.append('VALI')
+                    else:
+                        dataset_shares.append(task.request.request_type)
             if len(dataset_shares) >0:
                 if len(dataset_shares)>1:
                     dataset_share = 'any'
@@ -868,7 +871,7 @@ def find_active_staged_with_share():
                 if dataset_stage.dataset not in result:
                     result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
                                                      'total':dataset_stage.total_files,'share': share}
-                if share == 'VALI':
+                if share == 'VALI' or share == 'MC':
                     files_finished = dataset_stage.staged_files
                 else:
                     if task.total_files_finished is None:
