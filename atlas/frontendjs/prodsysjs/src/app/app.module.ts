@@ -33,6 +33,7 @@ import {GpContainerInfoResolver} from "./derivation-exclusion/gp-container-info/
 import { GpApiInstructionComponent } from './derivation-exclusion/gp-api-instruction/gp-api-instruction.component';
 import {MatCardModule} from "@angular/material/card";
 import { SliceComponent } from './production-request/slice/slice.component';
+import {NgxChartsModule} from "@swimlane/ngx-charts";
 
 
 const routerOptions: ExtraOptions = {
@@ -82,31 +83,32 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     GpApiInstructionComponent,
     SliceComponent,
   ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    HttpClientXsrfModule.withOptions({
-      cookieName: 'csrftoken',
-      headerName: 'X-CSRFToken',
-    }),
-    RouterModule.forRoot(routes, routerOptions),
-    BrowserAnimationsModule,
-    MatTableModule,
-    MatSortModule,
-    MatCheckboxModule,
-    MatGridListModule,
-    MatButtonModule,
-    MatSidenavModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FormsModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-    MatRadioModule,
-    MatCardModule,
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        HttpClientXsrfModule.withOptions({
+            cookieName: 'csrftoken',
+            headerName: 'X-CSRFToken',
+        }),
+        RouterModule.forRoot(routes, routerOptions),
+        BrowserAnimationsModule,
+        MatTableModule,
+        MatSortModule,
+        MatCheckboxModule,
+        MatGridListModule,
+        MatButtonModule,
+        MatSidenavModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        MatListModule,
+        MatProgressSpinnerModule,
+        MatRadioModule,
+        MatCardModule,
+        NgxChartsModule,
 
 
-  ],
+    ],
   providers: [
         {
           provide: APP_BASE_HREF,

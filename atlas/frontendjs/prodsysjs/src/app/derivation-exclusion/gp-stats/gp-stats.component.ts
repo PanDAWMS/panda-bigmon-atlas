@@ -5,7 +5,7 @@ import {MatTableDataSource} from '@angular/material/table';
 import {GroupProductionDeletionContainer} from '../gp-deletion-container';
 import {SelectionModel} from '@angular/cdk/collections';
 import {ViewportScroller} from '@angular/common';
-
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 
 
@@ -36,6 +36,21 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   statsByOutputBases: StatsByOutputBase[] = [];
   formatsOnPage: string[] = [];
   dataType: string;
+  showXAxis = true;
+  showYAxis = true;
+  gradient = false;
+  showLegend = false;
+  showXAxisLabel = true;
+  xAxisLabel = 'Format';
+  showYAxisLabel = true;
+  yAxisLabel = 'Size (TB)';
+  view: any[] = [1800, 1000];
+  sizeChart: any[] = [];
+  sizeChartData: any[] = [];
+  totalDatasets = 0;
+  totalSize = 0;
+  totalDatasetsToDelete = 0;
+  totalSizeToDelete = 0;
   constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller, ) { }
 
   ngOnInit(): void {
@@ -63,6 +78,11 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
     if (this.statsByOutputBases !== undefined){
       this.statsByOutputBases = [];
     }
+    this.sizeChartData = [];
+    this.totalDatasets = 0;
+    this.totalSize = 0;
+    this.totalDatasetsToDelete = 0;
+    this.totalSizeToDelete = 0;
     this.statsByOutput = new Map<string, Map<string, StatsByOutput>>();
     this.formatsOnPage = [];
     for (const currentStat of this.gpStats){
@@ -90,15 +110,28 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
 
       for (const statsForFormat of this.statsByOutput[formatBase].values()){
         statsForBase.push(statsForFormat);
+        this.totalDatasets += statsForFormat.containers;
+        this.totalSize += statsForFormat.size ;
+        this.totalDatasetsToDelete += statsForFormat.containersToDelete;
+        this.totalSizeToDelete  += statsForFormat.sizeToDelete;
+        if (statsForFormat.sizeToDelete > 0) {
+          this.sizeChartData.push({name: statsForFormat.outputFormat, value: Number(statsForFormat.sizeToDelete) / 10e12});
+        }
       }
       statsForBase.sort((a, b) => a.outputFormat.localeCompare(b.outputFormat));
       currentDataSource.data = statsForBase;
       this.statsByOutputBases.push({outputFormatBase: formatBase, dataSource: currentDataSource});
     }
+    this.sizeChartData.sort((a, b) => (a.value > b.value) ? -1 : ((b.value > a.value) ? 1 : 0));
+    this.sizeChart = this.sizeChartData;
   }
 
   changeType(): void {
     // console.log(this.dataType);
     this.router.navigate(['/gp-stats'], { queryParams: {type: this.dataType} });
+  }
+
+  onChartSelect(event): void{
+    this.router.navigate(['/gp-deletion', this.dataType,  event.name]);
   }
 }

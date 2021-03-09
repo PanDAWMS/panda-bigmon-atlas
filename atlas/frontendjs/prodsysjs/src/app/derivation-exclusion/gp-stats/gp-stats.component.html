@@ -1,5 +1,5 @@
 
-<section>
+
 <mat-radio-group  [(ngModel)]="dataType"  (ngModelChange)="changeType()"  aria-label="Select">
   <mat-radio-button [value]="'mc'">MC</mat-radio-button>
   <mat-radio-button [value]="'data'" style="padding-left: 10px">Data</mat-radio-button>
@@ -20,9 +20,28 @@
   <mat-divider></mat-divider>
  <h3> <a [routerLink]="['/gp-stats-matrix']" [queryParams]="{type: dataType}"> Full table of formats and ptags </a></h3>
   <mat-divider></mat-divider>
+  <h3>Total containers: {{totalDatasets}} Total size: {{totalSize|datasetSize}}
+    Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3>
+  <mat-divider></mat-divider>
+<mat-card [style]="'height: 800px;'">
+  <ngx-charts-bar-vertical
+    [results]="sizeChart"
+    [gradient]="gradient"
+    [xAxis]="showXAxis"
+    [yAxis]="showYAxis"
+    [legend]="showLegend"
+    [showXAxisLabel]="showXAxisLabel"
+    [showYAxisLabel]="showYAxisLabel"
+    [xAxisLabel]="xAxisLabel"
+    [yAxisLabel]="yAxisLabel"
+    (select)="onChartSelect($event)"
+  >
+  </ngx-charts-bar-vertical>
+</mat-card>
+  <mat-divider></mat-divider>
 
-<div class="section" *ngFor="let statsByOutput of statsByOutputBases" [attr.id]='statsByOutput.outputFormatBase' >
-  <h5>{{statsByOutput.outputFormatBase}}</h5>
+  <div class="section" *ngFor="let statsByOutput of statsByOutputBases" [attr.id]='statsByOutput.outputFormatBase' >
+ <h5>{{statsByOutput.outputFormatBase}}</h5>
 <table mat-table [dataSource]="statsByOutput.dataSource"  multiTemplateDataRows >
     <ng-container matColumnDef="output">
     <th mat-header-cell *matHeaderCellDef > Output </th>
@@ -49,4 +68,3 @@
 </table>
 </div>
 
-</section>
