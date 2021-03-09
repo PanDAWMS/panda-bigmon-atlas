@@ -447,6 +447,19 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     action_dataset.step_action = action_step
     action_dataset.save()
 
+
+def submit_queued_rule(action_step_id):
+    action_step = StepAction.objects.get(id=action_step_id)
+    ddm = DDM()
+    for action_stage in ActionStaging.objects.filter(step_action=action_step):
+        dataset_stage = action_stage.dataset_stage
+        if dataset_stage.status == 'queued':
+            perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), action_step.get_config('source_replica'))
+            dataset_stage.status = 'staging'
+            dataset_stage.start_time = timezone.now()
+            dataset_stage.save()
+
+
 def submit_all_tapes():
     ddm = DDM()
     for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
@@ -1446,6 +1459,12 @@ def finish_action(request, action, action_id):
                         task = ProductionTask.objects.get(id=ActionStaging.objects.filter(step_action=action_step)[0].task)
                         if task.status not in ProductionTask.NOT_RUNNING + ['to_abort']:
                             start_stagind_task(task)
+            elif action == 'bypass':
+                submit_queued_rule(action_step.id)
+                action_step.execution_time = timezone.now()
+                if action_step.status == 'executing':
+                    action_step.status = 'active'
+                action_step.save()
 
             else:
                 raise Exception('action is not supported')
