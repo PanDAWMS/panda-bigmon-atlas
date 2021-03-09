@@ -1331,7 +1331,7 @@ class GroupProductionDeletion(models.Model):
         extensions_number = self.extensions_number
         if not extensions_number:
             extensions_number = 0
-        return ((self.last_extension_time + timedelta(extensions_number * self.EXTENSIONS_DAYS)) - timezone.now()).days
+        return (self.last_extension_time  - timezone.now()).days + extensions_number * self.EXTENSIONS_DAYS + self.LIFE_TIME_DAYS
 
     def save(self, *args, **kwargs):
         if not self.id:
