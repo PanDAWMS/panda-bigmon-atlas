@@ -1220,54 +1220,65 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         }
         function findInputForSlices(sliceList){
 
-            sendData = sliceList;
-              $( "#waitingDialog" ).dialog();
-              $.ajax({
-                    url: "{% url 'prodtask:find_input_datasets' pr_id %}",
-                    type: 'POST',
-                    contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(sendData),
-                    dataType: 'text',
-                    success: function(data,status) {
-                        $( "#waitingDialog" ).dialog('close');
-                        var slices = $.evalJSON(data).data;
-                        var slice;
-                        for (slice in slices) {
-                            var sliceName = "#inputDatasetSelect" + slice;
-                            var existReduced = false;
-                            $(sliceName).html("");
-                            for (var i=0;i<slices[slice].length;i++){
-                                if (!slices[slice][i].excluded){
-                                     $(sliceName).append($('<option>', {
-                                        value: slices[slice][i].dataset_name,
-                                        text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
-                                    }));
-                                } else {
-                                     $(sliceName).append($('<option>', {
-                                        value: slices[slice][i].dataset_name,
-                                        text: slices[slice][i].dataset_name + " - " + slices[slice][i].events + " (reduced)"
-                                    }));
-                                    existReduced = true;
-                                }
+            var sendData = [];
+              $( "#progressInputFind" ).dialog();
+              $("#inputsCount").html("0/"+sliceList.length);
+              var slicesDone = 0;
+              for(var i=0;i<sliceList.length;i++){
+                  sendData = [sliceList[i]]
+                  $.ajax({
+                      url: "{% url 'prodtask:find_input_datasets' pr_id %}",
+                      type: 'POST',
+                      contentType: 'application/json; charset=utf-8',
+                      data: $.toJSON(sendData),
+                      dataType: 'text',
+                      success: function(data,status) {
+                          var slices = $.evalJSON(data).data;
+                          var slice;
+                          slicesDone+=1;
+                          $("#inputsCount").html(slicesDone+"/"+sliceList.length);
+                          if (slicesDone === sliceList.length){
+                              $( "#progressInputFind" ).dialog('close');
+                          }
+                          for (slice in slices) {
+                              var sliceName = "#inputDatasetSelect" + slice;
+                              var existReduced = false;
+                              $(sliceName).html("");
+                              for (var i=0;i<slices[slice].length;i++){
+                                  if (!slices[slice][i].excluded){
+                                      $(sliceName).append($('<option>', {
+                                          value: slices[slice][i].dataset_name,
+                                          text: slices[slice][i].dataset_name + " - " + slices[slice][i].events
+                                      }));
+                                  } else {
+                                      $(sliceName).append($('<option>', {
+                                          value: slices[slice][i].dataset_name,
+                                          text: slices[slice][i].dataset_name + " - " + slices[slice][i].events + " (reduced)"
+                                      }));
+                                      existReduced = true;
+                                  }
 
 
-                            }
-                            $(sliceName).show();
-                            if (existReduced){
+                              }
+                              $(sliceName).show();
+                              if (existReduced){
                                   $("#inputDatasetSelectReduced"+slice).html(" ! ");
 
-                            } else {
-                                 $("#inputDatasetSelectReduced"+slice).html("");
-                            }
-                            $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString());
-                            if(slices[slice].length == 1){
-                                $("#inputDatasetSelectCount"+slice).css({'color':'green'})
-                            }else{
-                                 $("#inputDatasetSelectCount"+slice).css({'color':'red'})
-                            }
-                        }
-                    }
-                });
+                              } else {
+                                  $("#inputDatasetSelectReduced"+slice).html("");
+                              }
+                              $("#inputDatasetSelectCount"+slice).html(slices[slice].length.toString());
+                              if(slices[slice].length == 1){
+                                  $("#inputDatasetSelectCount"+slice).css({'color':'green'})
+                              }else{
+                                  $("#inputDatasetSelectCount"+slice).css({'color':'red'})
+                              }
+                          }
+                      }
+                  });
+
+              }
+
               return false;
         };
 
@@ -2891,6 +2902,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
 <div id="waitingDialog" title="Run" style="display: none">
   <p>Please wait...</p>
 </div>
+    <div id="progressInputFind" title="Run" style="display: none">
+        <p>Inputs ready:</p><span id="inputsCount"></span>
+    </div>
 <div id="reloadDialog" title="Run" style="display: none">
   <p>Page reloading…</p>
 </div>
