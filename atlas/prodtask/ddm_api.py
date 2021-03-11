@@ -33,11 +33,12 @@ def find_dataset_events(dataset_pattern, ami_tags=None):
             if (task.status not in ['aborted','failed','lost']):
                 dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['taskid'],'events':task.total_events}})
         for current_dataset in datasets_prodsys2_db:
-            if '_tid' in current_dataset['name']:
-                patterns_for_container.add(current_dataset['name'][current_dataset['name'].find(':')+1:current_dataset['name'].rfind('_tid')]+'/')
-            else:
-                patterns_for_container.add(current_dataset['name'])
-            dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['task_id'],'events':current_dataset['events']}})
+            if 'archive' not in current_dataset['name']:
+                if '_tid' in current_dataset['name']:
+                    patterns_for_container.add(current_dataset['name'][current_dataset['name'].find(':')+1:current_dataset['name'].rfind('_tid')]+'/')
+                else:
+                    patterns_for_container.add(current_dataset['name'])
+                dataset_dict.update({current_dataset['name'][current_dataset['name'].find(':')+1:]:{'taskid':current_dataset['task_id'],'events':current_dataset['events']}})
         datasets_containers = []
         ddm = DDM()
         for pattern_for_container in patterns_for_container:
@@ -217,6 +218,8 @@ class DDM(object):
                 return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
         elif rse == 'CERN-PROD_RAW':
             return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+
+
 
     def get_replica_pre_stage_rule(self, dataset):
         scope, name = self.rucio_convention(dataset)
