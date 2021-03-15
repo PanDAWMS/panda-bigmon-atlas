@@ -767,7 +767,7 @@ def save_slice_changes(reqid, slice_steps):
                 if do_action:
                     try:
                         current_slice = InputRequestList.objects.get(request=reqid,slice=int(slice_number))
-                        if StepExecution.objects.filter(slice=current_slice,status = 'Approved').count() > 0:
+                        if StepExecution.objects.filter(slice=current_slice,status = 'Approved',request=reqid).count() > 0:
                             not_changed.append(slice)
                         else:
                             if steps_status['changes'].get('jobOption'):
@@ -797,7 +797,7 @@ def save_slice_changes(reqid, slice_steps):
                                 current_slice.priority = steps_status['changes'].get('priority')
                                 current_slice.save()
                                 priority_dict = get_priority_object(current_slice.priority)
-                                for step in StepExecution.objects.filter(slice=current_slice):
+                                for step in StepExecution.objects.filter(slice=current_slice,request=reqid):
                                         step.priority = priority_dict.priority(step.step_template.step, step.step_template.ctag)
                                         step.save()
                     except Exception as e:
@@ -2593,7 +2593,7 @@ def create_steps_in_child_pattern(new_request, parent_steps, pattern_request, ou
     step_pattern = {}
     for pattern_slice_number in pattern_slices:
         pattern_slice = InputRequestList.objects.get(request=pattern_request,slice=int(pattern_slice_number))
-        step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice)[0]
+        step_pattern[pattern_slice_number] = StepExecution.objects.filter(slice=pattern_slice,request=pattern_request)[0]
     slice_index = 0
     for parent_step in parent_steps:
         #parent_step = StepExecution.objects.get(id=int(parent_step_id))
@@ -2944,7 +2944,7 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
             if fill_slice_from:
                 new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
                 new_input_data.save()
-            step_execs = StepExecution.objects.filter(slice=current_slice[0])
+            step_execs = StepExecution.objects.filter(slice=current_slice[0],request=request_source)
             ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
             if request_source.request_type == 'MC':
                 STEPS = StepExecution.STEPS

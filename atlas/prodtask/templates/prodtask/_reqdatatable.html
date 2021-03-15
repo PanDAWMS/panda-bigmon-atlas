@@ -323,7 +323,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     (function(){
             $('.managementPriority').each(function(){
                 var priority = $(this).attr("id").slice('managementPriorityChange'.length);
-                console.log(priority);
                 $(this).val(priority);
 
             })
@@ -434,14 +433,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             if (input.value > limitMax) input.value = limitMax;
     }
 
-    function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel){
+    function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets){
                 $( "#waitingDialog" ).dialog();
 
                 var ajaxURL = '';
 
                 if (isApprove){
                     if (doSplit){
-                        console.log('dosplit');
                         ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve_split/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
                     } else{
                         ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
@@ -450,7 +448,13 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
-
+            var missedList = [];
+            var doubleTrf = [];
+            var wrongSLices = [];
+            var slices = [];
+            var errorSlices = [];
+            var notChangedSlices = [];
+            var removeDataset = [];
                 $.ajax({
                     url: ajaxURL,
                     type: 'POST',
@@ -465,8 +469,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             var notChangedSlices = $.evalJSON(data).no_action_slices;
                             var slices = $.evalJSON(data).slices;
                             var wrongSLices = $.evalJSON(data).wrong_slices;
-{#                            console.log(wrongSLices);#}
-
                             var doubleTrf = $.evalJSON(data).double_trf;
                             var newStatus = $.evalJSON(data).new_status;
                             var removeDataset =  $.evalJSON(data).removed_input;
@@ -539,7 +541,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                         location.reload();
                                     }
                                 }
-{#                                console.log(additionalComment);#}
 
                                     if (isApprove) {
                                         $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
@@ -557,19 +558,16 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                    $("#approveDialog").dialog("open");
 
                             }
-                            if (startFindig){
-{#                                 findInputForSlices(slices);#}
-                            } else{
-                                for (var i=0;i<toChangeDatasets.length;i++){
-                                    $("#inputDatasetName"+toChangeDatasets[i]).html($("#inputDatasetSelect"+toChangeDatasets[i]).val());
-                                }
+                            for (var j=0;j<toChangeDatasets.length;j++){
+                                $("#inputDatasetName"+toChangeDatasets[j]).html($("#inputDatasetSelect"+toChangeDatasets[j]).val());
                             }
-                            for (var i=0; i < removeDataset.length; i++){
-                                 $("#inputDatasetName"+removeDataset[i]).html('');
+
+                            for (var j=0; j < removeDataset.length; j++){
+                                 $("#inputDatasetName"+removeDataset[j]).html('');
                             }
                             if (slices.length < 200){
-                                for (var i = 0; i < slices.length; i++) {
-                                    changeSliceSaveStatus(slices[i]);
+                                for (var j = 0; j < slices.length; j++) {
+                                    changeSliceSaveStatus(slices[j]);
                                 }
                             }
 
@@ -582,6 +580,168 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 });
     }
 
+function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets){
+    $( "#progressSliceSaved" ).dialog();
+
+    var ajaxURL = '';
+
+    if (isApprove){
+        if (doSplit){
+            ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve_split/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+        } else{
+            ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+        }
+
+    } else {
+        ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
+    }
+    var missedListTotal = [];
+    var wrongSLicesTotal = [];
+    var slicesTotal = [];
+    var errorSlicesTotal = [];
+    var notChangedSlicesTotal = [];
+    var removeDatasetTotal = [];
+    var additionalComment = '';
+    var slicesKeys = Object.keys(sendData);
+    var total = slicesKeys.length;
+
+    var SLICE_LENGHT = 10;
+    var currentSlices = [];
+    var processed = 0;
+    $('#processedCount').html('processed :'+processed+'/'+total);
+
+    for(i=0;i<total;i+=SLICE_LENGHT){
+        var currentSendData = {};
+        if ((i+SLICE_LENGHT)>slicesKeys.length){
+            currentSlices = slicesKeys.slice(i,total)
+        } else{
+            currentSlices = slicesKeys.slice(i,i+SLICE_LENGHT)
+        }
+        for (j=0;j<currentSlices.length;j++){
+            currentSendData[currentSlices[j]]=sendData[currentSlices[j]]
+        }
+        (function(currentSendData) {
+            $.ajax({
+            url: ajaxURL,
+            type: 'POST',
+            contentType: 'application/json; charset=utf-8',
+            data: $.toJSON(currentSendData),
+            dataType: 'text',
+            success: function(data,status) {
+                processed += Object.keys(currentSendData).length;
+                $('#processedCount').html('processed :'+processed+'/'+total);
+                if(status) {
+                    var missedList = $.evalJSON(data).missing_tags;
+                    var errorSlices = $.evalJSON(data).error_slices;
+                    var notChangedSlices = $.evalJSON(data).no_action_slices;
+                    var slices = $.evalJSON(data).slices;
+                    var wrongSLices = $.evalJSON(data).wrong_slices;
+                    var newStatus = $.evalJSON(data).new_status;
+                    var removeDataset = $.evalJSON(data).removed_input;
+                    var approveProblem = $.evalJSON(data).error_approve_message;
+                    if (missedList !== undefined) {
+                        missedListTotal=missedListTotal.concat(missedList);
+                    }
+
+                    if (wrongSLices !== undefined) {
+                        wrongSLicesTotal=wrongSLicesTotal.concat(wrongSLices);
+                    }
+
+                    if (slices !== undefined) {
+                        slicesTotal=slicesTotal.concat(slices);
+                    }
+
+                    if (errorSlices !== undefined) {
+                        errorSlicesTotal=errorSlicesTotal.concat(errorSlices);
+                    }
+                    if (notChangedSlices !== undefined) {
+                        notChangedSlicesTotal=notChangedSlicesTotal.concat(notChangedSlices);
+                    }
+                    if (removeDataset !== undefined) {
+                        removeDatasetTotal=removeDatasetTotal.concat(removeDataset);
+                    }
+                    if (approveProblem) {
+                        additionalComment = '\n You should be request manager to approve it.'
+                    }
+                    if ((newStatus !== undefined) && (newStatus !== '')) {
+                        $('#requestStatus').html(newStatus);
+                    }
+                }
+                if(processed === total){
+                    $( "#progressSliceSaved" ).dialog('close');
+
+                    if ((missedListTotal.length !== 0)) {
+                        if (missedListTotal.length !== 0) {
+                            $("#missing_tags_string").html(missedList.toString());
+                            $("#missing_tags").show();
+                        }
+
+                    } else {
+                        if(wrongSLicesTotal.length>0){
+                            $("#wrongSliceString").html(wrongSLicesTotal.toString());
+                            $("#wrongSlice").show();
+                        } else {
+                            $("#wrongSlice").hide();
+                        }
+                        if((slicesTotal.length >0)||(errorSlicesTotal.length>0)||(notChangedSlicesTotal.length>0)) {
+                            $("#missing_tags").hide();
+                            $("#doubleTags").hide();
+                            $("#approveDialog").html('');
+                            if (errorSlicesTotal.length === 1) {
+                                $("#approveDialog").append($('<p/>').html('Slice has problem: ' + errorSlicesTotal[0]));
+                            } else {
+                                if (errorSlicesTotal.length > 1) {
+                                    $("#approveDialog").append($('<p/>').html(errorSlicesTotal.length + 'Slices have problem: ' + errorSlicesTotal.toString()));
+                                }
+                            }
+                            if (notChangedSlicesTotal.length === 1) {
+                                $("#approveDialog").append($('<p/>').html('Slice was not changed: ' + notChangedSlicesTotal[0]));
+                            } else {
+                                if (notChangedSlicesTotal.length > 1) {
+                                    $("#approveDialog").append($('<p/>').html(notChangedSlicesTotal.length + 'Slices were not changed: ' + notChangedSlicesTotal.toString()));
+                                }
+                            }
+                            if (doReload) {
+                                location.reload();
+                            }
+                        }
+                        if (isApprove) {
+                            $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slicesTotal.toString() + additionalComment));
+                            $("#approveDialog").attr("title", "Steps approved");
+                            for (i = 0; i < slicesTotal.length; i++) {
+                                $("#aprroveLabel".concat(slicesTotal[i])).css({'color': 'greenyellow'}).html("Submitted");
+                                $("#aprroveLabelLong".concat(slicesTotal[i])).css({'color': 'greenyellow'}).html("Submitted")
+                            }
+
+                        } else {
+                            $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: " + slicesTotal.toString()));
+                            $("#approveDialog").attr("title", "Steps saved");
+                        }
+
+                        $("#approveDialog").dialog("open");
+
+                    }
+                    for (var j=0;j<toChangeDatasets.length;j++){
+                        $("#inputDatasetName"+toChangeDatasets[j]).html($("#inputDatasetSelect"+toChangeDatasets[j]).val());
+                    }
+
+                    for (var j=0; j < removeDataset.length; j++){
+                        $("#inputDatasetName"+removeDataset[j]).html('');
+                    }
+                    if (slicesTotal.length < 200){
+                        for (var j = 0; j < slicesTotal.length; j++) {
+                            changeSliceSaveStatus(slicesTotal[j]);
+                        }
+                    }
+
+                }
+
+
+
+            }
+        })}(currentSendData));
+    }
+}
 
     function approveSlices(isApprove, approveLevel, waitingLevel, slices){
 
@@ -595,7 +755,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             for(var i=0;i<slices.length;i++){
                 {#                   8 = "checkbox".length#}
                 var sliceID = slices[i];
-                console.log(sliceID);
                 var existSkipped = false;
                 if (sliceID == '-1'){
                     doReload = true;
@@ -660,7 +819,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     } else {
                         sendData[sliceID] = {'sliceSteps':sliceSteps, 'changes':''};
                     }
-                    if (existSkipped &&  ($("#inputDatasetSelect" + sliceID).val() != "") && ($("#inputDatasetName" + sliceID).val() == "")){
+                    if (existSkipped && ($("#inputDatasetSelect" + sliceID).val() !== undefined) && ($("#inputDatasetSelect" + sliceID).val() !== null) &&  ($("#inputDatasetSelect" + sliceID).val() !== "") && ($("#inputDatasetName" + sliceID).html() == "")){
                         toChangeDatasets.push(sliceID);
                     }
                     if (existSkipped &&  !($("#inputDatasetSelect" + sliceID).val()) ){
@@ -668,12 +827,10 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
             }
-            console.log('finishPreapreData');
             if(askSplit['ask'] && isApprove){
 {#                do async check for split with message#}
                 var splitSliceData = $.toJSON(askSplit['slices']);
                 $( "#waitingDialog" ).dialog();
-                console.log(splitSliceData);
               $.ajax({
                           url: construct_django_url('/prodtask/check_slices_for_request_split/', "{{ pr_id }}"),
                           type: 'POST',
@@ -689,9 +846,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                               if (doSplit) {
                                   doReload = true;
-                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
                               } else {
-                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel);
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
                               }
 
                           }
@@ -700,8 +857,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
 
             } else {
+                if (toChangeDatasets.length!==0){
+                    saveChangesWithInput(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                } else {
+                    saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                }
 
-                saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel);
             }
 
 
@@ -856,7 +1017,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
      function checkSlice(event) {
 
              var currentSlice = sliceOrder.indexOf(($(event.target).attr('id')).slice('checkbox'.length));
-{#                console.log(currentSlice);#}
              if (event.shiftKey) {
                  if (lastCheckedSlice > -1) {
 
@@ -1318,14 +1478,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         function prepareSliceInfo(check_steps,sliceID){
             changeMode = false;
                 for(var i=0;i<check_steps.db_step_type.length;i++) {
-                    {#                 console.log(i);#}
                     stepHasChanges = false;
                     currentTag =  $.trim($("#short"+sliceID.toString() + 's' + i.toString()).html());
                     step_id = "#short" + sliceID.toString() + 's' + i.toString();
                     var currentType = 'not_skipped';
                     if ($(step_id).attr('class').indexOf("notShowFullSpan")>-1 ){
                                 currentTag = 'Child step';
-                        console.log(currentTag);
                             currentType = 'foreign';
 
                     } else{
@@ -1333,7 +1491,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                                 currentType = 'is_skipped';
                             }
                     }
-{#                    console.log(currentTag,check_steps.db_step_type[i].step_name);#}
                     if ((check_steps.db_step_type[i].step_name != "") || (currentTag != '')) {
                         if (currentTag != check_steps.db_step_type[i].step){
                            $('#sliceModal .storeOutput' + i.toString() + '.' + 'step').val(currentTag);
@@ -1358,8 +1515,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         }
                         for (fieldName in check_steps.db_step_type[i]) {
                             if ((fieldName != 'step_name')&&(fieldName != 'step')) {
-                                {#                            console.log(check_steps.db_step_type[i][fieldName]);#}
-                                {#                            console.log(fieldName);#}
                                 notUpdateFromDB = false;
                                 if (parseInt(sliceID) in changesList) {
                                     if (changesList[sliceID].stepsInSlice.length > i) {
@@ -1398,7 +1553,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             $(this).parent().css({'color': 'initial'});
                         });
                     }
-{#                    console.log(stepHasChanges);#}
                     currentHTML = $("#sectionName" + i.toString()).html()
                     if (stepHasChanges){
 
@@ -1412,7 +1566,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     }
 
                 }
-{#            console.log(check_steps);#}
             check_steps['is_eaqual'] = undefined;
             check_steps['db_step_type'] = undefined;
             for (sliceField in check_steps){
@@ -1491,7 +1644,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 } else {
                     numberToSave = workingOnSlices.length+1;
                 }
-                console.log(workingOnSlices);
                 if(numberToSave === 1){
                     $('#saveButtonSlice').html('Save');
                 } else {
@@ -1823,17 +1975,14 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 is_equal = clearChangesSlice(parseInt(sliceNumber),slice_data);
             });
             $.ajaxSetup({async: true});
-{#            console.log({is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] });#}
             return {is_equal:is_equal,db_step_type:step_types, datasetName:slice_data['datasetName'],comment:slice_data['comment'], jobOption:slice_data['jobOption'], eventsNumber: slice_data['eventsNumber'] };
         }
 
         function clearChangesSlice(sliceNumber, sliceData){
             var no_changes = true;
-{#            console.log(changesList[sliceNumber],sliceData)#}
+
             if (sliceNumber in changesList){
                 for (var field in sliceData){
-
-{#                    console.log(sliceData[field]);#}
                     if (field in changesList[sliceNumber]){
                         if (changesList[sliceNumber][field] != undefined){
                             if (changesList[sliceNumber][field] != sliceData[field]){
@@ -1854,7 +2003,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var no_changes = true;
             if (sliceNumber in changesList){
                 if (changesList[sliceNumber].stepsInSlice.length > i){
-{#                    console.log(current_step);#}
                     current_changes = changesList[sliceNumber].getStepByNumber(i);
                     for (fieldName in current_step){
                         if (fieldName in current_changes){
@@ -1969,7 +2117,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             var newRef = $('#newLink').val();
             var newProject = $('#chooseNewCloneProject').val();
             var sendData = {slices:sliceList,description:description,ref:newRef,project:newProject};
-{#             console.log(sendData);#}
               $( "#reloadDialog" ).dialog();
               $.ajax({
                     url: construct_django_url('/prodtask/request_clone2/',"{{ pr_id }}"),
@@ -2048,7 +2195,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         success: function (data, status) {
                             $("#waitingDialog").dialog('close');
                             var slices_str =  $.evalJSON(data).slices_range;
-                            console.log(data);
                             window.location.href = construct_django_url('/reqtask/',"{{ pr_id }}",slices_str);
 
                         }
@@ -2206,7 +2352,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                         var datasetList =  $.evalJSON(data).data;
                         for (i=0;i<datasetList.length;i++){
                             var datasetRow = $('<tr class=' +  datasetList[i].currentCampaign +' ></tr>');
-                            console.log(datasetList[i]);
                             datasetRow.append('<td><a href="https://rucio-ui.cern.ch/did?name='+
                                     datasetList[i].dataset+'">'+datasetList[i].dataset+ '</a></td>');
                             datasetRow.append('<td>'+'<a href="{{ bigpanda_base }}'+datasetList[i].input_task+'">'+datasetList[i].events+'</a>'+'</td>');
@@ -2260,7 +2405,6 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         };
         function savePriorityRequest(event,priority){
             event.preventDefault();
-            console.log(priority);
             var new_priority = $('#managementPriorityChange'+priority).val();
             if (new_priority!=priority){
                 $( "#reloadDialog" ).dialog();
@@ -2767,7 +2911,6 @@ function changeSliceChanges(that){
         var currentStepNumber = '';
         var currentField = '';
         var isSliceData = false;
-{#        console.log(that);#}
         for (i = 0; i < currentClass.length; i++) {
             if (currentClass[i] != '') {
                 if (currentClass[i].lastIndexOf('storeOutputSlice', 0) === 0) {
@@ -2814,7 +2957,6 @@ function changeSliceChanges(that){
             }
 
         }
-        {#        console.log(currentChangeStep,currentField,$(that).val());#}
     }
 };
 
@@ -2904,6 +3046,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </div>
     <div id="progressInputFind" title="Run" style="display: none">
         <p>Inputs ready:</p><span id="inputsCount"></span>
+    </div>
+    <div id="progressSliceSaved" title="Run" style="display: none">
+        <p>Slices saving:</p><span id="processedCount"></span>
     </div>
 <div id="reloadDialog" title="Run" style="display: none">
   <p>Page reloading…</p>
@@ -3286,7 +3431,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             {{ inputList.input_data}}
                         </a>
                     </td>
-                    <td  colspan="2"><a href="#" onclick="showModalDatasetInfo(event,{{ inputList.slice }})"><span class="changedatasetName{{ inputList.slice }}" id="inputDatasetName{{ inputList.slice }} filterField">{{ inputList.dataset }}</span><a/></td>
+                    <td  colspan="2"><a href="#" onclick="showModalDatasetInfo(event,{{ inputList.slice }})"><span class="changedatasetName{{ inputList.slice }} DatasetSort filterField" id="inputDatasetName{{ inputList.slice }}" title="{{ inputList.dataset }}">{{ inputList.dataset }}</span></a> </td>
                     <td></td>
                 {% endif %}
 {#                <td>{{ inputList.brief }}</td>#}

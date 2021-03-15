@@ -179,7 +179,7 @@ def extend_by_train_pattern_slices_in_req(request, reqid):
 
 
 def reject_steps_in_slice(current_slice):
-    step_execs = StepExecution.objects.filter(slice=current_slice)
+    step_execs = StepExecution.objects.filter(slice=current_slice,request=current_slice.request)
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     for step in ordered_existed_steps:
         if ProductionTask.objects.filter(step=step).count() == 0:
@@ -255,7 +255,7 @@ def set_parent_step(slices, request, parent_request):
             parent_slice_dict[parent_slice.input_data] = parent_slice_dict.get(parent_slice.input_data,[])+[parent_slice]
     for slice_number in slices:
         slice = InputRequestList.objects.get(slice=slice_number,request=request)
-        steps = StepExecution.objects.filter(slice=slice)
+        steps = StepExecution.objects.filter(slice=slice,request=request)
         ordered_existed_steps, parent_step = form_existed_step_list(steps)
         if ((not parent_step) or (parent_step.request_id != parent_request)) and slice.input_data:
             first_not_skipped = None
@@ -273,7 +273,7 @@ def set_parent_step(slices, request, parent_request):
                 parent_found = False
                 parent_slices = parent_slice_dict.get(slice.input_data,[])
                 for slice_index, parent_slice in enumerate(parent_slices):
-                    parent_slice_steps = StepExecution.objects.filter(slice=parent_slice)
+                    parent_slice_steps = StepExecution.objects.filter(slice=parent_slice,request=parent_request)
                     parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
                     for index,step in enumerate(parent_ordered_existed_steps):
                         if step.status in ['Approved']:
@@ -498,7 +498,7 @@ def find_child_request_slices(production_request_id,parent_slices):
         parent_steps = []
         for slice_number in parent_slices:
             current_slice = InputRequestList.objects.get(request=production_request_id,slice=int(slice_number))
-            parent_steps += StepExecution.objects.filter(slice=current_slice).values_list('id',flat=True)
+            parent_steps += StepExecution.objects.filter(slice=current_slice,request=production_request_id).values_list('id',flat=True)
         # for each child request find linked slices
         for child_request in child_requests:
             current_child_slice_set = set()
@@ -697,7 +697,7 @@ def step_params_from_tag(request, reqid):
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
                 if slice.slice>=int(slice_from):
-                    step_execs = StepExecution.objects.filter(slice=slice)
+                    step_execs = StepExecution.objects.filter(slice=slice, request=req)
                     for step_exec in step_execs:
                         if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
                             task_config = json.loads(step_exec.task_config)
@@ -763,7 +763,7 @@ def update_project_mode(request, reqid):
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
                 if slice.slice>=int(slice_from):
-                    step_execs = StepExecution.objects.filter(slice=slice)
+                    step_execs = StepExecution.objects.filter(slice=slice, request=req)
                     for step_exec in step_execs:
                         if(tag == step_exec.step_template.ctag)and(output_format == step_exec.step_template.output_formats):
                             if step_exec.status != 'Approved':
@@ -801,7 +801,7 @@ def get_tag_formats(request, reqid):
             req = TRequest.objects.get(reqid=reqid)
             slices = InputRequestList.objects.filter(request=req).order_by("slice")
             for slice in slices:
-                step_execs = StepExecution.objects.filter(slice=slice)
+                step_execs = StepExecution.objects.filter(slice=slice, request=req)
                 for step_exec in step_execs:
                     tag_format = step_exec.step_template.ctag + ":" + step_exec.step_template.output_formats
                     task_config = '{}'
@@ -948,7 +948,7 @@ def prepare_slices_to_retry(production_request, ordered_slices):
         tasks_parent[current_task['id']] = current_task['parent_id']
     for slice in ordered_slices:
         current_slice = InputRequestList.objects.get(slice=slice,request=production_request)
-        step_execs = StepExecution.objects.filter(slice=current_slice)
+        step_execs = StepExecution.objects.filter(slice=current_slice,request=production_request)
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
         result_dict[slice] = []
         for index, step in enumerate(ordered_existed_steps):
@@ -979,7 +979,7 @@ def apply_retry_action(production_request, retry_action):
     for slice_number in sorted(retry_action):
         if reduce(lambda x,y: x+y,retry_action[slice_number]):
             current_slice = InputRequestList.objects.get(request=production_request,slice=int(slice_number))
-            step_execs = StepExecution.objects.filter(slice=current_slice)
+            step_execs = StepExecution.objects.filter(slice=current_slice,request=production_request)
             ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
             if len(ordered_existed_steps) == len(retry_action[slice_number]):
                 new_slice = list(current_slice.values())[0]
@@ -1167,7 +1167,7 @@ def split_slice_by_tid(reqid, slice_number):
                 new_event_number = events_to_proceed
                 events_to_proceed = 0
             new_slice.input_events = new_event_number
-            steps = StepExecution.objects.filter(slice=new_slice)
+            steps = StepExecution.objects.filter(slice=new_slice,request=production_request)
             for step in steps:
                 if step.input_events == old_event_number:
                     step.input_events = new_event_number
@@ -1244,7 +1244,7 @@ def split_by_output(reqid,slice_number):
         outputs = ordered_existed_steps[0].step_template.output_formats.split('.')
         for output in outputs:
             new_slice = clone_slices(reqid, reqid, [slice.slice], 1, True)[0]
-            step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=reqid,slice=new_slice))
+            step = StepExecution.objects.get(slice=InputRequestList.objects.get(request=reqid,slice=new_slice),request=reqid)
             step_new_template = fill_template(step.step_template.step, step.step_template.ctag,
                                               step.step_template.priority, output,
                                               step.step_template.memory)
@@ -1301,7 +1301,7 @@ def split_slice(reqid, slice_number, divider):
     production_request = TRequest.objects.get(reqid=reqid)
     slice_to_split = InputRequestList.objects.filter(request = production_request, slice = slice_number)
     new_slice_number = (InputRequestList.objects.filter(request=production_request).order_by('-slice')[0]).slice + 1
-    step_execs = StepExecution.objects.filter(slice=slice_to_split[0])
+    step_execs = StepExecution.objects.filter(slice=slice_to_split[0],request = production_request)
     ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
     output_dataset = ''
     nEventsPerInputFile = None
@@ -1801,7 +1801,7 @@ def change_parent(request, reqid, new_parent):
 
 
 def change_slice_parent(request,slice,new_parent_slice):
-    step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice))
+    step_execs = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request,slice=slice),request=request)
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     step = ordered_existed_steps[0]
     if  int(new_parent_slice) == -2:
@@ -1814,7 +1814,7 @@ def change_slice_parent(request,slice,new_parent_slice):
             step.step_parent = step
             step.save()
             return
-        step_execs_old_parent = StepExecution.objects.filter(slice=parent_step.slice)
+        step_execs_old_parent = StepExecution.objects.filter(slice=parent_step.slice,request=parent_step.request)
         ordered_existed_steps_old_parent, parent_step_temp = form_existed_step_list(step_execs_old_parent)
         step_index = ordered_existed_steps_old_parent.index(parent_step)
         step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=int(new_parent_slice)))
@@ -1927,7 +1927,7 @@ def find_slice_dataset_info(reqid, slice_number):
     slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
     container = slice.dataset
     dataset_events_list = dataset_events_ddm(container)
-    steps = list(StepExecution.objects.filter(slice=slice))
+    steps = list(StepExecution.objects.filter(slice=slice,request=reqid))
     # ordered_existed_steps, parent_step = form_existed_step_list(steps)
     # tag = None
     # for step in ordered_existed_steps:
