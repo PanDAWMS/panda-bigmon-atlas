@@ -448,18 +448,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                 } else {
                     ajaxURL = "{% url 'prodtask:request_steps_save' pr_id %}";
                 }
-            var missedList = [];
-            var doubleTrf = [];
-            var wrongSLices = [];
-            var slices = [];
-            var errorSlices = [];
-            var notChangedSlices = [];
-            var removeDataset = [];
                 $.ajax({
                     url: ajaxURL,
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
+                    timeout: 0,
                     dataType: 'text',
                     success: function(data,status) {
                         $( "#waitingDialog" ).dialog('close');
