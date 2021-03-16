@@ -327,8 +327,8 @@
        $(".tooltiped").tooltip( );
        $(".show_tasks").one( 'click', function(){ expandTaskStat( $(this), $(this).attr('rid') ); } );
 
-       if( $(".show_tasks").length < 20 )
-           $(".show_tasks").each( function( index, element) { setTimeout ( function(){  $(element).click() }, index * 1000 ) } );
+       if( $(".show_tasks").length <= 50 )
+           $(".show_tasks").each( function( index, element) { setTimeout ( function(){  $(element).click() }, index  ) } );
 
     }
 
