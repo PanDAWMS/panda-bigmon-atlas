@@ -1788,13 +1788,13 @@ class JediTasks(models.Model):
     statechangetime = models.DateTimeField(null=True, db_column='STATECHANGETIME', blank=True)
     superstatus = models.CharField(max_length=64, db_column='SUPERSTATUS', blank=True)
     campaign = models.CharField(max_length=72, db_column='CAMPAIGN', blank=True)
-
     cputime = models.IntegerField(null=True, db_column='cputime', blank=True)
     cputimeunit = models.CharField(max_length=72, db_column='cputimeunit', blank=True)
     basewalltime = models.IntegerField(null=True, db_column='basewalltime', blank=True)
     cpuefficiency = models.IntegerField(null=True, db_column='cpuefficiency', blank=True)
     nucleus = models.CharField(max_length=72, db_column='NUCLEUS', blank=True)
     ttcrequested = models.DateTimeField(null=True, db_column='TTCREQUESTED', blank=True)
+    gshare = models.CharField(max_length=72, db_column='GSHARE', blank=True)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError('Read only')
