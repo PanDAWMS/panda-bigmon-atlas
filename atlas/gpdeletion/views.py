@@ -124,6 +124,8 @@ def apply_extension(container, number_of_extension, user, message):
         gp.extensions_number += number_of_extension
     else:
         gp.extensions_number = number_of_extension
+    if gp.extensions_number < 0:
+        gp.extensions_number = 0
     gp.update_time = timezone.now()
     gp.save()
     _logger.info(

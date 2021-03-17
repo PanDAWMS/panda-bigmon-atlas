@@ -38,7 +38,7 @@ export class GPDeletionContainerService {
       gpContainer.age = (now - gpContainer.epoch_last_update_time) / (86400);
       let expiredDays = this.EXPIED_DAYS;
       if ((gpContainer.extensions_number !== undefined) && (gpContainer.extensions_number > 0)){
-        expiredDays = this.EXPIED_DAYS + 30 * gpContainer.extensions_number;
+        expiredDays = this.EXPIED_DAYS + 60 * gpContainer.extensions_number;
         gpContainer.expended_till = (gpContainer.epoch_last_update_time + expiredDays * 86400) * 1000;
       }
       if (gpContainer.age > expiredDays){

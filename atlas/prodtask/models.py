@@ -1305,7 +1305,7 @@ class GroupProductionStats(models.Model):
 
 class GroupProductionDeletion(models.Model):
 
-    EXTENSIONS_DAYS = 30
+    EXTENSIONS_DAYS = 60
     LIFE_TIME_DAYS = 60
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_DELETION_ID', primary_key=True)
@@ -1331,7 +1331,7 @@ class GroupProductionDeletion(models.Model):
         extensions_number = self.extensions_number
         if not extensions_number:
             extensions_number = 0
-        return (self.last_extension_time  - timezone.now()).days + extensions_number * self.EXTENSIONS_DAYS + self.LIFE_TIME_DAYS
+        return (self.last_extension_time - timezone.now()).days + extensions_number * self.EXTENSIONS_DAYS + self.LIFE_TIME_DAYS
 
     def save(self, *args, **kwargs):
         if not self.id:
