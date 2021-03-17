@@ -4,7 +4,7 @@ import random
 from django.db.models import Q
 
 from atlas.cric.client import CRICClient
-from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask
+from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -191,7 +191,7 @@ class TapeResource(ResourceQueue):
                     if task.request.phys_group == 'VALI':
                         dataset_shares.append('VALI')
                     else:
-                        dataset_shares.append(task.request.request_type)
+                        dataset_shares.append(JediTasks.objects.get(id=task.id).gshare)
             if len(dataset_shares) >0:
                 if len(dataset_shares)>1:
                     dataset_share = 'any'
@@ -877,14 +877,15 @@ def find_active_staged_with_share():
         for action_stage in ActionStaging.objects.filter(step_action=action):
             dataset_stage = action_stage.dataset_stage
             task = ProductionTask.objects.get(id=action_stage.task)
-            share = task.request.request_type
+            #share = task.request.request_type
+            share = JediTasks.objects.get(id=task.id).gshare
             if task.request.phys_group == 'VALI':
                 share = 'VALI'
             if (dataset_stage.status not in ['queued']) and dataset_stage.source:
                 if dataset_stage.dataset not in result:
                     result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
                                                      'total':dataset_stage.total_files,'share': share}
-                if share == 'VALI' or share == 'MC':
+                if share == 'VALI':
                     files_finished = dataset_stage.staged_files
                 else:
                     if task.total_files_finished is None:
