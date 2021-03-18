@@ -17,7 +17,7 @@
   </mat-form-field>
   </form>
 
-    <p><button mat-button (click)="sendExtension()">Send</button></p>
+    <p><button mat-button [disabled]="sendClicked" (click)="sendExtension()">Send</button></p>
     <p><button mat-button (click)="sidenav.close()">Close</button></p>
 
 

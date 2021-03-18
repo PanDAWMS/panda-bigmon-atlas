@@ -65,6 +65,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   amiTagsDescription: Map<string, AMITag>;
   mainFilter = '';
   expiredFilter = '';
+  sendClicked = false;
 
   constructor(private route: ActivatedRoute, private gpDeletionContainerService: GPDeletionContainerService, private router: Router,
               private viewportScroller: ViewportScroller, private gpContainerDetailsService: GpContainerDetailsService,
@@ -134,6 +135,8 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
       this.fillTablesByTag();
   }
   fillTablesByTag(): void{
+    this.containersByTag = new Map<string, GroupProductionDeletionContainer[]>();
+    this.containersByTagTables = [];
     for (const container of this.gpList) {
       if (this.containersByTag.has(container.ami_tag)) {
         const currentContainer = this.containersByTag.get(container.ami_tag);
@@ -153,7 +156,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
       amiTags.push(amiTag);
     }
     this.amiTagsDescription = new Map<string, AMITag>();
-    this.amiTagService.getAMITagDetails(amiTags.join(',')).subscribe(amiTagsDetails =>{
+    this.amiTagService.getAMITagDetails(amiTags.join(',')).subscribe(amiTagsDetails => {
       this.amiTagsDescription = amiTagsDetails;
     });
     this.route.fragment.subscribe(f => {
@@ -189,6 +192,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   }
 
   sendExtension(): void {
+    this.sendClicked = true;
     const selectedContainers: GroupProductionDeletionContainer[] = [];
     for (const GPAMIContainers of this.containersByTagTables) {
        GPAMIContainers.dataSource.data.forEach(row => {
@@ -198,7 +202,13 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
         });
       }
     this.gpDeletionContainerService.askExtension({message: this.extendMessage,
-      containers: selectedContainers, number_of_extensions: this.extendNumbers}).subscribe();
+      containers: selectedContainers, number_of_extensions: this.extendNumbers}).subscribe( _ => {
+        this.gpDeletionContainerService.getGPDeletionPerOutput(this.outputType, this.dataType).subscribe(newGPList =>{
+            this.gpList = newGPList;
+            this.fillTablesByTag();
+            this.sendClicked = false;
+        });
+    });
   }
   applyFilter(filterValue): void{
     for (const GPAMIContainers of this.containersByTagTables) {

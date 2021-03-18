@@ -26,6 +26,7 @@ from rest_framework.decorators import parser_classes
 from django.core.cache import cache
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'MUON', 'PHYS',
@@ -131,6 +132,7 @@ def apply_extension(container, number_of_extension, user, message):
     _logger.info(
         'GP extension by {user} for {container} on {number_of_extension} '.format(user=user, container=container,
                                                                                    number_of_extension=number_of_extension))
+    _jsonLogger.info('Request for derivation container extension', extra={'user':user,'container':container,'number_of_extension':number_of_extension})
 
 
 def remove_extension(container):
