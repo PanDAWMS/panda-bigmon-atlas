@@ -336,7 +336,7 @@ class TestTapeResource(TapeResource):
 
 def start_stagind_task(task):
     #Send resume command
-    if(task.status in ['staging','waiting','paused']):
+    if(task.status in ['staging','waiting']):
         _logger.info('Resume task after pre stage %s ' % (str(task.id)))
         _do_deft_action('mborodin',int(task.id),'resume_task')
     pass
