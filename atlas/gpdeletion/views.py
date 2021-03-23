@@ -120,7 +120,7 @@ def apply_extension(container, number_of_extension, user, message):
     gp_extension.user = user
     gp_extension.timestamp = timezone.now()
     gp_extension.message = message
-    gp_extension.save()
+ #   gp_extension.save()
     if gp.extensions_number:
         gp.extensions_number += number_of_extension
     else:
@@ -128,7 +128,7 @@ def apply_extension(container, number_of_extension, user, message):
     if gp.extensions_number < 0:
         gp.extensions_number = 0
     gp.update_time = timezone.now()
-    gp.save()
+   # gp.save()
     _logger.info(
         'GP extension by {user} for {container} on {number_of_extension} '.format(user=user, container=container,
                                                                                    number_of_extension=number_of_extension))
