@@ -227,7 +227,7 @@ def ami_tags_reduction_w_data(postfix, data=False):
     return '_'.join(new_postfix)
 
 def get_container_name(dataset_name):
-    return '.'.join(dataset_name.split('.')[:-1] + [ami_tags_reduction_w_data(dataset_name.split('.')[-1], dataset_name.startswith('data'))])
+    return '.'.join(dataset_name.split('.')[:-1] + [ami_tags_reduction_w_data(dataset_name.split('.')[-1], dataset_name.startswith('data') or ('TRUTH' in dataset_name) )])
 
 
 def collect_datasets(format_base, data, only_new = False):
@@ -578,8 +578,7 @@ def clean_superceeded(do_es_check=True, format_base = None):
                             delete_container = False
                             if gp_container.days_to_delete <0 and (gp_container.version >= version_from_format(gp_container.output_format)):
                                 existed_datasets += es_datasets
-                            if('TRUTH' not in output_format):
-                                _logger.error('{container} is empty but something is found'.format(container=container_name))
+                            _logger.error('{container} is empty but something is found'.format(container=container_name))
                 else:
                     if (gp_container.days_to_delete < 0) and (gp_container.version >= version_from_format(gp_container.output_format)):
                         existed_datasets += datasets

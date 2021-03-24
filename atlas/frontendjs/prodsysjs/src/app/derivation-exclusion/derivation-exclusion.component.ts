@@ -53,7 +53,7 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   totalFilteredSize = 0;
   totalFilteredExpired = 0;
   totalFilteredExpiredSize = 0;
-  columnsToDisplay = [ 'select', 'container', 'available_tags', 'age', 'extended_till'];
+  columnsToDisplay = [ 'select', 'container', 'available_tags', 'age', 'extensions_number', 'extended_till'];
   containersByTag = new Map<string, GroupProductionDeletionContainer[]>();
   // selection = new SelectionModel<GroupProductionDeletionContainer>(true, []);
   containersByTagTables: Array<ContainerByTag> = [];

@@ -94,6 +94,11 @@
     <td mat-cell *matCellDef="let element"  [ngClass]="element.is_expired" > {{element.age | number:'1.0-0'}} </td>
   </ng-container>
 
+  <ng-container matColumnDef="extensions_number">
+    <th mat-header-cell *matHeaderCellDef > # ext </th>
+    <td mat-cell *matCellDef="let element"> {{element.extensions_number}} </td>
+  </ng-container>
+
   <ng-container matColumnDef="extended_till">
     <th mat-header-cell *matHeaderCellDef > Extended  </th>
     <td mat-cell *matCellDef="let element"> {{element.expended_till| date}} </td>
