@@ -647,7 +647,7 @@ def find_input_datasets(request, reqid):
                 pass
         results.update({'success':True,'data':slice_dataset_dict})
         _jsonLogger.info('Finish find input datasets for MC slices', extra=form_json_request_dict(reqid,request,
-                                                                                   {'duration':time()-start_time,'slices':slices}))
+                                                                                   {'duration':time()-start_time,'slices':json.dumps(slices)}))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 @csrf_protect
@@ -1157,7 +1157,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         slice_steps = json.loads(data)
         _logger.debug(form_request_log(reqid,request,"Steps modification for: %s" % slice_steps))
         start_time = time()
-        _jsonLogger.debug('Steps modification',extra=form_json_request_dict(reqid,request,{'steps':slice_steps}))
+        _jsonLogger.debug('Steps modification',extra=form_json_request_dict(reqid,request,{'steps':json.dumps(slice_steps)}))
         _jsonLogger.info('Start steps modification',extra=form_json_request_dict(reqid,request))
         slices = list(slice_steps.keys())
         req = TRequest.objects.get(reqid=reqid)

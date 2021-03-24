@@ -241,7 +241,7 @@ def find_parent_slices(request, reqid, parent_request):
             results = {'success':True}
             request.session['selected_slices'] = list(map(int,changed_slices))
             _jsonLogger.info('Finish parent steps for MC slices', extra=form_json_request_dict(reqid,request,
-                                                                                                      {'duration':time()-start_time,'slices':slices}))
+                                                                                                      {'duration':time()-start_time,'slices':json.dumps(slices)}))
         except Exception as e:
             _logger.error(str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')

@@ -44,7 +44,7 @@ def do_tasks_action(owner, tasks, action, *args):
     result = []
 
     for task in tasks:
-        _jsonLogger.info("Tasks action executed",extra={'task':str(task),'user':owner,'action':action,'params':args})
+        _jsonLogger.info("Tasks action executed",extra={'task':str(task),'user':owner,'action':action,'params':json.dumps(args)})
         req_info = do_action(owner, task, action, *args)
         #if req_info['exception']:
             #return req_info
