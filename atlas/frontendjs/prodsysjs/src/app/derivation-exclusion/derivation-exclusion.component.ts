@@ -164,6 +164,8 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
       });
     this.applyFilter(this.mainFilter);
     this.recountFiltered();
+    this.recountSelected();
+
 
   }
 
