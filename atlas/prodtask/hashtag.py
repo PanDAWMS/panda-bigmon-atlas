@@ -368,19 +368,23 @@ def add_request_hashtag(request, reqid):
             hashtag = hashtag.replace('#','').strip()
             hashtag = hashtag.replace(" ",'_')
             _logger.debug(form_request_log(reqid,request,'Add hashtag: %s' % str(hashtag)))
-            existed_hashtag = add_or_get_request_hashtag(hashtag)
-            if not HashTagToRequest.objects.filter(hashtag=existed_hashtag,request=reqid).exists():
-                request_hashtag = HashTagToRequest()
-                request_hashtag.hashtag = existed_hashtag
-                request_hashtag.request = TRequest.objects.get(reqid=reqid)
-                request_hashtag.save()
-                for task in ProductionTask.objects.filter(request=reqid):
-                    add_hashtag_to_task(existed_hashtag.hashtag,task.id)
+            _set_request_hashtag(reqid, hashtag)
             hashtag_html,hashtag_href = form_hashtag_string(reqid)
             results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
         except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def _set_request_hashtag(reqid,hashtag):
+    existed_hashtag = add_or_get_request_hashtag(hashtag)
+    if not HashTagToRequest.objects.filter(hashtag=existed_hashtag,request=reqid).exists():
+        request_hashtag = HashTagToRequest()
+        request_hashtag.hashtag = existed_hashtag
+        request_hashtag.request = TRequest.objects.get(reqid=reqid)
+        request_hashtag.save()
+        for task in ProductionTask.objects.filter(request=reqid):
+            add_hashtag_to_task(existed_hashtag.hashtag,task.id)
 
 @csrf_protect
 def add_task_hashtag(request, taskid):

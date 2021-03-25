@@ -15,6 +15,7 @@ from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, M
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions
 from atlas.prodtask.spdstodb import fill_template
+from .hashtag import _set_request_hashtag
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from .ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
@@ -2292,6 +2293,7 @@ def obsolete_old_deleted_tasks(request, reqid):
     if request.method == 'POST':
         try:
             if ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser :
+                _set_request_hashtag(reqid,'MCDeletedReprocessing')
                 data = request.body
                 input_dict = json.loads(data)
                 slices = input_dict['slices']
