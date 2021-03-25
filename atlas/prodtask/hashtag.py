@@ -374,6 +374,8 @@ def add_request_hashtag(request, reqid):
                 request_hashtag.hashtag = existed_hashtag
                 request_hashtag.request = TRequest.objects.get(reqid=reqid)
                 request_hashtag.save()
+                for task in ProductionTask.objects.filter(request=reqid):
+                    add_hashtag_to_task(existed_hashtag.hashtag,task.id)
             hashtag_html,hashtag_href = form_hashtag_string(reqid)
             results = {'success':True,'data':{'html':hashtag_html,'href':hashtag_href}}
         except Exception as e:
