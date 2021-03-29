@@ -67,6 +67,8 @@ def create_predefinition_action(step):
                 if (action in [8]) and  ('useZipToPin=yes') not in step.get_task_config('project_mode'):
                     step.update_project_mode('useZipToPin','yes')
                     step.save()
+        elif action in [11]:
+            pass
         else:
             step.status = 'Waiting'
             step.save()
