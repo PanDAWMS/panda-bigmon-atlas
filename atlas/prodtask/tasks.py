@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import time
+
 from atlas.celerybackend.celery import app
 from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_update, clean_superceeded
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
@@ -87,3 +89,10 @@ def gp_deletion_update_with_cleaning():
     do_gp_deletion_update()
     clean_superceeded()
     return True
+
+@app.task(bind=True)
+def test_async_progress(self, a):
+    for i in range(10):
+        time.sleep(10)
+        self.update_state(state="PROGRESS", meta={'progress': i*10})
+    return 'finished: '+str(a)
