@@ -1602,7 +1602,6 @@ def statistic_by_request_deriv_new(search_dict, formats):
 
     total_result = {}
     for format in formats:
-        print(formats)
         query = {
                   "size": 0,
                   "query": {
@@ -1696,7 +1695,6 @@ def statistic_by_request_deriv_new(search_dict, formats):
         except Exception as e:
             print("Problem with es deriv : %s" % (e))
             aggregs = None
-        print(exexute.hits.total)
         #return exexute
         if aggregs and exexute.hits.total>0:
                     for x in exexute.aggregations.amitag.buckets:

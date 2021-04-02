@@ -123,7 +123,7 @@ if response.status_code != requests.codes.ok:
 result = json.loads(response.content)
 if result['containers_extented'] != len(containers):
   for container_with_problem in result['containers_with_problems']:
-     print("Container &#123;container&#125; has problem: &#123;problem&#125;".format(container=container_with_problem[0],problem=container_with_problem[1])</pre>
+     print("Container &#123;container&#125; has problem: &#123;problem&#125;".format(container=container_with_problem[0],problem=container_with_problem[1]))</pre>
 
         </code>
       </mat-card-content>

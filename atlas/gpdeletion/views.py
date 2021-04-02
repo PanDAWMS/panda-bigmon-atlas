@@ -937,7 +937,7 @@ class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
                 filter[field] = self.request.query_params[field]
             elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
-        queryset = GroupProductionDeletion.objects.filter(**filter)
+        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('ami_tag','container')
 
         return queryset
 
@@ -959,7 +959,7 @@ class ListGroupProductionDeletionView(generics.ListAPIView):
                 filter['version__gte'] = version_from_format(self.request.query_params[field])
             elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
-        queryset = GroupProductionDeletion.objects.filter(**filter)
+        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('ami_tag','container')
 
         return queryset
 

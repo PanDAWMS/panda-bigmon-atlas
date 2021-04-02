@@ -115,7 +115,7 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
         this.totalDatasetsToDelete += statsForFormat.containersToDelete;
         this.totalSizeToDelete  += statsForFormat.sizeToDelete;
         if (statsForFormat.sizeToDelete > 0) {
-          this.sizeChartData.push({name: statsForFormat.outputFormat, value: Number(statsForFormat.sizeToDelete) / 10e12});
+          this.sizeChartData.push({name: statsForFormat.outputFormat, value: Number(statsForFormat.sizeToDelete) / 1e12});
         }
       }
       statsForBase.sort((a, b) => a.outputFormat.localeCompare(b.outputFormat));
