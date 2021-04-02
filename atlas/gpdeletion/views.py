@@ -316,8 +316,9 @@ def range_containers(container_key):
         for ami_tag in ami_tags[1:]:
             if latest.status == 'finished':
                 version += 1
-            if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags:
-                by_amitag[ami_tag].last_extension_time  = latest.update_time
+            last_extension = max([latest.update_time,by_amitag[ami_tag].update_time])
+            if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags or by_amitag[ami_tag].last_extension_time!=last_extension:
+                by_amitag[ami_tag].last_extension_time = last_extension
                 by_amitag[ami_tag].version = version
                 by_amitag[ami_tag].available_tags = available_tags
                 by_amitag[ami_tag].save()
@@ -508,6 +509,7 @@ def rerange_after_deletion(gp_delete_container):
                 by_amitag[gp_container.ami_tag] = gp_container
         if len(by_amitag.keys()) == 1:
             ami_tag, gp_container = by_amitag.popitem()
+            by_amitag[ami_tag].available_tags = gp_container.ami_tag
             gp_container.version = 0
             gp_container.save()
         else:
@@ -525,8 +527,9 @@ def rerange_after_deletion(gp_delete_container):
             for ami_tag in ami_tags[1:]:
                 if latest.status == 'finished':
                     version += 1
-                if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags:
-                    by_amitag[ami_tag].last_extension_time = latest.update_time
+                last_extension = max([latest.update_time,by_amitag[ami_tag].update_time])
+                if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags or by_amitag[ami_tag].last_extension_time!=last_extension:
+                    by_amitag[ami_tag].last_extension_time = last_extension
                     by_amitag[ami_tag].version = version
                     by_amitag[ami_tag].previous_container = None
                     by_amitag[ami_tag].available_tags = available_tags
@@ -537,6 +540,11 @@ def rerange_after_deletion(gp_delete_container):
         gp_extension.delete()
     gp_delete_container.delete()
 
+def fix_update_time(container):
+    gp_container = GroupProductionDeletion.objects.get(container=container)
+    ddm = DDM()
+    gp_container.update_time = ddm.dataset_metadata(container)['updated_at']
+    gp_container.save()
 
 def clean_superceeded(do_es_check=True, format_base = None):
     # for base_format in FORMAT_BASES:
@@ -937,7 +945,7 @@ class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
                 filter[field] = self.request.query_params[field]
             elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
-        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('ami_tag','container')
+        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('-ami_tag','container')
 
         return queryset
 
@@ -959,7 +967,7 @@ class ListGroupProductionDeletionView(generics.ListAPIView):
                 filter['version__gte'] = version_from_format(self.request.query_params[field])
             elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
-        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('ami_tag','container')
+        queryset = GroupProductionDeletion.objects.filter(**filter).order_by('-ami_tag','container')
 
         return queryset
 
