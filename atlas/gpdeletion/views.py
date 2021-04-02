@@ -127,7 +127,6 @@ def apply_extension(container, number_of_extension, user, message):
         gp.extensions_number = number_of_extension
     if gp.extensions_number < 0:
         gp.extensions_number = 0
-    gp.update_time = timezone.now()
     gp.save()
     _logger.info(
         'GP extension by {user} for {container} on {number_of_extension} '.format(user=user, container=container,
@@ -138,7 +137,6 @@ def apply_extension(container, number_of_extension, user, message):
 def remove_extension(container):
     gp = GroupProductionDeletion.objects.get(container=container)
     gp.extensions_number = 0
-    gp.update_time = timezone.now()
     gp.save()
 
 def form_gp_from_dataset(dataset):
@@ -531,6 +529,7 @@ def rerange_after_deletion(gp_delete_container):
                     by_amitag[ami_tag].last_extension_time = latest.update_time
                     by_amitag[ami_tag].version = version
                     by_amitag[ami_tag].previous_container = None
+                    by_amitag[ami_tag].available_tags = available_tags
                     by_amitag[ami_tag].save()
                 latest = by_amitag[ami_tag]
     gp_extensions = GroupProductionDeletionExtension.objects.filter(container=gp_delete_container)
