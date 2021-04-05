@@ -997,7 +997,7 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
             coeff = 1.0
             current_stat = statistics[step]
             if steps_tasks and (step in steps_tasks):
-                    current_stat['total_tasks_db'] = sum([steps_tasks[step][x] for x in steps_tasks[step]])
+                    current_stat['total_tasks_db'] = sum([steps_tasks[step][x] for x in steps_tasks[step] if x not in ProductionTask.RED_STATUS])
                     coeff = current_stat['total_tasks'] / current_stat['total_tasks_db']
                     if coeff > 1:
                         coeff = 1
