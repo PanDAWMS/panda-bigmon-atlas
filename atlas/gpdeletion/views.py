@@ -121,6 +121,8 @@ def apply_extension(container, number_of_extension, user, message):
     gp_extension.timestamp = timezone.now()
     gp_extension.message = message
     gp_extension.save()
+    if (number_of_extension > 0) and (gp.days_to_delete < 0):
+        number_of_extension += (gp.days_to_delete // GroupProductionDeletion.EXTENSIONS_DAYS) * -1
     if gp.extensions_number:
         gp.extensions_number += number_of_extension
     else:
