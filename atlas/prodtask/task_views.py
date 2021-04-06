@@ -814,14 +814,16 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
     for item in sync_keys:
         jedi_values.update({item:t_task[item]})
     #post production status
-    if deft_task.status in ['obsolete']:
+    if deft_task.status in ['obsolete','toabort']:
         jedi_values['status'] = deft_task.status
-    jedi_task = JediTasks.objects.filter(id=deft_task.id).values('start_time','errordialog')[0]
+    jedi_task = JediTasks.objects.filter(id=deft_task.id).values('start_time','errordialog','status')[0]
     if not jedi_values['start_time']:
         jedi_values['start_time'] = jedi_task['start_time']
     jedi_values['jedi_info'] = jedi_task['errordialog'][0:255]
     if not jedi_values['jedi_info']:
         jedi_values['jedi_info'] = 'no info from JEDI'
+    if jedi_task['status'] == 'aborting':
+        jedi_values['status'] = 'toabort'
     do_update = False
     for item in list(jedi_values.keys()):
         if jedi_values[item] != deft_task.__getattribute__(item):
