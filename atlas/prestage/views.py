@@ -506,6 +506,10 @@ def submit_all_tapes_processed_with_shares():
                 shares_penalty = {}
                 for dataset in active_for_tape:
                     shares_penalty[dataset['share']] = shares_penalty.get(dataset['share'],0) + dataset['value']
+                # adjust penalty
+                for share in shares_penalty.keys():
+                    if shares_penalty[share]!=0:
+                        shares_penalty[share] = shares_penalty[share] * int(tape.get_config('maximum_level')) // 100000
                 resource_tape = TapeResourceProcessedWithShare(tape.name,ddm,shares_penalty)
                 files_submitted = resource_tape.do_submission()
                 if tape.get_config('is_slow') and (files_submitted == 0):
