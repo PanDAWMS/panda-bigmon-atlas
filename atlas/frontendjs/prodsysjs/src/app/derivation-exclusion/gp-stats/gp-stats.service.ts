@@ -12,6 +12,7 @@ const CACHE_SIZE = 1;
 })
 export class GPStatsService {
     private gpStatsUrl = '/gpdeletion/gpstats';
+    private gpLastUpdateTimeUrl = '/gpdeletion/last_update_time_group_production';
     private cache$: Observable<GroupProductionStats[]>;
   constructor(
     private http: HttpClient){}
@@ -36,7 +37,15 @@ export class GPStatsService {
           catchError(this.handleError<GroupProductionStats[]>('getGPStats', []))
         );
     }
-    private handleError<T>(operation = 'operation', result?: T) {
+    GPLastUpdateTime(): Observable<string>  {
+      return this.http.get<string>(this.gpLastUpdateTimeUrl)
+        .pipe(
+          tap(_ => this.log(`fetched update time `)),
+          catchError(this.handleError<string>('GPLastUpdateTime', ''))
+        );
+    }
+
+  private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
 
       // TODO: send the error to remote logging infrastructure

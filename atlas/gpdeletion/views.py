@@ -131,9 +131,9 @@ def apply_extension(container, number_of_extension, user, message):
         gp.extensions_number = 0
     gp.save()
     _logger.info(
-        'GP extension by {user} for {container} on {number_of_extension} '.format(user=user, container=container,
-                                                                                   number_of_extension=number_of_extension))
-    _jsonLogger.info('Request for derivation container extension', extra={'user':user,'container':container,'number_of_extension':number_of_extension})
+        'GP extension by {user} for {container} on {number_of_extension} with messsage {message}'.format(user=user, container=container,
+                                                                                   number_of_extension=number_of_extension,message=message))
+    _jsonLogger.info('Request for derivation container extension for: {message}'.format(message=message), extra={'user':user,'container':container,'number_of_extension':number_of_extension})
 
 
 def remove_extension(container):
@@ -867,6 +867,13 @@ def version_from_format(output_format):
             return 2
     return 1
 
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def last_update_time_group_production(request):
+    return Response(cache.get('gp_deletion_update_time', timezone.now()).ctime())
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

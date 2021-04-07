@@ -6,6 +6,7 @@ import {GroupProductionDeletionContainer} from '../gp-deletion-container';
 import {SelectionModel} from '@angular/cdk/collections';
 import {ViewportScroller} from '@angular/common';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+import {GPStatsService} from "./gp-stats.service";
 
 
 
@@ -51,9 +52,13 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   totalSize = 0;
   totalDatasetsToDelete = 0;
   totalSizeToDelete = 0;
-  constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller, ) { }
+  lastUpdateTime = '';
+
+  constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller,
+              private gpStateService: GPStatsService ) { }
 
   ngOnInit(): void {
+    this.gpStateService.GPLastUpdateTime().subscribe(lastUpdateTime => this.lastUpdateTime = lastUpdateTime);
     this.gpStats = this.route.snapshot.data.gpStats;
     this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
     const URLdataType = paramMap.get('type');
@@ -64,7 +69,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
       this.fetchData(false);
       this.dataType = 'mc';
     }
-
   });
 
   }
