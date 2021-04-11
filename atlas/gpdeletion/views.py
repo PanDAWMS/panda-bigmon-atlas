@@ -123,6 +123,8 @@ def apply_extension(container, number_of_extension, user, message):
     gp_extension.save()
     if (number_of_extension > 0) and (gp.days_to_delete < 0):
         number_of_extension += (gp.days_to_delete // GroupProductionDeletion.EXTENSIONS_DAYS) * -1
+    if gp.days_to_delete + (number_of_extension * GroupProductionDeletion.EXTENSIONS_DAYS) > 365:
+        number_of_extension = (gp.days_to_delete // GroupProductionDeletion.EXTENSIONS_DAYS) * -1 + 6
     if gp.extensions_number:
         gp.extensions_number += number_of_extension
     else:
@@ -511,7 +513,7 @@ def rerange_after_deletion(gp_delete_container):
                 by_amitag[gp_container.ami_tag] = gp_container
         if len(by_amitag.keys()) == 1:
             ami_tag, gp_container = by_amitag.popitem()
-            by_amitag[ami_tag].available_tags = gp_container.ami_tag
+            gp_container.available_tags = gp_container.ami_tag
             gp_container.version = 0
             gp_container.save()
         else:
@@ -548,7 +550,7 @@ def fix_update_time(container):
     gp_container.update_time = ddm.dataset_metadata(container)['updated_at']
     gp_container.save()
 
-def clean_superceeded(do_es_check=True, format_base = None):
+def clean_superceeded(do_es_check=True, full=False, format_base = None):
     # for base_format in FORMAT_BASES:
     ddm = DDM()
     if not format_base:
@@ -557,6 +559,7 @@ def clean_superceeded(do_es_check=True, format_base = None):
     else:
         if format_base in FORMAT_BASES:
             cache_key = format_base
+            format_base = [format_base]
         else:
             return False
     existed_datasets = []
@@ -566,7 +569,10 @@ def clean_superceeded(do_es_check=True, format_base = None):
             superceed_version = 2
         formats = get_all_formats(base_format)
         for output_format in formats:
-            existed_containers = GroupProductionDeletion.objects.filter(output_format=output_format, version__gte=superceed_version)
+            if full:
+                existed_containers = GroupProductionDeletion.objects.filter(output_format=output_format)
+            else:
+                existed_containers = GroupProductionDeletion.objects.filter(output_format=output_format, version__gte=superceed_version)
             for gp_container in existed_containers:
                 container_name = gp_container.container
                 datasets = ddm.dataset_in_container(container_name)
@@ -587,7 +593,8 @@ def clean_superceeded(do_es_check=True, format_base = None):
                             delete_container = False
                             if gp_container.days_to_delete <0 and (gp_container.version >= version_from_format(gp_container.output_format)):
                                 existed_datasets += es_datasets
-                            _logger.error('{container} is empty but something is found'.format(container=container_name))
+                            if gp_container.version != 0:
+                                _logger.error('{container} is empty but something is found'.format(container=container_name))
                 else:
                     if (gp_container.days_to_delete < 0) and (gp_container.version >= version_from_format(gp_container.output_format)):
                         existed_datasets += datasets
@@ -780,7 +787,7 @@ def extension(request):
 @parser_classes((JSONParser,))
 def extension_api(request):
     """
-    Increase by 1 number of extension for each container in "containers" list with "message"
+    Increase by "number_of_extensions"  for each container in "containers" list with "message"
     Post data must contain two fields message and containers, e.g.:
     {"message":"Test","containers":['container1','container2']}\n
     :return is {'containers_extented': number of containers extented,'containers_with_problems': list of containers with problems}
@@ -791,9 +798,10 @@ def extension_api(request):
         username = request.user.username
         containers = request.data['containers']
         message = request.data['message']
+        number_of_extensions = request.data.get('number_of_extensions',1)
         for container in containers:
             try:
-                apply_extension(container,1,username,message)
+                apply_extension(container,number_of_extensions,username,message)
                 containers_extended += 1
             except Exception as e:
                 containers_with_problems.append((container, str(e)))
