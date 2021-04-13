@@ -82,11 +82,15 @@ class ResourceQueue(object):
                      "- {running}/{queued}".format(resource=self.resource_name,maximum=self.maximum_level,minimum=self.minimum_level,
                                                    percent=self.continious_percentage,running=running_level,queued=self.total_queued))
         shares_to_search = []
+        shares_penalties_prepared = {}
         if self.shares_penalty:
+            for share in self.shares_penalty:
+                for priority_share in self.shares_penalty[share]:
+                    shares_penalties_prepared[share+str(priority_share[0])] = priority_share[1]
             _logger.info("Shares penalties {resource}: {penalties} ".format(resource=self.resource_name,
-                                                       penalties=str(self.shares_penalty)))
+                                                       penalties=str(shares_penalties_prepared)))
             for share in self.queued_shares:
-                if ((float(running_level) + float(self.shares_penalty.get(share,0)))/ float(self.maximum_level)) < (self.continious_percentage / 100.0):
+                if ((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (self.continious_percentage / 100.0):
                     shares_to_search.append(share)
         if shares_to_search and ('any' not in shares_to_search):
             shares_to_search.append('any')
@@ -197,6 +201,11 @@ class TapeResource(ResourceQueue):
                     dataset_share = 'any'
                 else:
                     dataset_share = dataset_shares[0]
+                if dataset_share in self.shares_penalty:
+                    for share_priority in self.shares_penalty[dataset_share]:
+                        if priority <= share_priority[0]:
+                            dataset_share = dataset_share+str(share_priority[0])
+                            break
                 x['value'] = x['total_files']
                 x['priority'] = priority
                 x['share'] = dataset_share
@@ -503,13 +512,21 @@ def submit_all_tapes_processed_with_shares():
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 active_for_tape = [active_staged[x] for x in active_staged.keys() if
                                    active_staged[x]['tape'] == tape.name]
-                shares_penalty = {}
+                active_for_tape.sort(key=lambda x: x['priority'])
+                shares_penalty_by_priority = {}
                 for dataset in active_for_tape:
-                    shares_penalty[dataset['share']] = shares_penalty.get(dataset['share'],0) + dataset['value']
-                # adjust penalty
-                for share in shares_penalty.keys():
-                    if shares_penalty[share]!=0:
-                        shares_penalty[share] = shares_penalty[share] * int(tape.get_config('maximum_level')) // 100000
+                    if dataset['share'] not in shares_penalty_by_priority:
+                        shares_penalty_by_priority[dataset['share']] = {}
+                    for share in shares_penalty_by_priority[dataset['share']].keys():
+                        shares_penalty_by_priority[dataset['share']][share] += dataset['value']
+                    if dataset['priority'] not in shares_penalty_by_priority[dataset['share']]:
+                        shares_penalty_by_priority[dataset['share']][dataset['priority']] = dataset['value']
+                shares_penalty = {}
+                for share_name in shares_penalty_by_priority:
+                    shares_penalty[share_name] = shares_penalty_by_priority[share_name].items()
+                    shares_penalty[share_name] = [(x[0],x[1]* int(tape.get_config('maximum_level')) // 100000) for x in shares_penalty[share_name]]
+                    shares_penalty[share_name].sort(key=lambda x:-x[0])
+
                 resource_tape = TapeResourceProcessedWithShare(tape.name,ddm,shares_penalty)
                 files_submitted = resource_tape.do_submission()
                 if tape.get_config('is_slow') and (files_submitted == 0):
@@ -881,14 +898,19 @@ def find_active_staged_with_share():
         for action_stage in ActionStaging.objects.filter(step_action=action):
             dataset_stage = action_stage.dataset_stage
             task = ProductionTask.objects.get(id=action_stage.task)
+            if task.status in ProductionTask.NOT_RUNNING+['exhausted']:
+                continue
             #share = task.request.request_type
             share = JediTasks.objects.get(id=task.id).gshare
             if task.request.phys_group == 'VALI':
                 share = 'VALI'
             if (dataset_stage.status not in ['queued']) and dataset_stage.source:
+                priority = task.priority
+                if task.current_priority:
+                    priority = task.current_priority
                 if dataset_stage.dataset not in result:
                     result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
-                                                     'total':dataset_stage.total_files,'share': share}
+                                                     'total':dataset_stage.total_files,'share': share, 'priority':priority}
                 if share == 'VALI':
                     files_finished = dataset_stage.staged_files
                 else:
@@ -899,6 +921,8 @@ def find_active_staged_with_share():
                 result[dataset_stage.dataset]['value'] = min([result[dataset_stage.dataset]['value'],max([0,dataset_stage.staged_files-files_finished])])
                 if(result[dataset_stage.dataset]['share']!=share):
                     result[dataset_stage.dataset]['share'] = 'any'
+                if(result[dataset_stage.dataset]['priority']<priority):
+                    result[dataset_stage.dataset]['priority'] = priority
     return result
 
 def find_repeated_tasks_to_follow():
