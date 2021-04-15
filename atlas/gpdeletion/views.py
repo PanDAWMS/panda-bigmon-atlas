@@ -32,7 +32,7 @@ _jsonLogger = logging.getLogger('prodtask_ELK')
 FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'MUON', 'PHYS',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH']
 
-CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
+CP_FORMATS = ["FTAG", "EGAM", "MUON", 'PHYS', "JETM", "TAUP", "IDTR", "TCAL"]
 
 
 def get_all_formats(format_base):
@@ -114,6 +114,7 @@ def get_stats_per_format(output_format, version, is_real_data):
     return to_cache
 
 def apply_extension(container, number_of_extension, user, message):
+    container = container[container.find(':')+1:]
     gp = GroupProductionDeletion.objects.get(container=container)
     gp_extension = GroupProductionDeletionExtension()
     gp_extension.container = gp
@@ -809,6 +810,37 @@ def extension_api(request):
         return HttpResponseBadRequest(e)
     return Response({'containers_extented': containers_extended,'containers_with_problems': containers_with_problems})
 
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def extension_container_api(request):
+    """
+    Increase by "number_of_extensions"  for each container in "period_container"  with "message"
+    Post data must contain two fields message and period_container, e.g.:
+    {"message":"Test","period_container":'container'}\n
+    :return is {'containers_extented': number of containers extented,'containers_with_problems': list of containers with problems}
+"""
+    containers_extended = 0
+    containers_with_problems = []
+    try:
+        username = request.user.username
+        container = request.data['period_container']
+        message = request.data['message']
+        number_of_extensions = request.data.get('number_of_extensions',1)
+        ddm = DDM()
+        datasets = ddm.dataset_in_container(container)
+        containers = list(set(map(get_container_name,datasets)))
+        for container in containers:
+            try:
+                apply_extension(container,number_of_extensions,username,message)
+                containers_extended += 1
+            except Exception as e:
+                containers_with_problems.append((container, str(e)))
+    except Exception as e:
+        return HttpResponseBadRequest(e)
+    return Response({'containers_extented': containers_extended,'containers_with_problems': containers_with_problems})
+
 
 class UnixEpochDateField(serializers.DateTimeField):
     def to_representation(self, value):
@@ -980,8 +1012,9 @@ class ListGroupProductionDeletionView(generics.ListAPIView):
         for field in self.lookup_fields:
             if field == 'data_type' and self.request.query_params.get(field, None):
                 filter['container__startswith'] = self.request.query_params[field]
-            elif field == 'version' and self.request.query_params.get(field, None) and self.request.query_params.get('output_format', None):
+            elif field == 'output_format' and self.request.query_params.get(field, None) and not (self.request.query_params.get('version', None)):
                 filter['version__gte'] = version_from_format(self.request.query_params[field])
+                filter[field] = self.request.query_params[field]
             elif self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
         queryset = GroupProductionDeletion.objects.filter(**filter).order_by('-ami_tag','container')

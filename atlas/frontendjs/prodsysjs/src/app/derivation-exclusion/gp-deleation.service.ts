@@ -18,7 +18,7 @@ export class GPDeletionContainerService {
 
   getGPDeletionPerOutput(outputType: string, dataType: string): Observable<GroupProductionDeletionContainer[]> {
     return this.http.get<GroupProductionDeletionContainer[]>(this.gpDeletionUrl, {params: {data_type: dataType,
-        version: '1', output_format: outputType}})
+         output_format: outputType}})
       .pipe(
         map(gpList => this.calculateDatasetAge(gpList)),
         tap(_ => this.log(`fetched containers for group ${outputType} ${dataType}`)),
