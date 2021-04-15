@@ -4,7 +4,7 @@ import random
 from django.db.models import Q
 
 from atlas.cric.client import CRICClient
-from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks
+from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -229,6 +229,7 @@ class TapeResource(ResourceQueue):
 
 
     def priorities_queue(self):
+       # new_queue = self.queue.sort(key=lambda x:-x['priority'])
         self.queue.sort(key=lambda x:-x['priority'])
 
     def __submit(self, submission_list):
@@ -1703,3 +1704,38 @@ def change_replica_by_task(task_id, replica=None):
         dataset_stage.save()
     else:
         return False
+
+
+def check_replica_can_be_deleted(task_id, ddm):
+    if ActionStaging.objects.filter(task=task_id).exists():
+        task = ProductionTask.objects.get(id=task_id)
+        if task.status not in ProductionTask.RED_STATUS + ['done','obsolete']:
+            return False
+        action_stage = ActionStaging.objects.filter(task=task_id).last()
+        dataset_stage = action_stage.dataset_stage
+        do_deletion = True
+        for other_actions in ActionStaging.objects.filter(dataset_stage=dataset_stage):
+            if ProductionTask.objects.get(id=other_actions.task).status not in ProductionTask.RED_STATUS + ['done','obsolete']:
+                do_deletion = False
+                break
+        if do_deletion:
+            _logger.info("Rule %s will be deleted" % str(dataset_stage.rse))
+            ddm.delete_replication_rule(dataset_stage.rse)
+        return True
+    else:
+        return True
+
+
+def find_stage_task_replica_to_delete():
+    HASHTAG_STAGE_CAROUSEL = 'stageCarousel'
+    hashtag = HashTag.objects.get(hashtag=HASHTAG_STAGE_CAROUSEL)
+    ddm = DDM()
+    for task_id in hashtag.tasks_ids:
+        try:
+            if check_replica_can_be_deleted(task_id,ddm):
+                task = ProductionTask.objects.get(id=task_id)
+                task.remove_hashtag(HASHTAG_STAGE_CAROUSEL)
+        except Exception as e:
+            _logger.error("Staging replica deletion problem %s %s" % (str(e), str(task)))
+
+

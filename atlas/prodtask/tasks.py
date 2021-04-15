@@ -6,7 +6,7 @@ from atlas.celerybackend.celery import app
 from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_update, clean_superceeded
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
-    sync_cric_deft, find_repeated_tasks_to_follow
+    sync_cric_deft, find_repeated_tasks_to_follow, find_stage_task_replica_to_delete
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.open_ended import check_open_ended
@@ -56,8 +56,8 @@ def sync_evgen_jo():
     return None
 
 @app.task(ignore_result=True)
-def remove_done_staging(production_requests):
-    delete_done_staging_rules(production_requests)
+def remove_done_staging():
+    find_stage_task_replica_to_delete()
     return None
 
 
