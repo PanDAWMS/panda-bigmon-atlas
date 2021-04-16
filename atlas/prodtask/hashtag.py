@@ -3,8 +3,9 @@ import logging
 from os import walk
 
 import time
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -311,6 +312,7 @@ def campaign_steps(request):
 
 def request_hashtags_campaign(request):
     if request.method == 'GET':
+
         return render(request, 'prodtask/_hashtag_campaign.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Hashtags for mc16 campaign',
@@ -320,12 +322,24 @@ def request_hashtags_campaign(request):
 
 def request_hashtags_main(request):
     if request.method == 'GET':
+
         return render(request, 'prodtask/_hashtags_list.html', {
                 'active_app': 'prodtask',
                 'pre_form_text': 'Hashtags to request',
                 'submit_url': 'prodtask:request_progress_main',
                 'parent_template': 'prodtask/_index.html',
             })
+
+def request_hashtags_main_with_hashtag(request, hashtag_string):
+    if request.method == 'GET':
+        hashtags = hashtag_string.split(',')
+        hashtags_to_search = []
+        for hashtag in hashtags:
+            if HashTag.objects.filter(hashtag=hashtag).exists():
+                if HashTag.objects.get(hashtag=hashtag).type == 'UD':
+                    hashtags_to_search.append(hashtag)
+        hashtag_string = '|'+'|'.join(hashtags_to_search)
+    return HttpResponseRedirect(reverse('dkb:index', args=[])+'#/output_stat/?hashtag='+hashtag_string)
 
 
 def add_or_get_request_hashtag(hashtag, type='UD'):

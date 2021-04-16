@@ -160,6 +160,10 @@ urlpatterns = [
     url(r'^get_steps_bulk_info/(?P<reqid>\d+)/$', step_manage_views.get_steps_bulk_info, name='get_steps_bulk_info'),
     url(r'^set_steps_bulk_info/(?P<reqid>\d+)/$', step_manage_views.set_steps_bulk_info, name='set_steps_bulk_info'),
     url(r'^get_slices_bulk_info/(?P<reqid>\d+)/$', step_manage_views.get_slices_bulk_info, name='get_slices_bulk_info'),
+    url(r'^test_celery_task/(?P<reqid>\d+)/$', step_manage_views.test_celery_task, name='test_celery_task'),
+    url(r'^celery_task_status/(?P<celery_task_id>[\w-]+)/$', step_manage_views.celery_task_status, name='celery_task_status'),
+
+
     url(r'^change_parent/(?P<reqid>\d+)/(?P<new_parent>[-+]?\d+)/$', step_manage_views.change_parent, name='change_parent'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', step_manage_views.slice_steps, name='slice_steps'),
 
@@ -201,8 +205,10 @@ urlpatterns = [
     url(r'^request_progress_main/', selection.request_progress_main, name='request_progress_main'),
     url(r'^task_chain/', selection.task_chain, name='task_chain'),
 
+    url(r'^request_hashtags_outputs/(?P<hashtag_string>[\w,\-]+)/$', hashtag.request_hashtags_main_with_hashtag, name='request_hashtags_main_with_hashtag'),
 
     url(r'^request_hashtags_main/', hashtag.request_hashtags_main, name='request_hashtags_main'),
+
     url(r'^set_hashtag_for_tasks/', hashtag.set_hashtag_for_tasks, name='set_hashtag_for_tasks'),
     url(r'^set_hashtag_for_containers/', hashtag.set_hashtag_for_containers, name='set_hashtag_for_containers'),
 

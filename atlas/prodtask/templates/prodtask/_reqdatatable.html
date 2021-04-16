@@ -271,7 +271,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     })();
     (function(){
             $('.storeInput').bind('change',function(){changeSliceChanges(this);});
-        })();
+           $('.hashtags').attr('href',construct_django_url('/prodtask/request_hashtags_outputs/', '{{ hashtags_path }}'));
+
+    })();
     (function(){
             $('.sliceSplit').each(function(){
                 if($(this).html().endsWith('split')){
@@ -1250,7 +1252,60 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 });
               return false;
         };
-
+        {#function testAsyncClick(event){#}
+        {#    event.preventDefault();#}
+        {#    sendData = {'text':'test'};#}
+        {#    $.ajax({#}
+        {#        url: "{% url 'prodtask:test_celery_task' pr_id %}",#}
+        {#        type: 'POST',#}
+        {#        contentType: 'application/json; charset=utf-8',#}
+        {#        data: $.toJSON(sendData),#}
+        {#        dataType: 'json',#}
+        {#        success: function(data,status) {#}
+        {#            if (data.status === 'OK'){#}
+        {#                celery_task = data.task_id;#}
+        {#                progressBar(celery_task);#}
+        {#            }#}
+        {#            if (data.status === 'busy'){#}
+        {#                alert('Previous command is still executing, please wait before sending a new command');#}
+        {#            }#}
+        {##}
+        {#        },#}
+        {#        error: function (data,status){#}
+        {#            alert('Some problem during command sending'+data.toString());#}
+        {#        }#}
+        {#    });#}
+        {#}#}
+        {#function progressBar(celery_task_id){#}
+        {#    $('#asyncProgressRef').show();#}
+        {#    $('#asyncTaskID').html(celery_task_id);#}
+        {#    var pollInterval = undefined;#}
+        {#            poll = function() {#}
+        {#                $.ajax({#}
+        {#                    url: construct_django_url('/prodtask/celery_task_status/',celery_task_id),#}
+        {#                    dataType: 'json',#}
+        {#                    type: 'get',#}
+        {#                    success: function(data) { // check if available#}
+        {#                        $('#asyncStatus').html(data.status);#}
+        {#                        console.log(data);#}
+        {#                        if ( data.status === 'PROGRESS' ) { // get and check data value#}
+        {#                            $('#asyncProgressStat').html(data.progress.toString()+' %');#}
+        {#                        }#}
+        {#                        if ( data.status === 'SUCCESS' ) { // get and check data value#}
+        {#                            clearInterval(pollInterval); // optional: stop poll function#}
+        {#                            alert(data.result);#}
+        {#                        }#}
+        {#                    },#}
+        {#                    error: function() { // error logging#}
+        {#                        console.log('Error!');#}
+        {#                    }#}
+        {#                });#}
+        {#            };#}
+        {#            poll();#}
+        {#            pollInterval = setInterval(function() { // run function every 2000 ms#}
+        {#                poll();#}
+        {#            }, 5000);#}
+        {#}#}
         function findInputClick(event) {
             event.preventDefault();
             var i=0;
@@ -1286,7 +1341,8 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                     success: function(data,status) {
                         var newHashtags =$.evalJSON(data).data;
                         $('.hashtags').html(newHashtags.html);
-                        $('.hashtags').attr('href',"{% url 'prodtask:request_hashtags_main'  %}#/"+newHashtags.href);
+                        $('.hashtags').attr('href',construct_django_url('/prodtask/request_hashtags_outputs/', newHashtags.href));
+
                         redoHashtagList();
                     }
                 });
@@ -2652,7 +2708,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             $.post(removeUrl,$.toJSON(sendData), function(data,status){
                 var newHashtags =data.data;
                 $('.hashtags').html(newHashtags.html);
-                $('.hashtags').attr('href',"{% url 'prodtask:request_hashtags_main'  %}#/"+newHashtags.href);
+                $('.hashtags').attr('href',construct_django_url('/prodtask/request_hashtags_outputs/', newHashtags.href));
                 redoHashtagList();
             });
         }
@@ -3024,6 +3080,7 @@ var splitSlices = [];
 var suspectSplit = [];
 var workingOnSlices = [];
 var fromPreviousSlice = false;
+var celery_task = undefined;
 var NOTRUNNING = ['finished','done','obsolete','aborted','failed','broken'];
 var REDTASKSTATUS = ['aborted','failed','broken'];
 function ProjectModeForm(parentDiv, inputField){
@@ -3132,7 +3189,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 <div>
     <div class="row">
         <div class="large-2 column"><a id='hashtagWork' class="button prefix" onclick="showModalHashTag(event);">Add/Del #</a></div>
-        <div class="large-10 column"><span>HashTags: <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a></span></div>
+        <div class="large-10 column"><span>HashTags: <a class="hashtags" href="">{{ hashtags_string }}</a></span></div>
 
 
     </div>
@@ -3610,7 +3667,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
 	{% endfor %}
     </div>
 
-
+    <div style="display: none" id="asyncProgressRef" class="alert-box info round" >Async task <span id="asyncTaskID"></span> is <span id="asyncStatus"></span>  <span id="asyncProgressStat" ></span></div>
+{#    <button style="display: none" onclick="testAsyncClick(event);">Test</button>#}
  <form>
     <div class="row collapse hiddenNonEdit">
     <button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button>
@@ -4362,7 +4420,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <ul id="hashtagList">
 
     </ul>
-    <a class="hashtags" href="{% url 'prodtask:request_hashtags_main'  %}#/{{ hashtags_path }}">{{ hashtags_string }}</a>
+    <a class="hashtags" href="">{{ hashtags_string }}</a>
     <h3>New hashtag:</h3>
     <div class="row">
             <div class="large-4 column">
