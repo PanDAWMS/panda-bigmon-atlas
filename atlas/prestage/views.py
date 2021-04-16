@@ -1,5 +1,6 @@
 import json
 import random
+from copy import deepcopy
 
 from django.db.models import Q
 
@@ -171,9 +172,10 @@ class TestResource(ResourceQueue):
 
 class TapeResource(ResourceQueue):
 
-    def __init__(self, resource_name, ddm, test=False):
+    def __init__(self, resource_name, ddm, shares_penalty=None,  test=False):
         super().__init__(resource_name)
         self.ddm = ddm
+        self.shares_penalty = shares_penalty
         self.__get_tape_queue()
         self.get_limits()
         self.is_test = test
@@ -185,13 +187,18 @@ class TapeResource(ResourceQueue):
         for x in queued_staging_request:
             dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
             priority = 0
+            min_task = None
             dataset_shares = []
             for dataset_staging in dataset_stagings:
                 if dataset_staging.step_action.status == 'active':
                     task = ProductionTask.objects.get(id=dataset_staging.task)
-                    priority = task.current_priority
-                    if not priority:
-                        priority = task.priority
+                    current_priority = task.current_priority
+                    if not current_priority:
+                        current_priority = task.priority
+                    if current_priority > priority:
+                        priority = current_priority
+                    if not min_task or  task.id < min_task:
+                        min_task = task.id
                     if task.request.phys_group == 'VALI':
                         dataset_shares.append('VALI')
                     else:
@@ -201,15 +208,22 @@ class TapeResource(ResourceQueue):
                     dataset_share = 'any'
                 else:
                     dataset_share = dataset_shares[0]
-                if dataset_share in self.shares_penalty:
+                x['share'] = dataset_share
+                if self.shares_penalty and (dataset_share in self.shares_penalty):
+                    highest_priority = ''
                     for share_priority in self.shares_penalty[dataset_share]:
-                        if priority <= share_priority[0]:
-                            dataset_share = dataset_share+str(share_priority[0])
+                        if priority >= share_priority[0]:
+                            if priority > share_priority[0]:
+                                x['share'] = dataset_share+ highest_priority
+                            else:
+                                x['share'] = dataset_share+str(share_priority[0])
                             break
+                        highest_priority = str(share_priority[0])
                 x['value'] = x['total_files']
                 x['priority'] = priority
-                x['share'] = dataset_share
-                self.queued_shares.add(dataset_share)
+                x['order_by'] = [dataset_share, min_task]
+
+                self.queued_shares.add(x['share'])
                 self.total_queued += x['value']
                 self.queue.append(x)
 
@@ -229,8 +243,18 @@ class TapeResource(ResourceQueue):
 
 
     def priorities_queue(self):
-       # new_queue = self.queue.sort(key=lambda x:-x['priority'])
-        self.queue.sort(key=lambda x:-x['priority'])
+        new_queue = deepcopy(self.queue)
+        new_queue.sort(key=lambda x:x['order_by'][1])
+        share_order = ['any']
+        for x in new_queue:
+            if x['order_by'][0] not in share_order:
+                share_order.append(x['order_by'][0])
+        new_queue.sort(key=lambda x:-x['priority'])
+        self.queue = []
+        for share in share_order:
+            for x in new_queue:
+                if x['order_by'][0] == share:
+                    self.queue.append(x)
 
     def __submit(self, submission_list):
         #print(submission_list)
@@ -295,8 +319,8 @@ class TapeResource(ResourceQueue):
 
 class TapeResourceProcessed(TapeResource):
     def __init__(self, resource_name, ddm, running_level_processed, test=False):
-        super().__init__(resource_name, ddm, test)
         self.running_level_processed = running_level_processed
+        super().__init__(resource_name, ddm, test)
 
     def running_level(self):
         return self.running_level_processed
@@ -304,8 +328,7 @@ class TapeResourceProcessed(TapeResource):
 
 class TapeResourceProcessedWithShare(TapeResource):
     def __init__(self, resource_name, ddm, shares_penalty, test=False):
-        super().__init__(resource_name, ddm, test)
-        self.shares_penalty = shares_penalty
+        super().__init__(resource_name, ddm, shares_penalty, test)
 
 class TestTapeResourceWithShare(TapeResourceProcessedWithShare):
     def __init__(self, resource_name, ddm, shares_penalty, test, limits):
@@ -1736,6 +1759,6 @@ def find_stage_task_replica_to_delete():
                 task = ProductionTask.objects.get(id=task_id)
                 task.remove_hashtag(HASHTAG_STAGE_CAROUSEL)
         except Exception as e:
-            _logger.error("Staging replica deletion problem %s %s" % (str(e), str(task)))
+            _logger.error("Staging replica deletion problem %s %s" % (str(e), str(task_id)))
 
 
