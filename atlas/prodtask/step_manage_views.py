@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 
@@ -27,7 +28,10 @@ from .models import StepExecution, InputRequestList, TRequest, ProductionTask, P
     ParentToChildRequest, TTask
 from functools import reduce
 from time import time
-
+from atlas.celerybackend.celery import app
+from celery.result import AsyncResult
+from django.core.cache import cache
+from atlas.prodtask.tasks import test_async_progress
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -246,6 +250,80 @@ def find_parent_slices(request, reqid, parent_request):
         except Exception as e:
             _logger.error(str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def async_find_parent_slices(request, reqid, parent_request):
+    if request.method == 'POST':
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            ordered_slices = list(map(int,slices))
+            _logger.debug(form_request_log(reqid,request,'Find parent slices: %s, parent request %s'% (str(ordered_slices),parent_request)))
+            ordered_slices.sort()
+            return_value = single_request_action_celery_task(reqid,find_parent_slices_task,request.data['text'],ordered_slices,int(reqid),int(parent_request))
+            return Response(return_value)
+        except Exception as e:
+            _logger.error(str(e))
+            return HttpResponseBadRequest(e)
+
+
+
+@app.task(bind=True)
+def find_parent_slices_task(self, ordered_slices,reqid,parent_request):
+    parent_slices = list(InputRequestList.objects.filter(request=parent_request).order_by('slice'))
+    parent_slice_dict = {}
+    slices_updated = []
+    for parent_slice in parent_slices:
+        if (parent_slice.input_data) and (not parent_slice.is_hide):
+            parent_slice_dict[parent_slice.input_data] = parent_slice_dict.get(parent_slice.input_data,[])+[parent_slice]
+    if not self.request.called_directly:
+        self.update_state(state="PROGRESS", meta={'processed': 0, 'total': len(ordered_slices)})
+    for slices_processed, slice_number in enumerate(ordered_slices):
+        slice = InputRequestList.objects.get(slice=slice_number,request=reqid)
+        steps = StepExecution.objects.filter(slice=slice,request=reqid)
+        ordered_existed_steps, parent_step = form_existed_step_list(steps)
+        if ((not parent_step) or (parent_step.request_id != parent_request)) and slice.input_data:
+            first_not_skipped = None
+            step_to_delete = []
+            tags = []
+            for step in ordered_existed_steps:
+                if step.status in ['NotCheckedSkipped']:
+                    tags.append(step.step_template.ctag)
+                    step_to_delete.append(step)
+                else:
+                    first_not_skipped = step
+                    break
+            step_to_delete.reverse()
+            if tags:
+                parent_found = False
+                parent_slices = parent_slice_dict.get(slice.input_data,[])
+                for slice_index, parent_slice in enumerate(parent_slices):
+                    parent_slice_steps = StepExecution.objects.filter(slice=parent_slice,request=parent_request)
+                    parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
+                    for index,step in enumerate(parent_ordered_existed_steps):
+                        if step.status in ['Approved']:
+                            if step.step_template.ctag == tags[index]:
+                                if index == (len(tags)-1):
+                                    first_not_skipped.step_parent = step
+                                    first_not_skipped.set_task_config({'nEventsPerInputFile':''})
+                                    first_not_skipped.save()
+                                    for x in step_to_delete:
+                                        x.delete()
+                                    parent_slice_dict[slice.input_data].pop(slice_index)
+                                    parent_found = True
+                                    slices_updated.append(slice_number)
+                                    break
+                            else:
+                                break
+                    if parent_found:
+                        break
+        elif parent_step and  (parent_step.request_id == parent_request) and slice.input_data:
+            if parent_slice_dict.get(slice.input_data,[]):
+                parent_slice_dict[slice.input_data].pop(0)
+        if not self.request.called_directly:
+            self.update_state(state="PROGRESS", meta={'processed': slices_processed, 'total': len(ordered_slices)})
+    return slices_updated
 
 def set_parent_step(slices, request, parent_request):
     parent_slices = list(InputRequestList.objects.filter(request=parent_request).order_by('slice'))
@@ -2314,3 +2392,36 @@ def obsolete_old_deleted_tasks(request, reqid):
             _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
             return HttpResponseBadRequest(e)
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@api_view(['GET'])
+def celery_task_status(request, celery_task_id):
+    celery_task = AsyncResult(celery_task_id)
+    progress = 0
+    result = None
+    if (celery_task.status == 'PROGRESS') and celery_task.info:
+        if 'progress' in celery_task.info:
+            progress = celery_task.info.get('progress')
+        if ('processed' in celery_task.info) and ('total' in celery_task.info):
+            progress = celery_task.info.get('processed') // celery_task.info.get('total')
+    if (celery_task.status == 'SUCCESS'):
+        result = celery_task.result
+    return Response({'status':celery_task.status, 'progress': progress, 'result':result})
+
+@api_view(['POST'])
+def test_celery_task(request, reqid):
+    return_value = single_request_action_celery_task(reqid,test_async_progress,request.data['text'])
+    return Response(return_value)
+
+
+def single_request_action_celery_task(reqid, task_function, *args, **kwargs):
+        cache_key = 'celery_request_action'+str(reqid)
+        if cache.get(cache_key):
+            celery_task = AsyncResult(cache.get(cache_key))
+            if celery_task.status in ['FAILURE','SUCCESS']:
+                cache.delete(cache_key)
+            else:
+                return {'status':'busy','current_task':cache.get(cache_key)}
+        celery_task = task_function.delay(*args, **kwargs)
+        cache.set(cache_key,celery_task.task_id, TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
+        return {'status':'OK', 'task_id': celery_task.task_id}
