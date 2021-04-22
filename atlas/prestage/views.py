@@ -180,6 +180,7 @@ class TapeResource(ResourceQueue):
         self.shares_penalty = shares_penalty
         self.__get_tape_queue()
         self.get_limits()
+        self.priorities_queue()
         self.is_test = test
 
 
