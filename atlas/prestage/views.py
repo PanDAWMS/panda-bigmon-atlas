@@ -91,7 +91,7 @@ class ResourceQueue(object):
             _logger.info("Shares penalties {resource}: {penalties} ".format(resource=self.resource_name,
                                                        penalties=str(shares_penalties_prepared)))
             for share in self.queued_shares:
-                if ((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (self.continious_percentage / 100.0):
+                if ((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < 0.8:
                     shares_to_search.append(share)
         if shares_to_search and ('any' not in shares_to_search):
             shares_to_search.append('any')
