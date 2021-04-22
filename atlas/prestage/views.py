@@ -91,11 +91,13 @@ class ResourceQueue(object):
             _logger.info("Shares penalties {resource}: {penalties} ".format(resource=self.resource_name,
                                                        penalties=str(shares_penalties_prepared)))
             for share in self.queued_shares:
-                if ((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < 0.8:
+                if (((float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0)) and
+                        (((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (0.3 + (self.continious_percentage / 100.0)))):
                     shares_to_search.append(share)
         if shares_to_search and ('any' not in shares_to_search):
             shares_to_search.append('any')
-        if shares_to_search or (not self.shares_penalty and (float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0)):
+        if (shares_to_search or
+                (not self.shares_penalty and (float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0))):
             self.priorities_queue()
             to_submit_list = []
             to_submit_value = 0
