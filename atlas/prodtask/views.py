@@ -18,6 +18,10 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from time import time
+from atlas.celerybackend.celery import app
+from django.core.cache import cache
+
+from celery.result import AsyncResult
 
 from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
@@ -25,7 +29,7 @@ from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAc
 from atlas.prodtask.spdstodb import fill_template
 
 from ..prodtask.helper import form_request_log, form_json_request_dict
-from ..prodtask.ddm_api import find_dataset_events
+from ..prodtask.ddm_api import find_dataset_events, DDM
 from rest_framework.authtoken.models import Token
 
 
@@ -980,10 +984,29 @@ def split_request(production_request_number, slice_numbers):
         # Find containers
     # Modify original slice in a simul request
 
+def find_input_per_file_from_rucio(new_dataset_name):
+    task_id = None
+    if 'tid' in new_dataset_name:
+        task_id = int(new_dataset_name[new_dataset_name.rfind('tid')+3:new_dataset_name.rfind('_')])
+    else:
+        ddm = DDM()
+        datasets = ddm.dataset_in_container(new_dataset_name)
+        if datasets:
+            if 'tid' in datasets[0]:
+                task_id = int(datasets[0][datasets[0].rfind('tid')+3:datasets[0].rfind('_')])
+    if task_id:
+        current_task = ProductionTask.objects.get(id=task_id)
+        return current_task.step.get_task_config('nEventsPerJob')
+    return ''
 
 def change_dataset_in_slice(req, slice, new_dataset_name):
     input_list = InputRequestList.objects.get(request=req, slice=int(slice))
     events_per_file = find_input_per_file(new_dataset_name)
+    if not events_per_file:
+        try:
+            events_per_file = find_input_per_file_from_rucio(new_dataset_name)
+        except:
+            pass
     dataset = fill_dataset(new_dataset_name)
     input_list.dataset = dataset
     input_list.save()
@@ -2230,6 +2253,13 @@ def request_table_view(request, rid=None, show_hidden=False):
             except:
                 pass
             project_list = [str(x) for x in list(TProject.objects.all())]
+            cache_key = 'celery_request_action'+str(rid)
+            async_task = cache.get(cache_key,None)
+            if async_task:
+                celery_task = AsyncResult(async_task)
+                if celery_task.status in ['FAILURE','SUCCESS']:
+                    cache.delete(cache_key)
+                    async_task = None
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
@@ -2273,7 +2303,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'project_list':project_list,
                 'parent_request_id':parent_request_id,
                 'bigpanda_base':BIG_PANDA_TASK_BASE,
-                'limit_priority':limit_priority
+                'limit_priority':limit_priority,
+                'async_task':async_task
                })
         except Exception as e:
             _logger.error("Problem with request list page data forming: %s" % e)
@@ -2916,6 +2947,96 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
         pass
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
+
+def single_request_action_celery_task(reqid, task_function, *args, **kwargs):
+    cache_key = 'celery_request_action'+str(reqid)
+    if cache.get(cache_key):
+        celery_task = AsyncResult(cache.get(cache_key))
+        if celery_task.status in ['FAILURE','SUCCESS']:
+            cache.delete(cache_key)
+        else:
+            return {'status':'busy','current_task':cache.get(cache_key)}
+    celery_task = task_function.delay(*args, **kwargs)
+    cache.set(cache_key,celery_task.task_id, TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
+    return {'status':'OK', 'task_id': celery_task.task_id}
+
+@app.task(bind=True)
+def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):
+    ordered_slices = list(map(int,slices))
+    ordered_slices.sort()
+    #form levels from input text lines
+    #create chains for each input
+    request_source = TRequest.objects.get(reqid=reqid_source)
+    if reqid_source == reqid_destination:
+        request_destination = request_source
+    else:
+        request_destination = TRequest.objects.get(reqid=reqid_destination)
+    #TODO: fix race condition
+    new_slice_numbers = []
+    new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
+    old_new_step = {}
+    if not self.request.called_directly:
+        self.update_state(state="PROGRESS", meta={'processed': 0, 'total': len(ordered_slices)+1})
+    for slices_processed, slice_number in enumerate(ordered_slices):
+        current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
+        new_slice = list(current_slice.values())[0]
+        new_slice['slice'] = new_slice_number
+        new_slice_numbers.append(new_slice_number)
+        new_slice_number += 1
+        del new_slice['id']
+        del new_slice['request_id']
+        new_slice['request'] = request_destination
+        new_input_data = InputRequestList(**new_slice)
+        new_input_data.save()
+        if fill_slice_from:
+            new_input_data.cloned_from = InputRequestList.objects.get(request=request_source,slice=int(slice_number))
+            new_input_data.save()
+        step_execs = StepExecution.objects.filter(slice=current_slice[0],request=request_source)
+        ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+        if request_source.request_type == 'MC':
+            STEPS = StepExecution.STEPS
+        else:
+            STEPS = ['']*len(StepExecution.STEPS)
+        step_as_in_page = form_step_in_page(ordered_existed_steps,STEPS,parent_step)
+        first_changed = not make_link
+        for index,step in enumerate(step_as_in_page):
+            if step:
+                if ((index >= step_from) and (index < step_before)) or (not make_link):
+                    self_looped = step.id == step.step_parent.id
+                    old_step_id = step.id
+                    step.id = None
+                    step.step_appr_time = None
+                    step.step_def_time = None
+                    step.step_exe_time = None
+                    step.step_done_time = None
+                    step.slice = new_input_data
+                    step.request = request_destination
+                    if do_smart:
+                        problematic_tasks = get_problematic_task_list(old_step_id)
+                        if problematic_tasks:
+                            step.set_task_config({'previous_task_list':problematic_tasks})
+                    if (step.status == 'Skipped') or (index < step_from):
+                        step.status = 'NotCheckedSkipped'
+                    elif step.status in ['Approved','Waiting']:
+                        step.status = 'NotChecked'
+                    if step.step_parent.id in predefined_parrent:
+                        step.step_parent = predefined_parrent[step.step_parent.id]
+                    else:
+                        if first_changed and (step.step_parent.id in old_new_step):
+                            step.step_parent = old_new_step[int(step.step_parent.id)]
+                    step.save_with_current_time()
+                    if self_looped:
+                        step.step_parent = step
+                    first_changed = True
+                    step.save()
+                    old_new_step[old_step_id] = step
+        if not self.request.called_directly:
+            self.update_state(state="PROGRESS", meta={'processed': slices_processed, 'total': len(ordered_slices)+1})
+    clone_child_slices(reqid_source,old_new_step)
+    if not self.request.called_directly:
+        self.update_state(state="PROGRESS", meta={'processed': len(ordered_slices)+1, 'total': len(ordered_slices)+1})
+    return new_slice_numbers
+
 
 
 def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):

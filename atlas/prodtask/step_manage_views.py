@@ -20,7 +20,7 @@ from .hashtag import _set_request_hashtag
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from .ddm_api import dataset_events
 #from ..prodtask.task_actions import do_action
-from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
+from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update, single_request_action_celery_task
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -261,8 +261,8 @@ def async_find_parent_slices(request, reqid, parent_request):
             ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Find parent slices: %s, parent request %s'% (str(ordered_slices),parent_request)))
             ordered_slices.sort()
-            return_value = single_request_action_celery_task(reqid,find_parent_slices_task,request.data['text'],ordered_slices,int(reqid),int(parent_request))
-            return Response(return_value)
+            return_value = single_request_action_celery_task(reqid,find_parent_slices_task,ordered_slices,int(reqid),int(parent_request))
+            return HttpResponse(json.dumps(return_value), content_type='application/json')
         except Exception as e:
             _logger.error(str(e))
             return HttpResponseBadRequest(e)
@@ -321,8 +321,9 @@ def find_parent_slices_task(self, ordered_slices,reqid,parent_request):
         elif parent_step and  (parent_step.request_id == parent_request) and slice.input_data:
             if parent_slice_dict.get(slice.input_data,[]):
                 parent_slice_dict[slice.input_data].pop(0)
+
         if not self.request.called_directly:
-            self.update_state(state="PROGRESS", meta={'processed': slices_processed, 'total': len(ordered_slices)})
+                self.update_state(state="PROGRESS", meta={'processed': slices_processed, 'total': len(ordered_slices)})
     return slices_updated
 
 def set_parent_step(slices, request, parent_request):
@@ -2403,7 +2404,7 @@ def celery_task_status(request, celery_task_id):
         if 'progress' in celery_task.info:
             progress = celery_task.info.get('progress')
         if ('processed' in celery_task.info) and ('total' in celery_task.info):
-            progress = celery_task.info.get('processed') // celery_task.info.get('total')
+            progress = celery_task.info.get('processed') * 100 // celery_task.info.get('total')
     if (celery_task.status == 'SUCCESS'):
         result = celery_task.result
     return Response({'status':celery_task.status, 'progress': progress, 'result':result})
@@ -2414,14 +2415,4 @@ def test_celery_task(request, reqid):
     return Response(return_value)
 
 
-def single_request_action_celery_task(reqid, task_function, *args, **kwargs):
-        cache_key = 'celery_request_action'+str(reqid)
-        if cache.get(cache_key):
-            celery_task = AsyncResult(cache.get(cache_key))
-            if celery_task.status in ['FAILURE','SUCCESS']:
-                cache.delete(cache_key)
-            else:
-                return {'status':'busy','current_task':cache.get(cache_key)}
-        celery_task = task_function.delay(*args, **kwargs)
-        cache.set(cache_key,celery_task.task_id, TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
-        return {'status':'OK', 'task_id': celery_task.task_id}
+
