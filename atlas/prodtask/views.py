@@ -1837,7 +1837,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 cloned_slices = []
                 do_all = True
                 do_cloned_and_failed = False
-                if ((input_list_count>800) and (not show_hidden) and ((cur_request.request_type == 'MC')or(cur_request.request_type == 'EVENTINDEX'))) or \
+                if ((input_list_count>1800) and (not show_hidden) and ((cur_request.request_type == 'MC')or(cur_request.request_type == 'EVENTINDEX'))) or \
                         ((input_list_count>200)and (not show_hidden) and (cur_request.request_type == 'MC')and('pMSSM' in cur_request.description)):
 
                     show_as_huge = True
