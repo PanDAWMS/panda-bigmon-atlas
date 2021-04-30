@@ -1369,6 +1369,27 @@ class GroupProductionDeletionExtension(models.Model):
         db_table = '"T_GP_DELETION_EXT"'
 
 
+class GroupProductionDeletionProcessing(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_D_P_ID', primary_key=True)
+    container = models.CharField(max_length=255, db_column='CONTAINER', null=False)
+    timestamp = models.DateTimeField(db_column='UPDATE_TIMESTAMP', null=False)
+    status = models.CharField(max_length=20, db_column='STATUS',null=False)
+    deleted_datasets = models.DecimalField(decimal_places=0, max_digits=12, db_column='DELETED_DATASETS', null=True)
+    command_timestamp = models.DateTimeField(db_column='COMMAND_TIMESTAMP',  null=True)
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_GP_DEL_P_SEQ',"T_GP_DELETION_PROC",'GP_D_P_ID')
+        super(GroupProductionDeletionProcessing, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_DELETION_PROC"'
+
+
 class WaitingStep(models.Model):
 
     ACTIONS = {

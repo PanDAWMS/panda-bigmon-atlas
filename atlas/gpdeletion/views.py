@@ -6,7 +6,7 @@ from rest_framework.parsers import JSONParser
 from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
-    ProductionDataset, GroupProductionDeletionExtension
+    ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing
 from atlas.dkb.views import es_by_fields, es_by_keys, es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
+from atlas.celerybackend.celery import app
 
 from django.core.cache import cache
 
@@ -1032,3 +1033,37 @@ def collect_tags(start_requests):
                     if not GroupProductionAMITag.objects.filter(ami_tag=task.ami_tag).exists():
                         print(task.ami_tag)
                         update_tag_from_ami(task.ami_tag,task.name.startswith('data'))
+
+
+@app.task(time_limit=10800)
+def runDeletion(lifetime=3600):
+    containers_to_delete = GroupProductionDeletionProcessing.objects.filter(status='ToDelete')
+    all_datasets = cache.get("datasets_to_be_deleted")
+    ddm = DDM()
+    for container_to_delete in containers_to_delete:
+        datasets = ddm.dataset_in_container(container_to_delete.container)
+
+        deleted_datasets = 0
+        for dataset in datasets:
+            dataset = dataset[dataset.find(':')+1:]
+            try:
+                if dataset in all_datasets:
+                    _logger.info('{dataset} is about being deleted'.format(dataset=dataset))
+                    _jsonLogger.info('{dataset} is about being deleted'.format(dataset=dataset), extra={'dataset':dataset})
+                    ddm.deleteDataset(dataset, lifetime)
+                    deleted_datasets += 1
+                else:
+                    _logger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset))
+                    _jsonLogger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset), extra={'dataset':dataset})
+            except Exception as e:
+                _logger.error('Problem with {dataset} deletion error: {error}'.format(dataset=dataset,error=str(e)))
+                _jsonLogger.error('Problem with {dataset} deletion'.format(dataset=dataset), extra={'dataset':dataset, 'error':str(e)})
+        if deleted_datasets > 0:
+            container_to_delete.command_timestamp = timezone.now()
+            container_to_delete.deleted_datasets = deleted_datasets
+        if len(datasets) == deleted_datasets:
+            container_to_delete.status = 'Deleted'
+            container_to_delete.save()
+        else:
+            container_to_delete.status = 'Problematic'
+            container_to_delete.save()

@@ -194,9 +194,8 @@ class DDM(object):
         return output_datasets
 
 
-    def deleteDataset(self, dataset):
+    def deleteDataset(self, dataset, lifetime = 24*3600):
         scope, name = self.rucio_convention(dataset)
-        lifetime = 0
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
     def setLifeTimeTransientDataset(self, dataset, days):
@@ -340,6 +339,12 @@ class DDM(object):
             if rule['activity'] == 'Staging':
                 return rule['id']
         return None
+
+    def list_dataset_rules(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        return rules
+
 
     def find_disk_for_tape(self, tape_rse):
         rses = [x for x in list(self.list_rses('type=DATADISK')) if x['rse'].startswith(tape_rse.split('_')[0])]
