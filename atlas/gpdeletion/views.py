@@ -1042,22 +1042,24 @@ def runDeletion(lifetime=3600):
     ddm = DDM()
     for container_to_delete in containers_to_delete:
         datasets = ddm.dataset_in_container(container_to_delete.container)
-
+        datasets = [x[x.find(':')+1:] for x in datasets]
+        all_marked = True
         deleted_datasets = 0
         for dataset in datasets:
-            dataset = dataset[dataset.find(':')+1:]
-            try:
-                if dataset in all_datasets:
-                    _logger.info('{dataset} is about being deleted'.format(dataset=dataset))
-                    _jsonLogger.info('{dataset} is about being deleted'.format(dataset=dataset), extra={'dataset':dataset})
-                    ddm.deleteDataset(dataset, lifetime)
-                    deleted_datasets += 1
-                else:
-                    _logger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset))
-                    _jsonLogger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset), extra={'dataset':dataset})
-            except Exception as e:
-                _logger.error('Problem with {dataset} deletion error: {error}'.format(dataset=dataset,error=str(e)))
-                _jsonLogger.error('Problem with {dataset} deletion'.format(dataset=dataset), extra={'dataset':dataset, 'error':str(e)})
+            if dataset not in all_datasets:
+                _logger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset))
+                _jsonLogger.error('Dataset {dataset} is not marked for deletion'.format(dataset=dataset), extra={'dataset':dataset})
+                all_marked = False
+        if all_marked:
+            for dataset in datasets:
+                try:
+                        _logger.info('{dataset} is about being deleted'.format(dataset=dataset))
+                        _jsonLogger.info('{dataset} is about being deleted'.format(dataset=dataset), extra={'dataset':dataset, 'container':container_to_delete.container})
+                        ddm.deleteDataset(dataset, lifetime)
+                        deleted_datasets += 1
+                except Exception as e:
+                    _logger.error('Problem with {dataset} deletion error: {error}'.format(dataset=dataset,error=str(e)))
+                    _jsonLogger.error('Problem with {dataset} deletion'.format(dataset=dataset), extra={'dataset':dataset, 'container':container_to_delete.container, 'error':str(e)})
         if deleted_datasets > 0:
             container_to_delete.command_timestamp = timezone.now()
             container_to_delete.deleted_datasets = deleted_datasets
