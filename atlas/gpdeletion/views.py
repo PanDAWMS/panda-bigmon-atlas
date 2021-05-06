@@ -1035,6 +1035,23 @@ def collect_tags(start_requests):
                         update_tag_from_ami(task.ami_tag,task.name.startswith('data'))
 
 
+def find_containers_to_delete(deletion_day, total_containers=5000, size=1e15):
+    days_to_delete = (deletion_day - datetime.now()).days
+    container_to_check = GroupProductionDeletion.objects.filter(version__gte=1)
+    containers_to_delete = []
+    total_size = 0
+    for gp_container in container_to_check:
+        if ((gp_container.days_to_delete < days_to_delete) and (gp_container.version >= version_from_format(gp_container.output_format)) and
+                (not GroupProductionDeletionProcessing.objects.filter(container=gp_container.container).exists())):
+            containers_to_delete.append(gp_container.container)
+            total_size += gp_container.size
+            if size and total_size > size:
+                break
+            if total_containers and len(containers_to_delete)>=total_containers:
+                break
+    print(total_size)
+    return containers_to_delete
+
 @app.task(time_limit=10800)
 def runDeletion(lifetime=3600):
     containers_to_delete = GroupProductionDeletionProcessing.objects.filter(status='ToDelete')
