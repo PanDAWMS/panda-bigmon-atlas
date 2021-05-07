@@ -1305,10 +1305,12 @@ def deriv_output_proportion(request,project,ami_tag):
 
 
 def find_jo_by_dsid(dsid):
-    tasks = es_by_keys({'run_number':dsid,'step_name':'evgen'},1)
+    tasks = es_by_keys_nested({'run_number':dsid,'step_name':'evgen'},10)
     if tasks:
-        task = ProductionTask.objects.get(id=tasks[0]['taskid'])
-        return task.step.slice.input_data
+        for es_task in tasks:
+            task = ProductionTask.objects.get(id=es_task['taskid'])
+            if task.status in ['done','finished']:
+                return task.step.slice.input_data
     return str(dsid)
 
 
