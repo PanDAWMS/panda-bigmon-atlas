@@ -15,6 +15,8 @@ def number_of_files_in_dataset(dsn):
     ddm = DDM()
     return len(ddm.list_files(dsn)[0])
 
+def name_without_scope(name):
+    return name[name.find(':')+1:]
 
 def find_dataset_events(dataset_pattern, ami_tags=None):
         return_list = []
@@ -388,9 +390,19 @@ class DDM(object):
                 datasets_with_scopes.append({'scope': dataset_scope, 'name': dataset_name})
             self.__ddm.add_datasets_to_container(scope=scope, name=name, dsns=datasets_with_scopes)
 
+    def delete_datasets_from_container(self, container_name, datasets):
+        if container_name.endswith('/'):
+            container_name = container_name[:-1]
+        scope, name = self.rucio_convention(container_name)
+        dsns = list()
+        for dataset in datasets:
+            dataset_scope, dataset_name = self.rucio_convention(dataset)
+            dsns.append({'scope': dataset_scope, 'name': dataset_name})
+        self.__ddm.detach_dids(scope=scope, name=name, dids=dsns)
+
     def register_datasets_in_container(self, container_name, datasets):
         if container_name.endswith('/'):
-            dsn = container_name[:-1]
+            container_name = container_name[:-1]
         scope, name = self.rucio_convention(container_name)
         datasets_with_scopes = list()
         for dataset in datasets:

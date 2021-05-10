@@ -10,7 +10,7 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.open_ended import check_open_ended
-from atlas.prodtask.task_views import sync_old_tasks
+from atlas.prodtask.task_views import sync_old_tasks, check_merge_container
 
 import logging
 _logger = logging.getLogger('prodtaskwebui')
@@ -96,3 +96,9 @@ def test_async_progress(self, a):
         time.sleep(10)
         self.update_state(state="PROGRESS", meta={'progress': i*10})
     return 'finished: '+str(a)
+
+
+@app.task(ignore_result=True)
+def check_single_tag_containers():
+    check_merge_container(3)
+    return None

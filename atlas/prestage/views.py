@@ -1747,7 +1747,8 @@ def check_replica_can_be_deleted(task_id, ddm):
         if do_deletion:
             _logger.info("Rule %s will be deleted" % str(dataset_stage.rse))
             ddm.delete_replication_rule(dataset_stage.rse)
-        return True
+            return True
+        return False
     else:
         return True
 

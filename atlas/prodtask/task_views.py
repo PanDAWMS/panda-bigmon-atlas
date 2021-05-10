@@ -9,7 +9,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse, resolve
 
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
-from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.ddm_api import DDM, name_without_scope
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import StepExecution
 import logging
@@ -34,7 +34,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from django.utils.timezone import utc
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import locale
 import time
@@ -924,3 +924,53 @@ def sync_request_tasks(request, reqid):
         return Response(content,status=500)
 
     return Response({'success':True})
+
+def mc_ami_tags_reduction(postfix):
+    if 'tid' in postfix:
+        postfix = postfix[:postfix.find('_tid')]
+
+    new_postfix = []
+    first_letter = ''
+    for token in postfix.split('_')[:-1]:
+        if token[0] != first_letter and not (token[0] == 's' and first_letter == 'a'):
+            new_postfix.append(token)
+        first_letter = token[0]
+    new_postfix.append(postfix.split('_')[-1])
+    return '_'.join(new_postfix)
+
+def get_mc_container_name(dataset_name):
+    return '.'.join(dataset_name.split('.')[:-1] + [mc_ami_tags_reduction(dataset_name.split('.')[-1])])
+
+
+
+
+
+
+def check_merge_container(days, days_till=1):
+    time_since = timezone.now() - timedelta(days=days)
+    time_till = timezone.now() - timedelta(days=days_till)
+    ddm = DDM()
+    tasks = ProductionTask.objects.filter(timestamp__gte=time_since, timestamp__lte=time_till, provenance='AP', status__in=['done','finished'],
+                                          project__startswith='mc')
+    total = 0
+    for task in tasks:
+        if (task.phys_group not in ['SOFT','VALI']) and ('merge' in task.name):
+            parent_dataset = task.primary_input
+            if 'tid' not in parent_dataset:
+                _logger.warning('Warning no tid in parent {task_id}'.format(task_id=task.id))
+            else:
+                container_name = get_mc_container_name(parent_dataset)
+                container_datasets = ddm.dataset_in_container(container_name)
+                container_datasets = list(map(name_without_scope,container_datasets))
+                datasets = ProductionDataset.objects.filter(task_id=task.id)
+                dataset_name = None
+                for dataset in datasets:
+                    if '.log.' not in dataset.name:
+                        dataset_name = name_without_scope(dataset.name)
+                        break
+                if (parent_dataset in container_datasets) and (dataset_name in container_datasets):
+                    _logger.error('Error for {task_id} both datasets are in container {container}. {parent} will be removed'.format(task_id=task.id,container=container_name,parent=parent_dataset))
+                    ddm.delete_datasets_from_container(container_name,[parent_dataset])
+                    total += 1
+    return total
+
