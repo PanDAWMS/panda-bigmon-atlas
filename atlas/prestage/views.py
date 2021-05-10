@@ -1127,7 +1127,7 @@ def follow_repeated_staged(waiting_step, ddm):
             action_finished = False
             existed_rule = ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse)
             if existed_rule:
-                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=5):
+                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
                     except Exception as e:
