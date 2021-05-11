@@ -518,7 +518,7 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
 
 
 
-def filter_mc_campaign(cur_request, tasks):
+def filter_mc_campaign(cur_request, tasks, input_step_project_campaigns=[]):
     result = tasks
     events = -1
     if cur_request.campaign == 'MC16':
@@ -528,24 +528,24 @@ def filter_mc_campaign(cur_request, tasks):
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.request.campaign == cur_request.campaign:
-                if ((subcampaign=='MC16d') and (task.request.subcampaign=='MC16c')) or (task.request.subcampaign == subcampaign):
+                if ((subcampaign == 'MC16d') and (task.request.subcampaign == 'MC16c')) or (task.request.subcampaign == subcampaign) or (task.request.subcampaign in input_step_project_campaigns):
                     result.append(task_id)
                     events += task.total_events
             else:
-                if (subcampaign == 'MC16a') or ('valid' in task.name):
+                if (subcampaign == 'MC16a') or ('valid' in task.name) or (task.request.subcampaign in input_step_project_campaigns):
                     result.append(task_id)
                     events += task.total_events
     return result, events
 
 
-def filter_input_datasets(dataset_events, reqid, filter_type):
+def filter_input_datasets(dataset_events, reqid, filter_type, input_step_project_campaigns = []):
     result = []
     for item in dataset_events:
         if filter_type:
             if filter_type not in item['dataset_name']:
                 continue
         cur_request = TRequest.objects.get(reqid=reqid)
-        new_tasks, new_events = filter_mc_campaign(cur_request,item['tasks'])
+        new_tasks, new_events = filter_mc_campaign(cur_request,item['tasks'], input_step_project_campaigns)
         if len(new_tasks)<len(item['tasks']):
             if len(new_tasks)>0:
                 result.append({'dataset_name':item['dataset_name'],'events':str(new_events), 'excluded':True})
@@ -569,6 +569,7 @@ def form_skipped_slice(slice, reqid):
     processed_tags = []
     last_step_name = ''
     input_step_format = ''
+    input_step_project_campaigns = []
     for step in ordered_existed_steps:
         if step.status == 'NotCheckedSkipped' or step.status == 'Skipped':
             processed_tags.append(step.step_template.ctag)
@@ -576,6 +577,8 @@ def form_skipped_slice(slice, reqid):
 
         else:
             input_step_format = step.get_task_config('input_format')
+            project_cmapaigns = step.get_project_mode('runOnlyCampaign')
+            input_step_project_campaigns = list(map(lambda x: x[x.find(':')+1:],project_cmapaigns.split(',')))
             break
     if input_list.input_data and processed_tags:
         try:
@@ -611,7 +614,7 @@ def form_skipped_slice(slice, reqid):
             #print dataset_events
             #return {slice:[x for x in dataset_events if x['events']>=input_list.input_events ]}
 
-            return {slice:filter_input_datasets(dataset_events, reqid, filter_type)}
+            return {slice:filter_input_datasets(dataset_events, reqid, filter_type, input_step_project_campaigns)}
         except Exception as e:
             logging.error("Can't find skipped dataset: %s" %str(e))
             return {slice:[]}

@@ -697,6 +697,14 @@ class StepExecution(models.Model):
             self.set_task_config({'project_mode': new_project_mode})
         return return_value
 
+    def get_project_mode(self,token):
+        if self.get_task_config('project_mode'):
+            current_project_mode = self.get_task_config('project_mode')
+            for current_token in current_project_mode.split(';'):
+                if current_token.strip().startswith(token):
+                    return current_token[current_token.find('=')+1:].strip()
+        return None
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
