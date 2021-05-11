@@ -400,8 +400,8 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                                 step_in_db.priority = step_value['changes']['priority']
                             if parent_step:
                                 if still_skipped and (step_in_db.step_parent != parent_step) and ('nEventsPerInputFile' not in step_value['changes']):
-                                    if step_in_db.step_parent.get_task_config('nEventsPerInputFile'):
-                                        task_config['nEventsPerInputFile'] = step_in_db.step_parent.get_task_config('nEventsPerInputFile')
+                                    if parent_step.get_task_config('nEventsPerJob'):
+                                        task_config['nEventsPerInputFile'] = parent_step.get_task_config('nEventsPerJob')
                                 step_in_db.step_parent = parent_step
                             else:
                                 step_in_db.step_parent = step_in_db
