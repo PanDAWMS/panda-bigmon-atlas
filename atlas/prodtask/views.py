@@ -399,6 +399,9 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
                             if 'priority' in step_value['changes']:
                                 step_in_db.priority = step_value['changes']['priority']
                             if parent_step:
+                                if still_skipped and (step_in_db.step_parent != parent_step) and ('nEventsPerInputFile' not in step_value['changes']):
+                                    if step_in_db.step_parent.get_task_config('nEventsPerInputFile'):
+                                        task_config['nEventsPerInputFile'] = step_in_db.step_parent.get_task_config('nEventsPerInputFile')
                                 step_in_db.step_parent = parent_step
                             else:
                                 step_in_db.step_parent = step_in_db
@@ -578,7 +581,8 @@ def form_skipped_slice(slice, reqid):
         else:
             input_step_format = step.get_task_config('input_format')
             project_cmapaigns = step.get_project_mode('runOnlyCampaign')
-            input_step_project_campaigns = list(map(lambda x: x[x.find(':')+1:],project_cmapaigns.split(',')))
+            if project_cmapaigns:
+                input_step_project_campaigns = list(map(lambda x: x[x.find(':')+1:],project_cmapaigns.split(',')))
             break
     if input_list.input_data and processed_tags:
         try:
