@@ -92,7 +92,7 @@ class ResourceQueue(object):
                                                        penalties=str(shares_penalties_prepared)))
             for share in self.queued_shares:
                 if (((float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0)) and
-                        (((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (0.3 + (self.continious_percentage / 100.0)))):
+                        (((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (0.1 + (self.continious_percentage / 100.0)))):
                     shares_to_search.append(share)
         if shares_to_search and ('any' not in shares_to_search):
             shares_to_search.append('any')
@@ -191,7 +191,7 @@ class TapeResource(ResourceQueue):
             dataset_stagings = ActionStaging.objects.filter(dataset_stage=x['id'])
             priority = 0
             min_task = None
-            dataset_shares = []
+            dataset_shares_set = set()
             for dataset_staging in dataset_stagings:
                 if dataset_staging.step_action.status == 'active':
                     task = ProductionTask.objects.get(id=dataset_staging.task)
@@ -203,9 +203,13 @@ class TapeResource(ResourceQueue):
                     if not min_task or  task.id < min_task:
                         min_task = task.id
                     if task.request.phys_group == 'VALI':
-                        dataset_shares.append('VALI')
+                        dataset_shares_set.add('VALI')
                     else:
-                        dataset_shares.append(JediTasks.objects.get(id=task.id).gshare)
+                        if task.request.request_type in ['REPROCESSING']:
+                            dataset_shares_set.add("{0}{1}".format(JediTasks.objects.get(id=task.id).gshare,task.ami_tag))
+                        else:
+                            dataset_shares_set.add(JediTasks.objects.get(id=task.id).gshare)
+            dataset_shares = list(dataset_shares_set)
             if len(dataset_shares) >0:
                 if len(dataset_shares)>1:
                     dataset_share = 'any'
@@ -927,8 +931,10 @@ def find_active_staged_with_share():
             task = ProductionTask.objects.get(id=action_stage.task)
             if task.status in ProductionTask.NOT_RUNNING+['exhausted']:
                 continue
-            #share = task.request.request_type
-            share = JediTasks.objects.get(id=task.id).gshare
+            if task.request.request_type in ['REPROCESSING']:
+                share = "{0}{1}".format(JediTasks.objects.get(id=task.id).gshare,task.ami_tag)
+            else:
+                share = JediTasks.objects.get(id=task.id).gshare
             if task.request.phys_group == 'VALI':
                 share = 'VALI'
             if (dataset_stage.status not in ['queued']) and dataset_stage.source:
