@@ -92,7 +92,7 @@ class ResourceQueue(object):
                                                        penalties=str(shares_penalties_prepared)))
             for share in self.queued_shares:
                 if (((float(running_level) / float(self.maximum_level)) < (self.continious_percentage / 100.0)) and
-                        (((float(running_level) + float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (0.1 + (self.continious_percentage / 100.0)))):
+                        (((float(shares_penalties_prepared.get(share,0)))/ float(self.maximum_level)) < (self.continious_percentage / 100.0))):
                     shares_to_search.append(share)
         if shares_to_search and ('any' not in shares_to_search):
             shares_to_search.append('any')
