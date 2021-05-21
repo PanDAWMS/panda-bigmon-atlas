@@ -2262,8 +2262,8 @@ def request_table_view(request, rid=None, show_hidden=False):
             project_list = [str(x) for x in list(TProject.objects.all())]
             cache_key = 'celery_request_action'+str(rid)
             async_task = cache.get(cache_key,None)
-            if async_task:
-                celery_task = AsyncResult(async_task)
+            if async_task and (type(async_task) is dict):
+                celery_task = AsyncResult(async_task.get('id'))
                 if celery_task.status in ['FAILURE','SUCCESS']:
                     cache.delete(cache_key)
                     async_task = None
@@ -2955,17 +2955,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
     clone_slices(reqid,request_destination.reqid,slices,0,False)
     return request_destination.reqid
 
-def single_request_action_celery_task(reqid, task_function, *args, **kwargs):
-    cache_key = 'celery_request_action'+str(reqid)
-    if cache.get(cache_key):
-        celery_task = AsyncResult(cache.get(cache_key))
-        if celery_task.status in ['FAILURE','SUCCESS']:
-            cache.delete(cache_key)
-        else:
-            return {'status':'busy','current_task':cache.get(cache_key)}
-    celery_task = task_function.delay(*args, **kwargs)
-    cache.set(cache_key,celery_task.task_id, TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
-    return {'status':'OK', 'task_id': celery_task.task_id}
+
 
 @app.task(bind=True)
 def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):
@@ -3250,3 +3240,18 @@ def create_skip_used_tag(task_id):
     return new_step.id
 
 
+def single_request_action_celery_task(reqid, task_function, task_name, user, *args, **kwargs):
+    cache_key = 'celery_request_action'+str(reqid)
+    if cache.get(cache_key) and (type(cache.get(cache_key)) is dict):
+        async_task = cache.get(cache_key)
+        celery_task = AsyncResult(async_task.get('id'))
+        if celery_task.status in ['FAILURE','SUCCESS']:
+            cache.delete(cache_key)
+        else:
+
+            return {'status': 'busy','task_id':async_task.get('id'),'user': async_task.get('user'),'name': async_task.get('name')}
+    celery_task = task_function.delay(*args, **kwargs)
+    cache.set(cache_key,{'id': celery_task.task_id,'name': task_name,'user': user}, TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
+    _jsonLogger.info('Celery task is sent', extra={'celery_task_id': celery_task.task_id,'celery_task_name': task_name,
+                                                   'user': user, 'prod_request': reqid})
+    return {'status': 'OK', 'task_id': celery_task.task_id, 'user': user, 'name': task_name}

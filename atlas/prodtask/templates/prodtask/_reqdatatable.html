@@ -379,6 +379,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         $('#longDescription').show();
 
     {% endif %}
+    {% if async_task %}
+        progressCeleryBar('{{ async_task.id }}','{{ async_task.name }}','{{ async_task.user }}');
+    {% endif %}
 });
 
     var csrftoken = $.cookie('csrftoken');
@@ -561,9 +564,9 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                             for (var j=0; j < removeDataset.length; j++){
                                  $("#inputDatasetName"+removeDataset[j]).html('');
                             }
-                            if (slices.length < 200){
+                            if (slices.length > 0){
                                 for (var j = 0; j < slices.length; j++) {
-                                    changeSliceSaveStatus(slices[j]);
+                                    $("#saveStatus"+slices[j]).html("edit (saved)");
                                 }
                             }
 
@@ -724,9 +727,9 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                     for (var j=0; j < removeDataset.length; j++){
                         $("#inputDatasetName"+removeDataset[j]).html('');
                     }
-                    if (slicesTotal.length < 200){
+                    if (slicesTotal.length > 0){
                         for (var j = 0; j < slicesTotal.length; j++) {
-                            changeSliceSaveStatus(slicesTotal[j]);
+                            $("#saveStatus"+slicesTotal[j]).html("edit (saved)");
                         }
                     }
 
@@ -1118,6 +1121,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 });
               return false;
         }
+
         function registerRequest(event){
             event.preventDefault();
             sendData = {};
@@ -1252,60 +1256,90 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 });
               return false;
         };
-        {#function testAsyncClick(event){#}
-        {#    event.preventDefault();#}
-        {#    sendData = {'text':'test'};#}
-        {#    $.ajax({#}
-        {#        url: "{% url 'prodtask:test_celery_task' pr_id %}",#}
-        {#        type: 'POST',#}
-        {#        contentType: 'application/json; charset=utf-8',#}
-        {#        data: $.toJSON(sendData),#}
-        {#        dataType: 'json',#}
-        {#        success: function(data,status) {#}
-        {#            if (data.status === 'OK'){#}
-        {#                celery_task = data.task_id;#}
-        {#                progressBar(celery_task);#}
-        {#            }#}
-        {#            if (data.status === 'busy'){#}
-        {#                alert('Previous command is still executing, please wait before sending a new command');#}
-        {#            }#}
-        {##}
-        {#        },#}
-        {#        error: function (data,status){#}
-        {#            alert('Some problem during command sending'+data.toString());#}
-        {#        }#}
-        {#    });#}
-        {#}#}
-        {#function progressBar(celery_task_id){#}
-        {#    $('#asyncProgressRef').show();#}
-        {#    $('#asyncTaskID').html(celery_task_id);#}
-        {#    var pollInterval = undefined;#}
-        {#            poll = function() {#}
-        {#                $.ajax({#}
-        {#                    url: construct_django_url('/prodtask/celery_task_status/',celery_task_id),#}
-        {#                    dataType: 'json',#}
-        {#                    type: 'get',#}
-        {#                    success: function(data) { // check if available#}
-        {#                        $('#asyncStatus').html(data.status);#}
-        {#                        console.log(data);#}
-        {#                        if ( data.status === 'PROGRESS' ) { // get and check data value#}
-        {#                            $('#asyncProgressStat').html(data.progress.toString()+' %');#}
-        {#                        }#}
-        {#                        if ( data.status === 'SUCCESS' ) { // get and check data value#}
-        {#                            clearInterval(pollInterval); // optional: stop poll function#}
-        {#                            alert(data.result);#}
-        {#                        }#}
-        {#                    },#}
-        {#                    error: function() { // error logging#}
-        {#                        console.log('Error!');#}
-        {#                    }#}
-        {#                });#}
-        {#            };#}
-        {#            poll();#}
-        {#            pollInterval = setInterval(function() { // run function every 2000 ms#}
-        {#                poll();#}
-        {#            }, 5000);#}
-        {#}#}
+        function testAsyncClick(event){
+            event.preventDefault();
+            sendData = {'text':'test'};
+            url = "{% url 'prodtask:test_celery_task' pr_id %}";
+            sendAsyncTask(url,sendData);
+        }
+        function sendAsyncTask(url, sendData){
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: $.toJSON(sendData),
+                dataType: 'json',
+                success: function(data,status) {
+                    if (data.status === 'OK'){
+                        progressCeleryBar(data.task_id, data.name, data.user);
+                    }
+                    if (data.status === 'busy'){
+                        progressCeleryBar(data.task_id, data.name, data.user);
+                        alert('Previous command is still executing, please wait before sending a new command');
+                    }
+
+                },
+                error: function (data,status){
+                    alert('Some problem during command sending'+data.toString());
+                }
+            });
+        }
+        function progressCeleryBar(celery_task_id, function_name, user_name){
+            $('.asyncProgressRef').show();
+            $('.asyncTaskID').html(celery_task_id);
+            $(".btn_is_authorized").each(function(){this.disabled=true;});
+            $(".btn_is_authenticated").each(function(){this.disabled=true;});
+            $('.asyncTaskName').html(function_name);
+            $('.asyncTaskUserName').html(user_name);
+            var pollInterval = undefined;
+                    poll = function() {
+                        $.ajax({
+                            url: construct_django_url('/prodtask/celery_task_status/',celery_task_id),
+                            dataType: 'json',
+                            type: 'get',
+                            success: function(data) { // check if available
+                                $('.asyncStatus').html(data.status);
+                                $('.asyncTaskName').html(data.celery_task_name);
+                                console.log(data);
+                                if ( data.status === 'PROGRESS' ) { // get and check data value
+                                    $('.asyncProgressStat').html(data.progress.toString()+' %');
+                                }
+                                if ( data.status === 'SUCCESS' ) { // get and check data value
+                                    clearInterval(pollInterval); // optional: stop poll function
+                                    if (confirm('Async task finish successfully, reload the page?')){
+                                        location.reload();
+                                    }
+                                    $(".btn_is_authorized").each(function(){this.disabled=false;});
+                                    $(".btn_is_authenticated").each(function(){this.disabled=false;});
+                                    $('.asyncProgressRef').hide();
+
+
+                                }
+                                if ( data.status === 'FAILURE') { // get and check data value
+                                    clearInterval(pollInterval); // optional: stop poll function
+                                    if (confirm('Async task failed')){
+                                        location.reload();
+                                    }
+                                    $(".btn_is_authorized").each(function(){this.disabled=false;});
+                                    $(".btn_is_authenticated").each(function(){this.disabled=false;});
+                                    $('.asyncProgressRef').hide();
+
+                                }
+                            },
+                            error: function() { // error logging
+                                console.log('Error!');
+                                $(".btn_is_authenticated").each(function(){this.disabled=false;});
+                                $(".btn_is_authorized").each(function(){this.disabled=false;});
+                                $('.asyncProgressRef').hide();
+
+                            }
+                        });
+                    };
+                    poll();
+                    pollInterval = setInterval(function() { // run function every 2000 ms
+                        poll();
+                    }, 10000);
+        }
         function findInputClick(event) {
             event.preventDefault();
             var i=0;
@@ -2312,30 +2346,59 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
               return false;
         }
 
-            function findParentClick(event, parentRequestNumber){
+        {#    function findParentClick(event, parentRequestNumber){#}
+        {#        event.preventDefault();#}
+        {#        var sliceList = getCheckedSlices();#}
+        {#        var i=0;#}
+        {##}
+        {#        var sendData = {slices:sliceList};#}
+        {#          $( "#reloadDialog" ).dialog();#}
+        {#          $.ajax({#}
+        {#                url: construct_django_url('/prodtask/find_parent_slices/',"{{ pr_id }}",parentRequestNumber),#}
+        {#                type: 'POST',#}
+        {#                contentType: 'application/json; charset=utf-8',#}
+        {#                data: $.toJSON(sendData),#}
+        {#                dataType: 'text',#}
+        {#                timeout: 0,#}
+        {#                success: function(data,status) {#}
+        {#                    $( "#reloadDialog" ).dialog('close');#}
+        {#                    if(status){#}
+        {#                        location.reload();#}
+        {#                    }#}
+        {#                    }#}
+        {#                }#}
+        {#            );#}
+        {#          return false;#}
+        {#};#}
+
+            function findParentClick(event, parentRequestNumber, useAsync){
                 event.preventDefault();
                 var sliceList = getCheckedSlices();
-                var i=0;
-
                 var sendData = {slices:sliceList};
-                  $( "#reloadDialog" ).dialog();
-                  $.ajax({
-                        url: construct_django_url('/prodtask/find_parent_slices/',"{{ pr_id }}",parentRequestNumber),
-                        type: 'POST',
-                        contentType: 'application/json; charset=utf-8',
-                        data: $.toJSON(sendData),
-                        dataType: 'text',
-                        timeout: 0,
-                        success: function(data,status) {
-                            $( "#reloadDialog" ).dialog('close');
-                            if(status){
-                                location.reload();
-                            }
+
+                if (useAsync){
+                    var url = construct_django_url('/prodtask/async_find_parent_slices/',"{{ pr_id }}",parentRequestNumber);
+                    sendAsyncTask(url,sendData);
+                } else {
+                    $( "#reloadDialog" ).dialog();
+                    $.ajax({
+                            url: construct_django_url('/prodtask/find_parent_slices/',"{{ pr_id }}",parentRequestNumber),
+                            type: 'POST',
+                            contentType: 'application/json; charset=utf-8',
+                            data: $.toJSON(sendData),
+                            dataType: 'text',
+                            timeout: 0,
+                            success: function(data,status) {
+                                $( "#reloadDialog" ).dialog('close');
+                                if(status){
+                                    location.reload();
+                                }
                             }
                         }
                     );
-                  return false;
-        };
+                    return false;
+                }
+            }
 
             function changeParentClick(event, changeSliceNumber){
                 event.preventDefault();
@@ -3423,6 +3486,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
     </div>
 
 {% endif %}
+    <div class="row" >
+        <a id="asyncLink" href="#" data-dropdown="dropAsyncTask">
+            <div  style="display: none" class="alert-box info round asyncProgressRef" >Async task: "<span class="asyncTaskName"></span>" has status: "<span class="asyncStatus"></span>" completion:  <span class="asyncProgressStat" ></span></div></a>        </a>
+    </div>
 
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
@@ -3666,9 +3733,29 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
 	{% endfor %}
     </div>
+    <div class="row">
+        <a id="asyncLink" href="#" data-dropdown="dropAsyncTask">
+    <div  style="display: none" class="alert-box info round asyncProgressRef" >Async task: "<span class="asyncTaskName"></span>" has status: "<span class="asyncStatus"></span>" completion:  <span class="asyncProgressStat" ></span></div></a>
+        <div id="dropAsyncTask" class="f-dropdown content" data-dropdown-content>
+            <div class="row">
+                Task ID: <span class="asyncTaskID"></span>
+            </div>
+            <div class="row">
+                Task Name: <span class="asyncTaskName"></span>
+            </div>
+            <div class="row">
+                User Name: <span class="asyncTaskUserName"></span>
+            </div>
+            <div class="row">
+                Status: <span class="asyncStatus"></span>
+            </div>
+            <div class="row">
+                progress: <span class="asyncProgressStat" ></span>
+            </div>
 
-    <div style="display: none" id="asyncProgressRef" class="alert-box info round" >Async task <span id="asyncTaskID"></span> is <span id="asyncStatus"></span>  <span id="asyncProgressStat" ></span></div>
-{#    <button style="display: none" onclick="testAsyncClick(event);">Test</button>#}
+        </div>
+    </div>
+    {#    <button style="display: none" onclick="testAsyncClick(event);">Test</button>#}
  <form>
     <div class="row collapse hiddenNonEdit">
     <button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button>
@@ -3716,9 +3803,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <div class="row">
                 <div class="large-3 columns">
                     {% ifequal trequest.request_type "MC" %}
-                        <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</a>
+                        <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</button>
                     {% else  %}
-                         <a href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</a>
+                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</button>
                     {% endifequal %}
                 </div>
 
@@ -3750,9 +3837,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             </label>
                         </div>
                      <div class="row">
-                         <button id="findParentAction" class="btn_is_authenticated" title="Find parent slices" onclick="findParentClick(event,$('#parentRequestNumber').val());">Find</button>
+                         <button id="findParentAction" class="btn_is_authenticated" title="Find parent slices" onclick="findParentClick(event,$('#parentRequestNumber').val(), false);">Find</button>
                      </div>
-
+                    <div class="row">
+                        <button id="findParentAsyncAction" class="btn_is_authenticated" title="Find parent slices async" onclick="findParentClick(event,$('#parentRequestNumber').val(),true);">Async</button>
+                    </div>
                 </div>
 
             </div>
@@ -3789,11 +3878,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
     <div class="row">
         <div class="large-3 columns">
-            <a class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</a>
+            <button class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</button>
 
         </div>
         <div class="large-3 columns">
-            <a class="button btn_is_authenticated" onclick="showBulkSliceModal(event);">Bulk slice modification</a>
+            <button class="button btn_is_authenticated" onclick="showBulkSliceModal(event);">Bulk slice modification</button>
 
         </div>
         <div class="large-2 columns">

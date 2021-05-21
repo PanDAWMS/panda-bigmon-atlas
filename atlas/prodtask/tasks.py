@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import time
 
-from atlas.celerybackend.celery import app
+from atlas.celerybackend.celery import app, ProdSysTask
 from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_update, clean_superceeded
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
@@ -11,6 +11,7 @@ from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.open_ended import check_open_ended
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container
+from functools import wraps
 
 import logging
 _logger = logging.getLogger('prodtaskwebui')
@@ -90,11 +91,17 @@ def gp_deletion_update_with_cleaning():
     clean_superceeded()
     return True
 
-@app.task(bind=True)
+
+
+
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('test task')
 def test_async_progress(self, a):
     for i in range(10):
         time.sleep(10)
-        self.update_state(state="PROGRESS", meta={'progress': i*10})
+        self.progress_message_update(i*10)
+    if a == 'bad':
+        raise Exception('Something Wrong')
     return 'finished: '+str(a)
 
 

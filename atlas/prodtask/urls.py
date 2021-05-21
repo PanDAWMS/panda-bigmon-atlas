@@ -139,6 +139,8 @@ urlpatterns = [
 
 
     url(r'^find_parent_slices/(?P<reqid>\d+)/(?P<parent_request>\d+)/$', step_manage_views.find_parent_slices, name='find_parent_slices'),
+    url(r'^async_find_parent_slices/(?P<reqid>\d+)/(?P<parent_request>\d+)/$', step_manage_views.async_find_parent_slices, name='async_find_parent_slices'),
+
 
     url(r'^change_request_priority/(?P<reqid>\d+)/(?P<old_priority>[-+]?\d+)/(?P<new_priority>[-+]?\d+)/$', views.change_request_priority, name='change_request_priority'),
 
