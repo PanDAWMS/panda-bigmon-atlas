@@ -2203,10 +2203,14 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             var description = $('#newDescription').val();
             var newRef = $('#newLink').val();
             var newProject = $('#chooseNewCloneProject').val();
+            var url = construct_django_url('/prodtask/request_clone2/',"{{ pr_id }}");
+            if ($('#asyncRequestClone').prop('checked')){
+                url = construct_django_url('/prodtask/request_clone_async/',"{{ pr_id }}");
+            }
             var sendData = {slices:sliceList,description:description,ref:newRef,project:newProject};
               $( "#reloadDialog" ).dialog();
               $.ajax({
-                    url: construct_django_url('/prodtask/request_clone2/',"{{ pr_id }}"),
+                    url: url,
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
                     data: $.toJSON(sendData),
@@ -2454,6 +2458,11 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             var sliceList = getCheckedSlices();
             var i=0;
             $('#allClone').html('All'+'('+$('.checkboxSlice').length+')');
+            if($('.checkboxSlice').length>20){
+                $('#asyncRequestClone').prop('checked',true);
+            }
+
+
             $('#selectClone').html('Only selected'+'('+sliceList.length+')');
             $('#chooseNewCloneProject').val("{{ trequest.project }}");
              $('#cloneModal').foundation('reveal', 'open');
@@ -3933,6 +3942,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
       <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneAll"  CHECKED><span class="custom radio checked"></span><span id='allClone'>All</span></label>
       <label for="radioClone"><input name="radioClone" type="radio" id="radioCloneSelect" ><span class="custom radio"></span > <span id='selectClone'>Selected</span></label>
     <button id="cloneRequestButton" title="clone request" onclick="cloneRequest(event);$('#closeCloneReveal').click()">Clone request</button>
+    <label>Do asynchronous
+        <input type="checkbox"  id="asyncRequestClone" />
+    </label>
 <a id='closeCloneReveal' class="close-reveal-modal" >&#215;</a>
 </div>
 

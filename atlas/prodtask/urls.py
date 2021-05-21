@@ -29,6 +29,8 @@ urlpatterns = [
     url(r'^request_table_js/$',               request_views.request_table_js,   name='request_table_js'),
     url(r'^request/(?P<rid>\d+)/$',         request_views.request_details, name='request'),
     url(r'^request_clone2/(?P<reqid>\d+)/$',   request_views.request_clone2,   name='request_clone2'),
+    url(r'^request_clone_async/(?P<reqid>\d+)/$',   request_views.request_clone_async,   name='request_clone_async'),
+
     url(r'^request_update/(?P<reqid>\d+)/$',  request_views.request_update,  name='request_update'),
 
     url(r'^request_comments/(?P<reqid>\d+)/$',  request_views.request_comments,  name='request_comments'),

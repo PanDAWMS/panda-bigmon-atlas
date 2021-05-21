@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from time import time
-from atlas.celerybackend.celery import app
+from atlas.celerybackend.celery import app, ProdSysTask
 from django.core.cache import cache
 
 from celery.result import AsyncResult
@@ -2920,49 +2920,11 @@ def clone_request_hashtags(old_request_id, new_request):
         new_request_hashatg.hashtag = old_request_hashatg.hashtag
         new_request_hashatg.save()
 
-
-
-def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project, do_parent = True):
-    request_destination = TRequest.objects.get(reqid=reqid)
-    request_destination.reqid = None
-    request_destination.cstatus = 'waiting'
-    request_destination.description = new_short_description
-    request_destination.jira_reference = None
-    request_destination.is_error = None
-    request_destination.manager = owner
-    request_destination.ref_link = new_ref
-    request_destination.project = TProject.objects.get(project=project)
-    if request_destination.info_fields:
-        info_field = json.loads(request_destination.info_fields)
-        info_field['long_description'] = 'Cloned from request %s'%str(reqid)
-        request_destination.info_fields=json.dumps(info_field)
-    request_destination.save()
-    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
-                                                       status='waiting')
-    request_status.save_with_current_time()
-    if do_parent:
-        new_parent_child = ParentToChildRequest()
-        new_parent_child.parent_request = TRequest.objects.get(reqid=reqid)
-        new_parent_child.child_request = request_destination
-        new_parent_child.relation_type = 'CL'
-        new_parent_child.status = 'active'
-        new_parent_child.save()
-    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
-    try:
-        clone_request_hashtags(reqid, request_destination)
-    except:
-        pass
-    clone_slices(reqid,request_destination.reqid,slices,0,False)
-    return request_destination.reqid
-
-
-
-@app.task(bind=True)
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Clone slices')
 def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from, make_link, fill_slice_from=False, do_smart=False, predefined_parrent={}, step_before=99):
     ordered_slices = list(map(int,slices))
     ordered_slices.sort()
-    #form levels from input text lines
-    #create chains for each input
     request_source = TRequest.objects.get(reqid=reqid_source)
     if reqid_source == reqid_destination:
         request_destination = request_source
@@ -2972,8 +2934,7 @@ def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from,
     new_slice_numbers = []
     new_slice_number = InputRequestList.objects.filter(request=request_destination).count()
     old_new_step = {}
-    if not self.request.called_directly:
-        self.update_state(state="PROGRESS", meta={'processed': 0, 'total': len(ordered_slices)+1})
+    self.progress_message_update(0,len(ordered_slices)+1)
     for slices_processed, slice_number in enumerate(ordered_slices):
         current_slice = InputRequestList.objects.filter(request=request_source,slice=int(slice_number))
         new_slice = list(current_slice.values())[0]
@@ -3027,12 +2988,51 @@ def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from,
                     first_changed = True
                     step.save()
                     old_new_step[old_step_id] = step
-        if not self.request.called_directly:
-            self.update_state(state="PROGRESS", meta={'processed': slices_processed, 'total': len(ordered_slices)+1})
+        self.progress_message_update(slices_processed,len(ordered_slices)+1)
     clone_child_slices(reqid_source,old_new_step)
-    if not self.request.called_directly:
-        self.update_state(state="PROGRESS", meta={'processed': len(ordered_slices)+1, 'total': len(ordered_slices)+1})
+    self.progress_message_update(len(ordered_slices)+1,len(ordered_slices)+1)
     return new_slice_numbers
+
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project, do_parent = True, async = False):
+    request_destination = TRequest.objects.get(reqid=reqid)
+    request_destination.reqid = None
+    request_destination.cstatus = 'waiting'
+    request_destination.description = new_short_description
+    request_destination.jira_reference = None
+    request_destination.is_error = None
+    request_destination.manager = owner
+    request_destination.ref_link = new_ref
+    request_destination.project = TProject.objects.get(project=project)
+    if request_destination.info_fields:
+        info_field = json.loads(request_destination.info_fields)
+        info_field['long_description'] = 'Cloned from request %s'%str(reqid)
+        request_destination.info_fields=json.dumps(info_field)
+    request_destination.save()
+    request_status = RequestStatus(request=request_destination,comment='Request cloned from %i'%int(reqid),owner=owner,
+                                                       status='waiting')
+    request_status.save_with_current_time()
+    if do_parent:
+        new_parent_child = ParentToChildRequest()
+        new_parent_child.parent_request = TRequest.objects.get(reqid=reqid)
+        new_parent_child.child_request = request_destination
+        new_parent_child.relation_type = 'CL'
+        new_parent_child.status = 'active'
+        new_parent_child.save()
+    _logger.debug("New request: #%i"%(int(request_destination.reqid)))
+    try:
+        clone_request_hashtags(reqid, request_destination)
+    except:
+        pass
+    if not async:
+        clone_slices(reqid,request_destination.reqid,slices,0,False)
+    else:
+        return_value = single_request_action_celery_task(request_destination.reqid,clone_slices_task,'Clone slices',
+                                                         owner,reqid,request_destination.reqid,slices,0,False)
+    return request_destination.reqid
+
+
+
+
 
 
 

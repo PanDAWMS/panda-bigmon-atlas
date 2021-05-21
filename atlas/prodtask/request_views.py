@@ -658,27 +658,42 @@ def request_clone2(request, reqid):
     if request.method == 'POST':
         results = {'success':False}
         try:
-            data = request.body
-            input_dict = json.loads(data)
-            slices = input_dict['slices']
-            ordered_slices = list(map(int,slices))
-            ordered_slices.sort()
-            new_short_description = input_dict['description']
-            new_ref = input_dict['ref']
-            new_project = input_dict['project']
-            owner=''
-            try:
-                owner = request.user.username
-            except:
-                pass
-            if not owner:
-                owner = 'default'
-            _logger.debug(form_request_log(reqid,request,'Clone request' ))
-            new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project)
-            results = {'success':True,'new_request':int(new_request_id)}
+            results = do_request_clone_async(request, reqid, False)
         except Exception as e:
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def request_clone_async(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            results = do_request_clone_async(request, reqid, True)
+        except Exception as e:
+            _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def do_request_clone_async(request, reqid, async=False):
+    data = request.body
+    input_dict = json.loads(data)
+    slices = input_dict['slices']
+    ordered_slices = list(map(int,slices))
+    ordered_slices.sort()
+    new_short_description = input_dict['description']
+    new_ref = input_dict['ref']
+    new_project = input_dict['project']
+    owner=''
+    try:
+        owner = request.user.username
+    except:
+        pass
+    if not owner:
+        owner = 'default'
+        _logger.debug(form_request_log(reqid,request,'Clone request' ))
+    new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project, True, async)
+    return {'success':True,'new_request':int(new_request_id)}
+
+
 
 
 @csrf_protect
