@@ -1377,6 +1377,29 @@ class GroupProductionDeletionExtension(models.Model):
         db_table = '"T_GP_DELETION_EXT"'
 
 
+class SliceError(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='SLICE_ERROR_ID', primary_key=True)
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    slice = models.ForeignKey(InputRequestList, db_column='SLICE_ID', null=False, on_delete=CASCADE)
+    exception_type = models.CharField(max_length=50, db_column='EXCEPTION')
+    message  = models.CharField(max_length=2000, db_column='MESSAGE', null=True)
+    timestamp = models.DateTimeField(db_column='UPDATE_TIME', null=False)
+    exception_time = models.DateTimeField(db_column='EXCEPTION_TIME', null=False)
+    is_active = models.BooleanField(db_column='IS_ACTIVE')
+
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_SLICE_ERROR_SEQ',"T_SLICE_ERROR",'SLICE_ERROR_ID')
+        self.timestamp = timezone.now()
+        super(SliceError, self).save(*args, **kwargs)
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_SLICE_ERROR"'
+
 class GroupProductionDeletionProcessing(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_D_P_ID', primary_key=True)

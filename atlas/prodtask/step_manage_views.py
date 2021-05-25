@@ -11,7 +11,7 @@ from copy import deepcopy
 
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
-from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern
+from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError
 #from ..prodtask.spdstodb import fill_template
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, single_request_action_celery_task
@@ -620,6 +620,9 @@ def hide_slices_in_req(request, reqid):
         if not slice.is_hide:
             slice.is_hide = True
             reject_steps_in_slice(slice)
+            for slice_error in SliceError.objects.filter(request=slice.request,slice=slice, is_active=True):
+                slice_error.is_active = False
+                slice_error.save()
         else:
             slice.is_hide = False
         slice.save()
@@ -2416,3 +2419,10 @@ def test_celery_task(request, reqid):
 
 
 
+@api_view(['GET'])
+def input_with_slice_errors(request, reqid):
+    slice_erros = SliceError.objects.filter(request=reqid,is_active=True)
+    result_list = []
+    for slice_error in slice_erros:
+        result_list.append(slice_error.slice.dataset)
+    return Response({'input_errors':result_list})

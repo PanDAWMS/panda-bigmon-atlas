@@ -138,6 +138,8 @@ urlpatterns = [
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.hide_slices_in_req, name='hide_slices_in_req'),
     url(r'^request_train_patterns/(?P<reqid>\d+)/$', step_manage_views.request_train_patterns, name='request_train_patterns'),
     url(r'^obsolete_old_deleted_tasks/(?P<reqid>\d+)/$', step_manage_views.obsolete_old_deleted_tasks, name='obsolete_old_deleted_tasks'),
+    url(r'^input_with_slice_errors/(?P<reqid>\d+)/$', step_manage_views.input_with_slice_errors, name='input_with_slice_errors'),
+
 
 
     url(r'^find_parent_slices/(?P<reqid>\d+)/(?P<parent_request>\d+)/$', step_manage_views.find_parent_slices, name='find_parent_slices'),

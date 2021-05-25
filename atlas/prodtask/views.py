@@ -25,7 +25,7 @@ from celery.result import AsyncResult
 
 from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
-    ActionDefault
+    ActionDefault, SliceError
 from atlas.prodtask.spdstodb import fill_template
 
 from ..prodtask.helper import form_request_log, form_json_request_dict
@@ -1285,7 +1285,15 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                     for slice, new_dataset in list(slice_new_input.items()):
                         if new_dataset:
                             change_dataset_in_slice(req, int(slice), new_dataset)
-
+            if approve_level >= 0:
+                for slice_number in [x for x in map(int,slices) if x not in (error_slices + no_action_slices)]:
+                    if SliceError.objects.filter(request=reqid, is_active=True, slice=InputRequestList.objects.get(request=reqid,slice=slice_number)).exists():
+                        for slice_error in SliceError.objects.filter(request=reqid, is_active=True, slice=InputRequestList.objects.get(request=reqid,slice=slice_number)):
+                            slice_error.is_active = False
+                            slice_error.save()
+                            _jsonLogger.info('{message}'.format(message=slice_error.message),extra={'prod_request':reqid,
+                                                                                                    'slice':slice_error.slice_id,'exception_time':slice_error.exception_time,
+                                                                                                    'exception_type':slice_error.exception_type})
             results = {'missing_tags': missing_tags,
                        'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
                        'wrong_slices':wrong_skipping_slices,
@@ -2176,9 +2184,12 @@ def request_table_view(request, rid=None, show_hidden=False):
 
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
             jira_problem_link = ''
+            slice_errors_dict = {}
             if cur_request.jira_reference:
                 jira_problem_link = cur_request.jira_reference
-
+                slice_errors = list(SliceError.objects.filter(request=rid, is_active=True).values())
+                for slice_error in slice_errors:
+                    slice_errors_dict[slice_error['slice_id']] = slice_error
             for cur_slice in range(len(input_lists)):
                 temp_list = list(input_lists[cur_slice])
                 slice_output, real_events, total_events = get_last_step_format(temp_list)
@@ -2189,6 +2200,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                     temp_list+=[slice_output[:60]+"...",slice_output,events_str, total_events]
                 else:
                     temp_list+=[slice_output,slice_output,events_str, total_events]
+                if temp_list[0]['id'] in slice_errors_dict:
+                    temp_list[0]['is_error'] = 'sliceError'
+                    temp_list[0]['errorMessage'] = slice_errors_dict[temp_list[0]['id']]['exception_type']+': '+slice_errors_dict[temp_list[0]['id']]['message']
+                else:
+                    temp_list[0]['is_error'] = 'noSliceError'
+                    temp_list[0]['errorMessage'] = ''
 
                 input_lists[cur_slice] = tuple(temp_list)
             if cur_request.is_error:

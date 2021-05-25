@@ -166,7 +166,9 @@ changeSliceOrder();
 $(".stepchoose").css({"font-size": "12px","width": "50px","padding":"0px","border": "1px solid black",
                          "cursor":"pointer","user-select": "none"});
 $(".inputListRow").children("td").css({"padding":"1px"})
-$(".inputListTables").css({"border": "1px solid black","margin": "1px"})
+$(".inputListTables.noSliceError").css({"border": "1px solid black","margin": "1px"})
+    $(".inputListTables.sliceError").css({"border": "3px solid red","margin": "1px"})
+
 $(".outsideInputListTables").css({"border": "hidden","margin": "1px"})
 $(".showFullSpan").css({"cursor":"pointer","user-select":"none"});
 $(".showTasksInSlice").css({"cursor":"pointer","user-select":"none"});
@@ -2772,6 +2774,19 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             $.ajaxSetup({async: true});
                 $('#commentModalWindow').foundation('reveal', 'open');
             }
+            function showModalInputErrors(event){
+                event.preventDefault();
+                $.ajaxSetup({async: false});
+                $.get("{% url 'prodtask:input_with_slice_errors' pr_id %}",function(data,status){
+
+                    var inputErrors = data.input_errors;
+                    if (inputErrors !== undefined){
+                        $('#inputErrorsList').html(inputErrors.join('\n'));
+                    }
+                });
+                $.ajaxSetup({async: true});
+                $('#inputErrorsModalWindow').foundation('reveal', 'open');
+            }
         function removeHashTag(hashtag){
 
             removeUrl = construct_django_url('/prodtask/remove_hashtag_request/', {{ pr_id }});
@@ -2931,6 +2946,11 @@ function changeStatusFilter(){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }
                });
+                break;
+            case  'error_slices':
+                $('.noSliceError').each(function(){
+                        $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                });
                 break;
             case  'partially_submitted':
                 $('.StatusFilter').each(function(){
@@ -3427,6 +3447,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 Filter by status:
             <select id="statusFilter" onchange="changeStatusFilter();">
                 <option value="all">all</option>
+                <option value="error_slices">slice with errors</option>
                 <option value="!submitted">hide submitted</option>
                 <option value="partially_submitted">partially submitted</option>
                 <option value="not_submitted">not submitted</option>
@@ -3453,6 +3474,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <tr>
     <td>
     <button class="btn_is_authenticated" id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
+        <button  onclick="$('.showSliceError').show();">Show messages</button>
+        <button  onclick="$('#statusFilter').val('error_slices');changeStatusFilter();">Filter</button>
+        {% ifequal trequest.request_type "GROUP" %}
+            <button  onclick="showModalInputErrors(event);">Show Input</button>
+
+        {% endifequal %}
     </td>
     <td>
         <div id="deftRef" class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
@@ -3545,11 +3572,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <div  id="baseInput"></div>
     {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approveLevel, cloned, is_waiting, slice_output,slice_output_full,real_events, total_events  in inputLists %}
         <div class="inputListDivs" id="inputList_div{{ inputList.slice }}">
-
         <table class="outsideInputListTables" id="outsideInputListTables{{ inputList.slice }}"><tr>
             <td style="width: 29px;padding:0px;margin:0px"><form ><input  type="checkbox" class="checkboxSlice" id="checkbox{{ inputList.slice }}" onclick='checkSlice(event);' checked></form></td>
             <td style="padding:0px;margin:0px">
-            <table class="inputListTables" >
+            <table class="inputListTables {{ inputList.is_error }}" >
             <tr class="inputListRow">
                 <td style="width: 20px" ><a name="inputList{{ inputList.slice }}">{{ inputList.slice }}</a></td>
                 {% if  not_use_input_date_for_pattern %}
@@ -3577,6 +3603,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
 {#                <td>{{ inputList.brief }}</td>#}
 
             </tr>
+            <tr class="showSliceError" style="display: none">
+                <td colspan="16"  >
+                    <span  style="padding:0px;color: red" title="{{ inputList.errorMessage }}">{{ inputList.errorMessage}}</span>
+                </td>
+            </tr>
             {% if  not not_use_input_date_for_pattern %}
               <tr>
 
@@ -3589,6 +3620,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                             <td colspan="2" >events: <span  class="changeeventsNumber{{ inputList.slice }}">{{ real_events }}</span></td>
 
                          {% else %}
+
                             <td colspan="15" style="width: 500px" >
                             <span class="showFullSpan" style="padding:0px" title="{{ slice_output_full }}">Slice outputs:<span class="sliceOutput filterField"><b>
                                 {{ slice_output}}</b></span>
@@ -4456,7 +4488,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <a  class="close-reveal-modal">&#215;</a>
 </div>
 
+    <div id="inputErrorsModalWindow" class="reveal-modal" data-reveal>
+        <code id="inputErrorsList">
 
+        </code>
+        <a  class="close-reveal-modal">&#215;</a>
+    </div>
 
     <div id="datasetInfoWindow" class="reveal-modal" data-reveal>
     <h5 id="datasetsInfoLoad">Loading...</h5>
