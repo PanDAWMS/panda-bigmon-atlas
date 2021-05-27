@@ -130,6 +130,15 @@ $("#doColor").css({'background-color':step_bc[0]});
 $("#skippedColor").css({'background-color':step_bc[1]});
 $("#foreignColor").css({'background-color':step_bc[2]});
 
+$.fn.mirror = function (selector) {
+    return this.each(function () {
+        var $this = $(this);
+        var $selector = $(selector);
+        $this.bind('keyup', function () {
+            $selector.val(($this.val()));
+        });
+    });
+};
 $(document).ready(function(){
 var temp_ref_link = '{{ trequest.ref_link}}';
 $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,temp_ref_link.length));
@@ -177,21 +186,31 @@ $(".showSmallSpan").css({"cursor":"pointer"});
 {#Color pattern steps#}
  {% for step in step_list %}
     $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+     $("#bstartStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+     $("#patternform{{ forloop.counter0 }}").mirror("#bpatternform{{ forloop.counter0 }}");
+     $("#bpatternform{{ forloop.counter0 }}").mirror("#patternform{{ forloop.counter0 }}");
 
  {% endfor %}
 
 $('#chooseStepBulk').change(function(){changeStepBulk();});
 $('#amitagBulkSelect').change(function(){clickAmiStepBulk();});
 $('#radioSetStepBulk').change(function(){changeStepBulk();});
- $("#selectPattern").change(function(){
+ $(".selectPattern").change(function(){
+     $('.selectPattern').val($(this).val());
     {% for pattern, steps  in pattern_list %}
-        if ($("#selectPattern").val() == "{{ pattern }}"){
+        if ($(this).val() == "{{ pattern }}"){
             {% for step, fields in steps %}
                 $("#patternform{{forloop.counter0}}").val("{{ step }}");
+                $("#bpatternform{{forloop.counter0}}").val("{{ step }}");
+
                 if("{{ step }}" != ""){
                     $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+                    $("#bstartStep{{ forloop.counter0 }}").css({"background-color":$("#doColor").css("background-color")});
+
                 } else{
                     $("#startStep{{ forloop.counter0 }}").css({"background-color":$("#skippedColor").css("background-color")});
+                    $("#bstartStep{{ forloop.counter0 }}").css({"background-color":$("#skippedColor").css("background-color")});
+
                 }
                 i = {{  forloop.counter0 }};
                     {% for field_name, field_value in fields %}
@@ -202,16 +221,24 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         }
     {% endfor %}
 });
+{#$('.replaceEmptyCeckboxes').change(function(){$('.replaceEmptyCeckboxes').attr('checked',$(this).is(':checked'));})#}
+
 
     $(".stepchoose").click(function(){
         var currentColor = $(this).css("background-color");
         var currentIndex = (step_bc.indexOf(currentColor)+1)%2;
         $(this).css({"background-color":step_bc[currentIndex]});
         step_bc[currentIndex] =  $(this).css("background-color");
-        if($(this).attr("id").substr(0,4) == 'step'){
+        if($(this).attr("id").substr(0,4) === 'step'){
             var step_td_short = "td#short".concat($(this).attr("id").substr(4)).concat(".showFullSpan");
             $(step_td_short).css({"background-color":step_bc[currentIndex]});
-        };
+        }
+        if($(this).attr("id").substr(0,4) === 'star'){
+            $('#b'+$(this).attr("id")).css({"background-color":step_bc[currentIndex]});
+        }
+        if($(this).attr("id").substr(0,4) === 'bsta'){
+            $('#'+$(this).attr("id").substr(1)).css({"background-color":step_bc[currentIndex]});
+        }
     })  ;
     {#    replace hide/show on dynamic creation#}
     $(".showFullSpan").click(function(event){
@@ -933,6 +960,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                            var step_td_short = "td#short".concat(sliceID).concat("s{{ forloop.counter0 }}.showFullSpan");
 
                            var stepColor = $("#startStep{{ forloop.counter0 }}").css("background-color");
+
                            $(step_td_short).css({"background-color":stepColor});
                            var stepFormLong = "#".concat(sliceID).concat("s{{ forloop.counter0 }}.slice_form");
                            var step_th_long = "th#step".concat(sliceID).concat("s{{ forloop.counter0 }}.stepchoose");
@@ -3530,7 +3558,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 <table style="margin-left: 50px;border: hidden" id="patternTable">
 <tr>
     <th colspan="11">
-        <select id="selectPattern" >
+        <select class="selectPattern" >
             <option value="" disabled selected>Select pattern</option>
             {% for pattern, steps in pattern_list %}
                 <option value="{{ pattern }}">{{ pattern }}</option>
@@ -3558,7 +3586,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
         {% endfor %}
           <td colspan="4">
               <label> Replace empty
-                <input type="checkbox" id="replaceByPattern"  />
+                <input type="checkbox" class="replaceEmptyCeckboxes" id="replaceByPattern" onclick="$('.replaceEmptyCeckboxes').prop('checked',$(this).is(':checked'));" />
               </label>
           </td>
     </tr>
@@ -4650,7 +4678,42 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
   <a  class="close-reveal-modal">&#215;</a>
 </div>
+<table style="margin-left: 50px;border: hidden" id="patternTable">
+    <tr>
+        <th colspan="11">
+            <select class="selectPattern" >
+                <option value="" disabled selected>Select pattern</option>
+                {% for pattern, steps in pattern_list %}
+                    <option value="{{ pattern }}">{{ pattern }}</option>
+                {% endfor %}
+            </select>
+        </th>
+        <th >
+        <td><button id="showPattern" title="Show current pattern" onclick="showPatternClick(event);">Show</button></td>
+        </th>
+        <th >
+        <td><button class="btn_is_authenticated" id="bind" title="Create step execution" onclick="bindClick(event);">Bind</button></td>
+        </th>
 
+    </tr>
+    <tr>
+        {% for step in step_list %}
+            <th class="stepchoose" id="bstartStep{{ forloop.counter0 }}"  > <div > {{step.name}}</div></th>
+        {% endfor %}
+    </tr>
+    <tr>
+        {% for step in step_list %}
+            <td style="padding: 0px;width: 50px">
+                <form><input type="text" class="patternForm"  id="bpatternform{{forloop.counter0}}" value=""/></form>
+            </td>
+        {% endfor %}
+        <td colspan="4">
+            <label> Replace empty
+                <input type="checkbox" class="replaceEmptyCeckboxes" id="breplaceByPattern" onclick="$('.replaceEmptyCeckboxes').prop('checked',$(this).is(':checked'));"  />
+            </label>
+        </td>
+    </tr>
+</table>
 {% if hidden_slices > 0 %}
     <a href= "{% url 'prodtask:input_list_approve_full' pr_id %}">Show {{ hidden_slices }} hidden slices </a>
     <p/>
