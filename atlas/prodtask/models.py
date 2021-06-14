@@ -1391,13 +1391,12 @@ class SliceError(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_SLICE_ERROR_SEQ',"T_SLICE_ERROR",'SLICE_ERROR_ID')
+            self.id = prefetch_id('deft','T_SLICE_ERROR_SEQ',"T_SLICE_ERROR",'SLICE_ERROR_ID')
         self.timestamp = timezone.now()
         super(SliceError, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_SLICE_ERROR"'
 
 class GroupProductionDeletionProcessing(models.Model):
