@@ -858,7 +858,7 @@ def mcfile_form_prefill(form_data, request):
     form_data['need_split'] = (check_need_split(spreadsheet_dict) > 0)
     # if form_data['need_split']:
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
-    if len(spreadsheet_dict)>220:
+    if len(spreadsheet_dict)>1220:
         if (not request.user.is_superuser) and \
                             ('MCCOORD' not in egroup_permissions(request.user.username)):
             eroor_message = "Too many samples selected for a single request - please factorise request into " \
