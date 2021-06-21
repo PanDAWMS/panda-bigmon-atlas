@@ -203,6 +203,16 @@
                         <label class="left inline">  Discard events
                             <input type="checkbox" id="cbx_discard_events" >
                         </label>
+
+                    </div>
+                </div>
+                <div class="row" title="Disable staging mode">
+
+                    <div class="small-12 columns">
+                        <label class="left inline">  Disable staging mode
+                            <input type="checkbox" id="cbx_disable_staging_mode" >
+                        </label>
+
                     </div>
                 </div>
             </div>
@@ -913,7 +923,7 @@ function doTasksActionSelected(action) {
     }  else if (action == "abort_unfinished_jobs") {
                 parameters = [$("#cbx_job_hard_kill").prop("checked") ? 9 : null];
     }  else if (action == "retry") {
-                parameters = [$("#cbx_discard_events").prop("checked") ];
+                parameters = [$("#cbx_discard_events").prop("checked"),$("#cbx_disable_staging_mode").prop("checked") ];
     } else if ((action == 'set_hashtag') || (action=='remove_hashtag')) {
         parameters = [$('#hashtag_name').val()];
     }
