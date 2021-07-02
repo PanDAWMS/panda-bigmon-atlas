@@ -300,6 +300,7 @@ class TapeResource(ResourceQueue):
                                                             activity='Staging', notify='P', source_replica_expression=source_replica)
                             staging =  DatasetStaging.objects.get(id=x['id'])
                             staging.status = 'staging'
+                            staging.start_time = timezone.now()
                             staging.save()
                             total_submitted += x['value']
                         else:
