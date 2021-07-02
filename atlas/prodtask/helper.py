@@ -139,11 +139,15 @@ def form_request_log(reqid,request,message):
 
 def form_json_request_dict(reqid,request,extra=None):
     user_name = ''
-    try:
-        user_name = request.user.username
-    except:
-        pass
-    result = {'user':user_name,'prod_request':reqid}
+    if request:
+        try:
+            user_name = request.user.username
+        except:
+            pass
+    if user_name:
+        result = {'user':user_name,'prod_request':reqid}
+    else:
+        result = {'prod_request':reqid}
     if extra:
         result.update(extra)
     return result

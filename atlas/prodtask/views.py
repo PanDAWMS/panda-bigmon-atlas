@@ -18,6 +18,10 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from time import time
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 from atlas.celerybackend.celery import app, ProdSysTask
 from django.core.cache import cache
 
@@ -242,7 +246,7 @@ def form_step_in_page(ordered_existed_steps,STEPS, is_foreign):
 
 
 #TODO: FIX it. Make one commit
-def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99, waiting_level=99):
+def create_steps(prodsys_async_task, slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99, waiting_level=99):
     """
     Creating/saving steps
 
@@ -277,7 +281,11 @@ def create_steps(slice_steps, reqid, STEPS=StepExecution.STEPS, approve_level=99
         error_slices = []
         no_action_slices = []
         cur_request = TRequest.objects.get(reqid=reqid)
+        processed = 0
         for slice, steps_status in list(slice_steps.items()):
+            if prodsys_async_task:
+                processed += 1
+                prodsys_async_task.progress_message_update(processed+1,len(slice_steps.keys())+2)
             input_list = InputRequestList.objects.filter(request=cur_request, slice=int(slice))[0]
             existed_steps = StepExecution.objects.filter(request=cur_request, slice=input_list)
             if input_list.priority is None:
@@ -687,23 +695,23 @@ MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase
 
 
 
-def request_approve_status(production_request, request):
-    user_name = ''
-    is_superuser = False
-    try:
-        user_name = request.user.username
-    except:
-        pass
+def request_approve_status(production_request, request, user_name='', is_superuser=None):
 
-    try:
-        is_superuser = request.user.is_superuser
-    except:
-        pass
+    if request and not user_name:
+        try:
+            user_name = request.user.username
+        except:
+            pass
+    if request and not is_superuser:
+        try:
+            is_superuser = request.user.is_superuser
+        except:
+            pass
     if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
 
         # change to VOMS
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
-        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(request.user.username)) or is_superuser:
+        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(user_name)) or is_superuser:
             return 'approved'
 
     else:
@@ -1238,9 +1246,9 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
             if ['-1'] == list(slice_steps.keys()):
                 slice_0 = deepcopy(slice_steps['-1'])
                 if req.request_type == 'MC':
-                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level,waiting_level)
+                    error_slices, no_action_slices = create_steps(None, {0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level,waiting_level)
                 else:
-                    error_slices, no_action_slices = create_steps({0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level,waiting_level)
+                    error_slices, no_action_slices = create_steps(None, {0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level,waiting_level)
                 if req.request_type == 'MC':
                     approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
                     if (0 not in error_slices) and (approved_steps == 0):
@@ -1250,7 +1258,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                         extended_slice_steps = {}
                         for i in range(1,slice_count):
                             extended_slice_steps.update({str(i):deepcopy(slice_0)})
-                        error_slices, no_action_slices = create_steps(extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
+                        error_slices, no_action_slices = create_steps(None, extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
             else:
                 if '-1' in  list(slice_steps.keys()):
                     del slice_steps['-1']
@@ -1260,11 +1268,11 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                     removed_input = []
                     #child_steps_before_update = find_child_steps(reqid,slice_steps)
                     if req.request_type == 'MC':
-                        error_slices, no_action_slices = create_steps(slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
+                        error_slices, no_action_slices = create_steps(None, slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
                     else:
-                        error_slices, no_action_slices = create_steps(slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
+                        error_slices, no_action_slices = create_steps(None, slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
                     try:
                         make_child_update(reqid,owner,slice_steps)
                     except Exception as e:
@@ -1319,6 +1327,144 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
     return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Save slices')
+def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser, reqid, approve_level, waiting_level=99, do_split=False):
+    results = {'success':False, 'async_name':'save_slices'}
+
+    try:
+
+        start_time = time()
+        _jsonLogger.debug('Steps modification',extra=form_json_request_dict(reqid,None,{'user':user_name,'steps':json.dumps(slice_steps)}))
+        _jsonLogger.info('Start steps modification',extra=form_json_request_dict(reqid,None,{'user':user_name}))
+        slices = list(slice_steps.keys())
+        self.progress_message_update(0,len(slices)+2)
+
+        req = TRequest.objects.get(reqid=reqid)
+        fail_slice_save = save_slice_changes(reqid, slice_steps)
+        error_slices = []
+        if (req.request_type == 'MC') and not fail_slice_save:
+            error_slices=check_slice_jos(reqid,slice_steps)
+        try:
+            fill_request_priority(reqid,reqid)
+        except:
+            pass
+        for slice, steps_status in list(slice_steps.items()):
+            slice_steps[slice] = steps_status['sliceSteps']
+        for steps_status in list(slice_steps.values()):
+            for steps in steps_status[:-2]:
+                steps['value'] = steps['value'].strip()
+        slice_new_input = {}
+        for slice, steps_status in list(slice_steps.items()):
+            if steps_status[-1]:
+                slice_new_input.update({slice:steps_status[-1]['input_dataset']})
+            slice_steps[slice]= steps_status[:-1]
+
+        # Check input on missing tags, wrong skipping
+        missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
+        error_approve_message = False
+        owner = user_name
+        if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
+            if (not is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
+                error_approve_message = True
+        results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
+                   'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
+                   'error_approve_message': error_approve_message, 'async_name':'save_slices'}
+        removed_input = []
+        no_action_slices = []
+        self.progress_message_update(1,len(slices)+2)
+
+        if (not missing_tags) and (not error_approve_message) and (not error_slices):
+            if req.request_type == 'MC':
+                for steps_status in list(slice_steps.values()):
+                    for index,steps in enumerate(steps_status[:-2]):
+                        if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
+                            if not steps['formats']:
+                                steps['formats'] = 'AOD'
+
+            if ['-1'] == list(slice_steps.keys()):
+                slice_0 = deepcopy(slice_steps['-1'])
+                if req.request_type == 'MC':
+                    error_slices, no_action_slices = create_steps(self, {0:slice_steps['-1']},reqid,StepExecution.STEPS, approve_level,waiting_level)
+                else:
+                    error_slices, no_action_slices = create_steps(self, {0:slice_steps['-1']},reqid,['']*len(StepExecution.STEPS), approve_level,waiting_level)
+                if req.request_type == 'MC':
+                    approved_steps = StepExecution.objects.filter(request=reqid, status='Approved').count()
+                    if (0 not in error_slices) and (approved_steps == 0):
+                        fill_all_slices_from_0_slice(reqid)
+                    else:
+                        slice_count = InputRequestList.objects.filter(request=reqid).count()
+                        extended_slice_steps = {}
+                        for i in range(1,slice_count):
+                            extended_slice_steps.update({str(i):deepcopy(slice_0)})
+                        error_slices, no_action_slices = create_steps(self, extended_slice_steps,reqid,StepExecution.STEPS, approve_level)
+            else:
+                if '-1' in  list(slice_steps.keys()):
+                    del slice_steps['-1']
+                if not (req.manager) or (req.manager == 'None'):
+                    missing_tags.append('No manager name!')
+                else:
+                    removed_input = []
+                    #child_steps_before_update = find_child_steps(reqid,slice_steps)
+                    if req.request_type == 'MC':
+                        error_slices, no_action_slices = create_steps(self,slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
+                        good_slices = [int(x) for x in slices if int(x) not in error_slices]
+                        removed_input = remove_input(good_slices,reqid)
+                    else:
+                        error_slices, no_action_slices = create_steps(self,slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
+                    try:
+                        make_child_update(reqid,owner,slice_steps)
+                    except Exception as e:
+                        _logger.error("Problem with step modifiaction: %s" % e)
+            if (req.cstatus.lower() not in  ['test','cancelled']) and (approve_level>=0):
+                if not owner:
+                    owner = req.manager
+                req.cstatus = request_approve_status(req,None,user_name,is_superuser)
+                req.save()
+
+                request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
+                                               status=req.cstatus)
+                request_status.save_with_current_time()
+            if req.request_type == 'MC':
+                if do_split:
+                    split_request(reqid,[x for x in map(int,slices) if x not in error_slices])
+                else:
+                    for slice, new_dataset in list(slice_new_input.items()):
+                        if new_dataset:
+                            change_dataset_in_slice(req, int(slice), new_dataset)
+            if approve_level >= 0:
+                for slice_number in [x for x in map(int,slices) if x not in (error_slices + no_action_slices)]:
+                    if SliceError.objects.filter(request=reqid, is_active=True, slice=InputRequestList.objects.get(request=reqid,slice=slice_number)).exists():
+                        for slice_error in SliceError.objects.filter(request=reqid, is_active=True, slice=InputRequestList.objects.get(request=reqid,slice=slice_number)):
+                            slice_error.is_active = False
+                            slice_error.save()
+                            _jsonLogger.info('{message}'.format(message=slice_error.message),extra={'prod_request':reqid,
+                                                                                                    'slice':slice_error.slice_id,'exception_time':slice_error.exception_time,
+                                                                                                    'exception_type':slice_error.exception_type})
+
+            results = {'missing_tags': missing_tags,
+                       'slices': [x for x in map(int,slices) if x not in (error_slices + no_action_slices)],
+                       'wrong_slices':wrong_skipping_slices,
+                       'double_trf':old_double_trf, 'error_slices':error_slices,
+                       'no_action_slices' :no_action_slices,'success': True, 'new_status': req.cstatus,
+                       'removed_input':removed_input, 'fail_slice_save':'',
+                       'error_approve_message': error_approve_message, 'async_name':'save_slices'}
+        else:
+            results = {'missing_tags': missing_tags,
+                       'slices': [x for x in map(int, slices) if x not in (error_slices + no_action_slices)],
+                       'wrong_slices': wrong_skipping_slices,
+                       'double_trf': old_double_trf, 'error_slices': error_slices,
+                       'no_action_slices': no_action_slices, 'success': True, 'new_status': req.cstatus,
+                       'removed_input': removed_input, 'fail_slice_save': '',
+                       'error_approve_message': error_approve_message, 'async_name':'save_slices'}
+
+        _jsonLogger.info('Finish step modification, saved slices {slices}, problem slices {error_slices}'.format(slices=len(results.get('slices',[])),
+                                                                                                                 error_slices=len(results.get('error_slices',[]))),
+                         extra=form_json_request_dict(reqid,None,{'user':user_name,'duration':time()-start_time}))
+        self.progress_message_update(len(slices)+2,len(slices)+2)
+    except Exception as e:
+        _jsonLogger.error('Problem with step modifiaction',extra=form_json_request_dict(reqid,None,{'user':user_name,'error':str(e)}))
+    return json.dumps(results)
 
 def find_skipped_dataset(DSID,job_option,tags,data_type):
     """
@@ -1378,6 +1524,14 @@ def request_steps_save(request, reqid):
     if request.method == 'POST':
         return request_steps_approve_or_save(request, reqid, -1)
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
+
+
+@api_view(['POST'])
+def request_steps_save_async(request, reqid):
+    slice_steps = request.data
+    return_value= single_request_action_celery_task(reqid,request_steps_approve_or_save_async,'Save slices',request.user.username,
+                                             slice_steps,request.user.username,request.user.is_superuser, reqid, -1)
+    return Response(return_value)
 
 
 @csrf_protect
@@ -1798,6 +1952,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             slice_priorities = set()
             manage_slice_priorities = {}
             is_open_ended = False
+            tasks_by_status = []
             try:
                 is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
             except:
@@ -1940,8 +2095,27 @@ def request_table_view(request, rid=None, show_hidden=False):
                         steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
                         step_templates_set.add(current_step['step_template_id'])
                     tasks = {}
+                    tasks_status = {}
                     for current_task in tasks_db:
                         tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
+                        tasks_status[current_task['status']] = tasks_status.get(current_task['status'],0) + 1
+                    tasks_status['total'] = len(tasks_db)
+                    for status in ProductionTask.STATUS_ORDER:
+                        if tasks_status.get(status,0) > 0:
+                            status_filter = None
+                            if not status in ProductionTask.NOT_RUNNING:
+                                status_filter = 'running_tasks'
+                            if status in ProductionTask.RED_STATUS:
+                                status_filter = 'aborted_tasks'
+                            if status in ['done','finished']:
+                                status_filter = 'no_running_tasks'
+                            if status in ['total']:
+                                status_filter = 'all'
+                            if status in ['staging']:
+                                status_filter = 'waiting'
+                            if status in [ 'exhausted']:
+                                status_filter = 'exhausted'
+                            tasks_by_status.append((status,tasks_status[status],status_filter))
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
                         current_action['progress'] = False
@@ -2185,7 +2359,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
             jira_problem_link = ''
             slice_errors_dict = {}
-            if cur_request.jira_reference:
+            if cur_request.is_error:
                 jira_problem_link = cur_request.jira_reference
                 slice_errors = list(SliceError.objects.filter(request=rid, is_active=True).values())
                 for slice_error in slice_errors:
@@ -2328,7 +2502,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'parent_request_id':parent_request_id,
                 'bigpanda_base':BIG_PANDA_TASK_BASE,
                 'limit_priority':limit_priority,
-                'async_task':async_task
+                'async_task':async_task,
+                'tasks_by_status':tasks_by_status,
                })
         except Exception as e:
             _logger.error("Problem with request list page data forming: %s" % e)

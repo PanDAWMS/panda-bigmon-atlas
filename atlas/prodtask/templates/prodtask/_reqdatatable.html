@@ -16,7 +16,9 @@
 	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
         @import "{% static "css/font-awesome.min.css" %}";
-	</style>
+        @import "{% static "css/prodtask.css" %}";
+
+    </style>
    <style type="text/css">
 
  	span.obsolete	{ color : lightblue;}
@@ -191,7 +193,6 @@ $(".showSmallSpan").css({"cursor":"pointer"});
      $("#bpatternform{{ forloop.counter0 }}").mirror("#patternform{{ forloop.counter0 }}");
 
  {% endfor %}
-
 $('#chooseStepBulk').change(function(){changeStepBulk();});
 $('#amitagBulkSelect').change(function(){clickAmiStepBulk();});
 $('#radioSetStepBulk').change(function(){changeStepBulk();});
@@ -330,6 +331,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
                     var slice = currentID.slice(currentID.indexOf('ts')+2);
                     $('#redTaskFilter'+slice).html('exists');
                 }
+                if($(this).html() === 'exhausted'){
+                    var currentID = $(this).attr("id");
+                    var slice = currentID.slice(currentID.indexOf('ts')+2);
+                    $('#exhTaskFilter'+slice).html('exists');
+                }
+
 
 
             })
@@ -466,6 +473,17 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
             if (input.value < limitMin) input.value = limitMin;
             if (input.value > limitMax) input.value = limitMax;
     }
+
+function saveChangesAsync(sendData){
+    $( "#waitingDialog" ).dialog();
+
+    var ajaxURL = '';
+    ajaxURL = "{% url 'prodtask:request_steps_save_async' pr_id %}";
+
+    sendAsyncTask(ajaxURL, sendData)
+    $( "#waitingDialog" ).dialog('close');
+
+}
 
     function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets){
                 $( "#waitingDialog" ).dialog();
@@ -771,7 +789,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
     }
 }
 
-    function approveSlices(isApprove, approveLevel, waitingLevel, slices){
+    function approveSlices(isApprove, approveLevel, waitingLevel, slices, isAsync){
 
         var toChangeDatasets = [];
         var startFindig = false;
@@ -888,7 +906,12 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 if (toChangeDatasets.length!==0){
                     saveChangesWithInput(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
                 } else {
-                    saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                    if (isAsync){
+                        saveChangesAsync(sendData);
+                    }
+                    else {
+                        saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                    }
                 }
 
             }
@@ -898,7 +921,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
     }
 
 
-    function approveClick(event,isApprove, approveLevel, isWaiting){
+    function approveClick(event,isApprove, approveLevel, isWaiting,isAsync){
         event.preventDefault();
         var slices = [];
         var waitingLevel=99;
@@ -913,7 +936,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 slices.push(sliceID);
             }
         });
-        approveSlices(isApprove,approveLevel,waitingLevel, slices );
+        approveSlices(isApprove,approveLevel,waitingLevel, slices,isAsync );
     };
     function approveEmpty(event){
         event.preventDefault();
@@ -1314,7 +1337,80 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 }
             });
         }
-        function progressCeleryBar(celery_task_id, function_name, user_name){
+
+    function prepare_async_comment(results) {
+        var async_name = results.async_name;
+        var comment = '';
+        switch (async_name) {
+            case 'save_slices':
+                var missedList = results.missing_tags;
+                var errorSlices =  results.error_slices;
+                var notChangedSlices = results.no_action_slices;
+                var slices = results.slices;
+                var wrongSLices = results.wrong_slices;
+                var doubleTrf = results.double_trf;
+                var removeDataset =  results.removed_input;
+                if (missedList === undefined){
+                    missedList = [];
+                }
+
+                if (doubleTrf === undefined){
+                    doubleTrf = [];
+                }
+                if (wrongSLices === undefined){
+                    wrongSLices = [];
+                }
+                if (slices === undefined){
+                    slices = [];
+                }
+                if (errorSlices === undefined){
+                    errorSlices = [];
+                }
+                if (notChangedSlices === undefined){
+                    notChangedSlices = [];
+                }
+                if (removeDataset === undefined){
+                    removeDataset = [];
+                }
+                console.log(slices);
+
+                if((slices.length >0)||(errorSlices.length>0)||(notChangedSlices.length>0)) {
+                    if (errorSlices.length === 1) {
+                        comment='Slice has problem: ' + errorSlices[0]+'\n';
+                    } else {
+                        if (errorSlices.length > 1) {
+                            comment=errorSlices.length + ' Slices have problem: ' + errorSlices.toString()+'\n';
+                        }
+                    }
+                    if (notChangedSlices.length === 1) {
+                        comment='Slice was not changed: ' + notChangedSlices[0]+'\n';
+                    } else {
+                        if (notChangedSlices.length > 1) {
+                            comment=notChangedSlices.length + ' slices were not changed: ' + notChangedSlices.toString()+'\n';
+                        }
+                    }
+                    comment="Sucessfully saved slices: " + slices.toString()+'\n';
+
+                }
+
+
+                for (var j=0; j < removeDataset.length; j++){
+                    $("#inputDatasetName"+removeDataset[j]).html('');
+                }
+                if (slices.length > 0){
+                    for (var j = 0; j < slices.length; j++) {
+                        $("#saveStatus"+slices[j]).html("edit (saved)");
+                    }
+                }
+                break;
+
+            default:
+                return "";
+        }
+        return comment;
+    }
+
+    function progressCeleryBar(celery_task_id, function_name, user_name){
             $('.asyncProgressRef').show();
             $('.asyncTaskID').html(celery_task_id);
             $(".btn_is_authorized").each(function(){this.disabled=true;});
@@ -1336,7 +1432,14 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                                 }
                                 if ( data.status === 'SUCCESS' ) { // get and check data value
                                     clearInterval(pollInterval); // optional: stop poll function
-                                    if (confirm('Async task finish successfully, reload the page?')){
+                                    task_results = $.evalJSON(data.result);
+                                    var comment_string = '';
+                                    console.log(task_results);
+                                    if (task_results.async_name !== undefined){
+                                        comment_string = prepare_async_comment(task_results);
+                                    }
+                                    console.log(comment_string);
+                                    if (confirm(comment_string+'Async task finish successfully, reload the page?')){
                                         location.reload();
                                     }
                                     $(".btn_is_authorized").each(function(){this.disabled=false;});
@@ -3000,6 +3103,19 @@ function changeStatusFilter(){
                       $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
                   }});
                  break;
+            case 'no_running_tasks':
+                $('.TaskStatusFilter').each(function(){
+                    if($(this).html()!='No running'){
+                        $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                    }});
+                break;
+            case 'exhausted':
+                $('.ExhStatusFilter').each(function(){
+                    if($(this).html()!='exists'){
+                        $(this).parentsUntil(".inputListDivs").filter(".outsideInputListTables").parent().hide();
+                    }});
+                break;
+
             case 'aborted_tasks':
                 $('.RedStatusFilter').each(function(){
                     if($(this).html()!='exists'){
@@ -3216,7 +3332,7 @@ function ProjectModeForm(parentDiv, inputField){
 
 ProjectModeForm.prototype.createForm = function(inputString){
  this.parentDiv.append('')
-}
+};
 </script>
 
 <div id="approveDialog" style="display: none">
@@ -3443,11 +3559,46 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <h6> Total input: {{ totalSlice }}, from them approved: {{ approvedCount }}</h6>
 {% endif %}
 
-{% if approvedCount > 0 %}
-{#    <u><a href="http://bigpanda.cern.ch/jobs/?jobsetid={{ pr_id }}" class="tiny secondary" >All jobs from request</a></u>#}
-{% endif %}
+
+
 
 {% endif %}
+</div>
+</div>
+
+    {% if  tasks_by_status     %}
+        <div class="row">
+        <div class="large-10 columns">
+            <table>
+            <tr>
+                {% for  status, number, filter in tasks_by_status%}
+                    {% if filter %}
+                        <th><span class="rstat tstat {{ status }}" onclick="$('#statusFilter').val('{{ filter }}');changeStatusFilter();" style="cursor: pointer;" >{{ status }}</span></th>
+                    {% else %}
+                        <th><span class="rstat tstat {{ status }}">{{ status }}</span></th>
+
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            <tr>
+
+            {% for  status, number, filter in tasks_by_status%}
+                {% if filter %}
+                    <th><span class="rstat tstat {{ status }}" onclick="$('#statusFilter').val('{{ filter }}');changeStatusFilter();" style="cursor: pointer;" >{{ number }}</span></th>
+                {% else %}
+                    <th><span class="rstat tstat {{ status }}">{{ number }}</span></th>
+
+                {% endif %}
+            {% endfor %}
+            </tr>
+
+            </table>
+        </div>
+            <div class="large-2 columns">
+                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/reqtask/','{{ pr_id }}');">Manage all</a>
+            </div>
+        </div>
+    {% endif %}
 {% if show_as_huge  %}
 <u><a href="{% url "prodtask:task_table" %}#/?time_period=all&task_type=production&request={{ trequest.reqid}}">All task</a></u>
 
@@ -3482,6 +3633,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <option value="running_tasks">running tasks</option>
                 <option value="no_tasks">no tasks</option>
                 <option value="waiting">actions</option>
+                <option value="no_running_tasks">No running</option>
+                <option value="exhausted">exhausted</option>
                 <option value="aborted_tasks">aborted/broken/failed</option>
             </select>
            </label>
@@ -3497,6 +3650,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
             </label>
         </div>
     </div>
+    <div class="row">
+        <div class="large-12">
 {% if has_deft_problem %}
     <table>
     <tr>
@@ -3550,6 +3705,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
     </div>
 
 {% endif %}
+
     <div class="row" >
         <a id="asyncLink" href="#" data-dropdown="dropAsyncTask">
             <div  style="display: none" class="alert-box info round asyncProgressRef" >Async task: "<span class="asyncTaskName"></span>" has status: "<span class="asyncStatus"></span>" completion:  <span class="asyncProgressStat" ></span></div></a>        </a>
@@ -3705,6 +3861,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 {% endfor %}
                     <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">no_tasks</span>
                     <span id="redTaskFilter{{ inputList.slice }}" class="RedStatusFilter" style="display: none;">no_tasks</span>
+                    <span id="exhTaskFilter{{ inputList.slice }}" class="ExhStatusFilter" style="display: none;">no_tasks</span>
+
                     <span id="actionStatusFilter{{ inputList.slice }}" class="ActionStatusFilter" style="display: none;">no_actions</span>
                     <td colspan="2" id="aprroveLabel{{ inputList.slice }}" style="width: 8em;text-align:center"><span class="{{ approved.submitted }} {{ approved.original }} StatusFilter" >{{ approved.submitted }}</span><span id="sliceOrigin{{ inputList.slice }}" class="sliceOrigin" style="display: none"> {{ approved.original }}</span></td>
                 <span id="sliceSplit{{ inputList.slice }}" class="sliceSplit" style="display: none">{{ approved.split }}</span><td>
@@ -3837,12 +3995,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     >Login</a>
                 {% endif %}
 
-            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false);">Save</button>
+            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,false);">Save</button>
             {% ifequal trequest.request_type "MC" %}
 {#                true#}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true);">Submit</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true,false);">Submit</button>
             {% else  %}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false);">Approve</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false,false);">Approve</button>
 
             {% endifequal %}
             <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
@@ -3872,9 +4030,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <div class="row">
                 <div class="large-3 columns">
                     {% ifequal trequest.request_type "MC" %}
-                        <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Submit only steps before:</button>
+                        <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Submit only steps before:</button>
                     {% else  %}
-                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false);">Approve only steps before:</button>
+                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Approve only steps before:</button>
                     {% endifequal %}
                 </div>
 
@@ -3938,13 +4096,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  </div>
                     {% endifequal %}
     </div>
-     <div class="large-1 columns">
+     <div class="large-2 columns">
 
         <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event);">Prepare to recreate</button>
      </div></div>
-        <div class="large-1 columns">
 
-        </div>
     <div class="row">
         <div class="large-3 columns">
             <button class="button btn_is_authenticated" onclick="showBulkStepModal(event);">Bulk steps modification</button>
@@ -3971,7 +4127,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
                 </div>
         </div>
-        <div class="large-1 columns"></div>
+        <div class="large-1 columns"><button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,true);">Save Async</button></div>
 
     </div>
  </form>

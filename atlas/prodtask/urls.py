@@ -122,7 +122,7 @@ urlpatterns = [
     url(r'redirect_to_value/(?P<site_name>\w+)/$', views.redirect_to_value,
         name='redirect_to_value'),
     url(r'^request_steps_save/(?P<reqid>\d+)/$', views.request_steps_save, name='request_steps_save'),
-
+    url(r'^request_steps_save_async/(?P<reqid>\d+)/$', views.request_steps_save_async, name='request_steps_save_async'),
     url(r'^retry_errors_list/', retryerros.retry_errors_list, name='retry_errors_list'),
     url(r'^retry_errors_edit/(?P<retry_errors_id>\d+)/$', retryerros.retry_errors_edit, name='retry_errors_edit'),
     url(r'^retry_errors_delete/(?P<retry_errors_id>\d+)/$', retryerros.retry_errors_delete, name='retry_errors_delete'),
