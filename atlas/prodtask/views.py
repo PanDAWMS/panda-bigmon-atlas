@@ -2359,8 +2359,10 @@ def request_table_view(request, rid=None, show_hidden=False):
             step_list = [{'name':x,'idname':x.replace(" ",'')} for x in STEPS_LIST]
             jira_problem_link = ''
             slice_errors_dict = {}
-            if cur_request.is_error:
+
+            if cur_request.jira_reference:
                 jira_problem_link = cur_request.jira_reference
+            if cur_request.is_error:
                 slice_errors = list(SliceError.objects.filter(request=rid, is_active=True).values())
                 for slice_error in slice_errors:
                     slice_errors_dict[slice_error['slice_id']] = slice_error
