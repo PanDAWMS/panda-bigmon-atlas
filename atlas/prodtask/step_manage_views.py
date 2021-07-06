@@ -1367,7 +1367,8 @@ def split_slice(reqid, slice_number, divider):
                     current_step.step_parent = parent
                 current_step.save()
                 if first_step:
-                    first_step = False
+                    if current_step.status not in ['NotCheckedSkipped','Skipped']:
+                        first_step = False
                     current_step.input_events = new_input_data.input_events
                     if nEventsPerInputFile:
                         current_step.set_task_config({'nEventsPerInputFile':nEventsPerInputFile})
