@@ -558,7 +558,6 @@ def submit_all_tapes_processed_with_shares():
                     shares_penalty[share_name] = shares_penalty_by_priority[share_name].items()
                     shares_penalty[share_name] = [(x[0],x[1]* int(tape.get_config('maximum_level')) // 100000) for x in shares_penalty[share_name]]
                     shares_penalty[share_name].sort(key=lambda x:-x[0])
-
                 resource_tape = TapeResourceProcessedWithShare(tape.name,ddm,shares_penalty)
                 files_submitted = resource_tape.do_submission()
                 if tape.get_config('is_slow') and (files_submitted == 0):
@@ -930,7 +929,8 @@ def find_active_staged_with_share():
         for action_stage in ActionStaging.objects.filter(step_action=action):
             dataset_stage = action_stage.dataset_stage
             task = ProductionTask.objects.get(id=action_stage.task)
-            if task.status in ProductionTask.NOT_RUNNING+['exhausted']:
+            if ((task.status in ProductionTask.NOT_RUNNING+['exhausted']) or
+                    (task.start_time and (timezone.now() - task.start_time).days>30)) :
                 continue
             if task.request.request_type in ['REPROCESSING']:
                 share = "{0}{1}".format(JediTasks.objects.get(id=task.id).gshare,task.ami_tag)
