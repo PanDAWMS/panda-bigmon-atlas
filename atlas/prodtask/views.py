@@ -1016,12 +1016,13 @@ def find_input_per_file_from_rucio(new_dataset_name):
 
 def change_dataset_in_slice(req, slice, new_dataset_name):
     input_list = InputRequestList.objects.get(request=req, slice=int(slice))
-    events_per_file = find_input_per_file(new_dataset_name)
-    if not events_per_file:
-        try:
-            events_per_file = find_input_per_file_from_rucio(new_dataset_name)
-        except:
-            pass
+    # events_per_file = find_input_per_file(new_dataset_name)
+    # if not events_per_file:
+    events_per_file = None
+    try:
+        events_per_file = find_input_per_file_from_rucio(new_dataset_name)
+    except:
+        pass
     dataset = fill_dataset(new_dataset_name)
     input_list.dataset = dataset
     input_list.save()
