@@ -27,6 +27,7 @@ from django.shortcuts import render
 from atlas.prodtask.task_actions import _do_deft_action
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 def test_step_action(step_action_ids):
@@ -290,12 +291,16 @@ class TapeResource(ResourceQueue):
                                     _logger.info("Submit rule for {resource}: {dataset} {rule}".format(resource=self.resource_name,
                                                                                                        dataset=x['dataset'],
                                                                                                        rule=rule))
+                                    _jsonLogger.info("Submit new rule for {resource}".format(resource=self.resource_name),extra={'dataset':x['dataset'],'resource':self.resource_name,
+                                                                                                                             'rule':rule, 'files':x['value']})
                                     self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
                                                             activity='Staging', notify='P')
                                 else:
                                     _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
                                                                                                        dataset=x['dataset'],
                                                                                                        rule=rule, source=source_replica))
+                                    _jsonLogger.info("Submit new rule for {resource}".format(resource=self.resource_name),extra={'dataset':x['dataset'],'resource':self.resource_name,
+                                                                                                                                 'rule':rule, 'files':x['value']})
                                     self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
                                                             activity='Staging', notify='P', source_replica_expression=source_replica)
                             staging =  DatasetStaging.objects.get(id=x['id'])
@@ -556,7 +561,10 @@ def submit_all_tapes_processed_with_shares():
                 shares_penalty = {}
                 for share_name in shares_penalty_by_priority:
                     shares_penalty[share_name] = shares_penalty_by_priority[share_name].items()
-                    shares_penalty[share_name] = [(x[0],x[1]* int(tape.get_config('maximum_level')) // 100000) for x in shares_penalty[share_name]]
+                    if tape.get_config('maximum_level') < 100000:
+                        shares_penalty[share_name] = [(x[0],x[1]* int(tape.get_config('maximum_level')) // 100000) for x in shares_penalty[share_name]]
+                    else:
+                        shares_penalty[share_name] = [(x[0],x[1]) for x in shares_penalty[share_name]]
                     shares_penalty[share_name].sort(key=lambda x:-x[0])
                 resource_tape = TapeResourceProcessedWithShare(tape.name,ddm,shares_penalty)
                 files_submitted = resource_tape.do_submission()
@@ -673,6 +681,28 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                         input = random.choice(input)
         input=convert_input_to_physical_tape(input)
         create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input)
+
+
+def remove_stale_rules(days_after_last_update):
+    dataset_in_staging =  DatasetStaging.objects.filter(status='staging')
+    for dataset_stage_request in dataset_in_staging:
+        dataset_stagings = ActionStaging.objects.filter(dataset_stage=dataset_stage_request)
+        running_task = False
+        tasks = []
+        for stage_task in dataset_stagings:
+            tasks.append(stage_task.task)
+            if ProductionTask.objects.get(id=stage_task.task).status not in ProductionTask.NOT_RUNNING:
+                running_task = True
+                break
+        if not running_task:
+            tasks.sort()
+            _logger.warning(f"Rule {dataset_stage_request.rse} has no running tasks {tasks}" )
+            if  (timezone.now() - dataset_stage_request.update_time) > timedelta(days=days_after_last_update):
+                _logger.error(f"Rule {dataset_stage_request.rse} will be deleted" )
+                ddm = DDM()
+                ddm.delete_replication_rule(dataset_stage_request.rse)
+                dataset_stage_request.status = 'cancelled'
+                dataset_stage_request.save()
 
 
 def _parse_action_options(option_string):
@@ -1722,7 +1752,8 @@ def change_replica_by_task(task_id, replica=None):
 
         else:
             for new_replica in replicas['tape']:
-              if new_replica['rse'] != dataset_stage.source:
+              physical_replica = convert_input_to_physical_tape(new_replica['rse'])
+              if physical_replica != dataset_stage.source:
                 replica = new_replica['rse']
                 break
             if replica is None:
@@ -1730,10 +1761,10 @@ def change_replica_by_task(task_id, replica=None):
         rule, source_replicas, source = ddm.get_replica_pre_stage_rule_by_rse(replica)
         print(rule, source_replicas, source)
         action_step.set_config({'rule': rule})
-        action_step.set_config({'tape': source})
+        action_step.set_config({'tape': convert_input_to_physical_tape(source)})
         action_step.set_config({'source_replica': source_replicas})
         action_step.save()
-        dataset_stage.source = source
+        dataset_stage.source = convert_input_to_physical_tape(source)
         dataset_stage.save()
     else:
         return False
