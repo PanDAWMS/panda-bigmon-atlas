@@ -1092,6 +1092,8 @@ def follow_staged(waiting_step, ddm):
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
                     except Exception as e:
                         _logger.error("Check follow staged problem %s %s" % (str(e), str(waiting_step)))
+            else:
+                _logger.error("Check follow staged problem rule for %s was deleted step %s" % (dataset_stage.dataset, str(waiting_step)))
 
     if action_finished :
         action_step.status = 'done'
