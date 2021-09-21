@@ -1093,7 +1093,8 @@ def follow_staged(waiting_step, ddm):
                     except Exception as e:
                         _logger.error("Check follow staged problem %s %s" % (str(e), str(waiting_step)))
             else:
-                _logger.error("Check follow staged problem rule for %s was deleted step %s" % (dataset_stage.dataset, str(waiting_step)))
+                _logger.error("Check follow staged problem rule for %s was deleted step %s new rule will be created" % (dataset_stage.dataset, str(waiting_step)))
+                perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), action_step.get_config('source_replica'))
 
     if action_finished :
         action_step.status = 'done'
