@@ -1077,6 +1077,7 @@ def check_deletion_request():
         deletion_request.status = 'Submitted'
         deletion_request.save()
         datasets = cache.get('dataset_to_delete_ALL')
+        datasets = [x[x.find(':')+1:] for x in datasets]
         cache.set("datasets_to_be_deleted",datasets, None)
         return
 
@@ -1086,8 +1087,8 @@ def run_deletion():
         return
     if GroupProductionDeletionRequest.objects.filter(status='Submitted').exists():
         deletion_request = GroupProductionDeletionRequest.objects.filter(status='Submitted').last()
-        if datetime.now() >= deletion_request.start_deletion:
-            runDeletion.delay(3600)
+        if datetime.now().replace(tzinfo=pytz.utc) >= deletion_request.start_deletion:
+            runDeletion.apply_async(countdown=3600)
             deletion_request.status = 'Executing'
             deletion_request.save()
             return
@@ -1097,6 +1098,8 @@ def run_deletion():
             deletion_request.status = 'Done'
             deletion_request.save()
             return
+        else:
+            runDeletion.apply_async(countdown=3600)
 
 class GroupProductionDeletionRequestSerializer(serializers.ModelSerializer):
     class Meta:
