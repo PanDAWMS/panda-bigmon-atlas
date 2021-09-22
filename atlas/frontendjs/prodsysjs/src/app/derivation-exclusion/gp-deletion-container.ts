@@ -27,3 +27,13 @@ export interface ExtensionRequest {
   message: string;
   number_of_extensions: number;
 }
+
+export interface DeletionSubmission {
+  id: number;
+  deadline: string;
+  start_deletion: string;
+  username: string;
+  status: string;
+  containers?: number;
+  size?: number;
+}

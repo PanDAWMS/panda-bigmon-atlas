@@ -1,0 +1,38 @@
+<h1 mat-dialog-title>Slice details</h1>
+<div mat-dialog-content>
+  <form >
+    <p>
+      <mat-form-field appearance="fill">
+        <mat-label>Dataset</mat-label>
+        <input matInput  [(ngModel)]="slice.dataset" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+    </p>
+    <p>
+      <mat-form-field appearance="fill">
+        <mat-label>Job Options</mat-label>
+        <input matInput [(ngModel)]="slice.input_data" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Input Events</mat-label>
+        <input matInput [(ngModel)]="slice.input_events" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+    </p>
+    <p>
+      <mat-form-field appearance="fill">
+        <mat-label>Comment</mat-label>
+        <input matInput  [(ngModel)]="slice.comment" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+    </p>
+
+  </form>
+  <mat-tab-group   >
+    <mat-tab  *ngFor="let step of slice.steps" >
+      <ng-template mat-tab-label >
+        <span style="color:red;background: yellow;border-top: #673ab7">{{step.ami_tag}}</span>
+      </ng-template>
+      <app-step  [step]="step"></app-step> </mat-tab>
+
+  </mat-tab-group>
+</div>
+
+

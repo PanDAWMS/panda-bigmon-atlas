@@ -1,1 +1,33 @@
-<p>production-request works!</p>
+<span>Total: {{filteredSlices.length}}</span><p></p>
+<button (click)="sortSlicesByDataset()">Sort by dataset</button>
+<button (click)="sortSlicesByID()">Sort by ID</button>
+<button (click)="filterSlices()">Filter</button>
+<button (click)="unFilterSlice()">Drop filter</button>
+
+<span  *ngFor="let step_name of stepsOrder">-{{step_name}}-</span>
+<!--<div  *ngFor="let slice of filteredSlices;  trackBy: sliceTrackBy" >-->
+
+<!--  <table>-->
+<!--    <tr>-->
+<!--      <td><input type="checkbox"/></td>-->
+<!--      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice></td>-->
+<!--    </tr>-->
+<!--  </table>-->
+<!--</div>-->
+
+<!--<div  *ngFor="let slice of filteredSlices; trackBy: sliceTrackBy" >-->
+<!--  <app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice>-->
+<!--</div>-->
+
+<cdk-virtual-scroll-viewport itemSize="50" class="example-viewport">
+<div  *cdkVirtualFor="let slice of filteredSlices;templateCacheSize: 0 " class="example-item">
+
+  <table>
+    <tr>
+      <td><input type="checkbox"/></td>
+      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice></td>
+    </tr>
+  </table>
+</div>
+
+</cdk-virtual-scroll-viewport>

@@ -19,7 +19,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatSidenavModule} from "@angular/material/sidenav";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
-import {FormsModule} from "@angular/forms";
+import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import { RucioURLPipe } from './derivation-exclusion/rucio-url.pipe';
 import {MatListModule} from "@angular/material/list";
 import { GpStatsComponent } from './derivation-exclusion/gp-stats/gp-stats.component';
@@ -32,8 +32,16 @@ import { DatasetsTableComponent } from './derivation-exclusion/gp-container-info
 import {GpContainerInfoResolver} from "./derivation-exclusion/gp-container-info/datasets-table/gp-container-info.resolve";
 import { GpApiInstructionComponent } from './derivation-exclusion/gp-api-instruction/gp-api-instruction.component';
 import {MatCardModule} from "@angular/material/card";
-import { SliceComponent } from './production-request/slice/slice.component';
+import {SliceComponent, SliceDetailsDialogComponent} from './production-request/slice/slice.component';
 import {NgxChartsModule} from "@swimlane/ngx-charts";
+import { StepComponent } from './production-request/step/step.component';
+import { ProjectModeComponent } from './production-request/project-mode/project-mode.component';
+import {MatTabsModule} from "@angular/material/tabs";
+import {ScrollingModule} from "@angular/cdk/scrolling";
+import {MatDialogModule} from "@angular/material/dialog";
+import { GpDeletionRequestComponent } from './derivation-exclusion/gp-deletion-request/gp-deletion-request.component';
+import {MatDatepickerModule} from "@angular/material/datepicker";
+import {MatNativeDateModule} from "@angular/material/core";
 
 
 const routerOptions: ExtraOptions = {
@@ -48,7 +56,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         resolve: {
           gpList: GPDeletionContainerResolver
         } },
-  {path: 'gp-stats', component: GpStatsComponent,
+      {path: 'gp-stats', component: GpStatsComponent,
         resolve: {
           gpStats: GPStatsResolver,
         },
@@ -64,6 +72,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
           }
         },
       {path: 'request', component: ProductionRequestComponent},
+  {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
 
   {path: 'carousel', component: DataCarouselComponent}];
@@ -82,33 +91,42 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DatasetsTableComponent,
     GpApiInstructionComponent,
     SliceComponent,
+    StepComponent,
+    ProjectModeComponent,
+    SliceDetailsDialogComponent,
+    GpDeletionRequestComponent
   ],
-    imports: [
-        BrowserModule,
-        HttpClientModule,
-        HttpClientXsrfModule.withOptions({
-            cookieName: 'csrftoken',
-            headerName: 'X-CSRFToken',
-        }),
-        RouterModule.forRoot(routes, routerOptions),
-        BrowserAnimationsModule,
-        MatTableModule,
-        MatSortModule,
-        MatCheckboxModule,
-        MatGridListModule,
-        MatButtonModule,
-        MatSidenavModule,
-        MatFormFieldModule,
-        MatInputModule,
-        FormsModule,
-        MatListModule,
-        MatProgressSpinnerModule,
-        MatRadioModule,
-        MatCardModule,
-        NgxChartsModule,
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    HttpClientXsrfModule.withOptions({
+      cookieName: 'csrftoken',
+      headerName: 'X-CSRFToken',
+    }),
+    RouterModule.forRoot(routes, routerOptions),
+    BrowserAnimationsModule,
+    MatTableModule,
+    MatSortModule,
+    MatCheckboxModule,
+    MatGridListModule,
+    MatButtonModule,
+    MatSidenavModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatRadioModule,
+    MatCardModule,
+    NgxChartsModule,
+    MatTabsModule,
+    ScrollingModule,
+    MatDialogModule,
+    MatDatepickerModule,
+    ReactiveFormsModule,
+    MatNativeDateModule
 
-
-    ],
+  ],
   providers: [
         {
           provide: APP_BASE_HREF,

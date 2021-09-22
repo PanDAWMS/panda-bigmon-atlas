@@ -1039,26 +1039,28 @@ def collect_tags(start_requests):
 
 
 @api_view(['POST'])
-@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
-@permission_classes((IsAuthenticated,))
-@parser_classes((JSONParser,))
 def set_datasets_to_delete(request):
-    username = request.user.username
-    deadline = request.data['deadline']
-    start_deletion = request.data['start_deletion']
-    user = User.objects.get(username=username)
-    if not user.is_superuser:
-        return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
-    last_record = GroupProductionDeletionRequest.objects.last()
-    if deadline < last_record:
-        return Response('Previous deletion is not yet done', status.HTTP_400_BAD_REQUEST)
-    new_deletion_request = GroupProductionDeletionRequest()
-    new_deletion_request.username = username
-    new_deletion_request.status = 'Waiting'
-    new_deletion_request.start_deletion = start_deletion
-    new_deletion_request.deadline = deadline
-    new_deletion_request.save()
-    return Response(new_deletion_request)
+    try:
+        username = request.user.username
+        deadline = datetime.strptime(request.data['deadline'],"%Y-%m-%dT%H:%M:%S.%fZ")
+        start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
+        user = User.objects.get(username=username)
+        if not user.is_superuser:
+            return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
+        last_record = GroupProductionDeletionRequest.objects.last()
+        if deadline.replace(tzinfo=pytz.utc) < last_record.start_deletion:
+            return Response('Previous deletion is not yet done', status.HTTP_400_BAD_REQUEST)
+        new_deletion_request = GroupProductionDeletionRequest()
+        new_deletion_request.username = username
+        new_deletion_request.status = 'Waiting'
+        new_deletion_request.start_deletion = start_deletion
+        new_deletion_request.deadline = deadline
+        new_deletion_request.save()
+        if deadline.replace(tzinfo=pytz.utc) <= timezone.now():
+            check_deletion_request()
+    except Exception as e:
+        return Response('Problem %s'%str(e), status.HTTP_400_BAD_REQUEST)
+    return Response(GroupProductionDeletionRequestSerializer(new_deletion_request).data)
 
 @app.task()
 def check_deletion_request():
@@ -1071,6 +1073,8 @@ def check_deletion_request():
         deletion_request.containers = len(containers)
         for container in containers:
             gp_processing = GroupProductionDeletionProcessing()
+            if GroupProductionDeletionProcessing.objects.filter(container=container).exists():
+                gp_processing = GroupProductionDeletionProcessing.objects.filter(container=container).last()
             gp_processing.container = container
             gp_processing.status = 'ToDelete'
             gp_processing.save()
@@ -1119,7 +1123,7 @@ class ListGroupProductionDeletionRequestsView(generics.ListAPIView):
         for field in self.lookup_fields:
             if self.request.query_params.get(field, None):  # Ignore empty fields.
                 filter[field] = self.request.query_params[field]
-        queryset = GroupProductionDeletionRequest.objects.filter(**filter)
+        queryset = GroupProductionDeletionRequest.objects.filter(**filter).order_by('-timestamp')
         return queryset
 
 def find_containers_to_delete(deletion_day, total_containers=None, size=None):
@@ -1129,7 +1133,7 @@ def find_containers_to_delete(deletion_day, total_containers=None, size=None):
     total_size = 0
     for gp_container in container_to_check:
         if ((gp_container.days_to_delete < days_to_delete) and (gp_container.version >= version_from_format(gp_container.output_format)) and
-                (not GroupProductionDeletionProcessing.objects.filter(container=gp_container.container).exists())):
+                (not GroupProductionDeletionProcessing.objects.filter(container=gp_container.container, status='ToDelete').exists())):
             containers_to_delete.append(gp_container.container)
             total_size += gp_container.size
             if size and total_size > size:

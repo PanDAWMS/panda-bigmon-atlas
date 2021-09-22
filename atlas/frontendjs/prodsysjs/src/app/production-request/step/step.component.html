@@ -1,0 +1,17 @@
+<div class="single-step">
+  <form>
+    <p>
+    <mat-form-field appearance="fill">
+      <mat-label>Ami tag</mat-label>
+      <input matInput  [(ngModel)]="step.ami_tag" [ngModelOptions]="{standalone: true}">
+    </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Priority</mat-label>
+        <input matInput [(ngModel)]="step.priority" [ngModelOptions]="{standalone: true}">
+      </mat-form-field>
+    </p>
+    <app-project-mode [projectMode]="step.task_config.project_mode"></app-project-mode>
+  </form>
+
+
+</div>
