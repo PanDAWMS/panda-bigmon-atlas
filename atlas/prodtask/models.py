@@ -1230,6 +1230,34 @@ class ActionDefault(models.Model):
     class Meta:
         db_table = '"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
 
+
+
+class GroupProductionDeletionRequest(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GPDR_ID', primary_key=True)
+    username = models.CharField(max_length=30, db_column='USERNAME', null=True)
+    timestamp = models.DateTimeField(db_column='LAST_UPDATE')
+    deadline = models.DateTimeField(db_column='CUT_OFF')
+    start_deletion = models.DateTimeField(db_column='DELETION_START')
+    containers = models.DecimalField(decimal_places=0, max_digits=20, db_column='CONTAINERS')
+    size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
+    status = models.CharField(max_length=20, db_column='STATUS',null=False)
+
+
+    def save(self, *args, **kwargs):
+        if not self.timestamp:
+            self.timestamp = timezone.now()
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_GPDR_SEQ',"T_GP_DELETION_REQUEST",'GPDR_ID')
+        super(GroupProductionDeletionRequest, self).save(*args, **kwargs)
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_GP_DELETION_REQUEST"'
+
+
 class StorageResource(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='SRS_ID', primary_key=True)
