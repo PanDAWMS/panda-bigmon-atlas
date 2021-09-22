@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.contrib.messages.context_processors import messages
 from django.http.response import HttpResponseBadRequest
 from rest_framework.generics import get_object_or_404
@@ -6,7 +7,8 @@ from rest_framework.parsers import JSONParser
 from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
-    ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing
+    ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing, \
+    GroupProductionDeletionRequest
 from atlas.dkb.views import es_by_fields, es_by_keys, es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -1035,8 +1037,90 @@ def collect_tags(start_requests):
                         update_tag_from_ami(task.ami_tag,task.name.startswith('data'))
 
 
-def find_containers_to_delete(deletion_day, total_containers=5000, size=1e15):
-    days_to_delete = (deletion_day - datetime.now()).days
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def set_datasets_to_delete(request):
+    username = request.user.username
+    deadline = request.data['deadline']
+    start_deletion = request.data['start_deletion']
+    user = User.objects.get(username=username)
+    if not user.is_superuser:
+        return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
+    last_record = GroupProductionDeletionRequest.objects.last()
+    if deadline < last_record:
+        return Response('Previous deletion is not yet done', status.HTTP_400_BAD_REQUEST)
+    new_deletion_request = GroupProductionDeletionRequest()
+    new_deletion_request.username = username
+    new_deletion_request.status = 'Waiting'
+    new_deletion_request.start_deletion = start_deletion
+    new_deletion_request.deadline = deadline
+    new_deletion_request.save()
+    return Response(new_deletion_request)
+
+@app.task()
+def check_deletion_request():
+    if not GroupProductionDeletionRequest.objects.filter(status='Waiting').exists():
+        return
+    deletion_request = GroupProductionDeletionRequest.objects.filter(status='Waiting').last()
+    if datetime.now().replace(tzinfo=pytz.utc) >= deletion_request.deadline:
+        containers, total_size = find_containers_to_delete(deletion_request.deadline)
+        deletion_request.size = total_size
+        deletion_request.containers = len(containers)
+        for container in containers:
+            gp_processing = GroupProductionDeletionProcessing()
+            gp_processing.container = container
+            gp_processing.status = 'ToDelete'
+            gp_processing.save()
+        deletion_request.status = 'Submitted'
+        deletion_request.save()
+        datasets = cache.get('dataset_to_delete_ALL')
+        cache.set("datasets_to_be_deleted",datasets, None)
+        return
+
+@app.task()
+def run_deletion():
+    if not GroupProductionDeletionRequest.objects.filter(status__in=['Submitted','Executing']).exists():
+        return
+    if GroupProductionDeletionRequest.objects.filter(status='Submitted').exists():
+        deletion_request = GroupProductionDeletionRequest.objects.filter(status='Submitted').last()
+        if datetime.now() >= deletion_request.start_deletion:
+            runDeletion.delay(3600)
+            deletion_request.status = 'Executing'
+            deletion_request.save()
+            return
+    if GroupProductionDeletionRequest.objects.filter(status='Executing').exists():
+        deletion_request = GroupProductionDeletionRequest.objects.filter(status='Executing').last()
+        if not GroupProductionDeletionProcessing.objects.filter(status='ToDelete').exists():
+            deletion_request.status = 'Done'
+            deletion_request.save()
+            return
+
+class GroupProductionDeletionRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProductionDeletionRequest
+        fields = '__all__'
+
+class ListGroupProductionDeletionRequestsView(generics.ListAPIView):
+    serializer_class = GroupProductionDeletionRequestSerializer
+    lookup_fields = ['id']
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        filter = {}
+        for field in self.lookup_fields:
+            if self.request.query_params.get(field, None):  # Ignore empty fields.
+                filter[field] = self.request.query_params[field]
+        queryset = GroupProductionDeletionRequest.objects.filter(**filter)
+        return queryset
+
+def find_containers_to_delete(deletion_day, total_containers=None, size=None):
+    days_to_delete = (deletion_day - datetime.now().replace(tzinfo=pytz.utc)).days
     container_to_check = GroupProductionDeletion.objects.filter(version__gte=1)
     containers_to_delete = []
     total_size = 0
@@ -1049,8 +1133,7 @@ def find_containers_to_delete(deletion_day, total_containers=5000, size=1e15):
                 break
             if total_containers and len(containers_to_delete)>=total_containers:
                 break
-    print(total_size)
-    return containers_to_delete
+    return containers_to_delete, total_size
 
 @app.task(time_limit=10800)
 def runDeletion(lifetime=3600):
