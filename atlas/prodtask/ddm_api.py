@@ -294,6 +294,20 @@ class DDM(object):
 
         return list(self.__ddm.list_dataset_replicas(scope=scope, name=name))
 
+    def list_file_replicas(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        return list(self.__ddm.list_replicas([{'scope':scope,'name':name}]))
+
+    def staged_percent(self, dataset_name):
+        staged = 0
+        file_replicas = self.list_file_replicas(dataset_name)
+        for x in file_replicas:
+            for pfn in x['pfns'].values():
+                if pfn['type'] != 'TAPE':
+                    staged += 1
+                    break
+        return staged,len(file_replicas)
+
     def list_rses(self, filter = ''):
         return self.__ddm.list_rses(filter)
 
