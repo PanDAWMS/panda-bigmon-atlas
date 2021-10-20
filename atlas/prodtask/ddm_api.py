@@ -211,9 +211,10 @@ class DDM(object):
 
 
     def get_replica_pre_stage_rule_by_rse(self, rse):
-        rse_attr = self.__ddm.list_rse_attributes(rse)
+        #rse_attr = self.__ddm.list_rse_attributes(rse)
         if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
-                return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
+                #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
+                return 'type=DATADISK&datapolicynucleus=True', 'tier=1&type=DATATAPE', rse
         elif rse == 'CERN-PROD_TEST-CTA':
                 rse_attr = self.__ddm.list_rse_attributes(rse)
                 return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
