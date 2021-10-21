@@ -813,7 +813,7 @@ $(document).ready(function () {
 
         // fill action parameters from inputs
         if (action == "finish") {
-            parameters = [$("#cbx_soft_finish").attr("checked") ? 1 : 0];
+            parameters = [$("#cbx_soft_finish").prop("checked")];
         } else if (action == "change_priority") {
             parameters = [$("#new_priority").val()];
         } else if (action == "reassign_to_site") {
