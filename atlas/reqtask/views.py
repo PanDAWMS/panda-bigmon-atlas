@@ -172,7 +172,7 @@ def get_task_array(request):
 
 
 def  get_tasks_by_url(url):
-    url=re.sub('&display_limit.*(\d+)','',url)
+    url=re.sub('&display_limit=(\d+)','',url)
     url = url.replace('https','http')
     if 'json' not in url:
         if url[-1]=='&':
