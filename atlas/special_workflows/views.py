@@ -11,6 +11,11 @@ from atlas.prodtask.models import StepTemplate, StepExecution, InputRequestList,
     OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
 from atlas.prodtask.views import form_existed_step_list, clone_slices, set_request_status
 from django.contrib.auth.decorators import login_required
+from rest_framework import status
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser
+from rest_framework.decorators import parser_classes
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -64,7 +69,37 @@ def idds_tasks(request,production_request):
                 tasks.append({'id':task.id,'status':task.status,'parameter':parameter,'value':value ,'started':task.submit_time})
     return Response({'tasks':tasks})
 
-
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def request_results(request, production_request):
+    """
+    Returns list of datasets for the last step of the chain with a status
+    :param production_request: Production request id
+    :return: List of dict {chain_input: ,outputs:,  tasks: }
+    """
+    try:
+        slices = InputRequestList.objects.filter(request=production_request).order_by('slice')
+        result = []
+        for slice in slices:
+            if not slice.is_hide and StepExecution.objects.filter(request=production_request, slice=slice).exists():
+                steps,_ = form_existed_step_list(StepExecution.objects.filter(request=production_request, slice=slice))
+                step = steps[-1]
+                outputs = step.step_template.output_formats
+                result_tasks = []
+                if ProductionTask.objects.filter(step=steps[-1]).exists():
+                    for task in ProductionTask.objects.filter(step=steps[-1]):
+                            datasets = []
+                            if task.status not in ProductionTask.RED_STATUS:
+                                for dataset in list(ProductionDataset.objects.filter(task_id=task.id)):
+                                    if ('log' not in dataset.name) and ('LOG' not in dataset.name):
+                                        datasets.append(dataset.name)
+                            result_tasks.append({'task_id':task.id,'status':task.status, 'datasets': datasets})
+                result.append({'chain_input':slice.input_data,'outputs':outputs,'tasks':result_tasks})
+    except Exception as e:
+        return Response('Problem %s'%str(e), status.HTTP_400_BAD_REQUEST)
+    return Response(result)
 
 @api_view(['GET'])
 def idds_get_patterns(request):
