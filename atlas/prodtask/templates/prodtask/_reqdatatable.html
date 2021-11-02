@@ -1431,15 +1431,11 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                                     $('.asyncProgressStat').html(data.progress.toString()+' %');
                                 }
                                 if ( data.status === 'SUCCESS' ) { // get and check data value
+                                    $('.asyncTaskName').html('');
+                                    $('.asyncProgressStat').html('100%');
                                     clearInterval(pollInterval); // optional: stop poll function
-                                    task_results = $.evalJSON(data.result);
-                                    var comment_string = '';
-                                    console.log(task_results);
-                                    if (task_results.async_name !== undefined){
-                                        comment_string = prepare_async_comment(task_results);
-                                    }
-                                    console.log(comment_string);
-                                    if (confirm(comment_string+'Async task finish successfully, reload the page?')){
+
+                                    if (confirm('Async task finish successfully, reload the page?')){
                                         location.reload();
                                     }
                                     $(".btn_is_authorized").each(function(){this.disabled=false;});
