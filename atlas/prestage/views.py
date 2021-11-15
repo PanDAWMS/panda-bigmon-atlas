@@ -700,10 +700,14 @@ def remove_stale_rules(days_after_last_update):
         if not running_task:
             tasks.sort()
             _logger.warning(f"Rule {dataset_stage_request.rse} has no running tasks {tasks}" )
-            if  (timezone.now() - dataset_stage_request.update_time) > timedelta(days=days_after_last_update):
+            if (not dataset_stage_request.update_time) or (timezone.now() - dataset_stage_request.update_time) > timedelta(days=days_after_last_update):
                 _logger.error(f"Rule {dataset_stage_request.rse} will be deleted" )
                 ddm = DDM()
-                ddm.delete_replication_rule(dataset_stage_request.rse)
+                if dataset_stage_request.rse:
+                    try:
+                        ddm.delete_replication_rule(dataset_stage_request.rse)
+                    except:
+                        _logger.error(f"Problem with rule {dataset_stage_request.rse} deletion" )
                 dataset_stage_request.status = 'cancelled'
                 dataset_stage_request.save()
 
