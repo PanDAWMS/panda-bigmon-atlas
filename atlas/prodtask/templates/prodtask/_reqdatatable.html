@@ -1656,23 +1656,27 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
               return false;
         };
 
-        function obsoleteOldTasks(event){
+        function obsoleteOldTasks(event, is_group){
 
             event.preventDefault();
             var sliceCheckedList = getCheckedSlices();
             var sendData = {slices:sliceCheckedList };
-            $( "#waitingDialog" ).dialog();
-            $.ajax({
-                    url: construct_django_url('/prodtask/obsolete_old_deleted_tasks/',"{{ pr_id }}"),
-                    type: 'POST',
-                    contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(sendData),
-                    timeout: 0,
-                    dataType: 'text',
-                    success: function(data,status) {
-                        $( "#waitingDialog" ).dialog('close');
-                        alert('Number of "obsolete" tasks: '+$.evalJSON(data).tasksObsolete);
-                    },
+            if ((sliceCheckedList.length > 10) && (is_group)){
+                var url = construct_django_url('/prodtask/async_obsolete_old_deleted_tasks/',"{{ pr_id }}");
+                sendAsyncTask(url,sendData);
+            } else {
+                $( "#waitingDialog" ).dialog();
+                $.ajax({
+                        url: construct_django_url('/prodtask/obsolete_old_deleted_tasks/',"{{ pr_id }}"),
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        data: $.toJSON(sendData),
+                        timeout: 0,
+                        dataType: 'text',
+                        success: function(data,status) {
+                            $( "#waitingDialog" ).dialog('close');
+                            alert('Number of "obsolete" tasks: '+$.evalJSON(data).tasksObsolete);
+                        },
                         error: function (data,status,error) {
                             $("#waitingDialog").dialog('close');
 
@@ -1686,8 +1690,10 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
 
                         },
                     }
-            )
-            return false;
+                )
+                return false;
+            }
+
         };
 
         function prepareSliceInfo(check_steps,sliceID){
@@ -4093,8 +4099,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     {% endifequal %}
     </div>
      <div class="large-2 columns">
+         {% ifequal trequest.request_type "GROUP" %}
+            <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event, true);">Prepare to recreate</button>
+         {% else %}
+             <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event, false);">Prepare to recreate</button>
 
-        <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event);">Prepare to recreate</button>
+         {% endifequal %}
      </div></div>
 
     <div class="row">

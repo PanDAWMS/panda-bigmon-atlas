@@ -2328,7 +2328,8 @@ def check_all_outputs_deleted(task, ddm):
                 to_delete = False
     return to_delete and number_of_outputs == 0
 
-def obsolete_old_task_for_slice(request_id, slice_number, ddm):
+
+def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = False):
     slice = InputRequestList.objects.get(slice=slice_number, request=request_id)
     input_container = slice.dataset
     step_execs = StepExecution.objects.filter(request=request_id, slice=slice)
@@ -2340,6 +2341,9 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm):
             if ProductionTask.objects.filter(request=request_id, step=step).exists():
                 return 0
             first_step_tag = step.step_template.ctag
+            if is_derivation:
+                step.update_project_mode('checkOutputDeleted','yes')
+                step.save()
             break
     datasets = ddm.dataset_in_container(input_container)
     tasks = []
@@ -2352,15 +2356,16 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm):
             to_delete = check_all_outputs_deleted(task, ddm)
             if to_delete:
                 merge_is_empty = True
-                for child_task in ProductionTask.objects.filter(parent_id=task.id):
-                    if child_task.status in ['finished','done'] and '.merge.' in child_task.name:
-                        if check_all_outputs_deleted(child_task, ddm):
-                            _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
-                            number_of_obsolete_tasks += 1
-                            _do_deft_action('mborodin', int(child_task.id), 'obsolete')
-                        else:
-                            merge_is_empty = False
-                            break
+                if not is_derivation:
+                    for child_task in ProductionTask.objects.filter(parent_id=task.id):
+                        if child_task.status in ['finished','done'] and '.merge.' in child_task.name:
+                            if check_all_outputs_deleted(child_task, ddm):
+                                _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                                number_of_obsolete_tasks += 1
+                                _do_deft_action('mborodin', int(child_task.id), 'obsolete')
+                            else:
+                                merge_is_empty = False
+                                break
                 if merge_is_empty:
                     if task.status != 'obsolete':
                         _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
@@ -2368,28 +2373,70 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm):
                         _do_deft_action('mborodin', int(task.id), 'obsolete')
     return number_of_obsolete_tasks
 
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Obsolete deleted tasks')
+def async_obsolete_old_task_for_slices(self, reqid, slices):
+    ddm = DDM()
+    number_of_tasks = 0
+    self.progress_message_update(0, len(slices))
+    for slices_processed, slice_number in enumerate(slices):
+        try:
+            number_of_tasks+= obsolete_old_task_for_slice(reqid, slice_number, ddm, True)
+            self.progress_message_update(slices_processed, len(slices))
+        except Exception as e:
+            _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
+    return number_of_tasks
+
+
+@csrf_protect
+def async_obsolete_old_deleted_tasks(request, reqid):
+    if request.method == 'POST':
+        try:
+            production_request = TRequest.objects.get(reqid=reqid)
+            if (production_request.request_type not in ['GROUP']):
+                return HttpResponseBadRequest('Group requests only')
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
+            return_value = single_request_action_celery_task(reqid,async_obsolete_old_task_for_slices,'Obsolete deleted tasks',
+                                                             request.user.username,int(reqid),slices)
+            return HttpResponse(json.dumps(return_value), content_type='application/json')
+        except Exception as e:
+            _logger.error(str(e))
+            return HttpResponseBadRequest(e)
+
 @csrf_protect
 def obsolete_old_deleted_tasks(request, reqid):
     if request.method == 'POST':
         try:
-            if ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser :
-                _set_request_hashtag(reqid,'MCDeletedReprocessing')
-                data = request.body
-                input_dict = json.loads(data)
-                slices = input_dict['slices']
-                if '-1' in slices:
-                    del slices[slices.index('-1')]
-                _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
-                ddm = DDM()
-                number_of_tasks = 0
-                for slice_number in slices:
-                    try:
-                        number_of_tasks+= obsolete_old_task_for_slice(reqid,slice_number,ddm)
-                    except Exception as e:
-                        _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
-                results = {'success':True,'tasksObsolete':number_of_tasks}
-            else:
-                return HttpResponseForbidden('This action is only for MC COORD')
+            production_request = TRequest.objects.get(reqid=reqid)
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
+            ddm = DDM()
+            number_of_tasks = 0
+            add_checkOutputDeleted = False
+            if (production_request.request_type in ['REPROCESSING','MC']):
+                if ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser :
+                    _set_request_hashtag(reqid,'MCDeletedReprocessing')
+
+                else:
+                    return HttpResponseForbidden('This action is only for MC COORD')
+            elif (production_request.request_type in ['GROUP']):
+                add_checkOutputDeleted = True
+            for slice_number in slices:
+                try:
+                    number_of_tasks+= obsolete_old_task_for_slice(reqid, slice_number, ddm, add_checkOutputDeleted)
+                except Exception as e:
+                    _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
+            results = {'success': True,'tasksObsolete': number_of_tasks}
+
         except Exception as e:
             _logger.error("Problem with deleted output tasks obsolete : %s"%( e))
             return HttpResponseBadRequest(e)
@@ -2427,3 +2474,43 @@ def input_with_slice_errors(request, reqid):
     for slice_error in slice_erros:
         result_list.append(slice_error.slice.dataset)
     return Response({'input_errors':result_list})
+
+
+def fix_resim(request, slice):
+    steps = StepExecution.objects.filter(request=request,slice=InputRequestList.objects.get(request=request, slice=slice))
+    simul_step = None
+    resim_step = None
+    for step in steps:
+        if (step.status == 'Approved'):
+          if  (step.step_template.ctag =='s3126') and (ProductionTask.objects.filter(step=step).exists()):
+              simul_step = step
+          elif (step.step_template.ctag =='s3681') and (ProductionTask.objects.filter(step=step).exists()):
+              resim_step = step
+    if simul_step and resim_step:
+        simul_task = ProductionTask.objects.filter(step=simul_step)[0]
+        t_simul_task = TTask.objects.get(id = simul_task.id)
+        if int(t_simul_task.jedi_task_parameters['nEventsPerJob']) != int(simul_step.get_task_config('nEventsPerJob')):
+            resim_tasks =  ProductionTask.objects.filter(step=resim_step)
+            make_fix = False
+            for resim_task in resim_tasks:
+                t_resim_task =  TTask.objects.get(id = resim_task.id)
+                if t_resim_task.jedi_task_parameters['nEventsPerInputFile'] != t_simul_task.jedi_task_parameters['nEventsPerJob']:
+                    make_fix = True
+                    if t_resim_task.status in ['done','finished']:
+                        _do_deft_action('mborodin', int(t_resim_task.id), 'obsolete')
+                    elif t_resim_task.status not in ProductionTask.NOT_RUNNING:
+                        _do_deft_action('mborodin', int(t_resim_task.id), 'abort')
+            if make_fix:
+                simul_step.set_task_config({'nEventsPerJob':t_simul_task.jedi_task_parameters['nEventsPerJob']})
+                simul_step.save()
+                resim_step.set_task_config({'nEventsPerInputFile':t_simul_task.jedi_task_parameters['nEventsPerJob']})
+                resim_step.save()
+                new_slice = clone_slices(request,request,[slice],3,True, True)[0]
+                new_steps = StepExecution.objects.filter(request=request, slice=InputRequestList.objects.get(request=request,slice=new_slice))
+                for new_step in new_steps:
+                    new_step.status = 'Approved'
+                    new_step.save()
+                print(slice)
+                return True
+        else:
+            return False

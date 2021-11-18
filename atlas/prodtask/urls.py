@@ -138,6 +138,7 @@ urlpatterns = [
     url(r'^hide_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.hide_slices_in_req, name='hide_slices_in_req'),
     url(r'^request_train_patterns/(?P<reqid>\d+)/$', step_manage_views.request_train_patterns, name='request_train_patterns'),
     url(r'^obsolete_old_deleted_tasks/(?P<reqid>\d+)/$', step_manage_views.obsolete_old_deleted_tasks, name='obsolete_old_deleted_tasks'),
+    url(r'^async_obsolete_old_deleted_tasks/(?P<reqid>\d+)/$', step_manage_views.async_obsolete_old_deleted_tasks, name='async_obsolete_old_deleted_tasks'),
     url(r'^input_with_slice_errors/(?P<reqid>\d+)/$', step_manage_views.input_with_slice_errors, name='input_with_slice_errors'),
 
 
@@ -168,7 +169,6 @@ urlpatterns = [
     url(r'^get_slices_bulk_info/(?P<reqid>\d+)/$', step_manage_views.get_slices_bulk_info, name='get_slices_bulk_info'),
     url(r'^test_celery_task/(?P<reqid>\d+)/$', step_manage_views.test_celery_task, name='test_celery_task'),
     url(r'^celery_task_status/(?P<celery_task_id>[\w-]+)/$', step_manage_views.celery_task_status, name='celery_task_status'),
-
 
     url(r'^change_parent/(?P<reqid>\d+)/(?P<new_parent>[-+]?\d+)/$', step_manage_views.change_parent, name='change_parent'),
     url(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', step_manage_views.slice_steps, name='slice_steps'),
