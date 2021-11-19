@@ -1900,8 +1900,17 @@ def change_slice_parent(request,slice,new_parent_slice):
         step_index = ordered_existed_steps_old_parent.index(parent_step)
         step_execs_parent = StepExecution.objects.filter(slice=InputRequestList.objects.get(request=parent_step.request,slice=int(new_parent_slice)))
         ordered_existed_steps_parent, parent_step_parent = form_existed_step_list(step_execs_parent)
+        new_step_parent = None
         if step_index < len(ordered_existed_steps_parent):
-            step.step_parent = ordered_existed_steps_parent[step_index]
+            new_step_parent = ordered_existed_steps_parent[step_index]
+        elif parent_step.request.request_type in ['MC']:
+            step_as_in_page_old = form_step_in_page(ordered_existed_steps_old_parent, StepExecution.STEPS, parent_step_temp)
+            step_index = step_as_in_page_old.index(parent_step)
+            step_as_in_page = form_step_in_page(ordered_existed_steps_parent, StepExecution.STEPS, parent_step_parent)
+            if step_as_in_page[step_index]:
+                new_step_parent = step_as_in_page[step_index]
+        if new_step_parent:
+            step.step_parent = new_step_parent
             step.save()
             changed_slice = step.slice
             changed_slice.dataset = step.step_parent.slice.dataset
