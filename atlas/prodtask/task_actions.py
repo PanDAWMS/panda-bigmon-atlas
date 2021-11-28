@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset
+from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset, StepAction
 
 import atlas.deftcore.api.client as deft
 from atlas.prodtask.task_views import sync_deft_jedi_task
@@ -46,6 +46,32 @@ supported_actions = list(_deft_actions.keys())
 supported_actions.extend(['increase_priority', 'decrease_priority'])
 supported_actions.extend(['retry_new'])
 supported_actions.extend(['set_hashtag','remove_hashtag','sync_jedi'])
+supported_actions.extend(['disable_idds'])
+
+
+def create_disable_idds_action(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    if task.total_files_finished > 0:
+        step = task.step
+        actions = StepAction.objects.filter(step=step.id, action=12, status__in=['active','executing'])
+        action_exists = False
+        for action in actions:
+            if action.get_config('task') == task_id:
+                action_exists = True
+                break
+        if not action_exists:
+            new_action = StepAction()
+            new_action.step = step.id
+            new_action.action = 12
+            new_action.set_config({'task':int(task_id)})
+            new_action.attempt = 0
+            new_action.status = 'active'
+            new_action.request = step.request
+            new_action.create_time = timezone.now()
+            new_action.execution_time = timezone.now()
+            new_action.save()
+            return True
+    return False
 
 
 def do_action(owner, task_id, action, *args):
@@ -93,6 +119,15 @@ def do_action(owner, task_id, action, *args):
             result.update(dict(step_id=int(step_id)))
         except:
             result['exception'] = "Can't retry task {0}".format(task_id)
+    elif action == 'disable_idds':
+        try:
+            if create_disable_idds_action(task_id):
+                result.update(_do_deft_action(owner, task_id, 'finish', *args))
+            else:
+                raise Exception('No jobs finish yet')
+                #result.update(_do_deft_action(owner, task_id, 'abort', *args))
+        except Exception as e:
+            result['exception'] = "Can't disable idds for {0} because {1}".format(task_id,e)
 
     return result
 

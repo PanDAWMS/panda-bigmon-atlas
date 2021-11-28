@@ -102,7 +102,7 @@ for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exh
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
-                                          'ctrl','sync_jedi'])
+                                          'ctrl','sync_jedi','disable_idds'])
 
 
 
