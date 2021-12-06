@@ -28,7 +28,7 @@ from atlas.prodtask.task_actions import _do_deft_action
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
-
+HASHTAG_STAGE_CAROUSEL = 'stageCarousel'
 
 def test_step_action(step_action_ids):
     pass
@@ -833,6 +833,14 @@ def find_archive_dataset(dataset_name,ddm):
     return None
 
 
+def set_replica_to_delete(dataset_stage):
+    for action_stage in ActionStaging.objects.filter(dataset_stage=dataset_stage):
+        task = ProductionTask.objects.get(id=action_stage.task)
+        if task.status not in ProductionTask.NOT_RUNNING:
+            if (task.request.request_type in ['REPROCESSING']) or (task.request.request_type == 'MC' and task.request.phys_group != 'VALI'):
+                if HASHTAG_STAGE_CAROUSEL not in [str(x) for x in task.hashtags]:
+                    task.set_hashtag(HASHTAG_STAGE_CAROUSEL)
+
 
 def do_staging(action_step_id, ddm):
     action_step = StepAction.objects.get(id=action_step_id)
@@ -888,6 +896,10 @@ def do_staging(action_step_id, ddm):
                 dataset_stage.status = 'done'
                 dataset_stage.update_time = current_time
                 dataset_stage.end_time = current_time
+                try:
+                    set_replica_to_delete(dataset_stage)
+                except Exception as e:
+                    _logger.error("Set replica deletion problem %s %s" % (str(e), str(action_step_id)))
                 if task.status not in ProductionTask.NOT_RUNNING:
                     create_follow_action = True
             dataset_stage.save()
@@ -1834,9 +1846,11 @@ def check_replica_can_be_deleted(task_id, ddm):
         dataset_stage = action_stage.dataset_stage
         do_deletion = True
         for other_actions in ActionStaging.objects.filter(dataset_stage=dataset_stage):
-            if ProductionTask.objects.get(id=other_actions.task).status not in ProductionTask.RED_STATUS + ['done','obsolete']:
-                do_deletion = False
-                break
+            task = ProductionTask.objects.get(id=other_actions.task)
+            if task.status not in (ProductionTask.RED_STATUS + ['done','obsolete']):
+                if not ((task.status == 'finished') and (task.total_files_failed == 0)):
+                    do_deletion = False
+                    break
         if do_deletion:
             _logger.info("Rule %s will be deleted" % str(dataset_stage.rse))
             ddm.delete_replication_rule(dataset_stage.rse)
@@ -1847,7 +1861,6 @@ def check_replica_can_be_deleted(task_id, ddm):
 
 
 def find_stage_task_replica_to_delete():
-    HASHTAG_STAGE_CAROUSEL = 'stageCarousel'
     hashtag = HashTag.objects.get(hashtag=HASHTAG_STAGE_CAROUSEL)
     ddm = DDM()
     for task_id in hashtag.tasks_ids:
