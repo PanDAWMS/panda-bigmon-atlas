@@ -42,6 +42,17 @@ import {MatDialogModule} from "@angular/material/dialog";
 import { GpDeletionRequestComponent } from './derivation-exclusion/gp-deletion-request/gp-deletion-request.component';
 import {MatDatepickerModule} from "@angular/material/datepicker";
 import {MatNativeDateModule} from "@angular/material/core";
+import {MatChipsModule} from "@angular/material/chips";
+import {ChipsMultiSelectColoredComponent} from './multi-select-colored-chips/multi-select-colored-chips.component';
+import {MatIconModule} from "@angular/material/icon";
+import {MatToolbarModule} from "@angular/material/toolbar";
+import { TaskStatsComponent } from './production-request/task-stats/task-stats.component';
+import {MatSelectModule} from "@angular/material/select";
+import {MatExpansionModule} from "@angular/material/expansion";
+import { UnmergeCleaningComponent } from './unmerge-cleaning/unmerge-cleaning.component';
+import { UnmergeDatasetsComponent } from './unmerge-cleaning/unmerge-datasets/unmerge-datasets.component';
+import {MatPaginatorModule} from "@angular/material/paginator";
+import {UnmergeCleaningResolver} from "./unmerge-cleaning/unmerge-cleaning.resolver";
 
 
 const routerOptions: ExtraOptions = {
@@ -75,7 +86,15 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
 
-  {path: 'carousel', component: DataCarouselComponent}];
+  {path: 'carousel', component: DataCarouselComponent},
+  {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
+    resolve: {
+      unmergedDatasets: UnmergeCleaningResolver,
+    }},
+  {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,
+    resolve: {
+      unmergedDatasets: UnmergeCleaningResolver,
+    }}];
 
 @NgModule({
   declarations: [
@@ -94,39 +113,49 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     StepComponent,
     ProjectModeComponent,
     SliceDetailsDialogComponent,
-    GpDeletionRequestComponent
+    GpDeletionRequestComponent,
+    ChipsMultiSelectColoredComponent,
+    TaskStatsComponent,
+    UnmergeCleaningComponent,
+    UnmergeDatasetsComponent
   ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    HttpClientXsrfModule.withOptions({
-      cookieName: 'csrftoken',
-      headerName: 'X-CSRFToken',
-    }),
-    RouterModule.forRoot(routes, routerOptions),
-    BrowserAnimationsModule,
-    MatTableModule,
-    MatSortModule,
-    MatCheckboxModule,
-    MatGridListModule,
-    MatButtonModule,
-    MatSidenavModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FormsModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-    MatRadioModule,
-    MatCardModule,
-    NgxChartsModule,
-    MatTabsModule,
-    ScrollingModule,
-    MatDialogModule,
-    MatDatepickerModule,
-    ReactiveFormsModule,
-    MatNativeDateModule
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        HttpClientXsrfModule.withOptions({
+            cookieName: 'csrftoken',
+            headerName: 'X-CSRFToken',
+        }),
+        RouterModule.forRoot(routes, routerOptions),
+        BrowserAnimationsModule,
+        MatTableModule,
+        MatSortModule,
+        MatCheckboxModule,
+        MatGridListModule,
+        MatButtonModule,
+        MatSidenavModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        MatListModule,
+        MatProgressSpinnerModule,
+        MatRadioModule,
+        MatCardModule,
+        NgxChartsModule,
+        MatTabsModule,
+        ScrollingModule,
+        MatDialogModule,
+        MatDatepickerModule,
+        ReactiveFormsModule,
+        MatNativeDateModule,
+        MatChipsModule,
+        MatIconModule,
+        MatToolbarModule,
+        MatSelectModule,
+        MatExpansionModule,
+        MatPaginatorModule
 
-  ],
+    ],
   providers: [
         {
           provide: APP_BASE_HREF,

@@ -7,7 +7,7 @@ from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.urls import reverse, resolve
-
+from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
@@ -25,13 +25,14 @@ from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, Je
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.core.cache import cache
 
 from django.utils.timezone import utc
 from datetime import datetime, timedelta
@@ -39,6 +40,7 @@ import pytz
 import locale
 import time
 import json
+OUTPUTS_TYPES = ["AOD","EVNT","HITS"]
 
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -974,3 +976,61 @@ def check_merge_container(days, days_till=1):
                     total += 1
     return total
 
+
+@app.task(time_limit=10800, ignore_result=True)
+def find_merge_dataset_to_delete(is_mc = True):
+    ddm = DDM()
+    prefix = 'mc'
+    if not is_mc:
+        prefix = 'data'
+    result = {}
+    for x in OUTPUTS_TYPES:
+        result[x] = []
+    tasks = ProductionTask.objects.filter(timestamp__gte=timezone.now() - timedelta(days=60),provenance='AP',
+                                          status__in=['done','finished'],name__startswith=prefix )
+    merge_tasks = [x for x in tasks if x.phys_group not in ['SOFT','VALI'] and 'merge' in x.name and x.output_formats in OUTPUTS_TYPES]
+    deleted_datasets = []
+    for task in merge_tasks:
+        parent_dataset = task.primary_input
+        if 'tid' in parent_dataset:
+            production_dataset = ProductionDataset.objects.get(name=name_without_scope(parent_dataset))
+            if production_dataset.status != 'Deleted':
+                if ddm.dataset_exists(parent_dataset):
+                    dataset_details = ddm.dataset_metadata(parent_dataset)
+                    if ((dataset_details['datatype'] in OUTPUTS_TYPES) and dataset_details['expired_at']
+                            and (dataset_details['expired_at'] - timezone.now().replace(tzinfo=None) > timedelta(days=1))):
+                        result[dataset_details['datatype']].append({'name':dataset_details['name'],
+                                                                    'bytes':dataset_details['bytes'],
+                                                                    'daysLeft':(dataset_details['expired_at'] - timezone.now().replace(tzinfo=None)).days,
+                                                                    'task_id':dataset_details['task_id'],
+                                                                    'parentPer':task.total_files_failed / (task.total_files_finished+task.total_files_failed)})
+
+                else:
+                    deleted_datasets.append(parent_dataset)
+
+        else:
+            _logger.warning('Warning no tid in parent {task_id}'.format(task_id=task.id))
+
+    for x in OUTPUTS_TYPES:
+        cache.set('del_merge_%s_%s'% (prefix, x),result[x],None)
+    cache.set('deleted_datasets', deleted_datasets,None)
+    cache.set('merge_deletion_update_time',timezone.now(),None)
+
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def unmerged_datasets_to_delete(request):
+    """
+    """
+    result = {}
+    result['outputs'] = {}
+    prefix = 'mc'
+    if request.query_params.get('perfix'):
+        prefix = request.query_params.get('perfix')
+    for output in OUTPUTS_TYPES:
+        result['outputs'][output] = cache.get('del_merge_%s_%s'% (prefix, output))
+    result['timestamp'] = cache.get('merge_deletion_update_time')
+
+    return Response(result)

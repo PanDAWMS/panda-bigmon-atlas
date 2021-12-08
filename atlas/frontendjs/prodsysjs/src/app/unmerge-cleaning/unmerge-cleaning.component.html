@@ -1,0 +1,7 @@
+<h4> Unmerged {{prefix}} datasets marked for deletions</h4>
+<ul *ngFor="let element of unmergedDatasetsByFormat">
+  <li>
+    <a [routerLink]="['/unmerged-deletion', prefix, element.format ]" >{{element.format}} Datasets {{element.datasets}} Size {{element.size| datasetSize}}</a>
+  </li>
+
+</ul>

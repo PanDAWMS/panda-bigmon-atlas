@@ -31,8 +31,10 @@ common_patterns = [
   url(r'^api/', include(('atlas.prodtask_api.urls', 'prodtask_api'), namespace='prodtask_api')),
   url(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     url(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
+    url(r'^production_request/', include(('atlas.production_request.urls','production_request'), namespace='production_request')),
 
-    url(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
+
+                      url(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
 
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^gpdeletion/', include(('atlas.gpdeletion.urls', 'gpdeletion'), namespace='gpdeletion')),
