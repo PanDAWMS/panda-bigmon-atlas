@@ -82,8 +82,9 @@
            <th style="font-size : 50%">(Current) Priority</th>
 
            <th>Events</th>
-           <th style="font-size : 50%">Failure %</th>
+           <th style="font-size : 50%">Fail %</th>
            <th>Step</th>
+               <th>AMI</th>
            </tr>
            </thead>
            <tfoot>
@@ -101,6 +102,7 @@
            <th>Events</th>
            <th >Failure %</th>
           <th id="stepsFilter">Step</th>
+           <th >AMI Tag</th>
            </tr>
            </tfoot>
         </table>
@@ -220,7 +222,10 @@
                                 {
                                 "data" : "step_name",
                                 "visible" : true
-                                }
+                                },
+                            {
+                                "data" : "ami_tag",
+                            }
 
                         ],
                         dom: 'T<"clear">lftirp',
