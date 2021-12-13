@@ -1872,3 +1872,9 @@ def find_stage_task_replica_to_delete():
             _logger.error("Staging replica deletion problem %s %s" % (str(e), str(task_id)))
 
 
+def clean_stale_actions(days=2):
+    actions = StepAction.objects.filter(status='executing', execution_time__lte=timezone.now()-timedelta(days=2))
+    for action in actions:
+        _logger.error("Action %s is stuck" % (str(action.id)))
+        action.status = 'active'
+        action.save()
