@@ -674,10 +674,10 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                     if input_without_cern:
                         #Create rule because it could be recovered from CERN
                         if len(input_without_cern) == 1:
-                            staged_files, total_files = ddm.staged_percent(input_dataset)
-                            input = input_without_cern[0]
-                            if staged_files != total_files:
-                                rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input_without_cern))
+                            #staged_files, total_files = ddm.staged_percent(input_dataset)
+                            #input = input_without_cern[0]
+                            # if staged_files != total_files:
+                            rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input_without_cern))
                         else:
                             input = random.choice(input_without_cern)
                     else:
