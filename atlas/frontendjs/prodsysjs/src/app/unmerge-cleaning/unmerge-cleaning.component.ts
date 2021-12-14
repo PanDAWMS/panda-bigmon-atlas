@@ -11,6 +11,7 @@ export interface DatasetToDelete {
   task_id: number;
   parentPer: number;
   daysLeft: number;
+  parent_task_id: number;
 }
 
 @Component({

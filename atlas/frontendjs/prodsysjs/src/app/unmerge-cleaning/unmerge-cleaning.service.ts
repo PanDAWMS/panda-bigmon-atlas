@@ -16,20 +16,35 @@ export interface UnmergedDatasetsCombined {
 export class UnmergeCleaningService {
 
   private unmergeDatasetURL = '/prodtask/unmerged_datasets_to_delete';
-  private cache$: Observable<UnmergedDatasetsCombined>;
+  private specialDatasetURL = '/prodtask/special_datasets_to_delete';
+  private cache$: Map<string, Observable<UnmergedDatasetsCombined>> = new Map<string, Observable<UnmergedDatasetsCombined>>();
+  private cacheSpecial$: Observable<UnmergedDatasetsCombined>;
   constructor(private http: HttpClient) { }
 
   getUnmergeDatasets(prefix: string): Observable<UnmergedDatasetsCombined>{
-    if (!this.cache$) {
-      this.cache$ = this._getUnmergeDatasets(prefix).pipe(
+    if (!this.cache$.has(prefix)) {
+      this.cache$[prefix] = this._getUnmergeDatasets(prefix).pipe(
         shareReplay(CACHE_SIZE)
       );
     }
 
-    return this.cache$;
+    return this.cache$[prefix];
   }
 
+  getSpecialDatasets(parentTag: string, childTag: string): Observable<UnmergedDatasetsCombined>{
+    if (!this.cache$.has(parentTag + childTag)) {
+      this.cacheSpecial$ = this._getSpecialDatasets(parentTag,  childTag).pipe(
+        shareReplay(CACHE_SIZE)
+      );
+    }
+
+    return this.cacheSpecial$;
+  }
   private _getUnmergeDatasets(prefix: string): Observable<UnmergedDatasetsCombined> {
     return this.http.get<UnmergedDatasetsCombined>(this.unmergeDatasetURL, {params: {'prefix': prefix}});
+  }
+
+  private _getSpecialDatasets(parentTag: string, childTag: string): Observable<UnmergedDatasetsCombined> {
+    return this.http.get<UnmergedDatasetsCombined>(this.specialDatasetURL, {params: {parent_tag: parentTag, child_tag: childTag}});
   }
 }

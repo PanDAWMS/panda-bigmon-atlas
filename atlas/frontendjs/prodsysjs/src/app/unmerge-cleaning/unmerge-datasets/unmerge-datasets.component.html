@@ -1,5 +1,5 @@
 <p><a mat-raised-button  [routerLink]="['/unmerged-deletion', prefix]"  >Back</a></p>
-<h4>Unmerged not yet deleted {{prefix}} {{outputFormat}} Datasets: {{numberOfDatasets}} Total Size: {{totalSize|datasetSize}} </h4>
+<h4>{{message}} Datasets: {{numberOfDatasets}} Total Size: {{totalSize|datasetSize}} </h4>
 <button mat-fab color="warn"  >
   Delete
 </button>
@@ -23,8 +23,8 @@
     <td mat-cell *matCellDef="let element"> {{element.daysLeft}} </td>
   </ng-container>
   <ng-container matColumnDef="parentPer">
-    <th mat-header-cell *matHeaderCellDef   mat-sort-header> Merge done % </th>
-    <td mat-cell *matCellDef="let element"> {{100 - element.parentPer}} </td>
+    <th mat-header-cell *matHeaderCellDef   mat-sort-header> Parent done % </th>
+    <td mat-cell *matCellDef="let element"> <a href="https://bigpanda.cern.ch/task/{{element.parent_task_id}}/">{{100 - element.parentPer|number:'1.0-3'}}</a> </td>
   </ng-container>
   <tr mat-header-row *matHeaderRowDef="['task_id','name','bytes','daysLeft','parentPer']"></tr>
   <tr mat-row *matRowDef="let row; columns: ['task_id','name','bytes','daysLeft','parentPer'];"></tr>

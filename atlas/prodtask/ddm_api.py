@@ -219,7 +219,8 @@ class DDM(object):
                 rse_attr = self.__ddm.list_rse_attributes(rse)
                 return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
         elif rse == 'CERN-PROD_RAW':
-            return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+            #return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+            return 'type=DATADISK&datapolicynucleus=True', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
 
 
 
@@ -246,7 +247,7 @@ class DDM(object):
         self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})
 
     def get_rule(self, rule_id):
-        self.__ddm.get_replication_rule(rule_id)
+        return self.__ddm.get_replication_rule(rule_id)
 
 
 

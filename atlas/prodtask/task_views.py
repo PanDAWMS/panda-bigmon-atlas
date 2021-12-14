@@ -1002,7 +1002,7 @@ def find_merge_dataset_to_delete(is_mc = True):
                         result[dataset_details['datatype']].append({'name':dataset_details['name'],
                                                                     'bytes':dataset_details['bytes'],
                                                                     'daysLeft':(dataset_details['expired_at'] - timezone.now().replace(tzinfo=None)).days,
-                                                                    'task_id':dataset_details['task_id'],
+                                                                    'task_id':dataset_details['task_id'], 'parent_task_id': task.id,
                                                                     'parentPer':task.total_files_failed / (task.total_files_finished+task.total_files_failed)})
 
                 else:
@@ -1016,6 +1016,32 @@ def find_merge_dataset_to_delete(is_mc = True):
     cache.set('deleted_datasets', deleted_datasets,None)
     cache.set('merge_deletion_update_time',timezone.now(),None)
 
+
+def find_special_deletion(parent_ami_tag, child_ami_tag):
+    tasks = ProductionTask.objects.filter(timestamp__gte=timezone.now() - timedelta(days=120),provenance='AP',
+                                          status__in=['done','finished'],name__startswith='mc',ami_tag=parent_ami_tag)
+    ddm = DDM()
+    filtered_tasks =  [x for x in tasks if x.phys_group not in ['VALI'] and child_ami_tag in x.name ]
+    deleted_datasets = cache.get('deleted_datasets',[])
+    result = []
+    for task in filtered_tasks:
+        parent_dataset = task.primary_input
+        if 'tid' in parent_dataset:
+            production_dataset = ProductionDataset.objects.get(name=name_without_scope(parent_dataset))
+            if (production_dataset.status != 'Deleted') and (parent_dataset not in deleted_datasets):
+                if ddm.dataset_exists(parent_dataset):
+                    dataset_details = ddm.dataset_metadata(parent_dataset)
+                    result.append({'name':dataset_details['name'],
+                                                                'bytes':dataset_details['bytes'],
+                                                                'daysLeft':-1,
+                                                                'task_id':dataset_details['task_id'],'parent_task_id': task.id,
+                                                                'parentPer':task.total_files_failed / (task.total_files_finished+task.total_files_failed)})
+
+                else:
+                    deleted_datasets.append(parent_dataset)
+    cache.set('del_special_%s_%s'% (parent_ami_tag, child_ami_tag),result,None)
+    cache.set('deleted_datasets', deleted_datasets,None)
+    cache.set('special_deletion_update_time',timezone.now(),None)
 
 
 @api_view(['GET'])
@@ -1032,5 +1058,23 @@ def unmerged_datasets_to_delete(request):
     for output in OUTPUTS_TYPES:
         result['outputs'][output] = cache.get('del_merge_%s_%s'% (prefix, output))
     result['timestamp'] = cache.get('merge_deletion_update_time')
+
+    return Response(result)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def special_datasets_to_delete(request):
+    """
+    """
+    result = {}
+    parent_ami_tag = ''
+    child_ami_tag = ''
+    if request.query_params.get('parent_tag'):
+        parent_ami_tag = request.query_params.get('parent_tag')
+    if request.query_params.get('child_tag'):
+        child_ami_tag = request.query_params.get('child_tag')
+    result['outputs'] = {"special": cache.get('del_special_%s_%s'% (parent_ami_tag, child_ami_tag))}
+    result['timestamp'] = cache.get('special_deletion_update_time')
 
     return Response(result)
