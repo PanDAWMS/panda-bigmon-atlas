@@ -427,7 +427,7 @@
 
                 <div class="row">
                     <div class="small-6 large-6 columns">
-                        <select name="site_select" id="site_select" class="medium" >
+                        <select name="site_select" id="site_select" class="medium" onchange="changeSiteSelected()" multiple >
                             <option value="" selected>Select site</option>
                             <option value="">Unset site</option>
                         {% for entry in sites %}
@@ -446,7 +446,11 @@
                         <a class="button postfix" id="btn_do_reassign_site">Go</a>
                     </div>
                 </div>
-
+                <div class="row">
+                    <div class="small-12 large-12 columns">
+                       Selected sites: <span id="site_selected"></span> <span id="error_site" style="color: red"></span>
+                    </div>
+                </div>
                 <div class="row">
                     <div class="small-10 large-10 columns text-center">
                         <label> or </label>
@@ -795,7 +799,27 @@ function getSelectedTasksList() {
     return tasks;
 }
 
-
+function changeSiteSelected() {
+    var sites = $('#site_select').val();
+    $('#error_site').html('');
+    $('#btn_do_reassign_site').removeClass('disabled')
+    var selectedSlices = '';
+    if (sites.indexOf('') > -1){
+        selectedSlices = '';
+    } else if (sites.indexOf('ALL') > -1) {
+        selectedSlices = 'ALL';
+    } else {
+        selectedSlices = sites.join(',');
+    }
+    console.log(selectedSlices);
+    if(selectedSlices.length>60){
+        selectedSlices = '';
+        $('#error_site').html('Too many sites');
+        $('#btn_do_reassign_site').addClass('disabled')
+    }
+    $('#site_selected').html(selectedSlices);
+    return selectedSlices
+}
 // Perform specified action with given on the list of tasks
 function doTasksAction(action, tasks, parameters) {
 
@@ -880,7 +904,7 @@ function doTasksActionSelected(action) {
     } else if (action == "change_priority") {
         parameters = [$("#new_priority").val()];
     } else if (action == "reassign_to_site") {
-        parameters = [$("#site_select").val(),$("#site_mode_select").val()];
+        parameters = [ $('#site_select').val().join(','),$("#site_mode_select").val()];
     } else if (action == "reassign_to_cloud") {
         parameters = [$("#cloud_select").val(),$("#cloud_mode_select").val()];
     } else if (action == "reassign_to_nucleus") {
