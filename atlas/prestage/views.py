@@ -1,11 +1,13 @@
 import json
 import random
+import time
 from copy import deepcopy
 
 from django.db.models import Q
 
 from atlas.cric.client import CRICClient
-from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag
+from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
+    JediDatasets, JediDatasetContents
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -1852,8 +1854,14 @@ def check_replica_can_be_deleted(task_id, ddm):
                     do_deletion = False
                     break
         if do_deletion:
-            _logger.info("Rule %s will be deleted" % str(dataset_stage.rse))
-            ddm.delete_replication_rule(dataset_stage.rse)
+            rule = None
+            try:
+                rule = ddm.get_rule(dataset_stage.rse)
+            except:
+                pass
+            if rule:
+                _logger.info("Rule %s will be deleted" % str(dataset_stage.rse))
+                ddm.delete_replication_rule(dataset_stage.rse)
             return True
         return False
     else:
@@ -1878,3 +1886,56 @@ def clean_stale_actions(days=2):
         _logger.error("Action %s is stuck" % (str(action.id)))
         action.status = 'active'
         action.save()
+
+
+def find_failed_files(task_id, dataset_name):
+    if ':' not in dataset_name:
+        dataset_name = dataset_name.split('.')[0]+':'+dataset_name
+    dataset_id = JediDatasets.objects.get(id=task_id, datasetname=dataset_name).datasetid
+    failed_files = list(JediDatasetContents.objects.filter(datasetid=dataset_id, jeditaskid=task_id, procstatus='failed').values_list('lfn',flat=True))
+    return list(set(failed_files))
+
+
+def keep_failed_files(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    input_dataset = task.inputdataset
+    dataset_stage = DatasetStaging.objects.get(dataset=input_dataset)
+    ddm = DDM()
+    try:
+        rse_dict = ddm.get_rule(dataset_stage.rse)
+    except:
+        rse_dict = None
+    if rse_dict and task.status == 'finished' and task.total_files_failed != 0 and task.total_files_failed < 100:
+        keep_files = True
+        for other_actions in ActionStaging.objects.filter(dataset_stage=dataset_stage):
+            other_task = ProductionTask.objects.get(id=other_actions.task)
+            if (other_task != task) and ((timezone.now() - other_task.timestamp) < timedelta(days=30)):
+                if task.status not in (ProductionTask.RED_STATUS + ['done','obsolete']):
+                    if not ((task.status == 'finished') and (task.total_files_failed == 0)):
+                        keep_files = False
+                        break
+        if keep_files:
+            data_replicas =  ddm.full_replicas_per_type(input_dataset)['data']
+            if data_replicas:
+                failed_files_list = find_failed_files(task_id, input_dataset)
+                name_base = input_dataset
+                if '_tid' in input_dataset:
+                    name_base = input_dataset.split('_tid')[0]
+                new_name = name_base + '_sub' + str(task_id) + '_stg'
+                scope = input_dataset.split('.')[0]
+                files = [scope + ':' + file_name for file_name in failed_files_list]
+                lifetime = int((rse_dict['expires_at'] - timezone.now().replace(tzinfo=None)).total_seconds())
+                print(new_name, files, lifetime)
+                ddm.register_dataset(new_name, files, meta={'task_id':task_id}, lifetime=lifetime)
+                for replica in data_replicas:
+                    print(new_name, replica['rse'])
+                    ddm.add_replication_rule(new_name, replica['rse'], copies=1, lifetime=lifetime, weight='freespace',
+                                                           activity='Staging')
+                time.sleep(5)
+                replicas = list(ddm.list_dataset_rules(new_name))
+                old_rule = dataset_stage.rse
+                if replicas:
+                    dataset_stage.rse = replicas[0]['id']
+                    dataset_stage.save()
+                ddm.delete_replication_rule(old_rule)
+

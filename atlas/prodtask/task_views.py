@@ -1016,7 +1016,7 @@ def find_merge_dataset_to_delete(is_mc = True):
     cache.set('deleted_datasets', deleted_datasets,None)
     cache.set('merge_deletion_update_time',timezone.now(),None)
 
-
+@app.task(time_limit=10800, ignore_result=True)
 def find_special_deletion(parent_ami_tag, child_ami_tag):
     tasks = ProductionTask.objects.filter(timestamp__gte=timezone.now() - timedelta(days=120),provenance='AP',
                                           status__in=['done','finished'],name__startswith='mc',ami_tag=parent_ami_tag)

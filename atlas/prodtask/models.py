@@ -1821,6 +1821,45 @@ class JediDatasets(models.Model):
         app_label = 'panda'
         db_table = '"ATLAS_PANDA"."JEDI_DATASETS"'
 
+class JediDatasetContents(models.Model):
+    jeditaskid = models.BigIntegerField(db_column='JEDITASKID', primary_key=True)
+    datasetid = models.BigIntegerField(db_column='DATASETID')
+    fileid = models.BigIntegerField(db_column='FILEID')
+    creationdate = models.DateTimeField(db_column='CREATIONDATE')
+    lastattempttime = models.DateTimeField(null=True, db_column='LASTATTEMPTTIME', blank=True)
+    lfn = models.CharField(max_length=768, db_column='LFN')
+    guid = models.CharField(max_length=192, db_column='GUID', blank=True)
+    type = models.CharField(max_length=60, db_column='TYPE')
+    status = models.CharField(max_length=192, db_column='STATUS')
+    fsize = models.BigIntegerField(null=True, db_column='FSIZE', blank=True)
+    checksum = models.CharField(max_length=108, db_column='CHECKSUM', blank=True)
+    scope = models.CharField(max_length=90, db_column='SCOPE', blank=True)
+    attemptnr = models.IntegerField(null=True, db_column='ATTEMPTNR', blank=True)
+    maxattempt = models.IntegerField(null=True, db_column='MAXATTEMPT', blank=True)
+    nevents = models.IntegerField(null=True, db_column='NEVENTS', blank=True)
+    keeptrack = models.IntegerField(null=True, db_column='KEEPTRACK', blank=True)
+    startevent = models.IntegerField(null=True, db_column='STARTEVENT', blank=True)
+    endevent = models.IntegerField(null=True, db_column='ENDEVENT', blank=True)
+    firstevent = models.IntegerField(null=True, db_column='FIRSTEVENT', blank=True)
+    boundaryid = models.BigIntegerField(null=True, db_column='BOUNDARYID', blank=True)
+    pandaid = models.BigIntegerField(db_column='PANDAID', blank=True)
+    jobsetid = models.BigIntegerField(db_column='JOBSETID', blank=True)
+    maxfailure = models.IntegerField(null=True, db_column='MAXFAILURE', blank=True)
+    failedattempt = models.IntegerField(null=True, db_column='FAILEDATTEMPT', blank=True)
+    lumiblocknr = models.IntegerField(null=True, db_column='LUMIBLOCKNR', blank=True)
+    procstatus = models.CharField(max_length=192, db_column='PROC_STATUS')
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Read only')
+
+    def delete(self, *args, **kwargs):
+        raise NotImplementedError('Read only')
+
+    class Meta:
+        app_label = 'panda'
+        db_table = '"ATLAS_PANDA"."JEDI_DATASET_CONTENTS"'
+
+
 class JediTasks(models.Model):
     id = models.BigIntegerField(primary_key=True, db_column='JEDITASKID')
     taskname = models.CharField(max_length=384, db_column='TASKNAME', blank=True)
