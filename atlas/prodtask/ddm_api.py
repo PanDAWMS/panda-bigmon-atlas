@@ -200,6 +200,10 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset)
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
+    def keepDataset(self, dataset):
+        scope, name = self.rucio_convention(dataset)
+        self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=None)
+
     def setLifeTimeTransientDataset(self, dataset, days):
         scope, name = self.rucio_convention(dataset)
         lifetime = 60*24*60*days
@@ -425,3 +429,20 @@ class DDM(object):
             dataset_scope, dataset_name =self.rucio_convention(dataset)
             datasets_with_scopes.append({'scope': dataset_scope, 'name': dataset_name})
         self.__ddm.add_datasets_to_container(scope=scope, name=name, dsns=datasets_with_scopes)
+
+    def register_dataset(self, dsn, files=None, statuses=None, meta=None, lifetime=None):
+        """
+        :param dsn: the DID name
+        :param files: list of file names
+        :param statuses: dictionary with statuses, like {'monotonic':True}.
+        :param meta: meta-data associated with the data identifier is represented using key/value pairs in a dictionary.
+        :param lifetime: DID's lifetime (in seconds).
+        """
+        scope, name = self.rucio_convention(dsn)
+        file_dids = None
+        if files:
+            file_dids = list()
+            for file in files:
+                file_scope, file_name = self.rucio_convention(file)
+                file_dids.append({'scope': file_scope, 'name': file_name})
+        self.__ddm.add_dataset(scope, name, statuses=statuses, meta=meta, lifetime=lifetime, files=file_dids)
