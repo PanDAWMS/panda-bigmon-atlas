@@ -1068,7 +1068,7 @@ def create_request_for_pattern(parent_request_id, short_description, manager):
             new_request.provenance = 'GP'
             new_request.request_type = 'GROUP'
             new_request.energy_gev = parent_request.energy_gev
-            new_request.manager =  'atlas-dpd-production'
+            new_request.manager =  'atlas-phys-dpd-production'
             new_request.cstatus = 'waiting'
             new_request.save()
             request_status = RequestStatus(request=new_request,comment='Request created as child train WebUI',owner=manager,

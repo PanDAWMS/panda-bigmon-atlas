@@ -575,7 +575,7 @@ def create_request_from_train(request,train_id):
             form_data = {}
             form_data['request_type'] = 'GROUP'
             form_data['phys_group'] = 'PHYS'
-            form_data['manager'] = 'atlas-dpd-production'
+            form_data['manager'] = 'atlas-phys-dpd-production'
             form_data['energy_gev'] = train.pattern_request.energy_gev
             form_data['campaign'] = train.pattern_request.campaign
             form_data['project'] = train.pattern_request.project
