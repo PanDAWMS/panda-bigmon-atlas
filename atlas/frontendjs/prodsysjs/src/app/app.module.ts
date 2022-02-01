@@ -82,7 +82,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
             gpContainerInfo: GpContainerInfoResolver,
           }
         },
-      {path: 'request', component: ProductionRequestComponent},
+      {path: 'request/ids/:reqIDs', component: ProductionRequestComponent},
+  {path: 'request/:jira', component: ProductionRequestComponent},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
 

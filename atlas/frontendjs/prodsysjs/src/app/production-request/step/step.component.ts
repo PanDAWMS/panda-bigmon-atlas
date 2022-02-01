@@ -8,9 +8,14 @@ import {Step} from "../production-request-models";
 })
 export class StepComponent implements OnInit {
   @Input() step: Step;
+  @Input() colorSchema: {[index: number]: any};
+
+  panelOpenState: boolean;
 
   constructor() { }
   ngOnInit(): void {
+
   }
+
 
 }

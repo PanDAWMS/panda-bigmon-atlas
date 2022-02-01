@@ -1,20 +1,29 @@
 
 
   <div  style="{  border:1px solid red; min-width:80%;} ">
-    <mat-grid-list [cols]='stepsInOrder.length' rowHeight="2em">
-
-      <mat-grid-tile  (click)="openDialog();" [colspan]="stepsInOrder.length"  [rowspan]="1" >
-        {{slice.id}}-{{slice.dataset}}-{{slice.input_data}}
+    <mat-grid-list [cols]='stepsInOrder.length+1' rowHeight="2em">
+      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+        Input:
+      </mat-grid-tile>
+      <mat-grid-tile  (click)="openDialog();" [colspan]="stepsInOrder.length-1"  [rowspan]="1" style="cursor: pointer" >
+        {{slice.input_data}}
+      </mat-grid-tile>
+      <mat-grid-tile  (click)="openDialog();" [colspan]="1"  [rowspan]="1" style="cursor: pointer" >
+        input events: {{slice.input_events}}
+      </mat-grid-tile>
+      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+        Steps:
       </mat-grid-tile>
       <mat-grid-tile
         *ngFor="let step of stepsInOrder"
         [colspan]="1"
-        [rowspan]="1"
-
-      >
+        [rowspan]="1">
       <span *ngIf="step===undefined"></span>
-       <span *ngIf="step!==undefined" [style]="colorSchema[step.request_id]">{{step.ami_tag}}</span>
-
+        <div *ngIf="step!==undefined" [ngClass]="['stepStatus',step.status]"><div ><span >{{step.ami_tag}}</span><div [ngClass]="['campaign',colorSchema[step.request_id]['campaign']]"></div>
+          <div [ngClass]="['project',colorSchema[step.request_id]['project']]"></div></div></div>
+      </mat-grid-tile>
+      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+        Tasks:
       </mat-grid-tile>
       <mat-grid-tile
         *ngFor="let step of stepsInOrder"
@@ -22,42 +31,24 @@
         [rowspan]="1"
       >
         <span *ngIf="step===undefined"></span>
-        <span *ngIf="step!==undefined" >{{step.tasks.length}}</span>
+        <div *ngIf="step!==undefined" >
+          <div (click)="selectTask(step)" style="cursor: pointer">
+          <ng-container *ngFor="let task of step.tasksWithColor" ><span [style]="{color: task.color}">&#x25B6;</span><span [style]="{color: task.color}"><b>{{task.tasks}}</b></span>
+          </ng-container></div></div>
+
+      </mat-grid-tile>
+      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+        Events:
+      </mat-grid-tile>
+      <mat-grid-tile
+        *ngFor="let step of stepsInOrder"
+        [colspan]="1"
+        [rowspan]="1"
+      >
+        <span *ngIf="step===undefined"></span>
+        <span *ngIf="step!==undefined" >{{step.tasksEvents}}</span>
 
       </mat-grid-tile>
     </mat-grid-list>
     </div>
-<!--</div>-->
-<!--<form *ngIf="showFull">-->
-<!--  <p>-->
-<!--    <mat-form-field appearance="fill">-->
-<!--      <mat-label>Dataset</mat-label>-->
-<!--      <input matInput  [(ngModel)]="slice.dataset" [ngModelOptions]="{standalone: true}">-->
-<!--    </mat-form-field>-->
-<!--  </p>-->
-<!--  <p>-->
-<!--  <mat-form-field appearance="fill">-->
-<!--      <mat-label>Job Options</mat-label>-->
-<!--      <input matInput [(ngModel)]="slice.input_data" [ngModelOptions]="{standalone: true}">-->
-<!--    </mat-form-field>-->
-<!--    <mat-form-field appearance="fill">-->
-<!--      <mat-label>Input Events</mat-label>-->
-<!--      <input matInput [(ngModel)]="slice.input_events" [ngModelOptions]="{standalone: true}">-->
-<!--    </mat-form-field>-->
-<!--  </p>-->
-<!--  <p>-->
-<!--    <mat-form-field appearance="fill">-->
-<!--      <mat-label>Comment</mat-label>-->
-<!--      <input matInput  [(ngModel)]="slice.comment" [ngModelOptions]="{standalone: true}">-->
-<!--    </mat-form-field>-->
-<!--  </p>-->
 
-<!--</form>-->
-<!--<mat-tab-group *ngIf="showFull"  >-->
-<!--  <mat-tab  *ngFor="let step of slice.steps" >-->
-<!--    <ng-template mat-tab-label >-->
-<!--      <span style="color:red;background: yellow;border-top: #673ab7">{{step.ami_tag}}</span>-->
-<!--    </ng-template>-->
-<!--    <app-step  [step]="step"></app-step> </mat-tab>-->
-
-<!--</mat-tab-group>-->

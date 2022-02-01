@@ -1,9 +1,217 @@
 .example-item {
-  height: 60px;
+  height: 120px;
+}
+.example-sidenav-content {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
+.example-sidenav {
+  padding: 20px;
+}
 .example-viewport {
   height: 800px;
   width: 100%;
   border: 1px solid black;
+}
+input.inputChanged {
+  color: #673ab7;
+}
+input[type='number'] {
+
+}
+.campaign {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  position: absolute;
+  border-width: 0 14px 14px 0;
+  right: 0;
+  top: 0;
+}
+
+.campaign.MC16_MC16a {
+
+  border-color: transparent rgba(48,173,36,0.32) transparent transparent;
+
+}
+
+
+.campaign.MC16_MC16c {
+  border-color: transparent rgba(164,173,64,0.32) transparent transparent;
+}
+
+.campaign.MC16_MC16d {
+  border-color: transparent rgba(38,173,170,0.32) transparent transparent;
+}
+
+.campaign.MC16_MC16e {
+  border-color: transparent rgba(47,27,173,0.32) transparent transparent;
+}
+
+.campaign.MC20_MC20a {
+
+  border-color: transparent rgba(48,173,36,0.32) transparent transparent;
+
+}
+
+.campaign.MC20_MC20c {
+  border-color: transparent rgba(164,173,64,0.32) transparent transparent;
+}
+
+.campaign.MC20_MC20d {
+  border-color: transparent rgba(38,173,170,0.32) transparent transparent;
+}
+
+.campaign.MC20_MC20e {
+  border-color: transparent rgba(47,27,173,0.32) transparent transparent;
+}
+.project {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  position: absolute;
+  border-width: 14px 14px 0 0;
+  right: 0;
+  bottom: 0;
+}
+.project.mc15_13TeV {
+  border-color: transparent #426cc4 transparent transparent;
+
+}
+
+.project.mc16_13TeV {
+  border-color: transparent #2f9686 transparent transparent;
+
+}
+
+.project.mc15_valid {
+  border-color: transparent #426cc4 transparent transparent;
+
+}
+
+.project.mc16_valid {
+  border-color: transparent #2f9686 transparent transparent;
+
+}
+
+.project.mc20_13TeV {
+  border-color: transparent #7f2ab0 transparent transparent;
+
+}
+.project.mc20_valid {
+  border-color: transparent #7f2ab0 transparent transparent;
+
+}
+.stepStatus.Approved {
+  border-color: rgba(76,140,30,0.58);
+  border-style: solid;
+  border-width: 1px;
+}
+.taskStatus.executing {
+  color: LightGreen;
+}
+
+.taskStatus.done {
+  color: darkgreen;
+}
+
+.taskStatus.finished {
+  color: darkgreen;
+}
+
+.taskStatus.processed {
+  color: darkgreen;
+}
+
+.taskStatus.registered {
+  color: blue;
+}
+
+.taskStatus.waiting {
+  color: orange;
+}
+
+.taskStatus.cancelled {
+  color: red;
+}
+
+.taskStatus.hold {
+  color: rgba(255, 203, 25, 0.7);
+}
+
+
+.taskStatus.approved {
+  color: green;
+}
+
+.taskStatus.executing {
+  color: LightGreen;
+}
+
+.taskStatus.obsolete {
+  color: lightblue;
+}
+
+.taskStatus.holding {
+  color: black;
+}
+
+.taskStatus.pending {
+  color: blue;
+}
+
+.taskStatus.waiting {
+  color: blue;
+}
+
+.taskStatus.submitting {
+  color: blue;
+}
+
+.taskStatus.archived {
+  color: magenta;
+}
+
+.taskStatus.submitted {
+  color: green;
+}
+
+.taskStatus.running {
+  color: LightGreen;
+}
+
+.taskStatus.done {
+  color: darkgreen;
+}
+
+.taskStatus.finished {
+  color: darkgreen;
+}
+
+.taskStatus.failures {
+  color: orange;
+}
+
+.taskStatus.failed {
+  color: red;
+}
+
+.taskStatus.aborted {
+  color: red;
+}
+
+.taskStatus.exhausted {
+  color: orange;
+}
+
+
+.taskStatus.broken {
+  color: red;
+}
+
+.taskStatus.registered {
+  color: blue;
 }

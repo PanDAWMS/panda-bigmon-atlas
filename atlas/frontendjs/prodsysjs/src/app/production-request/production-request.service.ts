@@ -1,27 +1,55 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {Observable, of} from "rxjs";
-import {ProductionRequestSliceSteps, Slice, Step} from "./production-request-models";
-import {map} from "rxjs/operators";
+import {Observable, of, Subject} from "rxjs";
+import {ProductionRequests, ProductionRequestsJiraInfo, Slice, SliceBase, Step} from "./production-request-models";
+import {catchError, map, tap} from "rxjs/operators";
+import {ExtensionRequest} from "../derivation-exclusion/gp-deletion-container";
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductionRequestService {
 
-  private prSliceUrl = '/production_request/prepare_slice';
-  private prStepsUrl = '/production_request/steps_for_requests';
-
   constructor(
     private http: HttpClient){}
+
+  private prSliceUrl = '/production_request/prepare_slice';
+  private prStepsUrl = '/production_request/steps_for_requests';
+  private prSaveSliceUrl = '/production_request/save_slice/';
+  private prStepsJiraUrl = '/production_request/collect_steps_by_jira/';
+  private prInfoJiraUrl = '/production_request/info_by_jira/';
+  private sliceModificationSource = new Subject<Slice>();
+  private sliceSavedSource = new Subject<Slice>();
+  sliceChanged$ = this.sliceModificationSource.asObservable();
+  sliceSaved$ = this.sliceSavedSource.asObservable();
+
+  private static countTasks(step: Step): {[status: string]: number} {
+    const tasksByStatus = {};
+    for (const task of step.tasks){
+      if (task.status in tasksByStatus){
+        tasksByStatus[task.status] += 1;
+      } else {
+        tasksByStatus[task.status] = 1;
+      }
+    }
+    return tasksByStatus;
+  }
 
   getSlice(id: string): Observable<Slice> {
     return this.http.get<Slice>(this.prSliceUrl, {params: {slice_id: id }});
   }
-  getSteps(productionRequestsIDs: string): Observable<ProductionRequestSliceSteps> {
-    return this.http.get<ProductionRequestSliceSteps>(this.prStepsUrl, {params: {requests_list: productionRequestsIDs }})
+  getSteps(productionRequestsIDs: string): Observable<ProductionRequests> {
+    return this.http.get<ProductionRequests>(this.prStepsUrl, {params: {requests_list: productionRequestsIDs }})
       .pipe(map( allSteps => this.assembleSlices(allSteps)));
   }
+  getStepsJira(jiraID: string): Observable<ProductionRequests> {
+    return this.http.get<ProductionRequests>(this.prStepsJiraUrl, {params: {jira: jiraID }})
+      .pipe(map( allSteps => this.assembleSlices(allSteps)));
+  }
+  getInfoJira(jiraID: string): Observable<ProductionRequestsJiraInfo> {
+    return this.http.get<ProductionRequestsJiraInfo>(this.prInfoJiraUrl, {params: {jira: jiraID }});
+  }
+
   private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
 
@@ -40,7 +68,7 @@ export class ProductionRequestService {
     console.log(`ProductionRequestService: ${message}`);
   }
 
-  private assembleSlices(allSteps: ProductionRequestSliceSteps): ProductionRequestSliceSteps {
+  private assembleSlices(allSteps: ProductionRequests): ProductionRequests {
     const sliceMap = new Map<number, Slice>(allSteps.slices.map(x => [x.id, x] as [number, Slice]));
     const firstSliceParentStep = new Map<number, number>();
     const lastSliceStep =  new Map<number, number>();
@@ -50,6 +78,7 @@ export class ProductionRequestService {
     let currentSlice: Slice;
     let taleSlice: Slice;
     for (const step of allSteps.steps){
+
       if ((step.step_parent_id !== undefined) && (step.step_parent_id !== step.id)){
         if (lastSliceStep.has(step.step_parent_id)){
           currentSliceID = lastSliceStep.get(step.step_parent_id);
@@ -87,6 +116,7 @@ export class ProductionRequestService {
       }
       assembledSlices.set(currentSliceID, { ...currentSlice});
       processedSteps.set(step.id, currentSliceID);
+      step.tasksByStatus = ProductionRequestService.countTasks(step);
     }
     for (const [parentStep, sliceID] of firstSliceParentStep){
       if (processedSteps.has(parentStep)){
@@ -102,9 +132,38 @@ export class ProductionRequestService {
         assembledSlices.set(sliceID, { ...childSlice});
       }
     }
-
     allSteps.slices = Array.from(assembledSlices.values());
+    for (const slice of allSteps.slices){
+      const tasksByStatus = {};
+      for (const step of slice.steps){
+        if (step.tasksByStatus !== undefined){
+          for ( const [status, value] of Object.entries(step.tasksByStatus)){
+            if (status in tasksByStatus){
+              tasksByStatus[status] += value;
+            } else {
+              tasksByStatus[status] = value;
+            }
+          }
+        }
+        slice.tasksByStatus = tasksByStatus;
+      }
+    }
     allSteps.steps = [];
     return allSteps;
   }
+
+  modifySlice(slice: Slice): void{
+    this.sliceModificationSource.next(slice);
+  }
+
+  saveSlice(slice: Slice): Observable<Slice> {
+    return this.http.post<Slice>(this.prSaveSliceUrl, slice).pipe(
+      tap(savedSlice => {
+        this.log('Save slice');
+        this.sliceSavedSource.next(savedSlice);
+      }),
+      catchError(this.handleError<Slice>('askExtension'))
+    );
+  }
+
 }

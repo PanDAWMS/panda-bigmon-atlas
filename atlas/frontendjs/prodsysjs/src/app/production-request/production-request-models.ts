@@ -1,4 +1,4 @@
-export interface Slice{
+export interface SliceBase {
   id: number;
   dataset: string;
   slice: number;
@@ -12,16 +12,23 @@ export interface Slice{
   is_hide: boolean;
   request: any;
   cloned_from: any;
-  steps: Step[];
 }
 
-export interface ProductionRequestSliceSteps {
-  production_requests: ProductionRequest[];
+export interface Slice extends SliceBase{
   steps: Step[];
-  slices: Slice[];
+  tasksByStatus?: {[status: string]: number};
+  modifiedFields?: Partial<SliceBase>;
+}
+export interface ProductionRequestsJiraInfo {
+  reqIDs: number[];
+  requests_number: number;
+  description: string;
+  jira_reference: string;
+  manager: string;
+  phys_group: string;
 }
 
-export interface ProductionRequest{
+export interface ProductionRequestBase {
   reqid: number;
   manager: string;
   description: string;
@@ -37,15 +44,48 @@ export interface ProductionRequest{
   jira_reference: string;
   info_fields: string;
   is_fast: boolean;
-  project: any;
+  project_id: string;
 }
 
-export interface Step{
+export interface ProductionRequests {
+  production_requests: ProductionRequestBase[];
+  steps: Step[];
+  slices: Slice[];
+}
+
+
+
+
+export interface StepTaskConfig{
+  nEventsPerJob?: number;
+  nEventsPerMergeJob?: number;
+  nFilesPerMergeJob?: number;
+  nGBPerMergeJob?: number;
+  nMaxFilesPerMergeJob?: number;
+  nFilesPerJob?: number;
+  nGBPerJob?: number;
+  maxAttempt?: number;
+  nEventsPerInputFile?: number;
+  maxFailure?: number;
+  split_slice?: number;
+  input_format?: string;
+  token?: string;
+  merging_tag?: string;
+  project_mode?: string;
+  evntFilterEff?: string;
+  PDA?: string;
+  PDAParams?: string;
+  container_name?: string;
+  onlyTagsForFC?: string;
+  previous_task_list?: number[];
+}
+
+export interface StepBase{
   id: number;
   status: string;
   priority: number;
   input_events: number;
-  task_config: any;
+  task_config: StepTaskConfig;
   // project_mode: string;
   request_id: number;
   // step_template: any;
@@ -54,9 +94,20 @@ export interface Step{
   ami_tag: string;
   output_formats: string;
   step_name: string;
-  // step_actions: StepAction[]|null;
-  tasks: ProductionTask[]|null;
 }
+
+export interface Step extends StepBase{
+
+  // step_actions: StepAction[]|null;
+  tasks?: ProductionTask[];
+  tasksByStatus?: {[status: string]: number};
+  campaign?: string;
+  subcampaign?: string;
+  project_id?: string;
+  modifiedFields?: Partial<SliceBase>;
+
+}
+
 
 export interface StepAction{
   id: number;
@@ -84,8 +135,8 @@ export interface ProductionTask{
   // simulation_type: string;
   // phys_group: string;
   // provenance: string;
-  // status: string;
-  // total_events: number;
+  status: string;
+  total_events: number;
   // total_req_events: number;
   // total_req_jobs: number;
   // total_done_jobs: number;

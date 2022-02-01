@@ -16,5 +16,5 @@ def index(request, path=''):
                 'active_app': 'ng',
                 'pre_form_text': 'ng',
                 'title': 'ng',
-                'parent_template': 'prodtask/_index.html',
+                'parent_template': '_base_ng.html',
             })

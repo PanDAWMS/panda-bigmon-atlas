@@ -1,17 +1,111 @@
 <div class="single-step">
   <form>
-    <p>
-    <mat-form-field appearance="fill">
-      <mat-label>Ami tag</mat-label>
-      <input matInput  [(ngModel)]="step.ami_tag" [ngModelOptions]="{standalone: true}">
+    <mat-grid-list [cols]='6' rowHeight="4em">
+        <mat-grid-tile class='step-grid-field' [colspan]="2" >
+    <mat-form-field appearance="fill" class="step-modification-field">
+      <mat-label>Project/Campaign</mat-label>
+      <input matInput  [value]="colorSchema[step.request_id]['project']+ ':' + colorSchema[step.request_id]['campaign']"  disabled>
     </mat-form-field>
-      <mat-form-field appearance="fill">
-        <mat-label>Priority</mat-label>
-        <input matInput [(ngModel)]="step.priority" [ngModelOptions]="{standalone: true}">
-      </mat-form-field>
-    </p>
-    <app-project-mode [projectMode]="step.task_config.project_mode"></app-project-mode>
-  </form>
+        </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field'>
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Ami tag</mat-label>
+            <input matInput  [(ngModel)]="step.ami_tag" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field'>
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Events per input file</mat-label>
+            <input matInput  [(ngModel)]="step.task_config.nEventsPerInputFile" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field'>
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Events per job</mat-label>
+            <input matInput  [(ngModel)]="step.task_config.nEventsPerJob" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field'>
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Total events</mat-label>
+            <input matInput  [(ngModel)]="step.input_events" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field' [colspan]="2">
+        <mat-form-field appearance="fill" class="step-modification-field" >
+          <mat-label>Files per job</mat-label>
+          <input matInput  [(ngModel)]="step.task_config.nFilesPerJob" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+      </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field' [colspan]="2">
+        <mat-form-field appearance="fill" class="step-modification-field">
+          <mat-label>nGB per job</mat-label>
+          <input matInput  [(ngModel)]="step.task_config.nGBPerJob" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+      </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field'>
+        <mat-form-field appearance="fill" class="step-modification-field">
+          <mat-label>evntFilterEff</mat-label>
+          <input matInput  [(ngModel)]="step.task_config.evntFilterEff" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+      </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field'>
+        <mat-form-field appearance="fill" class="step-modification-field">
+          <mat-label>Max failure attempt</mat-label>
+          <input matInput  [(ngModel)]="step.task_config.maxFailure" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+      </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field'  [colspan]="3">
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Output formats</mat-label>
+            <input matInput  [(ngModel)]="step.output_formats" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+        <mat-grid-tile class='step-grid-field' [colspan]="3">
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Input format</mat-label>
+            <input matInput  [(ngModel)]="step.task_config.input_format" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
 
+      <mat-grid-tile class='step-grid-field' [colspan]="5" [rowspan]="2">
+        <app-project-mode class="step-modification-field" [projectMode]="step.task_config.project_mode"></app-project-mode>
+
+      </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field'>
+          <mat-form-field appearance="fill" class="step-modification-field">
+          <mat-label>Priority</mat-label>
+          <input matInput [(ngModel)]="step.priority" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+      </mat-grid-tile>
+      <mat-grid-tile class='step-grid-field'>
+
+      </mat-grid-tile>
+    </mat-grid-list>
+    <mat-expansion-panel (opened)="panelOpenState = true"
+                         (closed)="panelOpenState = false">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          {{panelOpenState ? 'Close' : 'Other arguments' }}
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-grid-list [cols]='6' rowHeight="4em">
+        <mat-grid-tile class='step-grid-field' [colspan]="5">
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Destination</mat-label>
+            <input matInput [(ngModel)]="step.task_config.token" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+      </mat-grid-list>
+      <mat-grid-list [cols]='6' rowHeight="4em">
+        <mat-grid-tile class='step-grid-field' [colspan]="5">
+          <mat-form-field appearance="fill" class="step-modification-field">
+            <mat-label>Previous tasks</mat-label>
+            <input matInput disabled [(ngModel)]="step.task_config.previous_task_list" [ngModelOptions]="{standalone: true}">
+          </mat-form-field>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+  </form>
 
 </div>

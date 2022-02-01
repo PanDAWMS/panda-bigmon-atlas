@@ -1,38 +1,53 @@
 <h1 mat-dialog-title>Slice details</h1>
 <div mat-dialog-content>
-  <form >
-    <p>
-      <mat-form-field appearance="fill">
-        <mat-label>Dataset</mat-label>
-        <input matInput  [(ngModel)]="slice.dataset" [ngModelOptions]="{standalone: true}">
-      </mat-form-field>
-    </p>
-    <p>
-      <mat-form-field appearance="fill">
-        <mat-label>Job Options</mat-label>
-        <input matInput [(ngModel)]="slice.input_data" [ngModelOptions]="{standalone: true}">
-      </mat-form-field>
-      <mat-form-field appearance="fill">
-        <mat-label>Input Events</mat-label>
-        <input matInput [(ngModel)]="slice.input_events" [ngModelOptions]="{standalone: true}">
-      </mat-form-field>
-    </p>
-    <p>
-      <mat-form-field appearance="fill">
-        <mat-label>Comment</mat-label>
-        <input matInput  [(ngModel)]="slice.comment" [ngModelOptions]="{standalone: true}">
-      </mat-form-field>
-    </p>
+  <mat-expansion-panel (opened)="panelOpenState = true"
+                       (closed)="panelOpenState = false">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        {{panelOpenState ? 'Close' : slice.input_data }}
+      </mat-panel-title>
+      <mat-panel-description>
+      {{panelOpenState ? '' : 'events: ' + slice.input_events}}
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <form  [formGroup]="sliceForm" >
 
-  </form>
-  <mat-tab-group   >
-    <mat-tab  *ngFor="let step of slice.steps" >
-      <ng-template mat-tab-label >
-        <span style="color:red;background: yellow;border-top: #673ab7">{{step.ami_tag}}</span>
+      <mat-form-field appearance="fill" [style]="{ width: '100%'}">
+        <mat-label>Dataset</mat-label>
+        <input matInput [ngClass]="fieldChanged('dataset')"  formControlName="dataset">
+      </mat-form-field>
+
+
+      <mat-form-field appearance="fill" [style]="{ width: '80%'}">
+        <mat-label>Job Options</mat-label >
+        <input matInput [ngClass]="fieldChanged('input_data')" formControlName="input_data">
+      </mat-form-field>
+      <mat-form-field appearance="fill" [style]="{ width: '20%'}">
+        <mat-label >Input Events</mat-label>
+        <input matInput type="number" [ngClass]="fieldChanged('input_events')" formControlName="input_events">
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" [style]="{ width: '100%'}">
+        <mat-label>Comment</mat-label>
+        <input matInput [ngClass]="fieldChanged('comment')" formControlName="comment">
+      </mat-form-field>
+
+
+    </form>
+  </mat-expansion-panel>
+  <mat-tab-group    >
+    <mat-tab  *ngFor="let step of data.slice.steps" >
+      <ng-template mat-tab-label>
+        <span >{{step.ami_tag}}</span>
+        <div [ngClass]="['campaign',data.colorSchema[step.request_id]['campaign']]"></div>
+        <div [ngClass]="['project',data.colorSchema[step.request_id]['project']]"></div>
       </ng-template>
-      <app-step  [step]="step"></app-step> </mat-tab>
+      <app-step  [step]="step" [colorSchema]="data.colorSchema"></app-step>
+    </mat-tab>
 
   </mat-tab-group>
+  <button (click)="saveSlice()" disabled>Save</button>
+
 </div>
 
 

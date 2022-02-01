@@ -1,33 +1,72 @@
-<span>Total: {{filteredSlices.length}}</span><p></p>
-<button (click)="sortSlicesByDataset()">Sort by dataset</button>
-<button (click)="sortSlicesByID()">Sort by ID</button>
-<button (click)="filterSlices()">Filter</button>
-<button (click)="unFilterSlice()">Drop filter</button>
+<mat-drawer-container  autosize>
+  <mat-drawer #tasksDrawer class="example-sidenav" [mode]="'over'">
+      <p>Slice: {{selectedTasksSlice.input_data}}</p>
+       <p>Step: {{selectedTasksStep.ami_tag}} - {{selectedTasksStep.step_name}}</p>
+      <div *ngFor="let task of selectedTasksStep.tasks" >
+        <table>
+          <tr><th>task ID</th><th>Status</th><th>Events</th></tr>
+          <tr><td><a href="https://bigpanda.cern.ch/task/{{task.id}}">{{task.id}}</a></td>
+            <td><span [ngClass]="['taskStatus',task.status]">{{task.status}}</span></td>
+            <td>{{task.total_events}}</td>
+          </tr>
+        </table>
+      </div>
+  </mat-drawer>
+<table>
+  <tr>
+    <th>Description:</th>
+    <th>Reference:</th>
+    <th>Manager:</th>
+    <th>Physics group:</th>
+  </tr>
+  <tr>
+    <td>{{pageInfo.description}} </td>
+    <td><a [href]="pageInfo.jira_reference"> {{jira}}</a> </td>
+    <td>{{pageInfo.manager}} </td>
+    <td>{{pageInfo.phys_group}} </td>
+  </tr>
+</table>
 
-<span  *ngFor="let step_name of stepsOrder">-{{step_name}}-</span>
-<!--<div  *ngFor="let slice of filteredSlices;  trackBy: sliceTrackBy" >-->
+<span>Total slices: {{filteredSlices.length}} Filtered: {{filteredSelectedSlices.length}}</span><p></p>
+<app-task-stats [taskStatusFiltered]="totalFilteredTasks" [taskStatus]="originalTaskStatus"  [formControl]="taskStatusControl" ></app-task-stats>
+<!--<mat-form-field appearance="fill">-->
+<!--  <mat-label>Steps</mat-label>-->
+<!--  <mat-select [formControl]="stepFilterFormControl" multiple>-->
+<!--    <mat-option *ngFor="let step_name of stepsOrder" [value]="step_name"  >{{step_name}}</mat-option>-->
+<!--  </mat-select>-->
+<!--</mat-form-field>-->
+<!--<button (click)="sortSlicesByDataset()">Sort by dataset</button>-->
+<!--<button (click)="sortSlicesByID()">Sort by ID</button>-->
+<!--<button (click)="unFilterSlice()">Drop filter</button>-->
+<p>
 
-<!--  <table>-->
-<!--    <tr>-->
-<!--      <td><input type="checkbox"/></td>-->
-<!--      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice></td>-->
-<!--    </tr>-->
-<!--  </table>-->
-<!--</div>-->
+    <label>Filter</label>
+    <input id="mainFilter" type="text" [formControl]="mainFilter">
+  <table><tr>
+  <td>
+  <app-chips-multi-select [options]="campaigns" [optionStyle]="'campaign'" [formControl]="chipsCampaignsControl" >
+  </app-chips-multi-select></td>
+  <td><app-chips-multi-select [options]="projects" [optionStyle]="'project'" [formControl]="chipsProjectsControl" >
+  </app-chips-multi-select></td>
+</tr></table>
+<mat-checkbox [checked]="filteredSlices.length===filteredSelectedSlices.length"
+              [indeterminate]="(filteredSlices.length!==filteredSelectedSlices.length)&&(filteredSelectedSlices.length>0)"
+              (change)="$event ? masterCheckboxToggle() : null"
+                (click)=" masterCheckboxToggle()"></mat-checkbox>
+<div [style]="'display: flex;justify-content: center;'">
+<span  *ngFor="let step_name of stepsOrder" [style]="{'border-style': 'solid','border-width': '1px'}">{{step_name}}</span></div>
 
-<!--<div  *ngFor="let slice of filteredSlices; trackBy: sliceTrackBy" >-->
-<!--  <app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice>-->
-<!--</div>-->
 
 <cdk-virtual-scroll-viewport itemSize="50" class="example-viewport">
 <div  *cdkVirtualFor="let slice of filteredSlices;templateCacheSize: 0 " class="example-item">
 
   <table>
     <tr>
-      <td><input type="checkbox"/></td>
-      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" [steps]="slice.steps" ></app-slice></td>
+      <td><input type="checkbox" [checked]="selectedSlices.isSelected(slice)" (click)= "toggleSliceChange($event, slice); $event.stopPropagation()"  /></td>
+      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" (tasksSelected)="tasksDrawer.toggle();onTaskSelected($event, slice)" ></app-slice></td>
     </tr>
   </table>
 </div>
 
 </cdk-virtual-scroll-viewport>
+</mat-drawer-container>
