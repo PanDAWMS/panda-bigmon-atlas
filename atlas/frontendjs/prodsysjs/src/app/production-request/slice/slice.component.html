@@ -14,14 +14,24 @@
       <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
         Steps:
       </mat-grid-tile>
-      <mat-grid-tile
-        *ngFor="let step of stepsInOrder"
-        [colspan]="1"
-        [rowspan]="1">
-      <span *ngIf="step===undefined"></span>
-        <div *ngIf="step!==undefined" [ngClass]="['stepStatus',step.status]"><div ><span >{{step.ami_tag}}</span><div [ngClass]="['campaign',colorSchema[step.request_id]['campaign']]"></div>
-          <div [ngClass]="['project',colorSchema[step.request_id]['project']]"></div></div></div>
-      </mat-grid-tile>
+      <div *ngFor="let step of stepsInOrder">
+        <mat-grid-tile
+
+          [colspan]="1"
+          [rowspan]="1" *ngIf="step===undefined">
+          <span ></span>
+        </mat-grid-tile>
+        <mat-grid-tile
+
+          [colspan]="1"
+          [rowspan]="1" *ngIf="step!==undefined" [ngClass]="['stepStatus',step.status]" style="background-color: #FFB734">
+
+         <span >{{step.ami_tag}}</span><div [ngClass]="['campaign',colorSchema[step.request_id]['campaign']]"></div>
+            <div [ngClass]="['project',colorSchema[step.request_id]['project']]"></div>
+        </mat-grid-tile>
+      </div>
+
+
       <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
         Tasks:
       </mat-grid-tile>

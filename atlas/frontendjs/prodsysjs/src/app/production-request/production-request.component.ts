@@ -130,10 +130,11 @@ export class ProductionRequestComponent implements OnInit, AfterViewInit {
           this.setFilterSortFragment('projects', newValues.toString());
           this.filterSlices();
         });
-        // this.taskStatusControl.valueChanges.subscribe( newValues => {
-        //   this.setFilterSortFragment('tasks', newValues.toString());
-        //   this.filterSlices();
-        // });
+        this.taskStatusControl.valueChanges.subscribe( newValues => {
+          // this.setFilterSortFragment('tasks', newValues.toString());
+          //console.log(newValues);
+          this.filterSlices();
+        });
         this.stepFilterFormControl.valueChanges.subscribe( newValues => {
           this.setFilterSortFragment('steps', newValues.toString());
           this.filterSlices();
