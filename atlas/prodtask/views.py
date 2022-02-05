@@ -2076,10 +2076,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
                         pre_definition_actions_db = []
-                        try:
-                            pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing','failed']).values())
-                        except:
-                            pass
+                        # try:
+                        #     pre_definition_actions_db = list(WaitingStep.objects.filter(request=rid, status__in=['active','executing','failed']).values())
+                        # except:
+                        #     pass
                         pre_definition_new_actions_db = []
                         try:
                             pre_definition_new_actions_db = list(StepAction.objects.filter(request=rid, status__in=['active','executing','failed','paused'], action=6))
