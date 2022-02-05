@@ -2455,13 +2455,17 @@ def request_table_view(request, rid=None, show_hidden=False):
             except:
                 pass
             project_list = [str(x) for x in list(TProject.objects.all())]
-            cache_key = 'celery_request_action'+str(rid)
-            async_task = cache.get(cache_key,None)
-            if async_task and (type(async_task) is dict):
-                celery_task = AsyncResult(async_task.get('id'))
-                if celery_task.status in ['FAILURE','SUCCESS']:
-                    cache.delete(cache_key)
-                    async_task = None
+            async_task = None
+            try:
+                cache_key = 'celery_request_action'+str(rid)
+                async_task = cache.get(cache_key,None)
+                if async_task and (type(async_task) is dict):
+                    celery_task = AsyncResult(async_task.get('id'))
+                    if celery_task.status in ['FAILURE','SUCCESS']:
+                        cache.delete(cache_key)
+                        async_task = None
+            except:
+                pass
             return   render(request, 'prodtask/_reqdatatable.html', {
                'active_app' : 'prodtask',
                'parent_template' : 'prodtask/_index.html',
