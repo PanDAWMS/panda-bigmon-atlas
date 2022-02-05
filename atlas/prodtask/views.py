@@ -28,7 +28,7 @@ from django.core.cache import cache
 from celery.result import AsyncResult
 
 from atlas.prodtask.mcevgen import sync_request_jos
-from atlas.prodtask.models import HashTagToRequest, HashTag, WaitingStep, StepAction, ActionStaging, \
+from atlas.prodtask.models import HashTagToRequest, HashTag,  StepAction, ActionStaging, \
     ActionDefault, SliceError
 from atlas.prodtask.spdstodb import fill_template
 
@@ -78,19 +78,20 @@ def create_predefinition_action(step):
         elif action in [11]:
             pass
         else:
-            step.status = 'Waiting'
-            step.save()
-            if not WaitingStep.objects.filter(step=int(step.id), action=action,
-                                              status__in=['active', 'executing']).exists():
-                waiting_step = WaitingStep()
-                waiting_step.step = step.id
-                waiting_step.request = step.request
-                waiting_step.create_time = timezone.now()
-                waiting_step.execution_time = timezone.now()
-                waiting_step.attempt = 0
-                waiting_step.action = action
-                waiting_step.status = 'active'
-                waiting_step.save()
+            pass
+            # step.status = 'Waiting'
+            # step.save()
+            # if not WaitingStep.objects.filter(step=int(step.id), action=action,
+            #                                   status__in=['active', 'executing']).exists():
+            #     waiting_step = WaitingStep()
+            #     waiting_step.step = step.id
+            #     waiting_step.request = step.request
+            #     waiting_step.create_time = timezone.now()
+            #     waiting_step.execution_time = timezone.now()
+            #     waiting_step.attempt = 0
+            #     waiting_step.action = action
+            #     waiting_step.status = 'active'
+            #     waiting_step.save()
 
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     if request.method == 'GET':
@@ -3342,7 +3343,7 @@ def fill_request_events(request_from, request_to):
 
 
 def pre_stage_approve(request):
-    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
+    waiting_steps = [] #ngStep.objects.filter(status__in=['executing','active'],action=4)
     result = []
     for waiting_step in waiting_steps:
         step = StepExecution.objects.get(id=waiting_step.step)
@@ -3363,7 +3364,7 @@ def pre_stage_approve(request):
 
 
 def pre_stage_approved(request):
-    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
+    waiting_steps = [] # WaitingStep.objects.filter(status__in=['executing','active'],action=4)
     result = []
     for waiting_step in waiting_steps:
         step = StepExecution.objects.get(id=waiting_step.step)
@@ -3383,7 +3384,7 @@ def pre_stage_approved(request):
     })
 
 def do_prestage_rule():
-    waiting_steps = WaitingStep.objects.filter(status__in=['executing','active'],action=4)
+    waiting_steps = [] #WaitingStep.objects.filter(status__in=['executing','active'],action=4)
     for waiting_step in waiting_steps:
         step = StepExecution.objects.get(id=waiting_step.step)
         production_request = step.request
