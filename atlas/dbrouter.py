@@ -21,7 +21,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'django_celery_beat':
             return 'dev_db'
         if model._meta.app_label == 'django_cache':
-            return 'dev_db'
+            return 'deft'
 
         return None
 
@@ -45,7 +45,7 @@ class ProdMonDBRouter(object):
         if model._meta.app_label == 'django_celery_beat':
             return 'dev_db_wr'
         if model._meta.app_label == 'django_cache':
-            return 'dev_db_wr'
+            return 'deft'
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
