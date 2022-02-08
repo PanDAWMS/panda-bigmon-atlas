@@ -1139,6 +1139,10 @@ class DatasetStaging(models.Model):
 
     ACTIVE_STATUS = ['queued','staging']
 
+    class STATUS():
+        QUEUED = 'queued'
+        STAGING = 'staging'
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DATASET_STAGING_ID', primary_key=True)
     dataset = models.CharField(max_length=255, db_column='DATASET', null=True)
     start_time = models.DateTimeField(db_column='START_TIME')
@@ -1248,13 +1252,12 @@ class GroupProductionDeletionRequest(models.Model):
         if not self.timestamp:
             self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GPDR_SEQ',"T_GP_DELETION_REQUEST",'GPDR_ID')
+            self.id = prefetch_id('deft','T_GPDR_SEQ',"T_GP_DELETION_REQUEST",'GPDR_ID')
         super(GroupProductionDeletionRequest, self).save(*args, **kwargs)
 
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_DELETION_REQUEST"'
 
 
@@ -1314,14 +1317,13 @@ class GroupProductionAMITag(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_AMI_TAG"'
 
 
 class GroupProductionStats(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_STATS_ID', primary_key=True)
-    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG', primary_key=True)
+    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
     output_format = models.CharField(max_length=20, db_column='OUTPUT_FORMAT', null=False)
     real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
     size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
@@ -1334,12 +1336,11 @@ class GroupProductionStats(models.Model):
         if not self.timestamp:
             self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GP_STATS_SEQ',"T_GP_STATS",'GP_STATS_ID')
+            self.id = prefetch_id('deft','T_GP_STATS_SEQ',"T_GP_STATS",'GP_STATS_ID')
         super(GroupProductionStats, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_STATS"'
 
 
@@ -1377,12 +1378,11 @@ class GroupProductionDeletion(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GP_DELETION_SEQ',"T_GP_DELETION",'GP_DELETION_ID')
+            self.id = prefetch_id('deft','T_GP_DELETION_SEQ',"T_GP_DELETION",'GP_DELETION_ID')
         super(GroupProductionDeletion, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_DELETION"'
 
 
@@ -1396,12 +1396,11 @@ class GroupProductionDeletionExtension(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GP_DELETION_EXT_SEQ',"T_GP_DELETION_EXT",'GP_DELETION_EXT_ID')
+            self.id = prefetch_id('deft','T_GP_DELETION_EXT_SEQ',"T_GP_DELETION_EXT",'GP_DELETION_EXT_ID')
         super(GroupProductionDeletionExtension, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_DELETION_EXT"'
 
 
@@ -1439,12 +1438,11 @@ class GroupProductionDeletionProcessing(models.Model):
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
         if not self.id:
-            self.id = prefetch_id('dev_db','T_GP_DEL_P_SEQ',"T_GP_DELETION_PROC",'GP_D_P_ID')
+            self.id = prefetch_id('deft','T_GP_DEL_P_SEQ',"T_GP_DELETION_PROC",'GP_D_P_ID')
         super(GroupProductionDeletionProcessing, self).save(*args, **kwargs)
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_GP_DELETION_PROC"'
 
 
