@@ -36,6 +36,8 @@ class CRICClient(object):
     def get_storageunit(self):
         return self._get_command('core/storageunit')
 
+    def get_pandaresource(self):
+        return self._get_command('atlas/pandaresource')
 
     def get_ddmendpoint(self):
         return self._get_command('atlas/ddmendpoint')
