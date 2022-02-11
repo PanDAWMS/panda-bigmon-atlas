@@ -76,6 +76,15 @@ class AMIClient(object):
         self.raise_for_errors(content)
         return self._get_rows(content, rowset_type)
 
+    def _get_command(self, command):
+        url = self._get_url(command).replace('json','help/json')
+        #url='https://ami.in2p3.fr/AMI/api/'
+        response = requests.get(url, headers=self._headers)
+        if response.status_code != requests.codes.ok:
+            response.raise_for_status()
+        content = json.loads(response.content)
+        return content
+
     def get_current_user(self):
         result = self._post_command('GetUserInfo')
         return str(result[0]['AMIUser'])
