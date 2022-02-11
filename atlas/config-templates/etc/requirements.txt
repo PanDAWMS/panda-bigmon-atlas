@@ -14,7 +14,7 @@ xlrd==1.2.0
 stomp.py==6.0.0
 daemonize==2.5.0
 dataclasses==0.7
-celery==4.4.2
+celery==5.2.2
 django-celery-beat==2.0.0
 django-celery-results==1.2.1
 python-json-logger==2.0.1
