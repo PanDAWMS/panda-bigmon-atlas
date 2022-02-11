@@ -3,8 +3,11 @@ import logging
 import httplib2
 import os
 
-from apiclient import discovery
-from oauth2client.service_account import ServiceAccountCredentials
+# from apiclient import discovery
+# from oauth2client.service_account import ServiceAccountCredentials
+
+from googleapiclient import discovery
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 PATH_TO_SERVER_CREDENTIALS = '/data/client_server_criedent.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -22,7 +25,7 @@ def make_task_link(task_id):
 
 class GSP(object):
     def get_credentials(self):
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('/data/client_server_criedent.json', SCOPES)
+        credentials = InstalledAppFlow.from_client_config('/data/client_server_criedent.json', SCOPES)
         return credentials
 
 
