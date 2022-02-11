@@ -3,7 +3,7 @@ from os.path import dirname, join
 
 import atlas
 import atlas.common
-from .local import MY_SECRET_KEY, dbaccess
+from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT
 
 ALLOWED_HOSTS = [
     ### cern.ch
@@ -24,10 +24,13 @@ defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
 
 DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
-STATICFILES_DIRS = [
 
-     join(dirname(atlas.common.__file__), 'static'),
+STATICFILES_DIRS = [
+        join(dirname(atlas.common.__file__), 'static'),
 ]
+
+if DEVELOPMENT:
+    STATICFILES_DIRS.append(join(dirname(atlas.__file__), 'frontendjs','prodsysjs','dist','prodsysjs'))
 
 TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),
@@ -58,7 +61,6 @@ URL_PATH_PREFIX = ''
 MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
 STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 
-DEBUG=False
 ## init logger
 ## A sample logging configuration. The only tangible logging
 ## performed by this configuration is to send an email to
@@ -68,24 +70,18 @@ DEBUG=False
 from .logconfig import LOGGING
 
 
-# MIDDLEWARE_CLASSES = (
-#     'django.contrib.sessions.middleware.SessionMiddleware',
-#     'django.middleware.common.CommonMiddleware',
-#     'django.middleware.csrf.CsrfViewMiddleware',
-#     'django.contrib.auth.middleware.AuthenticationMiddleware',
-#     'atlas.auth.shibsso.middleware.ShibSSOMiddleware',
-#     'django.contrib.messages.middleware.MessageMiddleware',
-# )
+
+if DEVELOPMENT:
+    DEBUG=True
+    AUTHENTICATION_BACKENDS = (
+       'atlas.auth.fake.backends.LoginAsBackend',
+    )
+else:
+    AUTHENTICATION_BACKENDS = (
+        'atlas.auth.shibsso.backends.ShibSSOBackend'
+    )
 
 
-AUTHENTICATION_BACKENDS = (
-#   'atlas.auth.fake.backends.LoginAsBackend',
-#    'atlas.auth.voms.backends.VomsBackend',
-    'atlas.auth.shibsso.backends.ShibSSOBackend',
-)
-
-
-# Settings for authentication variables
 
 SHIB_SSO_ADMIN = True
 SHIB_SSO_CREATE_ACTIVE = True

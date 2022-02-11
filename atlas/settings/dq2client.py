@@ -1,3 +1,3 @@
-
-PROXY_CERT = "/tmp/x509_prodsys_mon"
+from .local import CERTIFICATE_PATH
+PROXY_CERT = CERTIFICATE_PATH
 RUCIO_ACCOUNT = "prodsys"
