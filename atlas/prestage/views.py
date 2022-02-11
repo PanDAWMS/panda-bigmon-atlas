@@ -3,6 +3,8 @@ import random
 import time
 from copy import deepcopy
 
+from dataclasses import dataclass, field
+from typing import List
 from django.db.models import Q
 
 from atlas.cric.client import CRICClient
@@ -298,6 +300,7 @@ class TapeResource(ResourceQueue):
                                     self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
                                                             activity='Staging', notify='P')
                                 else:
+                                    source_replica = fill_source_replica_template(self.ddm, x['dataset'], source_replica, self.resource_name)
                                     _logger.info("Submit rule for {resource}: {dataset} {rule} {source}".format(resource=self.resource_name,
                                                                                                        dataset=x['dataset'],
                                                                                                        rule=rule, source=source_replica))
@@ -394,6 +397,17 @@ def send_use_archive_task(task):
     _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
 
 
+def fill_source_replica_template(ddm, dataset, source_replica_template, physical_tape):
+    if source_replica_template and ('{source_tape}' in source_replica_template):
+        dataset_tape_replicas = ddm.full_replicas_per_type(dataset)
+        for tape in dataset_tape_replicas['tape']:
+            if convert_input_to_physical_tape(tape['rse']) == physical_tape:
+                return source_replica_template.replace('{source_tape}', tape['rse'])
+        raise Exception('Source is not found')
+    else:
+        return source_replica_template
+
+
 def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
     try:
         _logger.info('%s should be pre staged rule %s  '%(input_dataset,rule))
@@ -451,7 +465,8 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
         dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
     if dataset_staging.status == 'queued' and waiting_parameters_from_step and waiting_parameters_from_step.get('nowait', False):
-        perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas)
+        source_replica = fill_source_replica_template(ddm, input_dataset, replicas, dataset_staging.source)
+        perfom_dataset_stage(input_dataset, ddm, rule, lifetime, source_replica)
         dataset_staging.status = 'staging'
         dataset_staging.start_time = timezone.now()
         dataset_staging.save()
@@ -502,7 +517,8 @@ def submit_queued_rule(action_step_id):
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
         if dataset_stage.status == 'queued':
-            perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), action_step.get_config('source_replica'))
+            source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
+            perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), source_replica)
             dataset_stage.status = 'staging'
             dataset_stage.start_time = timezone.now()
             dataset_stage.save()
@@ -883,9 +899,9 @@ def do_staging(action_step_id, ddm):
                                 _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
                 else:
                     action_finished = False
+                    source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
                     if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
-                                            action_step.get_config('lifetime'),
-                                            action_step.get_config('source_replica')):
+                                                action_step.get_config('lifetime'), source_replica):
                         dataset_stage.start_time = current_time
 
             if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or \
@@ -1115,7 +1131,8 @@ def follow_staged(waiting_step, ddm):
                         _logger.error("Check follow staged problem %s %s" % (str(e), str(waiting_step)))
             else:
                 _logger.error("Check follow staged problem rule for %s was deleted step %s new rule will be created" % (dataset_stage.dataset, str(waiting_step)))
-                perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), action_step.get_config('source_replica'))
+                source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
+                perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), source_replica)
 
     if action_finished :
         action_step.status = 'done'
@@ -1807,34 +1824,38 @@ def derivation_requests(request):
         return Response({'error': str(e)}, status=400)
     return Response(result)
 
-def change_replica_by_task(task_id, replica=None):
+
+
+def change_replica_by_task(ddm, task_id, replica=None):
     if ActionStaging.objects.filter(task=task_id).exists():
         action_stage = ActionStaging.objects.filter(task=task_id).last()
         action_step = action_stage.step_action
         dataset_stage = action_stage.dataset_stage
         if dataset_stage.status != 'queued':
             return False
-        ddm = DDM()
-        replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
-        if replica is not None and replica not in [x['rse'] for x in replicas['tape']]:
-            return False
 
-        else:
-            for new_replica in replicas['tape']:
-              physical_replica = convert_input_to_physical_tape(new_replica['rse'])
-              if physical_replica != dataset_stage.source:
-                replica = new_replica['rse']
-                break
-            if replica is None:
-                return  False
+        if not replica or convert_input_to_physical_tape(replica) != dataset_stage.source:
+            replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
+            if replica is not None:
+                if replica not in [x['rse'] for x in replicas['tape']]:
+                    return False
+            else:
+                for new_replica in replicas['tape']:
+                  physical_replica = convert_input_to_physical_tape(new_replica['rse'])
+                  if physical_replica != dataset_stage.source:
+                    replica = new_replica['rse']
+                    break
+                if replica is None:
+                    return  False
+            physical_tape = convert_input_to_physical_tape(replica)
+            dataset_stage.source = physical_tape
+            dataset_stage.save()
         rule, source_replicas, source = ddm.get_replica_pre_stage_rule_by_rse(replica)
         print(rule, source_replicas, source)
         action_step.set_config({'rule': rule})
         action_step.set_config({'tape': convert_input_to_physical_tape(source)})
         action_step.set_config({'source_replica': source_replicas})
         action_step.save()
-        dataset_stage.source = convert_input_to_physical_tape(source)
-        dataset_stage.save()
     else:
         return False
 
@@ -1892,7 +1913,8 @@ def find_failed_files(task_id, dataset_name):
     if ':' not in dataset_name:
         dataset_name = dataset_name.split('.')[0]+':'+dataset_name
     dataset_id = JediDatasets.objects.get(id=task_id, datasetname=dataset_name).datasetid
-    failed_files = list(JediDatasetContents.objects.filter(datasetid=dataset_id, jeditaskid=task_id, procstatus='failed').values_list('lfn',flat=True))
+    failed_files = list(JediDatasetContents.objects.filter(datasetid=dataset_id, jeditaskid=task_id,
+                                                           procstatus__in=['failed','ready','running']).values_list('lfn',flat=True))
     return list(set(failed_files))
 
 
@@ -1938,4 +1960,63 @@ def keep_failed_files(task_id):
                     dataset_stage.rse = replicas[0]['id']
                     dataset_stage.save()
                 ddm.delete_replication_rule(old_rule)
+
+
+@dataclass
+class StagingRequestWithTasks:
+    dataset: DatasetStaging
+    tasks: List[int] = field(default_factory=list)
+
+
+def find_stale_stages(days=10):
+
+    queued_replicas = DatasetStaging.objects.filter(dataset__startswith='data',status=DatasetStaging.STATUS.QUEUED,
+                                                    start_time__lte=timezone.now()-timedelta(days=days))
+    stage_requests = []
+    for dataset_staging in queued_replicas:
+        stage_request = StagingRequestWithTasks(dataset_staging)
+        for action in ActionStaging.objects.filter(dataset_stage=dataset_staging):
+            task = ProductionTask.objects.get(id=action.task)
+            if task.status not in ProductionTask.NOT_RUNNING:
+                stage_request.tasks.append(action.task)
+        if stage_request.tasks:
+            stage_requests.append(stage_request)
+    stage_requests.sort(key=lambda x: x.dataset.start_time)
+    ddm = DDM()
+    task_to_resubmit_by_tape = {}
+    for stage_request in stage_requests:
+        replicas = ddm.full_replicas_per_type(stage_request.dataset.dataset)
+        if len(replicas['tape']) > 1:
+            use_cern = False
+            new_tape = ''
+            if ('CERN' not in stage_request.dataset.source) and ('CERN' in ''.join([x['rse'] for x in replicas['tape']])):
+                use_cern = True
+            for tape_replica in replicas['tape']:
+                if use_cern:
+                    if 'CERN' in tape_replica['rse']:
+                        new_tape = tape_replica['rse']
+                elif convert_input_to_physical_tape(tape_replica['rse']) != stage_request.dataset.source:
+                    new_tape = tape_replica['rse']
+            task_to_resubmit_by_tape[new_tape] = task_to_resubmit_by_tape.get(new_tape,[]) + [stage_request]
+    for tape_queue, stage_requests in task_to_resubmit_by_tape.items():
+        physical_tape = convert_input_to_physical_tape(tape_queue)
+        if not DatasetStaging.objects.filter(status=DatasetStaging.STATUS.QUEUED, source=physical_tape).exists():
+            queue_config = ActionDefault.objects.get(type='PHYSICAL_TAPE', name=physical_tape)
+            maximum_level = queue_config.get_config('maximum_level')
+            tasks = []
+            level = 0
+            for stage_request in stage_requests:
+                tasks += stage_request.tasks
+                level += stage_request.dataset.total_files
+                if level > maximum_level:
+                    break
+            if tasks:
+                _logger.info("Change source replica to %s for tasks %s" % (str(tape_queue),str(tasks)))
+                for task in tasks:
+                    change_replica_by_task(ddm, task, tape_queue)
+            print(tape_queue, tasks)
+
+
+
+
 

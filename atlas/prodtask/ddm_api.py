@@ -224,7 +224,7 @@ class DDM(object):
                 return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
         elif rse == 'CERN-PROD_RAW':
             #return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
-            return 'type=DATADISK&datapolicynucleus=True', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+            return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|CERN-PROD_RAW',  'CERN-PROD_RAW'
 
 
 
@@ -317,6 +317,12 @@ class DDM(object):
     def list_rses(self, filter = ''):
         return self.__ddm.list_rses(filter)
 
+
+    __tape_rse = None
+    __datadisk_rse = None
+
+
+
     def biggest_datadisk(self, dataset_name):
         replicas = self.dataset_replicas(dataset_name)
         data_replicas = [x for x in replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
@@ -328,8 +334,12 @@ class DDM(object):
 
     def full_replicas_per_type(self, dataset_name):
         full_replicas = self.number_of_full_replicas(dataset_name)
-        data_replicas = [x for x in full_replicas if x['rse'] in [y['rse'] for y in self.list_rses('type=DATADISK')]]
-        tape_replicas = [x for x in full_replicas if x['rse'] in  [y['rse'] for y in  self.list_rses('rse_type=TAPE')]]
+        if self.__tape_rse is None:
+            self.__tape_rse = [y['rse'] for y in self.list_rses('rse_type=TAPE')]
+        if self.__datadisk_rse is None:
+            self.__datadisk_rse = [y['rse'] for y in self.list_rses('type=DATADISK')]
+        data_replicas = [x for x in full_replicas if x['rse'] in self.__datadisk_rse]
+        tape_replicas = [x for x in full_replicas if x['rse'] in  self.__tape_rse]
         return {'data':data_replicas,'tape':tape_replicas}
 
     def dataset_active_datadisk_rule(self, dataset_name):
