@@ -97,6 +97,7 @@ allowed_task_actions = {
     'staging':['retry'],
     'toretry':['retry'],
     'pending':['retry'],
+    'toabort':['abort']
 }
 
 # Actions for tasks in "active" states

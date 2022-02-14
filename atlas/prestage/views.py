@@ -690,14 +690,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                 else:
                     input_without_cern = [x for x in input if 'CERN'  not in x ]
                     if input_without_cern:
-                        #Create rule because it could be recovered from CERN
-                        if len(input_without_cern) == 1:
-                            #staged_files, total_files = ddm.staged_percent(input_dataset)
-                            #input = input_without_cern[0]
-                            # if staged_files != total_files:
                             rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input_without_cern))
-                        else:
-                            input = random.choice(input_without_cern)
                     else:
                         input = random.choice(input)
         input=convert_input_to_physical_tape(input)
@@ -2002,19 +1995,20 @@ def find_stale_stages(days=10):
         physical_tape = convert_input_to_physical_tape(tape_queue)
         if not DatasetStaging.objects.filter(status=DatasetStaging.STATUS.QUEUED, source=physical_tape).exists():
             queue_config = ActionDefault.objects.get(type='PHYSICAL_TAPE', name=physical_tape)
-            maximum_level = queue_config.get_config('maximum_level')
-            tasks = []
-            level = 0
-            for stage_request in stage_requests:
-                tasks += stage_request.tasks
-                level += stage_request.dataset.total_files
-                if level > maximum_level:
-                    break
-            if tasks:
-                _logger.info("Change source replica to %s for tasks %s" % (str(tape_queue),str(tasks)))
-                for task in tasks:
-                    change_replica_by_task(ddm, task, tape_queue)
-            print(tape_queue, tasks)
+            if (queue_config.get_config('allow_rebalancing') is not None) and queue_config.get_config('allow_rebalancing'):
+                maximum_level = queue_config.get_config('maximum_level')
+                tasks = []
+                level = 0
+                for stage_request in stage_requests:
+                    tasks += stage_request.tasks
+                    level += stage_request.dataset.total_files
+                    if level > maximum_level:
+                        break
+                if tasks:
+                    _logger.info("Change source replica to %s for tasks %s" % (str(tape_queue),str(tasks)))
+                    for task in tasks:
+                        change_replica_by_task(ddm, task, tape_queue)
+                print(tape_queue, tasks)
 
 
 
