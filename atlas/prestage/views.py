@@ -1144,13 +1144,18 @@ def create_replica_extension(task_id, ddm):
         replicas = ddm.full_replicas_per_type(input_dataset)
         if (len(replicas['data']) == 1) and (DatasetStaging.objects.filter(dataset=input_dataset).exists()):
             dataset_stage = DatasetStaging.objects.get(dataset=input_dataset)
-            if ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse):
+            existed_rule = ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse)
+            if existed_rule:
                 if StepAction.objects.filter(step=task.step.id,action=10).exists():
                     for step_action in StepAction.objects.filter(step=task.step.id,action=10):
                         for action_staging in ActionStaging.objects.filter(step_action=step_action):
                             if action_staging.task == task_id:
                                 return False
-
+                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=30):
+                    try:
+                        ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
+                    except Exception as e:
+                        _logger.error("Create replica extension problem %s task: %s" % (str(e), str(task_id)))
                 step_action = StepAction()
                 step_action.step = task.step.id
                 step_action.action = 10
