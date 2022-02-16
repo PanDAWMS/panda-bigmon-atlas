@@ -521,7 +521,7 @@ def rerange_after_deletion(gp_delete_container):
             gp_container.version = 0
             gp_container.save()
         else:
-            ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache) for x in by_amitag.keys()]
+            ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache.split('-')[0]) for x in by_amitag.keys()]
             ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
             ami_tags = [x[0] for x in ami_tags_cache]
             available_tags = ','.join(ami_tags)
