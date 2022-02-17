@@ -443,8 +443,8 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     if not lifetime:
         lifetime = config['lifetime']
     if not DatasetStaging.objects.filter(dataset=input_dataset,status__in=DatasetStaging.ACTIVE_STATUS).exists():
-        if DatasetStaging.objects.filter(dataset=input_dataset,status='done').exists():
-            dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,status='done').first()
+        if DatasetStaging.objects.filter(dataset=input_dataset,status__in=['done', 'canceled']).exists():
+            dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,status__in=['done', 'canceled']).first()
             dataset_staging.update_time = None
             dataset_staging.rse = None
             dataset_staging.source = None
