@@ -1019,27 +1019,50 @@ def find_active_staged_with_share():
                     result[dataset_stage.dataset]['priority'] = priority
     return result
 
+# def find_repeated_tasks_to_follow():
+#     to_repeat = []
+#     try:
+#         staged_tasks = []
+#         actions = StepAction.objects.filter(action=6, status='done', create_time__gte=timezone.now()-timedelta(days=30))
+#         for action in actions:
+#             if ActionStaging.objects.filter(step_action=action).exists():
+#                 for action_stage in ActionStaging.objects.filter(step_action=action):
+#                         staged_tasks.append(action_stage.task)
+#         actions = StepAction.objects.filter(action=10, create_time__gte=timezone.now()-timedelta(days=30))
+#         for action in actions:
+#             if ActionStaging.objects.filter(step_action=action).exists():
+#                 for action_stage in ActionStaging.objects.filter(step_action=action):
+#                         staged_tasks.append(action_stage.task)
+#         used_input = []
+#         for task_id in staged_tasks:
+#             task = ProductionTask.objects.get(id=task_id)
+#             dataset = task.primary_input
+#             if dataset not in used_input:
+#                 used_input.append(dataset)
+#                 repeated_tasks = ProductionTask.objects.filter(id__gt=task_id, submit_time__gte=timezone.now()-timedelta(days=7), primary_input=dataset)
+#                 for rep_task in repeated_tasks:
+#                     if rep_task.status not in ProductionTask.NOT_RUNNING:
+#                         ttask = TTask.objects.get(id=rep_task.id)
+#                         if 'inputPreStaging' not  in ttask._jedi_task_parameters and not ActionStaging.objects.filter(task=rep_task.id).exists():
+#                             to_repeat.append(rep_task.id)
+#         ddm = DDM()
+#         for task in to_repeat:
+#             if create_replica_extension(task, ddm):
+#                 _logger.info("Task {task} is now following".format(task=task))
+#     except Exception as e:
+#         _logger.error("Create follow repeated input tasks problem: %s" % str(e))
+#     return to_repeat
+
 def find_repeated_tasks_to_follow():
     to_repeat = []
     try:
-        staged_tasks = []
-        actions = StepAction.objects.filter(action=6, status='done', create_time__gte=timezone.now()-timedelta(days=30))
-        for action in actions:
-            if ActionStaging.objects.filter(step_action=action).exists():
-                for action_stage in ActionStaging.objects.filter(step_action=action):
-                        staged_tasks.append(action_stage.task)
-        actions = StepAction.objects.filter(action=10, create_time__gte=timezone.now()-timedelta(days=30))
-        for action in actions:
-            if ActionStaging.objects.filter(step_action=action).exists():
-                for action_stage in ActionStaging.objects.filter(step_action=action):
-                        staged_tasks.append(action_stage.task)
         used_input = []
-        for task_id in staged_tasks:
-            task = ProductionTask.objects.get(id=task_id)
-            dataset = task.primary_input
+        dataset_stagings = DatasetStaging.objects.filter(status='done', update_time__gte=timezone.now()-timedelta(days=30))
+        for dataset_staging in dataset_stagings:
+            dataset = dataset_staging.dataset[dataset_staging.dataset.find(':')+1:]
             if dataset not in used_input:
                 used_input.append(dataset)
-                repeated_tasks = ProductionTask.objects.filter(id__gt=task_id, submit_time__gte=timezone.now()-timedelta(days=7), primary_input=dataset)
+                repeated_tasks = ProductionTask.objects.filter(submit_time__gte=timezone.now()-timedelta(days=7), primary_input=dataset)
                 for rep_task in repeated_tasks:
                     if rep_task.status not in ProductionTask.NOT_RUNNING:
                         ttask = TTask.objects.get(id=rep_task.id)
@@ -1154,6 +1177,8 @@ def create_replica_extension(task_id, ddm):
                 if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=30):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
+                        dataset_stage.update_time = timezone.now()
+                        dataset_stage.save()
                     except Exception as e:
                         _logger.error("Create replica extension problem %s task: %s" % (str(e), str(task_id)))
                 step_action = StepAction()
