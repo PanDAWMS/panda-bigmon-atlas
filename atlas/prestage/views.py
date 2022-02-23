@@ -1140,9 +1140,11 @@ def follow_staged(waiting_step, ddm):
             action_finished = False
             existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
             if existed_rule:
-                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=5):
+                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
+                        dataset_stage.update_time = current_time
+                        dataset_stage.save()
                     except Exception as e:
                         _logger.error("Check follow staged problem %s %s" % (str(e), str(waiting_step)))
             else:
@@ -1231,6 +1233,8 @@ def follow_repeated_staged(waiting_step, ddm):
                 if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
+                        dataset_stage.update_time = current_time
+                        dataset_stage.save()
                     except Exception as e:
                         _logger.error("Check replicas extension problem %s %s" % (str(e), str(waiting_step)))
             else:
