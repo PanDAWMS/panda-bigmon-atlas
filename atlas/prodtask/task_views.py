@@ -226,6 +226,7 @@ def task_details(request, rid=None):
     if rid:
         try:
             same_tasks = []
+            same_tasks_with_status = []
             output_datasets = []
             output_formats = []
             if ProductionTask.objects.filter(id=rid).exists():
@@ -236,6 +237,8 @@ def task_details(request, rid=None):
                     dataset_pat=output_datasets[0].name.split("tid")[0]
                     datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
                     same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
+                    for same_task in same_tasks:
+                        same_tasks_with_status.append({'id': same_task, 'status': ProductionTask.objects.get(id=same_task).status})
             else:
                 task = TTask.objects.get(id=rid)
             ttask = TTask.objects.get(id=rid)
@@ -270,7 +273,7 @@ def task_details(request, rid=None):
                 'nucleus': get_nucleus(),
                 'shares': GLOBAL_SHARES,
                 'outputs': output_formats,
-                'extasks': same_tasks,
+                'extasks': same_tasks_with_status,
                 'hashtags': hashtags,
                 'parent_template': 'prodtask/_index.html',
                 'show_sync': True

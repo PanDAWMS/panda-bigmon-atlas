@@ -81,7 +81,7 @@
 <tr><th><label for="comments">Comments:</label></th><td>{{ task.comments }}</td></tr>
 <tr><th><label for="hashtags">Hashtags:</label></th><td ><div id="hashtags_list">{% for hashtag in hashtags %}<a href="{% url 'reqtask:request_tasks'  %}hashtags/&{{ hashtag }}">{{ hashtag }} </a>{% endfor %}</div>
     <a href='#' class="button " onclick="$('#hashtagModalWindow').foundation('reveal', 'open');" >+</a></td></tr>
-{% if extasks %}<tr><th><label for="same_tasks">Same Tasks:</label></th><td>{% for etask in extasks %}<a href="{% url 'prodtask:task' etask %}">{{ etask }}   </a>{% endfor %}</td></tr>{% endif %}
+{% if extasks %}<tr><th><label for="same_tasks">Same Tasks:</label></th><td>{% for etask in extasks %}<a href="{% url 'prodtask:task' etask.id %}" ><span class="tstat {{ etask.status }}"> {{ etask.id }}</span>   </a>{% endfor %}</td></tr>{% endif %}
 
 </table>
 
