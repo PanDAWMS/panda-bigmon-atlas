@@ -1151,13 +1151,13 @@ def make_child_update(parent_request_id, manager, slices):
                     for step in steps_by_slice[slice.id]:
                         if step.id in step_relation:
                             used_slices.add(slice.slice)
-                            if step.status == 'Approved':
-                                for child_step in step_relation[step.id]:
-                                    if not(child_step.slice.is_hide):
-                                        if child_step.status != 'Approved':
-                                            child_step.status = 'Approved'
-                                            child_step.save()
-                                            do_request_approve = True
+                            # if step.status == 'Approved':
+                            #     for child_step in step_relation[step.id]:
+                            #         if not(child_step.slice.is_hide):
+                            #             if child_step.status != 'Approved':
+                            #                 child_step.status = 'Approved'
+                            #                 child_step.save()
+                            #                 do_request_approve = True
             if child_request.relation_type == 'BC':
                 slices_to_proceed = [slice_number for slice_number in slices if int(slice_number) not in used_slices]
                 parent_steps, slices_not_approved = find_parent_for_train_steps(slices_to_proceed, parent_request)
