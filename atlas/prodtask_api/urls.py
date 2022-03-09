@@ -2,7 +2,8 @@ from django.conf.urls import  url
 
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, extension_container_api, group_production_datasets_full
 from atlas.prodtask_api.views import *
-from atlas.special_workflows.views import request_results
+from atlas.special_workflows.views import request_results, clone_active_learning_request
+
 app_name='prodtask_api'
 
 
@@ -18,6 +19,6 @@ urlpatterns = [
     url(r'^gp_extension_period_container/$', extension_container_api, name='extension_container_api'),
     url(r'^gp_deletions_containers_cached/$', group_production_datasets_full, name='group_production_datasets_full'),
     url(r'^production_requet_results/(?P<production_request>\d+)/$', request_results, name='request_results'),
-
+    url(r'^clone_AL_request/$', clone_active_learning_request, name='clone_active_learning_request'),
 
 ]
