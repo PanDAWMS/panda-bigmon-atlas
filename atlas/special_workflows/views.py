@@ -158,7 +158,7 @@ def find_pattern_slices(source_request):
                 break
     return list(pattern_slices.keys())
 
-def clone_request_by_pattern(source_request, username, job_options):
+def clone_request_by_pattern(source_request, username, job_options, description):
     missing_jo = []
     job_options_full = []
     for job_option in job_options:
@@ -170,7 +170,7 @@ def clone_request_by_pattern(source_request, username, job_options):
     if missing_jo:
         raise ValueError('JO are missing: {missing_jo}'.format(missing_jo=str(missing_jo)))
     source_production_request = TRequest.objects.get(reqid=source_request)
-    new_request = request_clone_slices(source_request, username, source_production_request.description,
+    new_request = request_clone_slices(source_request, username, description,
                          source_production_request.ref_link, [], source_production_request.project.project, True, False)
     pattern_slices = find_pattern_slices(source_request)
     for job_option in job_options_full:
@@ -203,11 +203,11 @@ def replace_etag(cloned_request, new_etag, submit):
 @parser_classes((JSONParser,))
 def clone_active_learning_request(request):
     """
-    Find a pattern in the "source_request" and clone it with new "job_options" and new "etag". If {"submit": True} it also
+    Find a pattern in the "source_request" and clone it with new "job_options" and new "etag" and new "description". If {"submit": True} it also
     submits cloned request.\n
     Post data must contain three fields: source_request, job_options, etag:
     {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412"}\n
-    One optional field: submit  {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412", "submit": True}\n
+     optional field: submit  {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412", "desription":"Google AL iteration 3", "submit": True"}\n
     Note: job options must exist on cvmfs before calling this API\n
     :return is {'new_request': request id,'link': Link to the request page}
     """
@@ -216,10 +216,11 @@ def clone_active_learning_request(request):
         source_request = request.data['source_request']
         job_options = request.data['job_options']
         new_etag = request.data['etag']
+        description = request.data['description']
         to_submit = False
         if 'submit' in request.data:
             to_submit = request.data['submit']
-        cloned_request = clone_request_by_pattern(source_request, username, job_options)
+        cloned_request = clone_request_by_pattern(source_request, username, job_options, description)
         replace_etag(cloned_request, new_etag, to_submit)
         if to_submit:
             set_request_status(username,cloned_request,'approved','Automatic approve', 'Request was approved after creation')
