@@ -25,7 +25,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.http import urlquote
 from django.utils.translation import ugettext as _
@@ -77,9 +77,9 @@ def logout(request, next_page=None, template_name='registration/logged_out.html'
         return HttpResponseRedirect(redirect_to)
 
     if next_page is None:
-        return render_to_response(template_name, {
-                                  'title': _('Logged out')
-                                  }, context_instance=RequestContext(request))
+        return render(request, template_name, {
+            'title': _('Logged out')
+            })
     else:
         # Redirect to this page until the session has been cleared.
         return HttpResponseRedirect(next_page or request.path)

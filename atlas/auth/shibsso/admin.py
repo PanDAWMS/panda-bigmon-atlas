@@ -21,7 +21,7 @@ from django.contrib.admin import AdminSite
 from django.contrib.auth import BACKEND_SESSION_KEY
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 from functools import update_wrapper
 from django.utils.http import urlquote
@@ -64,9 +64,9 @@ class ShibSSOAdminSite(AdminSite):
                 if not request.user.is_authenticated():
                     return self.login(request)
                 else:
-                    return render_to_response('shibsso/no_permission.html', {
-                                              'title': _('Site administration')
-                                              }, context_instance=RequestContext(request))
+                    return render(request, 'shibsso/no_permission.html', {
+                        'title': _('Site administration')
+                    })
                                           
             return view(request, * args, ** kwargs)
         if not cacheable:
