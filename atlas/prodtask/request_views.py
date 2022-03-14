@@ -673,7 +673,7 @@ def request_clone_async(request, reqid):
             _logger.error("Problem with request clonning #%i: %s"%(reqid,e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def do_request_clone_async(request, reqid, async=False):
+def do_request_clone_async(request, reqid, do_async=False):
     data = request.body
     input_dict = json.loads(data)
     slices = input_dict['slices']
@@ -690,7 +690,8 @@ def do_request_clone_async(request, reqid, async=False):
     if not owner:
         owner = 'default'
         _logger.debug(form_request_log(reqid,request,'Clone request' ))
-    new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project, True, async)
+    new_request_id = request_clone_slices(reqid, owner, new_short_description, new_ref, ordered_slices, new_project,
+                                          True, do_async)
     return {'success':True,'new_request':int(new_request_id)}
 
 

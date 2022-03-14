@@ -3193,7 +3193,7 @@ def clone_slices_task(self, reqid_source,  reqid_destination, slices, step_from,
     self.progress_message_update(len(ordered_slices)+1,len(ordered_slices)+1)
     return new_slice_numbers
 
-def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project, do_parent = True, async = False):
+def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, project, do_parent=True, do_async=False):
     request_destination = TRequest.objects.get(reqid=reqid)
     request_destination.reqid = None
     request_destination.cstatus = 'waiting'
@@ -3223,7 +3223,7 @@ def request_clone_slices(reqid, owner, new_short_description, new_ref,  slices, 
         clone_request_hashtags(reqid, request_destination)
     except:
         pass
-    if not async:
+    if not do_async:
         clone_slices(reqid,request_destination.reqid,slices,0,False)
     else:
         return_value = single_request_action_celery_task(request_destination.reqid,clone_slices_task,'Clone slices',
