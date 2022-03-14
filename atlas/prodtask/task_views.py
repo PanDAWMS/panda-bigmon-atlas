@@ -1,10 +1,7 @@
 from copy import deepcopy
 
-from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, render_to_response, redirect
-from django.template import Context, Template, RequestContext
-from django.template.loader import get_template
+from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.urls import reverse, resolve
 from atlas.celerybackend.celery import app

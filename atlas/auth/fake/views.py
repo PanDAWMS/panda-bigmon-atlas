@@ -5,8 +5,6 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 
 @never_cache

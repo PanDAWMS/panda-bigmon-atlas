@@ -2030,7 +2030,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         total_task_dict['running'] = ProductionTask.objects.filter(Q(status='running'),Q(request=cur_request)).count()
                         total_task_dict['blue'] = total_task_dict['total'] - (total_task_dict['red'] +  total_task_dict['done'] + total_task_dict['finished'] + total_task_dict['running'])
                         #Find slices with broken slices
-                        if ((total_task_dict['red']+total_task_dict['finished'])>0)and(total_task_dict['red']<600):
+                        if ((total_task_dict['red']+total_task_dict['finished'])>0)and(total_task_dict['red']<1000):
                             list(map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list))
                             list(map(lambda x: failed_slices.add(x.step.slice.id),finished_task_list))
                             cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]

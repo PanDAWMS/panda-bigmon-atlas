@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render
 from django.template import Context, Template, RequestContext
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
