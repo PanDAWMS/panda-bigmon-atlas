@@ -11,7 +11,7 @@ export default (targetOptions: TargetOptions, indexHtml: string) => {
   const scriptNames = ['main', 'polyfills', 'runtime', 'vendor'];
   const styleNames = ['style'];
 
-  let result = '{% load static from staticfiles %}\n';
+  let result = '{% load static  %}\n';
   for (const styleName of styleNames){
     if (indexHtml.indexOf(`href="${styleName}`) > 0){
       const index = indexHtml.indexOf(`href="${styleName}`) + `href="${styleName}`.length;
