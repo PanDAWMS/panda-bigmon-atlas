@@ -911,6 +911,7 @@ def do_staging(action_step_id, ddm):
                 dataset_stage.status = 'done'
                 dataset_stage.update_time = current_time
                 dataset_stage.end_time = current_time
+                dataset_stage.staged_size = dataset_stage.dataset_size
                 try:
                     set_replica_to_delete(dataset_stage)
                 except Exception as e:
