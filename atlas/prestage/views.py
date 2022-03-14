@@ -452,8 +452,11 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
         else:
             dataset_staging = DatasetStaging()
             dataset_staging.dataset = input_dataset
-        dataset_staging.total_files = ddm.dataset_metadata(input_dataset)['length']
+        dataset_meta = ddm.dataset_metadata(input_dataset)
+        dataset_staging.total_files = dataset_meta['length']
+        dataset_staging.dataset_size = dataset_meta['bytes']
         dataset_staging.staged_files = 0
+        dataset_staging.staged_size = 0
         dataset_staging.status = 'queued'
         if source:
             dataset_staging.source = source
@@ -881,6 +884,7 @@ def do_staging(action_step_id, ddm):
                         dataset_stage.rse = existed_rule['id']
                         if dataset_stage.staged_files != int(existed_rule['locks_ok_cnt']):
                             dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
+                            dataset_stage.staged_size = int(dataset_stage.dataset_size * dataset_stage.staged_files / dataset_stage.total_files)
                             dataset_stage.update_time = current_time
                         else:
                             delay = 2*int(action_step.get_config('delay'))

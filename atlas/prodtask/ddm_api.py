@@ -277,6 +277,17 @@ class DDM(object):
             raise e
         return [x['scope']+':'+x['name'] for x in output_datasets]
 
+    def staged_size(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        replicas = self.dataset_replicas(dataset_name)
+        if self.__datadisk_rse is None:
+            self.__datadisk_rse = [y['rse'] for y in self.list_rses('type=DATADISK')]
+        data_replicas = [x for x in replicas if x['rse'] in self.__datadisk_rse]
+        max_data_replica_size = 0
+        if data_replicas:
+            max_data_replica_size = max([x['available_bytes'] for x in data_replicas])
+        return max_data_replica_size
+
     def number_of_full_replicas(self, dataset_name):
         replicas = self.dataset_replicas(dataset_name)
         full_replicas = []

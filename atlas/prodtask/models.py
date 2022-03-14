@@ -1153,6 +1153,10 @@ class DatasetStaging(models.Model):
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
     source = models.CharField(max_length=200, db_column='SOURCE_RSE', null=True)
     update_time = models.DateTimeField(db_column='UPDATE_TIME')
+    dataset_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='DATASET_BYTES', null=True)
+    staged_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='STAGED_BYTES', null=True)
+    source_expression = models.CharField(max_length=400, db_column='SOURCE_EXPRESSION', null=True)
+
 
     def save(self, *args, **kwargs):
         if not self.id:
