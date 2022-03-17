@@ -205,9 +205,9 @@ def clone_active_learning_request(request):
     """
     Find a pattern in the "source_request" and clone it with new "job_options" and new "etag" and new "description". If {"submit": True} it also
     submits cloned request.\n
-    Post data must contain three fields: source_request, job_options, etag:
-    {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412"}\n
-     optional field: submit  {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412", "desription":"Google AL iteration 3", "submit": True"}\n
+    Post data must contain 4 fields: source_request, job_options, etag and description:
+    {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412", "description":"Google AL iteration 3"}\n
+     optional field: submit  {"source_request":"42251","job_options":['511380','511381'], "etag":"e8412", "description":"Google AL iteration 3", "submit": True"}\n
     Note: job options must exist on cvmfs before calling this API\n
     :return is {'new_request': request id,'link': Link to the request page}
     """
