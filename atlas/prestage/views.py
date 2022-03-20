@@ -208,7 +208,10 @@ class TapeResource(ResourceQueue):
                     if not min_task or  task.id < min_task:
                         min_task = task.id
                     if task.request.phys_group == 'VALI':
-                        dataset_shares_set.add('VALI')
+                        if task.request.campaign == 'test':
+                            dataset_shares_set.add('test')
+                        else:
+                            dataset_shares_set.add('VALI')
                     else:
                         if task.request.request_type in ['REPROCESSING']:
                             dataset_shares_set.add("{0}{1}".format(JediTasks.objects.get(id=task.id).gshare,task.ami_tag))
@@ -258,9 +261,14 @@ class TapeResource(ResourceQueue):
         new_queue = deepcopy(self.queue)
         new_queue.sort(key=lambda x:x['order_by'][1])
         share_order = ['any']
+        test_tasks = False
         for x in new_queue:
-            if x['order_by'][0] not in share_order:
+            if x['order_by'][0] == 'test':
+                test_tasks = True
+            elif x['order_by'][0] not in share_order:
                 share_order.append(x['order_by'][0])
+        if test_tasks:
+            share_order.append('test')
         new_queue.sort(key=lambda x:-x['priority'])
         self.queue = []
         for share in share_order:
