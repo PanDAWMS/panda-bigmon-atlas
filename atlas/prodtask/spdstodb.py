@@ -24,6 +24,8 @@ from .models import get_default_nEventsPerJob_dict
 
 from django.conf import settings
 import atlas.deftcore.api.client as deft
+import ssl
+import certifi
 _deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
 
@@ -81,7 +83,7 @@ STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
 NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2","events","ds"]
 
 def get_key_by_url(url):
-        response = urllib.request.urlopen(url)
+        response = urllib.request.urlopen(url, context=ssl.create_default_context(cafile=certifi.where()))
         r = response.url
         format = ''
         if r.find('key')>0:

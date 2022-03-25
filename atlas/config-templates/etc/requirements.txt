@@ -10,7 +10,7 @@ progressbar2==4.0.0
 pytz==2021.3
 rucio-clients==1.27.5
 rucio-clients-atlas==0.0.6
-xlrd==2.0.1
+xlrd==1.2.0
 stomp.py==8.0.0
 daemonize==2.5.0
 celery==5.2.3
