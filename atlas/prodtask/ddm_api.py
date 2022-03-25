@@ -192,7 +192,7 @@ class DDM(object):
     def find_container(self, pattern):
         _logger.debug('Search container with pattern: %s' % pattern)
         scope, name = self.rucio_convention(pattern)
-        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},type='container'))
+        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},did_type='container'))
         return output_datasets
 
 
