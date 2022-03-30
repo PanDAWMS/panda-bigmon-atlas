@@ -896,8 +896,9 @@ def do_staging(action_step_id, ddm):
                             dataset_stage.update_time = current_time
                         else:
                             delay = 2*int(action_step.get_config('delay'))
-                        if ((existed_rule['expires_at']-timezone.now().replace(tzinfo=None))<timedelta(days=5)) and \
-                                (task.status not in ['done','finished','broken','aborted']):
+                        if ((existed_rule['expires_at']-timezone.now().replace(tzinfo=None)) < timedelta(days=5)) and \
+                                (task.status not in ['done','finished','broken','aborted']) and \
+                                ((existed_rule['expires_at']-timezone.now().replace(tzinfo=None)) > timedelta(hours=2)):
                             try:
                                 ddm.change_rule_lifetime(existed_rule['id'],15*86400)
                             except Exception as e:
