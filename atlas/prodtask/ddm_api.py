@@ -253,7 +253,8 @@ class DDM(object):
     def get_rule(self, rule_id):
         return self.__ddm.get_replication_rule(rule_id)
 
-
+    def boost_rule(self, rule_id):
+        return self.__ddm.update_replication_rule(rule_id, {'boost_rule': True})
 
     def delete_replication_rule(self, rule_id):
         self.__ddm.delete_replication_rule(rule_id)

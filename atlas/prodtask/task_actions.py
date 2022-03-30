@@ -5,12 +5,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset, StepAction
+from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset, StepAction, ActionStaging
 
 import atlas.deftcore.api.client as deft
 from atlas.prodtask.task_views import sync_deft_jedi_task
 
 from atlas.prodtask.views import task_clone_with_skip_used
+from atlas.prodtask.ddm_api import DDM
 
 _deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
@@ -49,29 +50,42 @@ supported_actions.extend(['set_hashtag','remove_hashtag','sync_jedi'])
 supported_actions.extend(['disable_idds'])
 
 
-def create_disable_idds_action(task_id):
+def create_disable_idds_action(owner, task_id):
     task = ProductionTask.objects.get(id=task_id)
-    if task.total_files_finished > 0:
-        step = task.step
-        actions = StepAction.objects.filter(step=step.id, action=12, status__in=['active','executing'])
-        action_exists = False
-        for action in actions:
-            if action.get_config('task') == task_id:
-                action_exists = True
-                break
-        if not action_exists:
-            new_action = StepAction()
-            new_action.step = step.id
-            new_action.action = 12
-            new_action.set_config({'task':int(task_id)})
-            new_action.attempt = 0
-            new_action.status = 'active'
-            new_action.request = step.request
-            new_action.create_time = timezone.now()
-            new_action.execution_time = timezone.now()
-            new_action.save()
-            return True
-    return False
+    if ActionStaging.objects.filter(task=task.id).exists():
+        if task.total_files_finished > 0:
+            step = task.step
+            actions = StepAction.objects.filter(step=step.id, action=12, status__in=['active','executing'])
+            action_exists = False
+            for action in actions:
+                if action.get_config('task') == task_id:
+                    action_exists = True
+                    break
+            if not action_exists:
+                new_action = StepAction()
+                new_action.step = step.id
+                new_action.action = 12
+                new_action.set_config({'task':int(task_id)})
+                new_action.attempt = 0
+                new_action.status = 'active'
+                new_action.request = step.request
+                new_action.create_time = timezone.now()
+                new_action.execution_time = timezone.now()
+                new_action.save()
+                return _do_deft_action(owner, task_id, 'finish')
+        else:
+            if task.status == 'staging':
+                try:
+                    dataset_stage = ActionStaging.objects.filter(task=task.id)[0].dataset_stage
+                    ddm = DDM()
+                    rule = ddm.get_rule(dataset_stage.rse)
+                    if rule['locks_ok_cnt'] == 0:
+                        ddm.delete_replication_rule(dataset_stage.rse)
+                    return {'status':'success'}
+                except Exception as e:
+                    return  {'exception':str(e)}
+
+    return {'exception':'No staging rule is found'}
 
 
 def do_action(owner, task_id, action, *args):
@@ -118,16 +132,12 @@ def do_action(owner, task_id, action, *args):
             step_id = task_clone_with_skip_used(task_id, owner)
             result.update(dict(step_id=int(step_id)))
         except:
-            result['exception'] = "Can't retry task {0}".format(task_id)
+            result['exception'] = "Can't retry task {0}".format(str(task_id))
     elif action == 'disable_idds':
         try:
-            if create_disable_idds_action(task_id):
-                result.update(_do_deft_action(owner, task_id, 'finish', *args))
-            else:
-                raise Exception('No jobs finish yet')
-                #result.update(_do_deft_action(owner, task_id, 'abort', *args))
+            result.update(create_disable_idds_action(owner, task_id))
         except Exception as e:
-            result['exception'] = "Can't disable idds for {0} because {1}".format(task_id,e)
+            result['exception'] = "Can't disable idds for {0} because {1}".format(str(task_id), str(e))
 
     return result
 
