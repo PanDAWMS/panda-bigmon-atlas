@@ -457,7 +457,12 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                 } else {
                     var jo = joboptions.split("/");
-                    var dsid = jo[0].substring(0, 4) + "xxx/";
+                    if (jo[0].length  == 6){
+                        var dsid = jo[0].substring(0, 4) + "xxx/";
+                    } else {
+                        var dsid = jo[0].substring(0, 2) + '/' + jo[0].substring(0, 5) + "xxx/";
+                    }
+
                     var link = "https://gitlab.cern.ch/atlas-physics/pmg/mcjoboptions/tree/master/" + dsid + joboptions;
                     $(this).attr('href', link);
 

@@ -30,6 +30,10 @@ def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOption
     for directory in listdir(base_path):
         if directory.endswith('xxx') and directory[:-3].isdigit():
             dsids_parent_dirs.append(directory)
+        elif directory.isdigit():
+            for second_level_directory in listdir(base_path+'/'+directory):
+                if second_level_directory.endswith('xxx') and second_level_directory[:-3].isdigit():
+                    dsids_parent_dirs.append(directory+'/'+second_level_directory)
     dsid_to_update = {}
     for dsids_dir in dsids_parent_dirs:
         for dsid in listdir(base_path+'/'+dsids_dir):
