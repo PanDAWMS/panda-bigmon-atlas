@@ -81,6 +81,8 @@ def create_disable_idds_action(owner, task_id):
                     rule = ddm.get_rule(dataset_stage.rse)
                     if rule['locks_ok_cnt'] == 0:
                         ddm.delete_replication_rule(dataset_stage.rse)
+                    else:
+                        return _do_deft_action(owner, task_id, 'resume_task')
                     return {'status':'success'}
                 except Exception as e:
                     return  {'exception':str(e)}
