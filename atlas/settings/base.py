@@ -131,3 +131,5 @@ if DEVELOPMENT:
                           'atlas.prodtask.step_manage_views.async_obsolete_old_task_for_slices': {'queue': 'test'}}
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50214400
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -259,7 +259,6 @@ class DataTable(object, metaclass=DataTableDeclarativeMeta):
             for search_field in search_fields:
                 if search_field in ['request_approved','request_created','failure_rate']:
                     continue
-                print(search_field)
                 # FIXME: Does not work for extra fields or foreignkey fields
                 if bRegex:
                     q = Q(**{'%s__regex' % search_field: sSearch})

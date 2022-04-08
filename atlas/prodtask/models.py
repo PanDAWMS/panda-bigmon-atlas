@@ -141,10 +141,10 @@ class TRequest(models.Model):
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
     energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
     project = models.ForeignKey(TProject,db_column='PROJECT', on_delete=CASCADE, null=True, blank=False)
-    is_error = models.NullBooleanField(db_column='EXCEPTION', null=True, blank=False)
+    is_error = models.BooleanField(db_column='EXCEPTION', null=True, blank=False)
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
-    is_fast = models.NullBooleanField(db_column='IS_FAST', null=True, blank=False)
+    is_fast = models.BooleanField(db_column='IS_FAST', null=True, blank=False)
     #locked = models.DecimalField(decimal_places=0, max_digits=1, db_column='LOCKED', null=True)
 
     def get_next_slice(self):
@@ -366,7 +366,7 @@ class InputRequestList(models.Model):
     project_mode = models.CharField(max_length=256, db_column='PROJECT_MODE')
     priority = models.DecimalField(decimal_places=0, max_digits=12, db_column='PRIORITY')
     input_events = models.DecimalField(decimal_places=0, max_digits=12, db_column='INPUT_EVENTS')
-    is_hide = models.NullBooleanField(db_column='HIDED', null=True, blank=False)
+    is_hide = models.BooleanField(db_column='HIDED', null=True, blank=False)
     cloned_from = models.ForeignKey('self',db_column='CLONED_FROM', null=True, on_delete=CASCADE)
 
     def save(self, *args, **kwargs):
@@ -832,7 +832,7 @@ class ProductionTask(models.Model):
     total_files_tobeused = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESTOBEUSED', null=True)
     total_files_used = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESUSED', null=True)
     total_files_onhold = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESONHOLD', null=True)
-    is_extension = models.NullBooleanField(db_column='IS_EXTENSION', null=True, blank=False)
+    is_extension = models.BooleanField(db_column='IS_EXTENSION', null=True, blank=False)
     total_files_finished = models.DecimalField(decimal_places=0, max_digits=10, db_column='NFILESFINISHED', null=True)
     ttcr_timestamp = models.DateTimeField(db_column='TTCR_TIMESTAMP', null=True)
     ttcj_timestamp = models.DateTimeField(db_column='TTCJ_TIMESTAMP', null=True)
@@ -1309,7 +1309,7 @@ class GroupProductionAMITag(models.Model):
     ami_tag = models.CharField(max_length=10, db_column='AMI_TAG', primary_key=True)
     status = models.CharField(max_length=20, db_column='STATUS',null=False)
     skim = models.CharField(max_length=1, db_column='SKIM', null=False)
-    real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
+    real_data = models.BooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
     cache = models.CharField(max_length=100, db_column='CACHE',null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
     comment = models.CharField(max_length=1000, db_column='TAG_COMMENT')
@@ -1329,7 +1329,7 @@ class GroupProductionStats(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_STATS_ID', primary_key=True)
     ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
     output_format = models.CharField(max_length=20, db_column='OUTPUT_FORMAT', null=False)
-    real_data = models.NullBooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
+    real_data = models.BooleanField(db_column='IS_REAL_DATA', null=True, blank=False)
     size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES')
     containers = models.DecimalField(decimal_places=0, max_digits=20, db_column='CONTAINERS')
     to_delete_containers =  models.DecimalField(decimal_places=0, max_digits=20, db_column='TD_CONTAINERS')

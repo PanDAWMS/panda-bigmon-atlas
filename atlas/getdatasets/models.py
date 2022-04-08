@@ -24,5 +24,5 @@ class TaskProdSys1(models.Model):
         db_table = 'T_TASK_REQUEST'
 
 
-class TRequest(models.Model):
-    request = models.CharField(max_length=200, db_column='REQUEST', null=True)
+# class TRequest(models.Model):
+#     request = models.CharField(max_length=200, db_column='REQUEST', null=True)

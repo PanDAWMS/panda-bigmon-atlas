@@ -6,7 +6,7 @@ from django.core import serializers
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from .forms import RequestForm
+# from .forms import RequestForm
 
 from .models import ProductionDatasetsExec
 from ..settings import dq2client as settings
@@ -84,37 +84,37 @@ class ProductionDatasetsTable(tables.Table):
 	def render_num(self):
 		return '%d' % next(self.counter)
 
-def request_data_form2(request):
-		if request.method == 'POST':
-				form = RequestForm(request.POST)
-				pks = request.POST.getlist("selection")
-		if pks:
-			#print list(pks)
-			return HttpResponse(json.dumps(list(pks)), content_type="application/json")
-		else:
-			if form.is_valid():
-					req = form.cleaned_data['request']
-					dslist = request_data(req)
-					table=ProductionDatasetsTable(dslist)
-					return render(request, '_request_table.html', {
-								'active_app': 'getdatasets',
-								'pre_form_text': 'Datasets search',
-								'form': form,
-								'table': table,
-								'submit_text': 'Select',
-								'submit_url': 'getdatasets:request_data_form',
-								'parent_template': 'prodtask/_index.html',
-								})
-
-			else:
-					form = RequestForm()
-					return render(request, '_request_table.html', {
-						'active_app': 'getdatasets',
-						'pre_form_text': 'Datasets search',
-						'form': form,
-						'submit_url': 'getdatasets:request_data_form',
-						'parent_template': 'prodtask/_index.html',
-						})
+# def request_data_form2(request):
+# 		if request.method == 'POST':
+# 				form = RequestForm(request.POST)
+# 				pks = request.POST.getlist("selection")
+# 		if pks:
+# 			#print list(pks)
+# 			return HttpResponse(json.dumps(list(pks)), content_type="application/json")
+# 		else:
+# 			if form.is_valid():
+# 					req = form.cleaned_data['request']
+# 					dslist = request_data(req)
+# 					table=ProductionDatasetsTable(dslist)
+# 					return render(request, '_request_table.html', {
+# 								'active_app': 'getdatasets',
+# 								'pre_form_text': 'Datasets search',
+# 								'form': form,
+# 								'table': table,
+# 								'submit_text': 'Select',
+# 								'submit_url': 'getdatasets:request_data_form',
+# 								'parent_template': 'prodtask/_index.html',
+# 								})
+#
+# 			else:
+# 					form = RequestForm()
+# 					return render(request, '_request_table.html', {
+# 						'active_app': 'getdatasets',
+# 						'pre_form_text': 'Datasets search',
+# 						'form': form,
+# 						'submit_url': 'getdatasets:request_data_form',
+# 						'parent_template': 'prodtask/_index.html',
+# 						})
 
 def request_data_form(request):
 	if request.method == 'POST':
