@@ -356,15 +356,19 @@ def set_parent_step(slices, request, parent_request):
                         if step.status in ['Approved']:
                             if step.step_template.ctag == tags[index]:
                                 if index == (len(tags)-1):
-                                    first_not_skipped.step_parent = step
-                                    first_not_skipped.set_task_config({'nEventsPerInputFile':''})
-                                    first_not_skipped.save()
-                                    for x in step_to_delete:
-                                        x.delete()
-                                    parent_slice_dict[slice.input_data].pop(slice_index)
-                                    parent_found = True
-                                    slices_updated.append(slice_number)
-                                    break
+                                    if (not (ProductionTask.objects.filter(step=step, request=parent_request, status__in=ProductionTask.RED_STATUS).exists()) or
+                                            (ProductionTask.objects.filter(step=step, request=parent_request, status__in=ProductionTask.SYNC_STATUS).exists())):
+                                        first_not_skipped.step_parent = step
+                                        first_not_skipped.set_task_config({'nEventsPerInputFile':''})
+                                        first_not_skipped.save()
+                                        for x in step_to_delete:
+                                            x.delete()
+                                        parent_slice_dict[slice.input_data].pop(slice_index)
+                                        parent_found = True
+                                        slices_updated.append(slice_number)
+                                        break
+                                    else:
+                                        break
                             else:
                                 break
                     if parent_found:
