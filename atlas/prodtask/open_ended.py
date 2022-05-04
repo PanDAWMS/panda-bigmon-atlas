@@ -133,7 +133,8 @@ def step_approve_action(step):
 
 
 def do_task_start(reqid):
-    not_approved_steps = list(StepExecution.objects.filter(request=reqid,status='NotChecked'))
+    not_approved_steps_including_hidden = list(StepExecution.objects.filter(request=reqid,status='NotChecked'))
+    not_approved_steps = [x for x in not_approved_steps_including_hidden if not x.slice.is_hide]
     is_extended = False
     if len(not_approved_steps) > 0:
         approved_steps_number = StepExecution.objects.filter(request=reqid,status='Approved').count()
@@ -168,15 +169,17 @@ def clean_obsolete_openended(reqid, container):
     slices = list(InputRequestList.objects.filter(Q(request=reqid), ~Q(is_hide=True)).order_by('slice'))
     slice_to_delete = []
     for slice in slices:
-        if 'tid' in slice.dataset:
-            task_id = int(slice.dataset[slice.dataset.rfind('tid')+3:slice.dataset.rfind('_')])
-            if (ProductionTask.objects.get(id=task_id) in ['obsolete']+ProductionTask.RED_STATUS) or (slice.dataset not in datasets_in_container):
-                slice_to_delete.append((slice.id,task_id))
-                for step in StepExecution.objects.filter(slice=slice):
-                    step.status = 'NotChecked'
-                    step.save()
-                slice.is_hide = True
-                slice.save()
+        step = StepExecution.objects.get(slice=slice, request=reqid)
+        if not ProductionTask.objects.filter(step=step).exists():
+            if 'tid' in slice.dataset:
+                task_id = int(slice.dataset[slice.dataset.rfind('tid')+3:slice.dataset.rfind('_')])
+                if (ProductionTask.objects.get(id=task_id) in ['obsolete']+ProductionTask.RED_STATUS) or (slice.dataset not in datasets_in_container):
+                    slice_to_delete.append((slice.slice,task_id))
+                    for step in StepExecution.objects.filter(slice=slice, request=reqid):
+                        step.status = 'NotChecked'
+                        step.save()
+                    slice.is_hide = True
+                    slice.save()
 
     return slice_to_delete
 
