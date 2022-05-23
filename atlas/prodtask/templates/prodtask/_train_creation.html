@@ -82,10 +82,17 @@
 * @name run
 * @desc Update xsrf $http headers to align with Django's defaults
 */
+
     function run($http) {
       $http.defaults.xsrfHeaderName = 'X-CSRFToken';
       $http.defaults.xsrfCookieName = 'csrftoken';
     }
+
+        var trainApp = angular.module('trainApp',['ngRoute','trainServices']);
+    trainApp.config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+    });
+
     trainServices.factory('TrainLoads', ['$resource',
       function($resource){
         return $resource('/prodtask/trainloadsbytrain/'+':train', {}, {
@@ -102,7 +109,7 @@
 
     trainServices.factory('TrainLoad', ['$resource',
       function($resource){
-        return $resource("/prodtask/trainloads/"+':id', {}, {
+        return $resource("/prodtask/trainloads/"+':id'+'/', {}, {
           get: {method:'GET'},
           save:   {method:'POST'},
           update: { method:'PUT' }
@@ -137,10 +144,7 @@
 
 
 
-    var trainApp = angular.module('trainApp',['ngRoute','trainServices']);
-    trainApp.config(function($resourceProvider) {
-        $resourceProvider.defaults.stripTrailingSlashes = false;
-    });
+
     trainApp.controller('TrainCtrl',['$scope','$http','TrainLoads', function (scope, http, trainLoads){
         scope.trainLoads = trainLoads.query({train:train_id});
             scope.train_id = train_id;
@@ -252,23 +256,12 @@
             alert('Only EVNT could be used with DAOD_TRUTH*, only xAOD with the rests');
         } else{
             console.log(editTrainLoad.trainLoad.outputs);
-            if (editTrainLoad.trainLoad.datasets.length<1000){
-                trainLoads.save(editTrainLoad.trainLoad,function(data) {
-                    console.log(data);
-                   location.path('/');
-                });
-            } else {
-                var temp_datasets = editTrainLoad.trainLoad.datasets;
-                editTrainLoad.trainLoad.datasets = 'ongoing_transaction';
-                trainLoads.save(editTrainLoad.trainLoad,function(data) {
-                     editTrainLoad.trainLoad.datasets=temp_datasets;
 
+            trainLoads.save(editTrainLoad.trainLoad,function(data) {
+                console.log(data);
+               location.path('/');
+            });
 
-                   trainLoad.update({id:data.id},editTrainLoad.trainLoad,function(data2) {
-                    location.path('/');
-                    });
-                });
-            }
         }
 
     };
