@@ -357,7 +357,8 @@ def set_parent_step(slices, request, parent_request):
                             if step.step_template.ctag == tags[index]:
                                 if index == (len(tags)-1):
                                     if (not (ProductionTask.objects.filter(step=step, request=parent_request, status__in=ProductionTask.RED_STATUS).exists()) or
-                                            (ProductionTask.objects.filter(step=step, request=parent_request, status__in=ProductionTask.SYNC_STATUS).exists())):
+                                            (ProductionTask.objects.filter(step=step, request=parent_request, status__in=ProductionTask.RED_STATUS).count() !=
+                                            ProductionTask.objects.filter(step=step, request=parent_request).count())):
                                         first_not_skipped.step_parent = step
                                         first_not_skipped.set_task_config({'nEventsPerInputFile':''})
                                         first_not_skipped.save()
