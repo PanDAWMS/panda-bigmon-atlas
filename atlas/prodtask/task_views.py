@@ -8,7 +8,7 @@ from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import StepExecution
+from atlas.prodtask.models import StepExecution, GlobalShare
 import logging
 
 from ..settings import defaultDatetimeFormat
@@ -44,36 +44,6 @@ _logger = logging.getLogger('prodtaskwebui')
 
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
-GLOBAL_SHARES = [
-    'Express',
-    'Validation',
-    'Test',
-    'Special',
-    'MC 16',
-    'MC Other',
-    'MC 16 evgen',
-    'MC Other evgen',
-    'MC 16 simul',
-    'MC Other simul',
-    'MC merge',
-    'Reprocessing default',
-    'Heavy Ion',
-    'Spillover',
-    'MC Derivations',
-    'Data Derivations',
-    'Overlay',
-    'User Analysis',
-    'Group Higgs',
-    'Group SM',
-    'Group Exotics',
-    'Group Susy',
-    'Group Analysis',
-    'Upgrade',
-    'HLT Reprocessing',
-    'Event Index',
-    'Frontier'
-
-]
 # Allowed task actions per status
 allowed_task_actions = {
     'waiting': ['set_hashtag','remove_hashtag','abort','retry', 'reassign', 'change_priority', 'change_parameters', 'increase_attempt_number','kill_job',  'abort_unfinished_jobs','sync_jedi'],
@@ -268,7 +238,7 @@ def task_details(request, rid=None):
                 'clouds': get_clouds(),
                 'sites': get_sites(),
                 'nucleus': get_nucleus(),
-                'shares': GLOBAL_SHARES,
+                'shares': get_global_shares(),
                 'outputs': output_formats,
                 'extasks': same_tasks_with_status,
                 'hashtags': hashtags,
@@ -1079,3 +1049,28 @@ def special_datasets_to_delete(request):
     result['timestamp'] = cache.get('special_deletion_update_time')
 
     return Response(result)
+
+
+def recover_obsolete(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    if task.status == 'obsolete':
+        tt_task = TTask.objects.get(id=task_id)
+        task.status = tt_task.status
+        task.save()
+
+
+def get_global_shares(update_cache=False):
+    if not update_cache and cache.get('global_share'):
+        return cache.get('global_share')
+    all_global_share = list(GlobalShare.objects.all())
+    leaf_shares = {}
+    for share in all_global_share:
+        leaf_shares.pop(share.parent, '')
+        leaf_shares[share.name] = share.parent
+    leaf_shares_list = list(leaf_shares.items())
+    leaf_shares_list.sort(key=lambda x:x[1]+'-'+x[0])
+    result = [x[0] for x in leaf_shares_list]
+    cache.set('global_share', result, 3600*24)
+    return result
+
+

@@ -19,7 +19,7 @@ import logging
 
 from .models import ProductionTask, TRequest, StepExecution, JediTasks
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, GLOBAL_SHARES, get_permission_analy, \
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_global_shares, get_permission_analy, \
     check_action_allowed
 from .task_views import get_permissions
 from .task_actions import do_action
@@ -325,7 +325,7 @@ def task_manage(request):
                              'last_task_submit_time': last_task_submit_time,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'shares': GLOBAL_SHARES,
+                             'shares': get_global_shares(),
                              'nucleus': get_nucleus(),
                              'edit_mode': True,
                              'show_sync': True

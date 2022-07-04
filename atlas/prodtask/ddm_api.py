@@ -200,6 +200,10 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset)
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=lifetime)
 
+    def datasetSetTransient(self, dataset, transient = False):
+        scope, name = self.rucio_convention(dataset)
+        self.__ddm.set_metadata(scope=scope, name=name, key='transient', value=transient)
+
     def keepDataset(self, dataset):
         scope, name = self.rucio_convention(dataset)
         self.__ddm.set_metadata(scope=scope, name=name, key='lifetime', value=None)

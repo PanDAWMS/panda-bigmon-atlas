@@ -8,7 +8,7 @@ from atlas.dkb.views import tasks_from_string
 from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, InputRequestList
 # import logging
 # import os
-from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, GLOBAL_SHARES
+from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, get_global_shares
 
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -54,7 +54,7 @@ def tasks_hashtags(request, hashtag_formula):
                             {'reqid':None,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'shares' : GLOBAL_SHARES,
+                             'shares' : get_global_shares(),
                              'nucleus': get_nucleus(),
                              'search_string':'Hashtags: %s'%hashtag_formula,
                              'title':'Hashtags: %s'%hashtag_formula
@@ -71,7 +71,7 @@ def request_recent_tasks(request, days=3):
                             {'reqid':None,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'shares': GLOBAL_SHARES,
+                             'shares': get_global_shares(),
                              'nucleus': get_nucleus(),
                              'search_string':'Tasks for the last %s days'%str(days),
                              'title': 'Tasks for the last %s days'%str(days)
@@ -91,7 +91,7 @@ def request_tasks_slices(request, rid, slices):
                             {'reqid':None,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'shares': GLOBAL_SHARES,
+                             'shares': get_global_shares(),
                              'nucleus': get_nucleus(),
                              'search_string':'Slices for request: %s'%str(rid),
                              'title': 'Slices for request: %s'%str(rid)
@@ -115,7 +115,7 @@ def request_tasks(request, rid = None):
                             {'reqid':rid,
                              'clouds': get_clouds(),
                              'sites': get_sites(),
-                             'shares': GLOBAL_SHARES,
+                             'shares': get_global_shares(),
                              'nucleus': get_nucleus()
                              })
 
@@ -126,7 +126,7 @@ def request_tasks_by_url(request):
     if request_path:
         params_for_bigpanda = "http://bigpanda.cern.ch/tasks/?" + request_path
     return render(request, 'reqtask/_task_table.html',{ 'params_for_bigpanda':  params_for_bigpanda  , 'clouds': get_clouds(),
-                             'sites': get_sites(),'shares': GLOBAL_SHARES,
+                             'sites': get_sites(),'shares': get_global_shares(),
                              'nucleus': get_nucleus(), 'get_tasks_by_url':True})
 
 
