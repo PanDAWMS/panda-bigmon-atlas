@@ -1307,7 +1307,7 @@ def perfom_idds_disable(step_action_ids):
             if task_status in ProductionTask.NOT_RUNNING:
                 if task_status == 'finished':
                     _logger.info("Retry command with iDDS disabled is sent for %s" % (str(task_id)))
-                    _do_deft_action('mborodin',task_id,'retry', [False, True])
+                    _do_deft_action('mborodin',task_id,'retry', False, True)
                     action_step.status = 'done'
                     action_step.message = 'Command send'
                     action_step.done_time = current_time
