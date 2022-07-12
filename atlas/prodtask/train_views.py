@@ -339,7 +339,8 @@ def train_create(request):
     if request.method == 'POST':
         try:
             form = ProductionTrainForm(request.POST)  # A form bound to the POST data
-        except:
+        except Exception as e:
+            _logger.error("Problem with train creation  %s" % e)
             return HttpResponseRedirect(reverse('prodtask:request_table'))
         if form.is_valid():
             # Process the data in form.cleaned_data
@@ -363,7 +364,8 @@ def train_create(request):
         try:
             manager = request.user.username
             form = ProductionTrainForm({'manager':manager})
-        except:
+        except Exception as e:
+            _logger.error("Problem with train creation  %s" % e)
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return render(request, 'prodtask/_train_form.html', {
         'active_app': 'prodtask',
