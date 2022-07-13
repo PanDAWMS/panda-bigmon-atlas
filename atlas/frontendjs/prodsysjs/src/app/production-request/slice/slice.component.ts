@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, EventEmitter, Inject, Input, OnInit,
 import {ProductionTask, Slice, SliceBase, Step} from "../production-request-models";
 import {MAT_DIALOG_DATA, MatDialog} from "@angular/material/dialog";
 import {newArray} from "@angular/compiler/src/util";
-import {FormBuilder} from "@angular/forms";
+import {UntypedFormBuilder} from "@angular/forms";
 import {ProductionRequestService} from "../production-request.service";
 
 interface PreparedStep extends Step {
@@ -149,7 +149,7 @@ export class SliceDetailsDialogComponent implements OnInit{
   originalSlice: Slice;
   slice: Slice;
   modifiedFields: Set<string> = new Set<string>();
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { slice: Slice,  colorSchema: any}, private fb: FormBuilder,
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { slice: Slice,  colorSchema: any}, private fb: UntypedFormBuilder,
               private productionRequestService: ProductionRequestService) {
 
   }

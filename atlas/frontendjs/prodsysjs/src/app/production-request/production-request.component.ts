@@ -7,7 +7,7 @@ import {
   ProductionTask,
   Slice, Step
 } from './production-request-models';
-import {FormControl} from "@angular/forms";
+import {UntypedFormControl} from "@angular/forms";
 import {SelectionModel} from "@angular/cdk/collections";
 import {MAT_CHECKBOX_DEFAULT_OPTIONS, MatCheckboxDefaultOptions} from "@angular/material/checkbox";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
@@ -34,11 +34,11 @@ export class ProductionRequestComponent implements OnInit, AfterViewInit {
   filteredSlices: Slice[] = undefined;
   requestByCampaign: Map<string, number[]> = new Map<string, number[]>();
   campaigns: string[] = [];
-  chipsCampaignsControl = new FormControl([]);
+  chipsCampaignsControl = new UntypedFormControl([]);
   projects: string[] = [];
-  chipsProjectsControl = new FormControl([]);
-  taskStatusControl = new FormControl([]);
-  mainFilter = new FormControl('');
+  chipsProjectsControl = new UntypedFormControl([]);
+  taskStatusControl = new UntypedFormControl([]);
+  mainFilter = new UntypedFormControl('');
   requestByProject: Map<string, number[]> = new Map<string, number[]>();
   lastChecked?: Slice = undefined;
   campaignColors = new Map<string, any>();
@@ -51,7 +51,7 @@ export class ProductionRequestComponent implements OnInit, AfterViewInit {
   totalLen: number;
   sourceSteps: Observable<ProductionRequests>;
   colorSchema: {[index: number]: any} = {};
-  stepFilterFormControl = new FormControl([]);
+  stepFilterFormControl = new UntypedFormControl([]);
   originalTaskStatus: {[status: string]: number} = {};
   jira: string;
   selectedTasksStep: Step;
@@ -106,8 +106,8 @@ export class ProductionRequestComponent implements OnInit, AfterViewInit {
           this.colorSchema[allSteps.production_requests[i].reqid] = {campaign : campaign.replace(':', '_'),
             project: allSteps.production_requests[i].project_id };
         }
-        this.chipsCampaignsControl = new FormControl(this.campaigns);
-        this.chipsProjectsControl = new FormControl(this.projects);
+        this.chipsCampaignsControl = new UntypedFormControl(this.campaigns);
+        this.chipsProjectsControl = new UntypedFormControl(this.projects);
 
         this.stepsOrder = [];
         this.stepsOrder = Object.entries(stepPosition).sort(([, a], [, b]) => a - b)
@@ -121,7 +121,7 @@ export class ProductionRequestComponent implements OnInit, AfterViewInit {
         this.selectedSlices.select(...this.filteredSlices);
         this.recountFiltered();
         this.originalTaskStatus = this.totalFilteredTasks;
-        this.taskStatusControl = new FormControl(Object.keys(this.totalFilteredTasks));
+        this.taskStatusControl = new UntypedFormControl(Object.keys(this.totalFilteredTasks));
         this.chipsCampaignsControl.valueChanges.subscribe( newValues => {
           this.setFilterSortFragment('campaigns', newValues.toString());
           this.filterSlices();

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {FormControl} from "@angular/forms";
+import {UntypedFormControl} from "@angular/forms";
 import {MatTableDataSource} from "@angular/material/table";
 import {DeletionSubmission} from "../gp-deletion-container";
 import {GpDeletionRequestService} from "./gp-deletion-request.service";
@@ -12,8 +12,8 @@ import {MatDatepickerInputEvent} from "@angular/material/datepicker";
 })
 export class GpDeletionRequestComponent implements OnInit {
 
-  deadlineDate = new FormControl(new Date());
-  startDeletionDate = new FormControl(new Date());
+  deadlineDate = new UntypedFormControl(new Date());
+  startDeletionDate = new UntypedFormControl(new Date());
   DeletionRequestsDataSource: MatTableDataSource<DeletionSubmission>;
   submissionDisabled = true;
   currentRequest: DeletionSubmission|undefined = undefined;
