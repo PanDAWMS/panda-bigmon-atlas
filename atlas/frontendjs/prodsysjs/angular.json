@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "cli": {
-    "analytics": "89bea659-ddcd-49ed-9c5a-41499a71a82a"
+    "analytics": "89bea659-ddcd-49ed-9c5a-41499a71a82a",
+    "schematicCollections": [
+      "@angular-eslint/schematics"
+    ]
   },
   "version": 1,
   "newProjectRoot": "projects",
@@ -18,7 +21,10 @@
           "options": {
             "outputPath": "../static/js",
             "indexTransform": "src/index-html-transform.ts",
-            "index": {"input":"src/index.html","output": "../../templates/frontendjs/_ng_template.html"},
+            "index": {
+              "input": "src/index.html",
+              "output": "../../templates/frontendjs/_ng_template.html"
+            },
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
@@ -108,6 +114,15 @@
             "production": {
               "devServerTarget": "prodsysjs:serve:production"
             }
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }
