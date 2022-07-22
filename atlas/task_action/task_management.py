@@ -66,6 +66,9 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     username: str
     comment: str
 
+    ES_PATTERN = "https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(task,prod_request,user,return_code,return_message,comment),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:_log_production_task_action_message),type:phrase),query:(match_phrase:(funcName:_log_production_task_action_message))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:{0}),type:phrase),query:(match_phrase:(prod_request:{0})))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:M,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))"
+
+    JIRA_MESSAGE_TEMPLATE = "Tasks actions for this request can be found [es-atlas|{link}]"
     def __init__(self, username, comment=''):
         self.jedi_client = JEDIClient()
         self.username = username
@@ -76,17 +79,14 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         _jsonLogger.info("Production task action",
                          extra={'task': str(task_id), 'prod_request': production_request_id,'user': self.username, 'action': action, 'params': json.dumps(args),
                                 'return_code': return_code,'return_message': return_message ,'comment': self.comment})
-        # print({'task': str(task_id), 'prod_request': production_request_id,'user': self.username, 'action': action, 'params': json.dumps(args),
-        #                          'return_code': return_code,'return_message': return_message})
+
 
     def _log_analysis_task_action_message(self, task_id, action, return_code, return_message, *args):
         _jsonLogger.info("Analysis task action",
                          extra={'task': str(task_id), 'user': self.username, 'comment': self.comment,
                                 'action': action, 'params': json.dumps(args),
                                 'return_code': return_code, 'return_message': return_message})
-        # print({'task': str(task_id), 'user': self.username,
-        #                          'action': action, 'params': json.dumps(args),
-        #                          'return_code': return_code, 'return_message': return_message})
+
 
     def _log_action_message(self, task_id, action, return_code, return_message, *args):
         try:
@@ -95,11 +95,15 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 task = ProductionTask.objects.get(id=task_id)
                 if task.request_id > 300:
                     production_request = task.request
-                    # if not production_request.info_field('task_jira_es'):
-                    #     if not self.jira_client:
-                    #         self.jira_client = JIRAClient()
-                    #     production_request.set_info_field('task_jira_es', True)
-                    #     production_request.save()
+                    es_link = self.ES_PATTERN.format(production_request.reqid)
+                    jira_message = self.JIRA_MESSAGE_TEMPLATE.format(link=es_link)
+                    if production_request.jira_reference and not production_request.info_field('task_jira_es'):
+                        if not self.jira_client:
+                            self.jira_client = JIRAClient()
+                            self.jira_client.authorize()
+                        self.jira_client.add_issue_comment(production_request.jira_reference, jira_message)
+                        production_request.set_info_field('task_jira_es', True)
+                        production_request.save()
                     self._log_production_task_action_message(production_request.reqid, task_id, action, return_code, return_message, *args)
                     return
             self._log_analysis_task_action_message(task_id, action, return_code, return_message, *args)
