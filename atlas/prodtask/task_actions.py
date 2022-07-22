@@ -1,4 +1,5 @@
 import json
+from functools import partial
 
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
@@ -12,6 +13,7 @@ from atlas.prodtask.task_views import sync_deft_jedi_task
 
 from atlas.prodtask.views import task_clone_with_skip_used
 from atlas.prodtask.ddm_api import DDM
+from atlas.task_action.task_management import TaskActionExecutor
 
 _deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
@@ -89,6 +91,39 @@ def create_disable_idds_action(owner, task_id):
 
     return {'exception':'No staging rule is found'}
 
+def do_new_action(owner, task_id, action, *args):
+    action_executor = TaskActionExecutor(owner)
+    action_translation = {
+            'abort': action_executor.killTask,
+            'finish': action_executor.finishTask,
+            'change_priority': action_executor.changeTaskPriority,
+            'reassign_to_site': action_executor.reassignTaskToSite,
+            'reassign_to_cloud': action_executor.reassignTaskToCloud,
+            'reassign_to_nucleus': action_executor.reassignTaskToNucleus,
+            'reassign_to_share': action_executor.reassignShare,
+            'retry': action_executor.retryTask,
+            'change_ram_count': action_executor.changeTaskRamCount,
+            'change_wall_time': action_executor.changeTaskWalltime,
+            'change_cpu_time': action_executor.changeTaskCputime,
+            'increase_attempt_number': action_executor.increaseAttemptNr,
+            'abort_unfinished_jobs': action_executor.killUnfinishedJobs,
+            'delete_output': action_executor.clean_task_carriages,
+            'kill_job': action_executor.kill_jobs_in_task,
+            'obsolete': action_executor.obsolete_task,
+            'change_core_count': partial(action_executor.changeTaskAttribute, attrName='coreCount'),
+            'change_split_rule': action_executor.changeTaskSplitRule,
+            'pause_task': action_executor.pauseTask,
+            'resume_task': action_executor.resumeTask,
+            'trigger_task': action_executor.triggerTaskBrokerage,
+            'avalanche_task': action_executor.avalancheTask,
+            'reload_input': action_executor.reloadInput,
+            'retry_new': action_executor.retry_new,
+            'set_hashtag': action_executor.set_hashtag,
+            'remove_hashtag': action_executor.remove_hashtag,
+            'sync_jedi': action_executor.sync_jedi,
+            'disable_idds': action_executor.create_disable_idds_action
+        }
+    return action_translation[action](task_id, *args)
 
 def do_action(owner, task_id, action, *args):
 

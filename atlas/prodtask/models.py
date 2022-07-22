@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from enum import Enum, auto
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -724,6 +725,28 @@ class StepExecution(models.Model):
 
 
 
+class TaskTemplate(models.Model):
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_TEMPLATE_ID', primary_key=True)
+    step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID')
+    name = models.CharField(max_length=130, db_column='TASK_NAME')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
+    task_template = models.JSONField(db_column='TEMPLATE')
+    task_error = models.CharField(max_length=4000, db_column='TRASK_ERROR', null=True)
+    build = models.CharField(max_length=200, db_column='TAG', null=True)
+
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(TaskTemplate, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table =  "T_TASK_TEMPLATE"
+
+
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
@@ -787,13 +810,42 @@ class TTask(models.Model):
 
 
 
+
 class ProductionTask(models.Model):
-    STATUS_ORDER = ['total', 'waiting','staging','registered', 'assigning', 'submitting', 'ready', 'running',
-                    'paused', 'exhausted', 'done', 'finished', 'toretry', 'toabort', 'failed', 'broken', 'aborted',
-                    'obsolete']
-    SYNC_STATUS = ['running','registered','paused','assigning','toabort','toretry','submitting','ready','exhausted','waiting', 'staging']
-    RED_STATUS = ['failed','aborted','broken']
-    NOT_RUNNING = RED_STATUS + ['finished','done','obsolete']
+
+
+    class STATUS:
+        WAITING = 'waiting'
+        STAGING = 'staging'
+        REGISTERED = 'registered'
+        ASSIGNING = 'assigning'
+        SUBMITTING = 'submitting'
+        READY = 'ready'
+        RUNNING = 'running'
+        PAUSED = 'paused'
+        EXHAUSTED = 'exhausted'
+        DONE = 'done'
+        FINISHED = 'finished'
+        TORETRY = 'toretry'
+        TOABORT = 'toabort'
+        FAILED = 'failed'
+        BROKEN = 'broken'
+        ABORTED = 'aborted'
+        OBSOLETE = 'obsolete'
+
+
+    STATUS_ORDER = ['total', STATUS.WAITING, STATUS.STAGING, STATUS.REGISTERED, STATUS.ASSIGNING, STATUS.SUBMITTING,
+                    STATUS.READY, STATUS.RUNNING, STATUS.PAUSED, STATUS.EXHAUSTED, STATUS.DONE, STATUS.FINISHED,
+                    STATUS.TORETRY, STATUS.TOABORT, STATUS.FAILED, STATUS.BROKEN, STATUS.ABORTED, STATUS.OBSOLETE]
+    SYNC_STATUS = [STATUS.RUNNING, STATUS.REGISTERED, STATUS.PAUSED, STATUS.ASSIGNING, STATUS.TOABORT, STATUS.TORETRY,
+                   STATUS.SUBMITTING, STATUS.READY, STATUS.EXHAUSTED, STATUS.WAITING, STATUS.STAGING]
+    RED_STATUS = [STATUS.FAILED, STATUS.ABORTED, STATUS.BROKEN]
+    NOT_RUNNING = RED_STATUS + [STATUS.FINISHED, STATUS.DONE, STATUS.OBSOLETE]
+    OBSOLETE_READY_STATUS = [STATUS.FINISHED, STATUS.DONE]
+
+
+
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
@@ -847,7 +899,7 @@ class ProductionTask(models.Model):
     def failure_rate(self):
         try:
             #rate = round(self.total_files_failed/self.total_files_tobeused*100,3);
-            rate = self.total_files_failed/self.total_files_tobeused*100;
+            rate = self.total_files_failed/self.total_files_tobeused*100
             if rate == 0 or rate>=1:
                 rate = int(rate)
             elif rate < .001:
@@ -1086,6 +1138,15 @@ def remove_hashtag_from_task(task_id, hashtag):
 
 class StepAction(models.Model):
 
+    class STATUS:
+        ACTIVE = 'active'
+        FAILED = 'failed'
+        DONE = 'done'
+        EXECUTING = 'executing'
+        CANCELED = 'canceled'
+
+    ACTIVE_STATUS = [STATUS.ACTIVE, STATUS.EXECUTING]
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ACTION_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
     step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')
@@ -1139,9 +1200,10 @@ class DatasetStaging(models.Model):
 
     ACTIVE_STATUS = ['queued','staging']
 
-    class STATUS():
+    class STATUS:
         QUEUED = 'queued'
         STAGING = 'staging'
+        CANCELED = 'canceled'
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DATASET_STAGING_ID', primary_key=True)
     dataset = models.CharField(max_length=255, db_column='DATASET', null=True)

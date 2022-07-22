@@ -11,6 +11,7 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.open_ended import check_open_ended
+from atlas.prodtask.task_actions import do_new_action
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container
 from functools import wraps
 
@@ -68,6 +69,10 @@ def cric_profile_sync():
     sync_cric_deft()
     return None
 
+@app.task
+def async_tasks_action(username, task_ids, action, *args):
+    result = [do_new_action(username, x, action, *args) for x in task_ids]
+    return result
 
 @app.task(ignore_result=True)
 def find_DC_existsed_replica_tasks():
