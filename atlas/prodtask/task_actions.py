@@ -91,8 +91,8 @@ def create_disable_idds_action(owner, task_id):
 
     return {'exception':'No staging rule is found'}
 
-def do_new_action(owner, task_id, action, *args):
-    action_executor = TaskActionExecutor(owner)
+def do_new_action(owner, task_id, action, comment, *args):
+    action_executor = TaskActionExecutor(owner, comment)
     action_translation = {
             'abort': action_executor.killTask,
             'finish': action_executor.finishTask,

@@ -66,9 +66,9 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     username: str
     comment: str
 
-    ES_PATTERN = "https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(task,prod_request,user,return_code,return_message,comment),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:_log_production_task_action_message),type:phrase),query:(match_phrase:(funcName:_log_production_task_action_message))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:{0}),type:phrase),query:(match_phrase:(prod_request:{0})))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:M,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))"
-
+    ES_PATTERN = "https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(task,action,params,prod_request,user,return_code,return_message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:_log_production_task_action_message),type:phrase),query:(match_phrase:(funcName:_log_production_task_action_message))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:{0}),type:phrase),query:(match_phrase:(prod_request:{0})))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:M,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))"
     JIRA_MESSAGE_TEMPLATE = "Tasks actions for this request can be found [es-atlas|{link}]"
+
     def __init__(self, username, comment=''):
         self.jedi_client = JEDIClient()
         self.username = username

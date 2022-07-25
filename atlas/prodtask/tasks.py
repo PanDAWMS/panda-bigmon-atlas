@@ -70,8 +70,8 @@ def cric_profile_sync():
     return None
 
 @app.task
-def async_tasks_action(username, task_ids, action, *args):
-    result = [do_new_action(username, x, action, *args) for x in task_ids]
+def async_tasks_action(username, task_ids, action, comment, *args):
+    result = [do_new_action(username, x, action, comment, *args) for x in task_ids]
     return result
 
 @app.task(ignore_result=True)
