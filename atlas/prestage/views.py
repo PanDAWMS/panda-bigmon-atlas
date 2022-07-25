@@ -29,6 +29,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from atlas.prodtask.task_actions import _do_deft_action
+from atlas.task_action.task_management import TaskActionExecutor
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -397,11 +398,11 @@ def start_stagind_task(task):
     #Send resume command
     if(task.status in ['staging','waiting']):
         _logger.info('Resume task after pre stage %s ' % (str(task.id)))
-        _do_deft_action('mborodin',int(task.id),'resume_task')
-    pass
+        #_do_deft_action('mborodin',int(task.id),'resume_task')
+        action_executor = TaskActionExecutor('mborodin', 'Resume task after pre stage')
+        action_executor.resumeTask(int(task.id))
 
 def send_use_archive_task(task):
-    #Send resume command
     _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
 
 
