@@ -2446,6 +2446,30 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             showTasksFromSlices(sliceList)
         }
 
+        function splitSlicesByEventsClick(event){
+            event.preventDefault();
+            var sliceList = getCheckedSlices();
+            var i=0;
+            var sendData = {slices:sliceList};
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: construct_django_url('/prodtask/replace_relation_to_input_slices/',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        }
+
+
         function splitSlicesByTIDClick(event){
             event.preventDefault();
             var sliceList = getCheckedSlices();
@@ -4096,6 +4120,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  </div>
                  <div class="row">
                      <button id="splitSliceByTID" class="btn_is_authenticated" title="Split slices by tid" onclick="splitSlicesByTIDClick(event);">Split by tid</button>
+                 </div>
+
+                <div class="row">
+                     <button id="splitSliceByEvents" class="btn_is_authenticated" title="Split slices by Events" onclick="splitSlicesByEventsClick(event);">Split by Events</button>
                  </div>
 
             </div>

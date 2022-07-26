@@ -250,6 +250,82 @@ def find_parent_slices(request, reqid, parent_request):
             _logger.error(str(e))
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+
+def find_parent_tid(step: StepExecution) -> str:
+    tasks = ProductionTask.objects.filter(step=step.step_parent)
+    if len(step.step_parent.step_template.output_formats.split('.')) > 1:
+        if step.get_task_config('input_format'):
+            input_format = step.get_task_config('input_format')
+        else:
+            return ''
+    else:
+        input_format = step.step_parent.step_template.output_formats
+    for output_datset in ProductionDataset.objects.filter(task_id=tasks[0].id):
+        if f".{input_format}." in output_datset.name:
+            if len(tasks) == 1:
+                return output_datset.name
+            else:
+                return output_datset.name.split('_tid')[0]
+
+
+def replace_parent_step(production_request: int, ordered_slices: [int]) -> [int]:
+    result_slices = []
+    for slice_number in ordered_slices:
+        slice = InputRequestList.objects.get(slice=slice_number,request=production_request)
+        steps = StepExecution.objects.filter(slice=slice,request=production_request)
+        ordered_existed_steps, parent_step = form_existed_step_list(steps)
+        if steps[0].request.request_type == 'MC':
+            STEPS = StepExecution.STEPS
+        else:
+            STEPS = [''] * len(StepExecution.STEPS)
+        step_as_in_page = form_step_in_page(ordered_existed_steps, STEPS, parent_step)
+        for index, step in enumerate(step_as_in_page):
+            if step and not ProductionTask.objects.filter(step=step).exists() and (step.step_parent != step):
+                if (ProductionTask.objects.filter(step=step.step_parent).exists() and
+                    not ProductionTask.objects.filter(step=step.step_parent).exclude(status__in=ProductionTask.NOT_RUNNING).exists()
+                        and type(step.input_events) is int and step.input_events>0):
+                    slice_input = find_parent_tid(step)
+                    if slice_input:
+                        if step.step_parent == parent_step:
+                            new_step = step
+                        else:
+                            new_slice = clone_slices(production_request,production_request,[step.slice.slice],index,True)[0]
+                            new_steps = StepExecution.objects.filter(
+                                slice=InputRequestList.objects.get(slice=new_slice,request=production_request),
+                                request=production_request)
+                            ordered_new_steps, _ = form_existed_step_list(new_steps)
+                            new_step = ordered_new_steps[0]
+                        new_step.step_parent = new_step
+                        new_step.slice.dataset = slice_input
+                        new_step.slice.save()
+                        new_step.save()
+                        result_slices.append(new_step.slice.slice)
+    return result_slices
+
+
+@csrf_protect
+def replace_relation_to_input_slices(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            start_time = time()
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            ordered_slices = list(map(int,slices))
+            _logger.debug(form_request_log(reqid,request,'Replace child-parent to tids slices: %s'% (str(ordered_slices))))
+            ordered_slices.sort()
+            changed_slices = replace_parent_step(reqid, ordered_slices)
+            results = {'success':True}
+            request.session['selected_slices'] = list(map(int,changed_slices))
+            _jsonLogger.info('Finish replacing parenr steps for MC slices', extra=form_json_request_dict(reqid,request,
+                                                                                                      {'duration':time()-start_time,'slices':json.dumps(slices)}))
+        except Exception as e:
+            _logger.error(str(e))
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
 @csrf_protect
 def async_find_parent_slices(request, reqid, parent_request):
     if request.method == 'POST':

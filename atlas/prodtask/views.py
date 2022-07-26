@@ -147,7 +147,7 @@ def step_status_definition(is_skipped, is_approve=True, is_waiting=False):
         return 'NotChecked'
 
 
-def form_existed_step_list(step_list):
+def form_existed_step_list(step_list) -> ([StepExecution],StepExecution):
     result_list = []
     temporary_list = []
     another_chain_step = None

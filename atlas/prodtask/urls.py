@@ -180,6 +180,8 @@ urlpatterns = [
     url(r'^make_report/(?P<production_request_type>\w+)/(?P<number_of_days>\d)/$', report_view.make_report, name='make_report'),
     url(r'^make_default_report/$', report_view.make_default_report, name='make_default_report'),
     url(r'^find_input_datasets/(?P<reqid>\d+)/$', views.find_input_datasets, name='find_input_datasets'),
+    url(r'^replace_relation_to_input_slices/(?P<reqid>\d+)/$', step_manage_views.replace_relation_to_input_slices, name='replace_relation_to_input_slices'),
+
     url(r'^task_about/$', views.about, name='about'),
 
 
