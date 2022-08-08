@@ -408,6 +408,8 @@ def send_use_archive_task(task):
 
 def fill_source_replica_template(ddm, dataset, source_replica_template, physical_tape):
     if source_replica_template and ('{source_tape}' in source_replica_template):
+        if '_sub' in dataset:
+            dataset = dataset.split('_sub')[0]
         dataset_tape_replicas = ddm.full_replicas_per_type(dataset)
         for tape in dataset_tape_replicas['tape']:
             if convert_input_to_physical_tape(tape['rse']) == physical_tape:
@@ -678,11 +680,18 @@ def convert_input_to_physical_tape(input):
 
 def create_prestage(task,ddm,rule, input_dataset,config, special=None, destination=None):
     #check that's only Tape replica
-    replicas = ddm.full_replicas_per_type(input_dataset)
-    if (len(replicas['data']) > 0) and not destination:
+    original_data_replica = False
+    original_dataset = input_dataset
+    if '_sub' in input_dataset:
+        original_dataset = input_dataset.split('_sub')[0]
+        original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
+    replicas = ddm.full_replicas_per_type(original_dataset)
+
+    if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
         start_stagind_task(task)
         return True
     else:
+
         #No data replica - create a rule
         source_replicas = None
         input = None
@@ -693,7 +702,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                 if special in ([x['rse'] for x in replicas['tape']]+['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']):
                     rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(special)
                 else:
-                    rule, source_replicas, input = ddm.get_replica_pre_stage_rule(input_dataset)
+                    rule, source_replicas, input = ddm.get_replica_pre_stage_rule(original_dataset)
         else:
             if replicas['tape']:
                 input = [x['rse'] for x in replicas['tape']]
