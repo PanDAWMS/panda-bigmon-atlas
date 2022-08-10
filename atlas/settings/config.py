@@ -3,7 +3,7 @@ from os.path import dirname, join
 
 import atlas
 import atlas.common
-from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT
+from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT, ADMIN_MAILS
 
 ALLOWED_HOSTS = [
     ### cern.ch
@@ -18,6 +18,8 @@ ALLOWED_HOSTS = [
 
     '127.0.0.1', '.localhost'
 ]
+
+admin_mails = ADMIN_MAILS
 
 defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
 
