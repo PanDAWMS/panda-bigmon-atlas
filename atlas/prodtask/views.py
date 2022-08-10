@@ -1,6 +1,7 @@
 import re
 
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.forms import model_to_dict
 import json
 import logging
@@ -31,6 +32,7 @@ from atlas.prodtask.mcevgen import sync_request_jos
 from atlas.prodtask.models import HashTagToRequest, HashTag,  StepAction, ActionStaging, \
     ActionDefault, SliceError
 from atlas.prodtask.spdstodb import fill_template
+from .settings import APP_SETTINGS
 
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from ..prodtask.ddm_api import find_dataset_events, DDM
@@ -45,6 +47,8 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
     OpenEndedRequest, TrainProduction, ParentToChildRequest, TProject
 
 from django.db.models import Q
+
+from ..settings import admin_mails
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -3456,3 +3460,10 @@ def single_request_action_celery_task(reqid, task_function, task_name, user, *ar
     _jsonLogger.info('Celery task is sent', extra={'celery_task_id': celery_task.task_id,'celery_task_name': task_name,
                                                    'user': user, 'prod_request': reqid})
     return {'status': 'OK', 'task_id': celery_task.task_id, 'user': user, 'name': task_name}
+
+def send_alarm_message(subject, message):
+    send_mail(subject,
+              message,
+              APP_SETTINGS['prodtask.email.from'],
+              admin_mails,
+              fail_silently=False)
