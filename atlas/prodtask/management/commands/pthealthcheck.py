@@ -21,7 +21,7 @@ class Command(BaseCommand):
                     send_alarm_message('Alarm: the celery beat health check problem',
                               f'Celery beat health check problem {e}')
                     raise e
-                if (timezone.now() - last_executed_task.last_run_at) < timedelta(hours=3):
+                if (timezone.now() - last_executed_task.last_run_at) > timedelta(hours=3):
                     send_alarm_message('Alarm: the celery beat is stuck',
                                        f'Celery beat last updated {last_executed_task.last_run_at}')
             except Exception as e:
