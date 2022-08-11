@@ -1,6 +1,6 @@
 cx-Oracle==8.3.0
 decorator==5.1.1
-Django==3.2.12
+Django==3.2.15
 django-tables2==2.4.1
 djangorestframework==3.13.1
 elasticsearch==6.8.2
