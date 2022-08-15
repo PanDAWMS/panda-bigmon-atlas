@@ -14,6 +14,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not args:
+            self.stdout.write(f'Start celery beat health check {timezone.now()}')
+
             try:
                 try:
                     last_executed_task = PeriodicTask.objects.all().order_by('-last_run_at')[0]
