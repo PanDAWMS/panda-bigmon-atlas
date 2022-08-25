@@ -405,11 +405,18 @@ def start_stagind_task(task):
 def send_use_archive_task(task):
     _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
 
+def translate_sub_dataset_name(dataset: str) -> str:
+    if '_grl' in dataset:
+        base_dataset = dataset.split('_sub')[0]
+        if base_dataset.endswith('.'):
+            return base_dataset[:-1]
+        return base_dataset
+    return dataset
 
 def fill_source_replica_template(ddm, dataset, source_replica_template, physical_tape):
     if source_replica_template and ('{source_tape}' in source_replica_template):
         if '_sub' in dataset:
-            dataset = dataset.split('_sub')[0]
+            dataset = translate_sub_dataset_name(dataset)
         dataset_tape_replicas = ddm.full_replicas_per_type(dataset)
         for tape in dataset_tape_replicas['tape']:
             if convert_input_to_physical_tape(tape['rse']) == physical_tape:
@@ -683,7 +690,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
     original_data_replica = False
     original_dataset = input_dataset
     if '_sub' in input_dataset:
-        original_dataset = input_dataset.split('_sub')[0]
+        original_dataset = translate_sub_dataset_name(input_dataset)
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
     replicas = ddm.full_replicas_per_type(original_dataset)
 
