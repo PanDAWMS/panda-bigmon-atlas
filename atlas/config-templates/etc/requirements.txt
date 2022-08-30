@@ -17,6 +17,6 @@ celery==5.2.3
 django-celery-beat==2.2.1
 django-celery-results==2.2.0
 python-json-logger==2.0.2
-mod-wsgi==4.9.0
+mod-wsgi==4.9.3
 pandas==1.4.1
 openpyxl==3.0.9
