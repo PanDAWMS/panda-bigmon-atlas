@@ -20,5 +20,6 @@ urlpatterns = [
     url(r'^gp_deletions_containers_cached/$', group_production_datasets_full, name='group_production_datasets_full'),
     url(r'^production_requet_results/(?P<production_request>\d+)/$', request_results, name='request_results'),
     url(r'^clone_AL_request/$', clone_active_learning_request, name='clone_active_learning_request'),
-
+    url(r'^is_stage_rule_stuck_because_of_tape/$', is_stage_rule_stuck_because_of_tape,
+        name='is_stage_rule_stuck_because_of_tape')
 ]

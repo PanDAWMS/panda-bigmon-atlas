@@ -30,6 +30,9 @@ from django.shortcuts import render
 
 from atlas.prodtask.task_actions import _do_deft_action
 from atlas.task_action.task_management import TaskActionExecutor
+from elasticsearch7_dsl import Search, connections
+from elasticsearch7 import Elasticsearch
+from atlas.settings.local import MONIT_ES
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -2079,3 +2082,48 @@ def find_stale_stages(days=10):
 
 
 
+def staging_rule_verification(dataset: str, stuck_days: int = 10) -> (bool,bool):
+    """
+
+    :param dataset:
+    :param stuck_days:
+    :return: Two booleans: 1) Is rule not updated for stuck_days and 2) if any of files stuck due to tape problem
+    """
+
+    if not DatasetStaging.objects.filter(dataset=dataset).exists():
+        raise ValueError(f'Staging for {dataset} is not found')
+    if not  DatasetStaging.objects.filter(dataset=dataset,status=DatasetStaging.STATUS.STAGING,
+                                          update_time__lte=timezone.now()-timedelta(days=stuck_days)).exists():
+        return False, False
+    ddm = DDM()
+    dataset_staging = DatasetStaging.objects.filter(dataset=dataset).last()
+    rule_id = dataset_staging.rse
+    # Get list of files which are not yet staged
+    stuck_files = [ file_lock['name'] for file_lock in ddm.list_locks(rule_id) if file_lock['state'] != 'OK']
+    # Check in ES that files have failed attempts from tape. Limit to 1000 files, should be enough
+    connection = Elasticsearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']),
+                               verify_certs=MONIT_ES['verify_certs'], timeout=10000)
+    days_since_start = stuck_days
+    if dataset_staging.start_time and ((timezone.now() - dataset_staging.start_time).days > days_since_start):
+            days_since_start = (timezone.now() - dataset_staging.start_time).days
+    tape_replicas = ddm.full_replicas_per_type(dataset_staging.dataset)['tape']
+    # Find source Tape replica
+    source = None
+    for replica in tape_replicas:
+        if convert_input_to_physical_tape(replica['rse']) == dataset_staging.source:
+            source = replica['rse']
+            break
+    if not source:
+        raise ValueError(f'{dataset_staging.dataset} tape replica is not found')
+    s = Search(using=connection, index='monit_prod_ddm_enr_*').\
+        query("terms", data__name=stuck_files[:1000]).\
+        query("range", **{
+                "metadata.timestamp": {
+                    "gte": f"now-{days_since_start}d/d",
+                    "lt": "now/d"
+                }}).\
+        query("match", data__event_type='transfer-failed').\
+        query('match', data__src_endpoint=source)
+    if s.count() > 0:
+        return True, True
+    return True, False

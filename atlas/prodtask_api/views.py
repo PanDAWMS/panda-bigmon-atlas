@@ -9,11 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
+from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import form_existed_step_list, set_request_status
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 
@@ -157,3 +159,30 @@ def test_api(request):
     data = request.data
 
     return Response({'user':request.user.username,'data':data})
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def is_stage_rule_stuck_because_of_tape(request):
+    """
+        CHeck that "dataset" is stuck for "days" due to a tape problem\n
+       * dataset: dataset name. Required\n
+       * days: Days request should not being updated to be stuck, 7 is minimum, 10 is default. optional
+
+    """
+    try:
+        dataset = request.query_params.get('dataset')
+        days = int(request.query_params.get('days', 10))
+        if not dataset:
+            raise ValueError('dataset name is required')
+        if days < 7:
+            raise ValueError('7 days is a minimum')
+        stuck, result = staging_rule_verification(dataset, days)
+        _jsonLogger.info("Check staging rule to be stuck",
+                         extra={'dataset': dataset, 'days': days, 'result': str((stuck, result))})
+        return Response({'dataset': dataset, 'days': days, 'stuck': stuck, 'tape_errors': result})
+    except Exception as e:
+        _jsonLogger.error(f"Check staging rule to be stuck failed {e}")
+        return HttpResponseBadRequest(e)
