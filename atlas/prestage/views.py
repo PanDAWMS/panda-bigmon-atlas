@@ -2098,6 +2098,10 @@ def staging_rule_verification(dataset: str, stuck_days: int = 10) -> (bool,bool)
     ddm = DDM()
     dataset_staging = DatasetStaging.objects.filter(dataset=dataset).last()
     rule_id = dataset_staging.rse
+    # Check rucio claims it's Tape problem:
+    rule_info = ddm.get_rule(rule_id)
+    if rule_info.get('error') and ('[TAPE SOURCE]' in rule_info.get('error')):
+        return True, True
     # Get list of files which are not yet staged
     stuck_files = [ file_lock['name'] for file_lock in ddm.list_locks(rule_id) if file_lock['state'] != 'OK']
     # Check in ES that files have failed attempts from tape. Limit to 1000 files, should be enough

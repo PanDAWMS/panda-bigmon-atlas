@@ -10,7 +10,7 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
 from atlas.prestage.views import staging_rule_verification
-from atlas.prodtask.models import TRequest, InputRequestList, StepExecution
+from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import form_existed_step_list, set_request_status
 
@@ -164,10 +164,9 @@ def test_api(request):
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
-@parser_classes((JSONParser,))
 def is_stage_rule_stuck_because_of_tape(request):
     """
-        CHeck that "dataset" is stuck for "days" due to a tape problem\n
+        Check that "dataset" is stuck for "days" due to a tape problem\n
        * dataset: dataset name. Required\n
        * days: Days request should not being updated to be stuck, 7 is minimum, 10 is default. optional
 
@@ -177,6 +176,12 @@ def is_stage_rule_stuck_because_of_tape(request):
         days = int(request.query_params.get('days', 10))
         if not dataset:
             raise ValueError('dataset name is required')
+        if not DatasetStaging.objects.filter(dataset=dataset).exists():
+            if ':' not in dataset:
+                if DatasetStaging.objects.filter(dataset=dataset.split('.')[0]+':'+dataset).exists():
+                    dataset = dataset.split('.')[0]+':'+dataset
+                else:
+                    raise  ValueError(f'Staging for {dataset} is not found')
         if days < 7:
             raise ValueError('7 days is a minimum')
         stuck, result = staging_rule_verification(dataset, days)
@@ -185,4 +190,4 @@ def is_stage_rule_stuck_because_of_tape(request):
         return Response({'dataset': dataset, 'days': days, 'stuck': stuck, 'tape_errors': result})
     except Exception as e:
         _jsonLogger.error(f"Check staging rule to be stuck failed {e}")
-        return HttpResponseBadRequest(e)
+        return HttpResponseBadRequest(f"Check staging rule to be stuck failed {e}")
