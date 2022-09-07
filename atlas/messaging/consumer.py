@@ -59,11 +59,11 @@ class Listener(stomp.ConnectionListener):
         else:
             self._test_listener = None
 
-    def on_message(self, headers, message):
-        message_id = headers["message-id"]
+    def on_message(self, frame):
+        message_id = frame.headers["message-id"]
         logger.info(f"Message ID: {message_id}")
-        logger.debug("Listener %s Received headers: %s"%(self._listener_id, headers))
-        logger.debug("Listener %s Received message: %s"%(self._listener_id, message))
+        logger.debug("Listener %s Received headers: %s"%(self._listener_id, frame.headers))
+        logger.debug("Listener %s Received message: %s"%(self._listener_id, frame.body))
 
         # https://jasonrbriggs.github.io/stomp.py/api.html#acks-and-nacks
         def ack_logic():
@@ -73,7 +73,7 @@ class Listener(stomp.ConnectionListener):
             # Requeue is used because of RabbitMQ: https://www.rabbitmq.com/stomp.html#ack-nack
             self._connection.nack(message_id, self._subscription_id, requeue=False)
 
-        self._callback(Payload(ack_logic, nack_logic, headers, json.loads(message)))
+        self._callback(Payload(ack_logic, nack_logic, frame.headers, json.loads(frame.body)))
 
     def is_open(self):
         return self._connection.is_connected()
@@ -126,8 +126,8 @@ def build_listener(connection_settings, callback, destination_name ,ack_type=Ack
     # http://jasonrbriggs.github.io/stomp.py/api.html
     conn = stomp.connect.StompConnection11(
         hosts,
-        ssl_version=ssl_version,
-        use_ssl=use_ssl,
+        # ssl_version=ssl_version,
+        # use_ssl=use_ssl,
         heartbeats=(outgoing_heartbeat, incoming_heartbeat),
         vhost=vhost,
     )
