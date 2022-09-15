@@ -150,7 +150,7 @@ def log_external_task_action(action, username, body, status):
                     if key != 'task_id':
                         args.append(value)
                 TaskActionExecutor._log_production_task_action_message(username, '', task.request_id, task.id, action, jedi_info['return_code'],
-                                                     jedi_info['return_info'], *args)
+                                                     jedi_info['return_info'] or '', *args)
         except Exception as ex:
             _logger.error(f'Problem action logging {ex}')
     return None
