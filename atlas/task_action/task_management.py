@@ -75,10 +75,11 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         self.jira_client = None
         self.comment = comment
 
-    def _log_production_task_action_message(self, production_request_id, task_id, action, return_code, return_message, *args):
+    @staticmethod
+    def _log_production_task_action_message(username, comment, production_request_id, task_id, action, return_code, return_message, *args):
         _jsonLogger.info("Production task action",
-                         extra={'task': str(task_id), 'prod_request': production_request_id,'user': self.username, 'action': action, 'params': json.dumps(args),
-                                'return_code': return_code,'return_message': return_message ,'comment': self.comment})
+                         extra={'task': str(task_id), 'prod_request': production_request_id,'user': username, 'action': action, 'params': json.dumps(args),
+                                'return_code': return_code,'return_message': return_message ,'comment': comment})
 
 
     def _log_analysis_task_action_message(self, task_id, action, return_code, return_message, *args):
@@ -104,7 +105,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                         self.jira_client.add_issue_comment(production_request.jira_reference, jira_message)
                         production_request.set_info_field('task_jira_es', True)
                         production_request.save()
-                    self._log_production_task_action_message(production_request.reqid, task_id, action, return_code, return_message, *args)
+                    self._log_production_task_action_message(self.username, self.comment, production_request.reqid, task_id, action, return_code, return_message, *args)
                     return
             self._log_analysis_task_action_message(task_id, action, return_code, return_message, *args)
         except Exception as ex:

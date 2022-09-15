@@ -10,12 +10,16 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
     clean_stale_actions, find_stale_stages
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
+from atlas.prodtask.models import ProductionTask
 from atlas.prodtask.open_ended import check_open_ended
 from atlas.prodtask.task_actions import do_new_action
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container
 from functools import wraps
 
 import logging
+
+from atlas.task_action.task_management import TaskActionExecutor
+
 _logger = logging.getLogger('prodtaskwebui')
 
 
@@ -131,4 +135,22 @@ def clean_stale_action_task():
 @app.task(ignore_result=True)
 def rebalance_tape_carousel():
     find_stale_stages(8)
+    return None
+
+@app.task(ignore_result=True)
+def log_external_task_action(action, username, body, status):
+    if 'task_id' in body:
+        try:
+            task_id = int(body['task_id'])
+            if ProductionTask.objects.filter(id=task_id).exists:
+                task = ProductionTask.objects.get(id=task_id)
+                jedi_info = status['jedi_info']
+                args = []
+                for key,value in body.items():
+                    if key != 'task_id':
+                        args.append(value)
+                TaskActionExecutor._log_production_task_action_message(username, '', task.request_id, task.id, action, jedi_info['return_code'],
+                                                     jedi_info['return_info'], *args)
+        except Exception as ex:
+            _logger.error(f'Problem action logging {ex}')
     return None
