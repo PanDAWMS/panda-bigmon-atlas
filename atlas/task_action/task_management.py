@@ -79,14 +79,14 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def _log_production_task_action_message(username, comment, production_request_id, task_id, action, return_code, return_message, *args):
         _jsonLogger.info("Production task action",
                          extra={'task': str(task_id), 'prod_request': production_request_id,'user': username, 'action': action, 'params': json.dumps(args),
-                                'return_code': return_code,'return_message': return_message ,'comment': comment})
+                                'return_code': str(return_code),'return_message': return_message ,'comment': comment})
 
 
     def _log_analysis_task_action_message(self, task_id, action, return_code, return_message, *args):
         _jsonLogger.info("Analysis task action",
                          extra={'task': str(task_id), 'user': self.username, 'comment': self.comment,
                                 'action': action, 'params': json.dumps(args),
-                                'return_code': return_code, 'return_message': return_message})
+                                'return_code': str(return_code), 'return_message': return_message})
 
 
     def _log_action_message(self, task_id, action, return_code, return_message, *args):
