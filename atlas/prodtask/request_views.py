@@ -1835,7 +1835,7 @@ def request_create(request):
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
-                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'25','maxFailure':'15'})
+                                   {'nEventsPerJob':'5000','priority':'520','maxAttempt':'25','maxFailure':'5'})
 
 
 @login_required(login_url='/prodtask/login/')
