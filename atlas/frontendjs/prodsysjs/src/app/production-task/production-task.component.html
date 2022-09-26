@@ -1,0 +1,3 @@
+<div  *ngIf="task$ | async as task">{{task.id}} - {{task.status}}</div>
+<div  *ngIf="actionLog$ | async as actionLogs"><ul *ngFor="let action of actionLogs"><li>{{action.action}} - {{action.message}}</li></ul></div>
+<app-task-action  *ngIf="task$ | async as task" [task]="task"></app-task-action>

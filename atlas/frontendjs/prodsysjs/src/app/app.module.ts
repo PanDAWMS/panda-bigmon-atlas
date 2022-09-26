@@ -53,6 +53,9 @@ import { UnmergeCleaningComponent } from './unmerge-cleaning/unmerge-cleaning.co
 import { UnmergeDatasetsComponent } from './unmerge-cleaning/unmerge-datasets/unmerge-datasets.component';
 import {MatPaginatorModule} from "@angular/material/paginator";
 import {SpecialCleaningResolver, UnmergeCleaningResolver} from "./unmerge-cleaning/unmerge-cleaning.resolver";
+import { ProductionTaskComponent } from './production-task/production-task.component';
+import {DialogTaskSubmissionComponent, TaskActionComponent} from './task-action/task-action.component';
+import {MatMenuModule} from "@angular/material/menu";
 
 
 const routerOptions: ExtraOptions = {
@@ -84,6 +87,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         },
       {path: 'request/ids/:reqIDs', component: ProductionRequestComponent},
   {path: 'request/:jira', component: ProductionRequestComponent},
+  {path: 'task/:id', component: ProductionTaskComponent},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
 
@@ -122,7 +126,10 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     ChipsMultiSelectColoredComponent,
     TaskStatsComponent,
     UnmergeCleaningComponent,
-    UnmergeDatasetsComponent
+    UnmergeDatasetsComponent,
+    ProductionTaskComponent,
+    TaskActionComponent,
+    DialogTaskSubmissionComponent
   ],
     imports: [
         BrowserModule,
@@ -158,7 +165,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         MatToolbarModule,
         MatSelectModule,
         MatExpansionModule,
-        MatPaginatorModule
+        MatPaginatorModule,
+        MatMenuModule
 
     ],
   providers: [

@@ -1,0 +1,41 @@
+<h1 mat-dialog-title>Task action: {{data.action_name}}</h1>
+<div mat-dialog-content>
+  Execute action for task: <b>{{data.task.id}}</b> with status: {{data.task.status}} <p></p>
+ <span *ngIf="parameters!==''">{{parameters}}</span>
+    <p></p>
+
+  <mat-form-field  appearance="fill" >
+    <mat-label>Comment(optional)</mat-label>
+    <input matInput [(ngModel)]="comment" >
+  </mat-form-field>
+  <p></p>
+  <div *ngIf="actionResult">
+    <div *ngIf="!actionResult.action_sent" style="display: flex">
+      <mat-icon color="warn">error</mat-icon>
+      <div *ngIf="actionResult.action_verification[0].action_allowed">
+        {{data.action_name}} is not allowed for a task in the status {{data.task.status}}
+      </div>
+    </div>
+    <div *ngIf="!actionResult.action_sent" style="display: flex">
+      <mat-icon  color="warn">error</mat-icon>
+      <div *ngIf="!actionResult.action_verification[0].action_allowed">
+        {{data.action_name}} is not allowed for a task in the status {{data.task.status}}
+      </div>
+      <div *ngIf="actionResult.action_verification[0].action_allowed && ! actionResult.action_verification[0].user_allowed">
+        You are not permitted to execute this action.
+      </div>
+    </div>
+    <div *ngIf="actionResult.action_sent" style="display: flex">
+      <mat-icon style="color: #2f9686">task_alt</mat-icon>
+      <div>
+        JEDI return code: {{actionResult.result[0].return_code}}
+        <p></p>
+        JEDI info: {{actionResult.result[0].return_info}}
+      </div>
+    </div>
+    {{actionResult|json}}</div>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="dialogRef.close()">Cancel</button>
+  <button mat-button (click)="submitAction()" >OK</button>
+</div>

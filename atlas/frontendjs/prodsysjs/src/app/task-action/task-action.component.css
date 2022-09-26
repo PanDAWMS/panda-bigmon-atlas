@@ -1,0 +1,54 @@
+.action-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+.action-menu-vertical-fields {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.action-menu-row .mat-raised-button {
+  height: 40px;
+  margin: 0 13px;
+}
+.action-menu-row .mat-raised-button, .task-action-button-field, .action-label,
+.action-menu-vertical-fields .mat-raised-button, .action-button-column .mat-raised-button {
+    font-size: 16px;
+}
+ .action-checkbox {
+    font-size: 20px;
+    margin: 3px 8px;
+}
+.task-action-button-field {
+  width: 200px;
+}
+
+.task-action-input-form {
+  width: 200px;
+}
+
+.action-label {
+  text-align: center;
+}
+
+.action-button-column{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+
+.action-button-column .mat-raised-button {
+  margin: 5px 8px;
+}
+
+.mat-radio-button {
+  margin-left: 8px;
+}
+
+.task-action-comment-field {
+  font-size: 13px;
+  margin-top: 8px;
+
+}

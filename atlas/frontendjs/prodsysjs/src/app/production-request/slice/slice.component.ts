@@ -1,7 +1,6 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
 import {ProductionTask, Slice, SliceBase, Step} from "../production-request-models";
 import {MAT_DIALOG_DATA, MatDialog} from "@angular/material/dialog";
-import {newArray} from "@angular/compiler/src/util";
 import {UntypedFormBuilder} from "@angular/forms";
 import {ProductionRequestService} from "../production-request.service";
 
