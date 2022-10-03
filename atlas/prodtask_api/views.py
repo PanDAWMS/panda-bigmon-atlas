@@ -1,3 +1,4 @@
+
 import json
 import logging
 
@@ -144,6 +145,9 @@ def create_slice(request):
 
 
 
+
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -156,9 +160,7 @@ def test_api(request):
 
     """
 
-    data = request.data
-
-    return Response({'user':request.user.username,'data':data})
+    return Response({'user':request.user.username,'data': request.data})
 
 
 @api_view(['GET'])

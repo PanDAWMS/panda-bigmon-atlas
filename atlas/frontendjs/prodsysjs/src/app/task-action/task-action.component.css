@@ -52,3 +52,17 @@
   margin-top: 8px;
 
 }
+.action-result-icon-error {
+  color: red;
+  margin-right: 10px;
+}
+
+.action-result-icon-task_alt {
+  color: green;
+  margin-right: 10px;
+}
+
+.action-result-icon-warning {
+  color: darkgoldenrod;
+  margin-right: 10px;
+}

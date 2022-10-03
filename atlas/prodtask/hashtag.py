@@ -468,9 +468,8 @@ def add_hashtag_to_task(hashtag_name, task_id):
     hashtag = HashTag.objects.get(hashtag=hashtag_name)
     if hashtag not in current_hashtags:
         task.set_hashtag(hashtag_name)
-        if task.status in ProductionTask.NOT_RUNNING:
-            task.timestamp = timezone.now()
-            task.save()
+        task.timestamp = timezone.now()
+        task.save()
 
 def get_key_for_request(reqid):
     request = TRequest.objects.get(reqid=reqid)

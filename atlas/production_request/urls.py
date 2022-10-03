@@ -10,7 +10,11 @@ urlpatterns = [
     url(r'^steps_for_requests/$', get_steps_api,name='get_steps_api'),
     url(r'^save_slice/$', save_slice,name='save_slice'),
     url(r'^collect_steps_by_jira/$', collect_steps_by_jira,name='collect_steps_by_jira'),
-    url(r'^info_by_jira/$', info_by_jira,name='info_by_jira')
+    url(r'^info_by_jira/$', info_by_jira,name='info_by_jira'),
+    url(r'^task/$', production_task,name='production_task'),
+    url(r'^task_action_logs/$', production_task_action_logs, name='production_task_action_logs'),
+    url(r'^task_action/$', task_action, name='task_action'),
+    url(r'^reassign_entities/$', get_reassign_entities, name='get_reassign_entities')
 
 
 ]

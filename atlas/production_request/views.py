@@ -3,11 +3,15 @@ import json
 import os
 from functools import reduce
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
+from atlas.atlaselastic.views import get_tasks_action_logs
+from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
-    ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError
+    ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
+    JediTasks
 
 from rest_framework import serializers, generics
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -15,6 +19,10 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
+
+from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares
+from atlas.task_action.task_management import TaskActionExecutor
+
 
 class SliceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -93,6 +101,63 @@ def get_steps_api(request):
     if request.query_params.get('requests_list'):
         return Response(get_steps_for_requests(list(map(int, request.query_params.get('requests_list').split(',')))))
 
+class ProductionTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductionTask
+        fields = '__all__'
+
+class JediTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JediTasks
+        fields = '__all__'
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_task(request):
+    try:
+        task_id = int(request.query_params.get('task_id'))
+        jedi_parameters_task = TTask.objects.get(id=task_id)
+        task_parameters = jedi_parameters_task.jedi_task_parameters
+        job_parameters = task_parameters.pop('jobParameters', {})
+        output_datasets = []
+        jedi_task = JediTaskSerializer(JediTasks.objects.get(id=task_id)).data
+        if ProductionTask.objects.filter(id=task_id).exists():
+            production_task = ProductionTask.objects.get(id=task_id)
+            task_data = ProductionTaskSerializer(production_task).data
+            task_data['subcampaign'] = production_task.request.subcampaign
+            task_data['request_id'] = production_task.request_id
+            task_data['coreCount'] = jedi_parameters_task.jedi_task_parameters.get('coreCount',1)
+            output_datasets = [x.name for x in ProductionDataset.objects.filter(task_id=task_id)]
+            task_data['failureRate'] = production_task.failure_rate
+            if production_task.request_id > 300:
+                task_data['projectMode'] = production_task.step.get_task_config('project_mode')
+        else:
+            task_data = {'id': task_id, 'username': jedi_parameters_task.username,
+                         'name': jedi_parameters_task.name, 'status': jedi_parameters_task.status }
+        return Response({'task':task_data, 'task_parameters': task_parameters, 'job_parameters': job_parameters,
+                         'jedi_task': jedi_task, 'output_datasets':output_datasets})
+    except ObjectDoesNotExist:
+        return Response(f"Task doesn't exist", status=400)
+    except Exception as ex:
+        return Response(f"Problem with task loading: {ex}", status=400)
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_task_action_logs(request):
+    if request.query_params.get('task_id'):
+        return Response(get_tasks_action_logs(int(request.query_params.get('task_id'))))
+
+
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def task_action(request):
+
+    return Response(None)
 
 def get_steps_for_requests(requests_ids):
     def split_list(a, n):
@@ -188,3 +253,12 @@ def info_by_jira(request):
     group = production_requests[0].phys_group
     return Response({'description': description, 'requests_number': len(production_requests), 'jira_reference': jira,
                      'manager': manager, 'phys_group': group, 'reqIDs': req_ids})
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_reassign_entities(request):
+    return Response( {
+    'sites': get_sites(),
+    'nucleus': get_nucleus(),
+    'shares': get_global_shares()})

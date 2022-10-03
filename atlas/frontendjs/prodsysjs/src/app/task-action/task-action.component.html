@@ -245,5 +245,12 @@
      </div>
   </mat-menu>
 </div>
-
-<p>Result: {{result|json}}</p>
+<ng-container *ngIf="actionExecuting">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</ng-container>
+<ng-container *ngIf="actionExecution$ | async as actionResult;">
+  <mat-card>
+    <mat-icon class="action-result-icon-{{actionResult.type}}">{{actionResult.type}}</mat-icon>
+    <span>{{actionResult.result}}</span>
+  </mat-card>
+</ng-container>

@@ -1,5 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {MatTableDataSource} from "@angular/material/table";
+import {Component, Input} from '@angular/core';
 import {Dataset} from "../gp-container-info.service";
 
 @Component({

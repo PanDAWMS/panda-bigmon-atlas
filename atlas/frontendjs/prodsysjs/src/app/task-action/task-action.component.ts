@@ -1,18 +1,16 @@
 import {Component, Inject, Input, OnInit} from '@angular/core';
 import {ProductionTask} from '../production-request/production-request-models';
-import {ReassignDestination, TaskActionResult, TaskService} from '../production-task/task-service.service';
+import {
+  ActionParams,
+  ReassignDestination, TaskAction,
+  TaskActionResult,
+  TaskService
+} from '../production-task/task-service.service';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Observable} from 'rxjs';
+import {filter, map, switchMap, tap} from 'rxjs/operators';
 
-type ActionParams = number[]|string[]|boolean[]|null;
 
-interface TaskAction {
-  task: ProductionTask;
-  action: string;
-  action_name: string;
-  params: ActionParams;
-  params_name: string[]|null;
-  comment: string;
-}
 
 
 
@@ -29,6 +27,8 @@ export class TaskActionComponent implements OnInit {
   siteOption = 'nokill';
   nucleuOption = 'nokill';
   shareOption = 'default';
+  actionExecution$: Observable<{type: string, result: string}>;
+  actionExecuting = false;
   TASKACTIONS = {
     abort: {name: 'Abort', params_name: []},
     finish: {name: 'Finish', params_name: ['Soft Finish']},
@@ -66,16 +66,46 @@ export class TaskActionComponent implements OnInit {
 
   ngOnInit(): void {
      this.taskService.getReassignEntities().subscribe( result => this.reassignEntities = result);
+     this.actionExecution$ = this.taskService.getActionList().pipe(
+       filter(value => value !== null),
+       tap(_ => this.actionExecuting = true),
+       switchMap((taskAction) => {
+         return this.taskService.submitTaskAction([taskAction.task.id], taskAction.action,
+           taskAction.comment, taskAction.params);
+       }),
+       tap(_ => this.actionExecuting = false),
+       map(taskActionResult => {
+         if (!taskActionResult.action_sent){
+           if (taskActionResult.error && (taskActionResult.error !== '')){
+             return {type: 'error', result: taskActionResult.error};
+           }
+           if (taskActionResult.action_verification.length === 1){
+             if (taskActionResult.action_verification[0].action_allowed &&
+               !taskActionResult.action_verification[0].user_allowed){
+               return {type: 'error', result: 'User permission is insufficient to execute the action'};
+             }
+             return {type: 'error', result: `The action is not allowed for a task in ${this.task.status} status`};
+           }
+         }
+         if (taskActionResult.result.length === 1) {
+           if (taskActionResult.result[0].return_info !== null && taskActionResult.result[0].return_info.includes('Command rejected')){
+             return {type: 'warning', result: `The command was sent to JEDI, return info:
+            ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
+           }
+           return {type: 'task_alt', result: `The command was sent to JEDI, return info:
+            ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
+         }
+       }));
   }
 
   executeAction(action: string, params: ActionParams): void {
-    console.log(params);
+
     if (  this.SINGLE_TASK_CONFIRMATION_REQUIRED.indexOf(action) > -1){
       this.dialog.open(DialogTaskSubmissionComponent, {data : {task: this.task, action, action_name: this.TASKACTIONS[action].name,
         params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment}});
     } else {
-      this.taskService.submitTaskAction([this.task.id], action,  this.comment, params).
-        subscribe(result => this.result = result);
+      this.taskService.addAction({task: this.task, action, action_name: this.TASKACTIONS[action].name,
+          params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment});
     }
 
   }
@@ -110,7 +140,7 @@ export class DialogTaskSubmissionComponent implements OnInit{
   }
 
   submitAction(): void {
-    this.taskService.submitTaskAction([this.data.task.id], this.data.action,  this.comment, this.data.params).
-    subscribe(result => this.actionResult = result);
+    this.taskService.addAction(this.data);
+    this.dialogRef.close();
   }
 }

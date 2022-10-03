@@ -1,0 +1,139 @@
+.mat-grid-tile {
+  border: 1px black solid;
+}
+
+/*.task-field {*/
+/*  font-weight: bold;*/
+/*    text-align: right;*/
+/*}*/
+
+/*.task-value {*/
+/*  text-align: left;*/
+/*}*/
+/*.task-field, .task-value{*/
+/*  font-size: 16px;*/
+/*}*/
+
+.task-grid {
+  display: grid;
+  grid-template-columns: min-content 3fr 1fr 3fr 1fr 3fr;
+  gap: 10px;
+  max-width: 200ch;
+  margin: 10px;
+  border: 2px #E7E9EB solid;
+
+}
+.task-grid>div {
+    font-size: 16px;
+
+}
+.task-grid>div:nth-child(2n+1) {
+    font-weight: bold;
+    text-align: right;
+    background-color: #E7E9EB;
+
+}
+.task-grid>div:nth-child(2n) {
+  text-align: left;
+}
+.logTable {
+  max-height: 270px;
+  overflow: auto;
+}
+.mat-column-username {
+  flex: none;
+  width: 120px;
+}
+.mat-column-action {
+  flex: none;
+  width: 140px;
+}
+.mat-column-timestamp {
+  flex: none;
+  width: 120px;
+}
+.mat-column-code {
+  flex: none;
+  width: 50px;
+}
+
+.taskStatus.approved {
+  color: green;
+}
+
+.taskStatus.executing {
+  color: LightGreen;
+}
+
+.taskStatus.obsolete {
+  color: lightblue;
+}
+
+.taskStatus.holding {
+  color: black;
+}
+
+.taskStatus.pending {
+  color: blue;
+}
+
+.taskStatus.waiting {
+  color: blue;
+}
+
+.taskStatus.submitting {
+  color: blue;
+}
+
+.taskStatus.archived {
+  color: magenta;
+}
+
+.taskStatus.submitted {
+  color: green;
+}
+
+.taskStatus.running {
+  color: LightGreen;
+}
+
+.taskStatus.done {
+  color: darkgreen;
+}
+
+.taskStatus.finished {
+  color: darkgreen;
+}
+
+.taskStatus.failures {
+  color: orange;
+}
+
+.taskStatus.failed {
+  color: red;
+}
+
+.taskStatus.aborted {
+  color: red;
+}
+
+.taskStatus.exhausted {
+  color: orange;
+}
+
+
+.taskStatus.broken {
+  color: red;
+}
+
+.taskStatus.toabort {
+  color: red;
+}
+
+.taskStatus.registered {
+  color: blue;
+}
+
+.taskStatus.toretry {
+  color: blue;
+}

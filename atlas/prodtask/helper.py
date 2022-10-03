@@ -1,4 +1,15 @@
+import dataclasses
 import threading
+from abc import ABC
+
+
+@dataclasses.dataclass
+class BaseFromDict(ABC):
+
+    @classmethod
+    def create_from_dict(cls, dict_):
+        class_fields = {f.name for f in dataclasses.fields(cls)}
+        return cls(**{k: v for k, v in dict_.items() if k in class_fields})
 
 class SingletonException(Exception):
     pass

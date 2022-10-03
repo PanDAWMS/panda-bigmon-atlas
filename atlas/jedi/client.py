@@ -691,3 +691,12 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
                     else:
                         converted_data[key] = 'False'
         return converted_data
+
+
+class JEDIClientTest(JEDIClient):
+
+    def __init__(self, base_url=jedi_settings.JEDI_BASE_URL, cert=jedi_settings.CERTIFICATE):
+        super().__init__(base_url, cert)
+
+    def _post_command(self, command, data, convert_boolean=True):
+        return 1, f"{command} {data}"

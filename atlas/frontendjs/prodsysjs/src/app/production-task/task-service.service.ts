@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Observable, of} from 'rxjs';
-import {ProductionTask, Slice} from '../production-request/production-request-models';
+import {BehaviorSubject, Observable, of} from 'rxjs';
+import {JEDITask, ProductionTask, Slice} from '../production-request/production-request-models';
 import {GroupProductionStats} from '../derivation-exclusion/gp-stats/gp-stats';
 import {catchError, shareReplay, tap} from 'rxjs/operators';
 
@@ -9,20 +9,44 @@ const CACHE_SIZE = 1;
 export interface TaskActionLog {
   task_id: number;
   action: string;
-  message: string;
+  return_message: string;
+  return_code: string;
+  username: string;
+  params: string;
+  timestamp: string;
+  comment: string;
 }
+export type ActionParams = number[]|string[]|boolean[]|null;
 
+export interface TaskAction {
+  task: ProductionTask;
+  action: string;
+  params: ActionParams;
+  comment: string;
+  action_name: string;
+  params_name: string[]|null;
 
+}
 
 export interface TaskActionResult{
   action_sent: boolean;
   result: {task_id: number, return_code: string, return_info: string}[]|null;
   action_verification: {task_id: number, action_allowed: boolean, user_allowed: boolean}[]|null;
+  error?: string;
 }
 export interface ReassignDestination{
   sites: string[];
   nucleus: string[];
   shares: string[];
+}
+
+export interface TaskInfo {
+  task?: ProductionTask;
+  task_parameters?: any;
+  job_parameters?: any;
+  jedi_task?: JEDITask;
+  output_datasets?: string[];
+  error?: string;
 }
 
 @Injectable({
@@ -36,6 +60,7 @@ export class TaskService {
   private prTaskAction = '/api/tasks_action/';
   private prTaskReassignEntities = '/production_request/reassign_entities/';
   private reassignCache$: Observable<ReassignDestination>;
+  private actionSubject$: BehaviorSubject<TaskAction|null> = new BehaviorSubject(null);
 
   private requestReassignEntities(): Observable<ReassignDestination>  {
     return this.http.get<ReassignDestination>(this.prTaskReassignEntities)
@@ -44,16 +69,41 @@ export class TaskService {
         catchError(this.handleError<ReassignDestination>('requestReassignEntities', {sites: [], nucleus: [], shares: []}))
       );
   }
-  getTask(id: string): Observable<ProductionTask> {
-    return this.http.get<ProductionTask>(this.prTaskUrl, {params: {task_id: id }});
+  getTask(id: string): Observable<TaskInfo> {
+    return this.http.get<TaskInfo>(this.prTaskUrl, {params: {task_id: id }}).pipe(
+      catchError( err => {
+        let result: TaskInfo;
+        if (err.status !== '400') {
+          result = {error: `Error task loading ${err.error} `};
+        } else {
+          result = {error: `Error task loading ${err.error} (status ${err.status})`};
+        }
+        return of(result);
+      })
+    );
   }
 
   getTaskActionLogs(id: string): Observable<TaskActionLog[]> {
     return this.http.get<TaskActionLog[]>(this.prTaskActionsUrl, {params: {task_id: id }});
   }
 
-  submitTaskAction(tasksID: number[], action: string, comment: string, params: number[]|string[]|boolean[]|null): Observable<TaskActionResult>{
-    return this.http.post<TaskActionResult>(this.prTaskAction, {tasksID, action, comment, params});
+  submitTaskAction(tasksID: number[], action: string, comment: string,
+                   params: number[]|string[]|boolean[]|null): Observable<TaskActionResult>{
+    return this.http.post<TaskActionResult>(this.prTaskAction, {tasksID, action, comment, params}).pipe(
+      catchError( err => {
+        const result: TaskActionResult = {action_sent: false, result: null, action_verification: null,
+          error:  `Backend returned code ${err.status}, body was: ${err.error}`};
+        return of(result);
+      })
+    );
+  }
+
+  getActionList(): Observable<TaskAction|null>{
+    return this.actionSubject$;
+  }
+
+  addAction(taskAction: TaskAction): void{
+    this.actionSubject$.next(taskAction);
   }
 
   getReassignEntities(): Observable<ReassignDestination> {

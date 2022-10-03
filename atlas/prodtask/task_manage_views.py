@@ -19,7 +19,7 @@ import logging
 
 from .models import ProductionTask, TRequest, StepExecution, JediTasks
 
-from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_global_shares, get_permission_analy, \
+from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_global_shares, \
     check_action_allowed
 from .task_views import get_permissions
 from .task_actions import do_action
