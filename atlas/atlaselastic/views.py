@@ -29,13 +29,20 @@ def get_tasks_action_logs(task_id: int) -> any:
     response = search.execute()
     result = []
     for hit in response:
+        return_message = ''
+        try:
+            return_message = hit.return_message
+        except:
+            pass
         result.append(dataclasses.asdict(TaskActionLogMessage(task_id=int(hit.task),
                                                                 action=hit.action,
-                                                                return_message=hit.return_message,
+                                                                return_message=return_message,
                                                               username=hit.user,
                                                               timestamp=hit['@timestamp'],
                                                               params=str(hit.params),
                                                               return_code=str(hit.return_code),
                                                               comment=hit.comment
                                                               )))
+        result.sort(key=lambda x: x['timestamp'])
+        result.reverse()
     return result
