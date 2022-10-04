@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from elasticsearch7_dsl import Search, connections
 from atlas.settings.local import ATLAS_ES
 
-connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=False)
+connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'])
 
 class LogsName():
     TASK_ACTIONS = "task_action.task_management"
