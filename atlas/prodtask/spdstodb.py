@@ -63,7 +63,8 @@ TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", 
                              'Reco',
                              'Rec Merge',
                              'Deriv',
-                             'Deriv Merge'
+                             'Deriv Merge',
+                                'rivet'
                                 ]}
 
 STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
@@ -77,7 +78,7 @@ STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
                     'evgen_input',
                     'Deriv',
                     'Deriv Merge',
-                    'type', 'evgen_release'
+                    'type', 'evgen_release', 'rivet'
                     ]
 
 NUMERIC_FIELDS = ["ecm","evevgen","evfs", "eva2","events","ds"]
@@ -282,7 +283,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 st = currentstep
                                 tag = translated_row[currentstep]
                                 task_config = {}
-
+                                project_mode_addition = []
                                 # Store input events only for evgen
                                 if StepExecution.STEPS.index(currentstep)==0:
                                     if tag=='e9999':
@@ -316,15 +317,17 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                         formats = 'TXT'
                                     else:
                                         formats = STEP_FORMAT[currentstep]
+                                    if translated_row.get('rivet',''):
+                                        project_mode_addition.append('rivet='+translated_row.get('rivet',''))
 
                                 else:
                                     formats = None
                                 if do_split:
                                     task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
-                                                                         'project_mode':get_default_project_mode_dict().get(st,'')})
+                                                                         'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
                                 else:
                                     task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
-                                                                         'project_mode':get_default_project_mode_dict().get(st,'')})
+                                                                         'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
 
                                 if reduce_input_format:
                                     task_config.update({'input_format':reduce_input_format})
