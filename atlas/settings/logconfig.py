@@ -183,7 +183,7 @@ LOGGING = {
 
 
 def appendLogger(loggername, loggerlevel='DEBUG', \
-                 loggerclass='logging.handlers.RotatingFileHandler'):
+                 loggerclass='logging.handlers.RotatingFileHandler', backupCount=2):
     """
         appendLogger - append new logger properties
 
@@ -201,7 +201,7 @@ def appendLogger(loggername, loggerlevel='DEBUG', \
         'class':loggerclass, \
         'filename': filename, \
         'maxBytes': LOG_SIZE, \
-        'backupCount': 2, \
+        'backupCount': backupCount, \
         'formatter': 'verbose', \
     }
     LOGGING['loggers'][loggername] = \
@@ -245,7 +245,7 @@ appendLogger('prodtaskwebui')
 ### postproduction
 appendLogger('postproduction')
 
-appendLogger('prodtask_messaging')
+appendLogger('prodtask_messaging', backupCount=0)
 
 appendJsonLogger('prodtask_ELK')
 
