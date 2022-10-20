@@ -22,12 +22,13 @@ import {filter, map, switchMap, tap} from 'rxjs/operators';
 
 export class TaskActionComponent implements OnInit {
   @Input() task: ProductionTask;
+
   result?: TaskActionResult;
   reassignEntities: ReassignDestination = {sites: [], nucleus: [], shares: []};
   siteOption = 'nokill';
   nucleuOption = 'nokill';
   shareOption = 'default';
-  actionExecution$: Observable<{type: string, result: string}>;
+  actionExecution$: Observable<{action: string, type: string, result: string}>;
   actionExecuting = false;
   TASKACTIONS = {
     abort: {name: 'Abort', params_name: []},
@@ -57,7 +58,8 @@ export class TaskActionComponent implements OnInit {
     set_hashtag: {name: 'Set hashtag', params_name: ['hashtag']},
     remove_hashtag: {name: 'Remove hashtag', params_name: ['hashtag']},
     sync_jedi: {name: 'Sync with JEDI', params_name: []},
-    disable_idds: {name: 'Push staging rule', params_name: []}
+    disable_idds: {name: 'Push staging rule', params_name: []},
+    finish_plus_reload:  {name: 'Finish + reload', params_name: []}
   };
    SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete'];
    comment = '';
@@ -77,22 +79,22 @@ export class TaskActionComponent implements OnInit {
        map(taskActionResult => {
          if (!taskActionResult.action_sent){
            if (taskActionResult.error && (taskActionResult.error !== '')){
-             return {type: 'error', result: taskActionResult.error};
+             return {action: taskActionResult.action, type: 'error', result: taskActionResult.error};
            }
            if (taskActionResult.action_verification.length === 1){
              if (taskActionResult.action_verification[0].action_allowed &&
                !taskActionResult.action_verification[0].user_allowed){
-               return {type: 'error', result: 'User permission is insufficient to execute the action'};
+               return {action: taskActionResult.action, type: 'error', result: 'User permission is insufficient to execute the action'};
              }
-             return {type: 'error', result: `The action is not allowed for a task in ${this.task.status} status`};
+             return {action: taskActionResult.action, type: 'error', result: `The action is not allowed for a task in ${this.task.status} status`};
            }
          }
          if (taskActionResult.result.length === 1) {
            if (taskActionResult.result[0].return_info !== null && taskActionResult.result[0].return_info.includes('Command rejected')){
-             return {type: 'warning', result: `The command was sent to JEDI, return info:
+             return {action: taskActionResult.action, type: 'warning', result: `The command was sent to JEDI, return info:
             ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
            }
-           return {type: 'task_alt', result: `The command was sent to JEDI, return info:
+           return {action: taskActionResult.action, type: 'task_alt', result: `The command was sent to JEDI, return info:
             ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
          }
        }));

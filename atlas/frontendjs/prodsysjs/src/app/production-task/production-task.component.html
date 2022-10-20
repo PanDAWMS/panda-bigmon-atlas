@@ -1,6 +1,6 @@
 <ng-container *ngIf="task$ | async as  taskInfo">
 <ng-container *ngIf="!taskInfo.error && taskInfo.task as task; else loading">
-  <app-task-action  [task]="task"></app-task-action>
+  <app-task-action  [task]="task" ></app-task-action>
   <div class="task-grid">
     <!--    Row-->
     <div>ID:</div><div><app-bptask [task]="task.id"></app-bptask> </div>
@@ -42,6 +42,9 @@
     <!--    Row-->
     <div>Input:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">
     <a href="{{task.inputdataset|rucioURL}}">{{task.inputdataset}}</a></div>
+    <ng-container *ngIf="task.staging">
+      <div>Staging:</div><div style="grid-column: 2 / -1"></div>
+    </ng-container>
     <!--    Row-->
     <div>Outputs:</div>
     <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
@@ -49,7 +52,12 @@
         <a href="{{dataset|rucioURL}}">{{dataset}}</a>
       </div>
     </div>
-
+    <div>Hashtags:</div>
+    <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+      <ng-container *ngFor="let hashtag of task.hashtags">
+        <a href="/dkb/#/output_stat/?hashtag=|{{hashtag}}" style="margin-left: 5px">{{hashtag}}</a>
+      </ng-container>
+    </div>
   </div>
 
 </ng-container>

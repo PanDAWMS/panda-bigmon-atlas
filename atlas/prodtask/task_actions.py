@@ -50,6 +50,7 @@ supported_actions.extend(['increase_priority', 'decrease_priority'])
 supported_actions.extend(['retry_new'])
 supported_actions.extend(['set_hashtag','remove_hashtag','sync_jedi'])
 supported_actions.extend(['disable_idds'])
+supported_actions.extend(['finish_plus_reload'])
 
 
 def create_disable_idds_action(owner, task_id):
@@ -92,6 +93,28 @@ def create_disable_idds_action(owner, task_id):
     return {'exception':'No staging rule is found'}
 
 
+def create_finish_reload_action(owner, task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    if task.total_files_finished > 0:
+        step = task.step
+        actions = StepAction.objects.filter(step=step.id, action=13, status__in=['active','executing'])
+        action_exists = False
+        for action in actions:
+            if action.get_config('task') == task_id:
+                return {'exception':'Finish-reload input already exist'}
+        if not action_exists:
+            new_action = StepAction()
+            new_action.step = step.id
+            new_action.action = 13
+            new_action.set_config({'task':int(task_id)})
+            new_action.attempt = 0
+            new_action.status = 'active'
+            new_action.request = step.request
+            new_action.create_time = timezone.now()
+            new_action.execution_time = timezone.now()
+            new_action.save()
+            return _do_deft_action(owner, task_id, 'finish', True)
+    return {'exception':'No jobs are finished yet'}
 
 
 
@@ -150,6 +173,11 @@ def do_action(owner, task_id, action, *args):
             result.update(create_disable_idds_action(owner, task_id))
         except Exception as e:
             result['exception'] = "Can't disable idds for {0} because {1}".format(str(task_id), str(e))
+    elif action == 'finish_plus_reload':
+        try:
+            result.update(create_finish_reload_action(owner, task_id))
+        except Exception as e:
+            result['exception'] = "Can't finish-reload for {0} because {1}".format(str(task_id), str(e))
 
     return result
 

@@ -1208,6 +1208,7 @@ class DatasetStaging(models.Model):
         QUEUED = 'queued'
         STAGING = 'staging'
         CANCELED = 'canceled'
+        DONE = 'done'
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DATASET_STAGING_ID', primary_key=True)
     dataset = models.CharField(max_length=255, db_column='DATASET', null=True)

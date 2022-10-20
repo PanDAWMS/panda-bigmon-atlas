@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable, of} from 'rxjs';
+import {BehaviorSubject, Observable, of, Subject} from 'rxjs';
 import {JEDITask, ProductionTask, Slice} from '../production-request/production-request-models';
 import {GroupProductionStats} from '../derivation-exclusion/gp-stats/gp-stats';
-import {catchError, shareReplay, tap} from 'rxjs/operators';
+import {catchError, map, shareReplay, tap} from 'rxjs/operators';
 
 const CACHE_SIZE = 1;
 export interface TaskActionLog {
@@ -32,6 +32,8 @@ export interface TaskActionResult{
   action_sent: boolean;
   result: {task_id: number, return_code: string, return_info: string}[]|null;
   action_verification: {task_id: number, action_allowed: boolean, user_allowed: boolean}[]|null;
+  action?: string;
+  tasksID?: number[];
   error?: string;
 }
 export interface ReassignDestination{
@@ -61,7 +63,7 @@ export class TaskService {
   private prTaskReassignEntities = '/production_request/reassign_entities/';
   private reassignCache$: Observable<ReassignDestination>;
   private actionSubject$: BehaviorSubject<TaskAction|null> = new BehaviorSubject(null);
-
+  private actionResults$: BehaviorSubject<TaskActionResult|null> = new BehaviorSubject(null);
   private requestReassignEntities(): Observable<ReassignDestination>  {
     return this.http.get<ReassignDestination>(this.prTaskReassignEntities)
       .pipe(
@@ -87,14 +89,22 @@ export class TaskService {
     return this.http.get<TaskActionLog[]>(this.prTaskActionsUrl, {params: {task_id: id }});
   }
 
+  getActionResults(): Observable<TaskActionResult|null>{
+    return this.actionResults$;
+  }
+
   submitTaskAction(tasksID: number[], action: string, comment: string,
                    params: number[]|string[]|boolean[]|null): Observable<TaskActionResult>{
     return this.http.post<TaskActionResult>(this.prTaskAction, {tasksID, action, comment, params}).pipe(
+      map( result => {
+        return {tasksID, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification};
+      }),
       catchError( err => {
-        const result: TaskActionResult = {action_sent: false, result: null, action_verification: null,
+        const result: TaskActionResult = {tasksID, action, action_sent: false, result: null, action_verification: null,
           error:  `Backend returned code ${err.status}, body was: ${err.error}`};
         return of(result);
-      })
+      }),
+      tap(result => this.actionResults$.next(result))
     );
   }
 

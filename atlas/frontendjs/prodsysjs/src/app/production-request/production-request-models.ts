@@ -123,6 +123,16 @@ export interface StepAction{
   request: any;
 }
 
+export interface StagingProgress{
+  dataset: string;
+  rule: string;
+  source: string;
+  staged_files: number;
+  total_files: number;
+  status: string;
+
+}
+
 export interface ProductionTask{
   id: number;
   parent_id: number;
@@ -172,6 +182,8 @@ export interface ProductionTask{
   subcampaign?: string;
   projectMode?: string;
   failureRate?: number;
+  hashtags?: string[];
+  staging?: StagingProgress;
   // step: any;
   // request: any;
 }

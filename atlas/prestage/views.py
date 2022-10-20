@@ -1357,6 +1357,48 @@ def perfom_idds_disable(step_action_ids):
             waiting_step.status = 'active'
             waiting_step.save()
 
+def perfom_finish_reload(step_action_ids):
+    current_time = timezone.now()
+    config = ActionDefault.objects.get(name='reload_input_finished').get_config()
+    action_executor = TaskActionExecutor('mborodin', 'Reload input task after finish')
+
+    for waiting_step in step_action_ids:
+        try:
+            action_step = StepAction.objects.get(id=waiting_step)
+            task_id = action_step.get_config('task')
+            task_status = TTask.objects.get(id=task_id).status
+            if task_status in ProductionTask.NOT_RUNNING:
+                if task_status == ProductionTask.STATUS.FINISHED:
+                    _logger.info("Reload input is sent for %s" % (str(task_id)))
+                    action_executor.reloadInput(task_id)
+                    action_step.status = 'done'
+                    action_step.message = 'Command send'
+                    action_step.done_time = current_time
+                    action_step.save()
+                else:
+                    _logger.error("Reload input is sent  is not sent for %s because it's %s" % (str(task_id), task_status))
+                    action_step.status = 'failed'
+                    action_step.message = 'Command not send'
+                    action_step.done_time = current_time
+                    action_step.save()
+            else:
+                if action_step.attempt > config['lifetime']:
+                    _logger.error("Reload input command is not sent for %s because it takes too long" % (str(task_id)))
+                    action_step.status = 'failed'
+                    action_step.message = 'Command not send'
+                    action_step.done_time = current_time
+                    action_step.save()
+                else:
+                    action_step.status = 'active'
+                    action_step.attempt += 1
+                    action_step.execution_time = current_time + timedelta(minutes=config['delay'])
+                    action_step.save()
+
+        except Exception as e:
+            _logger.error("Reload input command send command problem: %s %s" % (str(e), str(waiting_step)))
+            waiting_step = StepAction.objects.get(id=waiting_step)
+            waiting_step.status = 'active'
+            waiting_step.save()
 
 def process_actions(action_step_todo):
     for action_step in action_step_todo:
@@ -1382,6 +1424,8 @@ def process_actions(action_step_todo):
             follow_repeated_staging(executing_actions[action])
         elif action == 12:
             perfom_idds_disable(executing_actions[action])
+        elif action == 13:
+            perfom_finish_reload(executing_actions[action])
 
 def prestage_by_tape(request, reqid=None):
     try:

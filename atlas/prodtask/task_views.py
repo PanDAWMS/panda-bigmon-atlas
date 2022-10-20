@@ -72,7 +72,7 @@ for _status in ['registered', 'assigning', 'submitting', 'ready', 'running','exh
     allowed_task_actions[_status].extend(['abort', 'finish', 'change_priority',
                                           'change_parameters', 'reassign',
                                           'increase_attempt_number', 'abort_unfinished_jobs','set_hashtag','remove_hashtag',
-                                          'ctrl','sync_jedi','disable_idds'])
+                                          'ctrl','sync_jedi','disable_idds', 'finish_plus_reload'])
 
 
 
@@ -1013,6 +1013,11 @@ def recover_obsolete(task_id):
         tt_task = TTask.objects.get(id=task_id)
         task.status = tt_task.status
         task.save()
+        datasets = ProductionDataset.objects.filter(task_id=task.id)
+        for dataset in datasets:
+            if 'log' not in dataset.name and 'waitdeleted' in dataset.status.lower():
+                dataset.status = 'done'
+                dataset.save()
 
 
 def get_global_shares(update_cache=False):

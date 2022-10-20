@@ -32,6 +32,10 @@ class DEFTAction(ABC):
     def create_disable_idds_action(self, task_id):
         pass
 
+    @abstractmethod
+    def create_finish_reload_action(self, task_id):
+        pass
+
     # @abstractmethod
     # def increase_task_priority(self, task_id, delta):
     #     pass
@@ -289,6 +293,30 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         return False, 'No staging rule is found'
 
     @_action_logger
+    def create_finish_reload_action(self, task_id):
+        task = ProductionTask.objects.get(id=task_id)
+        if task.total_files_finished > 0:
+            step = task.step
+            actions = StepAction.objects.filter(step=step.id, action=13, status__in=['active','executing'])
+            action_exists = False
+            for action in actions:
+                if action.get_config('task') == task_id:
+                    return False, 'Finish-reload input already exist'
+            if not action_exists:
+                new_action = StepAction()
+                new_action.step = step.id
+                new_action.action = 13
+                new_action.set_config({'task':int(task_id)})
+                new_action.attempt = 0
+                new_action.status = 'active'
+                new_action.request = step.request
+                new_action.create_time = timezone.now()
+                new_action.execution_time = timezone.now()
+                new_action.save()
+                return self.finishTask(task_id, True)
+        return False, 'No jobs are finished yet'
+
+    @_action_logger
     def obsolete_task(self, task_id):
         task = ProductionTask.objects.get(id=task_id)
         if task.status in ProductionTask.OBSOLETE_READY_STATUS:
@@ -305,14 +333,14 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_action_logger
     def set_hashtag(self, task_id, hashtag_name):
         task = ProductionTask.objects.get(id=task_id)
-        hashtag = add_or_get_request_hashtag(hashtag_name[0])
+        hashtag = add_or_get_request_hashtag(hashtag_name)
         task.set_hashtag(hashtag)
         return True, ''
 
     @_action_logger
     def remove_hashtag(self, task_id, hashtag_name):
         task = ProductionTask.objects.get(id=task_id)
-        hashtag = add_or_get_request_hashtag(hashtag_name[0])
+        hashtag = add_or_get_request_hashtag(hashtag_name)
         task.remove_hashtag(hashtag)
         return True, ''
 
@@ -363,11 +391,12 @@ class TaskManagementAuthorisation():
                 self.allowed_task_actions[status].extend(['finish',
                                                             'pause_task', 'resume_task', 'trigger_task',
                                                             'avalanche_task', 'reload_input',
-                                                            'increase_attempt_number', 'abort_unfinished_jobs','disable_idds', 'kill_job', 'retry'] +
+                                                            'increase_attempt_number', 'abort_unfinished_jobs',
+                                                          'disable_idds', 'kill_job', 'retry', 'finish_plus_reload'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.FINISHED:
-                self.allowed_task_actions[status].extend(['retry', 'obsolete', 'retry_new', 'finish', 'reload_input', 'disable_idds'] +
+                self.allowed_task_actions[status].extend(['retry', 'obsolete', 'retry_new', 'finish', 'reload_input', 'disable_idds', 'finish_plus_reload'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.DONE:
@@ -529,7 +558,8 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'set_hashtag': action_executor.set_hashtag,
             'remove_hashtag': action_executor.remove_hashtag,
             'sync_jedi': action_executor.sync_jedi,
-            'disable_idds': action_executor.create_disable_idds_action
+            'disable_idds': action_executor.create_disable_idds_action,
+            'finish_plus_reload': action_executor.create_finish_reload_action
         }
     if args == (None,):
          return action_translation[action](task_id)
