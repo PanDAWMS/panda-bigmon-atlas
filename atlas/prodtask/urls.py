@@ -87,6 +87,9 @@ urlpatterns = [
     url(r'^task_create/$',              task_views.task_create, name='task_create'),
     url(r'^unmerged_datasets_to_delete/$',              task_views.unmerged_datasets_to_delete, name='unmerged_datasets_to_delete'),
     url(r'^special_datasets_to_delete/$',              task_views.special_datasets_to_delete, name='special_datasets_to_delete'),
+    url(r'^unmerge_datasets_not_deleted/$', task_views.unmerge_datasets_not_deleted, name='unmerge_datasets_not_deleted'),
+
+
 
 
     url(r'^task_stat_by_req/(?P<rid>\d+)/$', task_views.task_status_stat_by_request, name='task_status_stat_by_request'),

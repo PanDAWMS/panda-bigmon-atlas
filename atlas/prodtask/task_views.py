@@ -943,6 +943,44 @@ def find_merge_dataset_to_delete(is_mc = True):
     cache.set('deleted_datasets', deleted_datasets,None)
     cache.set('merge_deletion_update_time',timezone.now(),None)
 
+def find_merge_dataset_not_delete(is_mc = True, days_from=356, days_to=60):
+    ddm = DDM()
+    prefix = 'mc'
+    if not is_mc:
+        prefix = 'data'
+    result = {}
+    for x in OUTPUTS_TYPES:
+        result[x] = []
+    tasks = ProductionTask.objects.filter(timestamp__lte=timezone.now() - timedelta(days=days_to),
+                                          timestamp__gte=timezone.now() - timedelta(days=days_from),provenance='AP',
+                                          status__in=['done','finished'],name__startswith=prefix )
+    merge_tasks = [x for x in tasks if x.phys_group not in ['SOFT','VALI'] and 'merge' in x.name and x.output_formats in OUTPUTS_TYPES]
+    datasets = 0
+    size = 0
+    for task in merge_tasks:
+        parent_dataset = task.primary_input
+        if 'tid' in parent_dataset:
+            production_dataset = ProductionDataset.objects.get(name=name_without_scope(parent_dataset))
+            if production_dataset.status != 'Deleted':
+                if ddm.dataset_exists(parent_dataset):
+                    dataset_details = ddm.dataset_metadata(parent_dataset)
+                    if (dataset_details['datatype'] in OUTPUTS_TYPES):
+                        result[dataset_details['datatype']].append({'name':dataset_details['name'],
+                                                                    'bytes':dataset_details['bytes'],
+                                                                    'task_id':dataset_details['task_id'], 'parent_task_id': task.id,
+                                                                    'parentPer':task.total_files_failed / (task.total_files_finished+task.total_files_failed)})
+                        datasets+=1
+                        size+=dataset_details['bytes']
+
+
+        else:
+            _logger.warning('Warning no tid in parent {task_id}'.format(task_id=task.id))
+
+    for x in OUTPUTS_TYPES:
+        cache.set('not_deleted_unmerge_%s_%s_%s'% (prefix, x, str(days_from)),result[x],None)
+    return datasets, size
+
+
 @app.task(time_limit=10800, ignore_result=True)
 def find_special_deletion(parent_ami_tag, child_ami_tag):
     tasks = ProductionTask.objects.filter(timestamp__gte=timezone.now() - timedelta(days=120),provenance='AP',
@@ -985,6 +1023,23 @@ def unmerged_datasets_to_delete(request):
     for output in OUTPUTS_TYPES:
         result['outputs'][output] = cache.get('del_merge_%s_%s'% (prefix, output))
     result['timestamp'] = cache.get('merge_deletion_update_time')
+
+    return Response(result)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def unmerge_datasets_not_deleted(request):
+    """
+    """
+    result = {}
+    result['outputs'] = {}
+    prefix = 'mc'
+    if request.query_params.get('perfix'):
+        prefix = request.query_params.get('perfix')
+    for output in OUTPUTS_TYPES:
+        result['outputs'][output] = cache.get('not_deleted_unmerge_%s_%s'% (prefix, output))
+    result['timestamp'] = timezone.now()
 
     return Response(result)
 

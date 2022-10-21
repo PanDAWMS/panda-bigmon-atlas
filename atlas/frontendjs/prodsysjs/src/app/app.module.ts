@@ -52,7 +52,11 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import { UnmergeCleaningComponent } from './unmerge-cleaning/unmerge-cleaning.component';
 import { UnmergeDatasetsComponent } from './unmerge-cleaning/unmerge-datasets/unmerge-datasets.component';
 import {MatPaginatorModule} from '@angular/material/paginator';
-import {SpecialCleaningResolver, UnmergeCleaningResolver} from './unmerge-cleaning/unmerge-cleaning.resolver';
+import {
+  SpecialCleaningResolver,
+  UnmergeCleaningResolver,
+  UnmergeNotDeletedResolver
+} from './unmerge-cleaning/unmerge-cleaning.resolver';
 import { ProductionTaskComponent } from './production-task/production-task.component';
 import {DialogTaskSubmissionComponent, TaskActionComponent} from './task-action/task-action.component';
 import {MatMenuModule} from '@angular/material/menu';
@@ -96,14 +100,22 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'gp-api', component: GpApiInstructionComponent},
 
   {path: 'carousel', component: DataCarouselComponent},
-  {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
+  // {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
+  //   resolve: {
+  //     unmergedDatasets: UnmergeCleaningResolver,
+  //   }},
+    {path: 'unmerged-deletion/notdeleted/:prefix', component: UnmergeCleaningComponent,
     resolve: {
-      unmergedDatasets: UnmergeCleaningResolver,
+      unmergedDatasets: UnmergeNotDeletedResolver,
     }},
-  {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,
+      {path: 'unmerged-deletion/notdeleted/:prefix/:output', component: UnmergeDatasetsComponent,
     resolve: {
-      unmergedDatasets: UnmergeCleaningResolver,
+      unmergedDatasets: UnmergeNotDeletedResolver,
     }},
+  // {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,
+  //   resolve: {
+  //     unmergedDatasets: UnmergeCleaningResolver,
+  //   }},
   {path: 'special-deletion/:prefix/:parentTag/:childTag', component: UnmergeDatasetsComponent,
     resolve: {
       specialDatasets: SpecialCleaningResolver,

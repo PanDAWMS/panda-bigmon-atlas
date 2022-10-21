@@ -21,6 +21,17 @@ export class UnmergeCleaningResolver implements Resolve<UnmergedDatasetsCombined
 @Injectable({
   providedIn: 'root'
 })
+export class UnmergeNotDeletedResolver implements Resolve<UnmergedDatasetsCombined> {
+  constructor(private service: UnmergeCleaningService) {
+  }
+  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<UnmergedDatasetsCombined>|Promise<any>|any {
+    return this.service.getUnmergeNotDeletedDatasets(route.paramMap.get('prefix'));
+  }
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class SpecialCleaningResolver implements Resolve<UnmergedDatasetsCombined> {
   constructor(private service: UnmergeCleaningService) {
   }
