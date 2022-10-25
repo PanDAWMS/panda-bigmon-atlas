@@ -78,8 +78,13 @@ def get_object_form_step(step):
     compare_str = reduce(lambda x, y: x+y, iter(result_object.values()))
     return result_object,compare_str
 
+def filter_reprocessing_steps(step_obj):
+    if step_obj['PDA'] == 'preStage':
+        step_obj['PDA'] = ''
+        step_obj['PDAParams'] = ''
+    return step_obj
 
-def gather_form_dict(reqid, ordered_slices):
+def gather_form_dict(reqid, ordered_slices, filter_function=filter_reprocessing_steps):
     step_history = {}
     slice_hashes = {}
     slice_number = 0
@@ -92,6 +97,8 @@ def gather_form_dict(reqid, ordered_slices):
         slice_hash = ''
         for step in ordered_existed_steps:
             current_slice_object,step_hash = get_object_form_step(step)
+            if filter_function:
+                current_slice_object = filter_reprocessing_steps(current_slice_object)
             current_slice_objects.append(current_slice_object)
             slice_hash += step_hash
         is_doublicate = False
