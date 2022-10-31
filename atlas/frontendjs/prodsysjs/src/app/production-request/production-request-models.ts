@@ -184,6 +184,7 @@ export interface ProductionTask{
   failureRate?: number;
   hashtags?: string[];
   staging?: StagingProgress;
+  inputEvents?: number;
   // step: any;
   // request: any;
 }
@@ -209,4 +210,5 @@ export interface JEDITask{
   diskio: number;
   diskiounit: string;
   basewalltime: number;
+  errordialog: string;
 }

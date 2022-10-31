@@ -13,6 +13,9 @@ urlpatterns = [
     url(r'^info_by_jira/$', info_by_jira,name='info_by_jira'),
     url(r'^task/$', production_task,name='production_task'),
     url(r'^task_action_logs/$', production_task_action_logs, name='production_task_action_logs'),
+    url(r'^production_task_hs06/$', production_task_hs06, name='production_task_hs06'),
+    url(r'^production_error_logs/$', production_error_logs, name='production_error_logs'),
+    url(r'^production_task_extensions/$', production_task_extensions, name='production_task_extensions'),
     url(r'^task_action/$', task_action, name='task_action'),
     url(r'^reassign_entities/$', get_reassign_entities, name='get_reassign_entities')
 

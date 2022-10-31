@@ -1,17 +1,20 @@
 import json
+import logging
 
 import os
+import re
 from functools import reduce
 
+import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-from atlas.atlaselastic.views import get_tasks_action_logs
+from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats
 from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
-    JediTasks
+    JediTasks, JediDatasetContents, JediDatasets
 
 from rest_framework import serializers, generics
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -23,6 +26,7 @@ from rest_framework.decorators import parser_classes
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares
 from atlas.task_action.task_management import TaskActionExecutor
 
+_logger = logging.getLogger('prodtaskwebui')
 
 class SliceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -131,8 +135,9 @@ def production_task(request):
             task_data['failureRate'] = production_task.failure_rate
             if production_task.request_id > 300:
                 task_data['projectMode'] = production_task.step.get_task_config('project_mode')
+                task_data['inputEvents'] = production_task.step.input_events
                 if DatasetStaging.objects.filter(dataset=production_task.input_dataset).exists():
-                    dataset_staging = DatasetStaging.objects.filter(dataset=production_task.input_dataset)[-1]
+                    dataset_staging = DatasetStaging.objects.filter(dataset=production_task.input_dataset).last()
                     if ((dataset_staging.status in DatasetStaging.ACTIVE_STATUS) or
                             (dataset_staging.status==DatasetStaging.STATUS.DONE and dataset_staging.start_time>production_task.submit_time)):
                         task_data['staging'] = {'status':dataset_staging.status,
@@ -158,7 +163,100 @@ def production_task_action_logs(request):
         return Response(get_tasks_action_logs(int(request.query_params.get('task_id'))))
 
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_task_hs06(request):
+    if request.query_params.get('task_id'):
+        task_stats = get_task_stats(int(request.query_params.get('task_id')))
+        task=ProductionTask.objects.get(id=request.query_params.get('task_id'))
+        finished_hpes06 = 0
+        failed_hpes06 = 0
+        running_files = -1
+        input_dataset = task.inputdataset
+        input_dataset = input_dataset[input_dataset.find(':')+1:]
+        if task_stats:
+            finished_hpes06 = task_stats[0].task_hs06sec_finished
+            failed_hpes06 = task_stats[0].task_hs06sec_failed
+            running_files = 0
+        total_output = 0
+        input_events = 0
+        input_bytes = 0
+        for dataset in task_stats:
+            if dataset.type == 'output':
+                total_output += dataset.bytes or 0
+        if task.status not in ProductionTask.NOT_RUNNING:
+            dataset_id = None
+            for dataset in task_stats:
+                dataset_name = dataset.dataset
+                dataset_name = dataset_name[dataset_name.find(':') + 1:]
+                if (input_dataset.endswith('.py') and dataset_name=='pseudo_dataset') or (input_dataset==dataset_name):
+                    dataset_id = dataset.dataset_id
+                    input_events = dataset.events or 0
+                    input_bytes = dataset.bytes or 0
+                    break
+            if dataset_id == None:
+                for dataset in JediDatasets.objects.filter(id=task.id):
+                    dataset_name = dataset.datasetname
+                    dataset_name = dataset_name[dataset_name.find(':') + 1:]
+                    if (input_dataset.endswith('.py') and dataset_name == 'pseudo_dataset') or (
+                            input_dataset == dataset_name):
+                        dataset_id = dataset.datasetid
+                        break
+            if dataset_id:
+                running_files = JediDatasetContents.objects.filter(jeditaskid=task.id, datasetid=dataset_id,
+                                                               status='running').count()
 
+        parent_percent = 1.0
+        parent_task = task
+        while (parent_task.status not in ProductionTask.NOT_RUNNING) and (parent_task.parent_id != parent_task.id):
+            parent_task = ProductionTask.objects.get(id=parent_task.parent_id)
+            if (parent_task.status not in ProductionTask.NOT_RUNNING):
+                parent_percent = parent_percent * float(parent_task.total_files_finished) / float(parent_task.total_files_tobeused)
+        return Response({'finished': finished_hpes06,'failed': failed_hpes06, 'running': running_files, 'parentPercent':parent_percent,
+                         'total_output_size':total_output, 'input_events':input_events, 'input_bytes':input_bytes})
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_error_logs(request):
+    try:
+        if request.query_params.get('task_id'):
+            error_log = JediTasks.objects.get(id=request.query_params.get('task_id')).errordialog
+            if error_log:
+                link_re = re.match('^.*"([^"]+)"', error_log)
+                if link_re:
+                    log_url = link_re.group(1)
+                    log_response = requests.get(log_url,verify=False)
+                    if log_response.status_code == requests.codes.ok:
+                        log_content = log_response.content
+                        log_lines = [x for x in log_content.decode().splitlines() if x]
+                        log_lines.reverse()
+                        return Response({'log': '<br/>'.join(log_lines)})
+    except Exception as ex:
+        _logger.error(f'Problem reading logs: {ex}')
+    return Response({'log':None})
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_task_extensions(request):
+    same_tasks_with_status = []
+    try:
+        if request.query_params.get('task_id'):
+            task = ProductionTask.objects.get(id=int(request.query_params.get('task_id')))
+            output_datasets = ProductionDataset.objects.filter(task_id=int(request.query_params.get('task_id')))
+            if task.is_extension:
+                dataset_pat = output_datasets[0].name.split("tid")[0]
+                datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
+                same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
+                for same_task in same_tasks:
+                    same_tasks_with_status.append(
+                        {'id': same_task, 'status': ProductionTask.objects.get(id=same_task).status})
+    except Exception as ex:
+        _logger.error(f'Problem this extensions searching: {ex}')
+    return Response(same_tasks_with_status)
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

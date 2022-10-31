@@ -290,7 +290,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                     except Exception as e:
                         return False, str(e)
 
-        return False, 'No staging rule is found'
+        return False, 'Command rejected: No staging rule is found'
 
     @_action_logger
     def create_finish_reload_action(self, task_id):
@@ -301,7 +301,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             action_exists = False
             for action in actions:
                 if action.get_config('task') == task_id:
-                    return False, 'Finish-reload input already exist'
+                    return False, 'Command rejected: Finish-reload input already exist'
             if not action_exists:
                 new_action = StepAction()
                 new_action.step = step.id
@@ -314,7 +314,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 new_action.execution_time = timezone.now()
                 new_action.save()
                 return self.finishTask(task_id, True)
-        return False, 'No jobs are finished yet'
+        return False, 'Command rejected: No jobs are finished yet'
 
     @_action_logger
     def obsolete_task(self, task_id):
@@ -325,7 +325,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             task.save()
         return True, ''
 
-    @_action_logger
+
     def sync_jedi(self, task_id):
         sync_deft_jedi_task(task_id)
         return True, ''

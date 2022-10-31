@@ -28,25 +28,29 @@ export class ProductionTaskComponent implements OnInit, OnDestroy{
       tap(_ => this.pageUpdate$.next(100))
     ).subscribe();
   public pageUpdate$ = new BehaviorSubject(0);
-  // public task$ = this.route.paramMap.pipe(switchMap((params) => this.pageUpdate$.pipe(
-  //   switchMap((value) => this.taskService.getTask(params.get('id')).pipe(delay(value),
-  //     tap(_ => console.log('data taken'))))
-  // )));
+
+  public inputEvents: number|null = null;
+  public inputSize: number|null = null;
 
   public task$ = this.pageUpdate$.pipe(switchMap((value) => this.route.paramMap.pipe(
-    switchMap((params) => this.taskService.getTask(params.get('id')).pipe(delay(value),
-      tap(_ => console.log('data taken')))))));
+    switchMap((params) => this.taskService.getTask(params.get('id')).pipe(delay(value))))));
 
-  //   this.pageUpdate$.pipe(
-  //   switchMap((delayValue) => delay(delayValue)));
-  // //   this.route.paramMap.pipe(
-  // //   switchMap((params) => this.taskService.getTask(params.get('id')))
-  // // );
+  public taskStats$ = this.route.paramMap.pipe(switchMap((params) =>
+    this.taskService.getTaskStats(params.get('id').toString())),
+    tap( stat => {
+      this.inputEvents = stat.input_events;
+      this.inputSize = stat.input_bytes; }));
 
-  // public actionLog$ = this.task$.pipe(switchMap((taskInfo) => this.taskService.getTaskActionLogs(taskInfo.task.id.toString())));
   public actionLog$ = this.route.paramMap.pipe(switchMap((params) =>
     this.taskService.getTaskActionLogs(params.get('id').toString())));
-  constructor(private route: ActivatedRoute, private taskService: TaskService) {
+
+  public JEDIErrorLog$ = this.route.paramMap.pipe(switchMap((params) =>
+    this.taskService.getTaskErrorLogs(params.get('id').toString())));
+
+  public taskExtensions$ = this.route.paramMap.pipe(switchMap((params) =>
+    this.taskService.getTaskExtension(params.get('id').toString())));
+
+  constructor(public route: ActivatedRoute, private taskService: TaskService) {
   }
 
   ngOnInit(): void  {

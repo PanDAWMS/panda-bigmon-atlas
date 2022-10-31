@@ -1,0 +1,19 @@
+<div style="display: flex">
+<ng-container *ngFor="let status of possibleStatus">
+  <ng-container *ngIf="statusDescription[status].url; else noneclickable" >
+<a *ngIf="stats[status]>0"
+     [style]="{'background-color': statusDescription[status].color, 'flex-grow': stats[status], 'height':'10px',
+      'cursor': 'pointer'}"
+     [matTooltip]="statusDescription[status].descr + ' ' + (stats[status]*100).toFixed(2).toString() +'%'"
+        [href]="statusDescription[status].url">
+
+</a>
+</ng-container>
+  <ng-template #noneclickable>
+      <div *ngIf="stats[status]>0"
+         [style]="{'background-color': statusDescription[status].color, 'flex-grow': stats[status], 'height':'10px' }"
+         [matTooltip]="statusDescription[status].descr + ' ' + (stats[status]*100).toFixed(2).toString() +'%'">
+    </div>
+  </ng-template>
+</ng-container>
+</div>

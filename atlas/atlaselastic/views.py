@@ -20,9 +20,22 @@ class TaskActionLogMessage():
     timestamp: str = ''
     comment: str = ''
 
+@dataclass
+class TaskDatasetStats():
+    task_id: int
+    dataset_id: int
+    dataset: str
+    type: str
+    task_hs06sec_finished: int = 0
+    task_hs06sec_failed: int =0
+    bytes: int = 0
+    events: int = 0
 
 def get_atlas_es_logs_base(logName: str) -> Search:
     return Search(index='atlas_prodsyslogs-*').query("match", logName=logName)
+
+def get_atlas_dataset_info_base() -> Search:
+    return Search(index='atlas_datasets_info-*')
 
 def get_tasks_action_logs(task_id: int) -> any:
     search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match",task=str(task_id))
@@ -46,3 +59,24 @@ def get_tasks_action_logs(task_id: int) -> any:
         result.sort(key=lambda x: x['timestamp'])
         result.reverse()
     return result
+
+
+
+def get_task_stats(task_id: int) -> (int, int):
+    search = get_atlas_dataset_info_base().query("match",jeditaskid=task_id)
+    response = search.execute()
+    result = []
+    try:
+        for hit in response:
+            if hit.type in ['input','pseudo_input' ,'output']:
+                result.append(TaskDatasetStats(task_id=hit.jeditaskid,
+                                                                  dataset_id=hit.datasetid,
+                                                                  dataset=hit.datasetname,
+                                                                  type=hit.type,
+                                                                  task_hs06sec_finished=hit.task_hs06sec_finished,
+                                                                  task_hs06sec_failed=hit.task_hs06sec_failed,
+                                                                  bytes=hit.dataset_size,
+                                                                  events=hit.nevents))
+        return result
+    except Exception as ex:
+        return []

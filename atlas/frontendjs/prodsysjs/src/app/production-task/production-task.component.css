@@ -137,3 +137,86 @@
 .taskStatus.toretry {
   color: blue;
 }
+
+
+
+.taskStatusBkgr.approved {
+  background-color: green;
+}
+
+.taskStatusBkgr.executing {
+  background-color: LightGreen;
+}
+
+.taskStatusBkgr.obsolete {
+  background-color: lightblue;
+}
+
+.taskStatusBkgr.holding {
+  background-color: black;
+}
+
+.taskStatusBkgr.pending {
+  background-color: blue;
+}
+
+.taskStatusBkgr.waiting {
+  background-color: blue;
+}
+
+.taskStatusBkgr.submitting {
+  background-color: blue;
+}
+
+.taskStatusBkgr.archived {
+  background-color: magenta;
+}
+
+.taskStatusBkgr.submitted {
+  background-color: green;
+}
+
+.taskStatusBkgr.running {
+  background-color: LightGreen;
+}
+
+.taskStatusBkgr.done {
+  background-color: darkgreen;
+}
+
+.taskStatusBkgr.finished {
+  background-color: darkgreen;
+}
+
+.taskStatusBkgr.failures {
+  background-color: orange;
+}
+
+.taskStatusBkgr.failed {
+  background-color: red;
+}
+
+.taskStatusBkgr.aborted {
+  background-color: red;
+}
+
+.taskStatusBkgr.exhausted {
+  background-color: orange;
+}
+
+
+.taskStatusBkgr.broken {
+  background-color: red;
+}
+
+.taskStatusBkgr.toabort {
+  background-color: red;
+}
+
+.taskStatusBkgr.registered {
+  background-color: blue;
+}
+
+.taskStatusBkgr.toretry {
+  background-color: blue;
+}

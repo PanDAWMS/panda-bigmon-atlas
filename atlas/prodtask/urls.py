@@ -80,6 +80,8 @@ urlpatterns = [
     url(r'^close_deft_ref/(?P<reqid>\d+)/$',request_views.close_deft_ref, name='close_deft_ref'),
     url(r'^task_table/$',               task_views.task_table, name='task_table'),
     url(r'^task/(?P<rid>\d+)/$',        task_views.task_details, name='task'),
+    url(r'^task_old/(?P<rid>\d+)/$', task_views.task_old_details, name='task_old'),
+
     url(r'^task_clone/(?P<rid>\d+)/$',  task_views.task_clone, name='task_clone'),
     url(r'^task_update/(?P<rid>\d+)/$', task_views.task_update, name='task_update'),
     url(r'^slice_by_task/(?P<task_id>\d+)/$',        task_views.slice_by_task, name='slice_by_task'),

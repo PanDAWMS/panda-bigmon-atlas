@@ -1,24 +1,59 @@
 <ng-container *ngIf="task$ | async as  taskInfo">
 <ng-container *ngIf="!taskInfo.error && taskInfo.task as task; else loading">
+  <h5>{{task.id}} - {{task.name}}</h5>
   <app-task-action  [task]="task" ></app-task-action>
   <div class="task-grid">
     <!--    Row-->
     <div>ID:</div><div><app-bptask [task]="task.id"></app-bptask> </div>
-    <div>Status:</div><div><span  [ngClass]="['taskStatus',task.status]">{{task.status}}</span></div>
+    <div [ngClass]="['taskStatusBkgr',task.status]">Status:</div><div><span  [ngClass]="['taskStatus',task.status]">{{task.status}}</span></div>
     <div>Request:</div><div><a href="/prodtask/slice_by_task/{{task.id}}">{{task.request_id}}</a></div>
     <!--    Row-->
     <div>Name:</div><div style="grid-column: 2 / -1">{{task.name}} </div>
+    <!--    Row-->
+    <div>Parent:</div><div><a [routerLink]="['/task',task.parent_id]" >{{task.parent_id}}</a></div>
+    <div>Descendants:</div><div><a href="/prodtask/task_chain_view/{{task.id}}/">Link</a></div>
+    <div>Reference:</div><div><a href="https://its.cern.ch/jira/browse/{{task.reference}}">{{task.reference}}</a></div>
     <!--    Row-->
     <div>Owner:</div><div>{{task.username}}</div>
     <div>Campaign:SubCampaign</div><div>{{task.campaign}}:{{task.campaign}}</div>
     <div>Physic group</div><div>{{task.phys_group}}</div>
     <!--    Row-->
-    <div>Priority / current </div><div>{{task.priority}} / {{task.current_priority}}</div>
+    <div>Priority/current </div><div>{{task.priority}} / {{task.current_priority}}</div>
     <div>Global share</div><div style="grid-column: 4 / -1">{{taskInfo.jedi_task.gshare}}</div>
     <!--    Row-->
     <div>Total&nbsp;events:</div><div>{{task.total_events}}</div>
-    <div>Total req/done jobs</div><div>{{task.total_req_jobs}}/{{task.total_done_jobs}}</div>
-    <div>Failure rate:</div><div>{{task.total_files_failed}}</div>
+    <div>Created/done jobs</div><div>{{task.total_req_jobs}}/{{task.total_done_jobs}}</div>
+    <div>Failure rate:</div>
+    <div>{{task.failureRate}} % ( <a href='https://bigpanda.cern.ch/errors/?jeditaskid={{task.id}}' style="color: red"> {{ task.total_files_failed}} </a>| <span style="color: green"> {{ task.total_files_finished}}</span> from  <span style="color: black"> {{ task.total_files_tobeused}}</span>)</div>
+    <!--    Row-->
+    <ng-container *ngIf="taskStats$ | async as  taskStat">
+    <ng-container *ngIf="taskStat.failed+taskStat.finished+taskStat.running>0">
+
+        <div>Stats:</div>
+        <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            HS06*sec - <span  style="color: green">finished: {{taskStat.finished|number}} </span>
+          <a href='https://bigpanda.cern.ch/errors/?jeditaskid={{task.id}}' style="color: red"> failed: {{ taskStat.failed|number}}
+            <ng-container *ngIf="taskStat.failed>0">({{(taskStat.failed)/(taskStat.failed+taskStat.finished)| percent}})</ng-container>
+          </a> <b>&nbsp;|</b>
+          <ng-container *ngIf="taskStat.running>=0"><b>
+            <a style="color: lightgreen; margin-left: 6px" href="https://bigpanda.cern.ch/jobs/?jeditaskid={{task.id}}&jobstatus=defined|waiting|pending|assigned|throttled|activated|sent|starting|running|holding|transferring"> Running 'files': {{taskStat.running}}</a></b>
+          </ng-container><b>&nbsp;|</b>
+          <span *ngIf="taskStat.total_output_size>0" style="margin-left: 6px">Produced output {{taskStat.total_output_size | datasetSize}}</span>
+        </div>
+          <ng-container *ngIf="taskStat.running>=0">
+
+              <div>Progress:</div>
+            <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            <app-task-progress  [task]="task" [parentPercent]="taskStat.parentPercent" [runningFiles]="taskStat.running">
+
+            </app-task-progress>
+          </div>
+
+
+          </ng-container>
+
+    </ng-container>
+      </ng-container>
     <!--    Row-->
     <div>Submit:</div><div>{{task.submit_time| date:'short'}}</div>
     <div>Start:</div><div>{{task.start_time| date:'short'}}</div>
@@ -42,8 +77,18 @@
     <!--    Row-->
     <div>Input:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">
     <a href="{{task.inputdataset|rucioURL}}">{{task.inputdataset}}</a></div>
+    <!--    Row-->
+    <div>Input events:</div><div *ngIf="task.inputEvents && task.inputEvents > -1; else statinputevents">{{task.inputEvents}}</div>
+    <ng-template #statinputevents><div>{{inputEvents}}</div></ng-template>
+    <div>Input size:</div><div  style="grid-column: 4 / -1; overflow-wrap: anywhere">
+    <ng-container *ngIf="inputSize">{{inputSize | datasetSize}}</ng-container></div>
+
+    <!--    Row-->
     <ng-container *ngIf="task.staging">
-      <div>Staging:</div><div style="grid-column: 2 / -1"></div>
+      <div>Staging:</div>
+      <div style="grid-column: 2 / -1">
+        <app-task-staging-progress [stagingProgress]="task.staging"></app-task-staging-progress>
+      </div>
     </ng-container>
     <!--    Row-->
     <div>Outputs:</div>
@@ -52,12 +97,49 @@
         <a href="{{dataset|rucioURL}}">{{dataset}}</a>
       </div>
     </div>
+        <!--    Row-->
+
     <div>Hashtags:</div>
     <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
       <ng-container *ngFor="let hashtag of task.hashtags">
         <a href="/dkb/#/output_stat/?hashtag=|{{hashtag}}" style="margin-left: 5px">{{hashtag}}</a>
       </ng-container>
     </div>
+        <!--    Row-->
+    <ng-container *ngIf="taskInfo.jedi_task.errordialog">
+    <div>JEDI log:</div>
+    <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+      <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <div [innerHTML]="taskInfo.jedi_task.errordialog"></div>
+      </mat-expansion-panel-header>
+
+      <ng-template matExpansionPanelContent>
+        <ng-container *ngIf="JEDIErrorLog$ | async as JEDILog">
+          <ng-container *ngIf="JEDILog.log">
+                     <div [innerHTML]="JEDILog.log"></div>
+          </ng-container>
+        </ng-container>
+      </ng-template>
+    </mat-expansion-panel>
+    </div>
+      </ng-container>
+    <!--    Row-->
+    <ng-container *ngIf="task.is_extension">
+       <ng-container *ngIf="taskExtensions$ | async as taskExt">
+          <ng-container *ngIf="taskExt">
+
+            <div>Similar tasks:</div>
+          <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            <ng-container *ngFor="let extTask of taskExt">
+              <a  style="margin-left: 5px" [routerLink]="['/task',extTask.id]" ><span [ngClass]="['taskStatus',extTask.status]">{{extTask.id}}</span></a>
+
+            </ng-container>
+          </div>
+          </ng-container>
+      </ng-container>
+    </ng-container>
+
   </div>
 
 </ng-container>
@@ -129,4 +211,6 @@
     <mat-progress-bar *ngIf="!taskInfo.error" mode="indeterminate"></mat-progress-bar>
   </ng-template>
 </ng-container>
-
+<div *ngIf="route.paramMap | async as router">
+  <a href="/prodtask/task_old/{{router.get('id')}}">Old task page</a>
+</div>

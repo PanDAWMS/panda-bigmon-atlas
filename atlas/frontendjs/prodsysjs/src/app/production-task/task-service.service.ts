@@ -16,6 +16,17 @@ export interface TaskActionLog {
   timestamp: string;
   comment: string;
 }
+
+export interface TaskHS06 {
+  finished: number;
+  failed: number;
+  running: number;
+  parentPercent: number;
+  total_output_size: number;
+  input_events: number;
+  input_bytes: number;
+}
+
 export type ActionParams = number[]|string[]|boolean[]|null;
 
 export interface TaskAction {
@@ -59,13 +70,19 @@ export class TaskService {
   constructor(private http: HttpClient) { }
   private prTaskUrl = '/production_request/task';
   private prTaskActionsUrl = '/production_request/task_action_logs';
-  private prTaskAction = '/api/tasks_action/';
-  private prTaskReassignEntities = '/production_request/reassign_entities/';
+  private prTaskActionUrl = '/api/tasks_action/';
+  private prTaskReassignEntitiesUrl = '/production_request/reassign_entities/';
+  private prTaskStatsUrl = '/production_request/production_task_hs06/';
+  private prErrorLogsUrl = '/production_request/production_error_logs/';
+  private prTaskExtensionUrl = '/production_request/production_task_extensions/';
+
+
+
   private reassignCache$: Observable<ReassignDestination>;
   private actionSubject$: BehaviorSubject<TaskAction|null> = new BehaviorSubject(null);
   private actionResults$: BehaviorSubject<TaskActionResult|null> = new BehaviorSubject(null);
   private requestReassignEntities(): Observable<ReassignDestination>  {
-    return this.http.get<ReassignDestination>(this.prTaskReassignEntities)
+    return this.http.get<ReassignDestination>(this.prTaskReassignEntitiesUrl)
       .pipe(
         tap(_ => this.log(`fetched stats `)),
         catchError(this.handleError<ReassignDestination>('requestReassignEntities', {sites: [], nucleus: [], shares: []}))
@@ -89,13 +106,22 @@ export class TaskService {
     return this.http.get<TaskActionLog[]>(this.prTaskActionsUrl, {params: {task_id: id }});
   }
 
+  getTaskStats(id: string): Observable<TaskHS06> {
+    return this.http.get<TaskHS06>(this.prTaskStatsUrl, {params: {task_id: id }});
+  }
+  getTaskErrorLogs(id: string): Observable<{log: string|null}> {
+    return this.http.get<{log: string|null}>(this.prErrorLogsUrl, {params: {task_id: id }});
+  }
+  getTaskExtension(id: string): Observable<{id: number, status: string}[]|[]> {
+    return this.http.get<{id: number, status: string}[]|[]>(this.prTaskExtensionUrl, {params: {task_id: id }});
+  }
   getActionResults(): Observable<TaskActionResult|null>{
     return this.actionResults$;
   }
 
   submitTaskAction(tasksID: number[], action: string, comment: string,
                    params: number[]|string[]|boolean[]|null): Observable<TaskActionResult>{
-    return this.http.post<TaskActionResult>(this.prTaskAction, {tasksID, action, comment, params}).pipe(
+    return this.http.post<TaskActionResult>(this.prTaskActionUrl, {tasksID, action, comment, params}).pipe(
       map( result => {
         return {tasksID, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification};
       }),

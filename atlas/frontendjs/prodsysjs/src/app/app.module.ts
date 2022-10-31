@@ -1,12 +1,12 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import {Injectable, NgModule} from '@angular/core';
 import { HttpClientModule, HttpClientXsrfModule } from '@angular/common/http';
 import { APP_BASE_HREF } from '@angular/common';
 
 import { AppComponent } from './app.component';
 import { DerivationExclusionComponent } from './derivation-exclusion/derivation-exclusion.component';
 import { ProductionRequestComponent } from './production-request/production-request.component';
-import {Routes, RouterModule, ExtraOptions} from '@angular/router';
+import {Routes, RouterModule, ExtraOptions, ActivatedRouteSnapshot} from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { DataCarouselComponent } from './data-carousel/data-carousel.component';
 import {MatTableModule} from '@angular/material/table';
@@ -63,6 +63,9 @@ import {MatMenuModule} from '@angular/material/menu';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 import {BPTaskComponent} from "./common/bptask/bptask.component";
 import { RequestsliceComponent } from './common/requestslice/requestslice.component';
+import { TaskStagingProgressComponent } from './common/task-staging-progress/task-staging-progress.component';
+import { TaskProgressComponent } from './common/task-progress/task-progress.component';
+import {MatTooltipModule} from "@angular/material/tooltip";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -73,6 +76,13 @@ const routerOptions: ExtraOptions = {
     scrollOffset: [0, 64],
     relativeLinkResolution: 'legacy'
 };
+
+@Injectable({ providedIn: 'root' })
+export class TaskTitleResolvel {
+  resolve(route: ActivatedRouteSnapshot): Promise<string> {
+    return Promise.resolve('Task: ' + route.paramMap.get('id'));
+  }
+}
 
 const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: DerivationExclusionComponent,
         resolve: {
@@ -95,7 +105,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         },
       {path: 'request/ids/:reqIDs', component: ProductionRequestComponent},
   {path: 'request/:jira', component: ProductionRequestComponent},
-  {path: 'task/:id', component: ProductionTaskComponent},
+  {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
 
@@ -148,6 +158,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DialogTaskSubmissionComponent,
     BPTaskComponent,
     RequestsliceComponent,
+    TaskStagingProgressComponent,
+    TaskProgressComponent,
   ],
   imports: [
     BrowserModule,
@@ -185,7 +197,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatExpansionModule,
     MatPaginatorModule,
     MatMenuModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatTooltipModule
 
   ],
   providers: [
