@@ -197,7 +197,8 @@ def production_task_hs06(request):
                     dataset_id = dataset.dataset_id
                     input_events = dataset.events or 0
                     input_bytes = dataset.bytes or 0
-                    break
+                    if input_events>0:
+                        break
             if dataset_id is None:
                 for dataset in JediDatasets.objects.filter(id=task.id):
                     dataset_name = dataset.datasetname

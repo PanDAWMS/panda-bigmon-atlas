@@ -26,6 +26,10 @@ export class TaskProgressComponent implements OnChanges {
 
     if (this.task.total_files_finished === this.task.total_files_tobeused){
       this.stats.done = 1;
+      this.stats.not_ready = 0;
+      this.stats.running = 0;
+      this.stats.failed = 0;
+      this.stats.not_started = 0;
     } else {
       let total: number = +this.task.total_files_tobeused;
       const finishedFiles: number = +this.task.total_files_finished;

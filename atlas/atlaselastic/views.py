@@ -32,10 +32,10 @@ class TaskDatasetStats():
     events: int = 0
 
 def get_atlas_es_logs_base(logName: str) -> Search:
-    return Search(index='atlas_prodsyslogs-*').query("match", logName=logName)
+    return Search(index='atlas_prodsyslogs-*').extra(size=100).query("match", logName=logName)
 
 def get_atlas_dataset_info_base() -> Search:
-    return Search(index='atlas_datasets_info-*')
+    return Search(index='atlas_datasets_info-*').extra(size=100)
 
 def get_tasks_action_logs(task_id: int) -> any:
     search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match",task=str(task_id))
