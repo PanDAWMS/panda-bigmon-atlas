@@ -166,7 +166,7 @@ export class TaskService {
   }
 
   private log(message: string): void {
-    console.log(`GPDeletionContainerService: ${message}`);
+    console.log(`TaskService: ${message}`);
   }
 
 }

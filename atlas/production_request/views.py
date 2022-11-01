@@ -178,14 +178,17 @@ def production_task_hs06(request):
         if task_stats:
             finished_hpes06 = task_stats[0].task_hs06sec_finished
             failed_hpes06 = task_stats[0].task_hs06sec_failed
-            running_files = 0
+            if task.request_id > 300:
+                running_files = 0
         total_output = 0
         input_events = 0
         input_bytes = 0
+        output_datasets = set()
         for dataset in task_stats:
-            if dataset.type == 'output':
+            if (dataset.type == 'output') and (dataset.dataset_id not in output_datasets):
+                output_datasets.add(dataset.dataset_id)
                 total_output += dataset.bytes or 0
-        if task.status not in ProductionTask.NOT_RUNNING:
+        if  task.request_id > 300:
             dataset_id = None
             for dataset in task_stats:
                 dataset_name = dataset.dataset
@@ -195,7 +198,7 @@ def production_task_hs06(request):
                     input_events = dataset.events or 0
                     input_bytes = dataset.bytes or 0
                     break
-            if dataset_id == None:
+            if dataset_id is None:
                 for dataset in JediDatasets.objects.filter(id=task.id):
                     dataset_name = dataset.datasetname
                     dataset_name = dataset_name[dataset_name.find(':') + 1:]
@@ -203,7 +206,7 @@ def production_task_hs06(request):
                             input_dataset == dataset_name):
                         dataset_id = dataset.datasetid
                         break
-            if dataset_id:
+            if  (task.status not in ProductionTask.NOT_RUNNING) and dataset_id:
                 running_files = JediDatasetContents.objects.filter(jeditaskid=task.id, datasetid=dataset_id,
                                                                status='running').count()
 
