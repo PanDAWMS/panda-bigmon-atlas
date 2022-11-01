@@ -12,6 +12,7 @@ import {
 import {ActivatedRoute} from '@angular/router';
 import {TaskActionResult, TaskService} from './task-service.service';
 import {BehaviorSubject, EMPTY, Observable, of} from "rxjs";
+import {ProductionTask} from "../production-request/production-request-models";
 
 
 @Component({
@@ -31,9 +32,11 @@ export class ProductionTaskComponent implements OnInit, OnDestroy{
 
   public inputEvents: number|null = null;
   public inputSize: number|null = null;
+  public currentTask?: ProductionTask;
 
   public task$ = this.pageUpdate$.pipe(switchMap((value) => this.route.paramMap.pipe(
-    switchMap((params) => this.taskService.getTask(params.get('id')).pipe(delay(value))))));
+    switchMap((params) => this.taskService.getTask(params.get('id')).pipe(delay(value))),
+    tap(task => this.currentTask = {...task.task}))));
 
   public taskStats$ = this.route.paramMap.pipe(switchMap((params) =>
     this.taskService.getTaskStats(params.get('id').toString())),

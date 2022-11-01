@@ -21,13 +21,13 @@
     <div>Priority/current </div><div>{{task.priority}} / {{task.current_priority}}</div>
     <div>Global share</div><div style="grid-column: 4 / -1">{{taskInfo.jedi_task.gshare}}</div>
     <!--    Row-->
-    <div>Total&nbsp;events:</div><div>{{task.total_events}}</div>
+    <div>Total&nbsp;events:</div><div>{{task.total_events|number}}</div>
     <div>Created/done jobs</div><div>{{task.total_req_jobs}}/{{task.total_done_jobs}}</div>
     <div>Failure rate:</div>
     <div>{{task.failureRate}} % ( <a href='https://bigpanda.cern.ch/errors/?jeditaskid={{task.id}}' style="color: red"> {{ task.total_files_failed}} </a>| <span style="color: green"> {{ task.total_files_finished}}</span> from  <span style="color: black"> {{ task.total_files_tobeused}}</span>)</div>
     <!--    Row-->
     <ng-container *ngIf="taskStats$ | async as  taskStat">
-    <ng-container *ngIf="taskStat.failed+taskStat.finished+taskStat.running>0">
+    <ng-container *ngIf="((taskStat.failed+taskStat.finished>0) || (taskStat.running>=0 && task.total_files_tobeused>0))">
 
         <div>Stats:</div>
         <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
@@ -44,7 +44,7 @@
 
               <div>Progress:</div>
             <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
-            <app-task-progress  [task]="task" [parentPercent]="taskStat.parentPercent" [runningFiles]="taskStat.running">
+            <app-task-progress  [task]="currentTask" [parentPercent]="taskStat.parentPercent" [runningFiles]="taskStat.running">
 
             </app-task-progress>
           </div>
@@ -78,8 +78,8 @@
     <div>Input:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">
     <a href="{{task.inputdataset|rucioURL}}">{{task.inputdataset}}</a></div>
     <!--    Row-->
-    <div>Input events:</div><div *ngIf="task.inputEvents && task.inputEvents > -1; else statinputevents">{{task.inputEvents}}</div>
-    <ng-template #statinputevents><div>{{inputEvents}}</div></ng-template>
+    <div>Input events:</div><div *ngIf="task.inputEvents && task.inputEvents > -1; else statinputevents">{{task.inputEvents|number}}</div>
+    <ng-template #statinputevents><div>{{inputEvents|number}}</div></ng-template>
     <div>Input size:</div><div  style="grid-column: 4 / -1; overflow-wrap: anywhere">
     <ng-container *ngIf="inputSize">{{inputSize | datasetSize}}</ng-container></div>
 

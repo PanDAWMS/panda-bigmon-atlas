@@ -25,18 +25,19 @@ export class TaskProgressComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
 
     if (this.task.total_files_finished === this.task.total_files_tobeused){
-      this.stats.done = 100;
+      this.stats.done = 1;
     } else {
-      let total: number = this.task.total_files_tobeused;
-      if ((this.task.total_files_finished + this.task.total_files_failed + this.runningFiles) > this.task.total_files_tobeused){
-        total = this.task.total_files_finished + this.task.total_files_failed + this.runningFiles;
+      let total: number = +this.task.total_files_tobeused;
+      const finishedFiles: number = +this.task.total_files_finished;
+      const failedFiles: number = +this.task.total_files_failed;
+      if ((finishedFiles + failedFiles + this.runningFiles) > total){
+        total = finishedFiles + failedFiles + this.runningFiles;
       }
       this.stats.not_ready = 1 - this.parentPercent;
-      this.stats.done = this.task.total_files_finished * this.parentPercent / total;
+      this.stats.done = finishedFiles * this.parentPercent / total;
       this.stats.running = this.runningFiles * this.parentPercent / total;
-      this.stats.failed = this.task.total_files_failed * this.parentPercent / total;
-      this.stats.not_started = (total - this.task.total_files_finished -
-        this.task.total_files_failed - this.runningFiles) * this.parentPercent / total;
+      this.stats.failed = failedFiles * this.parentPercent / total;
+      this.stats.not_started = (total - finishedFiles - failedFiles - this.runningFiles) * this.parentPercent / total;
     }
     if (this.stats.running > 0){
       this.statusDescription.running.url = `https://bigpanda.cern.ch/jobs/?jeditaskid=${this.task.id}&jobstatus=defined|waiting|pending|assigned|throttled|activated|sent|starting|running|holding|transferring`;
