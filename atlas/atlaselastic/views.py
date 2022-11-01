@@ -73,9 +73,9 @@ def get_task_stats(task_id: int) -> (int, int):
                                                                   dataset_id=hit.datasetid,
                                                                   dataset=hit.datasetname,
                                                                   type=hit.type,
-                                                                  task_hs06sec_finished=hit.task_hs06sec_finished,
-                                                                  task_hs06sec_failed=hit.task_hs06sec_failed,
-                                                                  bytes=hit.dataset_size,
+                                                                  task_hs06sec_finished=hit.task_hs06sec_finished or 0,
+                                                                  task_hs06sec_failed=hit.task_hs06sec_failed or 0,
+                                                                  bytes=hit.dataset_size or 0,
                                                                   events=hit.nevents))
         return result
     except Exception as ex:

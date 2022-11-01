@@ -173,20 +173,24 @@ def production_task_hs06(request):
         finished_hpes06 = 0
         failed_hpes06 = 0
         running_files = -1
+
         input_dataset = task.inputdataset
         input_dataset = input_dataset[input_dataset.find(':')+1:]
-        if task_stats:
-            finished_hpes06 = task_stats[0].task_hs06sec_finished
-            failed_hpes06 = task_stats[0].task_hs06sec_failed
-            if task.request_id > 300:
-                running_files = 0
+        for dataset in task_stats:
+            if dataset.task_hs06sec_finished + dataset.task_hs06sec_failed>0:
+                finished_hpes06 = dataset.task_hs06sec_finished
+                failed_hpes06 = dataset.task_hs06sec_failed
+                if task.request_id > 300:
+                    running_files = 0
+                break
         total_output = 0
         input_events = 0
         input_bytes = 0
         output_datasets = set()
         for dataset in task_stats:
             if (dataset.type == 'output') and (dataset.dataset_id not in output_datasets):
-                output_datasets.add(dataset.dataset_id)
+                if dataset.bytes > 0:
+                    output_datasets.add(dataset.dataset_id)
                 total_output += dataset.bytes or 0
         if  task.request_id > 300:
             dataset_id = None
