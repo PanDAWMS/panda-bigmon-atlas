@@ -13,7 +13,7 @@ from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError
 #from ..prodtask.spdstodb import fill_template
-from atlas.prodtask.task_actions import _do_deft_action
+from atlas.prodtask.task_actions import _do_deft_action, _deft_client
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, single_request_action_celery_task
 from atlas.prodtask.spdstodb import fill_template
 from .hashtag import _set_request_hashtag
@@ -2426,21 +2426,24 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
     ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
     first_step_tag = None
     number_of_obsolete_tasks = 0
+    outputs = []
     for step in ordered_existed_steps:
         if step.status in ['NotChecked','Approved']:
             if ProductionTask.objects.filter(request=request_id, step=step).exists():
                 return 0
             first_step_tag = step.step_template.ctag
+            outputs = step.step_template.output_formats.split('.')
             if is_derivation:
                 step.update_project_mode('checkOutputDeleted','yes')
                 step.save()
             break
     datasets = ddm.dataset_in_container(input_container)
-    tasks = []
+    tasks_set = set()
     if first_step_tag:
-        tasks = list(ProductionTask.objects.filter(primary_input=input_container, ami_tag=first_step_tag))
+        tasks_set.update(list(ProductionTask.objects.filter(primary_input=input_container, ami_tag=first_step_tag)))
         for dataset in datasets:
-            tasks += list(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
+            tasks_set.update(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
+    tasks = list(tasks_set)
     for task in tasks:
         if task.status in ['finished','done','obsolete']:
             to_delete = check_all_outputs_deleted(task, ddm)
@@ -2453,7 +2456,7 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
                                 _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
                                 number_of_obsolete_tasks += 1
                                 _do_deft_action('mborodin', int(child_task.id), 'obsolete')
-                            else:
+                            elif  [x for x in outputs if x in child_task.output_formats.split('.')]:
                                 merge_is_empty = False
                                 break
                 if merge_is_empty:
@@ -2604,3 +2607,20 @@ def fix_resim(request, slice):
                 return True
         else:
             return False
+
+
+def recreate_output(task_id: int, output: str) -> (int, str):
+    task = ProductionTask.objects.get(id=task_id)
+    new_slice = clone_slices(task.request_id, task.request_id, [task.step.slice.slice],-1,True,True)[0]
+    new_steps = StepExecution.objects.filter(request=task.request_id,
+                                             slice=InputRequestList.objects.get(request=task.request_id, slice=new_slice))
+    step = new_steps[0]
+    step.status = 'Approved'
+    step.update_project_mode('checkOutputDeleted','yes')
+    new_step_template = fill_template(step.step_template.step, step.step_template.ctag,
+                                      step.step_template.priority, output, step.step_template.memory)
+    step.step_template = new_step_template
+    step.save()
+    _deft_client.force_request('mborodin', task.request_id)
+    task = ProductionTask.objects.get(step=step)
+    return task.id, task.output_dataset
