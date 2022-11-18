@@ -502,8 +502,24 @@ def task_status_stat_by_request(request, rid):
     :return: line with statuses
     """
     qs = ProductionTask.objects.filter(request__reqid=rid)
+
     stat = get_status_stat(qs)
-    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': stat, 'reqid': rid})
+    wrong_stat = get_status_stat(ProductionTask.objects.filter(request__reqid=rid, step__slice__is_hide=True))
+    result_stat = []
+    if len(wrong_stat)>1:
+        result_stat.append(stat[0])
+        result_stat[0]['count'] -= wrong_stat[0]['count']
+        wrong_stat_dict = {}
+        for x in wrong_stat[1:]:
+            wrong_stat_dict[x['status']] = int(x['count'])
+        for index in range(1,len(stat)):
+            if stat[index]['status'] in wrong_stat_dict:
+                stat[index]['count'] = int(stat[index]['count']) - wrong_stat_dict[stat[index]['status']]
+            if int(stat[index]['count']) > 0:
+                result_stat.append(stat[index])
+    else:
+        result_stat = stat
+    return TemplateResponse(request, 'prodtask/_task_status_stat.html', { 'stat': result_stat, 'reqid': rid})
 
 
 class Parameters(datatables.Parametrized):
