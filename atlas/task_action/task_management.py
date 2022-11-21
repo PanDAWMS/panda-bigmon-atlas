@@ -360,8 +360,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
 @dataclass
 class TaskActionAllowed():
     id: int
-    action: bool = False
-    user: bool = False
+    action_allowed: bool = False
+    user_allowed: bool = False
 
 class TaskManagementAuthorisation():
 
@@ -511,7 +511,7 @@ def tasks_action(request: Request):
         authentification_management = TaskManagementAuthorisation()
         tasks_allowed = authentification_management.tasks_action_authorisation(tasks_id, username, action, params, user_fullname)
         for task_verified in tasks_allowed:
-            if not task_verified.user or not task_verified.action:
+            if not task_verified.user_allowed or not task_verified.action_allowed:
                 return Response({'action_sent':False, 'action_verification': [asdict(x) for x in tasks_allowed], 'result': None})
         comment = request.data['comment']
         executor = TaskActionExecutor(username, comment)
