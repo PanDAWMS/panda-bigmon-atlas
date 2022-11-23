@@ -214,8 +214,9 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         if result[0] == 0:
             try:
                 task = ProductionTask.objects.get(id=jediTaskID)
-                task.status = ProductionTask.STATUS.TOABORT
-                task.save()
+                if task.status in ProductionTask.NOT_RUNNING:
+                    task.status = ProductionTask.STATUS.TORETRY
+                    task.save()
             except:
                 pass
         return result
