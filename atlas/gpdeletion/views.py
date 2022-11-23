@@ -1176,3 +1176,11 @@ def runDeletion(lifetime=3600):
         else:
             container_to_delete.status = 'Problematic'
             container_to_delete.save()
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((JSONParser,))
+def gpdeletedcontainers(request):
+    all_containers = list(GroupProductionDeletionProcessing.objects.filter(status='Deleted').order_by("-timestamp").values('container','timestamp','deleted_datasets'))
+    return Response(all_containers)

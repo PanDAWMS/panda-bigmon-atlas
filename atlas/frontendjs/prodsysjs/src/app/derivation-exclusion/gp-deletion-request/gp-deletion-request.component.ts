@@ -1,9 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {UntypedFormControl} from "@angular/forms";
 import {MatTableDataSource} from "@angular/material/table";
 import {DeletionSubmission} from "../gp-deletion-container";
-import {GpDeletionRequestService} from "./gp-deletion-request.service";
+import {DeletedContainers, GpDeletionRequestService} from "./gp-deletion-request.service";
 import {MatDatepickerInputEvent} from "@angular/material/datepicker";
+import {MatPaginator} from "@angular/material/paginator";
+import {MatSort} from "@angular/material/sort";
+
+
+
 
 @Component({
   selector: 'app-gp-deletion-request',
@@ -12,9 +17,13 @@ import {MatDatepickerInputEvent} from "@angular/material/datepicker";
 })
 export class GpDeletionRequestComponent implements OnInit {
 
+  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
   deadlineDate = new UntypedFormControl(new Date());
   startDeletionDate = new UntypedFormControl(new Date());
   DeletionRequestsDataSource: MatTableDataSource<DeletionSubmission>;
+  DeletionContainersDataSource: MatTableDataSource<DeletedContainers> = new  MatTableDataSource<DeletedContainers>();
+  allContainersLoading = false;
   submissionDisabled = true;
   currentRequest: DeletionSubmission|undefined = undefined;
   minDate: Date = new Date();
@@ -71,4 +80,18 @@ export class GpDeletionRequestComponent implements OnInit {
     }
 
 
+  showContainers(): void {
+    this.DeletionContainersDataSource.paginator = this.paginator;
+    this.DeletionContainersDataSource.sort = this.sort;
+    this.allContainersLoading = true;
+    this.gpDeletionRequestService.getAllDeletedContainers().subscribe(result => {
+      this.DeletionContainersDataSource.data = result;
+      this.allContainersLoading = false;
+    });
+  }
+
+  applyFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.DeletionContainersDataSource.filter = filterValue.trim().toLowerCase();
+  }
 }

@@ -4,12 +4,21 @@ import {Observable, of} from "rxjs";
 import {DeletionSubmission} from "../gp-deletion-container";
 import {catchError, tap} from "rxjs/operators";
 
+export interface DeletedContainers {
+  container: string;
+  timestamp: string;
+  deleted_datasets: number;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
 export class GpDeletionRequestService {
   private gpDeletionRequestUrl = '/gpdeletion/gpdeletionrequests';
   private gpDeletionRequestSubmissionUrl = '/gpdeletion/gpdeletionrequestsask/';
+  private gpAllDeletedContainersUrl = '/gpdeletion/gpdeletedcontainers/';
+
   constructor(private http: HttpClient) { }
 
   getExistingDeletionRequests(): Observable<DeletionSubmission[]> {
@@ -18,6 +27,14 @@ export class GpDeletionRequestService {
       catchError(this.handleError<DeletionSubmission[]>('getExistingDeletionRequests', []))
     );
   }
+
+  getAllDeletedContainers(): Observable<DeletedContainers[]> {
+    return this.http.get<DeletedContainers[]>(this.gpAllDeletedContainersUrl).pipe(
+      tap(_ => this.log('Fetched all deleted containers')),
+      catchError(this.handleError<DeletedContainers[]>('getAllDeletedContainers', []))
+    );
+  }
+
 
   postDeletionRequests(deadlineDate: Date, startDeletion: Date): Observable<DeletionSubmission> {
     return this.http.post<DeletionSubmission>(this.gpDeletionRequestSubmissionUrl,

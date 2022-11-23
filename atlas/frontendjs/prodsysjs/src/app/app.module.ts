@@ -66,6 +66,12 @@ import { RequestsliceComponent } from './common/requestslice/requestslice.compon
 import { TaskStagingProgressComponent } from './common/task-staging-progress/task-staging-progress.component';
 import { TaskProgressComponent } from './common/task-progress/task-progress.component';
 import {MatTooltipModule} from "@angular/material/tooltip";
+import {
+  DerivationFromTagComponent,
+  DialogContainerDetails,
+  DialogSelectedContainers
+} from './derivation-from-tag/derivation-from-tag.component';
+import {ClipboardModule} from "@angular/cdk/clipboard";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -108,7 +114,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
-
+  {path: 'input_by_ami_tag/:amiTag', component: DerivationFromTagComponent},
   {path: 'carousel', component: DataCarouselComponent},
   // {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
   //   resolve: {
@@ -160,6 +166,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     RequestsliceComponent,
     TaskStagingProgressComponent,
     TaskProgressComponent,
+    DerivationFromTagComponent,
+    DialogContainerDetails,
+    DialogSelectedContainers
   ],
   imports: [
     BrowserModule,
@@ -198,7 +207,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatPaginatorModule,
     MatMenuModule,
     MatProgressBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ClipboardModule
 
   ],
   providers: [
