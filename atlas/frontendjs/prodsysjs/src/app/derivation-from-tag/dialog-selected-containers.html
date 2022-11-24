@@ -1,0 +1,6 @@
+<button [cdkCopyToClipboard]="containers.join('\n')">Copy to clipboard</button>
+<section class="containersList">
+<ng-container *ngFor="let container of containers">
+  {{container}}<br>
+</ng-container>
+</section>

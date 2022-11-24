@@ -3,6 +3,7 @@ import logging
 
 import os
 import re
+from dataclasses import asdict
 from functools import reduce
 
 import requests
@@ -24,6 +25,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares
+from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -376,3 +378,18 @@ def get_reassign_entities(request):
     'sites': get_sites(),
     'nucleus': get_nucleus(),
     'shares': get_global_shares()})
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def derivation_input(request):
+    try:
+        if request.query_params.get('ami_tag'):
+            result, requests_ids, outputs, projects = find_all_inputs_by_tag(request.query_params.get('ami_tag'))
+            production_requests = list(TRequest.objects.filter(reqid__in=requests_ids).values())
+
+            return Response({'containers': map(asdict, result), 'requests': production_requests, "format_outputs": outputs,
+                             "projects": projects})
+    except Exception as ex:
+        return Response(f"Problem with derivation loading: {ex}", status=400)

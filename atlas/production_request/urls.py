@@ -17,7 +17,8 @@ urlpatterns = [
     url(r'^production_error_logs/$', production_error_logs, name='production_error_logs'),
     url(r'^production_task_extensions/$', production_task_extensions, name='production_task_extensions'),
     url(r'^task_action/$', task_action, name='task_action'),
-    url(r'^reassign_entities/$', get_reassign_entities, name='get_reassign_entities')
+    url(r'^reassign_entities/$', get_reassign_entities, name='get_reassign_entities'),
+    url(r'^derivation_input/$', derivation_input, name='derivation_input')
 
 
 ]

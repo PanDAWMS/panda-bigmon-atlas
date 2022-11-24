@@ -1,0 +1,93 @@
+
+ <mat-form-field >
+   <mat-label>Current AMI tag     </mat-label>
+     <input matInput  [(ngModel)]="currentAMITag"  >
+ </mat-form-field>
+    <button mat-raised-button color="primary" [routerLink]="['/input_by_ami_tag',currentAMITag]" [disabled]="" >Proceed</button>
+ <br>
+     <ng-container *ngIf="loadingData">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </ng-container>
+  <ng-container *ngIf="loadingError">
+    <h3>{{loadingError}}</h3>
+    </ng-container>
+<ng-container *ngIf="derivationData$| async as derivationData">
+
+  <ng-container *ngIf="!loadingData">
+  <mat-card>
+  <mat-card-header>
+    Filters
+  </mat-card-header>
+    <div>
+  <mat-form-field appearance="fill">
+  <mat-label>Outputs</mat-label>
+  <mat-select [formControl]="selectedOutputs" multiple (selectionChange)="filterChanged$.next(1)">
+    <mat-option *ngFor="let output of derivationData.format_outputs" [value]="output" >{{output}}</mat-option>
+  </mat-select>
+</mat-form-field>
+    <mat-form-field appearance="fill">
+  <mat-label>Requests</mat-label>
+  <mat-select [formControl]="selectedRequests" multiple (selectionChange)="filterChanged$.next(1)">
+    <mat-option *ngFor="let value of derivationData.requests" [value]="value.reqid" >{{value.reqid}} {{value.description}}</mat-option>
+  </mat-select>
+</mat-form-field>
+      <mat-form-field appearance="fill">
+
+    <mat-label>Projects</mat-label>
+  <mat-select [formControl]="selectedProjects" multiple (selectionChange)="filterChanged$.next(1)">
+    <mat-option *ngFor="let value of derivationData.projects" [value]="value" >{{value}}</mat-option>
+  </mat-select>
+</mat-form-field>
+  <mat-checkbox [(ngModel)]="filterBroken" (change)="filterChanged$.next(1)">Filter out containers with only broken tasks</mat-checkbox>
+      </div>
+    <div>
+          <mat-form-field style="width: 100%">
+    <mat-label>Filter by name</mat-label>
+      <input matInput #containerNameFilter [(ngModel)]="containerNameFilterValue" (input)="searchTerms$.next(containerNameFilter.value)" >
+    </mat-form-field>
+      </div>
+  <div style="overflow-wrap: anywhere"> Chosen outputs: {{selectedOutputs.value}}, Filtered containers: {{containersToCopy.length}}</div>
+    <div>
+    <button mat-raised-button color="primary" (click)="showSelectedContainers()" >Show containers</button>
+      </div>
+
+  </mat-card>
+    <mat-card>
+  <mat-card-header>
+    Show
+  </mat-card-header>
+
+      <mat-checkbox [(ngModel)]="filterBrokenShow" (change)="filterChanged$.next(1)">Show container with only broken tasks</mat-checkbox>
+      <mat-checkbox [(ngModel)]="filterRunningShow" (change)="filterChanged$.next(1)">Show container with running tasks</mat-checkbox>
+      <mat-checkbox [(ngModel)]="filterWrongName" (change)="filterChanged$.next(1)">Show container with originally wrong container name</mat-checkbox>
+
+    </mat-card>
+    </ng-container>
+</ng-container>
+
+<div>
+ <table mat-table [dataSource]="dataSource" [fixedLayout]="true">
+  <ng-container matColumnDef="Container">
+    <th mat-header-cell *matHeaderCellDef> Container </th>
+    <td mat-cell *matCellDef="let row">
+      <span [ngClass]="{'RunningContainer':row.is_running,'FailedContainer':row.is_failed,'WrongNameContainer':row.is_wrong_name}">{{row.container}}</span>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="outputs">
+    <th mat-header-cell *matHeaderCellDef>outputs </th>
+    <td mat-cell *matCellDef="let row"> {{row.output_formats}} </td>
+  </ng-container>
+
+
+    <tr mat-header-row *matHeaderRowDef="['Container', 'outputs']"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['Container', 'outputs']"
+              (click)="showContainerDetails(row)"
+    ></tr>
+  </table>
+    <mat-paginator [pageSizeOptions]="[20, 50, 100]"
+                 showFirstLastButtons
+                 aria-label="Select page ">
+  </mat-paginator>
+  </div>
+

@@ -1,0 +1,126 @@
+.mat-cell {
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.mat-row .mat-cell {
+  border-bottom: 1px solid transparent;
+  border-top: 1px solid transparent;
+  cursor: pointer;
+}
+
+.mat-row:hover .mat-cell {
+  border-color: currentColor;
+}
+
+.containersList {
+  max-height: 500px;
+  overflow: auto;
+}
+
+.mat-checkbox {
+  padding-left: 3px;
+  padding-right: 3px;
+}
+span.WrongNameContainer {
+  color: coral;
+}
+
+span.RunningContainer {
+  color: #46a35e;
+}
+
+span.FailedContainer {
+  color: red;
+}
+
+div.datasetInContainer {
+  display: grid;
+  grid-template-columns: min-content 1fr 1fr 1fr;
+  gap: 10px;
+  max-width: 200ch;
+  margin: 10px;
+  border: 2px #E7E9EB solid;
+}
+
+
+.taskStatus.approved {
+  color: green;
+}
+
+.taskStatus.executing {
+  color: LightGreen;
+}
+
+.taskStatus.obsolete {
+  color: lightblue;
+}
+
+.taskStatus.holding {
+  color: black;
+}
+
+.taskStatus.pending {
+  color: blue;
+}
+
+.taskStatus.waiting {
+  color: blue;
+}
+
+.taskStatus.submitting {
+  color: blue;
+}
+
+.taskStatus.archived {
+  color: magenta;
+}
+
+.taskStatus.submitted {
+  color: green;
+}
+
+.taskStatus.running {
+  color: LightGreen;
+}
+
+.taskStatus.done {
+  color: darkgreen;
+}
+
+.taskStatus.finished {
+  color: darkgreen;
+}
+
+.taskStatus.failures {
+  color: orange;
+}
+
+.taskStatus.failed {
+  color: red;
+}
+
+.taskStatus.aborted {
+  color: red;
+}
+
+.taskStatus.exhausted {
+  color: orange;
+}
+
+
+.taskStatus.broken {
+  color: red;
+}
+
+.taskStatus.toabort {
+  color: red;
+}
+
+.taskStatus.registered {
+  color: blue;
+}
+
+.taskStatus.toretry {
+  color: blue;
+}
