@@ -115,6 +115,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
   {path: 'input_by_ami_tag/:amiTag', component: DerivationFromTagComponent},
+    {path: 'input_by_ami_tag', component: DerivationFromTagComponent},
+
   {path: 'carousel', component: DataCarouselComponent},
   // {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
   //   resolve: {
