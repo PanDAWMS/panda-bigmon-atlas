@@ -290,7 +290,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                         return True, ''
                     except Exception as e:
                         return False, str(e)
-
+                else:
+                    return False, 'Task has no finished jobs'
         return False, 'Command rejected: No staging rule is found'
 
     @_action_logger
