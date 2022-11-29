@@ -403,7 +403,11 @@ def start_stagind_task(task):
         _logger.info('Resume task after pre stage %s ' % (str(task.id)))
         #_do_deft_action('mborodin',int(task.id),'resume_task')
         action_executor = TaskActionExecutor('mborodin', 'Resume task after pre stage')
-        action_executor.resumeTask(int(task.id))
+        result, message = action_executor.resumeTask(int(task.id))
+        if not result or 'Command rejected' in (message or ''):
+            _logger.error(f"Resume command failed for {task.id} with {result} - {message}")
+
+
 
 def send_use_archive_task(task):
     _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
