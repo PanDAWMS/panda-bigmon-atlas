@@ -27,6 +27,8 @@ from rest_framework.decorators import parser_classes
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
+from django.core.cache import cache
+
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -386,10 +388,16 @@ def get_reassign_entities(request):
 def derivation_input(request):
     try:
         if request.query_params.get('ami_tag'):
-            result, requests_ids, outputs, projects = find_all_inputs_by_tag(request.query_params.get('ami_tag'))
-            production_requests = list(TRequest.objects.filter(reqid__in=requests_ids).values())
-
-            return Response({'containers': map(asdict, result), 'requests': production_requests, "format_outputs": outputs,
-                             "projects": projects})
+            ami_tag = request.query_params.get('ami_tag')
+            cached_result = cache.get(f'derivation_input_{ami_tag}')
+            if cached_result is None:
+                result, requests_ids, outputs, projects = find_all_inputs_by_tag(ami_tag)
+                production_requests = list(TRequest.objects.filter(reqid__in=requests_ids).values())
+                return_value = {'containers': map(asdict, result), 'requests': production_requests, "format_outputs": outputs,
+                             "projects": projects}
+                cache.set(f'derivation_input_{ami_tag}',return_value,24*3600)
+            else:
+                return_value = cached_result
+            return Response(return_value)
     except Exception as ex:
         return Response(f"Problem with derivation loading: {ex}", status=400)

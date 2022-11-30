@@ -172,16 +172,18 @@ def find_all_inputs_by_tag(ami_tag: str) -> [DerivationContainer]:
         derivation_container.is_wrong_name = False
         if derivation_container.container.split('.')[1].isnumeric() and (short_container != derivation_container.container)\
                 and (short_container.replace('mc16_13TeV','mc15_13TeV') != derivation_container.container):
-            new_datasets = [x[x.find(':') + 1:] for x in ddm.dataset_in_container(short_container)]
-            if not [x.dataset for x in derivation_container.datasets if x.dataset not in new_datasets]:
-                derivation_container.is_wrong_name = True
-                if short_container not in forming_containers:
+            if short_container in forming_containers:
+                short_deriv_container = forming_containers[short_container]
+                short_deriv_container.datasets += derivation_container.datasets
+                short_deriv_container.reduce_datasets()
+                derivation_container.container = ''
+            else:
+                new_datasets = [x[x.find(':') + 1:] for x in ddm.dataset_in_container(short_container)]
+                if not [x.dataset for x in derivation_container.datasets if x.dataset not in new_datasets]:
+                    derivation_container.is_wrong_name = True
                     derivation_container.container = short_container
-                else:
-                    short_deriv_container = forming_containers[short_container]
-                    short_deriv_container.datasets += derivation_container.datasets
-                    short_deriv_container.reduce_datasets()
-                    derivation_container.container = ''
+
+
     total_requests = set()
     total_outputs = set()
     total_projects = set()
