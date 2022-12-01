@@ -29,8 +29,8 @@ from django.core.cache import cache
 from celery.result import AsyncResult
 
 from atlas.prodtask.mcevgen import sync_request_jos
-from atlas.prodtask.models import HashTagToRequest, HashTag,  StepAction, ActionStaging, \
-    ActionDefault, SliceError
+from atlas.prodtask.models import HashTagToRequest, HashTag, StepAction, ActionStaging, \
+    ActionDefault, SliceError, TTask, MCJobOptions
 from atlas.prodtask.spdstodb import fill_template
 from .settings import APP_SETTINGS
 
@@ -1196,6 +1196,35 @@ def check_slice_jos(reqid, slice_steps):
                     bad_slice.append(int(slice_number))
     return bad_slice
 
+
+def remove_step_by_index(ordered_existed_steps: [StepExecution], index: int):
+    step = ordered_existed_steps[index]
+    ordered_existed_steps[index + 1].step_parent = step.step_parent
+    ordered_existed_steps[index + 1].save()
+    step.step_parent = step
+    step.save()
+    step.delete()
+
+def delete_small_merge(good_slices: [int], production_request: int):
+    slices = InputRequestList.objects.filter(slice__in=good_slices,request=production_request)
+    for slice in slices:
+        ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=production_request, slice=slice))
+        for index, step in enumerate(ordered_existed_steps):
+            if step.step_template.step == 'Evgen Merge':
+                if (step.step_parent != step and index != (len(ordered_existed_steps)-1) and
+                        not ProductionTask.objects.filter(step=step).exists() and step.status == 'Approved' and step.step_parent.status == 'Approved'):
+                    evnt_events_per_job = 0
+                    if ProductionTask.objects.filter(step=step.step_parent).exists():
+                        task = TTask.objects.get(id= ProductionTask.objects.filter(step=step.step_parent).last().id)
+                        evnt_events_per_job = task.jedi_task_parameters.get('nEventsPerJob',0)
+                    else:
+                        if '/' in slice.input_data and slice.input_data.split('/')[0].isnumeric():
+                            if MCJobOptions.objects.filter(dsid=int(slice.input_data.split('/')[0])).exists():
+                                evnt_events_per_job = MCJobOptions.objects.get(dsid=int(slice.input_data.split('/')[0])).events_per_job
+                    if step.get_task_config('nEventsPerJob') and step.get_task_config('nEventsPerJob') < evnt_events_per_job:
+                        _logger.info(f'Merge step deleted in slice {slice.slice} for request {production_request} modification')
+                        remove_step_by_index(ordered_existed_steps, index)
+                break
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
     try:
@@ -1277,6 +1306,8 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                         error_slices, no_action_slices = create_steps(None, slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
+                        if approve_level >= 0:
+                            delete_small_merge(good_slices, reqid)
                     else:
                         error_slices, no_action_slices = create_steps(None, slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
                     try:
@@ -1299,6 +1330,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                     for slice, new_dataset in list(slice_new_input.items()):
                         if new_dataset:
                             change_dataset_in_slice(req, int(slice), new_dataset)
+
             if approve_level >= 0:
                 for slice_number in [x for x in map(int,slices) if x not in (error_slices + no_action_slices)]:
                     if SliceError.objects.filter(request=reqid, is_active=True, slice=InputRequestList.objects.get(request=reqid,slice=slice_number)).exists():
@@ -1416,6 +1448,8 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
                         error_slices, no_action_slices = create_steps(self,slice_steps,reqid,StepExecution.STEPS, approve_level, waiting_level)
                         good_slices = [int(x) for x in slices if int(x) not in error_slices]
                         removed_input = remove_input(good_slices,reqid)
+                        if approve_level >= 0:
+                            delete_small_merge(good_slices, reqid)
                     else:
                         error_slices, no_action_slices = create_steps(self,slice_steps,reqid,['']*len(StepExecution.STEPS), approve_level, waiting_level)
                     try:
