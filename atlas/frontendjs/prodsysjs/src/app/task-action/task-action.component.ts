@@ -27,7 +27,7 @@ export class TaskActionComponent implements OnInit {
   reassignEntities: ReassignDestination = {sites: [], nucleus: [], shares: []};
   siteOption = 'nokill';
   nucleuOption = 'nokill';
-  shareOption = 'default';
+  shareOption = false;
   actionExecution$: Observable<{action: string, type: string, result: string}>;
   actionExecuting = false;
   TASKACTIONS = {

@@ -86,8 +86,8 @@
           </mat-select>
         </mat-form-field>
         <mat-radio-group [(ngModel)]="shareOption"  (click)="$event.stopPropagation()" >
-            <mat-radio-button value="default">Default </mat-radio-button>
-            <mat-radio-button value="running">Reassign running</mat-radio-button>
+            <mat-radio-button [value]="false">Default </mat-radio-button>
+            <mat-radio-button [value]="true">Reassign running</mat-radio-button>
         </mat-radio-group>
       </div>
         <button mat-raised-button color="primary" (click)="executeAction('reassign_to_share',[shares.value, shareOption])">Go</button>
