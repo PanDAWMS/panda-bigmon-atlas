@@ -245,7 +245,7 @@ appendLogger('prodtaskwebui')
 ### postproduction
 appendLogger('postproduction')
 
-appendLogger('prodtask_messaging', backupCount=0)
+appendLogger('prodtask_messaging', loggerlevel='INFO', backupCount=0)
 
 appendJsonLogger('prodtask_ELK')
 
