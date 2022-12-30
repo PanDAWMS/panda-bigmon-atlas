@@ -9,7 +9,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing, \
     GroupProductionDeletionRequest
-from atlas.dkb.views import es_by_fields, es_by_keys, es_by_keys_nested
+from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
 import pytz
