@@ -273,7 +273,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                             if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0) or translated_row.get('evgen_release','') )\
                                     and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
                                 translated_row[currentstep]='e9999'
-                            if format and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
+                            if format and (not [x for x in ['LHE','TXT','EVNT'] if x in format]) and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
                             if format and (currentstep == 'Rec Merge') and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
                                 translated_row[currentstep]='p9999'
