@@ -17,13 +17,15 @@
         <td style="margin: 0px"><table><tbody><tr><td>Step Name</td></tr>  <tr><td> Tasks total (running)</td></tr>
         <tr><td> Input events (running tasks)</td></tr>
         <tr><td> Processed events</td></tr>
-        <tr><td> Output events</td> </tr>
+        <tr><td> Output task events</td> </tr>
         <tr><td> Running/Pending/Not started</td></tr>
         <tr><td> Input bytes (running tasks)</td></tr>
         <tr><td> Input bytes (done tasks)</td></tr>
         <tr><td> Output bytes</td></tr>
         <tr><td> Average HS06 per event</td></tr>
   <!--   <tr><td> Total Failed HS06</td></tr> -->
+         <tr><td> Events (finished datasets)</td></tr>
+
         <tr><td> Duration (finished tasks)</td></tr>
         </tbody></table>
         </td>
@@ -41,7 +43,11 @@
                 <tr><td>{{ step.output_bytes | myfilesize }}  ( {{ step.output_not_removed_tasks}} tasks)</td></tr>
                 <tr><td>{{ step.hs06  }}</td></tr>
 <!--              <tr><td>{{ step.cpu_failed | bignumber }}</td></tr> -->
+                <tr><td>{{ step.dataset_output_events | number:0 }} </td></tr>
+
                 <tr><td>{{ step.duration | number:2 }} days</td></tr>
+
+
                 </tbody></table>
             </td>
         </tbody>

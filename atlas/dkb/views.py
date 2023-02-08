@@ -787,7 +787,13 @@ def statistic_by_request_deriv_new(search_dict, formats):
                             "nested": {"path": "output_dataset"},
                             "aggs": {
                                 "not_removed": {
-                                    "filter": {"term": {"output_dataset.deleted": False}},
+                                    "filter": {
+                                    "bool" :{
+                                        "filter": [{"term": {"output_dataset.deleted": False}},
+                                                    {"term": {"output_dataset.data_format.keyword": format}} ]
+                                    }},
+
+
                                     "aggs": {
                                         "bytes": {
                                             "sum": {"field": "output_dataset.bytes"}
@@ -826,12 +832,13 @@ def statistic_by_request_deriv_new(search_dict, formats):
                         input_events = x.input_events.value
                         # if x.not_deleted.input_events_datasets.value and input_events and (x.not_deleted.input_events_datasets.value>input_events):
                         #     input_events = x.not_deleted.input_events_datasets.value
+
                         result[format+' '+x.key] = {'name':format+' '+x.key,  'total_events':x.total_events.value,
                                    'input_events': input_events,
                                    'input_bytes': x.not_deleted.input_bytes.value, 'input_not_removed_tasks': x.not_deleted.doc_count,
                                    'output_bytes':x.output.not_removed.bytes.value,
                                    'output_not_removed_tasks':x.output.not_removed.doc_count, 'processed_events': x.processed_events.value,
-                                   'total_tasks': x.doc_count, 'hs06':int(cpu_total), 'duration':duration}
+                                   'total_tasks': x.doc_count, 'hs06':int(cpu_total), 'duration':duration, 'dataset_output_events':x.output.not_removed.events.value}
         total_result.update(result)
 
     return total_result
