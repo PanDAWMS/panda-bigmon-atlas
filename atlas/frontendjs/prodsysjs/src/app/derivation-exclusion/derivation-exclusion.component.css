@@ -1,6 +1,6 @@
 .links {
   text-align: center;
-  margin-bottom: 5rem;
+  margin-bottom: 2rem;
 }
 ul {
   list-style: none;
@@ -70,12 +70,12 @@ tr.example-element-row:not(.example-expanded-row):active {
 /*  padding: 40px;*/
 /*}*/
 
-.mat-cell.expired{
+.mat-cell.expired, span.expired{
   background-color: red;
 }
 
-.mat-cell.not_expired{
-  background-color: green;
+.mat-cell.not_expired, span.not_expired{
+  background-color: orange;
 }
 .mat-form-field {
   font-size: 14px;

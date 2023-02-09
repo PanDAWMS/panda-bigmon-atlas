@@ -28,28 +28,31 @@
 
 
    <p><a mat-raised-button  [routerLink]="['/gp-stats']" [queryParams]="{type: dataType}" >Back to overview</a></p>
-<p>Superseded datasets {{outputType}}</p>
+    <p>List of <b>superseded</b> containers of {{outputType}}</p>
+    <p>      <span class="not_expired" >&nbsp;&nbsp;&nbsp;</span> - Superseded containers within the grace period or with extended lifetime <br>
+      <span class="expired" >&nbsp;&nbsp;&nbsp;</span> - Superseded containers marked for  deletion <br></p>
     <p>Total: {{totalFiltered}} containers, {{totalFilteredSize|datasetSize}};
       Expired:  {{totalFilteredExpired}} containers, {{totalFilteredExpiredSize|datasetSize}} </p>
-
-<div class="links">
-  <ul>
+<div>
+  <ul class="links">
     <li *ngFor="let containerByTag of containersByTagTables">
       <a [routerLink]='"."' [queryParamsHandling]="'merge'" [fragment]="containerByTag.amiTag">{{containerByTag.amiTag}}</a>
     </li>
   </ul>
 </div>
-
 <button mat-raised-button  color="primary" (click)="sidenav.open()" >Extend selected</button><p>
     <span>Show: </span>
     <mat-radio-group  [(ngModel)]="expiredFilter"  (ngModelChange)="changeExpiredFilter()"  aria-label="Select">
       <mat-radio-button [value]="null">All</mat-radio-button>
       <mat-radio-button [value]="'expired'" style="padding-left: 10px">Expired</mat-radio-button>
     </mat-radio-group><br>
+    <div style="display: flex;">
+    <b style="margin-right: 5px">Filter:</b>
     <mat-form-field>
       <mat-label>Filter</mat-label>
       <input matInput [ngModel]="mainFilter" (keyup)="applyFilterEvent($event)" placeholder="" #input>
     </mat-form-field>
+    </div>
   <section>
 
 
