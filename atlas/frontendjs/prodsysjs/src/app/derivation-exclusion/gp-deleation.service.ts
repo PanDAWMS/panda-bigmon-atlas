@@ -44,7 +44,11 @@ export class GPDeletionContainerService {
       if (gpContainer.age > expiredDays){
         gpContainer.is_expired = 'expired';
       } else {
-        gpContainer.is_expired = 'not_expired';
+        if (gpContainer.extensions_number > 0){
+          gpContainer.is_expired = 'extension';
+        } else {
+          gpContainer.is_expired = 'not_expired';
+        }
       }
 
     }
