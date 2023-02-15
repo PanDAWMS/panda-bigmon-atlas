@@ -754,7 +754,7 @@ def remove_stale_rules(days_after_last_update):
                         ddm.delete_replication_rule(dataset_stage_request.rse)
                     except:
                         _logger.error(f"Problem with rule {dataset_stage_request.rse} deletion" )
-                dataset_stage_request.status = 'cancelled'
+                dataset_stage_request.status = DatasetStaging.STATUS.CANCELED
                 dataset_stage_request.save()
 
 
@@ -907,6 +907,12 @@ def do_staging(action_step_id, ddm):
         task = ProductionTask.objects.get(id=action_stage.task)
         if dataset_stage.status == 'done':
             start_stagind_task(task)
+            try:
+                ddm.change_rule_lifetime(dataset_stage.rse, 30 * 86400)
+                dataset_stage.update_time = current_time
+                dataset_stage.save()
+            except Exception as e:
+                _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
         if dataset_stage.status == 'staging':
             if True :
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
@@ -2179,3 +2185,50 @@ def staging_rule_verification(dataset: str, stuck_days: int = 10) -> (bool,bool)
     if s.count() > 0:
         return True, True
     return True, False
+
+
+
+# def staging_rule_percentage(dataset: str) -> (int,int):
+#     """
+#
+#     :param dataset:
+#     :param stuck_days:
+#     :return: Two booleans: 1) Is rule not updated for stuck_days and 2) if any of files stuck due to tape problem
+#     """
+#
+#     if not DatasetStaging.objects.filter(dataset=dataset).exists():
+#         raise ValueError(f'Staging for {dataset} is not found')
+#     if not  DatasetStaging.objects.filter(dataset=dataset,status=DatasetStaging.STATUS.DONE).exists():
+#         raise ValueError(f'Staging for {dataset} is not done yet')
+#     ddm = DDM()
+#     dataset_staging = DatasetStaging.objects.filter(dataset=dataset).last()
+#     rule_id = dataset_staging.rse
+#     # Check rucio claims it's Tape problem:
+#
+#     # Get list of files which are not yet staged
+#     stuck_files = [ file_lock['name'] for file_lock in ddm.list_locks(rule_id) if file_lock['state'] != 'OK']
+#     # Check in ES that files have failed attempts from tape. Limit to 1000 files, should be enough
+#     connection = Elasticsearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']),
+#                                verify_certs=MONIT_ES['verify_certs'], timeout=10000)
+#     days_since_start = stuck_days
+#     tape_replicas = ddm.full_replicas_per_type(dataset_staging.dataset)['tape']
+#     # Find source Tape replica
+#     source = None
+#     for replica in tape_replicas:
+#         if convert_input_to_physical_tape(replica['rse']) == dataset_staging.source:
+#             source = replica['rse']
+#             break
+#     if not source:
+#         raise ValueError(f'{dataset_staging.dataset} tape replica is not found')
+#     s = Search(using=connection, index='monit_prod_ddm_enr_*').\
+#         query("terms", data__name=stuck_files[:1000]).\
+#         query("range", **{
+#                 "metadata.timestamp": {
+#                     "gte": f"now-{days_since_start}d/d",
+#                     "lt": "now/d"
+#                 }}).\
+#         query("match", data__event_type='transfer-failed').\
+#         query('match', data__src_endpoint=source)
+#     if s.count() > 0:
+#         return True, True
+#     return True, False
