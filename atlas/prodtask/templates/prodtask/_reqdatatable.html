@@ -2450,7 +2450,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             event.preventDefault();
             var sliceList = getCheckedSlices();
             var i=0;
-            var sendData = {slices:sliceList};
+            var sendData = {slices:sliceList, events:$('#splitNumber').val()};
               $( "#reloadDialog" ).dialog();
               $.ajax({
                     url: construct_django_url('/prodtask/replace_relation_to_input_slices/',"{{ pr_id }}"),

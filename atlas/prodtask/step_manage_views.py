@@ -27,7 +27,7 @@ from rest_framework.decorators import api_view
 from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 from functools import reduce
-from time import time
+from time import time, sleep
 from atlas.celerybackend.celery import app, ProdSysTask
 from celery.result import AsyncResult
 from atlas.prodtask.tasks import test_async_progress
@@ -257,7 +257,10 @@ def find_parent_tid(step: StepExecution) -> str:
         if step.get_task_config('input_format'):
             input_format = step.get_task_config('input_format')
         else:
-            return ''
+            if 'EVNT' in step.step_parent.step_template.output_formats:
+                input_format = 'EVNT'
+            else:
+                return ''
     else:
         input_format = step.step_parent.step_template.output_formats
     for output_datset in ProductionDataset.objects.filter(task_id=tasks[0].id):
@@ -268,7 +271,7 @@ def find_parent_tid(step: StepExecution) -> str:
                 return output_datset.name.split('_tid')[0]
 
 
-def replace_parent_step(production_request: int, ordered_slices: [int]) -> [int]:
+def replace_parent_step(production_request: int, ordered_slices: [int], events: int) -> [int]:
     result_slices = []
     for slice_number in ordered_slices:
         slice = InputRequestList.objects.get(slice=slice_number,request=production_request)
@@ -296,7 +299,9 @@ def replace_parent_step(production_request: int, ordered_slices: [int]) -> [int]
                             ordered_new_steps, _ = form_existed_step_list(new_steps)
                             new_step = ordered_new_steps[0]
                         new_step.step_parent = new_step
+                        new_step.input_events = events
                         new_step.slice.dataset = slice_input
+                        new_step.slice.input_events = events
                         new_step.slice.save()
                         new_step.save()
                         result_slices.append(new_step.slice.slice)
@@ -312,12 +317,13 @@ def replace_relation_to_input_slices(request, reqid):
             input_dict = json.loads(data)
             start_time = time()
             slices = input_dict['slices']
+            events = input_dict['events']
             if '-1' in slices:
                 del slices[slices.index('-1')]
             ordered_slices = list(map(int,slices))
             _logger.debug(form_request_log(reqid,request,'Replace child-parent to tids slices: %s'% (str(ordered_slices))))
             ordered_slices.sort()
-            changed_slices = replace_parent_step(reqid, ordered_slices)
+            changed_slices = replace_parent_step(reqid, ordered_slices, events)
             results = {'success':True}
             request.session['selected_slices'] = list(map(int,changed_slices))
             _jsonLogger.info('Finish replacing parenr steps for MC slices', extra=form_json_request_dict(reqid,request,
@@ -2622,6 +2628,11 @@ def recreate_output(task_id: int, output: str) -> (int, str):
                                       step.step_template.priority, output, step.step_template.memory)
     step.step_template = new_step_template
     step.save()
-    _deft_client.force_request('mborodin', task.request_id)
-    task = ProductionTask.objects.get(step=step)
-    return task.id, task.output_dataset
+    requset_id = _deft_client.force_request('mborodin', task.request_id)
+    result = _deft_client.get_status(requset_id)
+    while not result:
+        sleep(1)
+        result = _deft_client.get_status(requset_id)
+
+    new_task = ProductionTask.objects.get(step=step)
+    return new_task.id, new_task.output_dataset
