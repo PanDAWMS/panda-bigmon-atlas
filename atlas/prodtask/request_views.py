@@ -2158,7 +2158,12 @@ class RequestTable(datatables.DataTable):
         sClass='centered',
         bSearchable=False,
     )
-
+    is_error = datatables.Column(
+        label='Err',
+        bSortable=False,
+        sClass='centered',
+        bSearchable=False,
+    )
     class Meta:
         model = TRequest
 
@@ -2363,7 +2368,10 @@ def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name
     for dataset in datasets:
         try:
             current_dataset_campaign = ddm.dataset_metadata(dataset)['campaign']
-            new_dataset_campaign = current_dataset_campaign.replace(current_subcampaign,newsubcampaign).replace(current_campaign,newcampaign)
+            if current_dataset_campaign is not None:
+                new_dataset_campaign = current_dataset_campaign.replace(current_subcampaign,newsubcampaign).replace(current_campaign,newcampaign)
+            else:
+                new_dataset_campaign = f"{newcampaign}:{newsubcampaign}"
             if new_dataset_campaign!=current_dataset_campaign:
                 ddm.changeDatasetCampaign(dataset,new_dataset_campaign)
             changed_datasets.append(dataset)

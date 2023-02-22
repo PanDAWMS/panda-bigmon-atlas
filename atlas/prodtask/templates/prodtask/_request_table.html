@@ -359,6 +359,11 @@
             if (row[12]!=''){
                 row[12] = parseInt(row[12]).toPrecision(2);
             }
+            if (row[13] === 'True'){
+                row[13] = '<span style="color: red">✖︎</span>';
+            } else {
+                row[13] = '';
+            }
 
         }
         updateInterface(data['additional']['request_stat']);
