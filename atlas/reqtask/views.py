@@ -13,7 +13,7 @@ from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, get_gl
 from decimal import Decimal
 from datetime import datetime, timedelta
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 
@@ -44,6 +44,12 @@ def str_to_slices_range(range_str):
 
 
 def tasks_hashtags(request, hashtag_formula):
+    try:
+        from atlas.settings.local import FIRST_ADOPTERS
+        if (request.user.username in FIRST_ADOPTERS):
+            return HttpResponseRedirect(f'/ng/tasks-by-hashtags/{hashtag_formula}')
+    except:
+        pass
     task_ids = []
     try:
         task_ids = tasks_from_string(hashtag_formula)
@@ -79,7 +85,12 @@ def request_recent_tasks(request, days=3):
 
 
 def request_tasks_slices(request, rid, slices):
-
+    try:
+        from atlas.settings.local import FIRST_ADOPTERS
+        if (request.user.username in FIRST_ADOPTERS):
+            return HttpResponseRedirect(f'/ng/request-tasks/{rid}/{slices}')
+    except:
+        pass
 
     if (rid and slices):
             ordered_slices = str_to_slices_range(slices)
@@ -110,7 +121,12 @@ def request_tasks(request, rid = None):
     # if rid:
     #     qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
     #     task_array = [decimal_default( x.get('id')) for x in qs]
-
+    try:
+        from atlas.settings.local import FIRST_ADOPTERS
+        if (request.user.username in FIRST_ADOPTERS):
+            return HttpResponseRedirect(f'/ng/request-tasks/{rid}')
+    except:
+        pass
     return render(request, 'reqtask/_task_table.html',
                             {'reqid':rid,
                              'clouds': get_clouds(),
