@@ -250,8 +250,32 @@
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </ng-container>
 <ng-container *ngIf="actionExecution$ | async as actionResult;">
-  <mat-card>
-    <mat-icon class="action-result-icon-{{actionResult.type}}">{{actionResult.type}}</mat-icon>
-    <span>{{actionResult.result}}</span>
-  </mat-card>
+  <ng-container *ngIf="actionResult.tasks_result.length===1; else multipleTasksResultBlock">
+      <mat-card>
+        <mat-icon class="action-result-icon-{{actionResult.tasks_result[0].type}}">{{actionResult.tasks_result[0].type}}</mat-icon>
+        <span>{{actionResult.tasks_result[0].result}}</span>
+      </mat-card>
+    </ng-container>
+  <ng-template #multipleTasksResultBlock>
+    <mat-accordion>
+      <mat-expansion-panel >
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="action-result-icon-{{summaryTasksResult.status}}">{{summaryTasksResult.status}}</mat-icon>
+             <span>{{summaryTasksResult.result}}</span>
+            <ng-container *ngIf="reSendAction.tasks.length>0">
+              <button (click)="reSendTasks()" style="margin-left: 7px" >Send command for {{reSendAction.tasks.length}} task(s)</button>
+            </ng-container>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-list>
+          <mat-list-item *ngFor="let taskResult of actionResult.tasks_result">
+            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+            <span>{{taskResult.task_id}} - {{taskResult.result}}</span>
+
+          </mat-list-item>
+        </mat-list>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </ng-template>
 </ng-container>

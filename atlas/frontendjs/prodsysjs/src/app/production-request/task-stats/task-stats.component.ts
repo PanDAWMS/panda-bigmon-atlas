@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, Input, OnInit} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {SelectionModel} from "@angular/cdk/collections";
 
@@ -17,11 +17,14 @@ import {SelectionModel} from "@angular/cdk/collections";
 export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
 
   @Input() taskStatus: {[status: string]: number};
-  @Input() taskStatusFiltered: {[status: string]: number};
+ // @Input() taskStatusFiltered: {[status: string]: number};
   @Input() collectionStatus?: {[status: string]: string[]};
+  @Input() statusOrder?: string[];
+
   value: string[] = [];
   selectedStatus: SelectionModel<string> = new SelectionModel(true, []);
-  collectionKeys: {[status: string]: number} = {};
+  collectionKeys: Map<string, number> = new Map<string, number>();
+  taskStatusOrdered: Map<string, number> = new Map<string, number>();
   collectionKeysSelect: SelectionModel<string> = new SelectionModel(true, []);
   onChange!: (value: string[]) => void;
   onTouch: any;
@@ -40,17 +43,35 @@ export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
 
   ngOnInit(): void {
     this.selectedStatus = new SelectionModel<string>(true, Object.keys(this.taskStatus));
+    if (!this.collectionStatus){
+      this.collectionStatus = {total: Object.keys(this.taskStatus)};
+    } else {
+          this.collectionStatus.total = Object.keys(this.taskStatus);
+    }
     if (this.collectionStatus){
       this.collectionKeysSelect = new SelectionModel<string>(true, Object.keys(this.collectionStatus));
-      for (const [name, status] of Object.entries(this.collectionStatus)){
-        const intersectionStatus = status.filter(val => this.selectedStatus.selected.includes(val));
+      let collectionKeysOrder: string[] = Object.keys(this.collectionStatus);
+      if (this.statusOrder){
+        collectionKeysOrder = this.statusOrder.filter(key => key in this.collectionStatus);
+      }
+      for (const name of collectionKeysOrder) {
+        const intersectionStatus = this.collectionStatus[name].filter(val => this.selectedStatus.selected.includes(val));
         if (intersectionStatus.length > 0){
-          this.collectionKeys[name] = intersectionStatus.reduce<number>((acc, currentStatus) => {
+          const statusCount = intersectionStatus.reduce<number>((acc, currentStatus) => {
             return acc + this.taskStatus[currentStatus];
           }, 0);
+          this.collectionKeys.set(name, statusCount);
         }
       }
     }
+    if (this.statusOrder){
+      this.statusOrder.forEach(status => {
+        if (status in this.taskStatus){
+          this.taskStatusOrdered.set(status, this.taskStatus[status]);
+        }
+      });
+    }
+
   }
   registerOnChange(fn: any): void {
     this.onChange = fn;
@@ -100,5 +121,9 @@ export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
     if (this.onChange) {
       this.onChange(value);
     }
+  }
+
+  asIsOrder(): number {
+    return 0;
   }
 }

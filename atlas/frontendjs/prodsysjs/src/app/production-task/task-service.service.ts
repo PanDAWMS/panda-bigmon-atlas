@@ -30,7 +30,7 @@ export interface TaskHS06 {
 export type ActionParams = number[]|string[]|boolean[]|null;
 
 export interface TaskAction {
-  task: ProductionTask;
+  tasks: ProductionTask[];
   action: string;
   params: ActionParams;
   comment: string;
@@ -42,7 +42,7 @@ export interface TaskAction {
 export interface TaskActionResult{
   action_sent: boolean;
   result: {task_id: number, return_code: string, return_info: string}[]|null;
-  action_verification: {task_id: number, action_allowed: boolean, user_allowed: boolean}[]|null;
+  action_verification: {id: number, action_allowed: boolean, user_allowed: boolean}[]|null;
   action?: string;
   tasksID?: number[];
   error?: string;
@@ -93,9 +93,9 @@ export class TaskService {
       catchError( err => {
         let result: TaskInfo;
         if (err.status !== '400') {
-          result = {error: `Error task loading ${err.error} `};
+          result = {error: `server problem with task loading ${err.error} `};
         } else {
-          result = {error: `Error task loading ${err.error} (status ${err.status})`};
+          result = {error: `server problem with task loading ${err.error} (status ${err.status})`};
         }
         return of(result);
       })

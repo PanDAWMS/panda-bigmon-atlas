@@ -1,0 +1,214 @@
+<ng-container *ngIf="task$ | async as  taskInfo">
+<ng-container *ngIf="!taskInfo.error && taskInfo.task as task; else loading">
+  <h5>{{task.id}} - {{task.name}}</h5>
+  <app-task-action  [tasks]="[task]" ></app-task-action>
+  <div class="task-grid">
+    <!--    Row-->
+    <div>ID:</div><div><app-bptask [task]="task.id"></app-bptask> </div>
+    <div [ngClass]="['taskStatusBkgr',task.status]">Status:</div><div><span  [ngClass]="['taskStatus',task.status]">{{task.status}}</span></div>
+    <div>Request:</div><div><a href="/prodtask/slice_by_task/{{task.id}}">{{task.request_id}}</a></div>
+    <!--    Row-->
+    <div>Name:</div><div style="grid-column: 2 / -1">{{task.name}} </div>
+    <!--    Row-->
+    <div>Parent:</div><div><a [routerLink]="['/task',task.parent_id]" >{{task.parent_id}}</a></div>
+    <div>Descendants:</div><div><a href="/prodtask/task_chain_view/{{task.id}}/">Link</a></div>
+    <div>Reference:</div><div><a href="https://its.cern.ch/jira/browse/{{task.reference}}">{{task.reference}}</a></div>
+    <!--    Row-->
+    <div>Owner:</div><div>{{task.username}}</div>
+    <div>Campaign:SubCampaign</div><div>{{task.campaign}}:{{task.campaign}}</div>
+    <div>Physic group</div><div>{{task.phys_group}}</div>
+    <!--    Row-->
+    <div>Priority/current </div><div>{{task.priority}} / {{task.current_priority}}</div>
+    <div>Global share</div><div>{{taskInfo.jedi_task.gshare}}</div>
+    <div>Core count</div><div >{{task.coreCount}}</div>
+    <!--    Row-->
+    <div>Total&nbsp;events:</div><div>{{task.total_events|number}}</div>
+    <div>Created/done jobs</div><div>{{task.total_req_jobs}}/{{task.total_done_jobs}}</div>
+    <div>Failure rate:</div>
+    <div>{{task.failureRate}} % ( <a href='https://bigpanda.cern.ch/errors/?jeditaskid={{task.id}}' style="color: red"> {{ task.total_files_failed}} </a>| <span style="color: green"> {{ task.total_files_finished}}</span> from  <span style="color: black"> {{ task.total_files_tobeused}}</span>)</div>
+    <!--    Row-->
+    <ng-container *ngIf="taskStats$ | async as  taskStat">
+    <ng-container *ngIf="((taskStat.failed+taskStat.finished>0) || (taskStat.running>=0 && task.total_files_tobeused>0))">
+
+        <div>Stats:</div>
+        <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            HS06*sec - <span  style="color: green">finished: {{taskStat.finished|number}} </span>
+          <a href='https://bigpanda.cern.ch/errors/?jeditaskid={{task.id}}' style="color: red"> failed: {{ taskStat.failed|number}}
+            <ng-container *ngIf="taskStat.failed>0">({{(taskStat.failed)/(taskStat.failed+taskStat.finished)| percent}})</ng-container>
+          </a> <b>&nbsp;|</b>
+          <ng-container *ngIf="taskStat.running>=0"><b>
+            <a style="color: lightgreen; margin-left: 6px" href="https://bigpanda.cern.ch/jobs/?jeditaskid={{task.id}}&jobstatus=defined|waiting|pending|assigned|throttled|activated|sent|starting|running|holding|transferring"> Running 'files': {{taskStat.running}}</a></b>
+          </ng-container><b>&nbsp;|</b>
+          <span *ngIf="taskStat.total_output_size>0" style="margin-left: 6px">Produced output {{taskStat.total_output_size | datasetSize}}</span>
+        </div>
+          <ng-container *ngIf="taskStat.running>=0">
+
+              <div>Progress:</div>
+            <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            <app-task-progress  [task]="currentTask" [parentPercent]="taskStat.parentPercent" [runningFiles]="taskStat.running">
+
+            </app-task-progress>
+          </div>
+
+
+          </ng-container>
+
+    </ng-container>
+      </ng-container>
+    <!--    Row-->
+    <div>Submit:</div><div>{{task.submit_time| date:'short'}}</div>
+    <div>Start:</div><div>{{task.start_time| date:'short'}}</div>
+    <div>Timestamp:</div><div>{{task.timestamp| date:'short'}}</div>
+    <!--    Row-->
+    <div>Project mode:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">{{task.projectMode}} </div>
+    <!--    Row-->
+    <div>Split rule:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">{{taskInfo.jedi_task.splitrule}} </div>
+    <!--    Row-->
+    <div>Cputime</div><div>{{taskInfo.jedi_task.cputime}} {{taskInfo.jedi_task.cputimeunit}}</div>
+    <div>Walltime</div><div>{{taskInfo.jedi_task.walltime}} {{taskInfo.jedi_task.walltimeunit}}</div>
+    <div>Cpu efficiency</div><div>{{taskInfo.jedi_task.cpuefficiency}}</div>
+    <!--    Row-->
+    <div>Ram</div><div>{{taskInfo.jedi_task.ramcount}} {{taskInfo.jedi_task.ramunit}}</div>
+    <div>Outdisk</div><div>{{taskInfo.jedi_task.outdiskcount}} {{taskInfo.jedi_task.outdiskunit}}</div>
+    <div>Workdisk</div><div>{{taskInfo.jedi_task.workdiskcount}} {{taskInfo.jedi_task.workdiskunit}}</div>
+    <!--    Row-->
+    <div>DiskIO</div><div>{{taskInfo.jedi_task.diskio}} {{taskInfo.jedi_task.diskiounit}}</div>
+    <div>IO intensity</div><div>{{taskInfo.jedi_task.iointensity}} {{taskInfo.jedi_task.iointensityunit}}</div>
+    <div>basewalltime</div><div>{{taskInfo.jedi_task.basewalltime}} </div>
+    <!--    Row-->
+    <div>Input:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+    <a href="{{task.inputdataset|rucioURL}}">{{task.inputdataset}}</a></div>
+    <!--    Row-->
+    <div>Input events:</div><div *ngIf="task.inputEvents && task.inputEvents > -1; else statinputevents">{{task.inputEvents|number}}</div>
+    <ng-template #statinputevents><div>{{inputEvents|number}}</div></ng-template>
+    <div>Input size:</div><div  style="grid-column: 4 / -1; overflow-wrap: anywhere">
+    <ng-container *ngIf="inputSize">{{inputSize | datasetSize}}</ng-container></div>
+
+    <!--    Row-->
+    <ng-container *ngIf="task.staging">
+      <div>Staging:</div>
+      <div style="grid-column: 2 / -1">
+        <app-task-staging-progress [stagingProgress]="task.staging"></app-task-staging-progress>
+      </div>
+    </ng-container>
+    <!--    Row-->
+    <div>Outputs:</div>
+    <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+      <div *ngFor="let dataset of taskInfo.output_datasets">
+        <a href="{{dataset|rucioURL}}">{{dataset}}</a>
+      </div>
+    </div>
+        <!--    Row-->
+
+    <div>Hashtags:</div>
+    <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+      <ng-container *ngFor="let hashtag of task.hashtags">
+        <a href="/dkb/#/output_stat/?hashtag=|{{hashtag}}" style="margin-left: 5px">{{hashtag}}</a>
+      </ng-container>
+    </div>
+        <!--    Row-->
+    <ng-container *ngIf="taskInfo.jedi_task.errordialog">
+    <div>JEDI log:</div>
+    <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+      <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <div [innerHTML]="taskInfo.jedi_task.errordialog"></div>
+      </mat-expansion-panel-header>
+
+      <ng-template matExpansionPanelContent>
+        <ng-container *ngIf="JEDIErrorLog$ | async as JEDILog">
+          <ng-container *ngIf="JEDILog.log">
+                     <div [innerHTML]="JEDILog.log"></div>
+          </ng-container>
+        </ng-container>
+      </ng-template>
+    </mat-expansion-panel>
+    </div>
+      </ng-container>
+    <!--    Row-->
+    <ng-container *ngIf="task.is_extension">
+       <ng-container *ngIf="taskExtensions$ | async as taskExt">
+          <ng-container *ngIf="taskExt">
+
+            <div>Similar tasks:</div>
+          <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
+            <ng-container *ngFor="let extTask of taskExt">
+              <a  style="margin-left: 5px" [routerLink]="['/task',extTask.id]" ><span [ngClass]="['taskStatus',extTask.status]">{{extTask.id}}</span></a>
+
+            </ng-container>
+          </div>
+          </ng-container>
+      </ng-container>
+    </ng-container>
+
+  </div>
+
+</ng-container>
+    <h5 *ngIf=" taskInfo.error">{{taskInfo.error}}</h5>
+
+
+<section class="logTable">
+  <mat-table [dataSource]="actionLog$" [fixedLayout]="true">
+  <ng-container matColumnDef="action">
+    <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.action}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="timestamp">
+    <mat-header-cell *matHeaderCellDef> Time </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.timestamp|date: 'short'}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="username">
+    <mat-header-cell *matHeaderCellDef>username </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.username}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="message">
+    <mat-header-cell *matHeaderCellDef>JEDI message </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.return_message}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="code">
+    <mat-header-cell *matHeaderCellDef>Return code </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.return_code}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="params">
+    <mat-header-cell *matHeaderCellDef>Params</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.params}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="comment">
+    <mat-header-cell *matHeaderCellDef>Comment</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.comment}} </mat-cell>
+  </ng-container>
+    <mat-header-row *matHeaderRowDef="['action', 'timestamp', 'username','message','code','params','comment']"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: ['action', 'timestamp', 'username','message','code','params','comment']"></mat-row>
+  </mat-table>
+</section>
+    <mat-expansion-panel hideToggle>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Job Parameters
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <table>
+      <tr *ngFor="let item of taskInfo.job_parameters | keyvalue">
+        <td>{{item.value| json}}</td>
+      </tr>
+    </table>
+  </mat-expansion-panel>
+  <mat-expansion-panel hideToggle>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Task Parameters
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <table>
+      <tr *ngFor="let item of taskInfo.task_parameters | keyvalue">
+        <td>{{item.key}}</td><td>{{item.value}}</td>
+      </tr>
+    </table>
+  </mat-expansion-panel>
+
+  <ng-template #loading>
+    <mat-progress-bar *ngIf="!taskInfo.error" mode="indeterminate"></mat-progress-bar>
+  </ng-template>
+</ng-container>

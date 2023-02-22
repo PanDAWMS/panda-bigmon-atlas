@@ -21,14 +21,17 @@ import {filter, map, switchMap, tap} from 'rxjs/operators';
 })
 
 export class TaskActionComponent implements OnInit {
-  @Input() task: ProductionTask;
-
+  // @Input() task?: ProductionTask;
+  @Input() tasks: ProductionTask[];
+  reSendAction?: TaskAction = null;
   result?: TaskActionResult;
+
+  summaryTasksResult: {status: string, result: string} = {status: '', result: ''};
   reassignEntities: ReassignDestination = {sites: [], nucleus: [], shares: []};
   siteOption = 'nokill';
   nucleuOption = 'nokill';
   shareOption = false;
-  actionExecution$: Observable<{action: string, type: string, result: string}>;
+  actionExecution$: Observable<{action: string, actions_result: string, tasks_result: {task_id: number, type: string, result: string}[]}>;
   actionExecuting = false;
   TASKACTIONS = {
     abort: {name: 'Abort', params_name: []},
@@ -69,52 +72,163 @@ export class TaskActionComponent implements OnInit {
   ngOnInit(): void {
      this.taskService.getReassignEntities().subscribe( result => this.reassignEntities = result);
      this.actionExecution$ = this.taskService.getActionList().pipe(
-       filter(value => value !== null),
-       tap(_ => this.actionExecuting = true),
+       filter(value => (this.tasks.length > 0) && (value !== null)),
+       tap(_ => {
+                         this.actionExecuting = true;
+                         this.summaryTasksResult = {status: '', result: ''};
+                       }),
        switchMap((taskAction) => {
-         return this.taskService.submitTaskAction([taskAction.task.id], taskAction.action,
+         this.reSendAction = {action: taskAction.action, tasks: [], comment: taskAction.comment, params: taskAction.params,
+         action_name: this.TASKACTIONS[taskAction.action].name, params_name: this.TASKACTIONS[taskAction.action].params_name};
+         return this.taskService.submitTaskAction(taskAction.tasks.map(task => task.id), taskAction.action,
            taskAction.comment, taskAction.params);
        }),
        tap(_ => this.actionExecuting = false),
        map(taskActionResult => {
-         if (!taskActionResult.action_sent){
-           if (taskActionResult.error && (taskActionResult.error !== '')){
-             return {action: taskActionResult.action, type: 'error', result: taskActionResult.error};
-           }
-           if (taskActionResult.action_verification.length === 1){
-             if (taskActionResult.action_verification[0].action_allowed &&
-               !taskActionResult.action_verification[0].user_allowed){
-               return {action: taskActionResult.action, type: 'error', result: 'User permission is insufficient to execute the action'};
+
+
+         if (!taskActionResult.action_sent && taskActionResult.error && (taskActionResult.error !== '')){
+               return {action: taskActionResult.action, actions_result: 'error',
+                 tasks_result: [{task_id: taskActionResult.tasksID[0], type: 'error', result: taskActionResult.error}]};
+         }
+
+         if (this.tasks.length === 1){
+           if (!taskActionResult.action_sent){
+             if (taskActionResult.action_verification.length === 1){
+               if (taskActionResult.action_verification[0].action_allowed &&
+                 !taskActionResult.action_verification[0].user_allowed){
+                 return {action: taskActionResult.action, actions_result: 'error',
+                   tasks_result: [{task_id: taskActionResult.action_verification[0].id, type: 'error', result: 'User permission is insufficient to execute the action'}]};
+               }
+               return {action: taskActionResult.action, actions_result: 'error',
+                  tasks_result: [{task_id: taskActionResult.action_verification[0].id, type: 'error', result:  `The action is not allowed for a task in ${this.tasks[0].status} status`}]};
              }
-             return {action: taskActionResult.action, type: 'error', result: `The action is not allowed for a task in ${this.task.status} status`};
            }
-         }
-         if (taskActionResult.result.length === 1) {
-           if (taskActionResult.result[0].return_info !== null && taskActionResult.result[0].return_info.includes('Command rejected')){
-             return {action: taskActionResult.action, type: 'warning', result: `The command was sent to JEDI, return info:
-            ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
+           if (taskActionResult.result.length === 1) {
+             if (taskActionResult.result[0].return_info !== null && taskActionResult.result[0].return_info.includes('Command rejected')){
+               return {action: taskActionResult.action, actions_result: 'sent',
+                 tasks_result: [{task_id: taskActionResult.result[0].task_id, type: 'warning', result:  `The command was sent to JEDI, return info:
+              ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`}]};
+             }
+             return {action: taskActionResult.action, actions_result: 'sent',
+                 tasks_result: [{task_id: taskActionResult.result[0].task_id, type: 'task_alt', result:  `The command was sent to JEDI, return info:
+              ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`}]};
+             // {action: taskActionResult.action, actions_result: 'task_alt', result: `The command was sent to JEDI, return info:
+            //  ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
            }
-           return {action: taskActionResult.action, type: 'task_alt', result: `The command was sent to JEDI, return info:
-            ${taskActionResult.result[0].return_info}; return code: ${taskActionResult.result[0].return_code};`};
+         } else {
+           const tasksResult = [];
+           if (!taskActionResult.action_sent) {
+             const reSendTasks = [];
+             for (const actionVerification of taskActionResult.action_verification) {
+               if (actionVerification.action_allowed && !actionVerification.user_allowed) {
+                 tasksResult.push({
+                   task_id: actionVerification.id,
+                   type: 'error',
+                   result: 'User permission is insufficient to execute the action'
+                 });
+               }
+               if (!actionVerification.action_allowed) {
+                 tasksResult.push({
+                   task_id: actionVerification.id,
+                   type: 'error',
+                   result: `The action is not allowed for a task in this status`
+                 });
+               }
+               if (actionVerification.action_allowed && actionVerification.user_allowed) {
+                 tasksResult.push({
+                   task_id: actionVerification.id,
+                   type: 'task_alt',
+                   result: `The action is allowed for a task`
+                 });
+                 reSendTasks.push(actionVerification.id);
+               }
+               if (reSendTasks.length > 0) {
+                 this.reSendAction.tasks = this.tasks.filter(task => reSendTasks.includes(task.id));
+               }
+             }
+             let returnString = `Error: commands were not sent to JEDI. ${tasksResult.length - reSendTasks.length} has problems`;
+             if (reSendTasks.length > 0){
+                returnString += `, for ${reSendTasks.length} tasks command can be sent again.`;
+              }
+             this.summaryTasksResult = {status: 'error', result: returnString};
+             return {action: taskActionResult.action, actions_result: 'error', tasks_result: tasksResult};
+           } else {
+              let goodTasks = 0;
+              let warningTasks = 0;
+              for (const taskResult of taskActionResult.result) {
+                if (taskResult.return_info !== null && taskResult.return_info.includes('Command rejected')){
+                  tasksResult.push({
+                     task_id: taskResult.task_id,
+                     type: 'warning',
+                     result: `The command was sent to JEDI, return info: ${taskResult.return_info}; return code: ${taskResult.return_code};`
+                 });
+                  warningTasks++;
+                } else {
+                  tasksResult.push({
+                     task_id: taskResult.task_id,
+                     type: 'task_alt',
+                     result: `The command was sent to JEDI, return info: ${taskResult.return_info}; return code: ${taskResult.return_code};`
+                 });
+                  goodTasks++;
+                }
+              }
+              if (warningTasks === 0){
+              this.summaryTasksResult = {status: 'task_alt', result: `The commands were sent to JEDI`};
+            } else {
+              this.summaryTasksResult = {status: 'warning', result: `The commands were sent to JEDI, ${warningTasks} tasks have problems`};
+              }
+              return {action: taskActionResult.action, actions_result: 'sent', tasks_result: tasksResult};
+           }
+
          }
-       }));
+       }
+       ));
   }
 
   executeAction(action: string, params: ActionParams): void {
-
-    if (  this.SINGLE_TASK_CONFIRMATION_REQUIRED.indexOf(action) > -1){
-      this.dialog.open(DialogTaskSubmissionComponent, {data : {task: this.task, action, action_name: this.TASKACTIONS[action].name,
-        params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment}});
-    } else {
-      this.taskService.addAction({task: this.task, action, action_name: this.TASKACTIONS[action].name,
-          params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment});
-    }
+        if (  this.SINGLE_TASK_CONFIRMATION_REQUIRED.indexOf(action) > -1){
+        this.dialog.open(DialogTaskSubmissionComponent, {data : {tasks: this.tasks, action, action_name: this.TASKACTIONS[action].name,
+          params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment}});
+      } else {
+        this.taskService.addAction({tasks: this.tasks, action, action_name: this.TASKACTIONS[action].name,
+            params, params_name: this.TASKACTIONS[action].params_name, comment: this.comment});
+      }
 
   }
   stopPropagation(event): void{
     event.stopPropagation();
   }
 
+
+  summaryResult(actionResult: { action: string; actions_result: string; tasks_result: { task_id: number; type: string; result: string }[] }): string {
+
+    if (actionResult.actions_result === 'error'){
+      let returnString = `Error: commands were not sent to JEDI. ${actionResult.tasks_result.length - this.reSendAction.tasks.length} tasks has problems`;
+      if (this.reSendAction.tasks.length > 0){
+        returnString += `, for ${this.reSendAction.tasks.length} tasks command can be sent again.`;
+      }
+      return returnString;
+    }
+    if (actionResult.actions_result === 'sent'){
+      let goodTasks = 0;
+      let warningTasks = 0;
+      for (const taskResult of actionResult.tasks_result){
+        if (taskResult.type === 'task_alt'){
+          goodTasks++;
+        }
+        if (taskResult.type === 'warning'){
+          warningTasks++;
+        }
+      }
+      return `Commands sent to JEDI. ${goodTasks} tasks were affected, ${warningTasks} tasks were not affected.`;
+    }
+
+  }
+
+  reSendTasks(): void{
+    this.taskService.addAction(this.reSendAction);
+  }
 }
 
 @Component({
@@ -123,7 +237,6 @@ export class TaskActionComponent implements OnInit {
 })
 export class DialogTaskSubmissionComponent implements OnInit{
 
-  actionResult?: TaskActionResult;
   parameters = '';
   comment = '';
 

@@ -8,9 +8,13 @@ from functools import reduce
 
 import requests
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.handlers.wsgi import WSGIRequest
+from django.http import HttpRequest
 from django.utils import timezone
+from rest_framework.request import Request
 
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats
+from atlas.dkb.views import tasks_from_string
 from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
@@ -158,6 +162,40 @@ def production_task(request):
     except Exception as ex:
         return Response(f"Problem with task loading: {ex}", status=400)
 
+class ProductionRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TRequest
+        fields = '__all__'
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_task_for_request(request: Request) -> Response:
+    try:
+        if 'hashtagString' in request.data and request.data['hashtagString']:
+            tasks_id = tasks_from_string(request.data['hashtagString'])
+            tasks = ProductionTask.objects.filter(id__in=tasks_id)
+        else:
+            request_id = int(request.data['requestID'])
+            if request.data['slices']:
+                slices = request.data['slices']
+                slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
+                steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
+                tasks = ProductionTask.objects.filter(step__in=steps)
+            else:
+                tasks = ProductionTask.objects.filter(request_id=request_id)
+        tasks_serial = []
+        for task in tasks:
+            serial_task = task.__dict__
+            del serial_task['_state']
+            step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
+            serial_task.update(dict(step_name=StepTemplate.objects.filter(id=step_id).values("step").get()['step']))
+            serial_task['failureRate'] = task.failure_rate or 0
+            tasks_serial.append(serial_task)
+
+        return Response(tasks_serial)
+    except Exception as ex:
+        return Response(f"Problem with task loading: {ex}", status=400)
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -371,6 +409,13 @@ def info_by_jira(request):
     group = production_requests[0].phys_group
     return Response({'description': description, 'requests_number': len(production_requests), 'jira_reference': jira,
                      'manager': manager, 'phys_group': group, 'reqIDs': req_ids})
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_request_info(request):
+    production_request = TRequest.objects.get(reqid=request.query_params.get('prodcution_request_id'))
+    return Response(ProductionRequestSerializer(production_request).data)
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

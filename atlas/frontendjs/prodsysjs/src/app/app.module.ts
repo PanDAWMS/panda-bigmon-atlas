@@ -72,6 +72,14 @@ import {
   DialogSelectedContainers
 } from './derivation-from-tag/derivation-from-tag.component';
 import {ClipboardModule} from "@angular/cdk/clipboard";
+import {
+  BtnCellRenderer,
+  DialogTaskDetailsComponent,
+  ProductionTaskTableComponent
+} from './production-task-table/production-task-table.component';
+import { TasksManagementComponent } from './tasks-management/tasks-management.component';
+import {AgGridModule} from "ag-grid-angular";
+import { TaskDetailsComponent } from './production-request/task-details/task-details.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -111,6 +119,10 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         },
       {path: 'request/ids/:reqIDs', component: ProductionRequestComponent},
   {path: 'request/:jira', component: ProductionRequestComponent},
+  {path: 'request-tasks/:id', component: TasksManagementComponent},
+  {path: 'request-tasks/:id/:slices', component: TasksManagementComponent},
+  {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
+
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
@@ -170,7 +182,12 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     TaskProgressComponent,
     DerivationFromTagComponent,
     DialogContainerDetails,
-    DialogSelectedContainers
+    DialogSelectedContainers,
+    ProductionTaskTableComponent,
+    TasksManagementComponent,
+    TaskDetailsComponent,
+    DialogTaskDetailsComponent,
+    BtnCellRenderer,
   ],
   imports: [
     BrowserModule,
@@ -210,12 +227,13 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatMenuModule,
     MatProgressBarModule,
     MatTooltipModule,
-    ClipboardModule
+    ClipboardModule,
+    AgGridModule
 
   ],
   providers: [
         {
-          provide: APP_BASE_HREF,
+           provide:  APP_BASE_HREF, useValue: '/ng',
           useFactory: getBaseLocation
         }
       ],

@@ -1,0 +1,11 @@
+<h3>{{currentTask}}</h3>
+<mat-dialog-content>
+
+<app-task-full-details [taskID]="currentTask"></app-task-full-details>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button [disabled]="currentIndex === 0" (click)="previousTask()" >Previous</button>
+  <button mat-button [disabled]="currentIndex === (data.filteredTasks.length - 1)"  (click)="nextTask()">Next</button>
+  <button mat-button mat-dialog-close>Exit</button>
+
+</mat-dialog-actions>

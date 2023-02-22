@@ -1,0 +1,46 @@
+<div class="filters-top-page">
+  <div>
+<app-task-stats [taskStatus]="tasksSteps"  [formControl]="taskStepControl"
+                [statusOrder]="TaskStatusStep.STEPS_ORDER" ></app-task-stats>
+</div>
+  <div>
+<app-task-stats  [taskStatus]="tasksStatus"  [formControl]="taskStatusControl" [collectionStatus]="TaskStatusStep.TASKS_STATUS_GROUPING"
+                [statusOrder]="TaskStatusStep.TASKS_STATUS_ORDER"></app-task-stats>
+    </div>
+  </div>
+<div class="task-table-wrapper">
+<div class="task-table-header">
+  <div >
+     Page Size:
+      <select style="width: 5em" (change)="onPageSizeChanged()" [(ngModel)]="pageSize" >
+        <option value="10" >10</option>
+        <option value="20" selected="">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="1000">1000</option>
+      </select>
+    </div>
+  <div>
+  <button mat-raised-button color="primary" (click)="selectFiltered()">Select Filtered</button>
+  <button mat-raised-button color="primary" (click)="clearSelection()">Clear selection</button>
+  </div>
+</div>
+<ag-grid-angular
+    #taskAGGrid
+     (gridReady)="onGridReady($event)"
+    style="width: 100%;"
+     [domLayout]="'autoHeight'"
+    [rowHeight]="22"
+    [rowData]="tasks"
+    [columnDefs]="taskAGColumns"
+    (selectionChanged)="onSelectionChanged($event)"
+    [defaultColDef]="defaultColDef"
+    [pagination]="true"
+    [rowSelection]="'multiple'"
+    class="ag-theme-alpine"
+    [gridOptions]="gridOptions"
+    [paginationPageSize]="pageSize"
+></ag-grid-angular>
+</div>
+<div><span>Tasks selected: {{selectedTasks.length}}</span></div>
+<app-task-action [tasks]="selectedTasks"></app-task-action>

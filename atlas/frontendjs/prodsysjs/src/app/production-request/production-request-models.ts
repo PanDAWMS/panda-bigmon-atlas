@@ -45,6 +45,9 @@ export interface ProductionRequestBase {
   info_fields: string;
   is_fast: boolean;
   project_id: string;
+
+  project?: string;
+
 }
 
 export interface ProductionRequests {
@@ -185,6 +188,7 @@ export interface ProductionTask{
   hashtags?: string[];
   staging?: StagingProgress;
   inputEvents?: number;
+  step_name?: string;
   // step: any;
   // request: any;
 }
