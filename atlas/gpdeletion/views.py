@@ -35,7 +35,7 @@ _jsonLogger = logging.getLogger('prodtask_ELK')
 FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'MUON', 'PHYS',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH']
 
-CP_FORMATS = ["FTAG", "EGAM", "MUON", 'PHYS', "JETM", "TAUP", "IDTR", "TCAL"]
+CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
 
 
 def get_all_formats(format_base):
