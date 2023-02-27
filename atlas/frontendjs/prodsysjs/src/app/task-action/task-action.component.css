@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: space-evenly;
+  margin-left: 20px;
 }
 .action-menu-vertical-fields {
   display: flex;
@@ -21,11 +22,11 @@
     margin: 3px 8px;
 }
 .task-action-button-field {
-  width: 200px;
+  width: 180px;
 }
 
 .task-action-input-form {
-  width: 200px;
+  width: 180px;
 }
 
 .action-label {
@@ -50,7 +51,7 @@
 .task-action-comment-field {
   font-size: 13px;
   margin-top: 8px;
-
+  width: 180px;
 }
 .action-result-icon-error {
   color: red;
