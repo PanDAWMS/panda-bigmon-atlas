@@ -40,6 +40,8 @@
     class="ag-theme-alpine"
     [gridOptions]="gridOptions"
     [paginationPageSize]="pageSize"
+    (gridSizeChanged)="onGridSizeChanged($event)"
+    (paginationChanged)="onPaginationChanged($event)"
 ></ag-grid-angular>
 </div>
 <div><span>Tasks selected: {{selectedTasks.length}}</span></div>

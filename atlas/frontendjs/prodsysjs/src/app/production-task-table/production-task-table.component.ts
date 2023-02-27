@@ -6,7 +6,7 @@ import {
   GridOptions,
   GridReadyEvent,
   GridSizeChangedEvent,
-  ICellRendererParams,
+  ICellRendererParams, PaginationChangedEvent,
   RowNode,
   SelectionChangedEvent
 } from "ag-grid-community";
@@ -253,6 +253,15 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   }
   onPageSizeChanged(): void {
     this.tasksGrid.api.paginationSetPageSize(this.pageSize);
+  }
+
+  onGridSizeChanged(params: GridSizeChangedEvent<any>): void {
+    params.columnApi.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
+  }
+
+
+  onPaginationChanged(params: PaginationChangedEvent<any>): void {
+        params.columnApi.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
   }
 }
 
