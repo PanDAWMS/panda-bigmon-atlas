@@ -81,8 +81,8 @@ hashtagApp.controller('HashTagCtrl',['$scope','$http','hashtagLists', function (
     scope.showTasks= function(){
 
 
-            window.location.href = construct_django_url('/reqtask/hashtags/',scope.hashtag_formula);
-
+            // window.location.href = construct_django_url('/reqtask/hashtags/',scope.hashtag_formula);
+                window.location.href = construct_django_url('/ng/tasks-by-hashtags/',scope.hashtag_formula);
     };
     scope.showStatistic= function(){
         var tasks = [];
@@ -197,8 +197,8 @@ hashtagApp.controller('setTasksHashtagCtrl',['$scope','$http','$routeParams',
                 scope.loading = true;
                 http.post(url,sendData).
                   success(function(data, status, headers, config) {
-                        window.location.href = '/reqtask/hashtags/&'+scope.hashtag;
-
+                       // window.location.href = '/reqtask/hashtags/&'+scope.hashtag;
+                        window.location.href = '/ng/tasks-by-hashtags/&'+scope.hashtag;
                     }).
                   error(function(data, status, headers, config) {
                       scope.loading = false;

@@ -2432,8 +2432,8 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                         success: function (data, status) {
                             $("#waitingDialog").dialog('close');
                             var slices_str =  $.evalJSON(data).slices_range;
-                            window.location.href = construct_django_url('/reqtask/',"{{ pr_id }}",slices_str);
-
+                            {#window.location.href = construct_django_url('/reqtask/',"{{ pr_id }}",slices_str);#}
+                            window.location.href = construct_django_url('/ng/request-tasks/',"{{ pr_id }}",slices_str);
                         }
                     }
             );
@@ -3629,7 +3629,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
             </table>
         </div>
             <div class="large-2 columns">
-                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/reqtask/','{{ pr_id }}');">Manage all</a>
+{#                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/reqtask/','{{ pr_id }}');">Manage all</a>#}
+                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/ng/request-tasks/','{{ pr_id }}');">Manage all</a>
             </div>
         </div>
     {% endif %}
