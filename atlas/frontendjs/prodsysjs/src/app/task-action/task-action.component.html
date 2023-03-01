@@ -157,7 +157,18 @@
         <button mat-raised-button color="primary" (click)="executeAction('change_core_count',['coreCount', coreCount.value])">Set</button>
       </div>
     <mat-divider></mat-divider>
-      <h5 class="action-label">Split rule</h5>
+    <div class="action-menu-row">
+        <div class="task-action-input-form">
+          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+            <mat-label>Comment (optional)</mat-label>
+            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
+          </mat-form-field>
+        </div>
+    </div>
+  </mat-menu>
+  <button mat-raised-button  [matMenuTriggerFor]="splitRuleMenu"  class="action-button-menu">Split rule▼</button>
+  <mat-menu #splitRuleMenu="matMenu" yPosition="below">
+          <h5 class="action-label">Split rule</h5>
       <div class="action-menu-row">
         <div class="task-action-input-form">
           <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
@@ -171,16 +182,8 @@
         </div>
         <button mat-raised-button color="primary" (click)="executeAction('change_split_rule',[splitRuleParameterInput.value,splitRuleValueInput.value])">Set</button>
       </div>
-    <mat-divider></mat-divider>
-    <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
-          </mat-form-field>
-        </div>
-    </div>
   </mat-menu>
+
 <button mat-raised-button (click)="executeAction('obsolete', null)"  color="accent" class="action-button-menu" >Obsolete</button>
 <button mat-raised-button  [matMenuTriggerFor]="klllJobsMenu"  class="action-button-menu">Kill jobs▼</button>
   <mat-menu #klllJobsMenu="matMenu" yPosition="below">
