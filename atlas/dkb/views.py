@@ -841,7 +841,7 @@ def statistic_by_request_deriv_new(search_dict, formats):
                             cpu_total = x.cpu_total.value
                             if x.cpu_total_hs06.doc_count > 0:
                                 cpu_total_adj = x.cpu_total_hs06.cpu_total_hs06.value * x.doc_count / (x.cpu_total_hs06.doc_count*x.input_events.value)
-                                if cpu_total_adj < cpu_total:
+                                if cpu_total_adj * 100 < cpu_total:
                                     cpu_total = (cpu_total/1000)
                                     if cpu_total < 1:
                                         cpu_total = 1
