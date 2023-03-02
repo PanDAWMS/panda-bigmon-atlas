@@ -759,6 +759,16 @@ def statistic_by_request_deriv_new(search_dict, formats):
                         "cpu_total": {
                             "avg": {"field": "hs06"}
                         },
+                        "cpu_total_hs06": {
+                            "filter":
+                                {"bool":{"must":[ {"exists": {"field": "toths06"}}]}},
+                            "aggs": {
+                                "cpu_total_hs06": {
+                                    "sum": {"field": "toths06"}
+                                }
+                            }
+
+                        },
                         "total_events": {
                             "sum": {"field": "total_events"}
                         },
@@ -829,6 +839,12 @@ def statistic_by_request_deriv_new(search_dict, formats):
                         cpu_total = 0
                         if x.cpu_total.value:
                             cpu_total = x.cpu_total.value
+                            if x.cpu_total_hs06.doc_count > 0:
+                                cpu_total_adj = x.cpu_total_hs06.cpu_total_hs06.value * x.doc_count / (x.cpu_total_hs06.doc_count*x.input_events.value)
+                                if cpu_total_adj < cpu_total:
+                                    cpu_total = (cpu_total/1000)
+                                    if cpu_total < 1:
+                                        cpu_total = 1
                         input_events = x.input_events.value
                         # if x.not_deleted.input_events_datasets.value and input_events and (x.not_deleted.input_events_datasets.value>input_events):
                         #     input_events = x.not_deleted.input_events_datasets.value
