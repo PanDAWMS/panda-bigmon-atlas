@@ -420,7 +420,7 @@ class TaskManagementAuthorisation():
             task.status = task_dict.get('status')
             task.phys_group = task_dict.get('phys_group')
             task.request_phys_group = task_dict.get('request__phys_group')
-            task.is_group_production = task_dict.get('request__request_type') == 'GROUP'
+            task.is_group_production = (task_dict.get('request__request_type') == 'GROUP') and (task.phys_group not in ['VALI']) and (task.request_phys_group not in ['VALI'])
             task.is_analy = task_dict.get('request_id') == 300
         else:
             task_dict = JediTasks.objects.values('username', 'taskname', 'status').get(id=task_id)
@@ -514,6 +514,7 @@ def tasks_action(request: Request):
         tasks_allowed = authentification_management.tasks_action_authorisation(tasks_id, username, action, params, user_fullname)
         for task_verified in tasks_allowed:
             if not task_verified.user_allowed or not task_verified.action_allowed:
+                logger.error(f"Action {action} for user {username} is not allowed for task {tasks_id}")
                 return Response({'action_sent':False, 'action_verification': [asdict(x) for x in tasks_allowed], 'result': None})
         comment = request.data['comment']
         executor = TaskActionExecutor(username, comment)
