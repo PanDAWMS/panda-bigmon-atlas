@@ -413,7 +413,7 @@ def send_use_archive_task(task):
     _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
 
 def translate_sub_dataset_name(dataset: str) -> str:
-    if '_grl' in dataset:
+    if '_flt' in dataset:
         base_dataset = dataset.split('_sub')[0]
         if base_dataset.endswith('.'):
             return base_dataset[:-1]
