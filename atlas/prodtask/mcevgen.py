@@ -8,7 +8,7 @@ _logger = logging.getLogger('prodtaskwebui')
 
 
 CVMFS_BASEPATH = '/cvmfs/atlas.cern.ch/repo/sw/Generators/'
-JO_PARAMETERS = {'evgenConfig.minevents':'events_per_job','evgenConfig.inputFilesPerJob':'files_per_job'}
+JO_PARAMETERS = {'evgenConfig.minevents':'events_per_job','evgenConfig.inputFilesPerJob':'files_per_job','evgenConfig.nEventsPerJob':'events_per_job'}
 
 def parse_jo_file(file_path):
     result = {}

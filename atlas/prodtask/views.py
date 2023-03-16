@@ -1211,7 +1211,7 @@ def delete_small_merge(good_slices: [int], production_request: int):
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=production_request, slice=slice))
         for index, step in enumerate(ordered_existed_steps):
             if step.step_template.step == 'Evgen Merge':
-                if (step.step_parent != step and index != (len(ordered_existed_steps)-1) and
+                if (step.step_parent != step  and
                         not ProductionTask.objects.filter(step=step).exists() and step.status == 'Approved' and step.step_parent.status == 'Approved'):
                     evnt_events_per_job = 0
                     if ProductionTask.objects.filter(step=step.step_parent).exists():
@@ -1222,8 +1222,10 @@ def delete_small_merge(good_slices: [int], production_request: int):
                             if MCJobOptions.objects.filter(dsid=int(slice.input_data.split('/')[0])).exists():
                                 evnt_events_per_job = MCJobOptions.objects.get(dsid=int(slice.input_data.split('/')[0])).events_per_job
                     if step.get_task_config('nEventsPerJob') and step.get_task_config('nEventsPerJob') < evnt_events_per_job:
-                        _logger.info(f'Merge step deleted in slice {slice.slice} for request {production_request} modification')
-                        remove_step_by_index(ordered_existed_steps, index)
+                        _logger.info(f'Merge step changed in slice {slice.slice} for request {production_request} ')
+                        step.set_task_config({'nEventsPerJob': evnt_events_per_job})
+                        step.save()
+                        # remove_step_by_index(ordered_existed_steps, index)
                 break
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
