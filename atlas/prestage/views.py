@@ -906,13 +906,14 @@ def do_staging(action_step_id, ddm):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
         if dataset_stage.status == 'done':
-            start_stagind_task(task)
-            try:
-                ddm.change_rule_lifetime(dataset_stage.rse, 30 * 86400)
-                dataset_stage.update_time = current_time
-                dataset_stage.save()
-            except Exception as e:
-                _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
+            if task.status not in ProductionTask.NOT_RUNNING:
+                start_stagind_task(task)
+                try:
+                        ddm.change_rule_lifetime(dataset_stage.rse, 30 * 86400)
+                        dataset_stage.update_time = current_time
+                        dataset_stage.save()
+                except Exception as e:
+                    _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
         if dataset_stage.status == 'staging':
             if True :
                 existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
