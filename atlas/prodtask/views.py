@@ -1031,7 +1031,7 @@ def change_dataset_in_slice(req, slice, new_dataset_name):
     dataset = fill_dataset(new_dataset_name)
     input_list.dataset = dataset
     input_list.save()
-    if events_per_file and req.request_type == 'MC':
+    if events_per_file and input_list.request.request_type == 'MC':
         temp1, pattern_tags, approved_step = get_skipped_steps(req,input_list)
         if approved_step.step_parent != approved_step:
             if approved_step.step_parent.status in ['NotCheckedSkipped','Skipped']:
