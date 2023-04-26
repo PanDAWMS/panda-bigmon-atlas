@@ -32,7 +32,7 @@ class AMIClient(object):
             self._base_url = base_url
             response = None
             try:
-                response = requests.get('{0}token/certificate'.format(self._base_url), cert=cert)
+                response = requests.get('{0}token/certificate'.format(self._base_url), cert=cert, verify=False)
             except ConnectionError as ex:
                 _logger.exception('AMI authentication error: {0}'.format(str(ex)))
             if (response is not None and response.status_code != requests.codes.ok) :
@@ -69,7 +69,7 @@ class AMIClient(object):
 
     def _post_command(self, command, rowset_type=None, **kwargs):
         url = self._get_url(command)
-        response = requests.post(url, headers=self._headers, data=json.dumps(kwargs))
+        response = requests.post(url, headers=self._headers, data=json.dumps(kwargs), verify=False)
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
         content = json.loads(response.content)
