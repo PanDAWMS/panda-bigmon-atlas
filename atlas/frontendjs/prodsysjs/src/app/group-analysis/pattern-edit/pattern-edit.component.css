@@ -1,0 +1,24 @@
+.taskParamGrid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: min-content 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-gap: 5px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #eee;
+}
+
+.jobParams>div {
+    border: 1px solid #ccc;
+    padding: 5px;
+
+}
+.jobParams>div:nth-child(odd) {
+    background-color: #fff;
+}
+.jobParams>div:nth-child(even) {
+    background-color: #eee;
+}

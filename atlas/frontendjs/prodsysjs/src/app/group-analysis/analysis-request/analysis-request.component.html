@@ -1,0 +1,42 @@
+<table *ngIf="requestInfo$ | async as requestInfo">
+  <tr>
+    <th>Request ID:</th>
+    <th>Description:</th>
+    <th>Reference:</th>
+    <th>Manager:</th>
+    <th>Physics group:</th>
+    <th>Campaign:</th>
+    <th>Project:</th>
+
+  </tr>
+  <tr>
+    <td><a href="/prodtask/inputlist_with_request/{{requestInfo.reqid}}">{{requestInfo.reqid}}</a> </td>
+    <td>{{requestInfo.description}} </td>
+    <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
+    <td>{{requestInfo.manager}} </td>
+    <td>{{requestInfo.phys_group}} </td>
+    <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>
+    <td>{{requestInfo.project}} </td>
+
+  </tr>
+</table>
+
+<div *ngIf="analysisSlices$| async as analysisSlices">
+  <div *ngFor="let slice of analysisSlices">
+    <table>
+    <tr>
+      <td><input type="checkbox"   /></td>
+      <td [style]="{width: '100%'}"><app-analysis-slice [slice]="slice"></app-analysis-slice></td>
+    </tr>
+  </table>
+  </div>
+    <ag-grid-angular
+      #sliceGrid
+      class="ag-theme-alpine"
+      [rowData]="analysisSlices"
+      [columnDefs]="sliceAGColumns"
+      [rowHeight]="66"
+      [domLayout]="'autoHeight'"
+    ></ag-grid-angular>
+</div>
+

@@ -1,0 +1,23 @@
+
+<div *ngIf="taskTemplate$ | async as taskTemplate">
+
+  <div class="templateBaseParams" [formGroup]="templateForm">
+      <div><b>Tag: </b>{{taskTemplate.tag}}</div>
+      <div><b>Status:</b>
+          <mat-select formControlName="status" >
+            <mat-option [value]="'ACTIVE'">Active</mat-option>
+            <mat-option [value]="'OBSOLETE'">Obsolete</mat-option>
+          </mat-select>
+      </div>
+      <div><b>Original task:</b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
+      <div><b>Description:</b> {{taskTemplate.description}}</div>
+      <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
+      <div><b>Software:</b> {{taskTemplate.software_release}}</div>
+      <button *ngIf="editMode!=='edit'" mat-raised-button color="primary" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
+    </div>
+    <mat-spinner *ngIf="loading" diameter="30"></mat-spinner>
+  <div *ngIf="errorMessage !== ''" class="error-message">Error: {{errorMessage}}</div>
+  <app-pattern-edit [pattern]="taskTemplate.task_parameters" (patternChange)="savePattern($event)" [submitButtonText]="'Save'"
+                     [(editMode)]="editMode"></app-pattern-edit>
+</div>
+

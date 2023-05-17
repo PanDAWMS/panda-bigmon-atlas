@@ -1,0 +1,44 @@
+.form-grid
+{
+      display: grid;
+
+
+    grid-template-columns: min-content 8fr 1fr;
+    max-width: 600px;
+}
+.form-grid>div {
+      border-bottom: 2px #E7E9EB solid;
+
+}
+.input-label {
+    padding: 5px 10px;
+    align-items: center;
+    display: flex;
+}
+
+.input-remove {
+    align-items: center;
+    display: flex;
+    cursor: pointer;
+}
+
+.input-field-row {
+      border: 2px #E7E9EB solid;
+}
+
+
+.input-field .mat-form-field, .input-field .mat-select, .input-field .mat-checkbox {
+    width: 100%;
+    padding: 0 5px;
+}
+
+.hiddenParams {
+    display: grid;
+    grid-template-columns: min-content  1fr;
+}
+
+.hidden-field {
+  padding: 0 5px;
+}
+
+

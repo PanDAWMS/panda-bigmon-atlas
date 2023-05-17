@@ -1,0 +1,68 @@
+
+<ng-container *ngIf="filteredControls$| async as filteredControls ">
+  <form [formGroup]="mainForm" (ngSubmit)="onSubmit()">
+
+    <div class="form-grid">
+    <div >
+
+   <input  #parameterNameFilter [formControlName]="'parameterNameFilter'"
+           [type]="'string'" (input)="searchTerms$.next(parameterNameFilter.value)" placeholder="Search name"
+          style="padding: 0 5px"/>
+
+    </div>
+    <div>
+   <input  #parameterValueFilter [formControlName]="'parameterValueFilter'"
+           [type]="'string'" (input)="searchTerms$.next(parameterValueFilter.value)" placeholder="Search value"
+            style="padding: 0 5px; width: 100%"/>
+    </div>
+    <div><span>Remove</span></div>
+
+<ng-container *ngFor="let control of filteredControls" >
+    <ng-container *ngIf="control.show">
+      <div class="input-label"><b>{{control.label}}</b></div>
+      <div class="input-field" formGroupName="taskParams">
+
+    <mat-form-field *ngIf="control.type !== 'boolean'; else booleanInput" >
+      <mat-label>{{control.label}}</mat-label>
+      <input matInput [id]="control.name" [formControlName]="control.name" [type]="control.type" [matTooltip]="control.description">
+    </mat-form-field>
+    <ng-template #booleanInput>
+      <mat-checkbox [id]="control.name" [formControlName]="control.name" [matTooltip]="control.description">{{control.label}}</mat-checkbox>
+    </ng-template>
+      </div>
+    <div class="input-remove">
+   <a *ngIf="!control.required" (click)="toggleParams(control)"> <mat-icon color="primary" class="delete">delete</mat-icon></a>
+      </div>
+  </ng-container>
+</ng-container>
+      </div>
+<div>
+  <button *ngIf="submitButtonText !== ''" mat-raised-button color="primary" type="submit" [disabled]="mainForm.invalid"
+  >{{submitButtonText}}</button>
+      <button  mat-raised-button color="primary" type="button" (click)="onCancel()" style="margin: 0 10px">Cancel</button>
+
+</div>
+  </form>
+<div>
+  {{numberHiddenParams}} parameters are not used <button mat-raised-button color="accent" (click)="showAll=true" style="margin: 0 10px">Add</button>
+  </div>
+  <ng-container *ngIf="showAll">
+        <div >
+
+       <input  #hiddenParameterNameFilter
+               [type]="'string'" (input)="mainForm.get('parameterNameFilter').setValue(hiddenParameterNameFilter.value);searchTerms$.next(hiddenParameterNameFilter.value)"
+               placeholder="Search name"
+              style="padding: 0 5px"/>
+
+        </div>
+    <div class="hiddenParams">
+    <ng-container *ngFor="let control of filteredControls">
+      <ng-container *ngIf="!control.show">
+        <div class="hidden-field"><b>{{control.label}}</b></div>
+        <div style="cursor: pointer"><a  (click)="toggleParams(control)"><mat-icon color="primary">add_circle</mat-icon></a>
+          </div>
+      </ng-container>
+    </ng-container>
+      </div>
+  </ng-container>
+  </ng-container>

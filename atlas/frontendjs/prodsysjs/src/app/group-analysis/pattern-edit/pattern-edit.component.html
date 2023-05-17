@@ -1,0 +1,22 @@
+
+<div>
+  <h5>Job parameters:</h5>
+  <div class="jobParams">
+  <div *ngFor="let jobParamaterItem of jobParameters" >
+         {{jobParamaterItem}}
+  </div>
+    </div>
+
+    <h5>Task parameters:</h5> <mat-slide-toggle *ngIf="editMode!=='disabled'" [(ngModel)]="editModeToggle" (change)="toggleEditMode($event)">Edit</mat-slide-toggle>
+ <div *ngIf="(editMode==='view')||(editMode==='disabled'); else taskParamsEdit" class="taskParamGrid">
+   <ng-container *ngFor="let item of preparedTaskParamsForm.controls">
+    <ng-container *ngIf="!KEYS_TO_HIDE.includes(item.name) && item.show">
+      <div><b>{{item.name}}</b></div><div>{{item.value|json}}</div>
+    </ng-container>
+  </ng-container>
+ </div>
+  <ng-template #taskParamsEdit>
+    <app-dynamic-form-w-filter [jsonFormData]="preparedTaskParamsForm" (formSubmit)="onFormSubmit($event)" [submitButtonText]="submitButtonText"
+    (formReset)="onFormReset($event)"  ></app-dynamic-form-w-filter>
+  </ng-template>
+</div>

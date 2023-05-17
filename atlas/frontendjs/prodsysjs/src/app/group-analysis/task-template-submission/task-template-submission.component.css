@@ -1,0 +1,11 @@
+.jobParams>div {
+    border: 1px solid #ccc;
+    padding: 5px;
+
+}
+.jobParams>div:nth-child(odd) {
+    background-color: #fff;
+}
+.jobParams>div:nth-child(even) {
+    background-color: #eee;
+}

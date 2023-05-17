@@ -1,0 +1,16 @@
+.templateBaseParams>div {
+    border: 1px solid #ccc;
+    padding: 5px;
+
+}
+.templateBaseParams>div:nth-child(odd) {
+    background-color: #fff;
+}
+.templateBaseParams>div:nth-child(even) {
+    background-color: #eee;
+}
+.error-message {
+    color: red;
+    font-size: 22px;
+    padding: 0 5px;
+}

@@ -80,6 +80,18 @@ import {
 import { TasksManagementComponent } from './tasks-management/tasks-management.component';
 import {AgGridModule} from "ag-grid-angular";
 import { TaskDetailsComponent } from './production-request/task-details/task-details.component';
+import { TaskTemplateSubmissionComponent } from './group-analysis/task-template-submission/task-template-submission.component';
+import {MatStepperModule} from "@angular/material/stepper";
+import { PatternEditComponent } from './group-analysis/pattern-edit/pattern-edit.component';
+import { AnalysisPatternComponent } from './group-analysis/analysis-pattern/analysis-pattern.component';
+import { AnalysisRequestComponent } from './group-analysis/analysis-request/analysis-request.component';
+import { AnalysisSliceComponent } from './group-analysis/analysis-slice/analysis-slice.component';
+import {
+  AgCellSliceComponent,
+  DialogSliceDetailsComponent
+} from './group-analysis/ag-cell-slice/ag-cell-slice.component';
+import { DynamicFormWFilterComponent } from './dynamic-form-w-filter/dynamic-form-w-filter.component';
+import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -122,6 +134,11 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'request-tasks/:id', component: TasksManagementComponent},
   {path: 'request-tasks/:id/:slices', component: TasksManagementComponent},
   {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
+    {path: 'gpa-template-creation', component: TaskTemplateSubmissionComponent},
+
+
+    {path: 'analysis-pattern/:tag', component: AnalysisPatternComponent},
+    {path: 'analysis-request/:id', component: AnalysisRequestComponent},
 
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
@@ -188,6 +205,14 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     TaskDetailsComponent,
     DialogTaskDetailsComponent,
     BtnCellRenderer,
+    TaskTemplateSubmissionComponent,
+    PatternEditComponent,
+    AnalysisPatternComponent,
+    AnalysisRequestComponent,
+    AnalysisSliceComponent,
+    AgCellSliceComponent,
+    DialogSliceDetailsComponent,
+    DynamicFormWFilterComponent
   ],
   imports: [
     BrowserModule,
@@ -228,7 +253,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatProgressBarModule,
     MatTooltipModule,
     ClipboardModule,
-    AgGridModule
+    AgGridModule,
+    MatStepperModule,
+    MatSlideToggleModule
 
   ],
   providers: [

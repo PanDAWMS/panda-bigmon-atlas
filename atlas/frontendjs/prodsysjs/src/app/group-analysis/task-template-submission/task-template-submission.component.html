@@ -1,0 +1,48 @@
+<mat-stepper #taskTemplateStepper [linear]="true">
+  <mat-step [stepControl]="taskIDFormGroup">
+    <form [formGroup]="taskIDFormGroup">
+      <ng-template matStepLabel>Choose Task</ng-template>
+      <mat-form-field>
+        <input matInput placeholder="Choose a task" formControlName="taskIDCtrl">
+      </mat-form-field>
+      <div class="actions">
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </form>
+  </mat-step>
+    <mat-step [stepControl]="templateDescriptionFormGroup">
+      <form [formGroup]="templateDescriptionFormGroup">
+        <mat-form-field>
+          <input matInput placeholder="Template description" formControlName="templateDescriptionCtrl">
+        </mat-form-field>
+        <ng-template matStepLabel>Edit Template</ng-template>
+        <div *ngIf="taskTemplate$ | async as taskTemplate">
+
+          <p>Template from task {{taskIDFormGroup.get('taskIDCtrl').value}}</p>
+          <p>
+            <app-pattern-edit [pattern]="taskTemplate" [(editMode)]="editMode" (patternChange)="changeTemplate($event)"
+            [submitButtonText]="'OK'"></app-pattern-edit>
+          </p>
+
+          </div>
+        <div class="actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button [disabled]="editMode==='edit'" matStepperNext>Next</button>
+        </div>
+      </form>
+    </mat-step>
+  <mat-step >
+        <ng-template matStepLabel>Submit</ng-template>
+        <div class="jobParams">
+          <div><b>Software: </b>{{currentTaskTemplate?.architecture}}</div>
+          <div><b>cliParams:</b> {{currentTaskTemplate?.cliParams}}</div>
+          <div><b>workingGroup:</b> {{currentTaskTemplate?.workingGroup}}</div>
+          <div><b>Description:</b> {{templateDescriptionFormGroup.get('templateDescriptionCtrl').value}}</div>
+        </div>
+        <div class="actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button (click)="createTemplate()">Submit</button>
+        </div>
+
+  </mat-step>
+</mat-stepper>
