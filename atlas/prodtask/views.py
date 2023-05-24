@@ -1221,7 +1221,7 @@ def delete_small_merge(good_slices: [int], production_request: int):
                         if '/' in slice.input_data and slice.input_data.split('/')[0].isnumeric():
                             if MCJobOptions.objects.filter(dsid=int(slice.input_data.split('/')[0])).exists():
                                 evnt_events_per_job = MCJobOptions.objects.get(dsid=int(slice.input_data.split('/')[0])).events_per_job
-                    if step.get_task_config('nEventsPerJob') and step.get_task_config('nEventsPerJob') < evnt_events_per_job:
+                    if step.get_task_config('nEventsPerJob') and int(step.get_task_config('nEventsPerJob')) < evnt_events_per_job:
                         _logger.info(f'Merge step changed in slice {slice.slice} for request {production_request} ')
                         step.set_task_config({'nEventsPerJob': evnt_events_per_job})
                         step.save()
