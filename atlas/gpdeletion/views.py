@@ -32,7 +32,7 @@ _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'MUON', 'PHYS',
+FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'MUON', 'PHYS',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH']
 
 CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
@@ -263,6 +263,7 @@ def collect_datasets_per_output(output, data, is_skim):
         'Start collecting containers for {output} {skim}) '.format(output=output, skim=skim))
     ami_tags_cache = list(
         GroupProductionAMITag.objects.filter(real_data=data, skim=skim).values_list('ami_tag', 'cache'))
+    ami_tags_cache = list(filter(lambda x: x[1].split('.')[2].isnumeric(), ami_tags_cache))
     ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
     ami_tags = [x[0] for x in ami_tags_cache]
     result = {}
