@@ -201,6 +201,14 @@ urlpatterns = [
     url(r'^add_pattern_to_list/$', train_views.add_pattern_to_list, name='add_pattern_to_list'),
     url(r'^remove_pattern_in_list/$', train_views.remove_pattern_in_list, name='remove_pattern_in_list'),
 
+    url(r'^submit_child_derivation/(?P<reqid>\d+)/$', train_views.submit_child_derivation,
+        name='submit_child_derivation'),
+    url(r'^save_derivation_phys_pattern/$', train_views.save_derivation_phys_pattern,
+        name='save_derivation_phys_pattern'),
+
+    url(r'^get_derivation_phys_pattern/$', train_views.get_derivation_phys_pattern,
+        name='get_derivation_phys_pattern'),
+
     url(r'^create_request_from_train/(?P<train_id>\d+)/$', train_views.create_request_from_train, name='create_request_from_train'),
     url(r'^get_pattern_from_request/(?P<reqid>\d+)/$', train_views.get_pattern_from_request, name='get_pattern_from_request'),
     url(r'^trains_list/$', train_views.trains_list, name='trains_list'),

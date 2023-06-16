@@ -1,16 +1,23 @@
 import json
+from dataclasses import dataclass, field, asdict
 from datetime import timedelta
 from enum import Enum, auto
+from typing import Dict, List
+from uuid import uuid1
 
+from django.core.cache import cache
+from django.db.models.signals import post_save
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import connection
 from django.db import connections
 from django.db.models import CASCADE
 from django.utils import timezone
+from rest_framework import serializers
+
 from ..prodtask.helper import Singleton
 import logging
-
+from django.dispatch import receiver
 _logger = logging.getLogger('prodtaskwebui')
 
 MC_STEPS = ['Evgen',
@@ -354,6 +361,8 @@ class ProductionContainer(models.Model):
         #db_table = u'T_PRODUCTION_DATASET'
         db_table = 'T_PRODUCTION_CONTAINER'
 
+
+
 class InputRequestList(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='IND_ID', primary_key=True)
     #dataset = models.ForeignKey(ProductionDataset, db_column='INPUTDATASET',null=True)
@@ -379,7 +388,10 @@ class InputRequestList(models.Model):
         #db_table = u'T_INPUT_DATASET'
         db_table = 'T_INPUT_DATASET'
 
-
+class SliceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InputRequestList
+        fields = '__all__'
 class RetryAction(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=10, db_column='RETRYACTION_ID', primary_key=True)
     action_name = models.CharField(max_length=50, db_column='RETRY_ACTION')
@@ -563,7 +575,8 @@ class ParentToChildRequest(models.Model):
                     ('MA', 'Manually'),
                     ('SP', 'Evgen Split'),
                     ('CL', 'Cloned'),
-                    ('MR', 'Merged')
+                    ('MR', 'Merged'),
+                    ('DP', 'Derivation'),
                     )
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PTC_ID', primary_key=True)
@@ -618,6 +631,12 @@ class StepExecution(models.Model):
                               'nFilesPerJob','nGBPerJob','maxAttempt','nEventsPerInputFile','maxFailure','split_slice']
     TASK_CONFIG_PARAMS = INT_TASK_CONFIG_PARAMS + ['input_format','token','merging_tag','project_mode','evntFilterEff',
                                                    'PDA', 'PDAParams', 'container_name', 'onlyTagsForFC']
+
+    class STATUS():
+        NOT_CHECKED = 'NotChecked'
+        APPROVED = 'Approved'
+        SKIPPED = 'Skipped'
+        NOT_CHECKED_SKIPPED = 'NotCheckedSkipped'
 
     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID', primary_key=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
@@ -719,6 +738,32 @@ class StepExecution(models.Model):
             if 'cloud' not in self.get_task_config('project_mode'):
                 self.update_project_mode('cloud','WORLD')
 
+    @property
+    def analysis_step_id(self):
+        return self.get_task_config('analysis_step_id')
+
+    @analysis_step_id.setter
+    def analysis_step_id(self, value):
+        self.set_task_config({'analysis_step_id':value})
+
+    @property
+    def analysis_step(self):
+        if self.analysis_step_id:
+            return AnalysisStepTemplate.objects.get(id=self.analysis_step_id)
+        return None
+
+    @property
+    def broken_step(self):
+        if self.slice.is_hide:
+            return True
+        if ProductionTask.objects.filter(step=self).exists():
+            total_tasks = ProductionTask.objects.filter(step=self).count()
+            broken_tasks = ProductionTask.objects.filter(step=self,
+                                                         status__in=ProductionTask.RED_STATUS+[ProductionTask.STATUS.OBSOLETE]).count()
+            if broken_tasks == total_tasks:
+                return True
+        return False
+
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'
         db_table = 'T_PRODUCTION_STEP'
@@ -749,6 +794,7 @@ class TaskTemplate(models.Model):
 
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
+    parent_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     total_done_jobs = models.DecimalField(decimal_places=0, max_digits=10, db_column='TOTAL_DONE_JOBS', null=True)
     submit_time = models.DateTimeField(db_column='SUBMIT_TIME', null=False)
@@ -762,6 +808,7 @@ class TTask(models.Model):
     prodSourceLabel = models.CharField(max_length=20, db_column='PRODSOURCELABEL', null=True)
     name = models.CharField(max_length=128, db_column='TASKNAME', null=True)
     username = models.CharField(max_length=128, db_column='USERNAME', null=True)
+    chain_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=True)
     _jedi_task_parameters = models.TextField(db_column='JEDI_TASK_PARAMETERS')
     __params = None
 
@@ -799,6 +846,9 @@ class TTask(models.Model):
 #        """ Read-only access to the table """
 #        raise NotImplementedError
 
+    def get_id(self):
+        return prefetch_id('deft', 'ATLAS_DEFT.PRODSYS2_TASK_ID_SEQ', 'T_TASK', 'TASKID')
+
     def delete(self, *args, **kwargs):
          return
 
@@ -809,7 +859,278 @@ class TTask(models.Model):
      #   app_label = 'taskmon'
 
 
+@dataclass
+class TemplateVariable:
+    class VariableType(str, Enum):
+        STRING = 'str'
+        INTEGER = 'int'
+        FLOAT = 'float'
+        BOOLEAN = 'bool'
+        TEMPLATE = 'template'
 
+    name: str
+    value: str
+    keys: [str] = field(default_factory=list)
+    type: VariableType = VariableType.TEMPLATE
+
+
+    class KEY_NAMES:
+        INPUT_BASE = 'input_base'
+        OUTPUT_BASE = 'output_base'
+        TASK_NAME = 'task_name'
+        USER_NAME = 'user_name'
+        TASK_PRIORITY = 'taskPriority'
+        PARENT_ID = 'parent_tid'
+
+    KEYS_SEPARATOR = ','
+
+    @staticmethod
+    def get_key_template(key: str) -> str:
+        return '{{ ' + key + ' }}'
+
+    @property
+    def primary_key(self) -> str:
+        return self.keys[0] if self.keys else None
+
+
+
+
+class AnalysisTaskTemplate(models.Model):
+
+    class STATUS:
+        ACTIVE = 'ACTIVE'
+        PREPARATION = 'PREPARATION'
+        OBSOLETE = 'OBSOLETE'
+        ERROR = 'ERROR'
+
+
+    id = models.AutoField(db_column='AT_ID', primary_key=True)
+    tag = models.CharField(max_length=50, db_column='TAG', null=True)
+    task_parameters = models.JSONField(db_column='TASK_PARAMETERS')
+    variables = models.JSONField(db_column='VARIABLES')
+    build_task = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUILD_TASKID', null=True)
+    source_tar = models.CharField(max_length=300, db_column='SOURCE_TAR', null=True)
+    description = models.CharField(max_length=4000, db_column='DESCRIPTION', null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
+    username = models.CharField(max_length=128, db_column='USERNAME', null=True)
+    physics_group = models.CharField(max_length=128, db_column='PHYSICS_GROUP', null=True)
+    software_release = models.CharField(max_length=128, db_column='SOFTWARE_RELEASE', null=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.status:
+            self.status = self.STATUS.ACTIVE
+        self.timestamp = timezone.now()
+        if not self.tag:
+            self.tag = "gtaNew"
+        super(AnalysisTaskTemplate, self).save(*args, **kwargs)
+        if self.tag == "gtaNew":
+            self.tag = "gta" + str(self.id)
+            super(AnalysisTaskTemplate, self).save(*args, **kwargs)
+
+
+    @property
+    def variables_data(self):
+        result = []
+        for x in self.variables:
+            x['type'] = TemplateVariable.VariableType(x['type'])
+            result.append(TemplateVariable(**x))
+        return result
+
+    @variables_data.setter
+    def variables_data(self, value):
+        self.variables = [asdict(x) for x in value]
+
+    def get_variable(self, variable_name: str):
+        for x in self.variables_data:
+            if x.name == variable_name:
+                return x.value
+        return None
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_AT_TEMPLATE"'
+
+
+
+class AnalysisStepTemplate(models.Model):
+
+
+    class STATUS:
+        NOT_CHECKED = 'NotChecked'
+        APPROVED = 'Approved'
+
+    class ANALYSIS_STEP_NAME:
+        ANALYSIS = 'Analysis'
+        MERGING = 'Merging'
+        GROUP_ANALYSIS = 'GroupAnaly'
+
+
+    id =  models.AutoField(db_column='AS_TEMPLATE_ID', primary_key=True)
+    name = models.CharField(max_length=128, db_column='NAME', null=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+    step_parameters = models.JSONField(db_column='STEP_PARAMETERS')
+    variables = models.JSONField(db_column='VARIABLES')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
+    task_template = models.ForeignKey(AnalysisTaskTemplate, on_delete=models.CASCADE, db_column='AT_ID', null=True)
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    slice = models.ForeignKey(InputRequestList, db_column='IND_ID', null=False, on_delete=CASCADE)
+    step_production_parent = models.ForeignKey(StepExecution, db_column='STEP_PARENT_ID', on_delete=CASCADE, null=True)
+    step_analysis_parent = models.ForeignKey('self', db_column='STEP_AT_PARENT_ID', on_delete=CASCADE)
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(AnalysisStepTemplate, self).save(*args, **kwargs)
+
+    @property
+    def variables_data(self):
+        result = []
+        for x in self.variables:
+            x['type'] = TemplateVariable.VariableType(x['type'])
+            result.append(TemplateVariable(**x))
+        return result
+
+    @variables_data.setter
+    def variables_data(self, value):
+        self.variables = [asdict(x) for x in value]
+
+    @property
+    def project(self):
+        return 'user'
+
+    @property
+    def priority(self):
+        return self.get_variable(TemplateVariable.KEY_NAMES.TASK_PRIORITY)
+
+    @property
+    def input_dataset(self):
+        return self.step_parameters['dsForIN']
+
+    @property
+    def vo(self):
+        return self.step_parameters['vo']
+
+    @property
+    def prodSourceLabel(self):
+        return self.step_parameters['prodSourceLabel']
+
+    def change_variable(self, variable_name: str, input_data: str):
+        for x in self.variables_data:
+            if x.name == variable_name:
+                x.value = input_data
+                return x.value
+        return None
+
+    def get_variable(self, variable_name: str):
+        for x in self.variables_data:
+            if x.name == variable_name:
+                return x.value
+        return None
+
+    def get_variable_key(self, variable_name: str):
+        for x in self.variables_data:
+            if x.name == variable_name:
+                return x.primary_key
+        return None
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_AT_STEP_TEMPLATE"'
+
+
+
+class SystemParametersHandler:
+    class PARAMETERS_NAMES:
+        DAOD_PHYS_Production = 'DAOD_PHYS_Production'
+        MC_CAMPAGINS = 'MC_Campaigns'
+
+    @dataclass
+    class DAOD_PHYS_Production:
+        campaign: str
+        subcampaign: str
+        outputs: List[str]
+        train_id: int
+
+        ALL_SUBCAMPAIGNS = 'all'
+
+    @dataclass
+    class MC_Campaign:
+        campaign: str
+        subcampaigns: List[str]
+
+    def __init__(self, name):
+        self.name = name
+
+
+    @staticmethod
+    def get_daod_phys_production() -> List[DAOD_PHYS_Production]:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.DAOD_PHYS_Production)
+        return [SystemParametersHandler.DAOD_PHYS_Production(**x) for x in values]
+
+    @staticmethod
+    def set_daod_phys_production(values: [DAOD_PHYS_Production]):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.DAOD_PHYS_Production,
+                                       [asdict(x) for x in values])
+
+
+    @staticmethod
+    def get_mc_campaigns() -> List[MC_Campaign]:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS)
+        return [SystemParametersHandler.MC_Campaign(**x) for x in values]
+
+    @staticmethod
+    def set_mc_campaigns(values: [MC_Campaign]):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS,
+                                       [asdict(x) for x in values])
+
+
+
+class SystemParameters(models.Model):
+
+
+
+    name = models.CharField(max_length=128, db_column='NAME', primary_key=True)
+    value = models.JSONField(db_column='value')
+    typeName = models.CharField(max_length=128, db_column='TYPENAME')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    cacheable = models.BooleanField(db_column='CACHEABLE')
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(SystemParameters, self).save(*args, **kwargs)
+
+
+
+    @staticmethod
+    def get_parameter(name):
+        if cache.get(name) is None:
+            if SystemParameters.objects.filter(name=name).exists():
+                cache.set(name, SystemParameters.objects.get(name=name).value)
+                return cache.get(name)
+            else:
+                raise Exception("Parameter with name %s does not exist" % name)
+        else:
+            return cache.get(name)
+
+    @staticmethod
+    def set_parameter(name, value):
+        if SystemParameters.objects.filter(name=name).exists():
+            param = SystemParameters.objects.get(name=name)
+            param.value = value
+            param.save()
+            if param.cacheable:
+                cache.set(name, value)
+        else:
+            raise Exception("Parameter with name %s does not exist" % name)
+
+
+    def __str__(self):
+        return self.name
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_DEFT_PARAMETERS"'
 
 class ProductionTask(models.Model):
 
@@ -860,8 +1181,11 @@ class ProductionTask(models.Model):
     username = models.CharField(max_length=128, db_column='USERNAME', null=True)
     dsn = models.CharField(max_length=12, db_column='DSN', null=True)
     phys_short = models.CharField(max_length=80, db_column='PHYS_SHORT', null=True)
-    phys_short = models.CharField(max_length=80, db_column='PHYS_SHORT', null=True)
     simulation_type = models.CharField(max_length=20, db_column='SIMULATION_TYPE', null=True)
+    vo = models.CharField(max_length=16, db_column='VO', null=True)
+    prodSourceLabel = models.CharField(max_length=20, db_column='PRODSOURCELABEL', null=True)
+    dynamic_jobdef = models.DecimalField(decimal_places=0, max_digits=1, db_column='DYNAMIC_JOB_DEFINITION', null=True)
+    bug_report = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUG_REPORT', null=False)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
     provenance = models.CharField(max_length=12, db_column='PROVENANCE', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
@@ -896,6 +1220,10 @@ class ProductionTask(models.Model):
     primary_input = models.CharField(max_length=250, db_column='PRIMARY_INPUT', null=True)
     ami_tag = models.CharField(max_length=15, db_column='CTAG')
     output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS')
+    pileup = models.DecimalField(decimal_places=0, max_digits=1, db_column='PILEUP', null=True)
+    subcampaign = models.CharField(max_length=32, db_column='SUBCAMPAIGN', null=True)
+    bunchspacing = models.CharField(max_length=32, db_column='BUNCHSPACING', null=True)
+
 #    def save(self):
 #         raise NotImplementedError
 

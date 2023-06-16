@@ -1,0 +1,51 @@
+<div *ngIf="patterns$| async as pattern">
+<!--  Form with 3 fields: first dropdown MC campaigns, second number request id, third checkbox list-->
+<form [formGroup]="mcPatternsForm">
+  <div formArrayName="mainArray">
+  <ng-container *ngFor="let alias of mainArray.controls; let i=index">
+    <div [formGroupName]="i" class="campignGrid">
+            <div>
+      <mat-form-field>
+        <mat-label>MC Campaigns</mat-label>
+        <mat-select formControlName="campaign" >
+          <mat-option *ngFor="let mcCampaign of mcCampaigns" [value]="mcCampaign">
+            {{mcCampaign}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+              </div>
+<div>
+  <mat-form-field>
+    <mat-label>Pattern Request Id</mat-label>
+    <input matInput  formControlName="train_id" (change)="requestIDChanged($event, i)">
+  </mat-form-field>
+  </div>
+  <div>
+  <mat-form-field style="width: 300px">
+    <mat-label>Outputs</mat-label>
+        <input  matInput disabled [value]="'DAOD_PHYS.DAOD_PHYSLITE'">
+  </mat-form-field>
+  </div>
+
+      <div>
+        <ng-container *ngIf="patternSteps[i] !== null; else patternStepsDisplay">
+          <ng-container *ngFor="let step of patternSteps[i]">
+             ami: {{step.ami_tag}}
+            outputs: {{step.outputs}}
+            <p> project mode: {{step.project_mode}}</p>
+          </ng-container>
+        </ng-container>
+        <ng-template #patternStepsDisplay>
+          <div> Not checked</div>
+        </ng-template>
+      </div>
+    </div>
+
+    </ng-container>
+<button mat-raised-button color="primary" (click)="addPattern()" [disabled]="true">Add Pattern</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()">Submit</button>
+        </div>
+
+</form>
+<div *ngIf="saveMessage">{{saveMessage}}</div>
+ </div>

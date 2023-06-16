@@ -2447,7 +2447,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             child_requests = []
             parent_request_id = ''
             try:
-                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA','CL','MR'],status='active')
+                related_requests = ParentToChildRequest.objects.filter(parent_request=rid,relation_type__in=['BC,MA','CL','MR','DP'],status='active')
                 for related_request in related_requests:
                     pattern_name = ''
                     pattern_id = rid
@@ -2462,7 +2462,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                         child_requests.append({'request':None,'pattern_id':pattern_id,
                                            'pattern_name':pattern_name,
                                            'type':dict(ParentToChildRequest.RELATION_TYPE)[related_request.relation_type]})
-                related_requests = ParentToChildRequest.objects.filter(child_request=rid,relation_type__in=['SP','CL'],status='active')
+                related_requests = ParentToChildRequest.objects.filter(child_request=rid,relation_type__in=['SP','CL', 'DP'],status='active')
                 for related_request in related_requests:
                     child_requests.append({'request':int(related_request.parent_request_id),'pattern_id':None,
                                            'pattern_name':'Parent',
@@ -2849,7 +2849,7 @@ def userinfo(request):
 
 
 def set_request_status(username, reqid, status, message, comment, request=None):
-    STATUS_ORDER = ['registered','approved','canceled']
+    STATUS_ORDER = ['registered','approved','canceled', 'test']
 
     _logger.debug(form_request_log(reqid,request,message))
 

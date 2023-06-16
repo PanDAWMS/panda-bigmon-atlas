@@ -2367,13 +2367,19 @@ def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name
     changed_datasets = []
     for dataset in datasets:
         try:
-            current_dataset_campaign = ddm.dataset_metadata(dataset)['campaign']
+            dataset_meta = ddm.dataset_metadata(dataset)
+            current_dataset_campaign = dataset_meta['campaign']
             if current_dataset_campaign is not None:
                 new_dataset_campaign = current_dataset_campaign.replace(current_subcampaign,newsubcampaign).replace(current_campaign,newcampaign)
             else:
                 new_dataset_campaign = f"{newcampaign}:{newsubcampaign}"
             if new_dataset_campaign!=current_dataset_campaign:
                 ddm.changeDatasetCampaign(dataset,new_dataset_campaign)
+                current_task = ProductionTask.objects.get(id=dataset_meta['task_id'])
+                hashtags = current_task.hashtags
+                for hashtag in hashtags:
+                    if hashtag.hashtag.startswith('MC16') and '_sc_' in hashtag.hashtag:
+                        current_task.remove_hashtag(hashtag.hashtag)
             changed_datasets.append(dataset)
         except DataIdentifierNotFound as e:
             pass

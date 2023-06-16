@@ -1,28 +1,33 @@
 import json
 import logging
+from dataclasses import asdict
 
 from datetime import timedelta
 from django.utils import timezone
 from django.urls import reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
 from rest_framework import serializers,generics
 from django.forms.models import model_to_dict
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest
+from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest, SystemParametersHandler
 from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices
 from atlas.prodtask.spdstodb import fill_template
+from .helper import form_json_request_dict
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
     ParentToChildRequest
 from django.template import RequestContext
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 
@@ -481,6 +486,115 @@ def create_request_as_child(request):
             return HttpResponse(json.dumps(results), status=500, content_type='application/json')
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+
+
+def find_pattern_derivation_request(campaign: str, subcampaign: str) -> (int, [str]):
+    all_patterns = SystemParametersHandler.get_daod_phys_production()
+    for pattern in all_patterns:
+        if pattern.campaign == campaign and ( pattern.subcampaign == SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS
+                                              or pattern.subcampaign == subcampaign):
+            return pattern.train_id, pattern.outputs
+    raise Exception('Pattern derivation request not found for campaign %s and subcampaign %s'%(campaign, subcampaign))
+
+def find_pattern_outputs(pattern_request_id: int, outputs: [str]):
+    pattern_train = TrainProduction.objects.get(id=pattern_request_id)
+    pattern_outputs = json.loads(pattern_train.outputs)
+    chosen_slices = []
+    for output_slice in pattern_outputs:
+        if [x for x in outputs if x in output_slice[1]]:
+            chosen_slices.append(output_slice)
+    return chosen_slices, pattern_train.pattern_request_id
+
+def find_steps_for_derivation(mc_request_id: int) -> [StepExecution]:
+    parent_steps = []
+    ordered_slices = InputRequestList.objects.filter(request=mc_request_id).order_by('slice')
+    for slice in ordered_slices:
+        if not slice.is_hide:
+            existed_steps = StepExecution.objects.filter(request=mc_request_id, slice=slice)
+            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, None)
+            AOD_input = False
+            for step in step_as_in_page:
+                if step:
+                    if step.status == 'Approved' and ((step.get_task_config('input_format')=='AOD' or AOD_input) and
+                        step.step_template.output_formats == 'AOD'):
+                        parent_steps.append(step)
+                    AOD_input = 'AOD' in step.step_template.output_formats
+    return parent_steps
+
+
+def filter_steps_for_derivation(parent_steps: [StepExecution], new_request: TRequest)-> [StepExecution]:
+    new_request_slices = list(InputRequestList.objects.filter(request=new_request).order_by('slice'))
+    existed_parent_steps = []
+    for slice in new_request_slices:
+        if not slice.is_hide:
+            existed_steps = StepExecution.objects.filter(request=new_request, slice=slice)
+            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            if existed_foreign_step:
+                existed_parent_steps.append(existed_foreign_step)
+    return [x for x in parent_steps if x not in existed_parent_steps]
+
+
+
+def submit_derivation_steps(new_request: TRequest) -> bool:
+    new_request_slices = list(InputRequestList.objects.filter(request=new_request).order_by('slice'))
+    approve_request = False
+    for slice in new_request_slices:
+        if not slice.is_hide:
+            existed_steps = StepExecution.objects.filter(request=new_request, slice=slice)
+            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            if existed_foreign_step and not existed_foreign_step.broken_step:
+                for step in ordered_existed_steps:
+                    if step.status == StepExecution.STATUS.NOT_CHECKED:
+                        step.status = StepExecution.STATUS.APPROVED
+                        step.save()
+                        approve_request = True
+    if approve_request:
+        set_request_status('cron', new_request.reqid, 'approved', 'Automatic child derivation approve',
+                           'Request was automatically approved')
+        return True
+    return False
+
+@csrf_protect
+def submit_child_derivation(request, reqid):
+    if request.method == 'POST':
+        try:
+            new_request_id = submit_child_derivation_request(reqid)
+            results = {'success':True, 'request_id':new_request_id}
+            _jsonLogger.info(f'Finish creating child derivaiton MC request {new_request_id}', extra=form_json_request_dict(reqid,request))
+        except Exception as e:
+            _jsonLogger.info(f'Error during MC request submission {e}', extra=form_json_request_dict(reqid,request))
+            _logger.error(f'Error during MC request submission {e}')
+            return HttpResponseBadRequest(e)
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def submit_child_derivation_request(original_request_id: int) -> int:
+    mc_request = TRequest.objects.get(reqid=original_request_id)
+    pattern_derivation_request, outputs = find_pattern_derivation_request(mc_request.campaign, mc_request.subcampaign)
+    parent_steps = find_steps_for_derivation(mc_request.reqid)
+    pattern_outputs, pattern_derivation_request = find_pattern_outputs(pattern_derivation_request, outputs)
+    if not ParentToChildRequest.objects.filter(parent_request=mc_request, relation_type='DP').exists():
+        new_description = 'PHYS Derivation of %s'%mc_request.description
+        new_request = create_request_for_pattern(mc_request.reqid, new_description, mc_request.manager)
+        new_request.project = mc_request.project
+        new_request.campaign = mc_request.campaign
+        new_request.subcampaign = mc_request.subcampaign
+        new_request.save()
+        new_parent_child = ParentToChildRequest()
+        new_parent_child.parent_request = TRequest.objects.get(reqid=original_request_id)
+        new_parent_child.child_request = new_request
+        new_parent_child.relation_type = 'DP'
+        new_parent_child.status = 'active'
+        new_parent_child.save()
+    else:
+        new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
+        parent_steps = filter_steps_for_derivation(parent_steps, new_request)
+    if parent_steps:
+        create_steps_in_child_pattern(new_request, parent_steps,
+                                      pattern_derivation_request,
+                                      pattern_outputs)
+    submit_derivation_steps(new_request)
+    return new_request.reqid
 @login_required(login_url='/prodtask/login/')
 def train_as_child(request, reqid):
     if 'train_extension' not in request.session:
@@ -716,3 +830,106 @@ def get_pattern_from_request(request,reqid):
     except Exception as e:
             pass
     return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+@api_view(['GET'])
+def get_derivation_phys_pattern(request):
+    current_patterns = SystemParametersHandler.get_daod_phys_production()
+    mc_campaigns = SystemParametersHandler.get_mc_campaigns()
+    result_campaigns = []
+    for mc_campaign in mc_campaigns:
+        #mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS] + mc_campaign.subcampaigns
+        mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS]
+        result_campaigns.append(mc_campaign)
+    current_patterns_dict = [dict(request_id=TrainProduction.objects.get(id=x.train_id).pattern_request_id, **asdict(x)) for x in current_patterns]
+
+    return Response({'current_patterns':current_patterns_dict,'mc_campaigns':[asdict(x) for x in result_campaigns],'steps':
+                     [get_pattern_steps(x.train_id,x.outputs) for x in current_patterns]})
+
+def get_pattern_steps(train_id, outputs):
+    train = TrainProduction.objects.get(id=train_id)
+    pattern_request = train.pattern_request
+    steps = []
+    for output in train.output_by_slice:
+        output_intersections = [x for x in outputs if x in output[1]]
+        if output_intersections:
+            step = StepExecution.objects.filter(request=pattern_request,
+                                                slice=InputRequestList.objects.get(request=pattern_request,
+                                                                                   slice=output[0])).first()
+            if step:
+                steps.append({'ami_tag': step.step_template.ctag,
+                               'project_mode': step.get_task_config('project_mode'),
+                               'outputs': output_intersections})
+    return steps
+
+@api_view(['GET'])
+def get_step_from_pattern(request):
+    pattern_request_id = int( request.query_params.get('request_id'))
+    if not TRequest.objects.filter(reqid=pattern_request_id):
+        return Response([])
+    pattern_request = TRequest.objects.get(reqid=pattern_request_id)
+    outputs = request.query_params.get('outputs')
+    if not outputs:
+        return Response([])
+    outputs = outputs.split('.')
+    steps = []
+    if TrainProduction.objects.filter(pattern_request=pattern_request).exists():
+        train = TrainProduction.objects.get(pattern_request=pattern_request)
+        for output in train.output_by_slice:
+            output_intersections = [x for x in outputs if x in output[1]]
+            if output_intersections:
+                step = StepExecution.objects.filter(request=pattern_request, slice = InputRequestList.objects.get(request=pattern_request,slice=output[0])).first()
+                if step:
+                    steps.append([{'ami_tag':step.step_template.ctag,'project_mode':step.get_task_config('project_mode'),'outputs':output_intersections}])
+    else:
+        slices = InputRequestList.objects.filter(request=pattern_request)
+        for slice in slices:
+            if not slice.is_hide:
+                step = StepExecution.objects.filter(request=pattern_request, slice = slice).first()
+                output_intersections = [x for x in outputs if x in slice.output_formats.split('.')]
+                if step and output_intersections:
+                    steps.append([{'ami_tag':step.step_template.ctag,'project_mode':step.get_task_config('project_mode'),
+                                   'outputs':output_intersections}])
+    return Response(steps)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def save_derivation_phys_pattern(request):
+    data = request.data
+    new_patterns = []
+    pattern_steps = []
+    try:
+        for pattern in data['patterns']:
+            steps = []
+            outputs = pattern['outputs'][0].split('.')
+            if TrainProduction.objects.filter(pattern_request_id=pattern['request_id']).exists():
+                train_id = TrainProduction.objects.get(pattern_request_id=pattern['request_id']).id
+                steps = get_pattern_steps(train_id, outputs)
+            else:
+                slices = InputRequestList.objects.filter(request=pattern['request_id'])
+                for slice in slices:
+                    if not slice.is_hide:
+                        step = StepExecution.objects.filter(request=pattern['request_id'], slice=slice).first()
+
+                        output_intersections = [x for x in outputs if x in step.step_template.output_formats.split('.')]
+
+                        if step and output_intersections:
+                            steps.append([{'ami_tag': step.step_template.ctag,
+                                           'project_mode': step.get_task_config('project_mode'),
+                                           'outputs': output_intersections}])
+                if not steps:
+                    raise Exception(f'No steps found for pattern {pattern["request_id"]}')
+                train_id = create_pattern_train(pattern['request_id'])
+            new_patterns.append(SystemParametersHandler.DAOD_PHYS_Production(pattern['campaign'],
+                                                                             pattern['subcampaign'], outputs,
+                                                                             train_id))
+            pattern_steps.append(steps)
+        SystemParametersHandler.set_daod_phys_production(new_patterns)
+        _jsonLogger.info("Save mc daod pattern",  extra={'user': request.user.username})
+        _logger.info("Save mc daod pattern: " +json.dumps(data['patterns']))
+        return Response({'steps':pattern_steps})
+    except Exception as ex:
+        _logger.error(f"Problem with mc daod phys pattern saving {ex}")
+        return Response(f"Problem with mc daod phys pattern saving {ex}", status=400)
+

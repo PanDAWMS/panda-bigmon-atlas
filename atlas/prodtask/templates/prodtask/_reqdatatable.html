@@ -1208,6 +1208,34 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 });
               return false;
         }
+        function submitChildDAOD(event) {
+                        event.preventDefault();
+            sendData = {};
+              $( "#waitingDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:submit_child_derivation' pr_id%}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $("#waitingDialog").dialog('close');
+                        var newRequestID = $.evalJSON(data).request_id;
+                        $("#approveDialog").html('');
+                         $("#approveDialog").append($('<p/>').html('Child DAOD production is ready request ID:'));
+                         $("#approveDialog").append('<a href="'+construct_django_url('/prodtask/inputlist_with_request/',newRequestID.toString())+'">'+newRequestID+"</a>");
+
+                        $("#approveDialog").dialog('open');
+                    },
+                    error: function(data,status) {
+                        console.log(data);
+                        $( "#waitingDialog" ).dialog('close');
+                        $("#problemDialog").html('Error: '+data.responseText);
+                        $("#problemDialog").dialog('open');
+                    }
+                });
+              return false;
+        }
         function cancelRequest(event){
             event.preventDefault();
             sendData = {};
@@ -4044,6 +4072,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
             <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
+                       {% ifequal trequest.request_type "MC" %}
+
+                     <button id="submitChildDerivation" class="btn_is_authenticated" title="Submit DAOD production" disabled onclick="submitChildDAOD(event);">Submit PHYS</button>
+
+                    {% endifequal %}
 
         <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
                 <div class="row">
@@ -4134,6 +4167,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                      <button id="splitSliceByOutput" class="btn_is_authenticated" title="Split merge by outputs" onclick="splitSlicesByOutputClick(event);">Split merge step</button>
                  </div>
                     {% endifequal %}
+
     </div>
      <div class="large-2 columns">
          {% ifequal trequest.request_type "GROUP" %}

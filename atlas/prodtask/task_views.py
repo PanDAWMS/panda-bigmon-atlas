@@ -8,7 +8,7 @@ from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import StepExecution, GlobalShare
+from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate
 import logging
 
 from ..settings import defaultDatetimeFormat
@@ -1176,3 +1176,13 @@ def get_global_shares(update_cache=False):
     return result
 
 
+def tasks_serialisation(tasks: [ProductionTask]) -> [dict]:
+    tasks_serial = []
+    for task in tasks:
+        serial_task = task.__dict__
+        del serial_task['_state']
+        step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
+        serial_task.update(dict(step_name=StepTemplate.objects.filter(id=step_id).values("step").get()['step']))
+        serial_task['failureRate'] = task.failure_rate or 0
+        tasks_serial.append(serial_task)
+    return tasks_serial

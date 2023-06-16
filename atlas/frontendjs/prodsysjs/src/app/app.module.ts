@@ -92,6 +92,8 @@ import {
 } from './group-analysis/ag-cell-slice/ag-cell-slice.component';
 import { DynamicFormWFilterComponent } from './dynamic-form-w-filter/dynamic-form-w-filter.component';
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
+import { CreateAnalysisRequestComponent } from './group-analysis/create-analysis-request/create-analysis-request.component';
+import { DerivationPhysPatternComponent } from './derivation-phys-pattern/derivation-phys-pattern.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -138,6 +140,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
 
 
     {path: 'analysis-pattern/:tag', component: AnalysisPatternComponent},
+      {path: 'create-analysis-request/:tag', component: CreateAnalysisRequestComponent},
+
     {path: 'analysis-request/:id', component: AnalysisRequestComponent},
 
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
@@ -145,6 +149,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'gp-api', component: GpApiInstructionComponent},
   {path: 'input_by_ami_tag/:amiTag', component: DerivationFromTagComponent},
     {path: 'input_by_ami_tag', component: DerivationFromTagComponent},
+  {path: 'derivation-phys-pattern', component: DerivationPhysPatternComponent},
 
   {path: 'carousel', component: DataCarouselComponent},
   // {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
@@ -212,7 +217,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AnalysisSliceComponent,
     AgCellSliceComponent,
     DialogSliceDetailsComponent,
-    DynamicFormWFilterComponent
+    DynamicFormWFilterComponent,
+    CreateAnalysisRequestComponent,
+    DerivationPhysPatternComponent
   ],
   imports: [
     BrowserModule,
