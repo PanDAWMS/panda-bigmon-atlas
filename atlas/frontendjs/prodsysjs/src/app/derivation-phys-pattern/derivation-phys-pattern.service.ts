@@ -9,6 +9,7 @@ export interface DerivationDAODDerivation {
         outputs: string[];
         train_id?: number;
         request_id: number;
+        status: string;
 }
 
 export interface MCCampaign {

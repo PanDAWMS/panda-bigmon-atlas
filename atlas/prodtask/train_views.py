@@ -493,7 +493,7 @@ def find_pattern_derivation_request(campaign: str, subcampaign: str) -> (int, [s
     all_patterns = SystemParametersHandler.get_daod_phys_production()
     for pattern in all_patterns:
         if pattern.campaign == campaign and ( pattern.subcampaign == SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS
-                                              or pattern.subcampaign == subcampaign):
+                                              or pattern.subcampaign == subcampaign) and pattern.status == SystemParametersHandler.DAOD_PHYS_Production.STATUS.ACTIVE:
             return pattern.train_id, pattern.outputs
     raise Exception('Pattern derivation request not found for campaign %s and subcampaign %s'%(campaign, subcampaign))
 
@@ -906,7 +906,7 @@ def save_derivation_phys_pattern(request):
             steps = []
             outputs = pattern['outputs'][0].split('.')
             if TrainProduction.objects.filter(pattern_request_id=pattern['request_id']).exists():
-                train_id = TrainProduction.objects.get(pattern_request_id=pattern['request_id']).id
+                train_id = TrainProduction.objects.filter(pattern_request_id=pattern['request_id']).last().id
                 steps = get_pattern_steps(train_id, outputs)
             else:
                 slices = InputRequestList.objects.filter(request=pattern['request_id'])
@@ -925,7 +925,7 @@ def save_derivation_phys_pattern(request):
                 train_id = create_pattern_train(pattern['request_id'])
             new_patterns.append(SystemParametersHandler.DAOD_PHYS_Production(pattern['campaign'],
                                                                              pattern['subcampaign'], outputs,
-                                                                             train_id))
+                                                                             train_id, pattern['status']))
             pattern_steps.append(steps)
         SystemParametersHandler.set_daod_phys_production(new_patterns)
         _jsonLogger.info("Save mc daod pattern",  extra={'user': request.user.username})

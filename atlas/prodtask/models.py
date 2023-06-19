@@ -1050,8 +1050,13 @@ class SystemParametersHandler:
         subcampaign: str
         outputs: List[str]
         train_id: int
+        status: str
 
         ALL_SUBCAMPAIGNS = 'all'
+
+        class STATUS:
+            ACTIVE = 'Active'
+            DISABLED = 'Disabled'
 
     @dataclass
     class MC_Campaign:

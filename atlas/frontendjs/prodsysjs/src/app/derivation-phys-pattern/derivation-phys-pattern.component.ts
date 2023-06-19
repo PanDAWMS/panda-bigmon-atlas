@@ -15,6 +15,7 @@ export class DerivationPhysPatternComponent implements OnInit {
   public currentPatterns: DerivationDAODDerivation[] = [];
   public patternSteps: (PatternStep[]|null)[] = [];
   public mcCampaigns: string[] = [];
+  public PATTERN_STATUS = ['Active', 'Disabled'];
   public saveMessage = '';
   public patterns$ = this.updatePattern$.pipe(switchMap(() => this.derivationPhysPatternService.getPatternWithCampaigns()),
     tap((result) => {
@@ -29,7 +30,8 @@ export class DerivationPhysPatternComponent implements OnInit {
       for (const pattern in this.currentPatterns){
         const currentPatternGroup =  this.fb.group({
           campaign: [this.currentPatterns[pattern].campaign + ':' + this.currentPatterns[pattern].subcampaign, ''],
-          train_id: [this.currentPatterns[pattern].request_id, '']
+          train_id: [this.currentPatterns[pattern].request_id, ''],
+          status: [this.currentPatterns[pattern].status, '']
         });
         this.mainArray.push(currentPatternGroup);
 
@@ -59,7 +61,8 @@ export class DerivationPhysPatternComponent implements OnInit {
         campaign: patternCampaign[0],
         subcampaign: patternCampaign[1],
         outputs: ['DAOD_PHYS.DAOD_PHYSLITE'],
-        request_id: patternValue.train_id
+        request_id: patternValue.train_id,
+        status: patternValue.status
       };
       newPatterns.push(newPattern);
     }
@@ -79,7 +82,8 @@ export class DerivationPhysPatternComponent implements OnInit {
   addPattern() {
     this.mainArray.push(this.fb.group({
       campaign: ['', ''],
-      train_id: ['', '']
+      train_id: ['', ''],
+      status: ['Active', '']
     }));
   }
   requestIDChanged($event: Event, i: number) {
