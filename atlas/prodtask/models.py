@@ -1119,7 +1119,7 @@ class SystemParameters(models.Model):
             param.value = value
             param.save()
             if param.cacheable:
-                cache.set(name, value)
+                cache.set(name, value, None)
         else:
             raise Exception("Parameter with name %s does not exist" % name)
 

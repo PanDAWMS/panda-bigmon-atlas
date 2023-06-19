@@ -17,6 +17,7 @@ from rest_framework import status
 from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest, SystemParametersHandler
 from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices
 from atlas.prodtask.spdstodb import fill_template
+from .hashtag import _set_request_hashtag
 from .helper import form_json_request_dict
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
@@ -586,6 +587,7 @@ def submit_child_derivation_request(original_request_id: int) -> int:
         new_parent_child.relation_type = 'DP'
         new_parent_child.status = 'active'
         new_parent_child.save()
+        _set_request_hashtag(new_request.reqid, 'PHYSAutoProduction')
     else:
         new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
         parent_steps = filter_steps_for_derivation(parent_steps, new_request)
