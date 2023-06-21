@@ -52,7 +52,7 @@
             <mat-radio-button value="soft">Soft</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button color="primary" (click)="executeAction('reassign_to_site',[sites.value, siteOption])">Go</button>
+        <button mat-raised-button [disabled]="sites.value===undefined" color="primary" (click)="executeAction('reassign_to_site',[sites.value, siteOption])">Go</button>
       </div>
     <mat-divider></mat-divider>
         <div class="action-menu-row">
@@ -72,7 +72,7 @@
             <mat-radio-button value="soft">Soft</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button color="primary" (click)="executeAction('reassign_to_nucleus',[nucleus.value, nucleuOption])">Go</button>
+        <button mat-raised-button [disabled]="nucleus.value===undefined" color="primary" (click)="executeAction('reassign_to_nucleus',[nucleus.value, nucleuOption])">Go</button>
       </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
@@ -90,7 +90,7 @@
             <mat-radio-button [value]="true">Reassign running</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button color="primary" (click)="executeAction('reassign_to_share',[shares.value, shareOption])">Go</button>
+        <button mat-raised-button [disabled]="shares.value===undefined" color="primary" (click)="executeAction('reassign_to_share',[shares.value, shareOption])">Go</button>
       </div>
     <mat-divider></mat-divider>
         <mat-divider></mat-divider>
