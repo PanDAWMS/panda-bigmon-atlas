@@ -2180,7 +2180,7 @@ class RequestTable(datatables.DataTable):
         bScrollCollapse = False
         
         aaSorting = [[0, "desc"]]
-        aLengthMenu = [[10, 50, 100, -1], [10, 50, 1000, "All"]]
+        aLengthMenu = [[10, 50, 100, 500], [10, 50, 100, 500]]
         iDisplayLength = 50
 
         bServerSide = True
