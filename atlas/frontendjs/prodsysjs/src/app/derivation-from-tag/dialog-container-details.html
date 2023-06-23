@@ -5,6 +5,7 @@
 <div *ngFor="let dataset of container.datasets " class="datasetInContainer">
   <div style="grid-column: 1 / -1"> <a href="{{dataset.dataset|rucioURL}}">{{dataset.dataset}}</a> </div>
   <div style="grid-column: 1 / -1">{{dataset.outputs.toString()}} </div>
+
   <div><a [routerLink]="['/task',dataset.task_id]" >{{dataset.task_id}}</a></div>
   <div><div><span  [ngClass]="['taskStatus',dataset.task_status]"><b>{{dataset.task_status}}</b></span></div></div>
   <div><a href="/prodtask/slice_by_task/{{dataset.task_id}}">{{dataset.request_id}}</a></div>

@@ -16,6 +16,7 @@ class DerivationDatasetInfo():
     task_id: int
     request_id: int
     task_status: str
+    output_datasets: [str] = field(default_factory=list)
 
 @dataclass
 class DerivationContainer():
@@ -28,6 +29,7 @@ class DerivationContainer():
     requests_id: [int] = field(default_factory=list)
     output_formats: [str] = field(default_factory=list)
     projects: [str] = field(default_factory=list)
+    output_containers: [str] = field(default_factory=list)
 
 
 
@@ -87,6 +89,7 @@ class DerivationContainer():
         requests = set()
         outputs = set()
         projects = set()
+        output_containers = set()
         for dataset in self.datasets:
             status = dataset.task_status
             self.is_running |= status not in ProductionTask.NOT_RUNNING
@@ -95,6 +98,9 @@ class DerivationContainer():
             requests.add(dataset.request_id)
             projects.add(dataset.dataset.split('.')[0])
             outputs.update(dataset.outputs.split('.'))
+            for output_dataset in dataset.output_datasets:
+                output_containers.add(get_container_name(output_dataset))
+        self.output_containers = list(output_containers)
         self.requests_id = list(requests)
         self.output_formats = list(outputs)
         self.projects = list(projects)
@@ -129,7 +135,6 @@ def find_all_inputs_by_tag(ami_tag: str) -> [DerivationContainer]:
     tasks = ProductionTask.objects.filter(ami_tag=ami_tag)
     forming_containers : dict[str,DerivationContainer]= {}
     datasets = {}
-    containers_content = {}
     ddm = DDM()
     result = []
     format_reduction = lambda x: '.'.join(sorted(list(set(x.split('.')))))
@@ -140,6 +145,8 @@ def find_all_inputs_by_tag(ami_tag: str) -> [DerivationContainer]:
             input_container = get_container_name(input_dataset)
         if 'tid' not in input_dataset:
             input_dataset = task.input_dataset[task.input_dataset.find(':')+1:]
+        current_output_datasets = ProductionDataset.objects.filter(task_id=task.id)
+        output_datasets = [x.name for x in current_output_datasets if '.log.' not in x.name]
         dataset_added = False
         cleaned_formats = format_reduction(task.output_formats)
         if input_container not in forming_containers:
@@ -148,13 +155,14 @@ def find_all_inputs_by_tag(ami_tag: str) -> [DerivationContainer]:
                                                               outputs=cleaned_formats,
                                                               task_id=task.id,
                                                               request_id=task.request_id,
-                                                                task_status=task.status)])
+                                                                task_status=task.status,
+                                                                                              output_datasets=output_datasets)])
             dataset_added = True
         else:
             derivation_container = forming_containers[input_container]
             if input_dataset+cleaned_formats not in [x.dataset+x.outputs for x in derivation_container.datasets]:
                 derivation_container.datasets.append(DerivationDatasetInfo(input_dataset,cleaned_formats,
-                                                                           task.id,task.request_id,task.status))
+                                                                           task.id,task.request_id,task.status, output_datasets))
                 dataset_added = True
             else:
                 index = [x.dataset+x.outputs for x in derivation_container.datasets].index(input_dataset+cleaned_formats)
@@ -162,6 +170,7 @@ def find_all_inputs_by_tag(ami_tag: str) -> [DerivationContainer]:
                     derivation_container.datasets[index].task_id = task.id
                     derivation_container.datasets[index].request_id = task.request_id
                     derivation_container.datasets[index].task_status = task.status
+                    derivation_container.datasets[index].output_datasets = output_datasets
                     dataset_added = True
 
         if dataset_added:

@@ -1,10 +1,10 @@
-import {AfterViewInit, Component, Inject, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, Inject, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
 import {
-  catchError,
+  catchError, concatAll,
   debounceTime,
   distinctUntilChanged,
   filter,
-  map,
+  map, mergeAll,
   mergeMap,
   switchMap,
   tap,
@@ -12,7 +12,7 @@ import {
 } from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {DerivationFromTagService} from './derivation-from-tag.service';
-import {BehaviorSubject, merge, Observable, Subject} from "rxjs";
+import {BehaviorSubject, concat, merge, Observable, Subject} from "rxjs";
 import {
   DerivationContainersCollection,
   DerivationContainersInput,
@@ -23,13 +23,18 @@ import {MatTableDataSource} from "@angular/material/table";
 import {FormControl} from "@angular/forms";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 
+function get_output(output: string): string {
+  return output.split('.')[output.split('.').length - 2]  ;
+}
+
 @Component({
   selector: 'app-derivation-from-tag',
   templateUrl: './derivation-from-tag.component.html',
-  styleUrls: ['./derivation-from-tag.component.css']
+  styleUrls: ['./derivation-from-tag.component.css'],
 })
 export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild('paginator') paginator: MatPaginator;
+  @ViewChild('paginator2') paginator2: MatPaginator;
 
   constructor(public route: ActivatedRoute, public dialog: MatDialog, private derivationFromTagService: DerivationFromTagService) { }
 
@@ -38,6 +43,7 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
   public loadingData?: boolean;
   public containers$: BehaviorSubject <DerivationContainersInput[]> = new BehaviorSubject([]);
   public containersToCopy: string[] = [];
+  public outputContainersToCopy: string[] = [];
   public filterChanged$: Subject<number> = new Subject<number>();
   searchTerms$ = new BehaviorSubject<string>('');
   public filteredContainers$ = merge(this.searchTerms$.pipe(debounceTime(300), distinctUntilChanged()),
@@ -53,13 +59,22 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
       map(containers => this.filterRunningShow ? containers.filter(container => container.is_running) : containers),
       map(containers => this.filterBrokenShow ? containers.filter(container => container.is_failed) : containers),
     );
-  public dataSource = new MatTableDataSource<DerivationContainersInput>([]);
+  public filteredOutputs$ = this.filteredContainers$.pipe(
+    map(containers =>
+      containers.map(container => container.output_containers).reduce((acc, val) => acc.concat(val), []).
+        filter(output => this.selectedOutputs.value.includes(get_output(output)))),
+    tap(outputs => this.outputContainersToCopy = outputs));
+
+    public dataSource = new MatTableDataSource<DerivationContainersInput>([]);
+    public dataSourceOutputs = new MatTableDataSource<string>([]);
   public derivationData$ = this.route.paramMap.pipe(tap(params => {
-    this.currentAMITag = params.get('amiTag').toString();
+    if (params.has('amiTag')){
+          this.currentAMITag = params.get('amiTag').toString();
+          this.loadingData = true;
+    }
     this.containers$.next([]);
-    this.loadingData = true;
     this.loadingError = null;
-  }),
+  }), filter(params => params.has('amiTag')),
     switchMap((params) =>   this.derivationFromTagService.getDerivationInputsByTag(params.get('amiTag').toString())),
     tap( receivedData => {
       this.loadingError = null;
@@ -91,10 +106,14 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
     this.filteredContainers$.subscribe( data => {
       this.dataSource.data = data;
     });
+    this.filteredOutputs$.subscribe( data => {
+      this.dataSourceOutputs.data = data;
+    });
 
   }
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    this.dataSourceOutputs.paginator = this.paginator2;
   }
 
   showContainerDetails(container: DerivationContainersInput): void {
@@ -102,9 +121,9 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
       data: container
     });
   }
-  showSelectedContainers(): void {
+  showSelectedContainers(data): void {
      this.dialog.open(DialogSelectedContainers, {
-      data: this.containersToCopy
+      data
     });
   }
 }

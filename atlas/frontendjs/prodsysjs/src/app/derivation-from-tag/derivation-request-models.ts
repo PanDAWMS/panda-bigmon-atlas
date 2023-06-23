@@ -18,6 +18,7 @@ export interface DerivationContainersInput {
   requests_id: number[];
   output_formats: string[];
   projects: string[];
+  output_containers: string[];
 }
 
 export interface DerivationContainersCollection {

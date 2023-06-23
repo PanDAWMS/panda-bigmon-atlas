@@ -19,7 +19,7 @@ from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
-    JediTasks, JediDatasetContents, JediDatasets
+    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer
 
 from rest_framework import serializers, generics
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -28,7 +28,7 @@ from rest_framework.authentication import TokenAuthentication, BasicAuthenticati
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 
-from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares
+from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 from django.core.cache import cache
@@ -36,10 +36,7 @@ from django.core.cache import cache
 
 _logger = logging.getLogger('prodtaskwebui')
 
-class SliceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InputRequestList
-        fields = '__all__'
+
 
 
 @api_view(['GET'])
@@ -167,6 +164,9 @@ class ProductionRequestSerializer(serializers.ModelSerializer):
         model = TRequest
         fields = '__all__'
 
+
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -184,18 +184,11 @@ def production_task_for_request(request: Request) -> Response:
                 tasks = ProductionTask.objects.filter(step__in=steps)
             else:
                 tasks = ProductionTask.objects.filter(request_id=request_id)
-        tasks_serial = []
-        for task in tasks:
-            serial_task = task.__dict__
-            del serial_task['_state']
-            step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
-            serial_task.update(dict(step_name=StepTemplate.objects.filter(id=step_id).values("step").get()['step']))
-            serial_task['failureRate'] = task.failure_rate or 0
-            tasks_serial.append(serial_task)
-
+        tasks_serial = tasks_serialisation(tasks)
         return Response(tasks_serial)
     except Exception as ex:
         return Response(f"Problem with task loading: {ex}", status=400)
+
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

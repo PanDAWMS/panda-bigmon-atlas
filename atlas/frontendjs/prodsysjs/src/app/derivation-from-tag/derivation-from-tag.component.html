@@ -27,8 +27,8 @@
 </mat-form-field>
     <mat-form-field appearance="fill">
   <mat-label>Requests</mat-label>
-  <mat-select [formControl]="selectedRequests" multiple (selectionChange)="filterChanged$.next(1)">
-    <mat-option *ngFor="let value of derivationData.requests" [value]="value.reqid" >{{value.reqid}} {{value.description}}</mat-option>
+  <mat-select   [formControl]="selectedRequests" multiple (selectionChange)="filterChanged$.next(1)" panelClass="panel-requests">
+    <mat-option *ngFor="let value of derivationData.requests" [value]="value.reqid" [matTooltip]="value.description + ' ' + value.ref_link.split('/').slice(-1)" >{{value.reqid}} <a href="{{value.ref_link}}">{{value.description}} - {{value.ref_link.split('/').slice(-1)}}</a></mat-option>
   </mat-select>
 </mat-form-field>
       <mat-form-field appearance="fill">
@@ -47,11 +47,16 @@
     </mat-form-field>
       </div>
   <div style="overflow-wrap: anywhere"> Chosen outputs: {{selectedOutputs.value}}, Filtered containers: {{containersToCopy.length}}</div>
+        </mat-card>
+        </ng-container>
+</ng-container>
+    <mat-tab-group>
+      <mat-tab label="Input containers">
     <div>
-    <button mat-raised-button color="primary" (click)="showSelectedContainers()" >Show containers</button>
+    <button mat-raised-button color="primary" (click)="showSelectedContainers(containersToCopy)" >Show containers</button>
       </div>
 
-  </mat-card>
+
     <mat-card>
   <mat-card-header>
     Show
@@ -62,8 +67,7 @@
       <mat-checkbox [(ngModel)]="filterWrongName" (change)="filterChanged$.next(1)">Show container with originally wrong container name</mat-checkbox>
 
     </mat-card>
-    </ng-container>
-</ng-container>
+
 
 <div>
  <table mat-table [dataSource]="dataSource" [fixedLayout]="true">
@@ -85,9 +89,35 @@
               (click)="showContainerDetails(row)"
     ></tr>
   </table>
-    <mat-paginator [pageSizeOptions]="[20, 50, 100]"
+    <mat-paginator #paginator="matPaginator" [pageSizeOptions]="[20, 50, 100]"
                  showFirstLastButtons
                  aria-label="Select page ">
   </mat-paginator>
   </div>
+ </mat-tab>
+      <mat-tab label="Output containers">
+    <div>
+    <button mat-raised-button color="primary" (click)="showSelectedContainers(outputContainersToCopy)" >Show output containers</button>
+      </div>
+        <div>*Output containers could not exist(deleted or not yet created)</div>
+  <table mat-table [dataSource]="dataSourceOutputs" [fixedLayout]="true">
+  <ng-container matColumnDef="Output Container">
+    <th mat-header-cell *matHeaderCellDef> Container </th>
+    <td mat-cell *matCellDef="let row">
+      <span>{{row}}</span>
+    </td>
+  </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="['Output Container']"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['Output Container']"
+
+    ></tr>
+  </table>
+    <mat-paginator #paginator2="matPaginator" [pageSizeOptions]="[20, 50, 100]"
+                 showFirstLastButtons
+                 aria-label="Select page ">
+  </mat-paginator>
+      </mat-tab>
+ </mat-tab-group>
+
 
