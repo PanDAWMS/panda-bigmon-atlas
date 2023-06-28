@@ -1,0 +1,16 @@
+.sliceCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+  height: 100%;
+  width: 100%;
+}
+.sliceCell>div {
+  margin: 0 0;
+  padding: 2px 2px 2px 2px;
+  height: 28px;
+}
+
+.ag-theme-alpine {
+    --ag-grid-size: 2px;
+}

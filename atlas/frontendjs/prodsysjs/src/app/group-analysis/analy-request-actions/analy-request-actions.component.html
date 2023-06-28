@@ -1,0 +1,9 @@
+<div>Slices selected: {{selectedSlices.length}}</div>
+<div>
+<!--  Three angular mat buttons: Submit, Modify, Clone with action submitAction() on click-->
+    <button mat-raised-button color="primary" (click)="executeAction('submit')">Submit</button>
+    <button mat-raised-button color="primary" (click)="executeAction('modify')" [disabled]="true">Modify</button>
+    <button mat-raised-button color="primary" (click)="executeAction('clone')" [disabled]="true">Clone</button>
+
+</div>
+{{sendMessage}}

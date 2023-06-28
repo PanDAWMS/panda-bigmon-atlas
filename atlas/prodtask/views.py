@@ -1945,6 +1945,8 @@ def request_table_view(request, rid=None, show_hidden=False):
         try:
             PRODTASK_TASK_BASE = request.build_absolute_uri(reverse('prodtask:task',args=[FAKE_TASK_NUMBER,]))
             cur_request = TRequest.objects.get(reqid=rid)
+            if cur_request.request_type == 'ANALYSIS':
+                return HttpResponseRedirect(f'/ng/analysis-request/{rid}')
             #steps_db =
             _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
             long_description = cur_request.info_field('long_description')

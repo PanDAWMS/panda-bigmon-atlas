@@ -94,6 +94,8 @@ import { DynamicFormWFilterComponent } from './dynamic-form-w-filter/dynamic-for
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import { CreateAnalysisRequestComponent } from './group-analysis/create-analysis-request/create-analysis-request.component';
 import { DerivationPhysPatternComponent } from './derivation-phys-pattern/derivation-phys-pattern.component';
+import { StepTasksComponent } from './group-analysis/step-tasks/step-tasks.component';
+import { AnalyRequestActionsComponent } from './group-analysis/analy-request-actions/analy-request-actions.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -136,11 +138,11 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'request-tasks/:id', component: TasksManagementComponent},
   {path: 'request-tasks/:id/:slices', component: TasksManagementComponent},
   {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
-    {path: 'gpa-template-creation', component: TaskTemplateSubmissionComponent},
+    {path: 'analysis-template-creation', component: TaskTemplateSubmissionComponent},
 
 
     {path: 'analysis-pattern/:tag', component: AnalysisPatternComponent},
-      {path: 'create-analysis-request/:tag', component: CreateAnalysisRequestComponent},
+      {path: 'create-analysis-request', component: CreateAnalysisRequestComponent},
 
     {path: 'analysis-request/:id', component: AnalysisRequestComponent},
 
@@ -219,7 +221,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DialogSliceDetailsComponent,
     DynamicFormWFilterComponent,
     CreateAnalysisRequestComponent,
-    DerivationPhysPatternComponent
+    DerivationPhysPatternComponent,
+    StepTasksComponent,
+    AnalyRequestActionsComponent
   ],
   imports: [
     BrowserModule,

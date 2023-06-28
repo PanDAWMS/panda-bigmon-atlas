@@ -11,8 +11,15 @@ import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog
 })
 export class AgCellSliceComponent implements ICellRendererAngularComp {
   public analysisSlice: AnalysisSlice;
+  currentStatus = '';
   agInit(params: ICellRendererParams<AnalysisSlice, any>): void {
     this.analysisSlice = params.data;
+    this.currentStatus = 'Ready';
+    for (const step of this.analysisSlice.steps) {
+      if (step.step.status === 'Approved'){
+        this.currentStatus = 'Submitted';
+      }
+    }
    }
 
     constructor(public dialog: MatDialog) {

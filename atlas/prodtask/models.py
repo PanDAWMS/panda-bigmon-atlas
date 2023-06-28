@@ -1015,11 +1015,15 @@ class AnalysisStepTemplate(models.Model):
         return self.step_parameters['prodSourceLabel']
 
     def change_variable(self, variable_name: str, input_data: str):
-        for x in self.variables_data:
+        current_data = self.variables_data
+        return_value = None
+        for x in current_data:
             if x.name == variable_name:
                 x.value = input_data
-                return x.value
-        return None
+                return_value = x.value
+                break
+        self.variables_data = current_data
+        return return_value
 
     def get_variable(self, variable_name: str):
         for x in self.variables_data:

@@ -20,23 +20,39 @@
 
   </tr>
 </table>
+<mat-tab-group mat-stretch-tabs >
+  <mat-tab label="Slices">
+   <div *ngIf="analysisSlices$| async as analysisSlices">
 
-<div *ngIf="analysisSlices$| async as analysisSlices">
-  <div *ngFor="let slice of analysisSlices">
-    <table>
-    <tr>
-      <td><input type="checkbox"   /></td>
-      <td [style]="{width: '100%'}"><app-analysis-slice [slice]="slice"></app-analysis-slice></td>
-    </tr>
-  </table>
-  </div>
     <ag-grid-angular
-      #sliceGrid
+      #slicesGrid
       class="ag-theme-alpine"
       [rowData]="analysisSlices"
       [columnDefs]="sliceAGColumns"
-      [rowHeight]="66"
-      [domLayout]="'autoHeight'"
+      [rowHeight]="90"
+      [rowSelection]="'multiple'"
+      [pagination]="true"
+     [domLayout]="'autoHeight'"
+      [paginationPageSize]="20"
+      (selectionChanged)="onSelectionChanged($event)"
+      (gridReady)="onGridReady($event)"
     ></ag-grid-angular>
 </div>
+
+<app-analy-request-actions [productionRequestID]="requestID" [selectedSlices]="selectedSlicesNumbers" (updateRequest)="updateRequest($event)"></app-analy-request-actions>
+  </mat-tab>
+  <mat-tab label="tasks">
+    <h1 *ngIf="taskLoadError" style="color: red">Error loading tasks: {{taskLoadError}}</h1>
+
+    <div *ngIf="tasks$ | async as tasks; else loading">
+      <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="false" >
+
+      </app-production-task-table>
+    </div>
+      <ng-template #loading>
+    <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
+  </ng-template>
+
+  </mat-tab>
+</mat-tab-group>
 

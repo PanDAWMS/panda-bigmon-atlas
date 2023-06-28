@@ -33,13 +33,21 @@ export class PatternEditComponent implements OnInit, OnChanges {
   public editModeToggle = false;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.editMode) {
-      this.editModeToggle = this.editMode === 'edit';
+
+    if (changes.pattern) {
+      this.editMode = 'view';
+      this.editModeChange.next(this.editMode);
+      this.prepareForm();
     }
+    this.editModeToggle = this.editMode === 'edit';
   }
 
   ngOnInit(): void {
     this.editModeToggle = this.editMode === 'edit';
+    this.prepareForm();
+  }
+
+  private prepareForm(): void {
     this.preparedTaskParamsForm = {controls: []};
     const paramsTemplate = TASKS_CONSTANTS.TASKS_PARAMS_FORM.task_params_control;
     for (const key of Object.keys(this.pattern)) {
@@ -62,6 +70,7 @@ export class PatternEditComponent implements OnInit, OnChanges {
         }
       }
     }
+    this.jobParameters = [];
     for (const jobItem of this.pattern.jobParameters) {
       if ((jobItem?.hidden !== true) && (jobItem?.value !== null) && (jobItem?.value !== undefined)) {
         this.jobParameters.push(jobItem?.value);

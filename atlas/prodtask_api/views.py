@@ -11,8 +11,10 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
 from atlas.prestage.views import staging_rule_verification
+from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging
 from atlas.prodtask.spdstodb import fill_template
+from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.views import form_existed_step_list, set_request_status
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -193,3 +195,24 @@ def is_stage_rule_stuck_because_of_tape(request):
     except Exception as e:
         _jsonLogger.error(f"Check staging rule to be stuck failed {e}")
         return HttpResponseBadRequest(f"Check staging rule to be stuck failed {e}")
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def recreate_delete_dataset(request):
+
+    try:
+        dataset = request.query_params.get('dataset')
+        if not dataset:
+            raise ValueError('dataset name is required')
+        ddm = DDM()
+        if ddm.dataset_exists(dataset):
+            raise ValueError(f'dataset {dataset} still exists')
+        task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+        output_type = dataset.split('.')[-2]
+        result_task_id, result_dataset = recreate_output(task_id, output_type)
+        return Response({'dataset': result_dataset, 'task_id': result_task_id})
+    except Exception as e:
+        error_message = f"Recreate deleted dataset failed {e}"
+        _jsonLogger.error(error_message)
+        return HttpResponseBadRequest(error_message)

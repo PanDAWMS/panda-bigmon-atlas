@@ -9,6 +9,7 @@ export interface AnalysisStepBase {
   step_analysis_parent_id: number;
   request_id: number;
   slice_id: number;
+  template_name: string;
 
 }
 
