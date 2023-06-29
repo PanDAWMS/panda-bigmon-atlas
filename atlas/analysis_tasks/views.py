@@ -103,6 +103,15 @@ def create_analy_task_for_slice(requestID: int, slice: int ) -> [int]:
             new_tasks.append(task_id)
     return new_tasks
 
+def monk_create_analy_task_for_slice(requestID: int, slice: int ):
+    new_tasks = []
+    steps = AnalysisStepTemplate.objects.filter(request=requestID, slice=InputRequestList.objects.get(slice=slice, request=requestID))
+    for step in steps:
+        if (step.status == AnalysisStepTemplate.STATUS.APPROVED) and (not ProductionTask.objects.filter(step=step.step_production_parent).exists()):
+            task_id = TTask().get_id()
+            t_task, prod_task = register_analysis_task(step, task_id, task_id)
+            return t_task, prod_task
+
 
 def render_task_template(task_template: dict, variables: [TemplateVariable]) -> dict:
     render_template = deepcopy(task_template)
@@ -213,9 +222,9 @@ def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTem
     new_name = get_new_name(slice.dataset, step.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME), template.tag )
     step.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
     step.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name)
-    step.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, slice.request.manager)
+    #step.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, slice.request.manager)
     step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.TASK_NAME)] = f'{new_name}/'
-    step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.USER_NAME)] = slice.request.manager
+    #step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.USER_NAME)] = slice.request.manager
     step.template = template
     step.step_production_parent = prod_step
     step.save()
