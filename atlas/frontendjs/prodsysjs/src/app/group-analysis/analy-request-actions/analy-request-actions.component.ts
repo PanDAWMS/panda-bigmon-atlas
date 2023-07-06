@@ -25,6 +25,13 @@ export class AnalyRequestActionsComponent implements OnInit {
           this.updateRequest.emit(true);
         }
       );
+    } else if (action === 'clone') {
+      this.analysisTaskService.submitAnalysisRequestAction(this.productionRequestID, 'clone', this.selectedSlices).subscribe(
+        (response) => {
+          this.sendMessage = response.result;
+          this.updateRequest.emit(true);
+        }
+      );
     }
   }
 }

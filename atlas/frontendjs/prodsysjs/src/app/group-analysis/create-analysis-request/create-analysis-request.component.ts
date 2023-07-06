@@ -6,7 +6,7 @@ import {GridReadyEvent} from "ag-grid-community";
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {TemplateBase} from "../analysis-task-model";
 import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component";
-import {Router} from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 
 
 interface InputContainerItem {
@@ -30,14 +30,27 @@ export class CreateAnalysisRequestComponent implements OnInit {
   requestDescriptionFormGroup = this.formBuilder.group({
     requestDescriptionCtrl: ['', Validators.required],
   });
+  patternTag: string|null = null;
   containersCurrentList: InputContainerItem[] = [];
   chosenTemplate: TemplateBase|null = null;
   editMode: editState = 'view';
   submissionError = '';
   containerListChanged$= new BehaviorSubject<string>('');
   containersChecked$ = new BehaviorSubject<boolean>(false);
-  patterns$ = this.analysisTasksService.getAllActiveTemplates().pipe(
-    tap((patterns) => console.log(patterns)));
+  patterns$ = combineLatest( [this.analysisTasksService.getAllActiveTemplates(), this.route.paramMap]).pipe(
+     map(([patterns, params]) => {
+       if (params.has('tag')) {
+         this.patternTag = params.get('tag');
+       }
+       if (this.patternTag !== null && patterns.length > 0) {
+        const requestedPattern = patterns.find((pattern) => pattern.tag === this.patternTag);
+        if (requestedPattern) {
+                  this.templateChoiceFormGroup.get('patternCntrl').setValue(requestedPattern);
+                  this.chosenTemplate = requestedPattern;
+        }
+      }
+       return patterns;
+    }));
   // debunk input, wait 300ms, filter empty string, replace all possible separators with commas, split on commas, remove empty strings
   // change when containersChecked$ emits
   separateInputContainerList$ = combineLatest([this.containerListChanged$, this.containersChecked$]).pipe(
@@ -77,9 +90,10 @@ export class CreateAnalysisRequestComponent implements OnInit {
     this.containersChecked = true;
   }
   constructor(private formBuilder: FormBuilder, private analysisTasksService: AnalysisTasksService,
-              private router: Router) { }
+              private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit(): void {
+
   }
 
   onGridReady($event: GridReadyEvent<any>) {

@@ -325,7 +325,10 @@ def analysis_steps_serializer(analysis_steps: [AnalysisStepTemplate]):
 @permission_classes((IsAuthenticated,))
 def get_all_patterns(request):
     try:
-        patterns = AnalysisTaskTemplate.objects.filter(status=AnalysisTaskTemplate.STATUS.ACTIVE)
+        if request.query_params.get('status') == 'all':
+            patterns = AnalysisTaskTemplate.objects.all()
+        else:
+            patterns = AnalysisTaskTemplate.objects.filter(status=AnalysisTaskTemplate.STATUS.ACTIVE)
         serialized_patterns = []
         for pattern in patterns:
             serialized_patterns.append(AnalysisTaskTemplateSerializer(pattern).data)
@@ -372,6 +375,14 @@ def get_analysis_request(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+def clone_analysis_request_slices(request):
+    slices = request.data['slices']
+    for slice in slices:
+        simple_analy_slice_clone(request.data['requestID'], slice)
+    return Response({'result':f"{len(slices)} cloned"}, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -380,6 +391,8 @@ def analysis_request_action(request):
         action = request.data['action']
         if action == 'submit':
             return submit_analysis_slices(request)
+        elif action == 'clone':
+            return clone_analysis_request_slices(request)
         else:
             return Response('Unknown action', status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -468,7 +481,30 @@ def get_keys_types_from_task_parametrers(keys_types: dict, array_keys: dict, dic
         elif key == 'multiStepExec':
                 get_keys_types_from_task_parametrers(mse[0], mse[1], mse[2], {}, value)
 
+def simple_analy_slice_clone(request_id: int, slice_number: int) -> int:
+    try:
+        new_slice = InputRequestList.objects.get(request_id=request_id, slice=slice_number)
+        original_slice = InputRequestList.objects.get(request_id=request_id, slice=slice_number)
+        step_exec = StepExecution.objects.get(slice=original_slice, request=request_id)
+        analy_step = AnalysisStepTemplate.objects.get(step_production_parent=step_exec)
+        new_slice.id = None
+        new_slice.slice = TRequest.objects.get(reqid=request_id).get_next_slice()
+        new_slice.save()
+        step_exec.id = None
+        step_exec.slice = new_slice
+        if step_exec.status == StepExecution.STATUS.APPROVED:
+            step_exec.status = StepExecution.STATUS.NOT_CHECKED
+        step_exec.save()
+        analy_step.id = None
+        analy_step.slice = new_slice
+        analy_step.step_production_parent = step_exec
+        if analy_step.status == AnalysisStepTemplate.STATUS.APPROVED:
+            analy_step.status = AnalysisStepTemplate.STATUS.NOT_CHECKED
+        analy_step.save()
+        return new_slice.slice
 
+    except Exception as e:
+        raise Exception(f'Failed to clone slice {slice} of request {request_id}: {str(e)}')
 # """
 # {
 #   taskName= 'text',

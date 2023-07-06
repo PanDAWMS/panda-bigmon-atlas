@@ -46,8 +46,8 @@ export class AnalysisTasksService {
     return this.http.get<TemplateBase>(this.prGetTemplateUrl, {params: {template_tag: templateID}});
   }
 
-  getAllActiveTemplates(): Observable<TemplateBase[]> {
-    return this.http.get<TemplateBase[]>(this.prGetAllTemplateUrl, {params: {active: 'true'}});
+  getAllActiveTemplates(status= 'ACTIVE'): Observable<TemplateBase[]> {
+    return this.http.get<TemplateBase[]>(this.prGetAllTemplateUrl, {params: {status}});
   }
   getAnalysisRequest(requestID: string): Observable<AnalysisSlice[]> {
     return this.http.get<AnalysisSlice[]>(this.prGetAnalysisRequestUrl, {params: {request_id: requestID}});

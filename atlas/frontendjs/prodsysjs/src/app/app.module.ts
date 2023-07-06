@@ -96,6 +96,7 @@ import { CreateAnalysisRequestComponent } from './group-analysis/create-analysis
 import { DerivationPhysPatternComponent } from './derivation-phys-pattern/derivation-phys-pattern.component';
 import { StepTasksComponent } from './group-analysis/step-tasks/step-tasks.component';
 import { AnalyRequestActionsComponent } from './group-analysis/analy-request-actions/analy-request-actions.component';
+import { AnalysisTemplatesTableComponent } from './group-analysis/analysis-templates-table/analysis-templates-table.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -143,6 +144,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
 
     {path: 'analysis-pattern/:tag', component: AnalysisPatternComponent},
       {path: 'create-analysis-request', component: CreateAnalysisRequestComponent},
+        {path: 'create-analysis-request/:tag', component: CreateAnalysisRequestComponent},
+  {path: 'analysis-templates', component: AnalysisTemplatesTableComponent},
 
     {path: 'analysis-request/:id', component: AnalysisRequestComponent},
 
@@ -223,7 +226,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     CreateAnalysisRequestComponent,
     DerivationPhysPatternComponent,
     StepTasksComponent,
-    AnalyRequestActionsComponent
+    AnalyRequestActionsComponent,
+    AnalysisTemplatesTableComponent
   ],
   imports: [
     BrowserModule,

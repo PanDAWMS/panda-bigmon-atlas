@@ -2,7 +2,7 @@
 <div *ngIf="taskTemplate$ | async as taskTemplate">
 
   <div class="templateBaseParams" [formGroup]="templateForm">
-      <div><b>Tag: </b>{{taskTemplate.tag}}</div>
+      <div><b>Tag: </b>{{taskTemplate.tag}} <button mat-raised-button color="primary" [routerLink]="['/create-analysis-request',taskTemplate.tag]" >Create request</button></div>
       <div><b>Status:</b>
           <mat-select formControlName="status" >
             <mat-option [value]="'ACTIVE'">Active</mat-option>

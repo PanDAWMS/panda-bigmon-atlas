@@ -36,7 +36,7 @@
       <ng-container *ngIf="patterns$ | async as patterns">
       <mat-form-field>
         <mat-label>Choose a pattern</mat-label>
-        <mat-select  formControlName="patternCntrl" (selectionChange)="changeTaskTemplate($event)">
+        <mat-select  formControlName="patternCntrl"  [(value)]="chosenTemplate" (selectionChange)="changeTaskTemplate($event)">
           <mat-option *ngFor="let pattern of patterns" [value]="pattern" >
             {{pattern.tag}} - {{pattern.description}}
           </mat-option>

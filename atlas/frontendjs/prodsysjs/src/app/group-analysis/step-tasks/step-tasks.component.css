@@ -1,0 +1,76 @@
+:host ::ng-deep .taskStatus.executing {
+  color: LightGreen;
+}
+
+:host ::ng-deep .taskStatus.obsolete {
+  color: lightblue;
+}
+
+:host ::ng-deep .taskStatus.holding {
+  color: black;
+}
+
+:host ::ng-deep .taskStatus.pending {
+  color: blue;
+}
+
+:host ::ng-deep .taskStatus.waiting {
+  color: blue;
+}
+
+:host ::ng-deep .taskStatus.submitting {
+  color: blue;
+}
+
+:host ::ng-deep .taskStatus.archived {
+  color: magenta;
+}
+
+:host ::ng-deep .taskStatus.submitted {
+  color: green;
+}
+
+:host ::ng-deep .taskStatus.running {
+  color: LightGreen;
+}
+
+:host ::ng-deep .taskStatus.done {
+  color: darkgreen;
+}
+
+:host ::ng-deep .taskStatus.finished {
+  color: darkgreen;
+}
+
+:host ::ng-deep .taskStatus.failures {
+  color: orange;
+}
+
+:host ::ng-deep .taskStatus.failed {
+  color: red;
+}
+
+:host ::ng-deep .taskStatus.aborted {
+  color: red;
+}
+
+:host ::ng-deep .taskStatus.exhausted {
+  color: orange;
+}
+
+
+:host ::ng-deep .taskStatus.broken {
+  color: red;
+}
+
+:host ::ng-deep .taskStatus.toabort {
+  color: red;
+}
+
+:host ::ng-deep .taskStatus.registered {
+  color: blue;
+}
+
+:host ::ng-deep .taskStatus.toretry {
+  color: blue;
+}

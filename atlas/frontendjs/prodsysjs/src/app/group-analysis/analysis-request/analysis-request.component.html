@@ -20,7 +20,7 @@
 
   </tr>
 </table>
-<mat-tab-group mat-stretch-tabs >
+<mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" >
   <mat-tab label="Slices">
    <div *ngIf="analysisSlices$| async as analysisSlices">
 
@@ -41,7 +41,7 @@
 
 <app-analy-request-actions [productionRequestID]="requestID" [selectedSlices]="selectedSlicesNumbers" (updateRequest)="updateRequest($event)"></app-analy-request-actions>
   </mat-tab>
-  <mat-tab label="tasks">
+  <mat-tab label="Tasks">
     <h1 *ngIf="taskLoadError" style="color: red">Error loading tasks: {{taskLoadError}}</h1>
 
     <div *ngIf="tasks$ | async as tasks; else loading">

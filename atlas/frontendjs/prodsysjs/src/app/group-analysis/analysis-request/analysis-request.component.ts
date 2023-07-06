@@ -1,14 +1,14 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {ActivatedRoute, Router} from "@angular/router";
-import {catchError, switchMap, tap} from "rxjs/operators";
+import {catchError, map, mergeAll, switchMap, tap} from "rxjs/operators";
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
 import {AnalysisSlice} from "../analysis-task-model";
 import {AgCellSliceComponent} from "../ag-cell-slice/ag-cell-slice.component";
 import {GridReadyEvent, SelectionChangedEvent} from "ag-grid-community";
 import {AgGridAngular} from "ag-grid-angular";
 import {ProductionTask} from "../../production-request/production-request-models";
-import {of} from "rxjs";
+import {combineLatest, of} from "rxjs";
 @Component({
   selector: 'app-analysis-request',
   templateUrl: './analysis-request.component.html',
@@ -17,6 +17,7 @@ import {of} from "rxjs";
 export class AnalysisRequestComponent implements OnInit {
   public requestID = '';
   public slices: AnalysisSlice[] = [];
+  public tasks: ProductionTask[] = [];
   public   requestInfo$ = this.route.paramMap.pipe(switchMap((params) => {
     this.requestID = params.get('id').toString();
     return this.taskManagementService.getProductionRequest(params.get('id'));
@@ -24,12 +25,15 @@ export class AnalysisRequestComponent implements OnInit {
   @ViewChild('slicesGrid') slicesGrid!: AgGridAngular;
   public selectedSlices: AnalysisSlice[] = [];
   public selectedSlicesNumbers: number[] = [];
+  public selectedTab  = 0;
   public taskLoadError?: string;
     public taskID: string|null = null;
 
   public analysisSlices$ = this.route.paramMap.pipe(switchMap((params) => {
     return this.analysisTaskService.getAnalysisRequest(params.get('id').toString());
-  }), tap( _ => {
+  }), //Sort slices by slice number
+    map((slices) => slices.sort((a, b) => a.slice.slice - b.slice.slice)),
+    tap( _ => {
    console.log('Slices');
   }));
   public tasks$ =  this.route.paramMap.pipe(switchMap((params) => {
@@ -40,6 +44,7 @@ export class AnalysisRequestComponent implements OnInit {
     this.taskLoadError = err.toString();
     return of([]);
   }));
+  public selectSlicesOrTasks$ = combineLatest([this.analysisSlices$, this.tasks$]);
   sliceAGColumns = [
     {
       field: 'slice',
@@ -64,6 +69,19 @@ export class AnalysisRequestComponent implements OnInit {
               private taskManagementService: TasksManagementService) { }
 
   ngOnInit(): void {
+    this.selectSlicesOrTasks$.subscribe(([slices, tasks]) => {
+      this.slices = slices;
+      let showTasks = true;
+      for (const slice of this.slices) {
+        if (slice.steps.map(s => s.tasks).length === 0) {
+          showTasks = false;
+          break;
+        }
+      }
+      if (showTasks) {
+        this.selectedTab = 1;
+      }
+    });
 
   }
   onGridReady(params: GridReadyEvent<AnalysisSlice>): void {

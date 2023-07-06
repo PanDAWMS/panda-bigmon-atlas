@@ -1,0 +1,21 @@
+  <mat-form-field appearance="fill">
+  <mat-label>Status</mat-label>
+  <mat-select [(value)]="statusFilter" (selectionChange)="filterChanged$.next(true)">
+    <mat-option [value]="'ACTIVE'" >Active</mat-option>
+        <mat-option [value]="'all'" >All</mat-option>
+
+  </mat-select>
+</mat-form-field>
+<div *ngIf="allTemplates$| async as allTemplates">
+
+    <ag-grid-angular
+      #templateGrid
+      style="width: 100%; height: 100%; "
+      class="ag-theme-alpine"
+      [rowData]="currentTemplates"
+      [columnDefs]="templatesAGColumns"
+      [pagination]="true"
+      [domLayout]="'autoHeight'"
+      [paginationPageSize]="20"
+    ></ag-grid-angular>
+</div>
