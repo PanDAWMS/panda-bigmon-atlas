@@ -145,6 +145,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'analysis-pattern/:tag', component: AnalysisPatternComponent},
       {path: 'create-analysis-request', component: CreateAnalysisRequestComponent},
         {path: 'create-analysis-request/:tag', component: CreateAnalysisRequestComponent},
+
+
   {path: 'analysis-templates', component: AnalysisTemplatesTableComponent},
 
     {path: 'analysis-request/:id', component: AnalysisRequestComponent},

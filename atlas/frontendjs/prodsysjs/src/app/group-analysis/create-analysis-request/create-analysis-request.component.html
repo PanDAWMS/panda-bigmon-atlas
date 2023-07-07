@@ -36,7 +36,7 @@
       <ng-container *ngIf="patterns$ | async as patterns">
       <mat-form-field>
         <mat-label>Choose a pattern</mat-label>
-        <mat-select  formControlName="patternCntrl"  [(value)]="chosenTemplate" (selectionChange)="changeTaskTemplate($event)">
+        <mat-select  formControlName="patternCntrl"  (selectionChange)="changeTaskTemplate($event)">
           <mat-option *ngFor="let pattern of patterns" [value]="pattern" >
             {{pattern.tag}} - {{pattern.description}}
           </mat-option>
@@ -58,15 +58,24 @@
     <form [formGroup]="requestDescriptionFormGroup">
       <ng-template matStepLabel>Request description</ng-template>
       <div *ngIf="chosenTemplate">Input Containers: {{containersCurrentList.length}}, template base: {{chosenTemplate.tag}}</div>
-      <mat-form-field>
-        <mat-label>Enter a description</mat-label>
-        <input matInput formControlName="requestDescriptionCtrl" placeholder="Description">
-      </mat-form-field>
-
+      <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabDescription" >
+        <mat-tab label="New request">
+          <mat-form-field>
+            <mat-label>Enter a description</mat-label>
+            <input matInput formControlName="requestDescriptionCtrl" placeholder="Description">
+          </mat-form-field>
+      </mat-tab>
+        <mat-tab label="Extend">
+          <mat-form-field >
+            <mat-label>Enter a request ID</mat-label>
+            <input matInput formControlName="requestExtentionCtrl"   placeholder="Request ID">
+          </mat-form-field>
+        </mat-tab>
+      </mat-tab-group>
 {{submissionError}}
       <div>
         <button mat-button matStepperPrevious>Back</button>
-        <button mat-button (click)="createRequest()" [disabled]="!requestDescriptionFormGroup.valid" >Submit</button>
+        <button mat-button (click)="createRequest()" [disabled]="!requestDescriptionFormGroup.valid  " >Submit</button>
       </div>
     </form>
   </mat-step>

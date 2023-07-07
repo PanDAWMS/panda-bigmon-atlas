@@ -73,7 +73,7 @@ export class AnalysisRequestComponent implements OnInit {
       this.slices = slices;
       let showTasks = true;
       for (const slice of this.slices) {
-        if (slice.steps.map(s => s.tasks).length === 0) {
+        if ((slice.steps.map(s => s.tasks.length)).reduce((sum, current) => sum + current, 0) === 0) {
           showTasks = false;
           break;
         }

@@ -341,10 +341,15 @@ def get_all_patterns(request):
 @permission_classes((IsAuthenticated,))
 def create_analysis_request(request):
     try:
-        new_request = TRequest.objects.get(reqid=48149)
-        new_request.reqid = None
-        new_request.description = request.data['description']
-        new_request.save()
+        if request.data['requestExtID']:
+            new_request = TRequest.objects.get(reqid=int(request.data['requestExtID']))
+            if new_request.request_type != 'ANALYSIS':
+                return Response(f'Request {request.data["requestExtID"]} is not an analysis request', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            new_request = TRequest.objects.get(reqid=48149)
+            new_request.reqid = None
+            new_request.description = request.data['description']
+            new_request.save()
         analysis_template_base = request.data['templateBase']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
         analysis_template.task_parameters = analysis_template_base['task_parameters']

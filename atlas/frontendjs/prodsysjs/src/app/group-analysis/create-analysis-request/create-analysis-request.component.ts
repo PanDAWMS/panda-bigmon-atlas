@@ -28,13 +28,16 @@ export class CreateAnalysisRequestComponent implements OnInit {
     patternCntrl: [null],
   });
   requestDescriptionFormGroup = this.formBuilder.group({
-    requestDescriptionCtrl: ['', Validators.required],
+    requestDescriptionCtrl: [''],
+    requestExtentionCtrl: [''],
   });
   patternTag: string|null = null;
   containersCurrentList: InputContainerItem[] = [];
   chosenTemplate: TemplateBase|null = null;
   editMode: editState = 'view';
+  extendedRequest: number|null = null;
   submissionError = '';
+  selectedTabDescription = 0;
   containerListChanged$= new BehaviorSubject<string>('');
   containersChecked$ = new BehaviorSubject<boolean>(false);
   patterns$ = combineLatest( [this.analysisTasksService.getAllActiveTemplates(), this.route.paramMap]).pipe(
@@ -48,6 +51,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
                   this.templateChoiceFormGroup.get('patternCntrl').setValue(requestedPattern);
                   this.chosenTemplate = requestedPattern;
         }
+
       }
        return patterns;
     }));
@@ -93,7 +97,13 @@ export class CreateAnalysisRequestComponent implements OnInit {
               private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit(): void {
-
+     this.route.queryParamMap.subscribe((queryParams) => {
+        if (queryParams.has('requestID')){
+          console.log(queryParams.get('requestID'));
+          this.requestDescriptionFormGroup.get('requestExtentionCtrl').setValue( queryParams.get('requestID'));
+          this.selectedTabDescription = 1;        }
+     }
+      );
   }
 
   onGridReady($event: GridReadyEvent<any>) {
@@ -120,6 +130,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
 
   createRequest(): void {
     this.analysisTasksService.createAnalysisRequest(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
+      this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
       this.chosenTemplate, this.containersCurrentList.map(container => container.containerName)).pipe(
       catchError( err =>  { this.submissionError = err.error;
                             return null; })).

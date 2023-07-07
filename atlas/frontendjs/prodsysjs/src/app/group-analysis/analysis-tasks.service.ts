@@ -56,8 +56,8 @@ export class AnalysisTasksService {
     return this.http.post(this.prSaveTaskTemplateUrl, {templateID, templateBase,  params});
   }
 
-  createAnalysisRequest(description: string, templateBase: Partial<TemplateBase>, inputContainers: string[]): Observable<string> {
-    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, templateBase, inputContainers});
+  createAnalysisRequest(description: string, requestExtID: string, templateBase: Partial<TemplateBase>, inputContainers: string[]): Observable<string> {
+    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputContainers});
   }
 
   submitAnalysisRequestAction(requestID: string, action: string, slices: number[]): Observable<AnalysisRequestActionResponse> {
