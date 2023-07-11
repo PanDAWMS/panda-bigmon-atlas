@@ -1,6 +1,7 @@
-from .local import CERT_PEM_PATH, CERT_KEY_PEM_PATH
+from .local import CERT_PEM_PATH, CERT_KEY_PEM_PATH, JIRA_KEY
 
 JIRA_CONFIG = {
+    'jira_key': JIRA_KEY,
     'auth_url': 'https://its.cern.ch/jira/loginCern.jsp',
     'issue_url': 'https://its.cern.ch/jira/rest/api/2/issue/',
     'cert': CERT_PEM_PATH,
