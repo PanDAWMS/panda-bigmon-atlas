@@ -95,7 +95,10 @@ import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import { CreateAnalysisRequestComponent } from './group-analysis/create-analysis-request/create-analysis-request.component';
 import { DerivationPhysPatternComponent } from './derivation-phys-pattern/derivation-phys-pattern.component';
 import { StepTasksComponent } from './group-analysis/step-tasks/step-tasks.component';
-import { AnalyRequestActionsComponent } from './group-analysis/analy-request-actions/analy-request-actions.component';
+import {
+  AnalyRequestActionsComponent,
+  DialogSliceModificationComponent
+} from './group-analysis/analy-request-actions/analy-request-actions.component';
 import { AnalysisTemplatesTableComponent } from './group-analysis/analysis-templates-table/analysis-templates-table.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
@@ -229,7 +232,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DerivationPhysPatternComponent,
     StepTasksComponent,
     AnalyRequestActionsComponent,
-    AnalysisTemplatesTableComponent
+    AnalysisTemplatesTableComponent,
+    DialogSliceModificationComponent
   ],
   imports: [
     BrowserModule,

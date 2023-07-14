@@ -8,6 +8,7 @@ connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login
 
 class LogsName():
     TASK_ACTIONS = "task_action.task_management"
+    PRESTAGE_LOGS = "prestage.views"
 
 @dataclass
 class TaskActionLogMessage():
@@ -62,8 +63,8 @@ def get_tasks_action_logs(task_id: int) -> any:
 
 
 
-def get_task_stats(task_id: int) -> (int, int):
-    search = get_atlas_dataset_info_base().query("match",jeditaskid=task_id)
+def get_task_stats(task_id: int) -> [TaskDatasetStats]:
+    search = get_atlas_dataset_info_base().query("match",jeditaskid=task_id).sort('-@timestamp')
     response = search.execute()
     result = []
     try:
@@ -80,3 +81,13 @@ def get_task_stats(task_id: int) -> (int, int):
         return result
     except Exception as ex:
         return []
+
+
+def get_staged_number(dataset: str, days: int) -> int:
+    search = get_atlas_es_logs_base(LogsName.PRESTAGE_LOGS).query("match_phrase",dataset=dataset).query("range", **{
+                "@timestamp": {
+                    "gte": f"now-{days}d/d",
+                    "lte": "now/d"
+                }})
+
+    return search.count()

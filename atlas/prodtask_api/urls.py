@@ -1,7 +1,7 @@
 from django.conf.urls import  url
 
 from atlas.analysis_tasks.views import prepare_template_from_task, create_template, get_template, get_analysis_request, \
-    save_template_changes, get_all_patterns, create_analysis_request, analysis_request_action
+    save_template_changes, get_all_patterns, create_analysis_request, analysis_request_action, get_analysis_request_stat
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, extension_container_api, group_production_datasets_full
 from atlas.prodtask_api.views import *
 from atlas.special_workflows.views import request_results, clone_active_learning_request
@@ -36,8 +36,7 @@ urlpatterns = [
 
     url(r'^create_analysis_request/$', create_analysis_request, name='create_analysis_request'),
     url(r'^analysis_request_action/$', analysis_request_action, name='analysis_request_action'),
-
-
+    url(r'^analysis_request_stats/$', get_analysis_request_stat, name='get_analysis_request_stat'),
 
     url(r'^get_analysis_request/$', get_analysis_request, name='get_analysis_request'),
 

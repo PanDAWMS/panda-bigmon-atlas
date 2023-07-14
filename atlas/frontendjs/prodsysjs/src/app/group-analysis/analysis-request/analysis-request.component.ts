@@ -5,7 +5,7 @@ import {catchError, map, mergeAll, switchMap, tap} from "rxjs/operators";
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
 import {AnalysisSlice} from "../analysis-task-model";
 import {AgCellSliceComponent} from "../ag-cell-slice/ag-cell-slice.component";
-import {GridReadyEvent, SelectionChangedEvent} from "ag-grid-community";
+import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from "ag-grid-community";
 import {AgGridAngular} from "ag-grid-angular";
 import {ProductionTask} from "../../production-request/production-request-models";
 import {combineLatest, of} from "rxjs";
@@ -28,7 +28,14 @@ export class AnalysisRequestComponent implements OnInit {
   public selectedTab  = 0;
   public taskLoadError?: string;
     public taskID: string|null = null;
-
+    public datasetFilter = '';
+  public gridOptions: GridOptions = {
+    isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
+    doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
+  };
+  public requestStats$ = this.route.paramMap.pipe(switchMap((params) => {
+    return this.analysisTaskService.getAnalysisRequestStats(params.get('id').toString());
+  }));
   public analysisSlices$ = this.route.paramMap.pipe(switchMap((params) => {
     return this.analysisTaskService.getAnalysisRequest(params.get('id').toString());
   }), //Sort slices by slice number
@@ -65,6 +72,17 @@ export class AnalysisRequestComponent implements OnInit {
     }
   ];
 
+  isExternalFilterPresent(): boolean {
+    return true;
+  }
+
+  doesExternalFilterPass(node: RowNode<AnalysisSlice>): boolean {
+    if (this.datasetFilter === '') {
+      return true;
+    } else {
+      return node.data.slice.dataset.includes(this.datasetFilter);
+    }
+  }
   constructor(private route: ActivatedRoute, private analysisTaskService: AnalysisTasksService, private router: Router,
               private taskManagementService: TasksManagementService) { }
 
@@ -89,10 +107,18 @@ export class AnalysisRequestComponent implements OnInit {
   }
   onSelectionChanged($event: SelectionChangedEvent<any>): void {
      this.selectedSlices = this.slicesGrid.api.getSelectedRows();
-     this.selectedSlicesNumbers = this.selectedSlices.map(s => s.slice.slice);
-  }
+     this.gridFilterOrSelectionChanged();
 
-  updateRequest(toUpdate: boolean) {
+  }
+  gridFilterOrSelectionChanged(): void {
+      this.selectedSlicesNumbers = [];
+      this.slicesGrid.api.forEachNodeAfterFilter((node) => {
+         if (node.isSelected()) {
+           this.selectedSlicesNumbers.push(node.data.slice.slice);
+         }
+       });
+   }
+  updateRequest(toUpdate: boolean): void {
     if (toUpdate) {
       this.analysisSlices$ = this.analysisTaskService.getAnalysisRequest(this.requestID);
     }
@@ -100,5 +126,9 @@ export class AnalysisRequestComponent implements OnInit {
   onTaskChosen(taskID: number): void {
     this.router.navigate(['.'],
         { queryParams: {task: taskID}, queryParamsHandling: 'merge' , relativeTo: this.route });
+  }
+
+  filterChanged($event: FilterChangedEvent<any>): void {
+     this.gridFilterOrSelectionChanged();
   }
 }

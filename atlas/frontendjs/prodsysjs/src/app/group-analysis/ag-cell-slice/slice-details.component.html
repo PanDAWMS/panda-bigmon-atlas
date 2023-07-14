@@ -1,5 +1,16 @@
-<section style="max-height: 800px; overflow: auto;">
-  <div style="width: auto"><h5>{{data.slice.dataset}}</h5></div>
-<app-pattern-edit [pattern]="data.steps[0].analysis_step.step_parameters" [submitButtonText]="'Not yet implemented'"></app-pattern-edit>
-</section>
+<div mat-dialog-title>Slice: {{data.slice.slice}}</div>
+<div mat-dialog-content>
+<!--  input string for slice dataset-->
+  <mat-form-field style="width: 100%">
+    <mat-label>Dataset:</mat-label>
+    <input matInput [(ngModel)]="dataset"  style="width: 100%">
+  </mat-form-field>
+
+<app-pattern-edit [pattern]="template" [submitButtonText]="'Save changes'" (patternChange)="saveChanges($event)"></app-pattern-edit>
+</div>
+{{sendMessage}}
+<div mat-dialog-actions>
+    <button mat-button (click)="saveChanges(null)" >Save</button>
+  <button mat-button (click)="dialogRef.close()">Cancel</button>
+</div>
 

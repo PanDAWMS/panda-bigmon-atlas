@@ -11,6 +11,7 @@ from rest_framework.authentication import TokenAuthentication, BasicAuthenticati
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer
 from atlas.prodtask.spdstodb import fill_template
@@ -380,6 +381,31 @@ def get_analysis_request(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_request_stat(request):
+    try:
+        request_id = int(request.query_params.get('request_id'))
+        tasks = ProductionTask.objects.filter(request=request_id)
+        tasks_stat = {'hs06sec_finished': 0, 'hs06sec_failed': 0, 'bytes': 0}
+        for task in tasks:
+            all_datasets_stats = get_task_stats(task.id)
+            hs_set = False
+            for dataset_stat in all_datasets_stats:
+                if dataset_stat.type == 'output':
+                    if not hs_set:
+                        tasks_stat['hs06sec_finished'] += dataset_stat.task_hs06sec_finished
+                        tasks_stat['hs06sec_failed'] += dataset_stat.task_hs06sec_failed
+                        hs_set = True
+                    if task.status not in ProductionTask.RED_STATUS:
+                        tasks_stat['bytes'] += dataset_stat.bytes
+        return Response(tasks_stat)
+
+    except TRequest.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def clone_analysis_request_slices(request):
     slices = request.data['slices']
@@ -387,6 +413,46 @@ def clone_analysis_request_slices(request):
         simple_analy_slice_clone(request.data['requestID'], slice)
     return Response({'result':f"{len(slices)} cloned"}, status=status.HTTP_200_OK)
 
+
+def get_slices_template(request):
+    try:
+        request_id = int(request.data['requestID'])
+        production_request = TRequest.objects.get(reqid=request_id)
+        slices = request.data['slices']
+        result = {'slicesToModify':[], 'template':None}
+        for slice_number in slices:
+            slice = InputRequestList.objects.filter(request=production_request).get(slice=slice_number)
+            step = AnalysisStepTemplate.objects.filter(request=production_request, slice=slice).order_by('id').first()
+            if step and step.status == AnalysisStepTemplate.STATUS.NOT_CHECKED:
+                result['slicesToModify'].append(slice_number)
+                if not result['template']:
+                    result['template'] = step.step_parameters
+        return Response(result, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def modify_slices_template(request):
+    try:
+        request_id = int(request.data['requestID'])
+        production_request = TRequest.objects.get(reqid=request_id)
+        slices = request.data['slices']
+        tempalte = request.data['template']
+        input_dataset = request.data['inputDataset']
+        result = {'slicesModified':[]}
+        for slice_number in slices:
+            slice = InputRequestList.objects.filter(request=production_request).get(slice=slice_number)
+            step = AnalysisStepTemplate.objects.filter(request=production_request, slice=slice).order_by('id').first()
+            if step and step.status == AnalysisStepTemplate.STATUS.NOT_CHECKED:
+                if input_dataset:
+                    slice.dataset = input_dataset
+                    slice.save()
+                step.step_parameters = tempalte
+                step.save()
+                result['slicesModified'].append(slice_number)
+        return Response({'result':f"{len(result['slicesModified'])} modified"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -398,6 +464,10 @@ def analysis_request_action(request):
             return submit_analysis_slices(request)
         elif action == 'clone':
             return clone_analysis_request_slices(request)
+        elif action == 'getSlicesTemplate':
+            return get_slices_template(request)
+        elif action == 'modifySlicesTemplate':
+            return modify_slices_template(request)
         else:
             return Response('Unknown action', status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

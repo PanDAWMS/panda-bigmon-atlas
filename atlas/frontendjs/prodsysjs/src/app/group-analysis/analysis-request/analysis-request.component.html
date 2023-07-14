@@ -20,8 +20,24 @@
 
   </tr>
 </table>
+<div *ngIf="requestStats$ | async as requestStats">
+  <ng-container *ngIf="requestStats.hs06sec_finished+requestStats.hs06sec_failed>0">
+    <span><b>Request stats:</b> </span>
+  <span style="color: #43a047">Finished hs06: {{requestStats.hs06sec_finished|number}} </span>
+  <span style="color: orangered">Failed hs06: {{requestStats.hs06sec_failed|number}} </span>
+  <span > Output bytes: {{requestStats.bytes| datasetSize}}</span>
+    </ng-container>
+</div>
 <mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" >
   <mat-tab label="Slices">
+<!--    Filter for datasets-->
+<mat-form-field style="width: 300px">
+      <mat-label>Filter</mat-label>
+      <input matInput [(ngModel)]="datasetFilter" (keyup)="slicesGrid.api.onFilterChanged()" placeholder="Filter">
+    </mat-form-field>
+
+
+
    <div *ngIf="analysisSlices$| async as analysisSlices">
 
     <ag-grid-angular
@@ -35,7 +51,9 @@
      [domLayout]="'autoHeight'"
       [paginationPageSize]="20"
       (selectionChanged)="onSelectionChanged($event)"
+          [gridOptions]="gridOptions"
       (gridReady)="onGridReady($event)"
+      (filterChanged)="filterChanged($event)"
     ></ag-grid-angular>
 </div>
 

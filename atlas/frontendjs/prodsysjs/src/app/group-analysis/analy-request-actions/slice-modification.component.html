@@ -1,0 +1,12 @@
+<div mat-dialog-title>Modify slices</div>
+<div mat-dialog-content>
+
+<section style="max-height: 800px; overflow: auto;">
+Modify {{data.slices}} slices:
+
+<app-pattern-edit [pattern]="data.template" [submitButtonText]="'Save changes'" (patternChange)="saveChanges($event)"></app-pattern-edit>
+</section>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="dialogRef.close()">Cancel</button>
+</div>

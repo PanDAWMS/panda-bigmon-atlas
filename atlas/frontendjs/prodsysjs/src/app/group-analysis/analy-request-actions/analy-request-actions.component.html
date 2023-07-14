@@ -2,7 +2,7 @@
 <div>
 <!--  Three angular mat buttons: Submit, Modify, Clone with action submitAction() on click-->
     <button mat-raised-button color="primary" (click)="executeAction('submit')">Submit</button>
-    <button mat-raised-button color="primary" (click)="executeAction('modify')" [disabled]="true">Modify</button>
+    <button mat-raised-button color="primary" (click)="executeAction('modify')" >Modify</button>
     <button mat-raised-button color="primary" (click)="executeAction('clone')" >Clone</button>
     <button mat-raised-button color="primary" [routerLink]="['/create-analysis-request',]" [queryParams]="{requestID: productionRequestID}" >Extend</button>
 
