@@ -1,5 +1,5 @@
 <div class="sliceCell">
-  <div (click)="showSlice()" style="cursor: pointer">{{analysisSlice.slice.dataset}}</div>
+  <div  >    <a  style="color: #43a047; cursor: pointer" (click)="showSlice()"><mat-icon class="more">more</mat-icon></a><span style="padding: 1px 1px">{{analysisSlice.slice.dataset}}</span></div>
   <div><span >Templates:</span><ng-container *ngFor="let step of analysisSlice.steps"><span style="background-color: gold">{{step.analysis_step.template_name}}</span></ng-container> - Status: {{currentStatus}}</div>
 <div><span >Tasks:</span><ng-container *ngFor="let step of analysisSlice.steps">(<app-step-tasks [step]="step"></app-step-tasks> )</ng-container></div>
 </div>

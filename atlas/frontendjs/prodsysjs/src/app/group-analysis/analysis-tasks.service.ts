@@ -42,8 +42,8 @@ export class AnalysisTasksService {
     return this.http.get<Partial<TaskTemplate>>(this.prTaskTemplateUrl, {params: {task_id: taskID }});
   }
 
-  createTaskTemplate(taskTemplate: TaskTemplate, taskID: string, description: string): Observable<string> {
-    return this.http.post<string>(this.prCreateTaskTemplateUrl, {taskTemplate, taskID, description}).pipe(
+  createTaskTemplate(taskTemplate: TaskTemplate, taskID: string, description: string, sourceAction: string): Observable<string> {
+    return this.http.post<string>(this.prCreateTaskTemplateUrl, {taskTemplate, taskID, description, sourceAction}).pipe(
       catchError( err => {
         if (err.status !== '500') {
           return throwError( `Error template creation ${err.error}`);

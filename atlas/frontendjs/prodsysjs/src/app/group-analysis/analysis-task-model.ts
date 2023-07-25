@@ -13,6 +13,7 @@ export interface AnalysisStepBase {
 
 }
 
+export const ANALISYS_SOURCE_ACTIONS = ['EL'];
 export interface AnalysisStep {
   step: StepBase;
   analysis_step: AnalysisStepBase;
@@ -194,6 +195,7 @@ export interface TemplateBase {
   variables: any;
   build_task: number;
   source_tar: string;
+  source_action: string;
   description: string;
   timestamp: string;
   username: string;

@@ -1,4 +1,5 @@
 import json
+import logging
 from copy import deepcopy
 
 from django.http import HttpResponseBadRequest
@@ -11,12 +12,15 @@ from rest_framework.authentication import TokenAuthentication, BasicAuthenticati
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from atlas.analysis_tasks.source_handling import submit_source_to_rucio
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
+from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 def find_output_base(task_params: dict) -> str:
@@ -73,7 +77,7 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
                              ['parent_tid'], TemplateVariable.VariableType.INTEGER))
     return task_params, template_variables
 
-def create_pattern_from_task(task_id: int, pattern_description: str, task_params: dict = None) -> AnalysisTaskTemplate:
+def create_pattern_from_task(task_id: int, pattern_description: str, task_params: dict = None, source_action: str = '') -> AnalysisTaskTemplate:
     task_template, template_variables = get_task_params(task_id, TTask.objects.get(id=task_id).jedi_task_parameters)
     new_pattern = AnalysisTaskTemplate()
     new_pattern.description = pattern_description
@@ -82,6 +86,8 @@ def create_pattern_from_task(task_id: int, pattern_description: str, task_params
     new_pattern.physics_group = task_params.get('workingGroup','VALI')
     new_pattern.variables_data = template_variables
     new_pattern.build_task = task_id
+    if source_action:
+        new_pattern.source_action = source_action
     new_pattern.save()
     return new_pattern
 
@@ -268,8 +274,18 @@ def prepare_template_from_task(request):
 @permission_classes((IsAuthenticated,))
 def create_template(request):
     try:
+        _jsonLogger.info('Create template from task',extra={'user':request.user.username, 'template_task_id':request.data['taskID']})
+
         new_pattern = create_pattern_from_task(int(request.data['taskID']), request.data['description'],
-                                               request.data['taskTemplate'])
+                                               request.data['taskTemplate'], request.data['sourceAction'])
+        try:
+            from atlas.settings.local import FIRST_ADOPTERS
+            if (request.user.username in FIRST_ADOPTERS):
+                _jsonLogger.info('Submit source to rucio',
+                                 extra={'user': request.user.username, 'template_task_id': request.data['taskID']})
+                submit_source_to_rucio.delay(new_pattern.id)
+        except:
+            pass
         return Response(new_pattern.tag,status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -460,6 +476,7 @@ def modify_slices_template(request):
 def analysis_request_action(request):
     try:
         action = request.data['action']
+        _jsonLogger.info('Do analysis request action', extra=form_json_request_dict(request.data['requestID'], request, extra={'action':action}))
         if action == 'submit':
             return submit_analysis_slices(request)
         elif action == 'clone':
@@ -483,6 +500,15 @@ def submit_analysis_slices(request):
             prod_step.status = StepExecution.STATUS.APPROVED
             step.save()
             prod_step.save()
+            try:
+                from atlas.settings.local import FIRST_ADOPTERS
+                if (request.user.username in FIRST_ADOPTERS):
+                    _jsonLogger.info('Submit analysis task for slice',
+                        extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice}))
+
+                    create_analy_task_for_slice(request.data['requestID'], slice)
+            except:
+                pass
     return Response({'result':f"{len(slices)} submitted"}, status=status.HTTP_200_OK)
 
 
@@ -491,6 +517,7 @@ def submit_analysis_slices(request):
 @permission_classes((IsAuthenticated,))
 def save_template_changes(request):
     try:
+        _jsonLogger.info('Save template changes',extra={'user':request.user.username, 'template_id':request.data['templateID']})
         template_id= request.data['templateID']
         if request.data['templateBase'] is not None:
             AnalysisTaskTemplate.objects.filter(tag=template_id).update(**request.data['templateBase'])

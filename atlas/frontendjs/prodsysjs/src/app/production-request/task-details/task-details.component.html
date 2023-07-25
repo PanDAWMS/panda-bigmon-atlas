@@ -142,7 +142,9 @@
     </ng-container>
 
   </div>
-
+<ng-container *ngIf="task.name.startsWith('user')||task.name.startsWith('group')">
+  <a [routerLink]="['/analysis-template-creation']" [queryParams]="{taskID: task.id}">Create template</a>
+</ng-container>
 </ng-container>
     <h5 *ngIf=" taskInfo.error">{{taskInfo.error}}</h5>
 
@@ -207,7 +209,6 @@
       </tr>
     </table>
   </mat-expansion-panel>
-
   <ng-template #loading>
     <mat-progress-bar *ngIf="!taskInfo.error" mode="indeterminate"></mat-progress-bar>
   </ng-template>

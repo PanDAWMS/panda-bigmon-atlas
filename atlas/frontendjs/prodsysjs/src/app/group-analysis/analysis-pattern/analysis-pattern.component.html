@@ -9,10 +9,13 @@
             <mat-option [value]="'OBSOLETE'">Obsolete</mat-option>
           </mat-select>
       </div>
-      <div><b>Original task:</b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
+      <div><b>Original task: </b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
       <div><b>Description:</b> {{taskTemplate.description}}</div>
       <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
       <div><b>Software:</b> {{taskTemplate.software_release}}</div>
+    <div><b>Source Tar: </b> <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a></div>
+      <div><b>Source Action:</b> {{taskTemplate.source_action}}</div>
+
       <button *ngIf="editMode!=='edit'" mat-raised-button color="primary" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
     </div>
     <mat-spinner *ngIf="loading" diameter="30"></mat-spinner>

@@ -910,6 +910,7 @@ class AnalysisTaskTemplate(models.Model):
     variables = models.JSONField(db_column='VARIABLES')
     build_task = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUILD_TASKID', null=True)
     source_tar = models.CharField(max_length=300, db_column='SOURCE_TAR', null=True)
+    source_action = models.CharField(max_length=50, db_column='SOURCE_ACTION', null=True)
     description = models.CharField(max_length=4000, db_column='DESCRIPTION', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
     username = models.CharField(max_length=128, db_column='USERNAME', null=True)

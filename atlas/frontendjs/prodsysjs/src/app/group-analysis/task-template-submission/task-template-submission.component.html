@@ -12,8 +12,17 @@
   </mat-step>
     <mat-step [stepControl]="templateDescriptionFormGroup">
       <form [formGroup]="templateDescriptionFormGroup">
-        <mat-form-field>
+        <mat-form-field style="width: 100%">
           <input matInput placeholder="Template description" formControlName="templateDescriptionCtrl">
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Source action</mat-label>
+            <mat-select formControlName="templateSourceActionCtrl">
+              <mat-option [value]="''">None</mat-option>
+              <mat-option *ngFor="let sourceAction of ANALISYS_SOURCE_ACTIONS" [value]="sourceAction">
+                {{sourceAction}}
+              </mat-option>
+            </mat-select>
         </mat-form-field>
         <ng-template matStepLabel>Edit Template</ng-template>
         <div *ngIf="taskTemplate$ | async as taskTemplate">

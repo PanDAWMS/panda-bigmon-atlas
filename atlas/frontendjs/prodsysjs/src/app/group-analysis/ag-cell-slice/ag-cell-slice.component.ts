@@ -32,7 +32,7 @@ export class AgCellSliceComponent implements ICellRendererAngularComp {
    }
 
   showSlice() {
-    this.dialog.open(DialogSliceDetailsComponent, {data: this.analysisSlice});
+    this.dialog.open(DialogSliceDetailsComponent, {width: '90%', data: this.analysisSlice});
   }
 }
 

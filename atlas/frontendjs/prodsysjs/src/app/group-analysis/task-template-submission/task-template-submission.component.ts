@@ -4,8 +4,8 @@ import {MatStepper} from "@angular/material/stepper";
 import {Observable, throwError} from "rxjs";
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {catchError, switchMap, tap} from "rxjs/operators";
-import {TaskTemplate} from "../analysis-task-model";
-import {Router} from "@angular/router";
+import {ANALISYS_SOURCE_ACTIONS, TaskTemplate} from "../analysis-task-model";
+import {ActivatedRoute, Router} from "@angular/router";
 import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component";
 
 @Component({
@@ -21,14 +21,24 @@ export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
   });
   templateDescriptionFormGroup = this.formBuilder.group({
     templateDescriptionCtrl: ['', Validators.required],
+    templateSourceActionCtrl: [''],
   });
   public taskTemplate$: Observable<Partial<TaskTemplate>>;
   public currentTaskTemplate: TaskTemplate;
   public submissionError: string;
   public editMode: editState = 'view';
-  constructor(private formBuilder: FormBuilder, private analysisTaskService: AnalysisTasksService, private router: Router) { }
+  constructor(private formBuilder: FormBuilder, private analysisTaskService: AnalysisTasksService, private router: Router,
+              private route: ActivatedRoute) { }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+     this.route.queryParamMap.subscribe((queryParams) => {
+        if (queryParams.has('taskID')){
+          this.taskIDFormGroup.get('taskIDCtrl').setValue( queryParams.get('taskID'));
+        }
+     }
+      );
+
+  }
        ngAfterViewInit(): void {
                this.taskTemplate$ = this.stepper.selectionChange.pipe(
         switchMap((event) => {
@@ -40,7 +50,9 @@ export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
 
   createTemplate(): void {
     this.analysisTaskService.createTaskTemplate(this.currentTaskTemplate,
-      this.taskIDFormGroup.get('taskIDCtrl').value, this.templateDescriptionFormGroup.get('templateDescriptionCtrl').value).pipe(
+      this.taskIDFormGroup.get('taskIDCtrl').value,
+      this.templateDescriptionFormGroup.get('templateDescriptionCtrl').value,
+      this.templateDescriptionFormGroup.get('templateSourceActionCtrl').value).pipe(
       catchError( err =>  this.submissionError = err.error)).
     subscribe((taskTemplateID) => { this.router.navigate(['analysis-pattern', taskTemplateID]); });
   }
@@ -52,4 +64,6 @@ export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
       this.currentTaskTemplate[key] = data.changes[key];
     }
   }
+
+  protected readonly ANALISYS_SOURCE_ACTIONS = ANALISYS_SOURCE_ACTIONS;
 }

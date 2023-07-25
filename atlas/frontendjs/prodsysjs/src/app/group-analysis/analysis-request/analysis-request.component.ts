@@ -120,7 +120,9 @@ export class AnalysisRequestComponent implements OnInit {
    }
   updateRequest(toUpdate: boolean): void {
     if (toUpdate) {
-      this.analysisSlices$ = this.analysisTaskService.getAnalysisRequest(this.requestID);
+      this.analysisSlices$ = this.analysisTaskService.getAnalysisRequest(this.requestID).pipe(
+        map((slices) => slices.sort((a, b) => a.slice.slice - b.slice.slice)
+      ));
     }
   }
   onTaskChosen(taskID: number): void {
