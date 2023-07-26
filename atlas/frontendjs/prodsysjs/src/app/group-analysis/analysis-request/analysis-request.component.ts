@@ -9,6 +9,7 @@ import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChang
 import {AgGridAngular} from "ag-grid-angular";
 import {ProductionTask} from "../../production-request/production-request-models";
 import {combineLatest, of} from "rxjs";
+import {MatTabChangeEvent} from "@angular/material/tabs";
 @Component({
   selector: 'app-analysis-request',
   templateUrl: './analysis-request.component.html',
@@ -40,9 +41,7 @@ export class AnalysisRequestComponent implements OnInit {
     return this.analysisTaskService.getAnalysisRequest(params.get('id').toString());
   }), //Sort slices by slice number
     map((slices) => slices.sort((a, b) => a.slice.slice - b.slice.slice)),
-    tap( _ => {
-   console.log('Slices');
-  }));
+);
   public tasks$ =  this.route.paramMap.pipe(switchMap((params) => {
 
     this.requestID = params.get('id').toString();
@@ -122,7 +121,21 @@ export class AnalysisRequestComponent implements OnInit {
     if (toUpdate) {
       this.analysisSlices$ = this.analysisTaskService.getAnalysisRequest(this.requestID).pipe(
         map((slices) => slices.sort((a, b) => a.slice.slice - b.slice.slice)
-      ));
+      ),
+        tap( slices => {
+            let showTasks = true;
+            for (const slice of slices) {
+              if ((slice.steps.map(s => s.tasks.length)).reduce((sum, current) => sum + current, 0) === 0) {
+                showTasks = false;
+                break;
+              }
+            }
+            if (showTasks) {
+              this.selectedTab = 1;
+            }
+        })
+      );
+      this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, null);
     }
   }
   onTaskChosen(taskID: number): void {
@@ -132,5 +145,9 @@ export class AnalysisRequestComponent implements OnInit {
 
   filterChanged($event: FilterChangedEvent<any>): void {
      this.gridFilterOrSelectionChanged();
+  }
+
+  tabChanged($event: MatTabChangeEvent): void {
+    this.selectedTab = $event.index;
   }
 }

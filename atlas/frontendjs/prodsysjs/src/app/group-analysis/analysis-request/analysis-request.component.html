@@ -28,7 +28,7 @@
   <span > Output bytes: {{requestStats.bytes| datasetSize}}</span>
     </ng-container>
 </div>
-<mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" >
+<mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
   <mat-tab label="Slices">
 <!--    Filter for datasets-->
 <mat-form-field style="width: 300px">
@@ -74,3 +74,4 @@
   </mat-tab>
 </mat-tab-group>
 
+<a *ngIf="requestID" href="https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(user,message,action),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:'{{requestID}}'),type:phrase),query:(match_phrase:(prod_request:'{{requestID}}')))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:auto,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))">Logs</a>
