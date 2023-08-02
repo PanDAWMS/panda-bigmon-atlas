@@ -15,3 +15,6 @@ class ANALYSIS_CONF:
     RUCIO_DOWNLOAD_SCRIPT: str = f'{BASE_SCRIPT_PATH}/rucio-download.sh'
     JEDI_SUBMIT_SCRIPT: str = f'{BASE_SCRIPT_PATH}/panda-source-task.sh'
     JEDI_PRUN_SCRIPT: str = f'{BASE_SCRIPT_PATH}/prun-any.sh'
+    MODIFY_EL_SCRIPT: str = f'{BASE_SCRIPT_PATH}/modify_tar_el.sh'
+    MODIFY_JOBDEF_PYTHON: str = f'{BASE_SCRIPT_PATH}/convert_jobdef_mult.py'
+    DEFAULT_EL_ASETUP: str = '21.2.191,AnalysisBase,here'

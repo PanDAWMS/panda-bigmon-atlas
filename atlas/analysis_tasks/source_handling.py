@@ -1,4 +1,4 @@
-
+import json
 import os
 import subprocess
 from uuid import uuid1
@@ -55,7 +55,27 @@ def submit_task_for_rucio_file(rucio_file):
     return submit_JEDI_source(ANALYSIS_CONF.JEDI_SUBMIT_SCRIPT, ANALYSIS_CONF.PROXY_PATH, ANALYSIS_CONF.PANDA_ACCOUNT,
                               source_file, f'{ANALYSIS_CONF.DEFAULT_SOURCE_DATASET.split(":")[0]}.{uuid1()}')
 
+def modify_and_submit_task(rucio_file, original_input, new_inputs):
+    new_source_file = modify_input_source(rucio_file, original_input, new_inputs)
+    return submit_task_for_modified_input(new_source_file)
 
+
+def submit_task_for_modified_input(file_path):
+    return submit_JEDI_source(ANALYSIS_CONF.JEDI_SUBMIT_SCRIPT, ANALYSIS_CONF.PROXY_PATH, ANALYSIS_CONF.PANDA_ACCOUNT,
+                              file_path, f'{ANALYSIS_CONF.DEFAULT_SOURCE_DATASET.split(":")[0]}.{uuid1()}')
+
+def modify_input_source(rucio_file, original_input, new_datasets):
+    original_source_file = download_from_rucio(ANALYSIS_CONF.RUCIO_DOWNLOAD_SCRIPT, ANALYSIS_CONF.PROXY_PATH, ANALYSIS_CONF.RUCIO_ACCOUNT,ANALYSIS_CONF.DEFAULT_DOWNLOAD_DIR, rucio_file)
+    tmp_path = os.path.join('/tmp',f'AnalysisES{uuid1()}')
+    os.mkdir(tmp_path)
+    new_input = os.path.join(tmp_path, 'input_datasets.json')
+    with open(new_input, "w") as f:
+        f.write(json.dumps(new_datasets))
+    result = subprocess.run([ANALYSIS_CONF.MODIFY_EL_SCRIPT, tmp_path,ANALYSIS_CONF.DEFAULT_EL_ASETUP, original_source_file,
+                          ANALYSIS_CONF.MODIFY_JOBDEF_PYTHON, original_input, new_input], capture_output=True)
+    if result.returncode != 0:
+     raise Exception(f'Failed to modify input source: {result.stderr}')
+    return os.path.join(tmp_path, 'source.modified.tar')
 def upload_source_to_rucio(archive_name, source_panda_cache):
     ddm = DDM()
     if ddm.dataset_exists(':'.join([ANALYSIS_CONF.DEFAULT_SOURCE_DATASET.split(':')[0], archive_name])):
@@ -86,6 +106,8 @@ def submit_JEDI_source(script_path, proxy_path, panda_account, input_tarball, ou
         if 'new jediTaskID=' in line:
             return int(line.strip().split('=')[1])
     return None
+
+
 
 @app.task()
 def submit_source_to_rucio(analisys_pattern_id: int):

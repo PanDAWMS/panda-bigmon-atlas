@@ -36,6 +36,9 @@ export class AnalysisTasksService {
   private prCreateAnalysisRequestUrl = '/api/create_analysis_request/';
   private prAnalysisRequestActionUrl = '/api/analysis_request_action/';
   private prGetAnalysisRequestStatsUrl = '/api/analysis_request_stats/';
+  private prGetAnalysisRequestOutputsUrl = '/api/get_analysis_request_output_datasets_names/';
+
+
   constructor(private http: HttpClient) { }
 
   getTaskTemplate(taskID: string): Observable<Partial<TaskTemplate>> {
@@ -66,6 +69,9 @@ export class AnalysisTasksService {
 
   getAnalysisRequestStats(requestID: string): Observable<AnalysisRequestStats> {
     return this.http.get<AnalysisRequestStats>(this.prGetAnalysisRequestStatsUrl, {params: {request_id: requestID}});
+  }
+  getAnalysisRequestOutputs(requestID: string): Observable<string[]> {
+    return this.http.get<string[]>(this.prGetAnalysisRequestOutputsUrl, {params: {request_id: requestID}});
   }
   saveTemplateParams(templateID: string, templateBase: Partial<TemplateBase>|null,  params: PatternChanges): Observable<any> {
     return this.http.post(this.prSaveTaskTemplateUrl, {templateID, templateBase,  params});

@@ -1,7 +1,9 @@
 import json
 import logging
 from copy import deepcopy
+from time import sleep
 
+import requests
 from django.http import HttpResponseBadRequest
 from django.utils import timezone
 from rest_framework.response import Response
@@ -12,14 +14,16 @@ from rest_framework.authentication import TokenAuthentication, BasicAuthenticati
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
-from atlas.analysis_tasks.source_handling import submit_source_to_rucio
+from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
-    ProductionTask, StepExecution, TRequest, SliceSerializer
+    ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
+from atlas.celerybackend.celery import app
+
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
@@ -57,8 +61,8 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
     if task_params is None:
         task_params = task.jedi_task_parameters
     output_base = find_output_base(task_params)
-    task_name = task.name.rstrip('/')
-    task_params['taskName'] = task_params['taskName'].replace(task_name, TemplateVariable.get_key_template(TemplateVariable.KEY_NAMES.TASK_NAME))
+    task_name = task.name
+    task_params['taskName'] = task_name.replace(task.name, TemplateVariable.get_key_template(TemplateVariable.KEY_NAMES.TASK_NAME))
     template_variables.append(TemplateVariable(TemplateVariable.KEY_NAMES.TASK_NAME, task_name, ['taskName']))
     task_params['userName'] = task_params['userName'].replace(task.username, TemplateVariable.get_key_template(TemplateVariable.KEY_NAMES.USER_NAME))
     template_variables.append(TemplateVariable(TemplateVariable.KEY_NAMES.USER_NAME, task.username, ['userName']))
@@ -154,10 +158,54 @@ def render_task_template(task_template: dict, variables: [TemplateVariable]) -> 
 
 def get_new_name(dataset: str, old_name: str, tag: str):
     prefix = '.'.join(old_name.split('.')[:2])
-    return prefix + '.' + dataset + '_' + tag
+    return prefix + '.' + dataset + '_' + tag + '.v00'
 
 
+def check_name_version(step_template: AnalysisStepTemplate):
+    current_task_name = step_template.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME)
+    if TTask.objects.filter(name=current_task_name).exists():
+        name_base = current_task_name.replace('/','')
+        current_postfix = name_base.split('.')[-1]
+        current_postfix_number = 1
+        if current_postfix.startswith('v'):
+            current_postfix_number = int(current_postfix[1:])
+            name_base = '.'.join(name_base.split('.')[:-1])
+        for version_number in range(current_postfix_number, 99):
+            new_name = name_base + '.v' + f'{version_number:02d}'
+            if not TTask.objects.filter(name=new_name+ '/').exists():
+                step_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name+ '/')
+                step_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
+                step_template.save()
+                return step_template
+        raise Exception('Too many versions of task')
+    return step_template
+
+
+def check_input_source_exists(step_template: AnalysisStepTemplate):
+    archive_name = step_template.step_parameters['buildSpec']['archiveName']
+    source_panda_cache = step_template.step_parameters['sourceURL']
+    source_url = f'{source_panda_cache}/cache/{archive_name}'
+    response = requests.head(source_url)
+    if response.status_code != 200:
+        raise Exception(f'Input source does not exist: {source_url}')
+    return True
+
+def collect_all_output_datasets(request_id: int) -> [str]:
+    output_datasets = []
+    for slice in InputRequestList.objects.filter(request=request_id):
+        for step in AnalysisStepTemplate.objects.filter(request=request_id, slice=slice):
+            if ProductionTask.objects.filter(step=step.step_production_parent).exists():
+                tasks = ProductionTask.objects.filter(step=step.step_production_parent)
+                for task in tasks:
+                    if task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
+                        datasets = JediDatasets.objects.filter(id=task.id)
+                        for dataset in datasets:
+                            if dataset.type == 'tmpl_output':
+                                output_datasets.append(dataset.datasetname)
+    return output_datasets
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
+    step_template = check_name_version(step_template)
+    check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(render_task_template(step_template.step_parameters, step_template.variables_data))
     task = TTask(id=task_id,
                           parent_tid=parent_tid,
@@ -228,9 +276,9 @@ def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTem
     step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, slice.dataset)
     new_name = get_new_name(slice.dataset, step.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME), template.tag )
     step.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
-    step.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name)
+    step.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, f'{new_name}/')
     #step.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, slice.request.manager)
-    step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.TASK_NAME)] = f'{new_name}/'
+    #step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.TASK_NAME)] =
     #step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.USER_NAME)] = slice.request.manager
     step.template = template
     step.step_production_parent = prod_step
@@ -262,6 +310,7 @@ def prepare_template_from_task(request):
     try:
         task_id = int(request.query_params.get('task_id'))
         task_template, _ = get_task_params(task_id, TTask.objects.get(id=task_id).jedi_task_parameters)
+        task_template[TemplateVariable.KEY_NAMES.NO_EMAIL] = True
         return Response(task_template)
     except TTask.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
@@ -279,13 +328,12 @@ def create_template(request):
         new_pattern = create_pattern_from_task(int(request.data['taskID']), request.data['description'],
                                                request.data['taskTemplate'], request.data['sourceAction'])
         try:
-            from atlas.settings.local import FIRST_ADOPTERS
-            if (request.user.username in FIRST_ADOPTERS):
-                _jsonLogger.info('Submit source to rucio',
-                                 extra={'user': request.user.username, 'template_task_id': request.data['taskID']})
-                submit_source_to_rucio.delay(new_pattern.id)
-        except:
-            pass
+            _jsonLogger.info('Submit source to rucio',
+                             extra={'user': request.user.username, 'template_task_id': request.data['taskID']})
+            submit_source_to_rucio.delay(new_pattern.id)
+        except Exception as e:
+            _jsonLogger.error(f'Submit source to rucio failed {e}',
+                             extra={'user': request.user.username, 'template_task_id': request.data['taskID']})
         return Response(new_pattern.tag,status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -370,6 +418,8 @@ def create_analysis_request(request):
         analysis_template_base = request.data['templateBase']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
         analysis_template.task_parameters = analysis_template_base['task_parameters']
+        new_request.manager = analysis_template.get_variable(TemplateVariable.KEY_NAMES.USER_NAME)
+        new_request.save()
         add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
         return Response(str(new_request.reqid))
 
@@ -423,6 +473,18 @@ def get_analysis_request_stat(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_request_output_datasets_names(request):
+    try:
+        request_id = int(request.query_params.get('request_id'))
+        output_datasets = collect_all_output_datasets(request_id)
+        return Response(output_datasets)
+    except TRequest.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 def clone_analysis_request_slices(request):
     slices = request.data['slices']
     for slice in slices:
@@ -490,6 +552,35 @@ def analysis_request_action(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@app.task()
+def prepare_eventloop_analysis_task(request_id: int):
+    slices = InputRequestList.objects.filter(request=request_id)
+    input_datasets = {}
+    slice_to_modify = {}
+    original_input = {}
+    for slice in slices:
+        if not slice.is_hide:
+            step = AnalysisStepTemplate.objects.filter(request=request_id, slice=slice).order_by('id').first()
+            if (step.task_template.source_action == AnalysisTaskTemplate.SOURCE_ACTION.EVENTLOOP and
+                    not ProductionTask.objects.filter(step=step.step_production_parent).exists()):
+                if step.task_template.source_tar not in input_datasets:
+                    input_datasets[step.task_template.source_tar] = []
+                    slice_to_modify[step.task_template.source_tar] = []
+                    original_task_id = step.task_template.build_task
+                    original_task = TTask.objects.get(id=original_task_id)
+                    original_task_parameters = original_task.jedi_task_parameters
+                    original_input[step.task_template.source_tar] = original_task_parameters['dsForIN']
+                input_datasets[step.task_template.source_tar].append(slice.dataset)
+                slice_to_modify[step.task_template.source_tar].append(slice.slice)
+    if input_datasets:
+        for source, datasets in input_datasets.items():
+            new_task = modify_and_submit_task(source, original_input[source] , datasets)
+            sleep(5)
+            _jsonLogger.info(f'Change input source for eventloop tasks with {new_task} for {len(slice_to_modify[source])} slices',
+                             extra=form_json_request_dict(request_id, None, extra={'slices':str(slice_to_modify[source])}))
+            for slice in slice_to_modify[source]:
+                modify_analysis_step_input_source(request_id, slice, new_task)
+
 def submit_analysis_slices(request):
     slices = request.data['slices']
     for slice in slices:
@@ -505,7 +596,6 @@ def submit_analysis_slices(request):
                 if (request.user.username in FIRST_ADOPTERS):
                     _jsonLogger.info('Submit analysis task for slice',
                         extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice}))
-
                     create_analy_task_for_slice(request.data['requestID'], slice)
             except:
                 pass
@@ -582,6 +672,13 @@ def get_keys_types_from_task_parametrers(keys_types: dict, array_keys: dict, dic
                 key_type_from_dict({key: value}, keys_types)
         elif key == 'multiStepExec':
                 get_keys_types_from_task_parametrers(mse[0], mse[1], mse[2], {}, value)
+
+def modify_analysis_step_input_source(request_id: int, slice: int, new_input_task_id: int):
+    analy_step = AnalysisStepTemplate.objects.get(request=request_id, slice=InputRequestList.objects.get(slice=slice, request=request_id))
+    task = TTask.objects.get(id=new_input_task_id)
+    analy_step.step_parameters['buildSpec']['archiveName'] = task.jedi_task_parameters['buildSpec']['archiveName']
+    analy_step.step_parameters['sourceURL'] = task.jedi_task_parameters['sourceURL']
+    analy_step.save()
 
 def simple_analy_slice_clone(request_id: int, slice_number: int) -> int:
     try:

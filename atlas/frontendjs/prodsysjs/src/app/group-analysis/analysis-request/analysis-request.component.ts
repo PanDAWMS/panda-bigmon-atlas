@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, Inject, OnInit, ViewChild} from '@angular/core';
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {ActivatedRoute, Router} from "@angular/router";
 import {catchError, map, mergeAll, switchMap, tap} from "rxjs/operators";
@@ -10,6 +10,7 @@ import {AgGridAngular} from "ag-grid-angular";
 import {ProductionTask} from "../../production-request/production-request-models";
 import {combineLatest, of} from "rxjs";
 import {MatTabChangeEvent} from "@angular/material/tabs";
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 @Component({
   selector: 'app-analysis-request',
   templateUrl: './analysis-request.component.html',
@@ -83,7 +84,7 @@ export class AnalysisRequestComponent implements OnInit {
     }
   }
   constructor(private route: ActivatedRoute, private analysisTaskService: AnalysisTasksService, private router: Router,
-              private taskManagementService: TasksManagementService) { }
+              private taskManagementService: TasksManagementService, public dialog: MatDialog) { }
 
   ngOnInit(): void {
     this.selectSlicesOrTasks$.subscribe(([slices, tasks]) => {
@@ -149,5 +150,24 @@ export class AnalysisRequestComponent implements OnInit {
 
   tabChanged($event: MatTabChangeEvent): void {
     this.selectedTab = $event.index;
+  }
+
+  showOutputs(): void {
+    this.analysisTaskService.getAnalysisRequestOutputs(this.requestID).subscribe((outputs) => {
+      this.dialog.open(DialogRequestOutputsComponent, {width: '90%', data: outputs});
+    });
+  }
+}
+
+// Dialog to show requests outputs
+@Component({
+  selector: 'app-dialog-request-outputs',
+  templateUrl: './request-outputs.component.html',
+})
+export class DialogRequestOutputsComponent implements OnInit {
+  outputs: string[] = [];
+  constructor(@Inject(MAT_DIALOG_DATA) public data: string[], public dialogRef: MatDialogRef<DialogRequestOutputsComponent>) { }
+  ngOnInit(): void {
+    this.outputs = this.data;
   }
 }

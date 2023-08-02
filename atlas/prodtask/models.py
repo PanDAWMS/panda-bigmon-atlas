@@ -881,6 +881,8 @@ class TemplateVariable:
         USER_NAME = 'user_name'
         TASK_PRIORITY = 'taskPriority'
         PARENT_ID = 'parent_tid'
+        SOURCE_PREPARED = 'source_prepared'
+        NO_EMAIL = 'noEmail'
 
     KEYS_SEPARATOR = ','
 
@@ -903,6 +905,8 @@ class AnalysisTaskTemplate(models.Model):
         OBSOLETE = 'OBSOLETE'
         ERROR = 'ERROR'
 
+    class SOURCE_ACTION:
+        EVENTLOOP = 'EL'
 
     id = models.AutoField(db_column='AT_ID', primary_key=True)
     tag = models.CharField(max_length=50, db_column='TAG', null=True)

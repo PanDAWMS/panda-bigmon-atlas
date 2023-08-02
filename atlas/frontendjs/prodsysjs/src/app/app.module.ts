@@ -84,7 +84,10 @@ import { TaskTemplateSubmissionComponent } from './group-analysis/task-template-
 import {MatStepperModule} from "@angular/material/stepper";
 import { PatternEditComponent } from './group-analysis/pattern-edit/pattern-edit.component';
 import { AnalysisPatternComponent } from './group-analysis/analysis-pattern/analysis-pattern.component';
-import { AnalysisRequestComponent } from './group-analysis/analysis-request/analysis-request.component';
+import {
+  AnalysisRequestComponent,
+  DialogRequestOutputsComponent
+} from './group-analysis/analysis-request/analysis-request.component';
 import { AnalysisSliceComponent } from './group-analysis/analysis-slice/analysis-slice.component';
 import {
   AgCellSliceComponent,
@@ -233,7 +236,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     StepTasksComponent,
     AnalyRequestActionsComponent,
     AnalysisTemplatesTableComponent,
-    DialogSliceModificationComponent
+    DialogSliceModificationComponent,
+    DialogRequestOutputsComponent
   ],
   imports: [
     BrowserModule,

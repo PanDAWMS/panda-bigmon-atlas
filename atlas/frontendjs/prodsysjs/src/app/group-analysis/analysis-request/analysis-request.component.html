@@ -4,9 +4,9 @@
     <th>Description:</th>
     <th>Reference:</th>
     <th>Manager:</th>
-    <th>Physics group:</th>
-    <th>Campaign:</th>
-    <th>Project:</th>
+<!--    <th>Physics group:</th>-->
+<!--    <th>Campaign:</th>-->
+<!--    <th>Project:</th>-->
 
   </tr>
   <tr>
@@ -14,20 +14,22 @@
     <td>{{requestInfo.description}} </td>
     <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
     <td>{{requestInfo.manager}} </td>
-    <td>{{requestInfo.phys_group}} </td>
-    <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>
-    <td>{{requestInfo.project}} </td>
+<!--    <td>{{requestInfo.phys_group}} </td>-->
+<!--    <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>-->
+<!--    <td>{{requestInfo.project}} </td>-->
 
   </tr>
 </table>
 <div *ngIf="requestStats$ | async as requestStats">
   <ng-container *ngIf="requestStats.hs06sec_finished+requestStats.hs06sec_failed>0">
-    <span><b>Request stats:</b> </span>
+    <span><b>Request stats: </b> </span>
   <span style="color: #43a047">Finished hs06: {{requestStats.hs06sec_finished|number}} </span>
   <span style="color: orangered">Failed hs06: {{requestStats.hs06sec_failed|number}} </span>
   <span > Output bytes: {{requestStats.bytes| datasetSize}}</span>
     </ng-container>
+  <button mat-raised-button color="primary" (click)="showOutputs()">Show output datasets</button>
 </div>
+
 <mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
   <mat-tab label="Slices">
 <!--    Filter for datasets-->

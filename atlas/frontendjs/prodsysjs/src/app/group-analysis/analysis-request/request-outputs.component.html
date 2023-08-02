@@ -1,0 +1,9 @@
+<div mat-dialog-title>Output containers for done and finished tasks</div>
+<div mat-dialog-content>
+<button [cdkCopyToClipboard]="outputs.join('\n')">Copy to clipboard</button>
+<section class="containersList">
+<ng-container *ngFor="let container of outputs">
+  {{container}}<br>
+</ng-container>
+</section>
+</div>
