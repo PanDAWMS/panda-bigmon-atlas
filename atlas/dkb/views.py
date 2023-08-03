@@ -550,6 +550,38 @@ def es_by_keys_nested(values, size=10000):
     return result
 
 
+def test_es_by_keys_nested(values, size=10000):
+
+    search_dict = []
+    for x in values:
+        search_dict.append({'term':{x:values[x]}})
+    test_param = DEFAULT_SEARCH['prod']
+    test_param['index']='tasks_production3'
+    es_search = DEFAULT_SEARCH['search'](**test_param)
+    query = {
+        "query": {
+            "bool": {
+                "must": search_dict,
+                'should': {
+                    'nested': {
+                        'path': 'output_dataset',
+                        'score_mode': 'sum',
+                        'query': {'match_all': {}},
+                    }
+                }
+            }
+        }, 'size':size
+    }
+    search = es_search.update_from_dict(query)
+    response = search.execute()
+    result = []
+    for hit in response:
+        current_hit = hit.to_dict()
+        if 'output_dataset' not in current_hit:
+            current_hit['output_dataset'] = []
+        result.append(current_hit)
+    return result
+
 def statistic_by_step_new(search_dict):
     es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
     query = {

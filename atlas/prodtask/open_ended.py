@@ -183,6 +183,30 @@ def clean_obsolete_openended(reqid, container):
 
     return slice_to_delete
 
+
+def verify_openeded_request(reqid):
+    slices = list(InputRequestList.objects.filter(Q(request=reqid),~Q(is_hide=True)).order_by('slice'))
+    datasets = []
+    datasets_with_tasks = []
+    for slice in slices:
+        datasets.append(slice.dataset[slice.dataset.find(':')+1:])
+        step = StepExecution.objects.filter(slice=slice, request=reqid)[0]
+        if ProductionTask.objects.filter(step=step).exists():
+            datasets_with_tasks.append(slice.dataset[slice.dataset.find(':')+1:])
+    container_name = slices[0].dataset
+    ddm = DDM()
+    datasets_in_container = ddm.dataset_in_container(container_name)
+    missing_dataset = []
+    dataset_without_tasks = []
+    for dataset in datasets_in_container:
+        if dataset[dataset.find(':')+1:] not in datasets:
+            missing_dataset.append(dataset)
+        if dataset[dataset.find(':')+1:] not in datasets_with_tasks:
+            dataset_without_tasks.append(dataset)
+    return missing_dataset, dataset_without_tasks
+
+
+
 def extend_open_ended_request(reqid):
     """
     To extend request by adding dataset which are not yet processed. Container is taken from first slice,

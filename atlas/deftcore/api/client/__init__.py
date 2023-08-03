@@ -232,3 +232,8 @@ class Client(object):
     def reload_input(self, owner, task_id):
         body = {'task_id': task_id}
         return self._create_request('reload_input', owner, body)
+
+
+    def force_request(self, owner, request_id):
+        body = {'request_id': request_id}
+        return self._create_request('force_request', owner, body)

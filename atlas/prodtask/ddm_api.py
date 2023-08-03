@@ -158,6 +158,18 @@ class DDM(object):
         self.__ddm = Client(account=account, ca_cert=False, auth_type='x509_proxy')
 
 
+    @property
+    def ddm_client(self):
+        return self.__ddm
+
+    def upload_file(self, local_file, rse, dataset, register_after_upload=True):
+        from rucio.client.uploadclient import UploadClient
+        scope, name = self.rucio_convention(dataset)
+        _rucio_file = {'path': local_file, 'rse': rse, 'did_scope': scope,'dataset_scope': scope, 'dataset_name': name, 'register_after_upload': register_after_upload}
+        upload_client = UploadClient(_client=self.ddm_client, logger=_logger)
+        return upload_client.upload([_rucio_file])
+
+
     def ping(self):
         return self.__ddm.ping()
 
@@ -220,15 +232,16 @@ class DDM(object):
 
     def get_replica_pre_stage_rule_by_rse(self, rse):
         #rse_attr = self.__ddm.list_rse_attributes(rse)
-        if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
-                #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
-                return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
-        elif rse == 'CERN-PROD_TEST-CTA':
-                rse_attr = self.__ddm.list_rse_attributes(rse)
-                return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
-        elif rse == 'CERN-PROD_RAW':
-            #return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
-            return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|CERN-PROD_RAW',  'CERN-PROD_RAW'
+        return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
+        # if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
+        #         #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
+        #         return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
+        # elif rse == 'CERN-PROD_TEST-CTA':
+        #         rse_attr = self.__ddm.list_rse_attributes(rse)
+        #         return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'CERN-PROD_TEST-CTA', rse
+        # elif rse == 'CERN-PROD_RAW':
+        #     #return 'CERN-PROD_DATADISK', 'CERN-PROD_RAW',  'CERN-PROD_RAW'
+        #     return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|CERN-PROD_RAW',  'CERN-PROD_RAW'
 
 
 
