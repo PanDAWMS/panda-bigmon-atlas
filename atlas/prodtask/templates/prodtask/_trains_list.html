@@ -47,12 +47,12 @@
     {% for train in trains %}
 <tr>
 <td>{{ train.id }}</td>
-    {% ifequal train.status 'Started'  %}
+    {% if train.status == 'Started'  %}
       <td><a href=" {% url "prodtask:input_list_approve" train.request %}">view</a></td>
 
     {% else %}
         <td><a href=" {% url "prodtask:train_edit" train.id %}">view</a></td>
-    {% endifequal %}
+    {% endif %}
 <td>{{ train.description }}</td>
 <td>{{ train.status }}</td>
 <td>{{ train.departure_time|date:"Y m d"}}</td>

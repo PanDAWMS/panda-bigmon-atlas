@@ -1,4 +1,4 @@
-from django.conf.urls import  url
+from django.urls import  re_path
 from atlas.frontenddjango.views import *
 
 app_name='frontenddjango'
@@ -6,8 +6,8 @@ app_name='frontenddjango'
 
 urlpatterns = [
 
-    url(r'^$', index, name='index'),
-    url(r'^(?P<path>.*)/$', index, name='index'),
+    re_path(r'^$', index, name='index'),
+    re_path(r'^(?P<path>.*)/$', index, name='index'),
 
 
 

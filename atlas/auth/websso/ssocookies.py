@@ -4,7 +4,7 @@ import os.path
 import io
 import re
 import urllib.parse
-import pycurl
+# import pycurl
 import html.parser
 import base64
 import getpass
@@ -28,7 +28,8 @@ class SSOCookies(object):
             if not os.path.isfile(pem_cert_key_path):
                 raise Exception('SSOCookies: key file {0} is not found'.format(pem_cert_key_path))
 
-        self.curl = pycurl.Curl()
+        # self.curl = pycurl.Curl()
+        self.curl = None
         self.curl.setopt(self.curl.COOKIEFILE, '')
         self.curl.setopt(self.curl.USERAGENT, self.user_agent_cert)
         self.curl.setopt(self.curl.SSLCERT, pem_cert_file_path)

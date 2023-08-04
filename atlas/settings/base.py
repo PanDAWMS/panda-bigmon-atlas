@@ -55,7 +55,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.request_pattern',
     'atlas.special_workflows',
     'atlas.getdatasets',
-    'atlas.auth.shibsso',
+    # 'atlas.auth.shibsso',
     'atlas.ami',
     'django_tables2',
     'atlas.celerybackend',

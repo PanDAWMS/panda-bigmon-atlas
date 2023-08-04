@@ -26,6 +26,6 @@ urls.py
 .......
 
 * Add (or change) the following lines for your login and logout urls:
-url(r'^login/$', 'auth.fake.views.login', name='login'),
+re_path(r'^login/$', 'auth.fake.views.login', name='login'),
 
-url(r'^logout/$', 'auth.fake.views.logout', name='logout'),
+re_path(r'^logout/$', 'auth.fake.views.logout', name='logout'),

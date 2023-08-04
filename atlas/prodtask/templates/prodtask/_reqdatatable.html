@@ -263,15 +263,15 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     (function(){
        {% for inputList, step_exec_dict, approved, show_task, show_action, foreignStepID, approve_level, cloned, is_waiting,  slice_output,slice_output_full,real_events, total_events  in inputLists %}
            {% for step in step_exec_dict %}
-                        {% ifequal step.skipped 'skipped' %}
+                        {% if step.skipped == 'skipped' %}
                             var stepColor = $("#skippedColor").css("background-color");
-                        {% endifequal %}
-                        {% ifequal step.skipped 'run' %}
+                        {% endif %}
+                        {% if step.skipped == 'run' %}
                             var stepColor = $("#doColor").css("background-color");
-                        {% endifequal %}
-                        {% ifequal step.skipped 'foreign' %}
+                        {% endif %}
+                        {% if step.skipped == 'foreign' %}
                             var stepColor = $("#foreignColor").css("background-color");
-                        {% endifequal %}
+                        {% endif %}
                         {% if  forloop.counter0 < approve_level %}
                             var borderColor = 'green';
                         {%  else  %}
@@ -3425,16 +3425,16 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <th>Reference:</th>
   <th>Manager:</th>
   <th>Physic group:</th>
-{% ifequal trequest.request_type "MC" %}
+{% if trequest.request_type == "MC" %}
  <th>SubCampaign Project:</th>
     {% else %}
     <th>Project:</th>
-{% endifequal %}
+{% endif %}
 
     <th>
-    {% ifequal trequest.request_type "MC" %}
+    {% if trequest.request_type == "MC" %}
         Priorities:
-    {% endifequal %}
+    {% endif %}
     </th>
   <th>Status:</th>
     <th>DEFT:</th>
@@ -3464,7 +3464,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <td><a href='{{trequest.ref_link}}' id='request_link'>{{ trequest.ref_link}}</a></td>
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="showOwnerChangeModal(event);"><i class="fa fa-edit"></i></a></td>
   <td>{{ trequest.phys_group}}</td>
-{% ifequal trequest.request_type "MC" %}
+{% if trequest.request_type == "MC" %}
   <td id="requestProject">{{ trequest.campaign}}:{{ trequest.subcampaign}} {{ trequest.project}}</td>
     <td>
 
@@ -3474,7 +3474,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
     {% else %}
    <td id="requestProject">{{ trequest.project}}</td>
   <td></td>
-{% endifequal %}
+{% endif %}
     <td><a onclick="showStatusHistory(event);"><u><span  style="cursor: pointer;" id="requestStatus">{{ trequest.cstatus}}</span></u></a></td>
     <td>
         {% if jira_problem_link %}
@@ -3597,14 +3597,14 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
 
 
-{% ifequal trequest.request_type "MC" %}
+{% if trequest.request_type == "MC" %}
     <div class="row">
         <div class="large-12 column">
             <u><a href="{{ original_spreadsheet }}" target="_blank">Original spreadsheet</a></u>
         </div>
     </div>
 
-{% endifequal %}
+{% endif %}
 {% if is_open_ended %}
     <div class="row">
 <div class="large-12">
@@ -3722,10 +3722,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
     <button class="btn_is_authenticated" id='closeDeftRef' onclick="closeDeftRef(event);">Remove</button>
         <button  onclick="$('.showSliceError').show();">Show messages</button>
         <button  onclick="$('#statusFilter').val('error_slices');changeStatusFilter();">Filter</button>
-        {% ifequal trequest.request_type "GROUP" %}
+        {% if trequest.request_type == "GROUP" %}
             <button  onclick="showModalInputErrors(event);">Show Input</button>
 
-        {% endifequal %}
+        {% endif %}
     </td>
     <td>
         <div id="deftRef" class="alert-box alert round" ><strong >Error: </strong> <span> Some task can't be created by DEfT: </span>
@@ -3858,7 +3858,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             {% if  not not_use_input_date_for_pattern %}
               <tr>
 
-                        {% ifequal trequest.request_type "MC" %}
+                        {% if trequest.request_type == "MC" %}
                             <td colspan="13" style="width: 500px" >
                             <span class="showFullSpan changecomment{{ inputList.slice }}" style="padding:0px" title="{{ inputList.comment }}">
                                 {{ inputList.comment }}
@@ -3873,7 +3873,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                                 {{ slice_output}}</b></span>
                             </span>
                             </td>
-                        {% endifequal %}
+                        {% endif %}
 
 
                    {% if cloned != 'no' %}
@@ -3908,7 +3908,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <tr class="inputListRow">
                 <td style="width: 20px"> </td>
                 {% for step in step_exec_dict %}
-                        {% ifequal step.skipped 'foreign' %}
+                        {% if step.skipped == 'foreign' %}
                             {% if step.is_another_request %}
                                 <td class="notShowFullSpan filterTag" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                                 style="font-size:12px;width:50px;padding:0px;border:1px solid black"><a target="_blank" href="{% url 'prodtask:input_list_approve' step.slice.request%}#inputList{{ step.slice.slice }}">{{ step.tag }}</a><span class="foreignStepID" style="display: none">{{ foreignStepID }}</span></td>
@@ -3920,7 +3920,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         {% else %}
                         <td class="showFullSpan filterTag" id="short{{ inputList.slice }}s{{ forloop.counter0 }}"
                             style="font-size:12px;width:50px;padding:0px;border:1px solid black">{{ step.tag }}</td>
-                        {% endifequal %}
+                        {% endif %}
                 {% endfor %}
                     <span id="taskStatusFilter{{ inputList.slice }}" class="TaskStatusFilter" style="display: none;">no_tasks</span>
                     <span id="redTaskFilter{{ inputList.slice }}" class="RedStatusFilter" style="display: none;">no_tasks</span>
@@ -4059,24 +4059,24 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 {% endif %}
 
             <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,false);">Save</button>
-            {% ifequal trequest.request_type "MC" %}
+            {% if trequest.request_type == "MC" %}
 {#                true#}
                 <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true,false);">Submit</button>
             {% else  %}
                 <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false,false);">Approve</button>
 
-            {% endifequal %}
+            {% endif %}
             <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
             <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
             <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
             <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
             <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
-                       {% ifequal trequest.request_type "MC" %}
+                       {% if trequest.request_type == "MC" %}
 
                      <button id="submitChildDerivation" class="btn_is_authenticated" title="Submit DAOD production"  onclick="submitChildDAOD(event);">Submit PHYS</button>
 
-                    {% endifequal %}
+                    {% endif %}
 
         <div id="dropCloneMenu" class="f-dropdown content" data-dropdown-content>
                 <div class="row">
@@ -4097,11 +4097,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
     </div>
     <div class="row">
                 <div class="large-3 columns">
-                    {% ifequal trequest.request_type "MC" %}
+                    {% if trequest.request_type == "MC" %}
                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Submit only steps before:</button>
                     {% else  %}
                          <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Approve only steps before:</button>
-                    {% endifequal %}
+                    {% endif %}
                 </div>
 
                 <div class="large-1 columns">
@@ -4162,20 +4162,20 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
             </div>
         {% endif %}
-                   {% ifequal trequest.request_type "GROUP" %}
+                   {% if trequest.request_type == "GROUP" %}
                     <div class="row">
                      <button id="splitSliceByOutput" class="btn_is_authenticated" title="Split merge by outputs" onclick="splitSlicesByOutputClick(event);">Split merge step</button>
                  </div>
-                    {% endifequal %}
+                    {% endif %}
 
     </div>
      <div class="large-2 columns">
-         {% ifequal trequest.request_type "GROUP" %}
+         {% if trequest.request_type == "GROUP" %}
             <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event, true);">Prepare to recreate</button>
          {% else %}
              <button id="obsoleteOldTasksSlices" class="btn_is_authorized" title="Obsolete old tasks with empty input" onclick="obsoleteOldTasks(event, false);">Prepare to recreate</button>
 
-         {% endifequal %}
+         {% endif %}
      </div></div>
 
     <div class="row">
@@ -4871,7 +4871,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
         </div>
 
      <div class="row">
-     {% ifnotequal trequest.request_type 'MC' %}
+     {% if trequest.request_type != 'MC' %}
          <div class="large-4 column">
              <label> Parent step:
                         <select id="trainParentStep" onchange="changeParentTrainStep();" >
@@ -4892,7 +4892,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                         </select>
                         </label>
           </div>
-     {% endifnotequal %}
+     {% endif %}
           <div class="large-8 column">
          <label> Pattern:
                     <select id="trainPatternRequest" onchange="changeParentTrainStep();" >

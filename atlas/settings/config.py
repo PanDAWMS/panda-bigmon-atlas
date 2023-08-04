@@ -72,7 +72,8 @@ STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 from .logconfig import LOGGING
 
 AUTHENTICATION_BACKENDS = (
-    'atlas.auth.shibsso.backends.ShibSSOBackend',
+    # 'atlas.auth.shibsso.backends.ShibSSOBackend',
+'atlas.auth.fake.backends.LoginAsBackend'
 )
 
 if DEVELOPMENT:

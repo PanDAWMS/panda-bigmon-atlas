@@ -1,12 +1,12 @@
-from django.conf.urls import url
+from django.urls import re_path
 from atlas.ami.views import *
 
 app_name='ami'
 
 
 urlpatterns = [
-    url(r'^ami_tag/(?P<amitag>\w+)/$', amitag,name='amitag'),
-    url(r'^sw_containers_by_amitag/(?P<amitag>\w+)/$', sw_containers_by_amitag,name='sw_containers_by_amitag'),
+    re_path(r'^ami_tag/(?P<amitag>\w+)/$', amitag,name='amitag'),
+    re_path(r'^sw_containers_by_amitag/(?P<amitag>\w+)/$', sw_containers_by_amitag,name='sw_containers_by_amitag'),
 
 
 

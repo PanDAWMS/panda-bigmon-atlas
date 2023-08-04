@@ -320,14 +320,14 @@
 <div class="columns large-3" style="border: solid">pattern request: <u><a href='{% url 'prodtask:input_list_approve' train.pattern_request.reqid %}'>{{ train.pattern_request.reqid  }}</a><u/></div>
 <div class="columns large-3" style="border: solid">Departure: {{ depart_date }}</div>
 {% if allow_assemble %}
-    {% ifnotequal train.status 'Closed' %}
+    {% if train.status != 'Closed' %}
         <a class='button' href="#/create">Assemble</a>
         {% if allow_close %}
             <a class='button' href="{%  url 'prodtask:close_train' train.id %}">Close</a>
         {% endif %}
    {% else %}
          <a class='button' href="{%  url 'prodtask:reopen_train' train.id %}">Open</a>
-    {% endifnotequal %}
+    {% endif %}
 
 {% endif %}
 </div>
