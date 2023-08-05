@@ -33,6 +33,7 @@ urlpatterns = [
     re_path(r'^request_update/(?P<reqid>\d+)/$',  request_views.request_update,  name='request_update'),
 
     re_path(r'^request_comments/(?P<reqid>\d+)/$',  request_views.request_comments,  name='request_comments'),
+    re_path(r'^protected/$', views.protected, name='protected'),
 
 
     re_path(r'^make_user_as_owner/(?P<reqid>\d+)/$',  request_views.make_user_as_owner,  name='make_user_as_owner'),

@@ -2560,7 +2560,9 @@ def request_table_view(request, rid=None, show_hidden=False):
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
-
+def protected(request):
+    _logger.info(request)
+    return HttpResponseRedirect(reverse('prodtask:request_table'))
 def step_template_details(request, rid=None):
     if rid:
         try:
