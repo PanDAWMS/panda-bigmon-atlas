@@ -76,10 +76,13 @@ AUTHENTICATION_BACKENDS = (
 'atlas.auth.fake.backends.LoginAsBackend'
 )
 
+
 if DEVELOPMENT:
     DEBUG=True
     AUTHENTICATION_BACKENDS = (
-       'atlas.auth.fake.backends.LoginAsBackend',
+     #  'atlas.auth.fake.backends.LoginAsBackend',
+
+        "atlas.auth.oidcsso.backends.OIDCCernSSOBackend"
     )
 
 
