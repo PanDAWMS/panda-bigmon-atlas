@@ -5,7 +5,7 @@ from django.urls import re_path, include
 
 import atlas.settings
 
-
+import atlas.auth.oidcsso.views
 from django.contrib import admin
 admin.autodiscover()
 import atlas.common.views as atlas_common_views
@@ -32,7 +32,7 @@ common_patterns = [
   re_path(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     re_path(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
     re_path(r'^production_request/', include(('atlas.production_request.urls','production_request'), namespace='production_request')),
-
+    re_path(r'^sso/prodtask/login/', atlas.auth.oidcsso.views.login, name='sso_login'),
 
                       re_path(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
 
