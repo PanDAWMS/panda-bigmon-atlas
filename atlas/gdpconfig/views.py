@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from functools import reduce
 
+from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -28,7 +29,7 @@ def fairshare(request, rid = None):
 
     return render(request, 'gdpconfig/_fairshare_table.html')
 
-@login_required(login_url='/gdpconfig/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def config_action(request,action):
     """
 
@@ -89,7 +90,7 @@ def config_action(request,action):
 
     return HttpResponse(json.dumps(result))
 
-@login_required(login_url='/gdpconfig/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def fairshare_action(request,action):
     """
 
@@ -188,7 +189,7 @@ def get_fairshare(request):
     return HttpResponse(data)
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def global_share(request):
     if request.method == 'GET':
         return render(request, 'gdpconfig/_global_share.html', {

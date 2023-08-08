@@ -3455,7 +3455,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <li><a href="#" onclick="createReprocessing(event);">Create base on this</a></li>
              <li><a href="#" onclick="syncTasksJEDI(event);">Sync tasks with JEDI</a></li>
         {% else %}
-          <li><a href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
+          <li><a href="{% url 'sso_login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>
         {% endif %}
     </ul>
   </td>
@@ -3547,7 +3547,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
        {% if not user.is_authenticated %}
            <div class="large-1 column">
             <a class="small radio button success"
-               href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+               href="{% url 'sso_login' %}?next={{ request.get_full_path|urlencode }}"
             >Login</a>
             </div>
         {% else %}
@@ -4054,7 +4054,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
         <strong class="hiddenNonEdit">Work with selected slices:</strong><p/>
                 {% if not user.is_authenticated %}
                     <a class="small radio button success"
-                       href="{% url 'prodtask:login' %}?next={{ request.get_full_path|urlencode }}"
+                       href="{% url 'sso_login' %}?next={{ request.get_full_path|urlencode }}"
                     >Login</a>
                 {% endif %}
 

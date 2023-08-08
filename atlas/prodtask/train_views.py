@@ -27,6 +27,8 @@ from django.template import RequestContext
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from ..settings import OIDC_LOGIN_URL
+
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
@@ -340,7 +342,7 @@ class TrainLoad(generics.RetrieveUpdateDestroyAPIView):
     queryset = TrainProductionLoad.objects.all()
     serializer_class = TrainCarriageSerializer
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def train_create(request):
     if request.method == 'POST':
         try:
@@ -597,7 +599,7 @@ def submit_child_derivation_request(original_request_id: int) -> int:
                                       pattern_outputs)
     submit_derivation_steps(new_request)
     return new_request.reqid
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def train_as_child(request, reqid):
     if 'train_extension' not in request.session:
         return HttpResponseRedirect(reverse('prodtask:input_list_approve_full', args=[reqid]))
@@ -715,7 +717,7 @@ def create_request_from_train(request,train_id):
                 'bigSliceNumber': False
             })
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def train_edit(request, train_id):
     try:
         train = TrainProduction.objects.get(id=train_id)
@@ -742,7 +744,7 @@ def train_edit(request, train_id):
     })
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def close_train(request, train_id):
     try:
         train = TrainProduction.objects.get(id=train_id)
@@ -753,7 +755,7 @@ def close_train(request, train_id):
         pass
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def reopen_train(request, train_id):
     try:
         train = TrainProduction.objects.get(id=train_id)
@@ -765,7 +767,7 @@ def reopen_train(request, train_id):
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def pattern_train_list(request):
     if request.method == 'GET':
         PATTEN_TYPES = ['mc_pattern','data_pattern','mc_default_pattern']

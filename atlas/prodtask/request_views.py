@@ -45,6 +45,7 @@ from .xls_parser_new import open_tempfile_from_url
 from rest_framework import serializers,generics
 from functools import reduce
 
+from ..settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -157,7 +158,7 @@ def previous_request_status(production_request_id):
                 return status
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 @csrf_protect
 def short_hlt_form(request):
     if request.method == 'GET':
@@ -387,7 +388,7 @@ def hlt_form_prepare_request(request):
         except Exception as e:
             return short_hlt_form(request)
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 @csrf_protect
 def short_valid_form(request):
     if request.method == 'GET':
@@ -1825,41 +1826,41 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
     })
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_create_new_spds(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create_new_spds',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
                                    {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'3.0')
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
                                    {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'2.0')
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def dpd_request_create(request):
     return request_clone_or_create(request, None, 'Create DPD Request', 'prodtask:dpd_request_create',
                                    TRequestDPDCreateCloneForm, TRequestCreateCloneConfirmation, dpd_form_prefill,
                                    {'nEventsPerJob':'5000','priority':'520','maxAttempt':'25','maxFailure':'5'})
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def hlt_request_create(request):
     return request_clone_or_create(request, None, 'Create HLT Request', 'prodtask:hlt_request_create',
                                    TRequestHLTCreateCloneForm, TRequestCreateCloneConfirmation, hlt_form_prefill,
                                    {'nEventsPerJob':'1000','priority':'970','maxAttempt':'25','maxFailure':'15'})
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def reprocessing_request_create(request):
     return request_clone_or_create(request, None, 'Create Reprocessing Request', 'prodtask:reprocessing_request_create',
                                    TRequestReprocessingCreateCloneForm, TRequestCreateCloneConfirmation,
                                    reprocessing_form_prefill,{'ram':'3800', 'projectmode':'lumiblock=yes;',
                                                               'nEventsPerJob':'1000','maxAttempt':'25','priority':'880','maxFailure':'15'})
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def eventindex_request_create(request):
     return request_clone_or_create(request, None, 'Create EventIndex Request', 'prodtask:eventindex_request_create',
                                    TRequestEventIndexCreateCloneForm, TRequestCreateCloneConfirmation,
