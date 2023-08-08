@@ -16,7 +16,7 @@ STATICFILES_FINDERS = (
 
 AUTH_MIDDL = "django.contrib.auth.middleware.PersistentRemoteUserMiddleware"
 if DEVELOPMENT:
-    AUTH_MIDDL = "atlas.auth.fake.FakeRemoteUserMiddleware"
+    AUTH_MIDDL = "atlas.auth.fake.middleware.FakeRemoteUserMiddleware"
 
 
 MIDDLEWARE = (
