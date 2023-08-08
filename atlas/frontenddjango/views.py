@@ -5,10 +5,11 @@ from django.shortcuts import render
 
 from django.contrib.auth.decorators import login_required
 
+from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def index(request, path=''):
     if request.method == 'GET':
 

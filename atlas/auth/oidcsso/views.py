@@ -9,10 +9,14 @@ import re
 def login(request, redirect_field_name=REDIRECT_FIELD_NAME):
     """Dispatching login action between authentication views."""
     redirect_to = request.GET.get(redirect_field_name, '')
-    if not redirect_to or ' ' in redirect_to:
-        redirect_to = settings.LOGIN_REDIRECT_URL
-    elif '//' in redirect_to and re.match(r'[^\?]*//', redirect_to):
-        redirect_to = settings.LOGIN_REDIRECT_URL
-    return HttpResponseRedirect(redirect_to)
+    if request.user.is_authenticated:
+        if not redirect_to or ' ' in redirect_to:
+            redirect_to = settings.LOGIN_REDIRECT_URL
+        elif '//' in redirect_to and re.match(r'[^\?]*//', redirect_to):
+            redirect_to = settings.LOGIN_REDIRECT_URL
+        return HttpResponseRedirect(redirect_to)
+    else:
+        HttpResponseRedirect(settings.LOGIN_REDIRECT_URL)
+
 
 

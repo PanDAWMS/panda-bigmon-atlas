@@ -49,7 +49,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 
 from django.db.models import Q
 
-from ..settings import admin_mails
+from ..settings import admin_mails, OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -2561,7 +2561,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
-@login_required(login_url='/sso/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def protected(request):
 
     return HttpResponseRedirect('/')

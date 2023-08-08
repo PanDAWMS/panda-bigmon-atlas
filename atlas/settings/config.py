@@ -82,7 +82,7 @@ if DEVELOPMENT:
     AUTHENTICATION_BACKENDS = (
      #  'atlas.auth.fake.backends.LoginAsBackend',
 
-        "atlas.auth.oidcsso.backends.OIDCCernSSOBackend"
+        "atlas.auth.oidcsso.backends.OIDCCernSSOBackend",
     )
 
 
@@ -94,6 +94,7 @@ SHIB_SSO_CREATE_STAFF = False
 SHIB_SSO_CREATE_SUPERUSER = False
 SHIB_LOGIN_PATH = '/Shibboleth.sso/?target='
 SHIB_LOGOUT_URL = 'https://login.cern.ch/adfs/ls/?wa=wsignout1.0&returnurl='
+OIDC_LOGIN_URL= '/sso/login/'
 META_EMAIL = 'ADFS_EMAIL'
 META_FIRSTNAME = 'ADFS_FIRSTNAME'
 META_GROUP = 'ADFS_GROUP'
