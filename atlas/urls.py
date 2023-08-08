@@ -32,7 +32,7 @@ common_patterns = [
   re_path(r'^prestage/', include(('atlas.prestage.urls','prestage'), namespace='prestage')),
     re_path(r'^request_pattern/', include(('atlas.request_pattern.urls','request_pattern'), namespace='request_pattern')),
     re_path(r'^production_request/', include(('atlas.production_request.urls','production_request'), namespace='production_request')),
-    re_path(r'^'+OIDC_LOGIN_URL, atlas.auth.oidcsso.views.login, name='sso_login'),
+    re_path(r'^'+OIDC_LOGIN_URL.rstrip('/'), atlas.auth.oidcsso.views.login, name='sso_login'),
 
                       re_path(r'^special_workflows/',include(('atlas.special_workflows.urls', 'special_workflows'), namespace='special_workflows')),
 
