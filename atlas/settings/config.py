@@ -73,7 +73,7 @@ from .logconfig import LOGGING
 
 AUTHENTICATION_BACKENDS = (
     # 'atlas.auth.shibsso.backends.ShibSSOBackend',
-'atlas.auth.fake.backends.LoginAsBackend'
+    "atlas.auth.oidcsso.backends.OIDCCernSSOBackend",
 )
 
 

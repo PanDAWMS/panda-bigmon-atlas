@@ -14,6 +14,9 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
+AUTH_MIDDL = "django.contrib.auth.middleware.PersistentRemoteUserMiddleware"
+if DEVELOPMENT:
+    AUTH_MIDDL = "atlas.auth.fake.FakeRemoteUserMiddleware"
 
 
 MIDDLEWARE = (
@@ -22,7 +25,7 @@ MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    "django.contrib.auth.middleware.PersistentRemoteUserMiddleware",
+     AUTH_MIDDL,
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
