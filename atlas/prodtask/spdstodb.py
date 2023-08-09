@@ -97,7 +97,7 @@ def get_key_by_url(url):
             if not google_key:
                 google_key = r[r.find("key=") + len("key="):r.find('&', r.find("key="))]
         else:
-            format = 'xlsx'
+            format = 'xls'
             google_key = r[r.find("/d/") + len("/d/"):r.find('/edit', r.find("/d/"))]
         _logger.debug("Google key %s retrieved from %s"%(google_key,url))
         return (google_key, format)

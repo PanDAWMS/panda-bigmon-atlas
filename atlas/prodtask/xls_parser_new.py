@@ -9,8 +9,7 @@ import zipfile
 
 import requests
 import xlrd
-
-
+import openpyxl
 def open_tempfile_from_url(url,tempfile_suffix):
         filename = tempfile.mkstemp(suffix=tempfile_suffix)[1]
         response = requests.get(url)
@@ -49,7 +48,7 @@ class XlrParser(object):
         Returns a dict tuple (result dict, color dict)
         """
         with open(open_google_ss(google_key,format),'rb') as f:
-            res = self.__parse_xsl(f)
+            res = self.__parse_xsl_openpyxl(f)
         return res
             
     def open_by_open_file(self,file_object):
@@ -60,7 +59,7 @@ class XlrParser(object):
 
         Returns a dict tuple (result dict, color dict)
         """
-        return self.__parse_xsl(file_object)
+        return self.__parse_xsl_openpyxl(file_object)
     
     def __parse_xsl(self, file_object):     
         nocolor = False
@@ -95,8 +94,21 @@ class XlrParser(object):
                     slice_index += 1
         return  (self.result_dict, color_dict)
 
-      
-
+    def __parse_xsl_openpyxl(self, file_object):
+        book =  openpyxl.load_workbook(file_object)
+        self.result_dict = {}
+        color_dict = {}
+        slice_index = 2
+        for sheet in book.worksheets:
+            for row in sheet.iter_rows(min_row=2):
+                row_dict = {}
+                for cell in row:
+                    if cell.value:
+                        row_dict[cell.column-1] = cell.value
+                if row_dict:
+                    self.result_dict[slice_index] = row_dict
+                    slice_index += 1
+        return (self.result_dict, color_dict)
   
 class OdfReader(object):
     def __init__(self, googlekey):
