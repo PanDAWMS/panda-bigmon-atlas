@@ -39,8 +39,8 @@ class OIDCCernSSOBackend(RemoteUserBackend):
                 _logger.info(f'authenticate {user_info}')
                 _logger.info(f'authenticate {user_groups}')
                 user = self._get_updated_user(remote_user, user_info.get('email'), user_info.get('given_name'), user_info.get('family_name'), user_groups)
-        except:
-            pass
+        except Exception as e:
+            _logger.error("Error during authentication: %s" % e)
 
         return super().authenticate(request, remote_user)
 
