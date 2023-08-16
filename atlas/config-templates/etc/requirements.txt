@@ -25,7 +25,6 @@ docopt==0.6.2
 dogpile.cache==1.1.8
 elasticsearch==6.8.2
 elasticsearch-dsl==6.4.0
-elasticsearch-dsl7==7.10.0
 elasticsearch7==7.13.4
 elasticsearch7-dsl==7.3.0.post1
 et-xmlfile==1.1.0
