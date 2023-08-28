@@ -435,6 +435,8 @@ def set_parent_step(slices, request, parent_request):
                     parent_slice_steps = StepExecution.objects.filter(slice=parent_slice,request=parent_request)
                     parent_ordered_existed_steps, parent_step = form_existed_step_list(parent_slice_steps)
                     for index,step in enumerate(parent_ordered_existed_steps):
+                        if len(tags) <= index:
+                            break
                         if step.status in ['Approved']:
                             if step.step_template.ctag == tags[index]:
                                 if index == (len(tags)-1):
