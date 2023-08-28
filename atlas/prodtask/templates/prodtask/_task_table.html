@@ -748,7 +748,7 @@ $(document).ready(function() {
                 $(location).attr('href', manage_url_full);
               {% else %}
     {% comment %} Redirect to login page and then to manage mode {%endcomment %}
-                $(location).attr('href', "{% url 'prodtask:login' %}?next={% url 'prodtask:task_manage' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}");
+                $(location).attr('href', "{% url 'sso_login' %}?next={% url 'prodtask:task_manage' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}");
               {% endif %}
 
                 return False;

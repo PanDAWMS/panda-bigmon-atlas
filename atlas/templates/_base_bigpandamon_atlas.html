@@ -160,7 +160,7 @@
 
 {% else %}
     <li>
-        <a href="{% url 'prodtask:login' %}?next={{ request.get_full_path }}">Login</a>
+        <a href="{% url 'sso_login' %}?next={{ request.get_full_path }}">Login</a>
     </li>
 {% endif %}
 

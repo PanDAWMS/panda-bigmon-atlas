@@ -16,6 +16,7 @@ from django.db.models import Q
 from atlas.prodtask.models import RetryAction
 
 from ..prodtask.helper import form_request_log
+from ..settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -23,7 +24,7 @@ from .forms import RetryErrorsForm
 from .models import RetryErrors, JediWorkQueue
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_list(request):
     if request.method == 'GET':
         retry_errors = list(RetryErrors.objects.all().order_by('id').values())
@@ -48,7 +49,7 @@ def retry_errors_list(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_edit(request, retry_errors_id):
     if request.method == 'POST':
         if (request.user.is_superuser) or (request.user.username in ['fbarreir']):
@@ -89,11 +90,11 @@ def retry_errors_edit(request, retry_errors_id):
         'parent_template' : 'prodtask/_index.html',
         })
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_clone(request, retry_errors_id):
     return retry_errors_clone_create(request, retry_errors_id,'prodtask:retry_errors_clone')
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_create(request):
     return retry_errors_clone_create(request, None,'prodtask:retry_errors_create')
 
@@ -141,7 +142,7 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
         'parent_template' : 'prodtask/_index.html',
         })
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_delete(request, retry_errors_id):
     if request.method == 'GET':
         if (request.user.is_superuser) or (request.user.username in ['fbarreir']):

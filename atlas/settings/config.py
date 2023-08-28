@@ -72,13 +72,17 @@ STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 from .logconfig import LOGGING
 
 AUTHENTICATION_BACKENDS = (
-    'atlas.auth.shibsso.backends.ShibSSOBackend',
+    # 'atlas.auth.shibsso.backends.ShibSSOBackend',
+    "atlas.auth.oidcsso.backends.OIDCCernSSOBackend",
 )
+
 
 if DEVELOPMENT:
     DEBUG=True
     AUTHENTICATION_BACKENDS = (
-       'atlas.auth.fake.backends.LoginAsBackend',
+     #  'atlas.auth.fake.backends.LoginAsBackend',
+
+        "atlas.auth.oidcsso.backends.OIDCCernSSOBackend",
     )
 
 
@@ -90,6 +94,11 @@ SHIB_SSO_CREATE_STAFF = False
 SHIB_SSO_CREATE_SUPERUSER = False
 SHIB_LOGIN_PATH = '/Shibboleth.sso/?target='
 SHIB_LOGOUT_URL = 'https://login.cern.ch/adfs/ls/?wa=wsignout1.0&returnurl='
+OIDC_LOGIN_URL= '/sso/login/'
+OIDC_USERNAME_FIELD = 'sub'
+OIDC_USERINFO_JSON_PATH = 'OIDC_userinfo_json'
+OIDC_GROUPS_CLAIM = 'OIDC_CLAIM_resource_access'
+OIDC_CLIENT_ID = 'atlas-prodtask'
 META_EMAIL = 'ADFS_EMAIL'
 META_FIRSTNAME = 'ADFS_FIRSTNAME'
 META_GROUP = 'ADFS_GROUP'

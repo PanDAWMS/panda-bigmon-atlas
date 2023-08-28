@@ -29,6 +29,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from atlas.prodtask.task_actions import _do_deft_action
+from atlas.settings import OIDC_LOGIN_URL
 from atlas.task_action.task_management import TaskActionExecutor
 from elasticsearch7_dsl import Search, connections, A
 from elasticsearch7 import Elasticsearch
@@ -1714,7 +1715,7 @@ def step_action(request, wstep_id):
 
 
 @api_view(['POST'])
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def finish_action(request, action, action_id):
 
     try:

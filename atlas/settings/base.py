@@ -14,6 +14,9 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
+AUTH_MIDDL = "django.contrib.auth.middleware.PersistentRemoteUserMiddleware"
+if DEVELOPMENT:
+    AUTH_MIDDL = "atlas.auth.fake.middleware.FakeRemoteUserMiddleware"
 
 
 MIDDLEWARE = (
@@ -22,6 +25,7 @@ MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+     AUTH_MIDDL,
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -55,7 +59,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.request_pattern',
     'atlas.special_workflows',
     'atlas.getdatasets',
-    'atlas.auth.shibsso',
+    # 'atlas.auth.shibsso',
     'atlas.ami',
     'django_tables2',
     'atlas.celerybackend',

@@ -1,3 +1,4 @@
+import os
 import re
 
 from django.contrib.auth.decorators import login_required
@@ -48,7 +49,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 
 from django.db.models import Q
 
-from ..settings import admin_mails
+from ..settings import admin_mails, OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -2560,7 +2561,10 @@ def request_table_view(request, rid=None, show_hidden=False):
             return HttpResponseRedirect(reverse('prodtask:request_table'))
     return HttpResponseRedirect(reverse('prodtask:request_table'))
 
+@login_required(login_url=OIDC_LOGIN_URL)
+def protected(request):
 
+    return HttpResponseRedirect('/')
 def step_template_details(request, rid=None):
     if rid:
         try:
@@ -2834,7 +2838,7 @@ def production_dataset_table(request):
     return TemplateResponse(request, 'prodtask/_dataset_table.html', {  'title': 'Aborted and Obsolete Production Dataset Status Table', 'active_app' : 'prodtask', 'table': request.fct,
                                                                 'parent_template': 'prodtask/_index.html'})
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 @csrf_protect
 @never_cache
 def userinfo(request):

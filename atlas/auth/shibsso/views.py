@@ -27,8 +27,6 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.template import RequestContext
-from django.utils.http import urlquote
-from django.utils.translation import ugettext as _
 from django.views.decorators.cache import never_cache
 
 def login(request, redirect_field_name=REDIRECT_FIELD_NAME):
@@ -48,7 +46,7 @@ def login(request, redirect_field_name=REDIRECT_FIELD_NAME):
 
         return HttpResponseRedirect(redirect_to)
 
-    path = urlquote(request.build_absolute_uri(request.get_full_path()))
+    path = request.build_absolute_uri(request.get_full_path())
 
     return HttpResponseRedirect('https://%s%s%s' %
                                 (request.get_host(),
@@ -65,7 +63,7 @@ def logout(request, next_page=None, template_name='registration/logged_out.html'
 
     if settings.META_USERNAME in request.META:
 
-        next_url = urlquote(request.build_absolute_uri(request.get_full_path()))
+        next_url = request.build_absolute_uri(request.get_full_path())
 
         return HttpResponseRedirect('%s%s' %
                                     (settings.SHIB_LOGOUT_URL,

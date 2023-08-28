@@ -10,11 +10,12 @@ from atlas.prodtask.models import StepTemplate, StepExecution, InputRequestList,
 from atlas.prodtask.views import form_existed_step_list, clone_slices
 from django.contrib.auth.decorators import login_required
 
+from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
 
-@login_required(login_url='/prodtask/login/')
+@login_required(login_url=OIDC_LOGIN_URL)
 def index(request):
     if request.method == 'GET':
 
