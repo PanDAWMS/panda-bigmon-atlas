@@ -1,4 +1,4 @@
-import {Component, Inject, Input, OnInit} from '@angular/core';
+import {Component, Inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {ProductionTask} from '../production-request/production-request-models';
 import {
   ActionParams,
@@ -20,9 +20,11 @@ import {filter, map, switchMap, tap} from 'rxjs/operators';
   styleUrls: ['./task-action.component.css']
 })
 
-export class TaskActionComponent implements OnInit {
+export class TaskActionComponent implements OnInit, OnDestroy {
   // @Input() task?: ProductionTask;
   @Input() tasks: ProductionTask[];
+  @Input() active = true;
+
   reSendAction?: TaskAction = null;
   result?: TaskActionResult;
 
@@ -69,10 +71,14 @@ export class TaskActionComponent implements OnInit {
 
   constructor(private taskService: TaskService, public dialog: MatDialog) { }
 
+  ngOnDestroy(): void {
+    this.active = false;
+  }
+
   ngOnInit(): void {
      this.taskService.getReassignEntities().subscribe( result => this.reassignEntities = result);
      this.actionExecution$ = this.taskService.getActionList().pipe(
-       filter(value => (this.tasks.length > 0) && (value !== null)),
+       filter(value => (this.tasks.length > 0) && (value !== null) && (this.active)),
        tap(_ => {
                          this.actionExecuting = true;
                          this.summaryTasksResult = {status: '', result: ''};

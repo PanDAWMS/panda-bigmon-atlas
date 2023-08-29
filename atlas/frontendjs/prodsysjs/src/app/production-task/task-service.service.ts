@@ -3,7 +3,7 @@ import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, Subject} from 'rxjs';
 import {JEDITask, ProductionTask, Slice} from '../production-request/production-request-models';
 import {GroupProductionStats} from '../derivation-exclusion/gp-stats/gp-stats';
-import {catchError, map, shareReplay, tap} from 'rxjs/operators';
+import {catchError, filter, map, shareReplay, switchMap, tap} from 'rxjs/operators';
 
 const CACHE_SIZE = 1;
 export interface TaskActionLog {
@@ -79,7 +79,7 @@ export class TaskService {
 
 
   private reassignCache$: Observable<ReassignDestination>;
-  private actionSubject$: BehaviorSubject<TaskAction|null> = new BehaviorSubject(null);
+  private actionSubject$: Subject<TaskAction|null> = new Subject();
   private actionResults$: BehaviorSubject<TaskActionResult|null> = new BehaviorSubject(null);
   private requestReassignEntities(): Observable<ReassignDestination>  {
     return this.http.get<ReassignDestination>(this.prTaskReassignEntitiesUrl)

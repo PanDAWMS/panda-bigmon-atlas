@@ -31,8 +31,8 @@ STATICFILES_DIRS = [
         join(dirname(atlas.common.__file__), 'static'),
 ]
 
-if DEVELOPMENT:
-    STATICFILES_DIRS.append(join(dirname(atlas.__file__), 'frontendjs','prodsysjs','dist','prodsysjs'))
+# if DEVELOPMENT:
+#     STATICFILES_DIRS.append(join(dirname(atlas.__file__), 'frontendjs','prodsysjs','dist','prodsysjs'))
 
 TEMPLATE_DIRS = (
     join(dirname(atlas.__file__), 'templates'),

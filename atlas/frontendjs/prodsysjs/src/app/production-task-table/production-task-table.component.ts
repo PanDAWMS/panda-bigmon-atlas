@@ -40,6 +40,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
   };
   public TaskStatusStep = TASKS_CONSTANTS;
+  public pageTasksActive = true;
 
 
     taskAGColumns = [
@@ -240,14 +241,14 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     if (emit) {
       this.taskChosen.emit(taskID);
     }
-
-
+    this.pageTasksActive = false;
     this.dialogRef = this.dialog.open(DialogTaskDetailsComponent,  {data: {selectedTask: taskID, filteredTasks}, closeOnNavigation: true});
     this.dialogRef.componentInstance.taskChosen.subscribe( newTask => {
       this.taskChosen.emit(newTask);
     });
     this.dialogRef.afterClosed().subscribe(result => {
       this.taskChosen.emit(null);
+      this.pageTasksActive = true;
       this.dialogRef.componentInstance.taskChosen.unsubscribe();
     });
   }
