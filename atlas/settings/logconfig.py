@@ -4,10 +4,13 @@
 import datetime
 from logging.handlers import TimedRotatingFileHandler
 
-from .local import LOG_ROOT
+from .local import LOG_ROOT, DEVELOPMENT
 LOG_SIZE = 1000000000
 import logging, socket
 
+SPECIAL_LOG_LEVEL = logging.INFO
+if DEVELOPMENT:
+    SPECIAL_LOG_LEVEL = logging.DEBUG
 class ContextFilter(logging.Filter):
     hostname = socket.gethostname()
 
@@ -31,11 +34,11 @@ LOGGING = {
     },
     'handlers': {
         'null': {
-            'level':'DEBUG',
+            'level':SPECIAL_LOG_LEVEL,
             'class':'logging.NullHandler',
         },
         'logfile-django': {
-            'level':'DEBUG',
+            'level':SPECIAL_LOG_LEVEL,
             'class':'logging.handlers.RotatingFileHandler',
             'filename': LOG_ROOT + "/logfile.django",
             'maxBytes': LOG_SIZE,
@@ -123,7 +126,7 @@ LOGGING = {
         'django': {
             'handlers':['logfile-django'],
             'propagate': True,
-            'level':'DEBUG',
+            'level':SPECIAL_LOG_LEVEL,
         },
         'django_datatables_view': {
             'handlers':['logfile-viewdatatables'],
@@ -172,7 +175,7 @@ LOGGING = {
                  'format': '%(asctime)s %(levelname)s %(hostname)s %(logName)s %(funcName)s %(lineno)d %(message)s'}
     },
     'logfile': {
-        'level':'DEBUG',
+        'level':SPECIAL_LOG_LEVEL,
         'class':'logging.handlers.RotatingFileHandler',
         'filename': LOG_ROOT + "/logfile",
         'maxBytes': LOG_SIZE,
@@ -182,7 +185,7 @@ LOGGING = {
 }
 
 
-def appendLogger(loggername, loggerlevel='DEBUG', \
+def appendLogger(loggername, loggerlevel=logging.DEBUG, \
                  loggerclass='logging.handlers.RotatingFileHandler', backupCount=2):
     """
         appendLogger - append new logger properties
@@ -240,12 +243,12 @@ appendLogger('django_datatable')
 
 ### ProdSys2 logging
 ### prodtaskwebui
-appendLogger('prodtaskwebui')
+appendLogger('prodtaskwebui', loggerlevel=SPECIAL_LOG_LEVEL)
 
 ### postproduction
 appendLogger('postproduction')
 
-appendLogger('prodtask_messaging', loggerlevel='INFO', backupCount=0)
+appendLogger('prodtask_messaging', loggerlevel=logging.INFO, backupCount=0)
 
 appendJsonLogger('prodtask_ELK')
 
