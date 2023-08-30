@@ -1,0 +1,32 @@
+{% extends parent_template %}
+
+{% load static  %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+
+    <script type="text/javascript">
+        $(document).foundation();
+    </script>
+
+{% endblock %}
+
+
+{% block subtitle %}
+Status{% endblock %}
+
+
+{% block body %}
+
+{{ block.super }}
+
+<code>
+ {{ status | linebreaks }}
+</code>
+
+
+{% endblock %}

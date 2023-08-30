@@ -256,6 +256,9 @@ urlpatterns = [
     re_path(r'^logout/$', logout, name='logout'),
 
     re_path(r'^userinfo/$', views.userinfo, name='userinfo'),
+    re_path(r'^health_status/$', views.health_status, name='health_status'),
+
+
 
 
 ]

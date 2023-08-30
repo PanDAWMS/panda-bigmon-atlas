@@ -49,7 +49,7 @@ from .models import StepTemplate, StepExecution, InputRequestList, TRequest, MCP
 
 from django.db.models import Q
 
-from ..settings import admin_mails, OIDC_LOGIN_URL
+from ..settings import admin_mails, OIDC_LOGIN_URL, SYSTEM_HEALTH_STATUS_FILE
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -3509,3 +3509,18 @@ def send_alarm_message(subject, message):
               APP_SETTINGS['prodtask.email.from'],
               admin_mails,
               fail_silently=False)
+
+def health_status(request):
+    if request.method == 'GET':
+        status = 'Not found'
+        try:
+            with open(SYSTEM_HEALTH_STATUS_FILE, 'r') as f:
+                status = f.read()
+        except:
+            pass
+        return render(request, 'prodtask/_health_status.html', {
+            'active_app': 'prodtask',
+            'pre_form_text': 'Status',
+            'status': status,
+            'parent_template': 'prodtask/_index.html',
+        })

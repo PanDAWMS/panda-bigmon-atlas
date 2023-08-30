@@ -153,6 +153,8 @@
             <li> <a href="{% url 'prodtask:userinfo' %}">Account info ({{ user.username }})</a> </li>
             {% if user.is_superuser %}
             <li> <a href="{% url 'admin:index' %}">Admin interface</a>  </li>
+            <li> <a href="{% url 'prodtask:health_status' %}">Machine status</a>  </li>
+
             {% endif %}
             <li> <a href="{% url 'prodtask:logout' %}?next={{ request.get_full_path }}">Logout</a> </li>
         </ul>
