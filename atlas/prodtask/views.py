@@ -3516,8 +3516,8 @@ def health_status(request):
         try:
             with open(SYSTEM_HEALTH_STATUS_FILE, 'r') as f:
                 status = f.read()
-        except:
-            pass
+        except Exception as e:
+            status = str(e)
         return render(request, 'prodtask/_health_status.html', {
             'active_app': 'prodtask',
             'pre_form_text': 'Status',
