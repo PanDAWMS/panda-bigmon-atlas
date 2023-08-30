@@ -3514,7 +3514,7 @@ def health_status(request):
     if request.method == 'GET':
         status = 'Not found'
         try:
-            with open(SYSTEM_HEALTH_STATUS_FILE, 'r') as f:
+            with open(SYSTEM_HEALTH_STATUS_FILE, 'r', encoding='utf-8') as f:
                 status = f.read()
         except Exception as e:
             status = str(e)
