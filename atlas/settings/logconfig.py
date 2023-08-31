@@ -114,7 +114,17 @@ LOGGING = {
             'filters': ['require_debug_false'],
 #            'class': 'django.utils.log.AdminEmailHandler'
             'class':'logging.StreamHandler',
-        }
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+        'json_console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json'
+        },
     },
     'loggers': {
         'django.request': {
@@ -185,7 +195,7 @@ LOGGING = {
 }
 
 
-def appendLogger(loggername, loggerlevel=logging.DEBUG, \
+def appendLogger(loggername, loggerlevel=logging.DEBUG,
                  loggerclass='logging.handlers.RotatingFileHandler', backupCount=2):
     """
         appendLogger - append new logger properties
@@ -198,20 +208,21 @@ def appendLogger(loggername, loggerlevel=logging.DEBUG, \
     handler = 'logfile-' + str(loggername)
     filename = LOG_ROOT + '/logfile.' + str(loggername)
 
-    LOGGING['handlers'][handler] = \
-    {
-        'level':loggerlevel, \
-        'class':loggerclass, \
-        'filename': filename, \
-        'maxBytes': LOG_SIZE, \
-        'backupCount': backupCount, \
-        'formatter': 'verbose', \
+    LOGGING['handlers'][handler] = {
+        'level':loggerlevel,
+        'class':loggerclass,
+        'filename': filename,
+        'maxBytes': LOG_SIZE,
+        'backupCount': backupCount,
+        'formatter': 'verbose',
     }
-    LOGGING['loggers'][loggername] = \
-    {
-        'handlers': [handler], \
-        'level': loggerlevel, \
+    LOGGING['loggers'][loggername] = {
+        'handlers': [handler],
+        'level': loggerlevel,
     }
+    if DEVELOPMENT:
+        LOGGING['loggers'][loggername]['handlers'].append('console')
+
 
 def appendJsonLogger(loggername, loggerlevel='DEBUG',  loggerclass='logging.handlers.TimedRotatingFileHandler'):
 
@@ -230,6 +241,8 @@ def appendJsonLogger(loggername, loggerlevel='DEBUG',  loggerclass='logging.hand
             'filters':['context_filter']
             }
     LOGGING['loggers'][loggername] = {'handlers': [handler], 'level': loggerlevel}
+    if DEVELOPMENT:
+        LOGGING['loggers'][loggername]['handlers'].append('json_console')
 
 
 

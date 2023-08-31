@@ -154,7 +154,6 @@ class DDM(object):
 
         os.environ['RUCIO_ACCOUNT'] = account
         os.environ['X509_USER_PROXY'] = certificate_path
-        _logger.debug('Try to auth with account %s and certificate %s'%(certificate_path, account))
         self.__ddm = Client(account=account, auth_type='x509_proxy')
 
 
