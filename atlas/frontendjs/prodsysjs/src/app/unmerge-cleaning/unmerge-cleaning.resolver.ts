@@ -1,16 +1,12 @@
 import { Injectable } from '@angular/core';
-import {
-  Router, Resolve,
-  RouterStateSnapshot,
-  ActivatedRouteSnapshot
-} from '@angular/router';
+import { Router, RouterStateSnapshot, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import {UnmergeCleaningService, UnmergedDatasetsCombined} from "./unmerge-cleaning.service";
 
 @Injectable({
   providedIn: 'root'
 })
-export class UnmergeCleaningResolver implements Resolve<UnmergedDatasetsCombined> {
+export class UnmergeCleaningResolver  {
   constructor(private service: UnmergeCleaningService) {
   }
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<UnmergedDatasetsCombined>|Promise<any>|any {
@@ -21,7 +17,7 @@ export class UnmergeCleaningResolver implements Resolve<UnmergedDatasetsCombined
 @Injectable({
   providedIn: 'root'
 })
-export class UnmergeNotDeletedResolver implements Resolve<UnmergedDatasetsCombined> {
+export class UnmergeNotDeletedResolver  {
   constructor(private service: UnmergeCleaningService) {
   }
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<UnmergedDatasetsCombined>|Promise<any>|any {
@@ -32,7 +28,7 @@ export class UnmergeNotDeletedResolver implements Resolve<UnmergedDatasetsCombin
 @Injectable({
   providedIn: 'root'
 })
-export class SpecialCleaningResolver implements Resolve<UnmergedDatasetsCombined> {
+export class SpecialCleaningResolver  {
   constructor(private service: UnmergeCleaningService) {
   }
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<UnmergedDatasetsCombined>|Promise<any>|any {

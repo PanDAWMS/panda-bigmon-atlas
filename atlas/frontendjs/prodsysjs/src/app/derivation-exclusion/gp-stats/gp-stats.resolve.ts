@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {Resolve, ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
+import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import {GroupProductionStats} from './gp-stats';
 import {GPStatsService} from './gp-stats.service';
@@ -7,7 +7,7 @@ import {GPStatsService} from './gp-stats.service';
 
 
 @Injectable({ providedIn: 'root' })
-export class GPStatsResolver implements Resolve<GroupProductionStats[]> {
+export class GPStatsResolver  {
   constructor(private service: GPStatsService) {}
 
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<any>|Promise<any>|any {
