@@ -110,8 +110,7 @@ const routerOptions: ExtraOptions = {
     scrollPositionRestoration: 'enabled',
     anchorScrolling: 'enabled',
     onSameUrlNavigation: 'reload',
-    scrollOffset: [0, 64],
-    relativeLinkResolution: 'legacy'
+    scrollOffset: [0, 64]
 };
 
 @Injectable({ providedIn: 'root' })
