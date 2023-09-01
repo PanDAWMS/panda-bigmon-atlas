@@ -6,7 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { MatChip, MatChipList } from '@angular/material/chips';
+import { MatChip, MatChipListbox } from '@angular/material/chips';
 
 @Component({
   selector: 'app-chips-multi-select',
@@ -23,8 +23,8 @@ import { MatChip, MatChipList } from '@angular/material/chips';
 
 export class ChipsMultiSelectColoredComponent
   implements OnInit, AfterViewInit, ControlValueAccessor {
-  @ViewChild(MatChipList)
-  chipList!: MatChipList;
+  @ViewChild(MatChipListbox)
+  chipList!: MatChipListbox;
 
   @Input() options: string[] = [];
   @Input() optionStyle: string;
@@ -83,9 +83,9 @@ export class ChipsMultiSelectColoredComponent
   }
 
   selectChips(value: string[]): void {
-    this.chipList.chips.forEach((chip) => chip.deselect());
+    this.chipList._chips.forEach((chip) => chip.deselect());
 
-    const chipsToSelect = this.chipList.chips.filter((c) =>
+    const chipsToSelect = this.chipList._chips.filter((c) =>
       value.includes(c.value)
     );
 
@@ -94,7 +94,7 @@ export class ChipsMultiSelectColoredComponent
 
   toggleSelection(chip: MatChip): void {
     if (!this.disabled){
-      chip.toggleSelected();
+      chip.value(!chip.value);
     }
   }
 }
