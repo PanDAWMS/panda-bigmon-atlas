@@ -1,10 +1,10 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {UntypedFormControl} from "@angular/forms";
-import {MatLegacyTableDataSource as MatTableDataSource} from "@angular/material/legacy-table";
+import {MatTableDataSource} from "@angular/material/table";
 import {DeletionSubmission} from "../gp-deletion-container";
 import {DeletedContainers, GpDeletionRequestService} from "./gp-deletion-request.service";
 import {MatDatepickerInputEvent} from "@angular/material/datepicker";
-import {MatLegacyPaginator as MatPaginator} from "@angular/material/legacy-paginator";
+import {MatPaginator} from "@angular/material/paginator";
 import {MatSort} from "@angular/material/sort";
 
 

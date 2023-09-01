@@ -2,7 +2,7 @@ import {Component, Inject, Input, OnInit} from '@angular/core';
 import {ICellRendererAngularComp} from "ag-grid-angular";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "../analysis-task-model";
 import {ICellRendererParams} from "ag-grid-community";
-import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef} from "@angular/material/legacy-dialog";
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {PatternChanges} from "../pattern-edit/pattern-edit.component";
 import {AnalysisTasksService} from "../analysis-tasks.service";
 

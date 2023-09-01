@@ -9,8 +9,8 @@ import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChang
 import {AgGridAngular} from "ag-grid-angular";
 import {ProductionTask} from "../../production-request/production-request-models";
 import {combineLatest, of} from "rxjs";
-import {MatLegacyTabChangeEvent as MatTabChangeEvent} from "@angular/material/legacy-tabs";
-import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef} from "@angular/material/legacy-dialog";
+import {MatTabChangeEvent} from "@angular/material/tabs";
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 @Component({
   selector: 'app-analysis-request',
   templateUrl: './analysis-request.component.html',

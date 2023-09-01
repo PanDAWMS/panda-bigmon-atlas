@@ -254,7 +254,7 @@
 </ng-container>
 <ng-container *ngIf="actionExecution$ | async as actionResult;">
   <ng-container *ngIf="actionResult.tasks_result.length===1; else multipleTasksResultBlock">
-      <mat-card>
+      <mat-card appearance="outlined">
         <mat-icon class="action-result-icon-{{actionResult.tasks_result[0].type}}">{{actionResult.tasks_result[0].type}}</mat-icon>
         <span>{{actionResult.tasks_result[0].result}}</span>
       </mat-card>

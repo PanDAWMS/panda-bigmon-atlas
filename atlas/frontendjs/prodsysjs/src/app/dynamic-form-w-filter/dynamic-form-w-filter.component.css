@@ -27,7 +27,7 @@
 }
 
 
-.input-field .mat-form-field, .input-field .mat-select, .input-field .mat-checkbox {
+.input-field .mat-mdc-form-field, .input-field .mat-mdc-select, .input-field .mat-mdc-checkbox {
     width: 100%;
     padding: 0 5px;
 }

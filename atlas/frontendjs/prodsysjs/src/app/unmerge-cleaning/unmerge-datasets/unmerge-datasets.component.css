@@ -1,7 +1,7 @@
-td.mat-cell {
+td.mat-mdc-cell {
   padding-left: 5px;
 }
 
-th.mat-header-cell {
+th.mat-mdc-header-cell {
   padding-left: 5px;
 }

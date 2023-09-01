@@ -12,14 +12,14 @@ ul li{
   float: left;
   padding-right: 10px;
 }
-td.mat-cell {
+td.mat-mdc-cell {
   padding-left: 10px;
 }
 
-th.mat-header-cell {
+th.mat-mdc-header-cell {
   padding-left: 10px;
 }
 
-.mat-raised-button.active {
+.mat-mdc-raised-button.active {
   color: "primary";
 }

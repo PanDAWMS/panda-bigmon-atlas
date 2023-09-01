@@ -9,11 +9,11 @@
   align-items: center;
   flex-direction: column;
 }
-.action-menu-row .mat-raised-button {
+.action-menu-row .mat-mdc-raised-button {
   height: 40px;
   margin: 0 13px;
 }
-.action-menu-row .mat-raised-button, .task-action-button-field, .action-label,
+.action-menu-row .mat-mdc-raised-button, .task-action-button-field, .action-label,
 .action-menu-vertical-fields .mat-raised-button, .action-button-column .mat-raised-button {
     font-size: 16px;
 }
@@ -40,11 +40,11 @@
 }
 
 
-.action-button-column .mat-raised-button {
+.action-button-column .mat-mdc-raised-button {
   margin: 5px 8px;
 }
 
-.mat-radio-button {
+.mat-mdc-radio-button {
   margin-left: 8px;
 }
 

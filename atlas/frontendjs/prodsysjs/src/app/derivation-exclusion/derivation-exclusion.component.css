@@ -19,14 +19,14 @@ ul li{
   width: 100%;
 }
 
-table.mat-table {
+table.mat-mdc-table {
 }
 
-td.mat-cell {
+td.mat-mdc-cell {
   padding-left: 5px;
 }
 
-th.mat-header-cell {
+th.mat-mdc-header-cell {
   padding-left: 5px;
 }
 tr.example-detail-row {
@@ -70,19 +70,19 @@ tr.example-element-row:not(.example-expanded-row):active {
 /*  padding: 40px;*/
 /*}*/
 
-.mat-cell.expired, span.expired{
+.mat-mdc-cell.expired, span.expired{
   background-color: red;
 }
 
-.mat-cell.not_expired, span.not_expired{
+.mat-mdc-cell.not_expired, span.not_expired{
   background-color: orange;
 }
 
-.mat-cell.extension, span.extension{
+.mat-mdc-cell.extension, span.extension{
   background-color: green;
 }
 
-.mat-form-field {
+.mat-mdc-form-field {
   font-size: 14px;
   width: 100%;
 }

@@ -26,7 +26,7 @@
   <h3>Total containers: {{totalDatasets}} Total size: {{totalSize|datasetSize}}
     Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3><br/> <h5>Last time updated: {{lastUpdateTime}}</h5>
   <mat-divider></mat-divider>
-<mat-card [style]="'height: 800px;'">
+<mat-card appearance="outlined" [style]="'height: 800px;'">
   <ngx-charts-bar-vertical
     [results]="sizeChart"
     [gradient]="gradient"

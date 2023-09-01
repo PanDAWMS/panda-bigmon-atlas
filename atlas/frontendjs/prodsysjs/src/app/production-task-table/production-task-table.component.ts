@@ -16,7 +16,7 @@ import {TasksManagementComponent} from "../tasks-management/tasks-management.com
 import {APP_BASE_HREF} from "@angular/common";
 import {UntypedFormControl} from "@angular/forms";
 import {TASKS_CONSTANTS} from "../common/constants/tasks_constants";
-import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig, MatLegacyDialogRef as MatDialogRef} from "@angular/material/legacy-dialog";
+import {MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef} from "@angular/material/dialog";
 import {TaskAction} from "../production-task/task-service.service";
 import {BehaviorSubject, Subject} from "rxjs";
 import {MatIcon} from "@angular/material/icon";

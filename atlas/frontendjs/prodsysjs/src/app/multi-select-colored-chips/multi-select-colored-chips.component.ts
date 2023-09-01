@@ -6,7 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { MatLegacyChip as MatChip, MatLegacyChipList as MatChipList } from '@angular/material/legacy-chips';
+import { MatChip, MatChipList } from '@angular/material/chips';
 
 @Component({
   selector: 'app-chips-multi-select',

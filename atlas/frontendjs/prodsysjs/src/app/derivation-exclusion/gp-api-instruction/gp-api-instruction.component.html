@@ -4,7 +4,7 @@ The Prodtask is using Token based authentication for its RestFull API. You can f
 and set it "Token your_token" as an authorisation Header.
 
 Example for curl:
-<mat-card>
+<mat-card appearance="outlined">
   <mat-card-title>
     CURL example
   </mat-card-title>
@@ -18,7 +18,7 @@ Example for curl:
 <p>
 Or for python the code could look like that:
 </p>
-<mat-card>
+<mat-card appearance="outlined">
   <mat-card-title>
     Python
   </mat-card-title>
@@ -42,7 +42,7 @@ For Derivation superseded container management following APIs are avalaible:
    <h5> <a href="https://prodtask-dev.cern.ch/api/gp_deletions_containers/?output_format=DAOD_BPHY1&data_type=mc">gp_deletions_containers</a></h5>
 
     A list of containers per an output with versions and number of extensions (GET method) taken from cache:<br/>
-    <mat-card>
+    <mat-card appearance="outlined">
       <mat-card-title>
         CURL example
       </mat-card-title>
@@ -60,7 +60,7 @@ For Derivation superseded container management following APIs are avalaible:
 
     A list of containers per an output with versions and number of extensions (GET method). Format could be specified by concrete format(output_format='DAOD_BPHY1')
     by base format(base_format='BHPY') or without output_format and base_format API will return all formats for a data_type(default data_type is 'mc')<br/>
-      <mat-card>
+      <mat-card appearance="outlined">
         <mat-card-title>
           CURL example
         </mat-card-title>
@@ -70,7 +70,7 @@ For Derivation superseded container management following APIs are avalaible:
     </code>
         </mat-card-content>
       </mat-card>
-    <mat-card>
+    <mat-card appearance="outlined">
       <mat-card-title>
         Example of output
       </mat-card-title>
@@ -89,7 +89,7 @@ For Derivation superseded container management following APIs are avalaible:
     A list of all datasets marked for the deletion. The list is taken from a cache, cache is updated daily (GET method).
     Two optional parameters: filter, return dataset wtih 'filter' in the dataset name. data_type - returns datasets of this data type(mc or data):<br/>
 
-    <mat-card>
+    <mat-card appearance="outlined">
         <mat-card-title>
           CURL example
         </mat-card-title>
@@ -103,7 +103,7 @@ For Derivation superseded container management following APIs are avalaible:
     <h5> <a href="https://prodtask-dev.cern.ch/api/gp_extension/">gp_extension</a></h5>
     Request extensions for a list of containers (POST method):<br/>
     <p>Python code which requests extension for containers from the file which contains container name one by line could look like that: </p>
-    <mat-card>
+    <mat-card appearance="outlined">
       <mat-card-title>
         Python example
       </mat-card-title>

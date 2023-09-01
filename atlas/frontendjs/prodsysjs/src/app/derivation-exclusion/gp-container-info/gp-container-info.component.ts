@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {ContainerAllInfo, Dataset, Extension, GpContainerInfoService} from "./gp-container-info.service";
-import {MatLegacyTableDataSource as MatTableDataSource} from "@angular/material/legacy-table";
+import {MatTableDataSource} from "@angular/material/table";
 
 @Component({
   selector: 'app-gp-container-info',

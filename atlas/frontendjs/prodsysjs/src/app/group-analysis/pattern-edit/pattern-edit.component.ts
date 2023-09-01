@@ -3,7 +3,7 @@ import {TaskTemplate} from "../analysis-task-model";
 import {JsonFormControls, JsonFormData} from "../../dynamic-form-w-filter/dynamic-form-w-filter.component";
 import {TASKS_CONSTANTS} from "../../common/constants/tasks_constants";
 import {Subject} from "rxjs";
-import {MatLegacySlideToggleChange as MatSlideToggleChange} from "@angular/material/legacy-slide-toggle";
+import {MatSlideToggleChange} from "@angular/material/slide-toggle";
 
 export interface PatternChanges {
   changes: Partial<TaskTemplate>;
