@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
 import {AnalysisTasksService} from "../analysis-tasks.service";
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
+import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef} from "@angular/material/legacy-dialog";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "../analysis-task-model";
 import {PatternChanges} from "../pattern-edit/pattern-edit.component";
 import {GridOptions, RowNode} from "ag-grid-community";

@@ -9,49 +9,49 @@ import { ProductionRequestComponent } from './production-request/production-requ
 import {Routes, RouterModule, ExtraOptions, ActivatedRouteSnapshot} from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { DataCarouselComponent } from './data-carousel/data-carousel.component';
-import {MatTableModule} from '@angular/material/table';
+import {MatLegacyTableModule as MatTableModule} from '@angular/material/legacy-table';
 import {MatSortModule} from '@angular/material/sort';
-import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatLegacyCheckboxModule as MatCheckboxModule} from '@angular/material/legacy-checkbox';
 import {GPDeletionContainerResolver} from './derivation-exclusion/gp-deletion.resolve';
 import {MatGridListModule} from '@angular/material/grid-list';
 import {DatasetSizePipe} from './derivation-exclusion/dataset-size.pipe';
-import {MatButtonModule} from '@angular/material/button';
+import {MatLegacyButtonModule as MatButtonModule} from '@angular/material/legacy-button';
 import {MatSidenavModule} from '@angular/material/sidenav';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatInputModule} from '@angular/material/input';
+import {MatLegacyFormFieldModule as MatFormFieldModule} from '@angular/material/legacy-form-field';
+import {MatLegacyInputModule as MatInputModule} from '@angular/material/legacy-input';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { RucioURLPipe } from './derivation-exclusion/rucio-url.pipe';
-import {MatListModule} from '@angular/material/list';
+import {MatLegacyListModule as MatListModule} from '@angular/material/legacy-list';
 import { GpStatsComponent } from './derivation-exclusion/gp-stats/gp-stats.component';
 import {GPStatsResolver} from './derivation-exclusion/gp-stats/gp-stats.resolve';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatRadioModule} from '@angular/material/radio';
+import {MatLegacyProgressSpinnerModule as MatProgressSpinnerModule} from '@angular/material/legacy-progress-spinner';
+import {MatLegacyRadioModule as MatRadioModule} from '@angular/material/legacy-radio';
 import { GpStatsMatrixComponent } from './derivation-exclusion/gp-stats-matrix/gp-stats-matrix.component';
 import { GpContainerInfoComponent } from './derivation-exclusion/gp-container-info/gp-container-info.component';
 import { DatasetsTableComponent } from './derivation-exclusion/gp-container-info/datasets-table/datasets-table.component';
 import {GpContainerInfoResolver} from './derivation-exclusion/gp-container-info/datasets-table/gp-container-info.resolve';
 import { GpApiInstructionComponent } from './derivation-exclusion/gp-api-instruction/gp-api-instruction.component';
-import {MatCardModule} from '@angular/material/card';
+import {MatLegacyCardModule as MatCardModule} from '@angular/material/legacy-card';
 import {SliceComponent, SliceDetailsDialogComponent} from './production-request/slice/slice.component';
 import {NgxChartsModule} from '@swimlane/ngx-charts';
 import { StepComponent } from './production-request/step/step.component';
 import { ProjectModeComponent } from './production-request/project-mode/project-mode.component';
-import {MatTabsModule} from '@angular/material/tabs';
+import {MatLegacyTabsModule as MatTabsModule} from '@angular/material/legacy-tabs';
 import {ScrollingModule} from '@angular/cdk/scrolling';
-import {MatDialogModule} from '@angular/material/dialog';
+import {MatLegacyDialogModule as MatDialogModule} from '@angular/material/legacy-dialog';
 import { GpDeletionRequestComponent } from './derivation-exclusion/gp-deletion-request/gp-deletion-request.component';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatNativeDateModule} from '@angular/material/core';
-import {MatChipsModule} from '@angular/material/chips';
+import {MatLegacyChipsModule as MatChipsModule} from '@angular/material/legacy-chips';
 import {ChipsMultiSelectColoredComponent} from './multi-select-colored-chips/multi-select-colored-chips.component';
 import {MatIconModule} from '@angular/material/icon';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import { TaskStatsComponent } from './production-request/task-stats/task-stats.component';
-import {MatSelectModule} from '@angular/material/select';
+import {MatLegacySelectModule as MatSelectModule} from '@angular/material/legacy-select';
 import {MatExpansionModule} from '@angular/material/expansion';
 import { UnmergeCleaningComponent } from './unmerge-cleaning/unmerge-cleaning.component';
 import { UnmergeDatasetsComponent } from './unmerge-cleaning/unmerge-datasets/unmerge-datasets.component';
-import {MatPaginatorModule} from '@angular/material/paginator';
+import {MatLegacyPaginatorModule as MatPaginatorModule} from '@angular/material/legacy-paginator';
 import {
   SpecialCleaningResolver,
   UnmergeCleaningResolver,
@@ -59,13 +59,13 @@ import {
 } from './unmerge-cleaning/unmerge-cleaning.resolver';
 import { ProductionTaskComponent } from './production-task/production-task.component';
 import {DialogTaskSubmissionComponent, TaskActionComponent} from './task-action/task-action.component';
-import {MatMenuModule} from '@angular/material/menu';
-import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatLegacyMenuModule as MatMenuModule} from '@angular/material/legacy-menu';
+import {MatLegacyProgressBarModule as MatProgressBarModule} from '@angular/material/legacy-progress-bar';
 import {BPTaskComponent} from "./common/bptask/bptask.component";
 import { RequestsliceComponent } from './common/requestslice/requestslice.component';
 import { TaskStagingProgressComponent } from './common/task-staging-progress/task-staging-progress.component';
 import { TaskProgressComponent } from './common/task-progress/task-progress.component';
-import {MatTooltipModule} from "@angular/material/tooltip";
+import {MatLegacyTooltipModule as MatTooltipModule} from "@angular/material/legacy-tooltip";
 import {
   DerivationFromTagComponent,
   DialogContainerDetails,
@@ -94,7 +94,7 @@ import {
   DialogSliceDetailsComponent
 } from './group-analysis/ag-cell-slice/ag-cell-slice.component';
 import { DynamicFormWFilterComponent } from './dynamic-form-w-filter/dynamic-form-w-filter.component';
-import {MatSlideToggleModule} from "@angular/material/slide-toggle";
+import {MatLegacySlideToggleModule as MatSlideToggleModule} from "@angular/material/legacy-slide-toggle";
 import { CreateAnalysisRequestComponent } from './group-analysis/create-analysis-request/create-analysis-request.component';
 import { DerivationPhysPatternComponent } from './derivation-phys-pattern/derivation-phys-pattern.component';
 import { StepTasksComponent } from './group-analysis/step-tasks/step-tasks.component';

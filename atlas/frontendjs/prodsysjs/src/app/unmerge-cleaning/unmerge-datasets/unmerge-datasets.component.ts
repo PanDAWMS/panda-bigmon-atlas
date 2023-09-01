@@ -1,10 +1,10 @@
 import {AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
-import {MatTableDataSource} from "@angular/material/table";
+import {MatLegacyTableDataSource as MatTableDataSource} from "@angular/material/legacy-table";
 import {DatasetToDelete} from "../unmerge-cleaning.component";
 import {UnmergedDatasetsCombined} from "../unmerge-cleaning.service";
 import {ActivatedRoute} from "@angular/router";
 import {reduce} from "rxjs/operators";
-import {MatPaginator} from "@angular/material/paginator";
+import {MatLegacyPaginator as MatPaginator} from "@angular/material/legacy-paginator";
 import {MatSort} from "@angular/material/sort";
 
 @Component({

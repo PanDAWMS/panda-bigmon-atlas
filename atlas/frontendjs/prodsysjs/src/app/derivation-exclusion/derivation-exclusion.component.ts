@@ -13,7 +13,7 @@ import {animate, state, style, transition, trigger} from '@angular/animations';
 import {GroupProductionDeletionContainer} from './gp-deletion-container';
 import {GPDeletionContainerService} from './gp-deleation.service';
 import {SelectionModel} from '@angular/cdk/collections';
-import {MatTableDataSource} from '@angular/material/table';
+import {MatLegacyTableDataSource as MatTableDataSource} from '@angular/material/legacy-table';
 import {ViewportScroller} from '@angular/common';
 import {GpContainerDetailsService} from './gp-container-details.service';
 import {AMITag, AmiTagService} from "./ami-tag.service";

@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {GroupProductionStats} from './gp-stats';
-import {MatTableDataSource} from '@angular/material/table';
+import {MatLegacyTableDataSource as MatTableDataSource} from '@angular/material/legacy-table';
 import {GroupProductionDeletionContainer} from '../gp-deletion-container';
 import {SelectionModel} from '@angular/cdk/collections';
 import {ViewportScroller} from '@angular/common';

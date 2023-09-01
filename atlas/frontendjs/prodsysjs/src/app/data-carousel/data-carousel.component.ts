@@ -3,9 +3,9 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {RequestPerDay} from './request-per-day';
 
 import {DataCarouselService} from './data-carousel.service';
-import {MatPaginator} from '@angular/material/paginator';
+import {MatLegacyPaginator as MatPaginator} from '@angular/material/legacy-paginator';
 import {MatSort} from '@angular/material/sort';
-import {MatTableDataSource} from '@angular/material/table';
+import {MatLegacyTableDataSource as MatTableDataSource} from '@angular/material/legacy-table';
 
 
 @Component({

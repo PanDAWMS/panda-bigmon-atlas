@@ -9,7 +9,7 @@ import {
 } from './production-request-models';
 import {UntypedFormControl} from "@angular/forms";
 import {SelectionModel} from "@angular/cdk/collections";
-import {MAT_CHECKBOX_DEFAULT_OPTIONS, MatCheckboxDefaultOptions} from "@angular/material/checkbox";
+import {MAT_LEGACY_CHECKBOX_DEFAULT_OPTIONS as MAT_CHECKBOX_DEFAULT_OPTIONS, MatLegacyCheckboxDefaultOptions as MatCheckboxDefaultOptions} from "@angular/material/legacy-checkbox";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
 import {Observable} from "rxjs";
 import {debounceTime, distinctUntilChanged} from "rxjs/operators";

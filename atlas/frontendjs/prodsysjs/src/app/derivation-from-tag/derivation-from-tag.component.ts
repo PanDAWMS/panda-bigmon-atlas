@@ -18,10 +18,10 @@ import {
   DerivationContainersInput,
   DerivationDatasetInfo
 } from "./derivation-request-models";
-import {MatPaginator} from "@angular/material/paginator";
-import {MatTableDataSource} from "@angular/material/table";
+import {MatLegacyPaginator as MatPaginator} from "@angular/material/legacy-paginator";
+import {MatLegacyTableDataSource as MatTableDataSource} from "@angular/material/legacy-table";
 import {FormControl} from "@angular/forms";
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
+import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef} from "@angular/material/legacy-dialog";
 
 function get_output(output: string): string {
   return output.split('.')[output.split('.').length - 2]  ;
