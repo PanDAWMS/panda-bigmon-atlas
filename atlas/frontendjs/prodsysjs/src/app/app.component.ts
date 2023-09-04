@@ -14,12 +14,12 @@ export class AppComponent {
   loading = true;
 
   constructor(private router: Router) {
-    router.events.subscribe((routerEvent: RouterEvent) => {
+    router.events.subscribe((routerEvent) => {
       this.checkRouterEvent(routerEvent);
     });
   }
 
-  checkRouterEvent(routerEvent: RouterEvent): void {
+  checkRouterEvent(routerEvent: any): void {
     if (routerEvent instanceof NavigationStart) {
       this.loading = true;
     }
