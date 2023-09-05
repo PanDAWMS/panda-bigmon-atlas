@@ -2073,6 +2073,10 @@ def check_campaign(reqid, rucio_campaign):
         rucio_campaign='mc15:mc15a'
     subcampaign = request.subcampaign.lower()
     if 'mc16' not in subcampaign:
+        if 'mc23' in subcampaign:
+            if ':' not in rucio_campaign:
+                return False
+            return  subcampaign == rucio_campaign.split(':')[1].lower()
         return True
     if ('mc16' not in rucio_campaign.lower()) or (':' not in rucio_campaign):
         if subcampaign == 'mc16a':
