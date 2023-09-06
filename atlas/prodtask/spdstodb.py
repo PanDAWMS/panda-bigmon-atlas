@@ -323,10 +323,10 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 else:
                                     formats = None
                                 if do_split:
-                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
+                                    task_config.update({'split_slice':1,'spreadsheet_original':1,'maxAttempt':30,'maxFailure':3,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
                                 else:
-                                    task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':10,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
+                                    task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':3,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
 
                                 if reduce_input_format:

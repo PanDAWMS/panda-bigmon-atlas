@@ -1830,13 +1830,13 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
 def request_create_new_spds(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create_new_spds',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'3.0')
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'3'},'3.0')
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def request_create(request):
     return request_clone_or_create(request, None, 'Create MC Request', 'prodtask:request_create',
                                    TRequestMCCreateCloneForm, TRequestCreateCloneConfirmation, mcfile_form_prefill,
-                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'15'},'2.0')
+                                   {'nEventsPerJob':'1000','priority':'880','maxAttempt':'25','maxFailure':'3'},'2.0')
 
 
 @login_required(login_url=OIDC_LOGIN_URL)

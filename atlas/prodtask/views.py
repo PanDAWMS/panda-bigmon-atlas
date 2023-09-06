@@ -452,7 +452,7 @@ def create_steps(prodsys_async_task, slice_steps, reqid, STEPS=StepExecution.STE
                             parent_step = step_in_db
                     else:
                             status_changed = True
-                            task_config = {'maxFailure':10,'maxAttempt':30}
+                            task_config = {'maxFailure':3,'maxAttempt':30}
                             if not input_list.project_mode:
                                 task_config.update({'project_mode':get_default_project_mode_dict().get(STEPS[index],'')})
                                 task_config.update({'nEventsPerJob':get_default_nEventsPerJob_dict().get(STEPS[index],'')})
