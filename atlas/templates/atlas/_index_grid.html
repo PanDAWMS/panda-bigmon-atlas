@@ -33,12 +33,14 @@
 {% block base_js %}
 {{ block.super }}
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
+    <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+
 
 {% endblock %}
 {% block body %}
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>
     <script>
 
     </script>

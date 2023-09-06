@@ -35,14 +35,16 @@
 {{ block.super }}
 
 
-    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
-{% endblock %}
+<script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
+
+    <script type="text/javascript" src="{% static "js/jquery-ui-prodsys.js" %}"></script>
+            <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.address/1.6/jquery.address.min.js"></script>{% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
     <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+
     <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 {% endblock %}

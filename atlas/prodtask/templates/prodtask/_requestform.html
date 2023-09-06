@@ -5,9 +5,9 @@
 
 {% block extra_css %}
 {{ block.super }}
-    <style type="text/css" title="currentStyle">
-	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
-	</style>
+{#    <style type="text/css" title="currentStyle">#}
+{#	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";#}
+{#	</style>#}
 	<style type="text/css" title="currentStyle">
 	</style>
 {% endblock %}
@@ -18,17 +18,21 @@
 {% block base_js %}
 {{ block.super }}
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>#}
+    <script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+
 {% endblock %}
 
 {% block body %}
+{% csrf_token %}
+
 <script>
 
 {#    TODO: Make a class#}
@@ -263,19 +267,21 @@
         }
     }
 
-    var csrftoken = $.cookie('csrftoken');
-    function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
-        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    }
-    $.ajaxSetup({
-        crossDomain: false, // obviates need for sameOrigin test
-        beforeSend: function(xhr, settings) {
-            if (!csrfSafeMethod(settings.type)) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            }
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
-    });
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
     {#TODO: make a django form behaviour#}
     function changeInputOnSelect(input_id,input_name,new_input_id,option_list){
                 var new_selector=$('<select id='+input_id+' name='+input_name+'></select>');
@@ -400,7 +406,7 @@ $(document).ready(function(){
             {
                  {% autoescape off %}
 
-                makeFormFromDict($.evalJSON('{{ default_object }}'));})();
+                makeFormFromDict(JSON.parse('{{ default_object }}'));})();
             {% endautoescape %}
         {% endif  %}
 });
@@ -433,7 +439,7 @@ $(document).ready(function(){
                }
                resultObject[sliceNumber]  = sliceObject;
             });
-            $("#{{ form.hidden_json_slices.auto_id }}").val($.toJSON(resultObject));
+            $("#{{ form.hidden_json_slices.auto_id }}").val(JSON.stringify(resultObject));
             currentTree = resultObject;
           }
 
@@ -445,12 +451,12 @@ $(document).ready(function(){
                     url: "{% url 'prodtask:find_datasets_by_pattern' %}",
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(sendData),
+                    data: JSON.stringify(sendData),
                     dataType: 'text',
                     success: function(data,status) {
                         $( "#waitingDialog" ).dialog('close');
                         if(status){
-                            var datasets = $.evalJSON(data).data;
+                            var datasets = JSON.parse(data).data;
                             $("#datasetsTable" + sliceNumber).html('');
                             for(var i=0;i<datasets.length;i++){
                               $("#datasetsTable" + sliceNumber).append('<tr><td class="datasetNames">'+

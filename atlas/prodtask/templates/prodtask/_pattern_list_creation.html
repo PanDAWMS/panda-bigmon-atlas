@@ -28,18 +28,20 @@
 {{ block.super }}
 
 
-    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
+{#    <script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>#}
+{##}
+{#    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>#}
+            <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>
 
-    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
-    <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
 {% endblock %}
 
 
@@ -52,13 +54,17 @@
     border:1px solid black;
 }
 </style>
+    {% csrf_token %}
+
     <script>
 
-        var csrftoken = $.cookie('csrftoken');
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
         function csrfSafeMethod(method) {
             // these HTTP methods do not require CSRF protection
             return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
+
         $.ajaxSetup({
             crossDomain: false, // obviates need for sameOrigin test
             beforeSend: function(xhr, settings) {
@@ -131,10 +137,10 @@ $(document).ready(function(){
                         url: "{% url 'prodtask:remove_pattern_in_list'  %}",
                         type: 'POST',
                         contentType: 'application/json; charset=utf-8',
-                        data: $.toJSON(sendData),
+                        data: JSON.stringify(sendData),
                         dataType: 'text',
                         success: function(data,status) {
-                            var return_status =  $.evalJSON(data).success;
+                            var return_status =  JSON.parse(data).success;
 
                             if(return_status){
                                 $('#train'+trainID).removeClass($('#patternType').val());
@@ -142,7 +148,7 @@ $(document).ready(function(){
 
                             } else{
 
-                                alert($.evalJSON(data).message);
+                                alert(JSON.parse(data).message);
                             }
                         }
                   });
@@ -157,16 +163,16 @@ $(document).ready(function(){
                         url: "{% url 'prodtask:add_pattern_to_list'  %}",
                         type: 'POST',
                         contentType: 'application/json; charset=utf-8',
-                        data: $.toJSON(sendData),
+                        data: JSON.stringify(sendData),
                         dataType: 'text',
                         success: function(data,status) {
                             $('#addSpin').spin(false);
                             $('#addPatternButton').removeClass('disabled');
-                            var return_status =  $.evalJSON(data).success;
+                            var return_status =  JSON.parse(data).success;
                             if(return_status){
                                 alert('Added');
-                                var requestName =  $.evalJSON(data).requestName;
-                                var trainID =  $.evalJSON(data).trainID;
+                                var requestName =  JSON.parse(data).requestName;
+                                var trainID =  JSON.parse(data).trainID;
                                 $("#patternTableBody").append(' <div id=train' +trainID+
                                                                         ' class="row ' + $('#patternType').val()  + ' Pattern"> \
         <div class="large-2 column"> \
@@ -181,7 +187,7 @@ $(document).ready(function(){
     </div>');
                             } else{
 
-                                alert($.evalJSON(data).message);
+                                alert(JSON.parse(data).message);
                             }
                         }
                   });

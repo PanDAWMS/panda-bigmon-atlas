@@ -12,8 +12,8 @@
 {% block extra_css %}
 {{ block.super }}
 	<style type="text/css" title="currentStyle">
-	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
-        @import "{% static "css/jquery.dataTables_themeroller.css" %}";
+	    {#@import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";#}
+        {#@import "{% static "css/jquery.dataTables_themeroller.css" %}";#}
         @import "{% static "css/prodtask.css" %}";
 	</style>
     
@@ -31,14 +31,15 @@
 {{ block.super }}
 
 
-    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#    <script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>
+{#    <script type="text/javascript" src="{% static "js/jquery.dataTables.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/libs/jquery-migrate-1.0.0.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/jquery.address-1.5.js" %}"></script>#}
+
 {% endblock %}
 
 

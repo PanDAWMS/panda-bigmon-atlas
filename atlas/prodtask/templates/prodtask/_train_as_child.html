@@ -18,18 +18,19 @@
 {% block base_js %}
 {{ block.super }}
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>#}
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
 <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>
 
 {% endblock %}
 
@@ -63,9 +64,9 @@
         groupList.push('{{ group }}');
     {% endfor %}
     {% autoescape off %}
-    var parsed_pattern_origin = prepare_pattern($.evalJSON('{{ train.outputs }}'));
+    var parsed_pattern_origin = prepare_pattern($.parseJSON('{{ train.outputs }}'));
     var parent_request = '{{ parent_request }}';
-    var parent_steps = $.evalJSON('{{ parent_steps }}');
+    var parent_steps = $.parseJSON('{{ parent_steps }}');
     var pattern_request= '{{ pattern_request }}';
     {% endautoescape %}
 
@@ -91,10 +92,10 @@
 
 
     function change_pattern(pattern,selected_slices_text){
-        var result_pattern = $.evalJSON($.toJSON(pattern));
+        var result_pattern = $.parseJSON(JSON.stringify(pattern));
 
         if ((selected_slices_text != undefined)&&(selected_slices_text != '')){
-            var selected_slices = $.evalJSON(selected_slices_text);
+            var selected_slices = $.parseJSON(selected_slices_text);
             for(var i=0;i<selected_slices.length;i++){
                 for(var j=0;j<result_pattern.length;j++){
 
@@ -131,7 +132,7 @@
 
             scope.groups = groupList;
         editTrainLoad.trainLoad = {};
-        scope.parsed_pattern = $.evalJSON($.toJSON(parsed_pattern_origin));
+        scope.parsed_pattern = $.parseJSON(JSON.stringify(parsed_pattern_origin));
         console.log(scope.parsed_pattern);
         scope.change_slice = function(slice_number,is_selected){
           for(var j=0;j<scope.parsed_pattern.length;j++){
@@ -169,7 +170,7 @@
 
               }
 
-            editTrainLoad.trainLoad.outputs = $.toJSON(result_outputs);
+            editTrainLoad.trainLoad.outputs = JSON.stringify(result_outputs);
         http.post("/prodtask/create_request_as_child/", editTrainLoad.trainLoad).
          success(function(data, status, headers, config) {
                     if(data.success) {

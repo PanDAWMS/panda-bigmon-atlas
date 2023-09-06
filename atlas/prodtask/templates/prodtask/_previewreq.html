@@ -12,19 +12,23 @@
 {% block base_js %}
 {{ block.super }}
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
-<script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>#}
+     <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 {% endblock %}
 
 
 {% block body %}
+    {% csrf_token %}
+
 <script>
     {#TODO: make a django form behaviour#}
     function changeInputOnSelect(input_id,input_name,new_input_id,option_list){
@@ -181,19 +185,21 @@ long_description_id:"This will be the body of the mail that will\n" +
                 $('#mainForm').submit();
             }
         }
-    var csrftoken = $.cookie('csrftoken');
-    function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
-        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    }
-    $.ajaxSetup({
-        crossDomain: false, // obviates need for sameOrigin test
-        beforeSend: function(xhr, settings) {
-            if (!csrfSafeMethod(settings.type)) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            }
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
-    });
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
 $(document).ready(function(){
         (function(){MCCampaignHandling()})();
         $(document).foundation();

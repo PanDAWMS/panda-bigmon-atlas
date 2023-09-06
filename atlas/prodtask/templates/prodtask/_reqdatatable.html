@@ -100,13 +100,14 @@
 {% block base_js %}
 {{ block.super }}
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
+<script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-ui-prodsys.js" %}"></script>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery.cookie.js" %}"></script>
 <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
 <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/spin.min.js' %}"></script>
@@ -118,6 +119,7 @@
 
 {% block body %}
 <!-- TODO: Replace next tables by independet from field objects   -->
+{% csrf_token %}
 
 <div style="display:none">
     <input type="hidden" id="doColor" />
@@ -420,19 +422,21 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
     {% endif %}
 });
 
-    var csrftoken = $.cookie('csrftoken');
-    function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
-        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    }
-    $.ajaxSetup({
-        crossDomain: false, // obviates need for sameOrigin test
-        beforeSend: function(xhr, settings) {
-            if (!csrfSafeMethod(settings.type)) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            }
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
-    });
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
     function makeJobOptionURL(){
         $('.makeJOUrl').each(function(){
 

@@ -18,8 +18,9 @@
 {% block extra_js %}
 {{ block.super }}
 
-    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+{#    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>#}
+{#    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>#}
+ <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
 
@@ -32,10 +33,10 @@
                     url: "{% url 'prodtask:add_task_hashtag' task.id %}",
                     type: 'POST',
                     contentType: 'application/json; charset=utf-8',
-                    data: $.toJSON(sendData),
+                    data: JSON.stringify(sendData),
                     dataType: 'text',
                     success: function(data,status) {
-                        newHashtag =$.evalJSON(data).data;
+                        newHashtag =JSON.parse(data).data;
                         var old_hashtags=$('#hashtags_list').html();
                         $('#hashtags_list').html(old_hashtags+' '+'<a href="{% url 'reqtask:request_tasks'  %}hashtags/&'+newHashtag+'">'+newHashtag+'</a>');
                         $('#hashtagModalWindow').foundation('reveal', 'close');

@@ -34,9 +34,10 @@
 
 </style>
 
-    <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>
+{#    <script type="text/javascript" src="{% static "js/jquery-1.11.3.js" %}"></script>#}
+
+    <script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
     <script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/cookie-1.4.0.js" %}"></script>
     <script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
     <script type="text/javascript" src="{% static "js/fnProcessingIndicator-1.10.10.js" %}"></script>
@@ -144,6 +145,8 @@
         var runStatusList = [];
         var goodStatusList = [];
 
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
         function csrfSafeMethod(method) {
             // these HTTP methods do not require CSRF protection
             return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -153,7 +156,7 @@
             crossDomain: false, // obviates need for sameOrigin test
             beforeSend: function(xhr, settings) {
                 if (!csrfSafeMethod(settings.type)) {
-                    xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
                 }
             }
         });

@@ -19,19 +19,25 @@
 {% block extra_js %}
 {{ block.super }}
 
-    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>
+{#    <script type="text/javascript" src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>#}
+{#    <script type="text/javascript" src="{% static 'js/jquery.json-2.4.min.js' %}"></script>#}
+{#    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>#}
+{#        <script type="text/javascript" src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>#}
 
-    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-prodsys.js" %}"></script>
+{#    <script type="text/javascript" src="{% static 'js/foundation.js' %}"></script>#}
 
-    <script type="text/javascript">
-        $(document).foundation();
-      $(function() {
-    $( ".datepicker" ).datepicker({dateFormat:'yy-mm-dd'});
-  });
-    </script>
+
 {% endblock %}
 {% block body %}
+        <script >
+        {#$(document).foundation();#}
+        $(document).ready(
+      $(function() {
+    $( ".datepicker" ).datepicker({dateFormat:'yy-mm-dd'});
+  }));
+    </script>
 {% if submit_url %}
 {% if form.is_multipart %}
     <form action="{% if url_args %}{% url submit_url url_args %}{% else %}{% url submit_url %}{% endif %}" enctype="multipart/form-data" method="post">{% csrf_token %}

@@ -9,19 +9,22 @@
 	</style>
 	<style type="text/css" title="currentStyle">
 	</style>
-        <script type="text/javascript">
-        $(document).foundation();
-      $(function() {
-    $( ".datepicker" ).datepicker({dateFormat:'yy-mm-dd'});
-  });
-    </script>
+
 {% endblock %}
 {% block base_js %}
 {{ block.super }}
 
 
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
+        <script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-prodsys.js" %}"></script>
+            <script type="text/javascript">
+        $(document).foundation();
+      $(function() {
+    $( ".datepicker" ).datepicker({dateFormat:'yy-mm-dd'});
+  });
+    </script>
 {% endblock %}
 {% block subtitle %}
 {{pre_form_text|safe}}

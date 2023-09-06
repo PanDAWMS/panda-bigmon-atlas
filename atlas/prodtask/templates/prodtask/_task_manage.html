@@ -3,17 +3,21 @@
 {% load static  %}
 
 
-{% block extra_js %}
-{{ block.super }}
-
-    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>
-
-    <script type="text/javascript">
-        $(document).foundation();
-    </script>
-
-{% endblock %}
+{#{% block extra_js %}#}
+{#{{ block.super }}#}
+{##}
+{#    <script type="text/javascript" src="{% static "js/foundation.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/jquery.json-2.4.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-prodsys.js" %}"></script>#}
+{##}
+{#    <script type="text/javascript" src="{% static "js/jquery-ui-prodsys.js" %}"></script>#}
+{#            <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.address/1.6/jquery.address.min.js"></script>#}
+{##}
+{#    <script type="text/javascript">#}
+{#        $(document).foundation();#}
+{#    </script>#}
+{##}
+{#{% endblock %}#}
 
 
 {% block body %}

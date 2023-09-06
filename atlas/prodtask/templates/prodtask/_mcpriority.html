@@ -10,24 +10,22 @@
 
 {% block extra_css %}
 {{ block.super }}
-	<style type="text/css" title="currentStyle">
-	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
-	</style>
+{#	<style type="text/css" title="currentStyle">#}
+{#	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";#}
+{#	</style>#}
 {% endblock %}
 
 {% block base_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
 {% endblock %}
 
 
 
 {% block body %}
 <script>
-$(document).ready(function(){
 
-});
 
 
 </script>

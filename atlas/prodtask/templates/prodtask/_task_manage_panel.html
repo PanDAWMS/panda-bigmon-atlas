@@ -790,21 +790,22 @@
 {%  csrf_token %}
 
 
-<script type="text/javascript">
+<script>
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-function csrfSafeMethod(method) {
-    // these HTTP methods do not require CSRF protection
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-}
-
-$.ajaxSetup({
-    crossDomain: false, // obviates need for sameOrigin test
-    beforeSend: function(xhr, settings) {
-        if (!csrfSafeMethod(settings.type)) {
-            xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
-    }
-});
+
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
 
 function makeAlertBox(content, box_id, text_id) {
     return $( "<div/>", { id: box_id, "class": "alert-box info radius", "data-alert": ""} )
@@ -870,7 +871,7 @@ function doTasksAction(action, tasks, parameters) {
     $.ajax({
         url: ajaxUrl,
         type: "POST",
-        data: $.toJSON(postData),
+        data: JSON.stringify(postData),
         dataType: "json",
         complete: function (jqXHR, textStatus) {
             var response = JSON.parse(jqXHR.responseText);

@@ -9,7 +9,7 @@
 {% block extra_css %}
 {{ block.super }}
 	<style type="text/css" title="currentStyle">
-	    @import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";
+	    {#@import "{% static "css/jquery-ui-1.10.3.custom.min.css" %}";#}
         @import "{% static "css/jquery.dataTables_themeroller.css" %}";
         @import "{% static "css/prodtask.css" %}";
         @import "{% static "css/dataTables.tableTools.css" %}";
@@ -55,11 +55,13 @@
 
 {% block base_js %}
 {{ block.super }}
-<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>
-<script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>
+{#<script type="text/javascript" src="{% static "js/jquery-1.9.1.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery-ui-1.10.3.custom.min.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/jquery.dataTables-1.10.10.js" %}"></script>#}
+{#<script type="text/javascript" src="{% static "js/dataTables.foundation-1.10.10.min.js" %}"></script>#}
+{#    <script type="text/javascript" src="{% static "js/dataTables.tableTools-2.2.3.js" %}"></script>#}
+     <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
     <script type="text/javascript" src="{% static "js/prodtask.js" %}"></script>
 
 {% endblock %}
