@@ -568,7 +568,10 @@ def filter_input_datasets(dataset_events, reqid, filter_type, input_step_project
                 result.append({'dataset_name':item['dataset_name'],'events':str(new_events), 'excluded':True})
         else:
             result.append({'dataset_name':item['dataset_name'],'events':item['events'], 'excluded':False})
-
+    # Sort by the event number
+    result.sort(key=lambda x: int(x['events']), reverse=True)
+    # Sort valid to the end
+    result.sort(key=lambda x: x['dataset_name'].find('valid'))
     return result
 
 
