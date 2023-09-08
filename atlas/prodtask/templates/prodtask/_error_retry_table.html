@@ -54,7 +54,7 @@
     <div class="row">
         <div class="large-3 column">{{ error_retry.id }}
 
-            <u><a  href="https://es-atlas1.cern.ch/kibana/app/kibana?#/discover?_g=(refreshInterval:(display:Off,pause:!f,value:0),time:(from:now-24h,mode:quick,to:now))&_a=(columns:!(timeEvent,logName,fields.type,logLevel,message),filters:!(),index:'620eaaf0-bfac-11ea-b7f2-27bdf2c0b5dc',interval:auto,query:(language:lucene,query:'logName:%22panda.log.RetrialModule%22%20AND%20fields.type:%22retrialmodule%22%20AND%20%20error_id:%22{{ error_retry.id }}%22'),sort:!('@timestamp',desc))">Kibana</a></u>
+        <u><a  href="https://es-atlas.cern.ch/kibana/app/dashboards?security_tenant=global#/view/e2291a50-631f-11e7-9922-df9c8fb6c52a?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h,to:now))&_a=(description:'',filters:!(),fullScreenMode:!f,options:(darkTheme:!f),query:(language:lucene,query:'error_id:{{ error_retry.id }}'),timeRestore:!t,title:'pandalogs%20-%20retry%20module%20dashboard',viewMode:view)">Kibana</a></u>
         |<u><a  href=" {% url "prodtask:retry_errors_edit" error_retry.id %}">Edit</a></u>
         |<u><a  href=" {% url "prodtask:retry_errors_clone" error_retry.id %}">Clone</a></u>
         |<u><a  href=" {% url "prodtask:retry_errors_delete" error_retry.id %}" onclick="return confirm('Are you sure?')" >Delete</a></u>
