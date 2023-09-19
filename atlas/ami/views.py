@@ -1,3 +1,5 @@
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 from atlas.ami.client import AMIClient
 from django.contrib.auth.decorators import login_required
@@ -9,10 +11,12 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 
+from atlas.settings import OIDC_LOGIN_URL
+
 _logger = logging.getLogger('prodtaskwebui')
 
 
-@login_required()
+@login_required(login_url=OIDC_LOGIN_URL)
 def amitag(request, amitag):
     error_message = ''
     tag = None
@@ -54,6 +58,8 @@ def sw_by_amitag(ami, amitag):
 
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def sw_containers_by_amitag(request,amitag):
     try:
         ami = AMIClient()
