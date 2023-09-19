@@ -145,6 +145,7 @@ urlpatterns = [
     re_path(r'^clone_slices_in_req/(?P<reqid>\d+)/(?P<step_from>[-+]?\d+)/(?P<make_link_value>[01])/$', step_manage_views.clone_slices_in_req, name='clone_slices_in_req'),
     re_path(r'^reject_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.reject_slices_in_req, name='reject_slices_in_req'),
     re_path(r'^hide_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.hide_slices_in_req, name='hide_slices_in_req'),
+    re_path(r'^partial_hide_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.partial_hide_slices_in_req, name='partial_hide_slices_in_req'),
     re_path(r'^request_train_patterns/(?P<reqid>\d+)/$', step_manage_views.request_train_patterns, name='request_train_patterns'),
     re_path(r'^obsolete_old_deleted_tasks/(?P<reqid>\d+)/$', step_manage_views.obsolete_old_deleted_tasks, name='obsolete_old_deleted_tasks'),
     re_path(r'^async_obsolete_old_deleted_tasks/(?P<reqid>\d+)/$', step_manage_views.async_obsolete_old_deleted_tasks, name='async_obsolete_old_deleted_tasks'),

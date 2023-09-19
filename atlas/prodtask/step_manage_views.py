@@ -702,19 +702,19 @@ def reject_slices_in_req(request, reqid):
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
 
+def hide_slice(slice):
+    if not slice.is_hide:
+        slice.is_hide = True
+        reject_steps_in_slice(slice)
+        for slice_error in SliceError.objects.filter(request=slice.request,slice=slice, is_active=True):
+            slice_error.is_active = False
+            slice_error.save()
+    else:
+        slice.is_hide = False
+    slice.save()
 @csrf_protect
 def hide_slices_in_req(request, reqid):
 
-    def hide_slice(slice):
-        if not slice.is_hide:
-            slice.is_hide = True
-            reject_steps_in_slice(slice)
-            for slice_error in SliceError.objects.filter(request=slice.request,slice=slice, is_active=True):
-                slice_error.is_active = False
-                slice_error.save()
-        else:
-            slice.is_hide = False
-        slice.save()
 
     if request.method == 'POST':
         results = {'success':False}
@@ -733,6 +733,26 @@ def hide_slices_in_req(request, reqid):
             for slice_id in find_child_request_slices(reqid, slices_numbers):
                 current_slice = InputRequestList.objects.get(id=slice_id)
                 hide_slice(current_slice)
+            results = {'success':True}
+        except Exception as e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+@csrf_protect
+def partial_hide_slices_in_req(request, reqid):
+
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'Hide partial slices: %s' % str(slices)))
+            slices_numbers = list(map(int, slices))
+            for slice_number in slices_numbers:
+                hide_partial_slice(reqid, slice_number)
             results = {'success':True}
         except Exception as e:
             pass
@@ -1087,6 +1107,84 @@ def reject_steps(request, reqid, step_filter):
         except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+def move_tasks_to_new_slice(source_request_id: int, destination_request_id: int,
+                            slice_from: int, step_from: int, do_not_hide = False) -> int:
+    source_slice = InputRequestList.objects.get(request=source_request_id, slice=slice_from)
+    step_execs = StepExecution.objects.filter(slice=source_slice, request=source_request_id)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    request_source = TRequest.objects.get(reqid=source_request_id)
+    if request_source.request_type == 'MC':
+        STEPS = StepExecution.STEPS
+    else:
+        STEPS = [''] * len(StepExecution.STEPS)
+    step_as_in_page = form_step_in_page(ordered_existed_steps, STEPS, parent_step)
+    step_from_on_the_page = -1
+    for index, step in enumerate(step_as_in_page):
+        if step:
+            step_from -=1
+        if step_from == -1:
+            step_from_on_the_page = index
+            break
+    destination_slice_number = clone_slices(source_request_id, destination_request_id, [source_slice.slice],
+                                            step_from_on_the_page, True)[0]
+    destination_slice = InputRequestList.objects.get(request=destination_request_id, slice=destination_slice_number)
+    new_steps = StepExecution.objects.filter(slice=destination_slice, request=destination_request_id)
+    new_steps_ordered, parent_step = form_existed_step_list(new_steps)
+    new_step_index = 0
+    for index, step in enumerate(step_as_in_page):
+        if step and ((step.step_parent == parent_step) or (new_step_index > 0)):
+            tasks = list(ProductionTask.objects.filter(step=step, request=source_request_id))
+            for task in tasks:
+                task.step = new_steps_ordered[new_step_index]
+                task.save()
+            current_status = step.status
+            if current_status == StepExecution.STATUS.APPROVED:
+                step.status = StepExecution.STATUS.NOT_CHECKED
+            elif current_status == StepExecution.STATUS.SKIPPED:
+                step.status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
+            step.save()
+            if len(tasks) > 0:
+                new_steps_ordered[new_step_index].status = StepExecution.STATUS.APPROVED
+            else:
+                new_steps_ordered[new_step_index].status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
+            new_steps_ordered[new_step_index].save()
+            new_step_index += 1
+    if not do_not_hide:
+        destination_slice.is_hide = True
+        destination_slice.save()
+    return destination_slice_number
+
+
+def find_broken_tasks_subslice(request_id: int, slice_number: int) -> (int, int):
+    slice = InputRequestList.objects.get(request=request_id, slice=slice_number)
+    step_execs = StepExecution.objects.filter(slice=slice, request=request_id)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    good_step_index = -1
+    last_broken_step = -1
+    for index, step in enumerate(ordered_existed_steps):
+        total_tasks = ProductionTask.objects.filter(step=step, request=request_id).count()
+        if total_tasks > 0:
+            if total_tasks != ProductionTask.objects.filter(step=step, request=request_id,
+                                                            status__in=ProductionTask.BAD_STATUS).count():
+                good_step_index = index
+            else:
+                last_broken_step = index
+    return good_step_index, last_broken_step
+
+
+def hide_partial_slice(request_id: int, slice_number: int) -> bool:
+
+    good_step_index, last_broken_step = find_broken_tasks_subslice(request_id, slice_number)
+    if good_step_index == -1:
+        hide_slice(InputRequestList.objects.get(request=request_id, slice=slice_number))
+        return True
+    elif last_broken_step > good_step_index:
+        move_tasks_to_new_slice(request_id, request_id, slice_number, good_step_index + 1)
+        return True
+    return False
+
 
 
 def prepare_slices_to_retry(production_request, ordered_slices):

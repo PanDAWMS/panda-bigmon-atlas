@@ -45,7 +45,7 @@
           <ul class="dropdown">
             <li><a href="{% url 'prodtask:request_table' %}">Requests</a></li>
             <li class="divider"></li>
-            <li><a href="{% url 'prodtask:request_create' %}">Create MC Request</a></li>
+            <li><a href="{% url 'prodtask:request_create_new_spds' %}">Create MC Request("New")</a></li>
             <li class="divider"></li>
             <li><a href="{% url 'prodtask:dpd_request_create' %}">Create DPD Request</a></li>
             <li class="divider"></li>
@@ -62,8 +62,6 @@
             <li><a href="{% url 'request_pattern:index' %}">MC Pattern</a></li>
             <li><a href="{% url 'prodtask:mcpriority_table' %}">MC Priority</a></li>
             <li><a href="{% url 'prodtask:make_default_report' %}">Problems report</a></li>
-              <li class="divider"></li>
-              <li><a href="{% url 'prodtask:request_create_new_spds' %}">New evgen tests</a></li>
           </ul>
 </li>
 {% endblock %}

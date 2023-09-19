@@ -952,6 +952,17 @@ class AnalysisTaskTemplate(models.Model):
                 return x.value
         return None
 
+    def change_variable(self, variable_name: str, input_data: str):
+        current_data = self.variables_data
+        return_value = None
+        for x in current_data:
+            if x.name == variable_name:
+                x.value = input_data
+                return_value = x.value
+                break
+        self.variables_data = current_data
+        return return_value
+
     class Meta:
         app_label = 'dev'
         db_table = '"T_AT_TEMPLATE"'
@@ -1181,6 +1192,7 @@ class ProductionTask(models.Model):
     RED_STATUS = [STATUS.FAILED, STATUS.ABORTED, STATUS.BROKEN]
     NOT_RUNNING = RED_STATUS + [STATUS.FINISHED, STATUS.DONE, STATUS.OBSOLETE]
     OBSOLETE_READY_STATUS = [STATUS.FINISHED, STATUS.DONE]
+    BAD_STATUS = RED_STATUS + [STATUS.OBSOLETE, STATUS.ABORTING, STATUS.TOABORT]
 
 
 

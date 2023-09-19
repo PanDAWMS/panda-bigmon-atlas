@@ -2818,7 +2818,29 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 );
               return false;
         };
+         function hidePartialClick(event){
+            event.preventDefault();
+            var i=0;
+            var sliceList = getCheckedSlices();
 
+            sendData = sliceList;
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: "{% url 'prodtask:partial_hide_slices_in_req' pr_id %}",
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        };
         function closeDeftRef(event){
             event.preventDefault();
             sendData = {'close':true};
@@ -4070,6 +4092,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
             <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
             <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
+            <button class="btn_is_authenticated" id="hideButton" title="Hide Broken tasks from slices"  href="#" data-dropdown="dropHideMenu" style="width: 1em; padding-left: 0; padding-right: 0">▼</button>
+
             <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
                        {% if trequest.request_type == "MC" %}
@@ -4093,7 +4117,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  <button id="cloneSlice" class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'1',$('#cloneFromStep').val());">Fix</button>
              </div>
         </div>
-
+        <div id="dropHideMenu" class="f-dropdown content" data-dropdown-content>
+             <div class="row">
+                 <button id="hidePartialSlice" class="btn_is_authenticated" title="Hide Broken tasks from slices" onclick="hidePartialClick(event);">Hide bad tasks</button>
+             </div>
+        </div>
     </div>
     <div class="row">
                 <div class="large-3 columns">
