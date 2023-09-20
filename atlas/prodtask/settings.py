@@ -1,6 +1,6 @@
 
 import os
-from .local import  ADMIN_MAILS
+from atlas.settings.local import  ADMIN_MAILS
 DJANGO_PATH = os.path.split( os.path.split( os.path.realpath(__file__) )[0] )[0]
 
 APP_SETTINGS = {
