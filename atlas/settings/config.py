@@ -19,6 +19,12 @@ ALLOWED_HOSTS = [
     '127.0.0.1', '.localhost'
 ]
 
+CSRF_COOKIE_SECURE = True
+
+
+CSRF_COOKIE_SAMESITE = 'Strict'
+
+CSRF_TRUSTED_ORIGINS = ['https://*']
 admin_mails = ADMIN_MAILS
 
 defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
