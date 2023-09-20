@@ -40,7 +40,7 @@ common_patterns = [
     re_path(r'^gpdeletion/', include(('atlas.gpdeletion.urls', 'gpdeletion'), namespace='gpdeletion')),
 
                       ### Uncomment the next line to enable the admin:
-    re_path(r'^admin_prodsys/',  admin.site.urls),
+    re_path(r'^prodsys_settings/',  admin.site.urls),
      re_path(r'^ng/',
          include(('atlas.frontenddjango.urls', 'frontenddjango'), namespace='frontenddjango')),
 
