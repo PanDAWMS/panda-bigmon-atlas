@@ -1431,7 +1431,7 @@ def find_datasets_by_pattern(request):
 
 
 
-@csrf_protect
+@login_required(login_url=OIDC_LOGIN_URL)
 def resend_email(request,reqid):
     if request.method == 'GET':
         if request.user.is_superuser:
@@ -2320,7 +2320,7 @@ def extend_request(request, reqid):
 
 
 
-@csrf_protect
+@login_required(login_url=OIDC_LOGIN_URL)
 @datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
 def request_table(request):
     """
@@ -2334,7 +2334,7 @@ def request_table(request):
                              'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
 
 
-@csrf_protect
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_table_js(request):
     """
     Request table
