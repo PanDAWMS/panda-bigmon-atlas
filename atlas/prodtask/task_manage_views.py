@@ -9,7 +9,7 @@ from django.conf import settings
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
@@ -162,6 +162,8 @@ def task_action_ext(request, action=None):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def task_chain_obsolete_action(request):
     error_message = []
     try:
@@ -205,6 +207,7 @@ def task_chain_obsolete_action(request):
     return Response(content)
 
 
+@csrf_protect
 def tasks_action(request, action):
     """
     Handling task actions requests

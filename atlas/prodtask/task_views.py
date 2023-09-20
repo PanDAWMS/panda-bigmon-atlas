@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template.response import TemplateResponse
@@ -11,7 +12,7 @@ from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate
 import logging
 
-from ..settings import defaultDatetimeFormat
+from ..settings import defaultDatetimeFormat, OIDC_LOGIN_URL
 
 import atlas.datatables as datatables
 from .models import Schedconfig
@@ -87,6 +88,7 @@ for _status in allowed_task_actions:
     if 'ctrl' in allowed_task_actions[_status]:
         allowed_task_actions[_status].extend(['pause_task', 'resume_task', 'trigger_task' , 'avalanche_task','reload_input','sync_jedi'])
 
+@csrf_protect
 def descent_tasks(request, task_id):
     try:
         child_tasks = find_downstreams_by_task(task_id)
@@ -98,6 +100,8 @@ def descent_tasks(request, task_id):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def form_task_chain(request, task_id):
     def update_parent(chain, task_childs, parent):
             task_childs[parent] = task_childs.get(parent,0) + 1
@@ -127,6 +131,7 @@ def form_task_chain(request, task_id):
     return Response(content)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_chain_view(request, task_id):
     if request.method == 'GET':
         task = ProductionTask.objects.get(id = int(task_id))
@@ -142,7 +147,7 @@ def task_chain_view(request, task_id):
 
 
 
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_old_details(request, rid=None):
     if rid:
         try:
@@ -283,14 +288,17 @@ def task_details(request, rid=None):
 
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_clone(request, rid=None):
     return HttpResponseRedirect('/')
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_update(request, rid=None):
     return HttpResponseRedirect('/')
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_create(request):
     return HttpResponseRedirect('/')
 
@@ -483,6 +491,8 @@ class ProductionTaskTable(datatables.DataTable):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def outside_task_action(request, action):
     result = {}
     return Response({"load": result})
@@ -497,6 +507,7 @@ def get_status_stat(qs):
               for x in qs.values('status').annotate(count=Count('id')) ]
 
 
+@csrf_protect
 def task_status_stat_by_request(request, rid):
     """
     ProductionTasks statuses for specific request
@@ -582,6 +593,7 @@ class Parameters(datatables.Parametrized):
     time_to = datatables.Parameter(label='Last update time period to', get_Q=lambda v: Q(timestamp__lt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 @datatables.parametrized_datatable(ProductionTaskTable, Parameters)
 def task_table(request):
     """
@@ -928,6 +940,8 @@ def create_nucleus_hashtag(nucleus,hashtag):
             task.set_hashtag(hashtag)
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def sync_request_tasks(request, reqid):
 
     try:

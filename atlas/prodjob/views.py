@@ -4,11 +4,12 @@ import logging
 # import os
 import re
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.conf import settings
 import atlas.deftcore.api.client as deft
-
+from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -22,7 +23,7 @@ _deft_job_actions = {
     'reassign_jobs': 'reassign_jobs',
 
 }
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_jobs(request):
     params_for_bigpanda = ''
     request_path = request.META['QUERY_STRING']
@@ -35,7 +36,7 @@ def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def jobs_action(request,action):
     """
 
@@ -106,6 +107,7 @@ def jobs_action(request,action):
     return HttpResponse(json.dumps(fin_res))
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def get_jobs(request):
 
     result = ''

@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 
@@ -10,6 +11,7 @@ from django.utils import timezone
 import logging
 
 from atlas.prodtask.views import set_request_status, make_child_update
+from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -342,7 +344,7 @@ def set_test_waiting(request,slice):
     waiting_step.status = 'active'
     waiting_step.save()
 
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def predefinition_action(request, wstep_id):
 
     try:
@@ -364,6 +366,7 @@ def predefinition_action(request, wstep_id):
 
     return render(request, 'prodtask/_waiting_step_action.html', request_parameters)
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def finish_action(request, wstep_id):
 
     try:
@@ -385,6 +388,7 @@ def finish_action(request, wstep_id):
     return HttpResponseRedirect(
         reverse('prodtask:input_list_approve_full', args=[step.request_id]) + '#inputList' + str(step.slice.slice))
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def tape_load_page(request):
     current_load = tape_current_load()
 
@@ -418,6 +422,7 @@ def push_waiting_step(wstep_id):
     waiting_step.execution_time = timezone.now()
     waiting_step.save()
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def cancel_action(request, wstep_id):
 
     try:

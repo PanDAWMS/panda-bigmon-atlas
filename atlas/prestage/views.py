@@ -6,6 +6,8 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List
 from django.db.models import Q
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
@@ -17,7 +19,7 @@ from atlas.prodtask.models import  StepExecution, InputRequestList, ProductionTa
 
 from decimal import Decimal
 from datetime import datetime
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 import logging
 # import os
@@ -1439,6 +1441,7 @@ def process_actions(action_step_todo):
         elif action == 13:
             perfom_finish_reload(executing_actions[action])
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def prestage_by_tape(request, reqid=None):
     try:
         result = []
@@ -1484,6 +1487,7 @@ def prestage_by_tape(request, reqid=None):
 
     return render(request, 'prestage/prestage_by_tape.html', request_parameters)
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def prestage_by_tape_with_limits(request, reqid=None):
     try:
 
@@ -1533,6 +1537,7 @@ def prestage_by_tape_with_limits(request, reqid=None):
     return render(request, 'prestage/prestage_by_tape_queued.html', request_parameters)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def step_action_in_request(request, reqid):
 
     try:
@@ -1632,6 +1637,7 @@ def replica_to_delete_dest(reqid):
     return result, result_destination
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def todelete_action_in_request(request, reqid):
 
     try:
@@ -1658,6 +1664,7 @@ def todelete_action_in_request(request, reqid):
     return render(request, 'prestage/todelete_by_request.html', request_parameters)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def step_action(request, wstep_id):
 
     try:
@@ -1715,7 +1722,8 @@ def step_action(request, wstep_id):
 
 
 @api_view(['POST'])
-@login_required(login_url=OIDC_LOGIN_URL)
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def finish_action(request, action, action_id):
 
     try:
@@ -1930,6 +1938,8 @@ def get_stats_replica_to_submitted():
 
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def derivation_requests(request):
     try:
         result = get_stats_replica_to_submitted()

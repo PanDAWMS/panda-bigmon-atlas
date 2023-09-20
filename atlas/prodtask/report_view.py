@@ -3,6 +3,8 @@ import json
 import copy
 import logging
 import pytz
+from django.contrib.auth.decorators import login_required
+
 from .models import TRequest, ProductionTask, StepExecution
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -18,9 +20,11 @@ from django.db.models import Count, Q
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
 
+from ..settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def make_default_report(request):
     error_list = []
     not_started = []
@@ -38,6 +42,7 @@ def make_default_report(request):
 
              })
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def make_report(request, production_request_type, number_of_days):
     if request.method == 'GET':
         try:

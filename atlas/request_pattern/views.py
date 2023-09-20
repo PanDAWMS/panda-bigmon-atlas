@@ -1,5 +1,8 @@
 import logging
+
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.shortcuts import render
@@ -47,16 +50,22 @@ def pattern_total_list(all=False):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def pattern_list_with_obsolete(request):
     return Response(pattern_total_list(True))
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def pattern_list(request):
     return Response(pattern_total_list())
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def clone_pattern(request):
     try:
         origin_slice = request.data['slice']
@@ -74,6 +83,8 @@ def clone_pattern(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def slice_pattern_steps(request,slice):
     pattern = InputRequestList.objects.get(request=29269, slice=slice)
     existed_steps = StepExecution.objects.filter(request=29269, slice=pattern)
@@ -107,6 +118,8 @@ def slice_pattern_steps(request,slice):
     return Response({'steps':result_list,'pattern_name':pattern.brief,'pattern_in_use':not(pattern.is_hide or False)})
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def slice_pattern_save_steps(request,slice):
     result = {'sucess':True}
     CHANGABLE = ['input_format', 'output_formats', 'tag','nEventsPerJob','project_mode','nFilesPerJob','nGBPerJob','maxFailure','container_name','onlyTagsForFC']
@@ -150,6 +163,8 @@ def slice_pattern_save_steps(request,slice):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def slice_pattern(request,slice):
     pattern = InputRequestList.objects.get(request=29269, slice=slice)
 

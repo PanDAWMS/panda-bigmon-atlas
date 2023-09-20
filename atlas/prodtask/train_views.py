@@ -121,6 +121,8 @@ def do_merge_requests(train_id, requests):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def merge_trains(request):
     data = request.data
     to_send = {}
@@ -134,6 +136,8 @@ def merge_trains(request):
     return Response({"load": to_send})
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def trains_to_merge(request):
     to_send = {}
     try:
@@ -146,6 +150,7 @@ def trains_to_merge(request):
 
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def train_luanch(request):
     if request.method == 'GET':
         return render(request, 'prodtask/_train_merge.html', {
@@ -267,6 +272,7 @@ def prepare_simple_train_carriages(train_id):
                 train_carriages.append({'dataset':dataset,'outputs':'.'.join(outputs),'loads_id':[load.id], 'groups': group})
     return train_carriages
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def assembled_train(request,train_id):
     if request.method == 'GET':
         try:
@@ -288,6 +294,7 @@ def assembled_train(request,train_id):
             return HttpResponse(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def trains_list(request):
     if request.method == 'GET':
         trains = TrainProduction.objects.filter(status='loading').order_by('-id')
@@ -300,6 +307,7 @@ def trains_list(request):
             })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def trains_list_full(request):
     if request.method == 'GET':
         trains = TrainProduction.objects.all().order_by('-id')
@@ -325,6 +333,8 @@ class TrainCarriageSerializer(serializers.ModelSerializer):
 class TrainLoadByTrain(generics.ListCreateAPIView):
     queryset = TrainProductionLoad.objects.all()
     serializer_class = TrainCarriageSerializer
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def list(self, request, train):
         # Note the use of `get_queryset()` instead of `self.queryset`
@@ -337,10 +347,16 @@ class TrainLoads(generics.ListCreateAPIView):
     queryset = TrainProductionLoad.objects.all()
     serializer_class = TrainCarriageSerializer
 
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
 
 class TrainLoad(generics.RetrieveUpdateDestroyAPIView):
     queryset = TrainProductionLoad.objects.all()
     serializer_class = TrainCarriageSerializer
+
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def train_create(request):
@@ -827,6 +843,7 @@ def remove_pattern_in_list(request):
             results = {'success':False,'message': str(e)}
     return HttpResponse(json.dumps(results), content_type='application/json')
 
+@csrf_protect
 def get_pattern_from_request(request,reqid):
     results = {}
     try:
@@ -837,6 +854,8 @@ def get_pattern_from_request(request,reqid):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def get_derivation_phys_pattern(request):
     current_patterns = SystemParametersHandler.get_daod_phys_production()
     mc_campaigns = SystemParametersHandler.get_mc_campaigns()
@@ -867,6 +886,8 @@ def get_pattern_steps(train_id, outputs):
     return steps
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def get_step_from_pattern(request):
     pattern_request_id = int( request.query_params.get('request_id'))
     if not TRequest.objects.filter(reqid=pattern_request_id):

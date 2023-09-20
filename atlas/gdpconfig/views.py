@@ -1,10 +1,13 @@
 import json
 
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 from atlas.prodtask.models import GDPConfig, Cloudconfig, GlobalShare
 
 from decimal import Decimal
 from datetime import datetime
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 import logging
 # import os
@@ -19,12 +22,13 @@ from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def gdpconfig(request, rid = None):
 
     return render(request, 'gdpconfig/_config_table.html')
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def fairshare(request, rid = None):
 
     return render(request, 'gdpconfig/_fairshare_table.html')
@@ -162,6 +166,7 @@ def str_to_type (s):
 #        return type(s)
         return str
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def get_config(request):
     qs_val = list(GDPConfig.objects.all().values())
     data = json.dumps(list(qs_val))
@@ -169,6 +174,7 @@ def get_config(request):
     return HttpResponse(data)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def get_fairshare(request):
     qs_val = Cloudconfig.objects.all().values('name','fairshare')
 
@@ -201,6 +207,8 @@ def global_share(request):
             })
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def global_share_tree(request):
     try:
         all_global_share = list(GlobalShare.objects.all().values())
@@ -286,6 +294,8 @@ def global_share_tree(request):
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def global_share_change(request):
     error_message = []
     try:

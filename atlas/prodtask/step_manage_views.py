@@ -9,6 +9,9 @@ from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
 from copy import deepcopy
 
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError
@@ -23,7 +26,7 @@ from .ddm_api import dataset_events
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Q
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \
     ParentToChildRequest, TTask
 from functools import reduce
@@ -2378,6 +2381,8 @@ def recursive_delete(step_id, do_delete=False):
 #         except Exception,e:
 #             print dataset,str(e)
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def request_train_patterns(request, reqid):
     train_pattern_list= []
     try:
@@ -2648,6 +2653,8 @@ def obsolete_old_deleted_tasks(request, reqid):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def celery_task_status(request, celery_task_id):
     celery_task = AsyncResult(celery_task_id)
     progress = 0
@@ -2665,6 +2672,8 @@ def celery_task_status(request, celery_task_id):
     return Response({'status':celery_task.status, 'progress': progress, 'result':result, 'celery_task_name':celery_task_name})
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def test_celery_task(request, reqid):
     return_value = single_request_action_celery_task(reqid,test_async_progress,'test',request.user.username,request.data['text'])
     return Response(return_value)

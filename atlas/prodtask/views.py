@@ -21,7 +21,9 @@ from django.utils import timezone
 from datetime import timedelta
 from time import time
 
-from rest_framework.decorators import api_view
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication, BasicAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from atlas.celerybackend.celery import app, ProdSysTask
@@ -98,6 +100,7 @@ def create_predefinition_action(step):
             #     waiting_step.status = 'active'
             #     waiting_step.save()
 
+@csrf_protect
 def step_approve(request, stepexid=None, reqid=None, sliceid=None):
     if request.method == 'GET':
         try:
@@ -1231,6 +1234,7 @@ def delete_small_merge(good_slices: [int], production_request: int):
                         step.save()
                         # remove_step_by_index(ordered_existed_steps, index)
                 break
+@csrf_protect
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
     try:
@@ -1573,6 +1577,8 @@ def request_steps_save(request, reqid):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def request_steps_save_async(request, reqid):
     slice_steps = request.data
     return_value= single_request_action_celery_task(reqid,request_steps_approve_or_save_async,'Save slices',request.user.username,
@@ -1694,12 +1700,13 @@ def make_request_fast(request, reqid):
         except Exception as e:
             pass
         return HttpResponse(json.dumps(results), content_type='application/json')
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def home(request):
     tmpl = get_template('prodtask/_index.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production Home'})
     return HttpResponse(tmpl.render(c))
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def about(request):
     tmpl = get_template('prodtask/_about.html')
     c = Context({'active_app' : 'prodtask', 'title'  : 'Monte Carlo Production about', })
@@ -1781,6 +1788,7 @@ def get_full_patterns():
     return result
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_table_view(request, rid=None, show_hidden=False):
     # Prepare data for step manipulation page
 
@@ -2638,6 +2646,7 @@ def step_template_table(request):
 
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def stepex_details(request, rid=None):
     if rid:
         try:
@@ -2714,6 +2723,7 @@ def step_execution_table(request):
                                                                 'parent_template': 'prodtask/_index.html'})
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def production_dataset_details(request, name=None):
    if name:
        try:
@@ -3417,6 +3427,7 @@ def pre_stage_approve(request):
     })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def pre_stage_approved(request):
     waiting_steps = [] # WaitingStep.objects.filter(status__in=['executing','active'],action=4)
     result = []
@@ -3513,6 +3524,7 @@ def send_alarm_message(subject, message):
               admin_mails,
               fail_silently=False)
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def health_status(request):
     if request.method == 'GET':
         status = 'Not found'

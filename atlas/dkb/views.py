@@ -1,8 +1,12 @@
-
+from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 import logging
+
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority, HashTag
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import render
 
@@ -11,6 +15,8 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from atlas.settings.local import ESLogin
+
+from atlas.settings import OIDC_LOGIN_URL
 
 connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=5000)
 _logger = logging.getLogger('prodtaskwebui')
@@ -33,6 +39,8 @@ def test_connection():
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def es_task_search_analy(request):
     search_string = request.data
     result, total = es_task_search_all(search_string, 'analy')
@@ -60,6 +68,8 @@ def es_task_search_all(search_string, task_type):
     return result, total
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def es_task_search(request):
     search_string = request.data
     result, total = es_task_search_all(search_string, 'prod')
@@ -75,6 +85,8 @@ def hits_to_tasks(hits):
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def search_string_to_url(request):
     search_string = request.data
     return Response(key_string_from_input(search_string))
@@ -85,6 +97,8 @@ def key_string_from_input(search_string):
     url = ','.join([x for x in prepared_strings if x])
     return {'url':url,'query_string':query_string}
 
+
+@login_required(login_url=OIDC_LOGIN_URL)
 def index(request):
     if request.method == 'GET':
 
@@ -97,12 +111,16 @@ def index(request):
 
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def test_name(request):
     """Return name of the user"""
     return Response(request.user.username)
 
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def task_tree(request, task_id):
     result_tree = []
     task_info = []
@@ -352,6 +370,8 @@ def form_statistic_per_step(statistics,running_stat, finished_stat, mc_steps=Tru
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def output_hashtag_stat(request):
     try:
         hashtags_raw = request.data['hashtag']
@@ -457,6 +477,8 @@ def count_output_stat(project, ami_tags, outputs=None):
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def tasks_from_list(request):
     result_tasks_list = []
     try:
@@ -468,6 +490,8 @@ def tasks_from_list(request):
     return Response(result_tasks_list)
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
 def deriv_output_proportion(request,project,ami_tag):
     try:
         result = count_output_stat(project,[x for x in ami_tag.split(',') if x])

@@ -353,7 +353,7 @@ def short_hlt_form(request):
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
 
-@csrf_protect
+@login_required(login_url=OIDC_LOGIN_URL)
 def hlt_form_prepare_request(request):
     if request.method == 'GET':
         try:
@@ -467,7 +467,7 @@ def short_valid_form(request):
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')
 
 
-@csrf_protect
+@login_required(login_url=OIDC_LOGIN_URL)
 def valid_form_prepare_request(request):
     if request.method == 'GET':
         try:
@@ -568,6 +568,7 @@ def clean_old_request(do_action=False):
     print(total_request)
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_details(request, rid=None):
     if rid:
         try:
@@ -601,6 +602,7 @@ def close_deft_ref(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+@csrf_protect
 def request_comments(request, reqid):
      if request.method == 'GET':
         results = {'success':False}
@@ -743,6 +745,7 @@ def create_tarball_input(production_request_id):
     return result
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_update(request, reqid=None):
     if request.method == 'POST':
         try:
@@ -1428,7 +1431,7 @@ def find_datasets_by_pattern(request):
 
 
 
-
+@csrf_protect
 def resend_email(request,reqid):
     if request.method == 'GET':
         if request.user.is_superuser:
@@ -1529,6 +1532,7 @@ def check_allow_request_create(current_user):
         return allowed_groups
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_clone_or_create(request, rid, title, submit_url, TRequestCreateCloneForm, TRequestCreateCloneConfirmation,
                             form_prefill, default_step_values = {'nEventsPerJob':'1000','priority':'880'}, version='2.0'):
     """
@@ -1893,6 +1897,7 @@ def change_production_request_status(request, reqid, new_status):
          return HttpResponse(json.dumps({}), content_type='application/json')
 
 
+@csrf_protect
 def change_request_status(request, reqid, status, message, comment):
     results = {}
     if request.method == 'POST':
@@ -1904,6 +1909,7 @@ def change_request_status(request, reqid, status, message, comment):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpattern_create(request, pattern_id=None):
     if pattern_id:
         try:
@@ -1966,6 +1972,7 @@ def step_list_pattern_from_json(json_pattern, STEPS=MCPattern.STEPS):
 
     return [(step, decompress_pattern(pattern_dict.get(step, {}))) for step in STEPS]
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpattern_update(request, pattern_id):
     try:
         values = MCPattern.objects.values().get(id=pattern_id)
@@ -1994,6 +2001,7 @@ def mcpattern_update(request, pattern_id):
 
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpattern_table(request):
     mcpatterns = MCPattern.objects.all()
     patterns_obsolete = []
@@ -2021,6 +2029,7 @@ def mcpattern_table(request):
     })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpriority_table(request):
     mcpriorities = MCPriority.objects.order_by('priority_key')
     header_list = ['Priority'] + MCPriority.STEPS
@@ -2043,6 +2052,7 @@ def mcpriority_table(request):
 
     })
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpriority_create(request):
 
     values = {}
@@ -2065,6 +2075,7 @@ def mcpriority_create(request):
     })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def mcpriority_update(request, pattern_id):
     try:
         values = list(MCPriority.objects.values()).get(id=pattern_id)
@@ -2309,6 +2320,7 @@ def extend_request(request, reqid):
 
 
 
+@csrf_protect
 @datatables.parametrized_datatable(RequestTable, Parameters, name='fct')
 def request_table(request):
     """
@@ -2322,6 +2334,7 @@ def request_table(request):
                              'parametrized': request.parametrized, 'parent_template': 'prodtask/_index.html'})
 
 
+@csrf_protect
 def request_table_js(request):
     """
     Request table

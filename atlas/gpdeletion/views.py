@@ -716,6 +716,8 @@ def update_tag_from_ami(tag, is_data=False):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def gpdetails(request):
     try:
         current_id = request.query_params.get('gp_id')
@@ -728,6 +730,8 @@ def gpdetails(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def ami_tags_details(request):
     try:
         ami_tags = request.query_params.get('ami_tags').split(',')
@@ -741,6 +745,8 @@ def ami_tags_details(request):
         return HttpResponseBadRequest(e)
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def gp_container_details(request):
     try:
         result = {}
@@ -773,6 +779,8 @@ def gp_container_details(request):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def extension(request):
     try:
         username = request.user.username
@@ -1004,6 +1012,10 @@ class ListGroupProductionDeletionForUsersView(generics.ListAPIView):
 
 
 class ListGroupProductionDeletionView(generics.ListAPIView):
+
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
     serializer_class = GroupProductionDeletionSerializer
     lookup_fields = ['dsid', 'output_format', 'version', 'status', 'skim', 'ami_tag','data_type']
 
@@ -1040,6 +1052,8 @@ def collect_tags(start_requests):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def set_datasets_to_delete(request):
     try:
         username = request.user.username
@@ -1112,6 +1126,10 @@ class GroupProductionDeletionRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ListGroupProductionDeletionRequestsView(generics.ListAPIView):
+
+    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
     serializer_class = GroupProductionDeletionRequestSerializer
     lookup_fields = ['id']
 

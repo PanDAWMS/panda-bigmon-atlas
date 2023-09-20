@@ -3,11 +3,15 @@ import logging
 from os import walk
 
 import time
+
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_protect
-from rest_framework.decorators import api_view
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 import pickle
 
@@ -20,10 +24,14 @@ from atlas.dkb.views import tasks_from_string, tasks_by_hashtag
 from .models import StepExecution, InputRequestList, TRequest
 from django.utils import timezone
 
+from ..settings import OIDC_LOGIN_URL
+
 _logger = logging.getLogger('prodtaskwebui')
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def request_hashtags(request, hashtags):
     hashtags_to_process = hashtags.split(',')
     result={}
@@ -107,6 +115,8 @@ def hashtag_request_to_tasks_full():
             list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update))
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def tasks_statistic_steps(request):
     result = {}
     try:
@@ -178,8 +188,9 @@ def propogate_hashtag_to_child(task_id, hashtag_type):
                 add_hashtag_to_task(hashtag,task.id)
 
 
-@csrf_protect
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def tasks_requests(request):
     result_tasks_list = []
     try:
@@ -192,8 +203,9 @@ def tasks_requests(request):
         print(str(e))
     return Response(result_tasks_list)
 
-@csrf_protect
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def tasks_hashtag(request):
     result_tasks_list = []
     try:
@@ -206,6 +218,8 @@ def tasks_hashtag(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def hashtagslists(request):
     result = []
     try:
@@ -221,6 +235,8 @@ def hashtagslists(request):
     return Response(result)
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def hashtags_by_request(request, reqid):
     hashtags = []
     try:
@@ -232,8 +248,9 @@ def hashtags_by_request(request, reqid):
     return Response({'hashtags':hashtags})
 
 
-@csrf_protect
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def set_hashtag_for_tasks(request):
 
     try:
@@ -264,8 +281,9 @@ def get_tasks_from_containers(containers):
 
 
 
-@csrf_protect
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def set_hashtag_for_containers(request):
     try:
         input_data = json.loads(request.body)
@@ -281,6 +299,8 @@ def set_hashtag_for_containers(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def hashtags_campaign_lists(request):
     result = []
     try:
@@ -298,6 +318,8 @@ def hashtags_campaign_lists(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def campaign_steps(request):
     result = {}
     try:
@@ -310,6 +332,7 @@ def campaign_steps(request):
 
     return Response(result)
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_hashtags_campaign(request):
     if request.method == 'GET':
 
@@ -320,6 +343,7 @@ def request_hashtags_campaign(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_hashtags_main(request):
     if request.method == 'GET':
 
@@ -330,6 +354,7 @@ def request_hashtags_main(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_hashtags_main_with_hashtag(request, hashtag_string):
     if request.method == 'GET':
         hashtags = hashtag_string.split(',')

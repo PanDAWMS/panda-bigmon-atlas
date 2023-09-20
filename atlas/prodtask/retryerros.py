@@ -99,6 +99,7 @@ def retry_errors_create(request):
     return retry_errors_clone_create(request, None,'prodtask:retry_errors_create')
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_clone_create(request, retry_errors_id,submit_url):
     if retry_errors_id:
          message = 'Clone retry error entity: %i' % int(retry_errors_id)

@@ -37,6 +37,8 @@ def index(request):
             })
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def idds_postproc(request,production_request):
     slices = InputRequestList.objects.filter(request=production_request).order_by('-slice')
     last_slice = None
@@ -58,6 +60,8 @@ def idds_postproc(request,production_request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def idds_tasks(request,production_request):
     slices = InputRequestList.objects.filter(request=production_request).order_by('slice')
     tasks = []
@@ -107,6 +111,8 @@ def request_results(request, production_request):
     return Response(result)
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def idds_get_patterns(request):
     slices = InputRequestList.objects.filter(request=30687).order_by('slice')
     patterns = []
@@ -119,6 +125,8 @@ def idds_get_patterns(request):
 
 
 @api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def idds_postproc_save(request,step_id):
     try:
         step = StepExecution.objects.get(id=step_id)

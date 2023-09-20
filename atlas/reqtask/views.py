@@ -2,6 +2,7 @@ import json
 import re
 
 import requests
+from django.contrib.auth.decorators import login_required
 from django.core import serializers
 
 from atlas.dkb.views import tasks_from_string
@@ -15,6 +16,8 @@ from datetime import datetime, timedelta
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+
+from atlas.settings import OIDC_LOGIN_URL
 
 
 # _logger = logging.getLogger('prodtaskwebui')
@@ -42,7 +45,7 @@ def str_to_slices_range(range_str):
                     slices += [current_value]
     return slices
 
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def tasks_hashtags(request, hashtag_formula):
     try:
         from atlas.settings.local import FIRST_ADOPTERS
@@ -67,6 +70,7 @@ def tasks_hashtags(request, hashtag_formula):
                              })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_recent_tasks(request, days=3):
     try:
         task_ids = list(ProductionTask.objects.filter(timestamp__gte=datetime.now() - timedelta(days=int(days)),request_id__gt=1000).values_list('id',flat=True))
@@ -83,7 +87,7 @@ def request_recent_tasks(request, days=3):
                              'title': 'Tasks for the last %s days'%str(days)
                              })
 
-
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_tasks_slices(request, rid, slices):
     try:
         from atlas.settings.local import FIRST_ADOPTERS
@@ -109,6 +113,7 @@ def request_tasks_slices(request, rid, slices):
                              })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_tasks(request, rid = None):
 
     # def decimal_default(obj):
@@ -136,6 +141,7 @@ def request_tasks(request, rid = None):
                              })
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_tasks_by_url(request):
     params_for_bigpanda = ''
     request_path = request.META['QUERY_STRING']
@@ -151,6 +157,7 @@ def request_tasks_by_url(request):
 
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def tasks_action(request):
     """
 
@@ -201,6 +208,7 @@ def  get_tasks_by_url(url):
     return [x['jeditaskid'] for x in data]
 
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def get_tasks(request):
 
     FAILED = ['failed','broken','aborted','obsolete']

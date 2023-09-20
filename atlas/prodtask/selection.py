@@ -1,17 +1,22 @@
 import logging
 import pickle
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic
 #from ..prodtask.task_actions import do_action
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 
 from .models import ProductionTask
+from ..settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def request_progress_main(request):
     if request.method == 'GET':
         return render(request, 'prodtask/_progress_stat.html', {
@@ -21,6 +26,7 @@ def request_progress_main(request):
                 'parent_template': 'prodtask/_index.html',
             })
 
+@login_required(login_url=OIDC_LOGIN_URL)
 def task_chain(request):
     if request.method == 'GET':
         return render(request, 'prodtask/_task_chain.html', {
@@ -31,6 +37,8 @@ def task_chain(request):
 
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def request_hashtag_monk(request, hashtags):
     hashtag_monk = pickle.load(open('/data/hashtagmonk.pkl','rb'))
     result = []
@@ -44,6 +52,8 @@ def request_hashtag_monk(request, hashtags):
     return Response({"load": result})
 
 @api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def request_progress_general(request, reqids):
     requests_to_process = list(map(int,reqids.split(',')))
     request_statistics = request_progress(requests_to_process)
