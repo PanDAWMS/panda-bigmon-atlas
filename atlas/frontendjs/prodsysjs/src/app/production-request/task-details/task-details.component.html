@@ -6,7 +6,7 @@
     <!--    Row-->
     <div>ID:</div><div><app-bptask [task]="task.id"></app-bptask> </div>
     <div [ngClass]="['taskStatusBkgr',task.status]">Status:</div><div><span  [ngClass]="['taskStatus',task.status]">{{task.status}}</span></div>
-    <div>Request:</div><div><a href="/prodtask/slice_by_task/{{task.id}}">{{task.request_id}}</a></div>
+    <div>Request:</div><div><a *ngIf="task.request_id!==300" href="/prodtask/slice_by_task/{{task.id}}">{{task.request_id}}</a></div>
     <!--    Row-->
     <div>Name:</div><div style="grid-column: 2 / -1">{{task.name}} </div>
     <!--    Row-->
