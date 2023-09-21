@@ -9,6 +9,7 @@ import {
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Observable} from 'rxjs';
 import {filter, map, switchMap, tap} from 'rxjs/operators';
+import {MatSelectChange} from "@angular/material/select";
 
 
 
@@ -68,6 +69,7 @@ export class TaskActionComponent implements OnInit, OnDestroy {
   };
    SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete'];
    comment = '';
+  selectedSites: string[] = [];
 
   constructor(private taskService: TaskService, public dialog: MatDialog) { }
 
@@ -234,6 +236,12 @@ export class TaskActionComponent implements OnInit, OnDestroy {
 
   reSendTasks(): void{
     this.taskService.addAction(this.reSendAction);
+  }
+
+  emptySelectedList(matSelectChange: MatSelectChange): void {
+    if ((matSelectChange.value.length > 1) && (matSelectChange.value as string[]).includes('')){
+     this.selectedSites = [''];
+    }
   }
 }
 

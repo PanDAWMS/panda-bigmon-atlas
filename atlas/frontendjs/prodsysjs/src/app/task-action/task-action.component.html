@@ -37,10 +37,10 @@
   <mat-menu #reassignMenu="matMenu" yPosition="below">
     <div class="action-menu-row">
       <div class="task-action-input-form">
-        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+        <mat-form-field class="task-action-button-field" appearance="fill"  (click)="$event.stopPropagation()">
           <mat-label>Sites</mat-label>
-          <mat-select #sites >
-            <mat-option [value]="''">Unselect Site</mat-option>
+          <mat-select #sites multiple [(value)]="selectedSites" (selectionChange)="emptySelectedList($event)">
+            <mat-option [value]="''" >Unselect Site</mat-option>
             <mat-option *ngFor="let site of reassignEntities.sites" [value]="site">
                   {{site}}
             </mat-option>
@@ -52,8 +52,11 @@
             <mat-radio-button value="soft">Soft</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button [disabled]="sites.value===undefined" color="primary" (click)="executeAction('reassign_to_site',[sites.value, siteOption])">Go</button>
+        <button mat-raised-button [disabled]="selectedSites.length === 0" color="primary" (click)="executeAction('reassign_to_site',[sites.value.join(','), siteOption])">Go</button>
       </div>
+        <div  *ngIf="selectedSites.length>1" class="action-menu-row" style="overflow-wrap: anywhere">
+          Sites: {{sites.value.join(',')}}
+        </div>
     <mat-divider></mat-divider>
         <div class="action-menu-row">
       <div class="task-action-input-form">
