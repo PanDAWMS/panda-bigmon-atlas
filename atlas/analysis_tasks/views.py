@@ -1,6 +1,7 @@
 import json
 import logging
 from copy import deepcopy
+from pprint import pprint
 from time import sleep
 
 import requests
@@ -73,6 +74,16 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
     input_variable = TemplateVariable(TemplateVariable.KEY_NAMES.INPUT_BASE, task_input)
     task_params = replace_template_by_variable(task_params, input_variable, [])
     template_variables.append(input_variable)
+    if ':' in output_base:
+        output_scope = output_base.split(':')[0]
+    else:
+        if output_base.startswith('user') or output_base.startswith('group'):
+            output_scope = '.'.join(output_base.split('.')[0:2])
+        else:
+            output_scope = output_base.split('.')[0]
+    scope_variable = TemplateVariable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE, output_scope)
+    task_params = replace_template_by_variable(task_params, scope_variable, [])
+    template_variables.append(scope_variable)
     template_variables.append(TemplateVariable(TemplateVariable.KEY_NAMES.TASK_PRIORITY, task_params.get('taskPriority',1000),
                                                ['taskPriority'], TemplateVariable.VariableType.INTEGER))
     if 'parent_tid' in task_params:
@@ -123,6 +134,11 @@ def monk_create_analy_task_for_slice(requestID: int, slice: int ):
             t_task, prod_task = register_analysis_task(step, task_id, task_id)
             return t_task, prod_task
 
+
+def print_rendered_steps_in_slice(requestID: int, slice: int):
+    steps = AnalysisStepTemplate.objects.filter(request=requestID, slice=InputRequestList.objects.get(slice=slice, request=requestID))
+    for step in steps:
+        pprint(render_task_template(step.step_parameters, step.variables_data))
 
 def render_task_template(task_template: dict, variables: [TemplateVariable]) -> dict:
     render_template = deepcopy(task_template)
@@ -432,6 +448,8 @@ def create_analysis_request(request):
 def get_analysis_request(request):
     try:
         request_id = int(request.query_params.get('request_id'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
         request = TRequest.objects.get(reqid=request_id)
         slices = InputRequestList.objects.filter(request=request)
         serialized_slices_with_steps = []
@@ -453,6 +471,8 @@ def get_analysis_request(request):
 def get_analysis_request_stat(request):
     try:
         request_id = int(request.query_params.get('request_id'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
         tasks = ProductionTask.objects.filter(request=request_id)
         tasks_stat = {'hs06sec_finished': 0, 'hs06sec_failed': 0, 'bytes': 0}
         for task in tasks:
@@ -479,6 +499,8 @@ def get_analysis_request_stat(request):
 def get_analysis_request_output_datasets_names(request):
     try:
         request_id = int(request.query_params.get('request_id'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
         output_datasets = collect_all_output_datasets(request_id)
         return Response(output_datasets)
     except TRequest.DoesNotExist:
@@ -495,6 +517,8 @@ def clone_analysis_request_slices(request):
 def get_slices_template(request):
     try:
         request_id = int(request.data['requestID'])
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
         production_request = TRequest.objects.get(reqid=request_id)
         slices = request.data['slices']
         result = {'slicesToModify':[], 'template':None}
@@ -513,6 +537,8 @@ def get_slices_template(request):
 def modify_slices_template(request):
     try:
         request_id = int(request.data['requestID'])
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
         production_request = TRequest.objects.get(reqid=request_id)
         slices = request.data['slices']
         tempalte = request.data['template']
@@ -582,6 +608,9 @@ def prepare_eventloop_analysis_task(request_id: int):
                 modify_analysis_step_input_source(request_id, slice, new_task)
 
 def submit_analysis_slices(request):
+    request_id = int(request.data['requestID'])
+    if request_id < 1000:
+        raise TRequest.DoesNotExist
     slices = request.data['slices']
     for slice in slices:
         analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request.data['requestID'], slice=InputRequestList.objects.get(slice=slice, request_id=request.data['requestID'])).order_by('id'))

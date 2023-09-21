@@ -1,7 +1,9 @@
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import timedelta
 from enum import Enum, auto
+from pprint import pprint
 from typing import Dict, List
 from uuid import uuid1
 
@@ -13,6 +15,7 @@ from django.db import connection
 from django.db import connections
 from django.db.models import CASCADE
 from django.utils import timezone
+from jinja2.nativetypes import NativeEnvironment
 from rest_framework import serializers
 
 from ..prodtask.helper import Singleton
@@ -883,6 +886,7 @@ class TemplateVariable:
         PARENT_ID = 'parent_tid'
         SOURCE_PREPARED = 'source_prepared'
         NO_EMAIL = 'noEmail'
+        OUTPUT_SCOPE = 'output_scope'
 
     KEYS_SEPARATOR = ','
 
@@ -962,6 +966,10 @@ class AnalysisTaskTemplate(models.Model):
                 break
         self.variables_data = current_data
         return return_value
+
+    def print(self):
+        print(f'Tag: {self.id}')
+        pprint(self.task_parameters)
 
     class Meta:
         app_label = 'dev'
@@ -1052,6 +1060,39 @@ class AnalysisStepTemplate(models.Model):
             if x.name == variable_name:
                 return x.primary_key
         return None
+
+    def render_task_template(self) -> dict:
+        render_template = deepcopy(self.step_parameters)
+        key_values = {}
+        for variable in self.variables_data:
+            for key_chain in variable.keys:
+                if key_chain not in key_values:
+                    key_values[key_chain] = {}
+                key_values[key_chain].update({variable.name: variable.value})
+        rendered_keys = []
+        for variable in self.variables_data:
+            if variable.type == TemplateVariable.VariableType.TEMPLATE:
+                for key_chain in variable.keys:
+                    if key_chain not in rendered_keys:
+                        current_node = render_template
+                        current_key = ''
+                        leaf_parent = None
+                        for key in key_chain.split(TemplateVariable.KEYS_SEPARATOR):
+                            leaf_parent = current_node
+                            if key.isdigit():
+                                current_key = int(key)
+                            else:
+                                current_key = key
+                            current_node = current_node[current_key]
+                        jinja_env = NativeEnvironment()
+                        current_template = jinja_env.from_string(current_node)
+                        rendered_template = current_template.render(key_values[key_chain])
+                        leaf_parent[current_key] = rendered_template
+                        rendered_keys.append(key_chain)
+
+        return render_template
+
+
 
     class Meta:
         app_label = 'dev'
