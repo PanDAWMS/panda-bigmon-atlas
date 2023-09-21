@@ -177,6 +177,8 @@ def production_task_for_request(request: Request) -> Response:
             tasks = ProductionTask.objects.filter(id__in=tasks_id)
         else:
             request_id = int(request.data['requestID'])
+            if request_id < 1000:
+                raise TRequest.DoesNotExist
             if request.data['slices']:
                 slices = request.data['slices']
                 slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
