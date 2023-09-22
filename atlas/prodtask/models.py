@@ -1092,7 +1092,17 @@ class AnalysisStepTemplate(models.Model):
 
         return render_template
 
-
+    def change_step_input(self, new_input: str) -> str:
+        self.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, new_input)
+        new_name = self.get_new_name(new_input.rpartition(':')[2], self.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME),
+                                self.task_template.tag)
+        self.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
+        self.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, f'{new_name}/')
+        return new_name
+    @staticmethod
+    def get_new_name(dataset: str, old_name: str, tag: str):
+        prefix = '.'.join(old_name.split('.')[:2])
+        return prefix + '.' + dataset + '_' + tag + '.v00'
 
     class Meta:
         app_label = 'dev'

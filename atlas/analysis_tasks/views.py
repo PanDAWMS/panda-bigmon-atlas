@@ -138,43 +138,7 @@ def monk_create_analy_task_for_slice(requestID: int, slice: int ):
 def print_rendered_steps_in_slice(requestID: int, slice: int):
     steps = AnalysisStepTemplate.objects.filter(request=requestID, slice=InputRequestList.objects.get(slice=slice, request=requestID))
     for step in steps:
-        pprint(render_task_template(step.step_parameters, step.variables_data))
-
-def render_task_template(task_template: dict, variables: [TemplateVariable]) -> dict:
-    render_template = deepcopy(task_template)
-    key_values = {}
-    for variable in variables:
-        for key_chain in variable.keys:
-            if key_chain not in key_values:
-                key_values[key_chain] = {}
-            key_values[key_chain].update({variable.name: variable.value})
-    rendered_keys = []
-    for variable in variables:
-        if variable.type == TemplateVariable.VariableType.TEMPLATE:
-            for key_chain in variable.keys:
-                if key_chain not in rendered_keys:
-                    current_node = render_template
-                    current_key= ''
-                    leaf_parent = None
-                    for key in key_chain.split(TemplateVariable.KEYS_SEPARATOR):
-                        leaf_parent = current_node
-                        if key.isdigit():
-                            current_key = int(key)
-                        else:
-                            current_key = key
-                        current_node = current_node[current_key]
-                    jinja_env = NativeEnvironment()
-                    current_template = jinja_env.from_string(current_node)
-                    rendered_template = current_template.render(key_values[key_chain])
-                    leaf_parent[current_key] = rendered_template
-                    rendered_keys.append(key_chain)
-
-    return render_template
-
-
-def get_new_name(dataset: str, old_name: str, tag: str):
-    prefix = '.'.join(old_name.split('.')[:2])
-    return prefix + '.' + dataset + '_' + tag + '.v00'
+        pprint(step.render_task_template())
 
 
 def check_name_version(step_template: AnalysisStepTemplate):
@@ -222,7 +186,7 @@ def collect_all_output_datasets(request_id: int) -> [str]:
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
     check_input_source_exists(step_template)
-    step_template.step_parameters = deepcopy(render_task_template(step_template.step_parameters, step_template.variables_data))
+    step_template.step_parameters = deepcopy(step_template.render_task_template())
     task = TTask(id=task_id,
                           parent_tid=parent_tid,
                           status=ProductionTask.STATUS.WAITING,
@@ -271,6 +235,7 @@ def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, pa
     return task, prod_task
 
 
+
 def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTemplate) -> AnalysisStepTemplate:
     prod_step = StepExecution()
     prod_step.step_template = fill_template(AnalysisStepTemplate.ANALYSIS_STEP_NAME.GROUP_ANALYSIS, template.tag, slice.priority)
@@ -289,13 +254,7 @@ def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTem
     step.slice = slice
     step.request = slice.request
     step.variables_data = deepcopy(template.variables_data)
-    step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, slice.dataset)
-    new_name = get_new_name(slice.dataset, step.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME), template.tag )
-    step.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
-    step.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, f'{new_name}/')
-    #step.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, slice.request.manager)
-    #step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.TASK_NAME)] =
-    #step.step_parameters[step.get_variable_key(TemplateVariable.KEY_NAMES.USER_NAME)] = slice.request.manager
+    step.change_step_input(slice.dataset)
     step.template = template
     step.step_production_parent = prod_step
     step.save()
@@ -434,6 +393,14 @@ def create_analysis_request(request):
         analysis_template_base = request.data['templateBase']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
         analysis_template.task_parameters = analysis_template_base['task_parameters']
+        if (analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE) and
+            analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('user')):
+            old_scope = analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE)
+            new_scope = f'user.{request.user.username}'
+            analysis_template.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, f"{request.user.first_name} {request.user.last_name}")
+            analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE, new_scope)
+            analysis_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, analysis_template.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME).replace(old_scope, new_scope))
+            analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE).replace(old_scope, new_scope))
         new_request.manager = analysis_template.get_variable(TemplateVariable.KEY_NAMES.USER_NAME)
         new_request.save()
         add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
@@ -541,17 +508,18 @@ def modify_slices_template(request):
             raise TRequest.DoesNotExist
         production_request = TRequest.objects.get(reqid=request_id)
         slices = request.data['slices']
-        tempalte = request.data['template']
-        input_dataset = request.data['inputDataset']
+        template = request.data['template']
+        input_dataset = request.data['inputDataset'].strip()
         result = {'slicesModified':[]}
         for slice_number in slices:
             slice = InputRequestList.objects.filter(request=production_request).get(slice=slice_number)
             step = AnalysisStepTemplate.objects.filter(request=production_request, slice=slice).order_by('id').first()
             if step and step.status == AnalysisStepTemplate.STATUS.NOT_CHECKED:
+                step.step_parameters = template
                 if input_dataset:
                     slice.dataset = input_dataset
+                    step.change_step_input(input_dataset)
                     slice.save()
-                step.step_parameters = tempalte
                 step.save()
                 result['slicesModified'].append(slice_number)
         return Response({'result':f"{len(result['slicesModified'])} modified"}, status=status.HTTP_200_OK)
@@ -621,8 +589,8 @@ def submit_analysis_slices(request):
             step.save()
             prod_step.save()
             try:
-                from atlas.settings.local import FIRST_ADOPTERS
-                if (request.user.username in FIRST_ADOPTERS):
+                # from atlas.settings.local import FIRST_ADOPTERS
+                # if (request.user.username in FIRST_ADOPTERS):
                     _jsonLogger.info('Submit analysis task for slice',
                         extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice}))
                     create_analy_task_for_slice(request.data['requestID'], slice)
@@ -733,105 +701,3 @@ def simple_analy_slice_clone(request_id: int, slice_number: int) -> int:
 
     except Exception as e:
         raise Exception(f'Failed to clone slice {slice} of request {request_id}: {str(e)}')
-# """
-# {
-#   taskName= 'text',
-#   uniqueTaskName= 'checkbox',
-#   vo= 'text',
-#   architecture= 'text',
-#   transUses= 'text',
-#   transHome= 'text',
-#   processingType= 'text',
-#   prodSourceLabel= 'text',
-#   site= 'text',
-#   includedSite= 'text',
-#   cliParams= 'text',
-#   osInfo= 'text',
-#   nMaxFilesPerJob= 'number',
-#   respectSplitRule= 'checkbox',
-#   sourceURL= 'text',
-#   dsForIN= 'text',
-#   mergeOutput= 'checkbox',
-#   userName= 'text',
-#   taskType= 'text',
-#   taskPriority= 'number',
-#   nFilesPerJob= 'number',
-#   fixedSandbox= 'text',
-#   walltime= 'number',
-#   coreCount= 'number',
-#   noInput= 'checkbox',
-#   nEvents= 'number',
-#   nEventsPerJob= 'number',
-#   noEmail= 'checkbox',
-#   osMatching= 'checkbox',
-#   useRealNumEvents= 'checkbox',
-#   skipScout= 'checkbox',
-#   official= 'checkbox',
-#   respectLB= 'checkbox',
-#   maxAttempt= 'number',
-#   useLocalIO= 'number',
-#   workingGroup= 'text',
-#   addNthFieldToLFN= 'text',
-#   getNumEventsInMetadata= 'checkbox',
-#   baseRamCount= 'number',
-#   campaign= 'text',
-#   cloud= 'text',
-#   cpuTimeUnit= 'text',
-#   ipConnectivity= 'text',
-#   maxFailure= 'number',
-#   mergeCoreCount= 'number',
-#   nGBPerJob= 'number',
-#   noWaitParent= 'checkbox',
-#   ramCount= 'number',
-#   ramUnit= 'text',
-#   reqID= 'number',
-#   scoutSuccessRate= 'number',
-#   ticketID= 'text',
-#   ticketSystemType= 'text',
-#   transPath= 'text',
-#   ramCountUnit= 'text',
-#   container_name= 'text',
-#   avoidVP= 'checkbox',
-#   runOnInstant= 'checkbox',
-#   nEventsPerFile= 'number',
-#   parentTaskName= 'text',
-#   nFiles= 'number',
-#   disableAutoFinish= 'checkbox',
-#   failWhenGoalUnreached= 'checkbox',
-#   goal= 'text',
-#   ttcrTimestamp= 'text',
-#   useExhausted= 'checkbox',
-#   gshare= 'text',
-#   ioIntensity= 'number',
-#   ioIntensityUnit= 'text',
-#   maxWalltime= 'number',
-#   orderByLB= 'checkbox',
-#   outDiskCount= 'number',
-#   outDiskUnit= 'text',
-#   tgtMaxOutputForNG= 'number',
-#   inputPreStaging= 'checkbox',
-#   noThrottle= 'checkbox',
-#   releasePerLB= 'checkbox',
-#   toStaging= 'checkbox',
-#   nGBPerMergeJob= 'text',
-#   nEventsPerInputFile= 'number',
-#   reuseSecOnDemand= 'checkbox',
-#   allowInputLAN= 'text',
-#   cpuTime= 'number',
-#   disableReassign= 'checkbox',
-#   esConvertible= 'checkbox',
-#   maxEventsPerJob= 'number',
-#   minGranularity= 'number',
-#   nucleus= 'text',
-#   skipShortInput= 'checkbox',
-#   baseWalltime= 'number',
-#   waitInput= 'number',
-#   notDiscardEvents= 'checkbox',
-#   taskBrokerOnMaster= 'checkbox',
-#   noLoopingCheck= 'checkbox',
-#   tgtNumEventsPerJob= 'number',
-#   countryGroup= 'text',
-#   disableAutoRetry= 'number',
-# }
-#
-# """
