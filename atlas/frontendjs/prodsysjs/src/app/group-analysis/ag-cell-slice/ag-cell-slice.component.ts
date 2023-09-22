@@ -5,6 +5,7 @@ import {ICellRendererParams} from "ag-grid-community";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {PatternChanges} from "../pattern-edit/pattern-edit.component";
 import {AnalysisTasksService} from "../analysis-tasks.service";
+import {BehaviorSubject} from "rxjs";
 
 @Component({
   selector: 'app-ag-cell-slice',
@@ -45,6 +46,7 @@ export class DialogSliceDetailsComponent implements OnInit {
   dataset: string;
   template: Partial<TaskTemplate>;
   sendMessage = '';
+  previewTask = 'Loading...';
   constructor(@Inject(MAT_DIALOG_DATA) public data: AnalysisSlice, public dialogRef: MatDialogRef<DialogSliceDetailsComponent>,
               private  analysisTaskService: AnalysisTasksService) { }
   ngOnInit(): void {
@@ -52,6 +54,14 @@ export class DialogSliceDetailsComponent implements OnInit {
     this.template = this.data.steps[0].analysis_step.step_parameters;
   }
 
+  openPreview(): void {
+    this.previewTask = 'Loading...';
+    this.analysisTaskService.getAnalysisTaskPreview(this.data.slice.request, this.data.slice.slice.toString()).subscribe(
+      (preview) => {
+        this.previewTask = preview;
+      }
+    );
+  }
   saveChanges(data: PatternChanges|null): void {
     if (data !== null) {
       for (const key of data.removedFields) {

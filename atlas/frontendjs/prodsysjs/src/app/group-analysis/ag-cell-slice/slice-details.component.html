@@ -5,6 +5,14 @@
     <mat-label>Dataset:</mat-label>
     <input matInput [(ngModel)]="dataset"  style="width: 100%">
   </mat-form-field>
+<mat-expansion-panel (opened)="openPreview()">
+  <mat-expansion-panel-header>
+    Preview
+  </mat-expansion-panel-header>
+  <ng-template matExpansionPanelContent>
+    <pre>{{previewTask}}</pre>
+  </ng-template>
+</mat-expansion-panel>
 
 <app-pattern-edit [pattern]="template" [submitButtonText]="'Save changes'" (patternChange)="saveChanges($event)"></app-pattern-edit>
 </div>

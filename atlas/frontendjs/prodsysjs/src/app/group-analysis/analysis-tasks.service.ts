@@ -37,10 +37,33 @@ export class AnalysisTasksService {
   private prAnalysisRequestActionUrl = '/api/analysis_request_action/';
   private prGetAnalysisRequestStatsUrl = '/api/analysis_request_stats/';
   private prGetAnalysisRequestOutputsUrl = '/api/get_analysis_request_output_datasets_names/';
+  private prGetTaskPreviewUrl = '/api/get_analysis_task_preview/';
+  private prGetPatternViewUrl = '/api/get_analysis_pattern_view/';
+
 
 
   constructor(private http: HttpClient) { }
 
+   getAnalysisTaskPreview(requestID: string, sliceNumber: string): Observable<string> {
+    return this.http.get<string>(this.prGetTaskPreviewUrl, {params: {requestID, sliceNumber}}).pipe(
+      catchError( err => {
+        if (err.status !== '500') {
+          return throwError( `Error task preview ${err.error}`);
+        } else {
+          return throwError( `Error task preview ${err.error} (status ${err.status})`);
+        }
+      }));
+  }
+  getAnalysisPatternView(tag: string): Observable<string> {
+    return this.http.get<string>(this.prGetPatternViewUrl, {params: {tag}}).pipe(
+      catchError( err => {
+        if (err.status !== '500') {
+          return throwError( `Error task preview ${err.error}`);
+        } else {
+          return throwError( `Error task preview ${err.error} (status ${err.status})`);
+        }
+      }));
+  }
   getTaskTemplate(taskID: string): Observable<Partial<TaskTemplate>> {
     return this.http.get<Partial<TaskTemplate>>(this.prTaskTemplateUrl, {params: {task_id: taskID }});
   }

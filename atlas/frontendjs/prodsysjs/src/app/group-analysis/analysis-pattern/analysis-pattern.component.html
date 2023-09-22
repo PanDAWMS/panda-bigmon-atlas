@@ -22,5 +22,13 @@
   <div *ngIf="errorMessage !== ''" class="error-message">Error: {{errorMessage}}</div>
   <app-pattern-edit [pattern]="taskTemplate.task_parameters" (patternChange)="savePattern($event)" [submitButtonText]="'Save'"
                      [(editMode)]="editMode"></app-pattern-edit>
+  <mat-expansion-panel (opened)="openExpertView()">
+  <mat-expansion-panel-header>
+    Expert View
+  </mat-expansion-panel-header>
+  <ng-template matExpansionPanelContent>
+    <pre>{{expertView}}</pre>
+  </ng-template>
+</mat-expansion-panel>
 </div>
 

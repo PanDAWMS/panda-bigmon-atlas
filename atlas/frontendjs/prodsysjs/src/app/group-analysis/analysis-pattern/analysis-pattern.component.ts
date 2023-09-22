@@ -22,9 +22,11 @@ export class AnalysisPatternComponent implements OnInit {
   public templateForm = this.fb.group({status: ['']});
   public editMode: editState = 'view';
   public loading = false;
+  public expertView = 'Loading...';
   constructor(private route: ActivatedRoute, private analysisTaskService: AnalysisTasksService, private fb: FormBuilder) { }
 
   ngOnInit(): void {
+     this.expertView = 'Loading...';
   }
   savePattern(data: PatternChanges): void {
     this.savePatternAndTemplate(data, true);
@@ -48,6 +50,15 @@ export class AnalysisPatternComponent implements OnInit {
     ).subscribe((result) => {
       this.loading = false;
     });
+  }
+
+  openExpertView(): void {
+    this.expertView = 'Loading...';
+    this.analysisTaskService.getAnalysisPatternView(this.templateID).subscribe(
+      (view) => {
+        this.expertView = view;
+      }
+    );
   }
 
 }

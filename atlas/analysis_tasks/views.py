@@ -701,3 +701,34 @@ def simple_analy_slice_clone(request_id: int, slice_number: int) -> int:
 
     except Exception as e:
         raise Exception(f'Failed to clone slice {slice} of request {request_id}: {str(e)}')
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_task_preview(request):
+    try:
+        request_id = int(request.query_params.get('requestID'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
+        slice = int(request.query_params.get('sliceNumber'))
+        step = AnalysisStepTemplate.objects.filter(request=request_id,
+                                                    slice=InputRequestList.objects.get(slice=slice, request=request_id)).last()
+        return Response(json.dumps(step.render_task_template(), indent=4, sort_keys=True))
+    except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_pattern_view(request):
+    try:
+        tag = request.query_params.get('tag')
+        template = AnalysisTaskTemplate.objects.filter(tag=tag).last()
+        return Response(json.dumps(template.task_parameters, indent=4, sort_keys=True))
+    except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
