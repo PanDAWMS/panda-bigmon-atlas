@@ -103,6 +103,7 @@ import {
   DialogSliceModificationComponent
 } from './group-analysis/analy-request-actions/analy-request-actions.component';
 import { AnalysisTemplatesTableComponent } from './group-analysis/analysis-templates-table/analysis-templates-table.component';
+import {NgxMatSelectSearchModule} from "ngx-mat-select-search";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -279,7 +280,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     ClipboardModule,
     AgGridModule,
     MatStepperModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    NgxMatSelectSearchModule
 
   ],
   providers: [

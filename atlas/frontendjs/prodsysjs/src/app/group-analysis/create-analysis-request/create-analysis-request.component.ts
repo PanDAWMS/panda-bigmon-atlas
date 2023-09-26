@@ -60,7 +60,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
   separateInputContainerList$ = combineLatest([this.containerListChanged$, this.containersChecked$]).pipe(
     map(([input, _]) => input),
     debounceTime(300),
-    filter(input => input !== ''),
+    // filter(input => input !== ''),
     map((input, _) => input.replace(/[\s,;]+/g, ',').split(',').filter((container) => container !== ''),
       // make a set to remove duplicates
       (containerList) => Array.from(new Set(containerList))),
@@ -86,6 +86,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
       } },
   ];
   containersChecked = false;
+  selectedTabInputContainers = 0;
   checkContainers(): void {
     for (const container of this.containersCurrentList){
       this.containerChekedList.set(container.containerName, 1);
@@ -102,6 +103,9 @@ export class CreateAnalysisRequestComponent implements OnInit {
           console.log(queryParams.get('requestID'));
           this.requestDescriptionFormGroup.get('requestExtentionCtrl').setValue( queryParams.get('requestID'));
           this.selectedTabDescription = 1;        }
+        if (queryParams.has('amiTag')){
+          this.selectedTabInputContainers = 1;
+        }
      }
       );
   }
@@ -138,4 +142,12 @@ export class CreateAnalysisRequestComponent implements OnInit {
       this.router.navigate(['analysis-request', requestID]);
     } });
   }
+
+  containersChanges(selectedContainers: string[] | []): void {
+    if(selectedContainers.length === 0){
+      this.containerListChanged$.next('');
+    }
+    this.containerListChanged$.next(selectedContainers.join(','));
+  }
+
 }
