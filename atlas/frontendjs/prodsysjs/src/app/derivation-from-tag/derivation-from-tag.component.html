@@ -3,7 +3,7 @@
    <mat-label>Current AMI tag     </mat-label>
      <input matInput  [(ngModel)]="currentAMITag"  >
  </mat-form-field>
-    <button mat-raised-button color="primary" [routerLink]="['.']" [queryParams]="{'amiTag':currentAMITag}" [disabled]="" >Proceed</button>
+    <button mat-raised-button color="primary" [routerLink]="['.']" [queryParams]="{'amiTag':currentAMITag}" [queryParamsHandling]="'merge'" [disabled]="" >Proceed</button>
  <br>
      <ng-container *ngIf="loadingData">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>

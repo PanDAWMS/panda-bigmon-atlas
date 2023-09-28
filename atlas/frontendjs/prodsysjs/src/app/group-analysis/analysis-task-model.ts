@@ -21,6 +21,7 @@ export interface AnalysisStep {
 }
 export interface AnalysisSlice {
   slice: SliceBase;
+  slice_error?: string;
   steps?: AnalysisStep[];
 }
 export interface JobParameter {

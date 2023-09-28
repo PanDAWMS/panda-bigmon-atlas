@@ -104,6 +104,20 @@ class TRequest(models.Model):
     # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
     #                              'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
     #                              'reprocessing','trig-hlt','Validation']]
+    class STATUS():
+        REGISTERED = 'registered'
+        HOLD = 'hold'
+        WAITING = 'waiting'
+        WORKING = 'working'
+        APPROVED = 'approved'
+        FINISHED = 'finished'
+        MONITORING = 'monitoring'
+        REWORKING = 'reworking'
+        REMONITORING = 'remonitoring'
+        CANCELLED = 'cancelled'
+        TEST = 'test'
+
+
     PHYS_GROUPS=[(x,x) for x in ['BPHY',
                                  'COSM',
                                  'DAPR',
@@ -1101,6 +1115,8 @@ class AnalysisStepTemplate(models.Model):
         return new_name
     @staticmethod
     def get_new_name(dataset: str, old_name: str, tag: str):
+        if '_tid' in dataset:
+            dataset = dataset.split('_tid')[0]
         prefix = '.'.join(old_name.split('.')[:2])
         return prefix + '.' + dataset + '_' + tag + '.v00'
 
@@ -1347,6 +1363,11 @@ class ProductionTask(models.Model):
 
     def remove_hashtag(self, hashtag):
         remove_hashtag_from_task(int(self.id), hashtag)
+
+    def output_non_log_datasets(self):
+        for dataset in ProductionDataset.objects.filter(task_id=self.id):
+            if '.log.' not in dataset.name.lower():
+                yield dataset.name
 
     class Meta:
         #db_table = u'T_PRODUCTION_STEP'

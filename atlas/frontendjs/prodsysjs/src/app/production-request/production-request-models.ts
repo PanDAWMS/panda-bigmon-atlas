@@ -97,6 +97,9 @@ export interface StepBase{
   ami_tag: string;
   output_formats: string;
   step_name: string;
+  production_step_parent_id?: number;
+  production_step_parent_request_id?: number;
+  production_step_parent_slice?: number;
 }
 
 export interface Step extends StepBase{

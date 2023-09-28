@@ -1,0 +1,39 @@
+  <mat-form-field >
+   <mat-label>Parent request     </mat-label>
+     <input matInput  [(ngModel)]="currentParentRequest"  >
+ </mat-form-field>
+    <button mat-raised-button color="primary" [routerLink]="['.']" [queryParams]="{'parentRequest':currentParentRequest}" [queryParamsHandling]="'merge'" [disabled]="" >Proceed</button>
+ <br>
+  <ng-container *ngIf="parentRequestData$ | async as parentRequestData">
+      <mat-form-field appearance="fill">
+  <mat-label>Outputs</mat-label>
+  <mat-select [formControl]="outputFormatsForm"  (selectionChange)="filterChanged$.next(1)">
+        <div>
+
+      </div>
+    <mat-option *ngFor="let output of outputFormats" [value]="output" >{{output}}</mat-option>
+  </mat-select>
+</mat-form-field>
+              <mat-form-field style="width: 100%">
+    <mat-label>Filter by name</mat-label>
+      <input matInput #searchTermFilter [(ngModel)]="searchTermFilterValue" (input)="searchTerms$.next(searchTermFilter.value)" >
+    </mat-form-field>
+           <ng-container *ngIf="filteredInputSlices$ | async as slices">
+                <button (click)="toggleSelectFilteredOutputs()">Select/Deselect filtered</button>
+        <ag-grid-angular
+          #agGridInputSlices
+          class="ag-theme-alpine"
+          style="width: 100%; height: 500px;"
+          [rowData]="slices"
+           [columnDefs]="inputAGColumns"
+          [rowSelection]="'multiple'"
+          (selectionChanged)="onSelectionInputSlicesChanged($event)"
+
+            [pagination]="true"
+          [paginationPageSize]="20"
+
+        >
+
+        </ag-grid-angular>
+        </ng-container>
+  </ng-container>

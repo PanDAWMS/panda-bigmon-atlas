@@ -1,5 +1,14 @@
 <div class="sliceCell">
-  <div  >    <a  style="color: #43a047; cursor: pointer" (click)="showSlice()"><mat-icon class="more">more</mat-icon></a><span style="padding: 1px 1px">{{analysisSlice.slice.dataset}}</span></div>
-  <div><span >Templates:</span><ng-container *ngFor="let step of analysisSlice.steps"><span style="background-color: gold">{{step.analysis_step.template_name}}</span></ng-container> - Status: {{currentStatus}}</div>
-<div><span >Tasks:</span><ng-container *ngFor="let step of analysisSlice.steps">(<app-step-tasks [step]="step"></app-step-tasks> )</ng-container></div>
+  <div  >    <a  style="color: #43a047; cursor: pointer" (click)="showSlice()"><mat-icon class="more">more</mat-icon></a>
+   <ng-container *ngIf="parentStep !== null"> <a  href="/prodtask/inputlist_with_request/{{parentStep.request}}/#inputList{{parentStep.slice}}">
+      Child to {{parentStep.request}} - {{parentStep.slice}}</a></ng-container>
+    <span style="padding: 1px 1px; margin-left: 5px">{{analysisSlice.slice.dataset}}</span></div>
+  <div><span *ngIf="analysisSlice.slice_error" style="color: red; margin-right: 5px"><mat-icon class="error">
+error
+</mat-icon>{{analysisSlice.slice_error}}</span><span >Templates:</span>
+    <ng-container *ngFor="let step of analysisSlice.steps"><span style="background-color: gold">{{step.analysis_step.template_name}}</span>
+  </ng-container> - Status: {{currentStatus}}</div>
+<div>
+  <span >Tasks:</span><ng-container *ngFor="let step of analysisSlice.steps">(<app-step-tasks [step]="step"></app-step-tasks> )</ng-container></div>
+
 </div>

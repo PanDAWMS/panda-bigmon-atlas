@@ -1,0 +1,2 @@
+ng build --configuration production
+ng build --source-map --watch

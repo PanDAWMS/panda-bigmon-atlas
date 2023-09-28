@@ -15,8 +15,14 @@ import {BehaviorSubject} from "rxjs";
 export class AgCellSliceComponent implements ICellRendererAngularComp {
   public analysisSlice: AnalysisSlice;
   currentStatus = '';
+  public parentStep: {request: number, slice: number}|null = null;
+
   agInit(params: ICellRendererParams<AnalysisSlice, any>): void {
     this.analysisSlice = params.data;
+    const prodStep = this.analysisSlice.steps[0].step;
+    if ((prodStep.production_step_parent_id) && (prodStep.production_step_parent_id !== prodStep.id) ) {
+      this.parentStep = {request: prodStep.production_step_parent_request_id, slice: prodStep.production_step_parent_slice};
+    }
     this.currentStatus = 'Ready';
     for (const step of this.analysisSlice.steps) {
       if (step.step.status === 'Approved'){
@@ -35,6 +41,8 @@ export class AgCellSliceComponent implements ICellRendererAngularComp {
   showSlice() {
     this.dialog.open(DialogSliceDetailsComponent, {width: '90%', data: this.analysisSlice});
   }
+
+  protected readonly parent = parent;
 }
 
 // Dialog to show slice details
@@ -47,11 +55,17 @@ export class DialogSliceDetailsComponent implements OnInit {
   template: Partial<TaskTemplate>;
   sendMessage = '';
   previewTask = 'Loading...';
+  public parentStep: {request: number, slice: number}|null = null;
+
   constructor(@Inject(MAT_DIALOG_DATA) public data: AnalysisSlice, public dialogRef: MatDialogRef<DialogSliceDetailsComponent>,
               private  analysisTaskService: AnalysisTasksService) { }
   ngOnInit(): void {
     this.dataset = this.data.slice.dataset;
     this.template = this.data.steps[0].analysis_step.step_parameters;
+    const prodStep = this.data.steps[0].step;
+    if ((prodStep.production_step_parent_id) && (prodStep.production_step_parent_id !== prodStep.id) ) {
+      this.parentStep = {request: prodStep.production_step_parent_request_id, slice: prodStep.production_step_parent_slice};
+    }
   }
 
   openPreview(): void {

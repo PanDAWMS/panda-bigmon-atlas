@@ -37,6 +37,8 @@ export class CreateAnalysisRequestComponent implements OnInit {
   editMode: editState = 'view';
   extendedRequest: number|null = null;
   submissionError = '';
+  creatingRequest = false;
+  inputSlices: {slice: number; outputFormat: string; requestID: string; container: string}[] = [];
   selectedTabDescription = 0;
   containerListChanged$= new BehaviorSubject<string>('');
   containersChecked$ = new BehaviorSubject<boolean>(false);
@@ -105,6 +107,8 @@ export class CreateAnalysisRequestComponent implements OnInit {
           this.selectedTabDescription = 1;        }
         if (queryParams.has('amiTag')){
           this.selectedTabInputContainers = 1;
+        } else if (queryParams.has('parentRequest')){
+          this.selectedTabInputContainers = 2;
         }
      }
       );
@@ -133,14 +137,36 @@ export class CreateAnalysisRequestComponent implements OnInit {
   }
 
   createRequest(): void {
-    this.analysisTasksService.createAnalysisRequest(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
-      this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
-      this.chosenTemplate, this.containersCurrentList.map(container => container.containerName)).pipe(
-      catchError( err =>  { this.submissionError = err.error;
-                            return null; })).
-    subscribe((requestID) => { if (requestID !== null) {
-      this.router.navigate(['analysis-request', requestID]);
-    } });
+    this.creatingRequest = true;
+    if (this.inputSlices.length === 0) {
+      this.analysisTasksService.createAnalysisRequest(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
+        this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
+        this.chosenTemplate, this.containersCurrentList.map(container => container.containerName)).pipe(
+        catchError(err => {
+          this.submissionError = err.error;
+          this.creatingRequest = false;
+          return null;
+        })).subscribe((requestID) => {
+        if (requestID !== null) {
+          this.creatingRequest = false;
+          this.router.navigate(['analysis-request', requestID]);
+        }
+      });
+    } else {
+      this.analysisTasksService.createAnalysisRequestFromSlices(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
+        this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
+        this.chosenTemplate, this.inputSlices).pipe(
+        catchError(err => {
+          this.submissionError = err.error;
+          this.creatingRequest = false;
+          return null;
+        })).subscribe((requestID) => {
+        if (requestID !== null) {
+          this.creatingRequest = false;
+          this.router.navigate(['analysis-request', requestID]);
+        }
+      });
+    }
   }
 
   containersChanges(selectedContainers: string[] | []): void {
@@ -150,4 +176,13 @@ export class CreateAnalysisRequestComponent implements OnInit {
     this.containerListChanged$.next(selectedContainers.join(','));
   }
 
+  inputSlicesChanges(slices: {slice: number; outputFormat: string; requestID: string; container: string}[] | []) {
+    if (slices.length === 0){
+      this.inputSlices = [];
+      this.containerListChanged$.next('');
+    } else {
+      this.inputSlices = slices;
+      this.containerListChanged$.next(slices.map(slice => `Request:${slice.requestID}-Slice:${slice.slice}-${slice.container}`).join(','));
+    }
+  }
 }

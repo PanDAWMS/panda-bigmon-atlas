@@ -1,6 +1,8 @@
 <!--mat stepper with two steps, first to submit a list, second to check it and edit the pattern-->
 <mat-horizontal-stepper #stepper>
   <mat-step [stepControl]="containersFormGroup">
+
+    <h6>Choose input:</h6>
           <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabInputContainers" >
             <mat-tab label="Copy list">
               <form [formGroup]="containersFormGroup">
@@ -21,6 +23,10 @@
             <mat-tab label="By AMI tag">
                   <app-derivation-from-tag [outputOnly]="true" (selectedContainers)="containersChanges($event)" ></app-derivation-from-tag>
             </mat-tab>
+            <mat-tab label="Parent request">
+                  <app-parent-drivation-for-analysis (selectedSlices)="inputSlicesChanges($event)" ></app-parent-drivation-for-analysis>
+            </mat-tab>
+
           </mat-tab-group>
 <h5>Slected containers:</h5>
 <!--        AG table with separateInputContainerList$ as input and pagination-->
@@ -84,7 +90,7 @@
 {{submissionError}}
       <div>
         <button mat-button matStepperPrevious>Back</button>
-        <button mat-button (click)="createRequest()" [disabled]="!requestDescriptionFormGroup.valid  " >Submit</button>
+        <button mat-button (click)="createRequest()" [disabled]="!requestDescriptionFormGroup.valid || creatingRequest  " >Submit</button>
       </div>
     </form>
   </mat-step>

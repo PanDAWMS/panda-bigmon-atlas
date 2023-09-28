@@ -4,6 +4,7 @@ import {Observable, of, throwError} from "rxjs";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "./analysis-task-model";
 import {catchError} from "rxjs/operators";
 import {PatternChanges} from "./pattern-edit/pattern-edit.component";
+import {DerivationContainersCollection} from "../derivation-from-tag/derivation-request-models";
 
 export interface AnalysisRequestActionResponse {
   result: string;
@@ -20,6 +21,11 @@ export interface AnalysisRequestStats {
   hs06sec_finished: number;
   hs06sec_failed: number;
   bytes: number;
+}
+
+export interface ParentDerivationRequest {
+  slices: {slice: number, outputFormat: string, container: string}[];
+  outputFormats: string[];
 }
 
 @Injectable({
@@ -39,6 +45,7 @@ export class AnalysisTasksService {
   private prGetAnalysisRequestOutputsUrl = '/api/get_analysis_request_output_datasets_names/';
   private prGetTaskPreviewUrl = '/api/get_analysis_task_preview/';
   private prGetPatternViewUrl = '/api/get_analysis_pattern_view/';
+  private prGetParentDerivationUrl = '/api/get_derivation_slices/';
 
 
 
@@ -122,13 +129,25 @@ export class AnalysisTasksService {
       );
     }
 
-  modifySlicesTemplate(requestID: string, slices: number[], templateBase: Partial<TaskTemplate>, inputDataset = ''): Observable<AnalysisRequestActionResponse> {
+    modifySlicesTemplate(requestID: string, slices: number[], templateBase: Partial<TaskTemplate>,
+                         inputDataset = ''): Observable<AnalysisRequestActionResponse> {
     return this.http.post<AnalysisRequestActionResponse>(this.prAnalysisRequestActionUrl,
       {requestID, action: 'modifySlicesTemplate', slices, template: templateBase, inputDataset}).pipe(
       catchError( err => {
-         const result: AnalysisRequestActionResponse = {result: null, error:  `Backend returned code ${err.status}, body was: ${err.error}`};
+         const result: AnalysisRequestActionResponse = {result: null,
+           error:  `Backend returned code ${err.status}, body was: ${err.error}`};
          return of(result);
       })
     );
+  }
+
+  getParentDerivation(parentRequest: string): Observable<ParentDerivationRequest> {
+    return this.http.get<ParentDerivationRequest>(this.prGetParentDerivationUrl, {params: {requestID: parentRequest}});
+  }
+
+  createAnalysisRequestFromSlices(description: string, requestExtID: string, templateBase: Partial<TemplateBase>,
+                                  inputSlices: {slice: number, outputFormat: string, requestID: string,
+                                    container: string}[]): Observable<string> {
+    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputSlices});
   }
 }

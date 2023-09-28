@@ -17,13 +17,15 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
+from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
-    ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets
+    ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
 from atlas.celerybackend.celery import app
+from atlas.production_request.derivation import get_container_name
 
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
@@ -113,16 +115,41 @@ def create_task_from_pattern(pattern_id: int, task_name: str, task_params: dict)
     return new_task
 
 
+def verify_step(step: AnalysisStepTemplate, ddm: DDM):
+    prod_step = step.step_production_parent
+    if not prod_step.step_parent or (prod_step.step_parent == prod_step):
+        if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
+            raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
+
+
 def create_analy_task_for_slice(requestID: int, slice: int ) -> [int]:
     new_tasks = []
+    ddm = DDM()
     steps = AnalysisStepTemplate.objects.filter(request=requestID, slice=InputRequestList.objects.get(slice=slice, request=requestID))
     for step in steps:
         if (step.status == AnalysisStepTemplate.STATUS.APPROVED) and (not ProductionTask.objects.filter(step=step.step_production_parent).exists()):
+            verify_step(step, ddm)
             task_id = TTask().get_id()
-            t_task, prod_task = register_analysis_task(step, task_id, task_id)
-            t_task.save()
-            prod_task.save()
-            new_tasks.append(task_id)
+            prod_step = step.step_production_parent
+            if not prod_step.step_parent or (prod_step.step_parent == prod_step):
+                t_task, prod_task = register_analysis_task(step, task_id, task_id)
+                t_task.save()
+                prod_task.save()
+                new_tasks.append(task_id)
+            else:
+                input_tasks = ProductionTask.objects.filter(step=prod_step.step_parent)
+                for input_task in input_tasks:
+                    if input_task.status not in ProductionTask.BAD_STATUS:
+                        for dataset in input_task.output_non_log_datasets():
+                            if step.slice.dataset ==  get_container_name(dataset):
+                                # step.change_step_input(dataset)
+                                step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, dataset)
+                                task_id = TTask().get_id()
+                                t_task, prod_task = register_analysis_task(step, task_id, input_task.id)
+                                t_task.save()
+                                prod_task.save()
+                                new_tasks.append(task_id)
+
     return new_tasks
 
 def monk_create_analy_task_for_slice(requestID: int, slice: int ):
@@ -143,6 +170,7 @@ def print_rendered_steps_in_slice(requestID: int, slice: int):
 
 def check_name_version(step_template: AnalysisStepTemplate):
     current_task_name = step_template.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME)
+    input_dataset = step_template.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
     if TTask.objects.filter(name=current_task_name).exists():
         name_base = current_task_name.replace('/','')
         current_postfix = name_base.split('.')[-1]
@@ -152,11 +180,16 @@ def check_name_version(step_template: AnalysisStepTemplate):
             name_base = '.'.join(name_base.split('.')[:-1])
         for version_number in range(current_postfix_number, 99):
             new_name = name_base + '.v' + f'{version_number:02d}'
-            if not TTask.objects.filter(name=new_name+ '/').exists():
-                step_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name+ '/')
-                step_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
-                step_template.save()
-                return step_template
+            if TTask.objects.filter(name=new_name+ '/').exists():
+                previous_task = TTask.objects.filter(name=new_name+ '/').last()
+                if ((TTask.objects.filter(name=new_name+ '/').last().status not in ProductionTask.BAD_STATUS) and
+                        input_dataset == previous_task.input_dataset):
+                    raise Exception(f'Task already exists: {previous_task.id}')
+                continue
+            step_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name+ '/')
+            step_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, new_name)
+            step_template.save()
+            return step_template
         raise Exception('Too many versions of task')
     return step_template
 
@@ -236,7 +269,7 @@ def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, pa
 
 
 
-def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTemplate) -> AnalysisStepTemplate:
+def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTemplate, parent_step: StepExecution|None=None) -> AnalysisStepTemplate:
     prod_step = StepExecution()
     prod_step.step_template = fill_template(AnalysisStepTemplate.ANALYSIS_STEP_NAME.GROUP_ANALYSIS, template.tag, slice.priority)
     prod_step.request = slice.request
@@ -245,6 +278,8 @@ def create_step_from_template(slice: InputRequestList, template: AnalysisTaskTem
     prod_step.priority = slice.priority
     prod_step.step_def_time = timezone.now()
     prod_step.input_events = -1
+    if parent_step:
+        prod_step.step_parent = parent_step
     prod_step.save()
     step = AnalysisStepTemplate()
     step.name = AnalysisStepTemplate.ANALYSIS_STEP_NAME.GROUP_ANALYSIS
@@ -277,6 +312,27 @@ def add_analysis_slices_to_request(production_request: TRequest, template: Analy
         step = create_step_from_template(slice, template)
         slices.append(new_slice_number)
     return slices
+
+def add_child_analysis_slices_to_request(production_request: TRequest, template: AnalysisTaskTemplate,
+                                         parent_steps: [StepExecution], parent_output: str) -> [int]:
+    slices = []
+    for parent_step in parent_steps:
+        task = ProductionTask.objects.filter(step=parent_step).last()
+        if task:
+            for dataset in task.output_non_log_datasets():
+                if parent_output in dataset.split('.'):
+                    slice = InputRequestList()
+                    new_slice_number = InputRequestList.objects.filter(request=production_request).count()
+                    slice.request = production_request
+                    slice.dataset =  get_container_name(dataset)
+                    slice.priority = template.get_variable(TemplateVariable.KEY_NAMES.TASK_PRIORITY)
+                    slice.brief = 'Analysis slice'
+                    slice.slice = new_slice_number
+                    slice.save()
+                    step = create_step_from_template(slice, template, parent_step)
+                    slices.append(new_slice_number)
+    return slices
+
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -337,8 +393,11 @@ def analysis_steps_serializer(analysis_steps: [AnalysisStepTemplate]):
     for step in analysis_steps:
         production_step = step.step_production_parent
         serialized_production_step = {'id':production_step.id,'ami_tag':production_step.step_template.ctag,'status':production_step.status,'production_step':production_step.step_template.step,
-                             'production_step_parent':production_step.step_parent_id, 'request':production_step.request_id,'task_config':production_step.get_task_config(),
-                             'priority':production_step.priority,'input_events':production_step.input_events, 'project_mode': production_step.get_task_config('project_mode')
+                             'production_step_parent_id':production_step.step_parent.id if production_step.step_parent else None,
+                                      'request':production_step.request_id,'task_config':production_step.get_task_config(),
+                             'priority':production_step.priority,'input_events':production_step.input_events, 'project_mode': production_step.get_task_config('project_mode'),
+                                      'production_step_parent_request_id':production_step.step_parent.request_id if production_step.step_parent else None,
+                                        'production_step_parent_slice':production_step.step_parent.slice.slice if production_step.step_parent else None,
                                       }
         tasks = ProductionTask.objects.filter(step=step.step_production_parent, request=step.request)
         serialized_tasks = []
@@ -390,6 +449,7 @@ def create_analysis_request(request):
             new_request.reqid = None
             new_request.description = request.data['description']
             new_request.save()
+
         analysis_template_base = request.data['templateBase']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
         analysis_template.task_parameters = analysis_template_base['task_parameters']
@@ -403,7 +463,18 @@ def create_analysis_request(request):
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE).replace(old_scope, new_scope))
         new_request.manager = analysis_template.get_variable(TemplateVariable.KEY_NAMES.USER_NAME)
         new_request.save()
-        add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
+        if 'inputContainers' in request.data:
+            add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
+        elif 'inputSlices' in request.data:
+            steps = []
+            input_request_id = None
+            output_format = None
+            for slice in request.data['inputSlices']:
+                if not input_request_id:
+                    input_request_id = int(slice['requestID'])
+                    output_format = slice['outputFormat']
+                steps.append(StepExecution.objects.get(request=input_request_id, slice=InputRequestList.objects.get(slice=slice['slice'], request=input_request_id)))
+            add_child_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , steps, output_format)
         return Response(str(new_request.reqid))
 
     except Exception as e:
@@ -424,7 +495,10 @@ def get_analysis_request(request):
             if slice.is_hide is None or slice.is_hide == False:
                 analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request, slice=slice).order_by('id'))
                 serialized_steps = analysis_steps_serializer(analysis_steps)
-                serialized_slices_with_steps.append({'slice': SliceSerializer(slice).data, 'steps': serialized_steps})
+                slice_error = ''
+                if SliceError.objects.filter(slice=slice, is_active=True).exists():
+                    slice_error = SliceError.objects.filter(slice=slice, is_active=True).last().message
+                serialized_slices_with_steps.append({'slice': SliceSerializer(slice).data, 'steps': serialized_steps, 'slice_error': slice_error})
         return Response(serialized_slices_with_steps)
 
     except TRequest.DoesNotExist:
@@ -575,27 +649,69 @@ def prepare_eventloop_analysis_task(request_id: int):
             for slice in slice_to_modify[source]:
                 modify_analysis_step_input_source(request_id, slice, new_task)
 
+
+def unset_slice_error(request, slice):
+    try:
+        if SliceError.objects.filter(request=request, slice=slice, is_active=True).exists():
+            slice_error = SliceError.objects.filter(request=request, slice=slice)[0]
+            slice_error.is_active = False
+            slice_error.save()
+    except Exception as ex:
+        _jsonLogger.warning('Slice error saving failed: {0}'.format(ex))
+
+
+def set_slice_error(request, slice, exception_type, message):
+    try:
+        slice_error = SliceError(request=TRequest.objects.get(reqid=request), slice=InputRequestList.objects.get(id=slice))
+        if SliceError.objects.filter(request=request, slice=slice).exists():
+            slice_error = SliceError.objects.filter(request=request, slice=slice)[0]
+        slice_error.exception_type = exception_type
+        slice_error.message = message
+        slice_error.exception_time = timezone.now()
+        slice_error.is_active = True
+        slice_error.save()
+    except Exception as ex:
+        _jsonLogger.warning('Slice error saving failed: {0}'.format(ex))
+
 def submit_analysis_slices(request):
-    request_id = int(request.data['requestID'])
-    if request_id < 1000:
-        raise TRequest.DoesNotExist
-    slices = request.data['slices']
-    for slice in slices:
-        analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request.data['requestID'], slice=InputRequestList.objects.get(slice=slice, request_id=request.data['requestID'])).order_by('id'))
-        for step in analysis_steps:
-            step.status = AnalysisStepTemplate.STATUS.APPROVED
-            prod_step = step.step_production_parent
-            prod_step.status = StepExecution.STATUS.APPROVED
-            step.save()
-            prod_step.save()
-            try:
-                # from atlas.settings.local import FIRST_ADOPTERS
-                # if (request.user.username in FIRST_ADOPTERS):
-                    _jsonLogger.info('Submit analysis task for slice',
-                        extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice}))
-                    create_analy_task_for_slice(request.data['requestID'], slice)
-            except:
-                pass
+    try:
+        request_id = int(request.data['requestID'])
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
+        slices = request.data['slices']
+        submitted_slices = []
+        production_request = TRequest.objects.get(reqid=request_id)
+        if production_request.cstatus in [TRequest.STATUS.CANCELLED]:
+            raise Exception('Request is cancelled')
+        for slice_number in slices:
+            slice = InputRequestList.objects.get(slice=slice_number, request_id=request.data['requestID'])
+            analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request.data['requestID'], slice=slice).order_by('id'))
+            for step in analysis_steps:
+                step.status = AnalysisStepTemplate.STATUS.APPROVED
+                prod_step = step.step_production_parent
+                prod_step.status = StepExecution.STATUS.APPROVED
+                step.save()
+                prod_step.save()
+                try:
+                    # from atlas.settings.local import FIRST_ADOPTERS
+                    # if (request.user.username in FIRST_ADOPTERS):
+                        _jsonLogger.info('Submit analysis task for slice',
+                            extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice.slice}))
+                        create_analy_task_for_slice(request.data['requestID'], slice.slice)
+                        submitted_slices.append(slice)
+                        unset_slice_error(request.data['requestID'], slice.id)
+                except Exception as e:
+                    _jsonLogger.error(f'Submit analysis task for slice failed {e}',
+                                      extra=form_json_request_dict(request.data['requestID'], request, extra={'slice': slice.slice}))
+                    step.status = AnalysisStepTemplate.STATUS.NOT_CHECKED
+                    prod_step = step.step_production_parent
+                    prod_step.status = StepExecution.STATUS.NOT_CHECKED
+                    step.save()
+                    prod_step.save()
+                    set_slice_error(request.data['requestID'], slice.id, 'default', str(e))
+
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response({'result':f"{len(slices)} submitted"}, status=status.HTTP_200_OK)
 
 
@@ -686,6 +802,8 @@ def simple_analy_slice_clone(request_id: int, slice_number: int) -> int:
         new_slice.id = None
         new_slice.slice = TRequest.objects.get(reqid=request_id).get_next_slice()
         new_slice.save()
+        if step_exec.step_parent == step_exec:
+            step_exec.step_parent = None
         step_exec.id = None
         step_exec.slice = new_slice
         if step_exec.status == StepExecution.STATUS.APPROVED:
@@ -714,6 +832,20 @@ def get_analysis_task_preview(request):
         slice = int(request.query_params.get('sliceNumber'))
         step = AnalysisStepTemplate.objects.filter(request=request_id,
                                                     slice=InputRequestList.objects.get(slice=slice, request=request_id)).last()
+        if step.step_production_parent.step_parent and step.step_production_parent.step_parent != step.step_production_parent:
+            input_tasks = ProductionTask.objects.filter(step=step.step_production_parent.step_parent)
+            pattern = None
+            parent_tasks = []
+            for input_task in input_tasks:
+                if input_task.status not in ProductionTask.BAD_STATUS:
+                    for dataset in input_task.output_non_log_datasets():
+                        if step.slice.dataset == get_container_name(dataset):
+                            if not pattern:
+                                step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, dataset)
+                                pattern = step.render_task_template()
+                            parent_tasks.append(input_task.id)
+
+            return Response(json.dumps({'parent_tasks_id':parent_tasks, 'rendered_first_task':step.render_task_template()}, indent=4, sort_keys=True))
         return Response(json.dumps(step.render_task_template(), indent=4, sort_keys=True))
     except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
         return Response(status=status.HTTP_404_NOT_FOUND)
@@ -730,5 +862,29 @@ def get_analysis_pattern_view(request):
         return Response(json.dumps(template.task_parameters, indent=4, sort_keys=True))
     except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
         return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_derivation_slices(request):
+    try:
+        request_id = int(request.query_params.get('requestID'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
+        slices = InputRequestList.objects.filter(request=request_id)
+        result_slices = []
+        output_formats = set()
+        for slice in slices:
+            if slice.is_hide is None or slice.is_hide == False:
+                step = StepExecution.objects.filter(slice=slice, request=request_id).last()
+                if step and step.status == StepExecution.STATUS.APPROVED and ProductionTask.objects.filter(step=step).exists():
+                    for dataset in ProductionTask.objects.filter(step=step).last().output_non_log_datasets():
+                        result_slices.append({'slice': slice.slice, 'outputFormat': dataset.split('.')[-2], 'container': get_container_name(dataset)})
+                        output_formats.add(dataset.split('.')[-2])
+        return Response({'slices': result_slices, 'outputFormats': list(output_formats)})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
