@@ -20,7 +20,8 @@ from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
-    ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError
+    ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError, \
+    HashTagToRequest, HashTag
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
@@ -29,7 +30,7 @@ from atlas.production_request.derivation import get_container_name
 
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
-
+OFFICIAL_HASHTAG = 'CentralisedNTUP'
 def find_output_base(task_params: dict) -> str:
     output_base = ''
     if 'outDS' in task_params['cliParams']:
@@ -673,6 +674,19 @@ def set_slice_error(request, slice, exception_type, message):
     except Exception as ex:
         _jsonLogger.warning('Slice error saving failed: {0}'.format(ex))
 
+
+def set_analysis_request_hashtags(requestID, new_tasks):
+    hashtags = [x.hashtag for x in HashTagToRequest.objects.filter(request_id=requestID)]
+    official_hashtag = HashTag.objects.get(hashtag=OFFICIAL_HASHTAG)
+    if official_hashtag not in hashtags:
+        hashtags.append(official_hashtag)
+    for task in new_tasks:
+        production_task = ProductionTask.objects.get(id=task)
+        for hashtag in hashtags:
+            production_task.set_hashtag(hashtag.hashtag)
+
+
+
 def submit_analysis_slices(request):
     try:
         request_id = int(request.data['requestID'])
@@ -680,6 +694,7 @@ def submit_analysis_slices(request):
             raise TRequest.DoesNotExist
         slices = request.data['slices']
         submitted_slices = []
+        new_tasks = []
         production_request = TRequest.objects.get(reqid=request_id)
         if production_request.cstatus in [TRequest.STATUS.CANCELLED]:
             raise Exception('Request is cancelled')
@@ -697,7 +712,7 @@ def submit_analysis_slices(request):
                     # if (request.user.username in FIRST_ADOPTERS):
                         _jsonLogger.info('Submit analysis task for slice',
                             extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice.slice}))
-                        create_analy_task_for_slice(request.data['requestID'], slice.slice)
+                        new_tasks += create_analy_task_for_slice(request.data['requestID'], slice.slice)
                         submitted_slices.append(slice)
                         unset_slice_error(request.data['requestID'], slice.id)
                 except Exception as e:
@@ -709,6 +724,8 @@ def submit_analysis_slices(request):
                     step.save()
                     prod_step.save()
                     set_slice_error(request.data['requestID'], slice.id, 'default', str(e))
+        if new_tasks:
+            set_analysis_request_hashtags(request.data['requestID'], new_tasks)
 
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
