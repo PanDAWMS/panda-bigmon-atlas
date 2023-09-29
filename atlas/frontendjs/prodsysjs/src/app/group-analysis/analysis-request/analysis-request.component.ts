@@ -11,12 +11,16 @@ import {ProductionTask} from "../../production-request/production-request-models
 import {combineLatest, of} from "rxjs";
 import {MatTabChangeEvent} from "@angular/material/tabs";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
+
+
+
 @Component({
   selector: 'app-analysis-request',
   templateUrl: './analysis-request.component.html',
   styleUrls: ['./analysis-request.component.css']
 })
 export class AnalysisRequestComponent implements OnInit {
+  public PRODUCTION_REQUEST_STATUS = ['waiting', 'working', 'monitoring', 'finished', 'cancelled'];
   public requestID = '';
   public slices: AnalysisSlice[] = [];
   public tasks: ProductionTask[] = [];
@@ -120,6 +124,7 @@ export class AnalysisRequestComponent implements OnInit {
    }
   updateRequest(toUpdate: boolean): void {
     if (toUpdate) {
+      this.requestInfo$ = this.taskManagementService.getProductionRequest(this.requestID);
       this.analysisSlices$ = this.analysisTaskService.getAnalysisRequest(this.requestID).pipe(
         map((slices) => slices.sort((a, b) => a.slice.slice - b.slice.slice)
       ),
@@ -156,6 +161,12 @@ export class AnalysisRequestComponent implements OnInit {
     this.analysisTaskService.getAnalysisRequestOutputs(this.requestID).subscribe((outputs) => {
       this.dialog.open(DialogRequestOutputsComponent, {width: '90%', data: outputs});
     });
+  }
+
+  updateRequestStatus(value: any): void {
+    this.analysisTaskService.setProductionRequestStatus(this.requestID, value).subscribe(() => {
+      this.updateRequest(true);
+    } );
   }
 }
 

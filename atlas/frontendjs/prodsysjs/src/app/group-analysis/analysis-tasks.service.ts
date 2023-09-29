@@ -107,6 +107,9 @@ export class AnalysisTasksService {
     return this.http.post(this.prSaveTaskTemplateUrl, {templateID, templateBase,  params});
   }
 
+  setProductionRequestStatus(requestID: string, status: string): Observable<any> {
+    return this.http.post(this.prAnalysisRequestActionUrl, {requestID, action: 'setStatus', status});
+  }
   createAnalysisRequest(description: string, requestExtID: string, templateBase: Partial<TemplateBase>, inputContainers: string[]): Observable<string> {
     return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputContainers});
   }

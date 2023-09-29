@@ -26,6 +26,7 @@ from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
 from atlas.celerybackend.celery import app
+from atlas.prodtask.views import set_request_status
 from atlas.production_request.derivation import get_container_name
 
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -601,6 +602,17 @@ def modify_slices_template(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+def set_analysis_request_status(request):
+    production_request_id = request.data['requestID']
+    new_status = request.data['status']
+    set_request_status(request.user.username, production_request_id, new_status, 'Request status was changed to %s by %s' % (new_status, request.user.username),
+                          'Request status is changed to %s by WebUI' % new_status, request)
+
+
+    return Response({'status': TRequest.objects.get(reqid=production_request_id).cstatus}, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -616,6 +628,8 @@ def analysis_request_action(request):
             return get_slices_template(request)
         elif action == 'modifySlicesTemplate':
             return modify_slices_template(request)
+        elif action == 'setStatus':
+            return set_analysis_request_status(request)
         else:
             return Response('Unknown action', status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -686,6 +700,19 @@ def set_analysis_request_hashtags(requestID, new_tasks):
             production_task.set_hashtag(hashtag.hashtag)
 
 
+def check_request_status(production_request: TRequest):
+     if production_request.cstatus in [TRequest.STATUS.WAITING, TRequest.STATUS.WORKING]:
+         new_status = TRequest.STATUS.MONITORING
+         slices = InputRequestList.objects.filter(request=production_request)
+         for slice in slices:
+            if slice.is_hide is None or slice.is_hide == False and not slice.tasks_in_slice().exists():
+                new_status = TRequest.STATUS.WORKING
+                break
+         set_request_status('auto', production_request.reqid, new_status,
+                            'Request status was changed to %s by %s' % (new_status, 'auto'),
+                            'Request status is changed to %s by backend' % new_status, None)
+
+
 
 def submit_analysis_slices(request):
     try:
@@ -699,8 +726,8 @@ def submit_analysis_slices(request):
         if production_request.cstatus in [TRequest.STATUS.CANCELLED]:
             raise Exception('Request is cancelled')
         for slice_number in slices:
-            slice = InputRequestList.objects.get(slice=slice_number, request_id=request.data['requestID'])
-            analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request.data['requestID'], slice=slice).order_by('id'))
+            slice = InputRequestList.objects.get(slice=slice_number, request_id=request_id)
+            analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request_id, slice=slice).order_by('id'))
             for step in analysis_steps:
                 step.status = AnalysisStepTemplate.STATUS.APPROVED
                 prod_step = step.step_production_parent
@@ -711,22 +738,22 @@ def submit_analysis_slices(request):
                     # from atlas.settings.local import FIRST_ADOPTERS
                     # if (request.user.username in FIRST_ADOPTERS):
                         _jsonLogger.info('Submit analysis task for slice',
-                            extra=form_json_request_dict( request.data['requestID'], request, extra={'slice': slice.slice}))
-                        new_tasks += create_analy_task_for_slice(request.data['requestID'], slice.slice)
+                            extra=form_json_request_dict( request_id, request, extra={'slice': slice.slice}))
+                        new_tasks += create_analy_task_for_slice(request_id, slice.slice)
                         submitted_slices.append(slice)
                         unset_slice_error(request.data['requestID'], slice.id)
                 except Exception as e:
                     _jsonLogger.error(f'Submit analysis task for slice failed {e}',
-                                      extra=form_json_request_dict(request.data['requestID'], request, extra={'slice': slice.slice}))
+                                      extra=form_json_request_dict(request_id, request, extra={'slice': slice.slice}))
                     step.status = AnalysisStepTemplate.STATUS.NOT_CHECKED
                     prod_step = step.step_production_parent
                     prod_step.status = StepExecution.STATUS.NOT_CHECKED
                     step.save()
                     prod_step.save()
-                    set_slice_error(request.data['requestID'], slice.id, 'default', str(e))
+                    set_slice_error(request_id, slice.id, 'default', str(e))
         if new_tasks:
-            set_analysis_request_hashtags(request.data['requestID'], new_tasks)
-
+            set_analysis_request_hashtags(request_id, new_tasks)
+        check_request_status(production_request)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response({'result':f"{len(slices)} submitted"}, status=status.HTTP_200_OK)

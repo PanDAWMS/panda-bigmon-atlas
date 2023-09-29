@@ -401,6 +401,9 @@ class InputRequestList(models.Model):
             self.id = prefetch_id('deft','ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
         super(InputRequestList, self).save(*args, **kwargs)
 
+    def tasks_in_slice(self):
+        return ProductionTask.objects.filter(request=self.request, step__in=StepExecution.objects.filter(slice=self, request=self.request))
+
     class Meta:
         #db_table = u'T_INPUT_DATASET'
         db_table = 'T_INPUT_DATASET'

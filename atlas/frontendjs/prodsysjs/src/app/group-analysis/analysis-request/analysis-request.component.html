@@ -4,7 +4,7 @@
     <th>Description:</th>
     <th>Reference:</th>
     <th>Manager:</th>
-<!--    <th>Physics group:</th>-->
+    <th>Status:</th>
 <!--    <th>Campaign:</th>-->
 <!--    <th>Project:</th>-->
 
@@ -14,10 +14,17 @@
     <td>{{requestInfo.description}} </td>
     <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
     <td>{{requestInfo.manager}} </td>
-<!--    <td>{{requestInfo.phys_group}} </td>-->
-<!--    <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>-->
-<!--    <td>{{requestInfo.project}} </td>-->
+    <td>
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select [(value)]="requestInfo.cstatus" (selectionChange)="updateRequestStatus($event.value)">
+          <mat-option *ngFor="let status of PRODUCTION_REQUEST_STATUS" [value]="status">
+            {{status}}
+          </mat-option>
+        </mat-select>
 
+      </mat-form-field>
+    </td>
   </tr>
 </table>
 <div *ngIf="requestStats$ | async as requestStats">
