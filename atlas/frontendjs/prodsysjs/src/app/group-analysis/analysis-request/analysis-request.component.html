@@ -5,7 +5,6 @@
     <th>Reference:</th>
     <th>Manager:</th>
     <th>Status:</th>
-<!--    <th>Campaign:</th>-->
 <!--    <th>Project:</th>-->
 
   </tr>
@@ -15,7 +14,8 @@
     <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
     <td>{{requestInfo.manager}} </td>
     <td>
-      <mat-form-field>
+      <a *ngIf="!showStatusChange" (click)="showStatusChange=true" style="cursor: pointer">{{requestInfo.cstatus}}</a>
+      <mat-form-field *ngIf="showStatusChange">
         <mat-label>Status</mat-label>
         <mat-select [(value)]="requestInfo.cstatus" (selectionChange)="updateRequestStatus($event.value)">
           <mat-option *ngFor="let status of PRODUCTION_REQUEST_STATUS" [value]="status">
@@ -25,8 +25,30 @@
 
       </mat-form-field>
     </td>
+    <td>
+
+    </td>
   </tr>
 </table>
+<mat-form-field class="hashtag-list" style="width: 100%">
+  <mat-label>Hashtags</mat-label>
+  <mat-chip-grid #chipGrid aria-label="Enter hashtag">
+    <mat-chip-row *ngFor="let hashtag of hashtags$ | async"
+                  (removed)="removeHashtag(hashtag)"
+                  (click)="clickHashtag(hashtag)">
+      {{hashtag}}
+      <button matChipRemove [attr.aria-label]="'remove ' + hashtag">
+        <mat-icon>cancel</mat-icon>
+      </button>
+    </mat-chip-row>
+    <input placeholder="New hashtag..."
+           [matChipInputFor]="chipGrid"
+           [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+
+           (matChipInputTokenEnd)="addHashtag($event)"
+    [disabled]="hashtagUpload"/>
+  </mat-chip-grid>
+</mat-form-field>
 <div *ngIf="requestStats$ | async as requestStats">
   <ng-container *ngIf="requestStats.hs06sec_finished+requestStats.hs06sec_failed>0">
     <span><b>Request stats: </b> </span>
@@ -40,15 +62,36 @@
 <mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
   <mat-tab label="Slices">
 <!--    Filter for datasets-->
-<mat-form-field style="width: 300px">
+
+   <div *ngIf="analysisSlices$| async as analysisSlices">
+    <div class="filters-top-page">
+      <div>
+          <mat-form-field style="width: 300px">
       <mat-label>Filter</mat-label>
       <input matInput [(ngModel)]="datasetFilter" (keyup)="slicesGrid.api.onFilterChanged()" placeholder="Filter">
     </mat-form-field>
-
-
-
-   <div *ngIf="analysisSlices$| async as analysisSlices">
-
+        </div>
+      <div>
+    <app-task-stats [taskStatus]="sliceTypes"  [formControl]="sliceTypeControl"
+                [statusOrder]="SLICE_TYPE_ORDER" ></app-task-stats>
+      </div>
+      </div>
+     <div class="task-table-header">
+  <div >
+     Page Size:
+      <select style="width: 5em" (change)="onPageSizeChanged()" [(ngModel)]="pageSize" >
+        <option value="10" >10</option>
+        <option value="20" selected="">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="1000">1000</option>
+      </select>
+    </div>
+  <div>
+  <button mat-raised-button color="primary" (click)="selectFiltered()">Select Filtered</button>
+  <button mat-raised-button color="primary" (click)="clearSelection()">Clear selection</button>
+  </div>
+</div>
     <ag-grid-angular
       #slicesGrid
       class="ag-theme-alpine"
@@ -58,7 +101,7 @@
       [rowSelection]="'multiple'"
       [pagination]="true"
      [domLayout]="'autoHeight'"
-      [paginationPageSize]="20"
+      [paginationPageSize]="pageSize"
       (selectionChanged)="onSelectionChanged($event)"
           [gridOptions]="gridOptions"
       (gridReady)="onGridReady($event)"
@@ -68,7 +111,8 @@
 
 <app-analy-request-actions [productionRequestID]="requestID" [selectedSlices]="selectedSlicesNumbers" (updateRequest)="updateRequest($event)"></app-analy-request-actions>
   </mat-tab>
-  <mat-tab label="Tasks">
+  <mat-tab label="Tasks" >
+<mat-slide-toggle [(ngModel)]="taskForAllSlices" (ngModelChange)="changeSelectAllTasks()">Selected Slices - ALl</mat-slide-toggle>
     <h1 *ngIf="taskLoadError" style="color: red">Error loading tasks: {{taskLoadError}}</h1>
 
     <div *ngIf="tasks$ | async as tasks; else loading">

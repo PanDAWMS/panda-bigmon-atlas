@@ -5,6 +5,8 @@ export class TASKS_CONSTANTS {
     'submitting', 'ready', 'running', 'paused', 'exhausted', 'done', 'finished', 'toretry',
     'toabort', 'failed', 'broken', 'aborted', 'obsolete'];
 
+  public static readonly BAD_TASKS_STATUS: string[] = ['failed', 'broken', 'aborted', 'toabort'];
+
   public static readonly STEPS_ORDER = ['total', 'Evgen',
                                          'Evgen Merge',
                                          'Simul',

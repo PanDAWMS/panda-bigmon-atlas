@@ -2,3 +2,10 @@
     /* bright green, 10% opacity */
     --ag-selected-row-background-color: rgb(0, 255, 0, 0.05);
 }
+.task-table-header, .filters-top-page {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px;
+}

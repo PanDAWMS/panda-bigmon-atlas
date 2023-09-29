@@ -38,6 +38,14 @@ export class AnalyRequestActionsComponent implements OnInit {
           this.updateRequest.emit(true);
         }
       );
+
+    } else if (action === 'hide') {
+      this.analysisTaskService.submitAnalysisRequestAction(this.productionRequestID, 'hide', this.selectedSlices).subscribe(
+        (response) => {
+          this.sendMessage = response.result;
+          this.updateRequest.emit(true);
+        }
+      );
     } else if (action === 'modify') {
       this.analysisTaskService.getSlicesCommonTemplate(this.productionRequestID,  this.selectedSlices).subscribe(
         (response) => {

@@ -46,6 +46,8 @@ export class AnalysisTasksService {
   private prGetTaskPreviewUrl = '/api/get_analysis_task_preview/';
   private prGetPatternViewUrl = '/api/get_analysis_pattern_view/';
   private prGetParentDerivationUrl = '/api/get_derivation_slices/';
+  private prGetAnalysisRequestHashtagsUrl = '/api/get_analysis_request_hashtags/';
+  private prAddAnalysisRequestHashtagUrl = '/api/add_delete_analysis_request_hashtag/';
 
 
 
@@ -152,5 +154,16 @@ export class AnalysisTasksService {
                                   inputSlices: {slice: number, outputFormat: string, requestID: string,
                                     container: string}[]): Observable<string> {
     return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputSlices});
+  }
+
+  getAnalysisRequestHashtags(requestID: string): Observable<string[]> {
+    return this.http.get<string[]>(this.prGetAnalysisRequestHashtagsUrl, {params: {requestID}});
+  }
+
+  addAnalysisRequestHashtag(requestID: string, hashtag: string) {
+        return this.http.post<string>(this.prAddAnalysisRequestHashtagUrl, {requestID, hashtag, action: 'add'});
+  }
+  removeAnalysisRequestHashtag(requestID: string, hashtag: string) {
+        return this.http.post<string>(this.prAddAnalysisRequestHashtagUrl, {requestID, hashtag, action: 'delete'});
   }
 }
