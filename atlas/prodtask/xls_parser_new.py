@@ -95,7 +95,7 @@ class XlrParser(object):
         return  (self.result_dict, color_dict)
 
     def __parse_xsl_openpyxl(self, file_object):
-        book =  openpyxl.load_workbook(file_object)
+        book =  openpyxl.load_workbook(file_object, data_only=True)
         self.result_dict = {}
         color_dict = {}
         slice_index = 2
