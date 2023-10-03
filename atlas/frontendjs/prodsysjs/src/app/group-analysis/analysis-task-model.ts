@@ -13,7 +13,7 @@ export interface AnalysisStepBase {
 
 }
 
-export const ANALISYS_SOURCE_ACTIONS = ['EL'];
+export const ANALISYS_SOURCE_ACTIONS = [];
 export interface AnalysisStep {
   step: StepBase;
   analysis_step: AnalysisStepBase;
