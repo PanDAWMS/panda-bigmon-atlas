@@ -105,6 +105,7 @@ import {
 import { AnalysisTemplatesTableComponent } from './group-analysis/analysis-templates-table/analysis-templates-table.component';
 import {NgxMatSelectSearchModule} from "ngx-mat-select-search";
 import { ParentDrivationForAnalysisComponent } from './group-analysis/parent-drivation-for-analysis/parent-drivation-for-analysis.component';
+import { AnalysisApiDescriptionComponent } from './group-analysis/analysis-api-description/analysis-api-description.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -161,6 +162,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
   {path: 'gp-api', component: GpApiInstructionComponent},
+    {path: 'ga-api', component: AnalysisApiDescriptionComponent},
   {path: 'input_by_ami_tag/:amiTag', component: DerivationFromTagComponent},
     {path: 'input_by_ami_tag', component: DerivationFromTagComponent},
   {path: 'derivation-phys-pattern', component: DerivationPhysPatternComponent},
@@ -239,7 +241,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AnalysisTemplatesTableComponent,
     DialogSliceModificationComponent,
     DialogRequestOutputsComponent,
-    ParentDrivationForAnalysisComponent
+    ParentDrivationForAnalysisComponent,
+    AnalysisApiDescriptionComponent
   ],
   imports: [
     BrowserModule,

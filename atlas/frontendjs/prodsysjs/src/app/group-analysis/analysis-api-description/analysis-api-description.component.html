@@ -1,0 +1,58 @@
+The Prodtask is using Token based authentication for its RestFull API. You can find your personal token on this page:
+<p><a href="https://prodtask-dev.cern.ch/prodtask/userinfo/">https://prodtask-dev.cern.ch/prodtask/userinfo/</a></p>
+
+and set it "Token your_token" as an authorisation Header.
+
+Example for curl:
+<mat-card appearance="outlined">
+  <mat-card-title>
+    CURL example
+  </mat-card-title>
+  <mat-card-content>
+<code>
+  <pre>
+  curl  -X POST -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"   https://prodtask-dev.cern.ch/api/test_api/</pre>
+</code>
+  </mat-card-content>
+</mat-card>
+<p>
+Or for python the code could look like that:
+</p>
+<mat-card appearance="outlined">
+  <mat-card-title>
+    Python
+  </mat-card-title>
+  <mat-card-content>
+<code>
+    <pre>
+import requests, json
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;
+response = requests.post('https://prodtask-dev.cern.ch/api/test_api/', headers=headers)
+json.loads(response.content)</pre>
+</code>
+  </mat-card-content>
+</mat-card>
+<mat-divider></mat-divider>
+<h3>APIs</h3>
+<p>
+For group analysis management following APIs are avalaible:
+</p>
+<ul>
+  <li>
+   <h5> <a href="https://prodtask-dev.cern.ch/api/get_analysis_request_output_datasets_names/?requestID=51122">get_analysis_request_output_datasets_names</a></h5>
+
+    A list of outputs for done/finished tasks in the requestID :<br/>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        CURL example
+      </mat-card-title>
+      <mat-card-content>
+        <code><pre>
+          curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/get_analysis_request_output_datasets_names/?requestID=51122"</pre>
+        </code>
+      </mat-card-content>
+    </mat-card>
+
+
+  </li>
+</ul>

@@ -3475,6 +3475,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <li><a href="#" onclick="closeOpenEnded(event);">Close Open Ended</a></li>
             {% endif  %}
                 <li><a href="#" onclick="createReprocessing(event);">Create base on this</a></li>
+                    {% if trequest.request_type == "GROUP" %}
+                <li>         <a  href="/ng/create-analysis-request?parentRequest={{ pr_id }}">Group Analysis</a></li>
+
+                    {% endif %}
              <li><a href="#" onclick="syncTasksJEDI(event);">Sync tasks with JEDI</a></li>
         {% else %}
           <li><a href="{% url 'sso_login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>

@@ -580,7 +580,7 @@ def get_analysis_request_stat(request):
 @permission_classes((IsAuthenticated,))
 def get_analysis_request_output_datasets_names(request):
     try:
-        request_id = int(request.query_params.get('request_id'))
+        request_id = int(request.query_params.get('requestID'))
         if request_id < 1000:
             raise TRequest.DoesNotExist
         output_datasets = collect_all_output_datasets(request_id)

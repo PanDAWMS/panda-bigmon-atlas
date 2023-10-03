@@ -103,7 +103,7 @@ export class AnalysisTasksService {
     return this.http.get<AnalysisRequestStats>(this.prGetAnalysisRequestStatsUrl, {params: {request_id: requestID}});
   }
   getAnalysisRequestOutputs(requestID: string): Observable<string[]> {
-    return this.http.get<string[]>(this.prGetAnalysisRequestOutputsUrl, {params: {request_id: requestID}});
+    return this.http.get<string[]>(this.prGetAnalysisRequestOutputsUrl, {params: {requestID}});
   }
   saveTemplateParams(templateID: string, templateBase: Partial<TemplateBase>|null,  params: PatternChanges): Observable<any> {
     return this.http.post(this.prSaveTaskTemplateUrl, {templateID, templateBase,  params});
