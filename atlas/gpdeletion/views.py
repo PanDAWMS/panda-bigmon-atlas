@@ -1203,3 +1203,51 @@ def runDeletion(lifetime=3600):
 def gpdeletedcontainers(request):
     all_containers = list(GroupProductionDeletionProcessing.objects.filter(status='Deleted').order_by("-timestamp").values('container','timestamp','deleted_datasets'))
     return Response(all_containers)
+
+
+def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, output_daods_file_ext: str):
+    """
+    Find all DAODs which are not in the list of DAODs to save
+    :param daod_lifetime_filepath: path to file with DAODs to save
+    :param output_daods_file: path to file with all DAODs
+    :return: list of DAODs to delete
+    """
+    all_daod_datasets_to_delete = []
+    with open(daod_lifetime_filepath, 'r') as f:
+        for line in f:
+            all_daod_datasets_to_delete.append(line.strip().split(' ')[0])
+    all_containers = GroupProductionDeletion.objects.filter(extensions_number__gte=1).values('container',
+                                                                                        'extensions_number',
+                                                                                        'last_extension_time',
+                                                                                                  'update_time',
+                                                                                        'id')
+    all_containers_dict = {x['container']: x for x in all_containers}
+    containers_by_id = {x['id']: x for x in all_containers}
+    extensions = GroupProductionDeletionExtension.objects.all().order_by('id').values('container_id', 'user',
+                                                                                           'message', 'id')
+    extensions_dict = {}
+    for extension in extensions:
+        extensions_dict[containers_by_id[extension['container_id']]['container']] = extension
+    result = []
+    for dataset in all_daod_datasets_to_delete:
+        container_name = get_container_name(dataset)
+        if container_name in all_containers_dict:
+            container_info = all_containers_dict[container_name]
+            last_time = container_info['last_extension_time']
+            if not last_time:
+                last_time = container_info['update_time']
+            if ((last_time - timezone.now()).days +
+                container_info['extensions_number'] * 60 + 60 > 0):
+                extension = extensions_dict.get(container_name,{'user': 'none', 'message': 'missing'})
+                result.append((dataset,extension['user'],extension['message']))
+    with open(output_daods_file, 'w') as f:
+        for dataset in result:
+            f.write('%s\n'%(dataset[0]))
+    with open(output_daods_file_ext, 'w') as f:
+        for dataset in result:
+            f.write('%s %s %s\n'%(dataset[0],dataset[1],dataset[2]))
+    return result
+
+
+
+

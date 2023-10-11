@@ -2283,3 +2283,17 @@ def staging_rule_file_errors(dataset: str):
 #     if s.count() > 0:
 #         return True, True
 #     return True, False
+
+def staging_tasks_by_destination(destination_rse: str):
+    staging_datasets = DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING)
+    ddm = DDM()
+    result = []
+    destination_tasks = []
+    for dataset_stage in staging_datasets:
+        replicas = ddm.dataset_replicas(dataset_stage.dataset)
+        if destination_rse in [x['rse'] for x in replicas]:
+            result.append(dataset_stage)
+    for dataset in result:
+        tasks = [ProductionTask.objects.get(id=x) for x in ActionStaging.objects.filter(dataset_stage=dataset).values_list('task', flat=True)]
+        destination_tasks += filter(lambda x: x.status not in ProductionTask.NOT_RUNNING, tasks)
+    return destination_tasks

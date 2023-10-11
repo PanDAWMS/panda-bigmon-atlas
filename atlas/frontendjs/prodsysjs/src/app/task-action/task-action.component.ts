@@ -65,7 +65,8 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     remove_hashtag: {name: 'Remove hashtag', params_name: ['hashtag']},
     sync_jedi: {name: 'Sync with JEDI', params_name: []},
     disable_idds: {name: 'Push staging rule', params_name: []},
-    finish_plus_reload:  {name: 'Finish + reload', params_name: []}
+    finish_plus_reload:  {name: 'Finish + reload', params_name: []},
+    release_task: {name: 'Release', params_name: []},
   };
    SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete'];
    comment = '';

@@ -234,6 +234,10 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         return self.jedi_client.resumeTask(jediTaskID, verbose)
 
     @_jedi_decorator
+    def release_task(self, jediTaskID, verbose=False):
+        return self.jedi_client.release_task(jediTaskID, verbose)
+
+    @_jedi_decorator
     def reassignShare(self, jediTaskID, share, reassign_running=False):
         return self.jedi_client.reassignShare([jediTaskID, ], share, reassign_running)
 
@@ -392,7 +396,7 @@ class TaskManagementAuthorisation():
             if status not in (ProductionTask.NOT_RUNNING + [ProductionTask.STATUS.ABORTING, ProductionTask.STATUS.TOABORT]):
                 self.allowed_task_actions[status].extend(['finish',
                                                             'pause_task', 'resume_task', 'trigger_task',
-                                                            'avalanche_task', 'reload_input',
+                                                            'avalanche_task', 'reload_input', 'release_task',
                                                             'increase_attempt_number', 'abort_unfinished_jobs',
                                                           'disable_idds', 'kill_job', 'retry', 'finish_plus_reload'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
@@ -562,7 +566,8 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'remove_hashtag': action_executor.remove_hashtag,
             'sync_jedi': action_executor.sync_jedi,
             'disable_idds': action_executor.create_disable_idds_action,
-            'finish_plus_reload': action_executor.create_finish_reload_action
+            'finish_plus_reload': action_executor.create_finish_reload_action,
+            'release_task': action_executor.release_task
         }
     if args == (None,):
          return action_translation[action](task_id)

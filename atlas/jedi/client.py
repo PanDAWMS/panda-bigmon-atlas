@@ -84,6 +84,10 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
+    def release_task(self, jediTaskID, verbose):
+        pass
+
+    @abstractmethod
     def avalancheTask(self, jediTaskID, verbose):
         pass
 
@@ -518,6 +522,28 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         data = {'jediTaskID': jediTaskID}
         return self._post_command('resumeTask',data)
 
+    def release_task(self, jediTaskID, verbose=False):
+        """release task from staging
+
+        args:
+            jedi_task_id: jediTaskID of the task to avalanche
+        returns:
+            status code
+                  0: communication succeeded to the panda server
+                  255: communication failure
+            tuple of return code and diagnostic message
+                  0: request is registered
+                  1: server error
+                  2: task not found
+                  3: permission denied
+                  4: irrelevant task status
+                100: non SSL connection
+                101: irrelevant taskID
+        """
+
+        data = {'jedi_task_id': jediTaskID}
+        return self._post_command('release_task',data)
+
     def reassignShare(self, jedi_task_ids, share, reassign_running=False):
         """
            args:
@@ -670,12 +696,15 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
     def _jedi_output_distillation(jedi_respond_raw):
         jedi_respond = jedi_respond_raw
         if type(jedi_respond_raw) is bytes:
-            jedi_respond = pickle.loads(jedi_respond_raw)
+            try:
+                jedi_respond = pickle.loads(jedi_respond_raw)
+            except:
+                jedi_respond = json.loads(jedi_respond_raw)
         return_code = -1
         return_info = ''
         if type(jedi_respond) is int:
             return_code = jedi_respond
-        elif type(jedi_respond) is tuple:
+        elif (type(jedi_respond) is tuple) or (type(jedi_respond) is list):
             return_code = jedi_respond[0]
             return_info = jedi_respond[1]
         return return_code, return_info
