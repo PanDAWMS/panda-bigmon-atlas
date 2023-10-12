@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
-    JediDatasets, JediDatasetContents
+    JediDatasets, JediDatasetContents, SystemParametersHandler
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -454,6 +454,15 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
         _logger.error("Can't create rule %s" % str(e))
         return False
 
+
+def append_excluded_rse(rule: str) -> str:
+    excluded_rses = SystemParametersHandler.get_excluded_staging_sites().sites
+    if excluded_rses and excluded_rses != ['']:
+        exclude_string = '\\'+'\\'.join(excluded_rses)
+        return f'{rule}{exclude_string}'
+    return rule
+
+
 def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None):
     step = task.step
     waiting_parameters_from_step = None
@@ -524,6 +533,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
                 level = 95
         action_step.set_config({'level':level})
         action_step.set_config({'lifetime':lifetime})
+        rule = append_excluded_rse(rule)
         action_step.set_config({'rule': rule})
         if replicas:
             action_step.set_config({'source_replica': replicas})
@@ -1975,6 +1985,7 @@ def change_replica_by_task(ddm, task_id, replica=None):
             dataset_stage.save()
         rule, source_replicas, source = ddm.get_replica_pre_stage_rule_by_rse(replica)
         print(rule, source_replicas, source)
+        rule = append_excluded_rse(rule)
         action_step.set_config({'rule': rule})
         action_step.set_config({'tape': convert_input_to_physical_tape(source)})
         action_step.set_config({'source_replica': source_replicas})

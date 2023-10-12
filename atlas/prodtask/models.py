@@ -1133,6 +1133,8 @@ class SystemParametersHandler:
     class PARAMETERS_NAMES:
         DAOD_PHYS_Production = 'DAOD_PHYS_Production'
         MC_CAMPAGINS = 'MC_Campaigns'
+        EXCLUDED_STAGING_SITES = 'ExcludedStagingSites'
+
 
     @dataclass
     class DAOD_PHYS_Production:
@@ -1152,6 +1154,10 @@ class SystemParametersHandler:
     class MC_Campaign:
         campaign: str
         subcampaigns: List[str]
+
+    @dataclass
+    class ExcludedStagingSites:
+        sites: List[str]
 
     def __init__(self, name):
         self.name = name
@@ -1178,6 +1184,15 @@ class SystemParametersHandler:
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS,
                                        [asdict(x) for x in values])
 
+    @staticmethod
+    def get_excluded_staging_sites() -> ExcludedStagingSites:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.EXCLUDED_STAGING_SITES)
+        return SystemParametersHandler.ExcludedStagingSites(**values)
+
+    @staticmethod
+    def set_excluded_staging_sites(values: ExcludedStagingSites):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.EXCLUDED_STAGING_SITES,
+                                       asdict(values))
 
 
 class SystemParameters(models.Model):
