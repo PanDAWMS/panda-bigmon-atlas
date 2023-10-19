@@ -6,7 +6,8 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List
 from django.db.models import Q
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework import status
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 from atlas.cric.client import CRICClient
@@ -2332,3 +2333,22 @@ def staging_tasks_by_destination(destination_rse: str):
         tasks = [ProductionTask.objects.get(id=x) for x in ActionStaging.objects.filter(dataset_stage=dataset).values_list('task', flat=True)]
         destination_tasks += filter(lambda x: x.status not in ProductionTask.NOT_RUNNING, tasks)
     return destination_tasks
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def data_carousel_config(request):
+    try:
+        excludeSites = SystemParametersHandler.get_excluded_staging_sites().sites
+        carouselTapes = []
+        for tape_info in ActionDefault.objects.filter(type='PHYSICAL_TAPE').order_by('name'):
+            carouselTapes.append({'tapeName': tape_info.name, 'min_bulksize': tape_info.get_config('minimum_level'),
+                                  'max_bulksize': tape_info.get_config('maximum_level'),
+                                  'batchdelay': tape_info.get_config('continious_percentage'),
+                                  'active': tape_info.get_config('active'),
+                                  'baseRule': tape_info.get_config('destination')})
+        return Response({'excludeSites': excludeSites, 'carouselTapes': carouselTapes}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

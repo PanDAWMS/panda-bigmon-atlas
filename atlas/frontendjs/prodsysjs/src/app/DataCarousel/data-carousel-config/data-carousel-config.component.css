@@ -1,0 +1,9 @@
+.tapeConfig {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  max-width: 200ch;
+  margin: 10px;
+  border: 2px #E7E9EB solid;
+
+}

@@ -5,6 +5,7 @@ from atlas.analysis_tasks.views import prepare_template_from_task, create_templa
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
     get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, add_delete_analysis_request_hashtag
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, extension_container_api, group_production_datasets_full
+from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
 from atlas.special_workflows.views import request_results, clone_active_learning_request
 from atlas.task_action.task_management import tasks_action
@@ -47,6 +48,8 @@ urlpatterns = [
     re_path(r'^get_derivation_slices/$', get_derivation_slices, name='get_derivation_slices'),
     re_path(r'^get_analysis_request_hashtags/$', get_analysis_request_hashtags, name='get_analysis_request_hashtags'),
     re_path(r'^add_delete_analysis_request_hashtag/$', add_delete_analysis_request_hashtag, name='add_delete_analysis_request_hashtag'),
+    re_path(r'^data_carousel_config/$', data_carousel_config, name='data_carousel_config'),
+
 
 
 ]
