@@ -405,7 +405,7 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset_name)
         rules = self.__ddm.list_did_rules(scope, name)
         for rule in rules:
-            if rule['activity'] == 'Staging':
+            if rule['activity'] == 'Staging' and rule['account'] == 'prodsys':
                 return rule
         return None
 
