@@ -231,7 +231,8 @@ class DDM(object):
 
     def get_replica_pre_stage_rule_by_rse(self, rse):
         #rse_attr = self.__ddm.list_rse_attributes(rse)
-        return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
+        # return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
+        return '{destination_by_tape}', 'type=DATADISK|{source_tape}', rse
         # if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
         #         #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
         #         return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
@@ -384,6 +385,14 @@ class DDM(object):
                 return rule
         return []
 
+    def dataset_active_rule_by_activity(self, dataset_name, activity='Staging'):
+        scope, name = self.rucio_convention(dataset_name)
+        rules = self.__ddm.list_did_rules(scope, name)
+        for rule in rules:
+            if rule['activity'] == activity:
+                return rule
+        return []
+
     def dataset_active_rule_by_rule_id(self, dataset_name, rule_id):
         scope, name = self.rucio_convention(dataset_name)
         rules = self.__ddm.list_did_rules(scope, name)
@@ -397,7 +406,7 @@ class DDM(object):
         rules = self.__ddm.list_did_rules(scope, name)
         for rule in rules:
             if rule['activity'] == 'Staging':
-                return rule['id']
+                return rule
         return None
 
     def list_dataset_rules(self, dataset_name):

@@ -297,13 +297,14 @@ class TapeResource(ResourceQueue):
                 for dataset_staging in dataset_stagings:
                     if dataset_staging.step_action.status == 'active':
                         rule = dataset_staging.step_action.get_config('rule')
+                        rule = prepare_rule(rule, self.resource_name)
                         lifetime = dataset_staging.step_action.get_config('lifetime')
                         source_replica =  dataset_staging.step_action.get_config('source_replica')
                 if rule and lifetime:
 
                     #print(x['dataset'], rule)
                     try:
-                        existed_rule = self.ddm.dataset_active_rule_by_rse(x['dataset'], rule)
+                        existed_rule = self.ddm.active_staging_rule(x['dataset'])
                         if not self.is_test:
                             if not existed_rule:
                                 if not source_replica:
@@ -435,11 +436,17 @@ def fill_source_replica_template(ddm, dataset, source_replica_template, physical
     else:
         return source_replica_template
 
+def render_destination_rule(rule: str, tape_name: str) -> str:
+    if tape_name and '{destination_by_tape}' in rule:
+        destination_config = ActionDefault.objects.get(name=tape_name).get_config().get('destination')
+        if destination_config:
+            return rule.replace('{destination_by_tape}', destination_config)
+    return rule
 
 def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
     try:
         _logger.info('%s should be pre staged rule %s  '%(input_dataset,rule))
-        rse = ddm.dataset_active_rule_by_rse(input_dataset, rule)
+        rse = ddm.active_staging_rule(input_dataset)
         if rse:
             return rse['id']
         if not replicas:
@@ -462,6 +469,8 @@ def append_excluded_rse(rule: str) -> str:
         return f'{rule}{exclude_string}'
     return rule
 
+def prepare_rule(original_rule: str, tape_name: str = '') -> str:
+    return render_destination_rule(append_excluded_rse(original_rule), tape_name)
 
 def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None):
     step = task.step
@@ -506,6 +515,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
     if dataset_staging.status == 'queued' and waiting_parameters_from_step and waiting_parameters_from_step.get('nowait', False):
         source_replica = fill_source_replica_template(ddm, input_dataset, replicas, dataset_staging.source)
+        rule = prepare_rule(rule, dataset_staging.source)
         perfom_dataset_stage(input_dataset, ddm, rule, lifetime, source_replica)
         dataset_staging.status = 'staging'
         dataset_staging.start_time = timezone.now()
@@ -533,7 +543,6 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
                 level = 95
         action_step.set_config({'level':level})
         action_step.set_config({'lifetime':lifetime})
-        rule = append_excluded_rse(rule)
         action_step.set_config({'rule': rule})
         if replicas:
             action_step.set_config({'source_replica': replicas})
@@ -559,7 +568,9 @@ def submit_queued_rule(action_step_id):
         dataset_stage = action_stage.dataset_stage
         if dataset_stage.status == 'queued':
             source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
-            perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), source_replica)
+            rule = action_step.get_config('rule')
+            rule = prepare_rule(rule, dataset_stage.source)
+            perfom_dataset_stage(dataset_stage.dataset, ddm, rule, action_step.get_config('lifetime'), source_replica)
             dataset_stage.status = 'staging'
             dataset_stage.start_time = timezone.now()
             dataset_stage.save()
@@ -929,7 +940,7 @@ def do_staging(action_step_id, ddm):
                     _logger.error("Check do staging problem %s %s" % (str(e), str(action_step_id)))
         if dataset_stage.status == 'staging':
             if True :
-                existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
+                existed_rule = ddm.active_staging_rule(dataset_stage.dataset)
                 if existed_rule:
                         if dataset_stage.rse and dataset_stage.rse != existed_rule['id']:
                             _logger.error("do staging change rule from %s to %s for %s" % (str(dataset_stage.rse), str(existed_rule['id']),dataset_stage.dataset))
@@ -950,7 +961,9 @@ def do_staging(action_step_id, ddm):
                 else:
                     action_finished = False
                     source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
-                    if perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'),
+                    rule = action_step.get_config('rule')
+                    rule = prepare_rule(rule, dataset_stage.source)
+                    if perfom_dataset_stage(dataset_stage.dataset, ddm, rule,
                                                 action_step.get_config('lifetime'), source_replica):
                         dataset_stage.start_time = current_time
 
@@ -1196,7 +1209,7 @@ def follow_staged(waiting_step, ddm):
             continue
         if task.status not in ProductionTask.NOT_RUNNING:
             action_finished = False
-            existed_rule = ddm.dataset_active_rule_by_rse(dataset_stage.dataset, action_step.get_config('rule'))
+            existed_rule = ddm.active_staging_rule(dataset_stage.dataset)
             if existed_rule:
                 if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
                     try:
@@ -1208,7 +1221,9 @@ def follow_staged(waiting_step, ddm):
             else:
                 _logger.error("Check follow staged problem rule for %s was deleted step %s new rule will be created" % (dataset_stage.dataset, str(waiting_step)))
                 source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
-                perfom_dataset_stage(dataset_stage.dataset, ddm, action_step.get_config('rule'), action_step.get_config('lifetime'), source_replica)
+                rule = action_step.get_config('rule')
+                rule = prepare_rule(rule, dataset_stage.source)
+                perfom_dataset_stage(dataset_stage.dataset, ddm, rule, action_step.get_config('lifetime'), source_replica)
 
     if action_finished :
         action_step.status = 'done'
@@ -1681,6 +1696,7 @@ def step_action(request, wstep_id):
         action_step = StepAction.objects.get(id=wstep_id)
         tasks_messages = []
         task = None
+        ddm= DDM()
         if action_step.action == 6:
             if ActionStaging.objects.filter(step_action=action_step).exists():
                 for staging in ActionStaging.objects.filter(step_action=action_step):
@@ -1688,12 +1704,17 @@ def step_action(request, wstep_id):
                     total_files = staging.dataset_stage.total_files
                     staged_files = staging.dataset_stage.staged_files
                     rse = staging.dataset_stage.rse
+                    rule_rse = action_step.get_config('rule')
+                    if rse:
+                        rucio_rule = ddm.get_rule(rse)
+                        if rucio_rule:
+                            rule_rse = rucio_rule['rse_expression']
                     task = staging.task
                     if ':' not in dataset:
                         dataset = '{0}:{1}'.format(dataset.split('.')[0],dataset)
                     link = '<a href="https://rucio-ui.cern.ch/did?name={name}">{name}</a>'.format(name=str(dataset))
                     rule_link = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">{rule_rse}</a>'.format(
-                        rule_id=rse, rule_rse=action_step.get_config('rule'))
+                        rule_id=rse, rule_rse=rule_rse)
 
                     if action_step.get_config('tape'):
                         tape_replica = str(action_step.get_config('tape'))
@@ -2301,8 +2322,11 @@ def staging_tasks_by_destination(destination_rse: str):
     result = []
     destination_tasks = []
     for dataset_stage in staging_datasets:
-        replicas = ddm.dataset_replicas(dataset_stage.dataset)
-        if destination_rse in [x['rse'] for x in replicas]:
+        # replicas = ddm.dataset_replicas(dataset_stage.dataset)
+        # if destination_rse in [x['rse'] for x in replicas]:
+        #     result.append(dataset_stage)
+        first_file = ddm.list_locks(dataset_stage.rse).__next__()
+        if first_file and first_file['rse'] == destination_rse:
             result.append(dataset_stage)
     for dataset in result:
         tasks = [ProductionTask.objects.get(id=x) for x in ActionStaging.objects.filter(dataset_stage=dataset).values_list('task', flat=True)]
