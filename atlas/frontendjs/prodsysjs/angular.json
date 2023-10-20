@@ -29,6 +29,7 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "aot": true,
+            "optimization": false,
             "assets": [
               "src/favicon.ico",
               "src/assets"

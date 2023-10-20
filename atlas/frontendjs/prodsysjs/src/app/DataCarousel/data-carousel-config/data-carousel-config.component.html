@@ -1,14 +1,15 @@
-<h4>Data Carousel config</h4>
+<h3>Data Carousel config</h3>
 <ng-container *ngIf="dataCarouselConfig$ | async as dataCarouselConfig; else loading">
   <div>Excluded sites: {{dataCarouselConfig.excludeSites.join(',')}}</div>
 <br>
-<div *ngFor="let tapeConfig of  dataCarouselConfig.carouselTapes" class="tapeConfig">
-    <div style="grid-column: 1 / -1;"> Name: <b>{{tapeConfig.tapeName}}</b></div>
+<div *ngFor="let tapeConfig of  dataCarouselConfig.carouselTapes" class="grid grid-cols-5
+gap-1 border-solid rounded-md border-slate-400 mb-5">
+    <div class="row-span-2"> Name: <b>{{tapeConfig.tapeName}}</b></div>
   <div> Active: <mat-icon *ngIf="tapeConfig.active" class="done" style="color: green">done</mat-icon><mat-icon *ngIf="!tapeConfig.active" class="close" style="color: red">close</mat-icon></div>
       <div> batchdelay: {{tapeConfig.batchdelay}}</div>
       <div> min_bulksize: {{tapeConfig.min_bulksize}}</div>
       <div> max_bulksize: {{tapeConfig.max_bulksize}}</div>
-      <div style="grid-column: 1 / -1; overflow-wrap: anywhere"> Base rule: {{tapeConfig.baseRule}}</div>
+      <div class="col-span-4"> Base rule: {{tapeConfig.baseRule}}</div>
     </div>
 
 </ng-container>
