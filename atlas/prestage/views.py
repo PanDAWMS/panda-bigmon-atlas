@@ -1212,7 +1212,7 @@ def follow_staged(waiting_step, ddm):
             action_finished = False
             existed_rule = ddm.active_staging_rule(dataset_stage.dataset)
             if existed_rule:
-                if (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
+                if existed_rule['expires_at'] and (existed_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=10):
                     try:
                         ddm.change_rule_lifetime(existed_rule['id'], 30 * 86400)
                         dataset_stage.update_time = current_time
