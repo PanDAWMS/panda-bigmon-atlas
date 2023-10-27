@@ -2041,8 +2041,19 @@ def request_table_view(request, rid=None, show_hidden=False):
             if (cur_request.request_type == 'GROUP') and (cur_request.phys_group != 'VALI'):
                 limit_priority = {'min': 560, 'max': 570}
                 try:
-                    if (request.user.is_superuser) :
+                    if (request.user.is_superuser):
                         limit_priority = {'min': 0, 'max': 2000}
+                    else:
+                        user_groups = request.user.groups.all()
+                        group_permissions = set()
+                        allowed_groups = []
+                        for gp in user_groups:
+                            group_permissions.update(list(gp.permissions.all()))
+                        for gp in group_permissions:
+                            if "has_" in gp.name and "_permissions" in gp.name:
+                                allowed_groups.append(gp.codename)
+                        if 'DPD' in allowed_groups:
+                            limit_priority = {'min': 0, 'max': 2000}
                 except:
                     pass
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
