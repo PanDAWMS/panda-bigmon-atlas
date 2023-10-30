@@ -1234,6 +1234,16 @@ def delete_small_merge(good_slices: [int], production_request: int):
                         step.save()
                         # remove_step_by_index(ordered_existed_steps, index)
                 break
+
+
+def any_group_check(username):
+    all_permissions = egroup_permissions(username)
+    for permission in all_permissions:
+        if permission in [x[0] for x in TRequest.PHYS_GROUPS]+['DPD']:
+            return True
+    return False
+
+
 @csrf_protect
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False}
@@ -1269,14 +1279,18 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         error_approve_message = False
         owner = request.user.username
+        no_action_slices = []
         if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
             if (not request.user.is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
                 error_approve_message = True
+        if (req.request_type == 'GROUP') and (req.phys_group != 'VALI'):
+            if (not request.user.is_superuser) and not any_group_check(request.user.username):
+                error_approve_message = True
+                no_action_slices = map(int, slices)
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message}
         removed_input = []
-        no_action_slices = []
         if (not missing_tags) and (not error_approve_message) and (not error_slices):
 
             _logger.debug("Start steps save/approval")
@@ -2044,14 +2058,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                     if (request.user.is_superuser):
                         limit_priority = {'min': 0, 'max': 2000}
                     else:
-                        user_groups = request.user.groups.all()
-                        group_permissions = set()
-                        allowed_groups = []
-                        for gp in user_groups:
-                            group_permissions.update(list(gp.permissions.all()))
-                        for gp in group_permissions:
-                            if "has_" in gp.name and "_permissions" in gp.name:
-                                allowed_groups.append(gp.codename)
+                        allowed_groups = egroup_permissions(request.user.username)
                         if 'DPD' in allowed_groups:
                             limit_priority = {'min': 0, 'max': 2000}
                 except:

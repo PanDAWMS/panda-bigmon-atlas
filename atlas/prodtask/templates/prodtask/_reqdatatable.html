@@ -551,7 +551,13 @@ function saveChangesAsync(sendData){
                             }
                             var additionalComment = '';
                             if (approveProblem){
-                                additionalComment = '\n You should be request manager to approve it.'
+                           {% if trequest.request_type == "MC" %}
+                                additionalComment = '\n You should be request manager to approve it.';
+
+                            {% else %}
+                               additionalComment = '\n You don\'t have rights to approve this request. Please contact Derivation coordination';
+
+                            {% endif %}
                             }
                             if ((newStatus != undefined) && (newStatus != '')){
                                 $('#requestStatus').html(newStatus);
@@ -581,14 +587,14 @@ function saveChangesAsync(sendData){
                                         $("#approveDialog").append($('<p/>').html('Slice has problem: ' + errorSlices[0]));
                                     } else {
                                         if (errorSlices.length > 1) {
-                                            $("#approveDialog").append($('<p/>').html(errorSlices.length + 'Slices have problem: ' + errorSlices.toString()));
+                                            $("#approveDialog").append($('<p/>').html(errorSlices.length + ' slices have problem: ' + errorSlices.toString()));
                                         }
                                     }
                                     if (notChangedSlices.length == 1) {
                                         $("#approveDialog").append($('<p/>').html('Slice was not changed: ' + notChangedSlices[0]));
                                     } else {
                                         if (notChangedSlices.length > 1) {
-                                            $("#approveDialog").append($('<p/>').html(notChangedSlices.length + 'Slices were not changed: ' + notChangedSlices.toString()));
+                                            $("#approveDialog").append($('<p/>').html(notChangedSlices.length + ' slices were not changed: ' + notChangedSlices.toString()));
                                         }
                                     }
                                     if (doReload) {
@@ -597,12 +603,18 @@ function saveChangesAsync(sendData){
                                 }
 
                                     if (isApprove) {
-                                        $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
-                                        $("#approveDialog").attr("title", "Steps approved");
-                                        for (i = 0; i < slices.length; i++) {
-                                            $("#aprroveLabel".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted");
-                                            $("#aprroveLabelLong".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted")
+                                        if (slices.length > 0){
+                                            $("#approveDialog").append($('<p/>').html("Sucessfully approved slices: " + slices.toString() + additionalComment));
+                                            $("#approveDialog").attr("title", "Steps approved");
+                                            for (i = 0; i < slices.length; i++) {
+                                                $("#aprroveLabel".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted");
+                                                $("#aprroveLabelLong".concat(slices[i])).css({'color': 'greenyellow'}).html("Submitted")
+                                            }
+                                        } else {
+                                            $("#approveDialog").append($('<p/>').html("No slices were approved - "+ additionalComment));
+                                            $("#approveDialog").attr("title", "No steps approved");
                                         }
+
 
                                     } else {
                                         $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: " + slices.toString()));
