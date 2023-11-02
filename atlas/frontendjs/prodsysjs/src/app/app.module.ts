@@ -107,6 +107,8 @@ import {NgxMatSelectSearchModule} from "ngx-mat-select-search";
 import { ParentDrivationForAnalysisComponent } from './group-analysis/parent-drivation-for-analysis/parent-drivation-for-analysis.component';
 import { AnalysisApiDescriptionComponent } from './group-analysis/analysis-api-description/analysis-api-description.component';
 import { DataCarouselConfigComponent } from './DataCarousel/data-carousel-config/data-carousel-config.component';
+import { ChatbotComponent } from './chatbot/chatbot.component';
+import { DerivationExtensionComponent } from './derivation-extension/derivation-extension.component';
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -168,6 +170,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'input_by_ami_tag', component: DerivationFromTagComponent},
   {path: 'derivation-phys-pattern', component: DerivationPhysPatternComponent},
   {path: 'dc-config', component: DataCarouselConfigComponent},
+  {path: 'chat', component: ChatbotComponent},
+  {path: 'derivation-extension/:requestID/:slices', component: DerivationExtensionComponent},
 
   {path: 'carousel', component: DataCarouselComponent},
   // {path: 'unmerged-deletion/:prefix', component: UnmergeCleaningComponent,
@@ -245,7 +249,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     DialogRequestOutputsComponent,
     ParentDrivationForAnalysisComponent,
     AnalysisApiDescriptionComponent,
-    DataCarouselConfigComponent
+    DataCarouselConfigComponent,
+    ChatbotComponent,
+    DerivationExtensionComponent
   ],
   imports: [
     BrowserModule,

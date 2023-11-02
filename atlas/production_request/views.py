@@ -21,7 +21,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer
 
-from rest_framework import serializers, generics
+from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
@@ -29,6 +29,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
+from atlas.prodtask.views import clone_slices
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 from django.core.cache import cache
@@ -441,3 +442,76 @@ def derivation_input(request):
             return Response(return_value)
     except Exception as ex:
         return Response(f"Problem with derivation loading: {ex}", status=400)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def pattern_slices_derivation_request(request):
+    try:
+        requestID = int(request.data['requestID'])
+        slicesIDs = request.data['slices']
+        based_input = ''
+        pattern_slices = []
+        for sliceID in slicesIDs:
+            slice = InputRequestList.objects.get(request_id=requestID, slice=sliceID)
+            if not based_input:
+                if ProductionTask.objects.filter(step__slice_id=slice, request_id=requestID).exists():
+                    if not ProductionTask.objects.filter(step__slice_id=slice, request_id=requestID, status__in=ProductionTask.BAD_STATUS).exists():
+                        based_input = slice.dataset
+                        pattern_slices.append(sliceID)
+                else:
+                    based_input = slice.dataset
+                    pattern_slices.append(sliceID)
+            else:
+                if slice.dataset == based_input:
+                    pattern_slices.append(sliceID)
+        pattern_steps = find_derivation_pattern_steps(requestID, pattern_slices)
+
+        return Response({'pattern_slices':','.join([x['slice'] for x in pattern_steps])})
+
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def find_derivation_pattern_steps(requestID: int, sliceIDs: [int]) -> [dict]:
+    pattern_steps = []
+    output_formats = set()
+    for sliceID in sliceIDs:
+        step = StepExecution.objects.get(slice=InputRequestList.objects.get(slice=sliceID, request=requestID),
+                                         request_id=requestID)
+        step_output_formats = step.step_template.output_formats.split('.')
+        if not [x for x in step_output_formats if x in output_formats]:
+            output_formats = output_formats.union(set(step_output_formats))
+            pattern_steps.append({'slice': sliceID, 'ami_tag': step.step_template.ctag,
+                                  'output_formats': step_output_formats})
+    return pattern_steps
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def form_pattern_for_derivation_request_extension(request):
+    try:
+        return Response(find_derivation_pattern_steps(int(request.data['requestID']),  request.data['slices']))
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def extend_derivation_request(request):
+    try:
+        requestID = int(request.data['requestID'])
+        sliceIDs = request.data['slices']
+        datasets = request.data['containerList']
+        pattern_steps = find_derivation_pattern_steps(requestID, sliceIDs)
+        pattern_slices = [x['slice'] for x in pattern_steps]
+        for dataset in datasets:
+            new_slices = clone_slices(requestID, requestID, pattern_slices, -1, False)
+            for sliceNumber in new_slices:
+                slice = InputRequestList.objects.get(request_id=requestID, slice=sliceNumber)
+                slice.dataset = dataset
+                slice.save()
+        return Response(str(requestID))
+
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

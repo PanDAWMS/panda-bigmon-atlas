@@ -9,7 +9,7 @@ import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component"
 import {ActivatedRoute, Router} from "@angular/router";
 
 
-interface InputContainerItem {
+export interface InputContainerItem {
   containerName: string;
   datasetNumber: number|null;
 }

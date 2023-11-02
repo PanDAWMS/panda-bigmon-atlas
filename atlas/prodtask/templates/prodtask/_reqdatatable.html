@@ -2942,6 +2942,32 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             $('#stepsExtend').html('');
             $('#checkExtend').html('Check');
         }
+
+        function prepareDerivationExtension(event){
+            event.preventDefault();
+            var sendData = {slices:getCheckedSlices(),requestID:"{{ pr_id }}"};
+            if (sendData.slices.length == 0){
+                alert('Please select slices');
+            } else {
+
+                $.ajax({
+                            url: "{% url 'prodtask_api:pattern_slices_derivation_request' %}",
+                            type: 'POST',
+                            contentType: 'application/json; charset=utf-8',
+                            data: $.toJSON(sendData),
+                            dataType: 'text',
+                            timeout: 0,
+                            success: function(data,status) {
+                                var pattern_slices =  $.evalJSON(data).pattern_slices;
+                                window.location.href = construct_django_url('/ng/derivation-extension/',{{ pr_id }},pattern_slices);
+
+                            },
+                            error: function(data,status) {
+                                alert('Error: '+data.responseText);
+                            }
+                      })
+            }
+        }
         function checkExtendRequest(event, that){
             event.preventDefault();
             $('#loadExtend').spin('small');
@@ -3479,7 +3505,12 @@ ProjectModeForm.prototype.createForm = function(inputString){
         {% if user.is_authenticated %}
           <li><a href="{% url 'prodtask:request_update' pr_id %}">Update</a></li>
           <li><a href="#" onclick="showModalClone(event);">Clone</a></li>
-            <li><a href="#" onclick="extendRequest(event);">Extend</a></li>
+             {% if trequest.request_type == "GROUP" %}
+                 <li><a href="#" onclick="prepareDerivationExtension(event);">Extend</a></li>
+            {% else %}
+                    <li><a href="#" onclick="extendRequest(event);">Extend</a></li>
+             {% endif %}
+
           <li><a href="#" onclick="approveEmpty(event);">Approve</a></li>
             {% if not is_open_ended %}
                 <li><a href="#" onclick="makeOpenEnded(event);">Make Open Ended</a></li>

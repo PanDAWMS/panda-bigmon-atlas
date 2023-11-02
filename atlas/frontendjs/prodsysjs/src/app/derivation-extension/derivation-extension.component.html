@@ -1,0 +1,36 @@
+
+<div class="text-2xl" *ngIf="productionRequest$ | async as productionRequest ">
+  Extend request - {{productionRequest.reqid}} - {{productionRequest.description}}
+</div>
+<div *ngFor="let patternStep of patternSteps$ | async as patternSteps" class="grid grid-cols-4 max-w-md ">
+  <div>Pattern:</div><div>{{patternStep.ami_tag}}</div>
+  <div>Outputs:</div><div>{{patternStep.output_formats.join('.') }}</div>
+    </div>
+<br>
+  <form [formGroup]="containersFormGroup">
+    <ng-template matStepLabel>Submit a list</ng-template>
+    <mat-form-field style="width: 100% ">
+      <mat-label>Enter a list of input containers(with any separator)</mat-label>
+      <textarea matInput #containerListInput placeholder="List" formControlName="containerList" (change)="containerListChanged$.next(containerListInput.value)" style="height: 300px"
+      ></textarea>
+    </mat-form-field>
+    <div>
+      <button>▼
+      </button>
+            </div>
+  </form>
+
+        <ag-grid-angular
+          style="width: 100%; height: 300px;"
+          class="ag-theme-balham"
+          [rowData]="separateInputContainerList$ | async"
+          [columnDefs]="columnDefs"
+          [pagination]="true"
+          [paginationPageSize]="10"
+        >
+        </ag-grid-angular>
+<div class="">
+  <div><button (click)="extendRequest()" [disabled]="containersCurrentList.length === 0">Extend</button> </div>
+<div>With {{containersCurrentList.length * patternLength}} slices</div>
+  </div>
+
