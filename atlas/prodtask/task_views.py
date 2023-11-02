@@ -12,10 +12,10 @@ from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate
 import logging
 
+from ..cric.client import CRICClient
 from ..settings import defaultDatetimeFormat, OIDC_LOGIN_URL
 
 import atlas.datatables as datatables
-from .models import Schedconfig
 
 from .forms import ProductionTaskForm, ProductionTaskCreateCloneForm, ProductionTaskUpdateForm
 from .models import ProductionTask, TRequest, TTask, ProductionDataset, Site, JediTasks, JediDatasets
@@ -612,37 +612,38 @@ def task_table(request):
 
 def get_clouds():
     """
-    Get list of clouds
+    !Deprecated Get list of clouds
     :return: list of clouds names
     """
-    clouds = [ x.get('cloud') for x in Schedconfig.objects.values('cloud').distinct() ]
-    locale.setlocale(locale.LC_ALL, '')
-    clouds = sorted(clouds, key=locale.strxfrm)
+    clouds = [ ]
+
     return clouds
 
 
-def get_sites():
+def get_sites(update_cache=False):
     """
     Get list of site names
     :return: list of site names
     """
-    sites = [ x.get('siteid') for x in Schedconfig.objects.values('siteid').distinct() ]
-    locale.setlocale(locale.LC_ALL, '')
-    sites = sorted(sites, key=locale.strxfrm)
-    return sites
+    if not update_cache and cache.get('panda_queues'):
+        return cache.get('panda_queues')
+    cric_client = CRICClient()
+    queues = cric_client.get_panda_queues()
+    result = list(queues.keys())
+    result.sort()
+    cache.set('panda_queues', result, 3600*24)
+    return result
 
-def get_nucleus():
+def get_nucleus(update_cache=False):
     """
     Get list of nuclei names
     :return: list of nuclei names
     """
-    nucleus = [ x.get('site_name') for x in Site.objects.filter(role='nucleus').values('site_name').distinct() ]
-    locale.setlocale(locale.LC_ALL, '')
-    nucleus = sorted(nucleus, key=locale.strxfrm)
-
-
+    if not update_cache and cache.get('panda_nucleus'):
+        return cache.get('panda_nucleus')
+    nucleus = [ x.get('site_name') for x in Site.objects.filter(role='nucleus').order_by('site_name').values('site_name').distinct() ]
+    cache.set('panda_nucleus', nucleus, 3600*24)
     return nucleus
-
 
 def slice_by_task(request, task_id):
     try:

@@ -41,3 +41,6 @@ class CRICClient(object):
 
     def get_ddmendpoint(self):
         return self._get_command('atlas/ddmendpoint')
+
+    def get_panda_queues(self):
+        return self._get_command('atlas/pandaqueue')
