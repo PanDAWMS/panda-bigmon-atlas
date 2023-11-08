@@ -493,3 +493,51 @@ class DDM(object):
                 file_scope, file_name = self.rucio_convention(file)
                 file_dids.append({'scope': file_scope, 'name': file_name})
         self.__ddm.add_dataset(scope, name, statuses=statuses, meta=meta, lifetime=lifetime, files=file_dids)
+
+    def get_production_container_name(self, dataset):
+        if '_tid' in dataset:
+            return dataset[:dataset.rfind('_tid')]
+        else:
+            return dataset
+
+    @staticmethod
+    def ami_tags_reduction_w_data(postfix: str, data=False) -> str:
+        if 'tid' in postfix:
+            postfix = postfix[:postfix.find('_tid')]
+        if data:
+            return postfix
+        new_postfix = []
+        first_letter = ''
+        for token in postfix.split('_'):
+            if token[0] != first_letter and not (token[0] == 's' and first_letter == 'a'):
+                new_postfix.append(token)
+            first_letter = token[0]
+        return '_'.join(new_postfix)
+
+
+    def get_sample_container_name(self, dataset_name: str) -> str:
+        container_name = '.'.join(dataset_name.split('.')[:-1] + [self.ami_tags_reduction_w_data(dataset_name.split('.')[-1],
+                                                                                            dataset_name.startswith(
+                                                                                                'data') or (
+                                                                                                        'TRUTH' in dataset_name))])
+        if dataset_name.startswith('data') or ('TRUTH' in dataset_name):
+            return container_name
+        postfix = container_name.split('.')[-1]
+        if postfix.split('_')[-1].startswith('r'):
+            return container_name.replace('merge', 'recon')
+        if postfix.split('_')[-1].startswith('e'):
+            return container_name.replace('merge', 'evgen')
+        if postfix.split('_')[-1].startswith('s') or postfix.split('_')[-1].startswith('a'):
+            return container_name.replace('merge', 'simul')
+        return container_name
+
+    @staticmethod
+    def with_and_without_scope(lfns: [str]) -> [str]:
+        return_list = []
+        for lfn in lfns:
+            return_list.append(lfn)
+            if lfn.find(':') > -1:
+                return_list.append(lfn.split(':')[1])
+            else:
+                return_list.append(f'{lfn.split(".")[0]}:{lfn}')
+        return return_list

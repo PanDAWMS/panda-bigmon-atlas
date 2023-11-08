@@ -329,6 +329,17 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             task.status = ProductionTask.STATUS.OBSOLETE
             task.timestamp = timezone.now()
             task.save()
+            output_datasets = list(task.output_non_log_datasets())
+            if filter(lambda x: 'EVNT' in x, output_datasets):
+                # remove dataset from containers
+                ddm = DDM()
+                for dataset in output_datasets:
+                    production_container = ddm.get_production_container_name(dataset)
+                    if dataset in ddm.with_and_without_scope(ddm.dataset_in_container(production_container)):
+                        ddm.delete_datasets_from_container(production_container, [dataset])
+                    sample_container = ddm.get_sample_container_name(dataset)
+                    if dataset in ddm.with_and_without_scope(ddm.dataset_in_container(sample_container)):
+                        ddm.delete_datasets_from_container(sample_container, [dataset])
         return True, ''
 
 
