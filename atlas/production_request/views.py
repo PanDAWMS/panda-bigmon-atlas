@@ -19,7 +19,7 @@ from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
-    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer
+    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -166,6 +166,13 @@ class ProductionRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
+    child_tasks = []
+    if ParentToChildRequest.objects.filter(parent_request=request_id, relation_type='DP').exists():
+        for child_request in ParentToChildRequest.objects.filter(parent_request=request_id, relation_type='DP').values_list('child_request_id', flat=True):
+            steps = list(StepExecution.objects.filter(request=child_request, step_parent_id__in=steps).values_list('id', flat=True))
+            child_tasks += list(ProductionTask.objects.filter(step__in=steps))
+    return child_tasks
 
 
 @api_view(['POST'])
@@ -184,9 +191,9 @@ def production_task_for_request(request: Request) -> Response:
                 slices = request.data['slices']
                 slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
                 steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
-                tasks = ProductionTask.objects.filter(step__in=steps)
+                tasks = list(ProductionTask.objects.filter(step__in=steps)) + child_derivation_tasks(request_id, steps)
             else:
-                tasks = ProductionTask.objects.filter(request_id=request_id)
+                tasks = list(ProductionTask.objects.filter(request_id=request_id))
         tasks_serial = tasks_serialisation(tasks)
         return Response(tasks_serial)
     except Exception as ex:

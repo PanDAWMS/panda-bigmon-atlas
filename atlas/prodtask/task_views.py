@@ -1192,12 +1192,26 @@ def get_global_shares(update_cache=False):
 
 
 def tasks_serialisation(tasks: [ProductionTask]) -> [dict]:
+    step_from_name = {
+        '.evgen.': 'Evgen',
+        '.simul.': 'Simul',
+        '.recon.': 'Reco',
+        '.deriv.': 'Deriv',
+    }
     tasks_serial = []
     for task in tasks:
         serial_task = task.__dict__
-        del serial_task['_state']
-        step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
-        serial_task.update(dict(step_name=StepTemplate.objects.filter(id=step_id).values("step").get()['step']))
+        if '_state' in serial_task:
+            del serial_task['_state']
+        step_name = ''
+        for key in step_from_name:
+            if key in task.name:
+                step_name = step_from_name[key]
+                break
+        if not step_name:
+            step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
+            step_name = StepTemplate.objects.filter(id=step_id).values("step").get()['step']
+        serial_task.update(dict(step_name=step_name))
         serial_task['failureRate'] = task.failure_rate or 0
         tasks_serial.append(serial_task)
     return tasks_serial
