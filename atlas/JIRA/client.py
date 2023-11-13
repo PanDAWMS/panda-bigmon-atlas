@@ -33,7 +33,7 @@ class JIRAClient(object):
         issue['fields']['summary'] = issue['fields']['summary'] % summary
         issue['fields']['description'] = issue['fields']['description'] % description
 
-        headers = {'Content-type': 'application/json', 'Authorization': 'Basic %s'%JIRA_CONFIG['jira_key']}
+        headers = {'Content-type': 'application/json', 'Authorization': 'Bearer %s'%JIRA_CONFIG['jira_key']}
 
         response = requests.post(JIRA_CONFIG['issue_url'],
                                  data=json.dumps(issue),
@@ -75,7 +75,7 @@ class JIRAClient(object):
         issue['fields']['description'] = issue['fields']['description'] % description
         issue['fields']['parent']['key'] = issue['fields']['parent']['key'] % parent_issue_key
 
-        headers = {'Content-type': 'application/json', 'Authorization': 'Basic %s'%JIRA_CONFIG['jira_key']}
+        headers = {'Content-type': 'application/json', 'Authorization': 'Bearer %s'%JIRA_CONFIG['jira_key']}
 
         response = requests.post(JIRA_CONFIG['issue_url'],
                                  data=json.dumps(issue),
@@ -106,7 +106,7 @@ class JIRAClient(object):
         comment = JIRA_CONFIG['issue_comment_template'].copy()
         comment['body'] = comment['body'] % comment_body
 
-        headers = {'Content-type': 'application/json', 'Authorization': 'Basic %s'%JIRA_CONFIG['jira_key']}
+        headers = {'Content-type': 'application/json', 'Authorization': 'Bearer %s'%JIRA_CONFIG['jira_key']}
         comment_url = '{0}{1}/comment'.format(JIRA_CONFIG['issue_url'], issue_key)
 
         response = requests.post(comment_url,
@@ -127,7 +127,7 @@ class JIRAClient(object):
         issue_close_request['update']['comment'][0]['add']['body'] = \
             issue_close_request['update']['comment'][0]['add']['body'] % comment
 
-        headers = {'Content-type': 'application/json', 'Authorization': 'Basic %s'%JIRA_CONFIG['jira_key']}
+        headers = {'Content-type': 'application/json', 'Authorization': 'Bearer %s'%JIRA_CONFIG['jira_key']}
         transitions_url = '{0}{1}/transitions'.format(JIRA_CONFIG['issue_url'], issue_key)
 
         response = requests.post(transitions_url,
