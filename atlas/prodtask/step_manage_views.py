@@ -2557,6 +2557,8 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
     tasks_set = set()
     if first_step_tag:
         tasks_set.update(list(ProductionTask.objects.filter(primary_input=input_container, ami_tag=first_step_tag)))
+        if ':' in input_container:
+            tasks_set.update(list(ProductionTask.objects.filter(primary_input=input_container.split(':')[1], ami_tag=first_step_tag)))
         for dataset in datasets:
             tasks_set.update(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
     tasks = list(tasks_set)
