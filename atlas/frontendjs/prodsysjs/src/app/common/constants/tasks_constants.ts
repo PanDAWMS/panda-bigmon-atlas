@@ -1,4 +1,7 @@
 
+export class DEFAULTS {
+  public static readonly TIME_FORMAT = 'YYYY-MM-dd HH:mm';
+}
 
 export class TASKS_CONSTANTS {
   public static readonly TASKS_STATUS_ORDER = ['total', 'active', 'good', 'waiting', 'staging', 'registered', 'assigning',

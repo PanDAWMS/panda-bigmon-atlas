@@ -4,6 +4,7 @@ import {TaskActionLog, TaskHS06, TaskInfo, TaskService} from '../../production-t
 import {ProductionTask} from '../production-request-models';
 import {delay, filter, switchMap, tap} from 'rxjs/operators';
 import {BehaviorSubject, Observable} from 'rxjs';
+import {DEFAULTS} from "../../common/constants/tasks_constants";
 
 @Component({
   selector: 'app-task-full-details',
@@ -50,4 +51,5 @@ export class TaskDetailsComponent implements OnInit, OnChanges {
     this.taskExtensions$ = this.taskService.getTaskExtension(this.taskID.toString().toString());
   }
 
+  protected readonly DEFAULTS = DEFAULTS;
 }
