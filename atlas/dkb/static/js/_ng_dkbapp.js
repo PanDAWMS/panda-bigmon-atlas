@@ -103,6 +103,7 @@
              success(function(data, status, headers, config) {
                 scope.tasks = data.tasks;
                 scope.total = data.total;
+                scope.events_per_campaign = data.per_campaign_size;
                 scope.loading = false;
 
              }).

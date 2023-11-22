@@ -43,8 +43,8 @@ def test_connection():
 @permission_classes((IsAuthenticated,))
 def es_task_search_analy(request):
     search_string = request.data
-    result, total = es_task_search_all(search_string, 'analy')
-    return Response({'tasks':result,'total':total})
+    result, total, per_campaign_size = es_task_search_all(search_string, 'analy')
+    return Response({'tasks':result,'total':total, 'per_campaign_size':per_campaign_size})
 
 
 def es_task_search_all(search_string, task_type):
@@ -65,15 +65,23 @@ def es_task_search_all(search_string, task_type):
             if 'output_dataset' not in current_hit:
                 current_hit['output_dataset'] = []
             result.append(current_hit)
-    return result, total
+    per_campaign_size = []
+    try:
+        response = keyword_search_size_nested(key_string_from_input(search_string)['query_string'], search_value).execute()
+        for bucket in response.aggregations.output_events_per_cmapaign.buckets:
+            per_campaign_size.append({'name':bucket.key,'size':bucket.processed_events.value,'tasks':bucket.doc_count})
+    except:
+        pass
+    return result, total, per_campaign_size
+
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, BasicAuthentication])
 @permission_classes((IsAuthenticated,))
 def es_task_search(request):
     search_string = request.data
-    result, total = es_task_search_all(search_string, 'prod')
-    return Response({'tasks':result,'total':total})
+    result, total, per_campaign_size = es_task_search_all(search_string, 'prod')
+    return Response({'tasks':result,'total':total, 'per_campaign_size':per_campaign_size})
 
 
 def hits_to_tasks(hits):
@@ -172,7 +180,64 @@ def keyword_search_nested(keyword_string, is_analy=False):
 
     return query
 
+def keyword_search_size_nested(keyword_string, is_analy=False):
+    keyword_wildcard = []
+    keyword_non_wildcard = []
+    keywords = keyword_string.split(' AND ')
+    for keyword in keywords:
+        if ('?' in keyword) or ('*' in keyword):
+            tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
+            if keyword[-1] != '*':
+                tokens[-1] = tokens[-1][:-2]+'"'
+            keyword_wildcard+=tokens
+        else:
+            keyword_non_wildcard.append(keyword)
+    query_string = []
+    if keyword_wildcard:
+        query_string.append({
+            "query_string": {
+                "query": ' AND '.join(keyword_wildcard),
+                "analyze_wildcard": True,
+                "fields":['taskname']
+            }})
+    if keyword_non_wildcard:
+        query_string.append({
+            "query_string": {
+                "query": ' AND '.join(keyword_non_wildcard),
+            }})
+    if is_analy:
+        es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['analy'])
+    else:
+        es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
+    query = es_search.update_from_dict({"query": {
+        "bool": {
+            "must":query_string,
+            'should': {
+                'nested': {
+                    'path': 'output_dataset',
+                    'score_mode': 'sum',
+                    'query': {'match_all': {}},
+                }
+            }
+        }
+    },
+        "aggs": {
+            "output_events_per_cmapaign": {
+                "terms": {
+                    "field":"subcampaign.keyword",
+                },
+                'aggs': {
+                    "processed_events": {
+                        "sum": {"field": "processed_events"}
+                    },
+                }
+            }
+        },
+        'size': 0,
 
+    })
+
+    return query
 
 def wrong_deriv():
     es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')

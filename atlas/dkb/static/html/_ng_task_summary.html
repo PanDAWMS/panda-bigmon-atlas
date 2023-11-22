@@ -31,6 +31,19 @@
     </div>
     <div class="column large-4"></div>
 </div>
+ <div class="row" >
+<h5>Processed events number (not verified!)</h5>
+     </div>
+<div>
+    <div class="row" ng-repeat="element in events_per_campaign" >
+        <div class="column large-2">{{ element.name }} :</div>
+        <div class="column large-2">{{ element.size | number }}</div>
+        <div class="column large-2"> in {{ element.tasks }} tasks</div>
+
+        <div class="column large-6"></div>
+    </div>
+</div>
+<br>
 <div class="row">
 <table id="taskTable">
     <tr  ng-repeat="element in tasks| filter:tasksname_search| orderBy:orderTaskBy " >
