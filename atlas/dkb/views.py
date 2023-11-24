@@ -134,16 +134,17 @@ def task_tree(request, task_id):
     task_info = []
     return Response(request.user.username)
 
-def keyword_search_nested(keyword_string, is_analy=False):
+def keyword_string_to_query(keyword_string):
     keyword_wildcard = []
     keyword_non_wildcard = []
     keywords = keyword_string.split(' AND ')
     for keyword in keywords:
         if ('?' in keyword) or ('*' in keyword):
-            tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
-            if keyword[-1] != '*':
-                tokens[-1] = tokens[-1][:-2]+'"'
-            keyword_wildcard+=tokens
+            # tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
+            # if keyword[-1] != '*':
+            #     tokens[-1] = tokens[-1][:-2]+'"'
+            # keyword_wildcard+=tokens
+            keyword_wildcard.append(keyword)
         else:
             keyword_non_wildcard.append(keyword)
     query_string = []
@@ -152,13 +153,17 @@ def keyword_search_nested(keyword_string, is_analy=False):
             "query_string": {
                 "query": ' AND '.join(keyword_wildcard),
                 "analyze_wildcard": True,
-                "fields":['taskname']
+                # "fields":['taskname']
             }})
     if keyword_non_wildcard:
         query_string.append({
             "query_string": {
                 "query": ' AND '.join(keyword_non_wildcard),
             }})
+    return query_string
+
+def keyword_search_nested(keyword_string, is_analy=False):
+    query_string = keyword_string_to_query(keyword_string)
     if is_analy:
         es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['analy'])
     else:
@@ -181,30 +186,8 @@ def keyword_search_nested(keyword_string, is_analy=False):
     return query
 
 def keyword_search_size_nested(keyword_string, is_analy=False):
-    keyword_wildcard = []
-    keyword_non_wildcard = []
-    keywords = keyword_string.split(' AND ')
-    for keyword in keywords:
-        if ('?' in keyword) or ('*' in keyword):
-            tokens = ['"'+x+'*"' for x in keyword.replace('"','').split('*') if x ]
-            if keyword[-1] != '*':
-                tokens[-1] = tokens[-1][:-2]+'"'
-            keyword_wildcard+=tokens
-        else:
-            keyword_non_wildcard.append(keyword)
-    query_string = []
-    if keyword_wildcard:
-        query_string.append({
-            "query_string": {
-                "query": ' AND '.join(keyword_wildcard),
-                "analyze_wildcard": True,
-                "fields":['taskname']
-            }})
-    if keyword_non_wildcard:
-        query_string.append({
-            "query_string": {
-                "query": ' AND '.join(keyword_non_wildcard),
-            }})
+    query_string = keyword_string_to_query(keyword_string)
+
     if is_analy:
         es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['analy'])
     else:
@@ -225,12 +208,13 @@ def keyword_search_size_nested(keyword_string, is_analy=False):
             "output_events_per_cmapaign": {
                 "terms": {
                     "field":"subcampaign.keyword",
+                    "size": 30,
                 },
                 'aggs': {
                     "processed_events": {
                         "sum": {"field": "processed_events"}
                     },
-                }
+                },
             }
         },
         'size': 0,
