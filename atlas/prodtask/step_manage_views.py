@@ -2190,6 +2190,8 @@ def check_campaign(reqid, rucio_campaign):
             return True
         elif (subcampaign == 'mc16d') and (rucio_subcampaign == 'mc16c'):
             return True
+        elif (subcampaign == 'mc23d') and (rucio_subcampaign == 'mc23c'):
+            return True
         else:
             return False
 

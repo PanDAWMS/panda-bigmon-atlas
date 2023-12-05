@@ -548,7 +548,7 @@ def filter_mc_campaign(cur_request, tasks, input_step_project_campaigns=[]):
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.request.campaign == cur_request.campaign:
-                if ((subcampaign == 'MC16d') and (task.request.subcampaign == 'MC16c')) or (task.request.subcampaign == subcampaign) or (task.request.subcampaign in input_step_project_campaigns):
+                if ((subcampaign == 'MC23d') and (task.request.subcampaign == 'MC23c')) or ((subcampaign == 'MC16d') and (task.request.subcampaign == 'MC16c')) or (task.request.subcampaign == subcampaign) or (task.request.subcampaign in input_step_project_campaigns):
                     result.append(task_id)
                     events += task.total_events
             else:
