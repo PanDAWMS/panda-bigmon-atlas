@@ -340,6 +340,10 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                     sample_container = ddm.get_sample_container_name(dataset)
                     if dataset in ddm.with_and_without_scope(ddm.dataset_in_container(sample_container)):
                         ddm.delete_datasets_from_container(sample_container, [dataset])
+                    if dataset.startswith('mc16'):
+                        sample_container = ddm.get_sample_container_name(dataset.replace('mc16', 'mc15'))
+                        if dataset in ddm.with_and_without_scope(ddm.dataset_in_container(sample_container)):
+                            ddm.delete_datasets_from_container(sample_container, [dataset])
         return True, ''
 
 
@@ -417,6 +421,8 @@ class TaskManagementAuthorisation():
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.DONE:
+                self.allowed_task_actions[status].extend(['obsolete'])
+            if status == ProductionTask.STATUS.OBSOLETE:
                 self.allowed_task_actions[status].extend(['obsolete'])
 
         pass

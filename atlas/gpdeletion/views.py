@@ -1,3 +1,6 @@
+import glob
+from dataclasses import dataclass, field
+import xml.etree.ElementTree as ET
 from django.contrib.auth.models import User
 from django.contrib.messages.context_processors import messages
 from django.http.response import HttpResponseBadRequest
@@ -8,7 +11,7 @@ from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing, \
-    GroupProductionDeletionRequest
+    GroupProductionDeletionRequest, InputRequestList, StepExecution
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -32,7 +35,7 @@ _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'MUON', 'PHYS',
+FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'MUON', 'NCB', 'PHYS',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH']
 
 CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
@@ -1249,5 +1252,128 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
     return result
 
 
+@dataclass
+class ContainerInfo:
+    container: str
+    period: str
+    version: str
+    project_year: str
+    ami_tag: str
+    output_format: str
+    output_base: str
+    input_datasets: list = field(default_factory=list)
 
+@dataclass
+class PreparedContainer:
+    output_containers: [str]
+    comment: str
+    super_tag: str
+
+    def get_name(self):
+        period = self.super_tag.split(',')[0]
+        postfix = self.super_tag.split(',')[1]
+        base = self.output_containers[0].split('.')[0]
+        stream = self.output_containers[0].split('.')[2]
+        output = self.output_containers[0].split('.')[4]
+        return f'{base}.{period}.{stream}.PhysCont.{output}.{postfix}'
+
+def check_all_output_dataset_exists(input_container_info: ContainerInfo, ddm: DDM) -> ([str], [str], [str]):
+    result_containers = []
+    missing_containers = []
+    missing_events = []
+    for dataset in input_container_info.input_datasets:
+        input_container_name = dataset
+        if '_tid' in dataset:
+            input_container_name = dataset.split('_tid')[0]
+        base = '.'.join(dataset.split('.')[0:3])
+        output_container = input_container_info.output_base.format(base=base, output_format=input_container_info.output_format,
+                                                                   input_tags=input_container_name.split('.')[-1])
+        if not ddm.dataset_exists(output_container):
+            missing_containers.append(output_container)
+            continue
+        datasets = ddm.dataset_in_container(output_container)
+        if not datasets:
+            missing_containers.append(output_container)
+            continue
+        task_id = ddm.dataset_metadata(datasets[0])['task_id']
+        if (ProductionTask.objects.get(id=task_id).status != ProductionTask.STATUS.DONE) and ProductionTask.objects.get(id=task_id).total_files_failed > 0:
+            missing_events.append(output_container)
+            continue
+        result_containers.append(output_container)
+    return result_containers, missing_containers, missing_events
+
+
+def prepare_super_container_creation(production_request_id: int) -> ([ContainerInfo], [str]):
+    slices = InputRequestList.objects.filter(request=production_request_id)
+    input_containers = {}
+    ddm = DDM()
+    all_input_datasets = set()
+    for slice in slices:
+        if not slice.is_hide:
+            step = StepExecution.objects.filter(slice=slice, request=production_request_id).last()
+            if ProductionTask.objects.filter(step=step).exists():
+                task = ProductionTask.objects.filter(step=step).last()
+
+                container = slice.dataset.strip('/')
+                period = container.split('.')[1]
+                version = container.split('.')[-1].split('_')[-1]
+                project_year = container.split('.')[0].split('_')[0][-2:]
+                ami_tag = task.ami_tag
+                output_formats = task.output_formats.split('.')
+                output_dataset = task.output_non_log_datasets().__next__()
+                output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
+                input_datasets = ddm.dataset_in_container(container)
+                all_input_datasets.update(input_datasets)
+                for output_format in output_formats:
+                    key = '_'.join([container, ami_tag, output_format])
+                    if key not in input_containers:
+                        input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
+                                                              output_format, output_base, input_datasets)
+
+    # for input_container_info in input_containers.values():
+    #     result_containers, missing_containers, not_full_containers = check_all_output_dataset_exists(input_container_info, ddm)
+    #     if result_containers:
+    #         super_tag = f'{input_container_info.period},grp{input_container_info.project_year}_{input_container_info.version}_{input_container_info.ami_tag}'
+    #         comment = f'{input_container_info.output_format} {super_tag}'
+    #         result_dict.append(PreparedContainer(result_containers, comment, super_tag))
+
+            # {'output_containers': result_containers,
+            #                     'comment': comment,
+            #                     'super_tag': super_tag})
+    return input_containers, all_input_datasets
+
+
+def assemble_super_container(containers_info: [ContainerInfo], all_datasets: [str]):
+    pass
+
+
+
+def check_request_for_grl(production_request_id: int, grl_path: str, all_datasets: [str]):
+    grl_runs = get_GRL_from_xml(grl_path)
+    verified_datasets = []
+    missing_runs = []
+    for run in grl_runs:
+        datasets = [x for x in all_datasets if run in x]
+        if not datasets:
+            missing_runs += [run]
+        else:
+            verified_datasets += datasets
+    return verified_datasets, missing_runs
+
+
+
+
+
+
+
+
+
+
+def get_GRL_from_xml(file_path: str) -> [int]:
+    grl_xml_root = ET.parse(file_path).getroot()
+    run_numbers = []
+    for run in grl_xml_root.findall('NamedLumiRange/LumiBlockCollection'):
+        run_number = int(run.find('Run').text)
+        run_numbers.append(int(run_number))
+    return run_numbers
 

@@ -56,9 +56,9 @@
     </ng-container>
       </ng-container>
     <!--    Row-->
-    <div>Submit:</div><div>{{task.submit_time| date: DEFAULTS.TIME_FORMAT}}</div>
-    <div>Start:</div><div>{{task.start_time| date:DEFAULTS.TIME_FORMAT}}</div>
-    <div>Timestamp:</div><div>{{task.timestamp| date:DEFAULTS.TIME_FORMAT}}</div>
+    <div>Submit:</div><div>{{task.submit_time| date}}</div>
+    <div>Start:</div><div>{{task.start_time| date}}</div>
+    <div>Timestamp:</div><div>{{task.timestamp| date}}</div>
     <!--    Row-->
     <div>Project mode:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">{{task.projectMode}} </div>
     <!--    Row-->
@@ -158,7 +158,7 @@
 
   <ng-container matColumnDef="timestamp">
     <mat-header-cell *matHeaderCellDef> Time </mat-header-cell>
-    <mat-cell *matCellDef="let row"> {{row.timestamp|date: DEFAULTS.TIME_FORMAT}} </mat-cell>
+    <mat-cell *matCellDef="let row"> {{row.timestamp|date}} </mat-cell>
   </ng-container>
   <ng-container matColumnDef="username">
     <mat-header-cell *matHeaderCellDef>username </mat-header-cell>

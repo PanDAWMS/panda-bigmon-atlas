@@ -2334,6 +2334,12 @@ def staging_tasks_by_destination(destination_rse: str):
         destination_tasks += filter(lambda x: x.status not in ProductionTask.NOT_RUNNING, tasks)
     return destination_tasks
 
+def recover_destination_excluded_from_nucleus(destination_rse: str):
+    tasks = staging_tasks_by_destination(destination_rse)
+    action_executor = TaskActionExecutor('mborodin', 'Release task since dest was excluded from nucleus')
+    for task in tasks:
+        action_executor.release_task(task.id)
+    return tasks
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

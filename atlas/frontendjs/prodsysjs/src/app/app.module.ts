@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
-import {Injectable, NgModule} from '@angular/core';
+import {Injectable, LOCALE_ID, NgModule} from '@angular/core';
 import { HttpClientModule, HttpClientXsrfModule } from '@angular/common/http';
-import { APP_BASE_HREF } from '@angular/common';
+import {APP_BASE_HREF, DATE_PIPE_DEFAULT_OPTIONS} from '@angular/common';
 
 import { AppComponent } from './app.component';
 import { DerivationExclusionComponent } from './derivation-exclusion/derivation-exclusion.component';
@@ -41,7 +41,7 @@ import {ScrollingModule} from '@angular/cdk/scrolling';
 import {MatDialogModule} from '@angular/material/dialog';
 import { GpDeletionRequestComponent } from './derivation-exclusion/gp-deletion-request/gp-deletion-request.component';
 import {MatDatepickerModule} from '@angular/material/datepicker';
-import {MatNativeDateModule} from '@angular/material/core';
+import {MAT_DATE_LOCALE, MatNativeDateModule} from '@angular/material/core';
 import {MatChipsModule} from '@angular/material/chips';
 import {ChipsMultiSelectColoredComponent} from './multi-select-colored-chips/multi-select-colored-chips.component';
 import {MatIconModule} from '@angular/material/icon';
@@ -109,6 +109,7 @@ import { AnalysisApiDescriptionComponent } from './group-analysis/analysis-api-d
 import { DataCarouselConfigComponent } from './DataCarousel/data-carousel-config/data-carousel-config.component';
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { DerivationExtensionComponent } from './derivation-extension/derivation-extension.component';
+import {DEFAULTS} from "./common/constants/tasks_constants";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -194,6 +195,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     resolve: {
       specialDatasets: SpecialCleaningResolver,
     }}];
+
+
 
 @NgModule({
   declarations: [
@@ -296,13 +299,13 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     MatStepperModule,
     MatSlideToggleModule,
     NgxMatSelectSearchModule
-
   ],
   providers: [
         {
            provide:  APP_BASE_HREF, useValue: '/ng',
           useFactory: getBaseLocation
-        }
+        },
+    {provide: DATE_PIPE_DEFAULT_OPTIONS, useValue: {dateFormat: DEFAULTS.TIME_FORMAT, timezone: 'UTC'}},
       ],
   bootstrap: [AppComponent]
 })
