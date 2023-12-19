@@ -189,6 +189,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                     elif translate_list[key] in NUMERIC_FIELDS:
                         if isinstance(excel_dict[row][key],float) or isinstance(excel_dict[row][key],int):
                            translated_row[translate_list[key]] = excel_dict[row][key]
+                        elif excel_dict[row][key].strip().isdigit():
+                            translated_row[translate_list[key]] = int(excel_dict[row][key].strip())
                     else:
                         translated_row[translate_list[key]] = excel_dict[row][key]
             if ('joboptions' not in translated_row) and ('ds' in translated_row):
