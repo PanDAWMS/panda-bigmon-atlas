@@ -73,18 +73,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "prodsysjs:build"
+            "buildTarget": "prodsysjs:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "prodsysjs:build:production"
+              "buildTarget": "prodsysjs:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "prodsysjs:build"
+            "buildTarget": "prodsysjs:build"
           }
         },
         "test": {
