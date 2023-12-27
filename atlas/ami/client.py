@@ -79,12 +79,16 @@ class AMIClient(object):
     def _get_command(self, command):
         url = self._get_url(command).replace('json','help/json')
         #url='https://ami.in2p3.fr/AMI/api/'
-        response = requests.get(url, headers=self._headers)
+        response = requests.get(url, headers=self._headers, verify=ami_settings.CA_CERTIFICATES)
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
         content = json.loads(response.content)
         return content
 
+    def create_physics_container(self, super_tag: str, contained_datasets: [str], creation_comment: str):
+        datasets_str = ','.join(contained_datasets)
+        return self._post_command('COMAPopulateSuperProductionDataset', None, superTag=super_tag, containedDatasets=datasets_str,
+                                  separator=',', creationComment=creation_comment, selectionType='run_config', rucioRegistration='yes')
     def get_current_user(self):
         result = self._post_command('GetUserInfo')
         return str(result[0]['AMIUser'])
