@@ -816,22 +816,27 @@ def sync_request(request_id):
 
 
 def sync_old_tasks(task_number, time_interval = 14400):
+    def chunks(lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
 
     if task_number>0:
         tasks = list(ProductionTask.objects.filter(id__lte=task_number,status__in=ProductionTask.SYNC_STATUS, request_id__gte=2000))
     else:
         tasks = list(ProductionTask.objects.filter(status__in=ProductionTask.SYNC_STATUS, request_id__gte=2000))
-    task_ids = [task.id for task in tasks]
-    jedi_tasks =  list(TTask.objects.filter(id__in=task_ids).values())
-    jedi_tasks_by_id = {}
-    for jedi_task in jedi_tasks:
-        jedi_tasks_by_id[int(jedi_task['id'])] = jedi_task
-    print(datetime.utcnow().replace(tzinfo=pytz.utc))
-    for task in tasks:
-        jedi_task = jedi_tasks_by_id[int(task.id)]
-        if (task.status != jedi_task['status']) or (jedi_task['timestamp'] > task.timestamp):
-            if (task.status != 'toretry') or (jedi_task['status']!='finished'):
-                sync_deft_jedi_task_from_db(task,jedi_task)
+    for task_chunk in chunks(tasks, 5000):
+        task_ids = [task.id for task in task_chunk]
+        jedi_tasks =  list(TTask.objects.filter(id__in=task_ids).values())
+        jedi_tasks_by_id = {}
+        for jedi_task in jedi_tasks:
+            jedi_tasks_by_id[int(jedi_task['id'])] = jedi_task
+        print(datetime.utcnow().replace(tzinfo=pytz.utc))
+        for task in task_chunk:
+            jedi_task = jedi_tasks_by_id[int(task.id)]
+            if (task.status != jedi_task['status']) or (jedi_task['timestamp'] > task.timestamp):
+                if (task.status != 'toretry') or (jedi_task['status']!='finished'):
+                    sync_deft_jedi_task_from_db(task,jedi_task)
 
 
 
