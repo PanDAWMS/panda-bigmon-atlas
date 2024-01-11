@@ -27,6 +27,13 @@ export interface TaskHS06 {
   input_bytes: number;
 }
 
+export interface MCSubCampaignStats{
+  mc_subcampaign: string;
+  stats: {evgen: {tag: string; scope: string; nevents: number}[];
+    simul: {tag: string; scope: string; nevents: number}[];
+    pile: {tag: string; scope: string; nevents: number}[]};
+}
+
 export type ActionParams = number[]|string[]|boolean[]|null;
 
 export interface TaskAction {
@@ -75,6 +82,8 @@ export class TaskService {
   private prTaskStatsUrl = '/production_request/production_task_hs06/';
   private prErrorLogsUrl = '/production_request/production_error_logs/';
   private prTaskExtensionUrl = '/production_request/production_task_extensions/';
+  private prGetMCSubCampaignUrl = '/api/mc_subcampaign_stats/';
+
 
 
 
@@ -136,6 +145,9 @@ export class TaskService {
 
   getActionList(): Observable<TaskAction|null>{
     return this.actionSubject$;
+  }
+  getMCSubCampaignStats(): Observable<MCSubCampaignStats[]>{
+    return this.http.get<MCSubCampaignStats[]>(this.prGetMCSubCampaignUrl);
   }
 
   addAction(taskAction: TaskAction): void{

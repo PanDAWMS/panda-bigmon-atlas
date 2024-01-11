@@ -1707,7 +1707,10 @@ def step_action(request, wstep_id):
                     rse = staging.dataset_stage.rse
                     rule_rse = action_step.get_config('rule')
                     if rse:
-                        rucio_rule = ddm.get_rule(rse)
+                        try:
+                            rucio_rule = ddm.get_rule(rse)
+                        except:
+                            rucio_rule = None
                         if rucio_rule:
                             rule_rse = rucio_rule['rse_expression']
                     task = staging.task

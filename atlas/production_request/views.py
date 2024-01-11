@@ -13,13 +13,13 @@ from django.http import HttpRequest
 from django.utils import timezone
 from rest_framework.request import Request
 
-from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats
+from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
 from atlas.dkb.views import tasks_from_string
 from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
-    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest
+    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -522,3 +522,19 @@ def extend_derivation_request(request):
 
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def mc_subcampaign_stats(request):
+    try:
+        total_stats = []
+        mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23a',':25ns'),
+                           SystemParametersHandler.MCSubCampaignStats('MC23:MC23c',':25ns'),
+                           SystemParametersHandler.MCSubCampaignStats('MC23:MC23d',':25ns'),]
+        for mc_subcampaign in mc_subcampaigns:
+            stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign,{'pile':mc_subcampaign.pile_suffix})
+            total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats})
+        return Response(total_stats)
+    except Exception as ex:
+        return Response(f"Problem with mc sub campaign loading: {ex}", status=400)

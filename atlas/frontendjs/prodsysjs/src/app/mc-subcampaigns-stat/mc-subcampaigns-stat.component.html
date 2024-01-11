@@ -1,0 +1,70 @@
+ <label class="text-2xl" >MC Campaigns stats based on
+   <a href="https://monit-grafana.cern.ch/d/FnZI3bn4k/datasets-info?orgId=17">atlas_datasets_info-*</a></label>
+@if (MCSubCampaignStats$ | async; as MCSubCampaignStats ) {
+  @for (subCampaignStats of MCSubCampaignStats; track subCampaignStats.mc_subcampaign){
+<div class="w-full p-4"> <!-- Main container with full width and padding -->
+    <div class="mb-4"> <!-- Label with bottom margin -->
+        <label  class="text-2xl">{{subCampaignStats.mc_subcampaign}}</label>
+    </div>
+    <div class="flex space-x-4"> <!-- Flex container with spacing between items -->
+        <div class="flex-1 bg-red-200 p-4">
+          <div class="font-bold mb-2">Evgen</div> <!-- Subcontainer Label -->
+
+            <div class="mb-4"> <!-- Parameter-Value Pair -->
+                <span>Total: </span>
+                <span >{{subCampaignStats.stats.evgen.total_events | billion}}</span>
+            </div>
+        <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.evgen.tags}"></ng-container>
+        </div> <!-- Each subcontainer takes equal width -->
+        <div class="flex-1 bg-green-200 p-4">
+          <div class="font-bold mb-2">Simul</div> <!-- Subcontainer Label -->
+
+            <div class="mb-4"> <!-- Parameter-Value Pair -->
+                <span>Total: </span>
+                <span >{{subCampaignStats.stats.simul.total_events | billion}}</span>
+            </div>
+          <div class="mb-4"> <!-- Parameter-Value Pair -->
+                <span>FullSim: </span>
+                <span >{{subCampaignStats.stats.simul.fullsim_events | billion}}</span>
+            </div>
+                    <div class="mb-4"> <!-- Parameter-Value Pair -->
+                <span>FastSim: </span>
+                <span >{{subCampaignStats.stats.simul.fastsim_events | billion}}</span>
+            </div>
+                  <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.simul.tags}"></ng-container>
+        </div>
+        <div class="flex-1 bg-blue-200 p-4">
+                    <div class="font-bold mb-2">Recon</div> <!-- Subcontainer Label -->
+
+            <div class="mb-4"> <!-- Parameter-Value Pair -->
+                <span>Total: </span>
+                <span >{{subCampaignStats.stats.pile.total_events | billion}}</span>
+            </div>
+        <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.pile.tags}"></ng-container>
+
+        </div>
+    </div>
+</div>
+
+  }
+} @else {
+<mat-spinner diameter="50"></mat-spinner>
+}
+
+<ng-template #tagTemplate let-tags="tags">
+  <mat-accordion>
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          All tags
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <ul class="mt-2 bg-white border rounded shadow">
+        @for (tag of tags; track tag.tag){
+        <li class="p-2 border-b hover:bg-gray-100">{{tag.tag}}: {{tag.nevents | billion}}</li>
+        }
+      </ul>
+    </mat-expansion-panel>
+  </mat-accordion>
+</ng-template>
+

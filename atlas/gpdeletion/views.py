@@ -11,7 +11,7 @@ from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing, \
-    GroupProductionDeletionRequest, InputRequestList, StepExecution
+    GroupProductionDeletionRequest, InputRequestList, StepExecution, SystemParametersHandler
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -1268,6 +1268,8 @@ class PreparedContainer:
     output_containers: [str]
     comment: str
     super_tag: str
+    missing_containers: [str] = field(default_factory=list)
+    not_full_containers: [str] = field(default_factory=list)
 
     def get_name(self):
         period = self.super_tag.split(',')[0]
@@ -1276,6 +1278,14 @@ class PreparedContainer:
         stream = self.output_containers[0].split('.')[2]
         output = self.output_containers[0].split('.')[4]
         return f'{base}.{period}.{stream}.PhysCont.{output}.{postfix}'
+
+    def to_dict(self):
+        return {'output_containers': self.output_containers,
+                            'comment': self.comment,
+                            'super_tag': self.super_tag,
+                            'missing_containers': self.missing_containers,
+                            'not_full_containers': self.not_full_containers,
+                            'name': self.get_name()}
 
 def check_all_output_dataset_exists(input_container_info: ContainerInfo, ddm: DDM) -> ([str], [str], [str]):
     result_containers = []
@@ -1303,11 +1313,11 @@ def check_all_output_dataset_exists(input_container_info: ContainerInfo, ddm: DD
     return result_containers, missing_containers, missing_events
 
 
-def prepare_super_container_creation(production_request_id: int) -> ([ContainerInfo], [str]):
+def prepare_super_container_creation(production_request_id: int) -> ([ContainerInfo], [ContainerInfo]):
     slices = InputRequestList.objects.filter(request=production_request_id)
     input_containers = {}
     ddm = DDM()
-    all_input_datasets = set()
+    all_year_containers = {}
     for slice in slices:
         if not slice.is_hide:
             step = StepExecution.objects.filter(slice=slice, request=production_request_id).last()
@@ -1323,28 +1333,46 @@ def prepare_super_container_creation(production_request_id: int) -> ([ContainerI
                 output_dataset = task.output_non_log_datasets().__next__()
                 output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
                 input_datasets = ddm.dataset_in_container(container)
-                all_input_datasets.update(input_datasets)
                 for output_format in output_formats:
                     key = '_'.join([container, ami_tag, output_format])
                     if key not in input_containers:
                         input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
                                                               output_format, output_base, input_datasets)
+                    key = '_'.join(['periodAllYear', ami_tag, output_format])
+                    if key not in all_year_containers:
+                        all_year_containers[key] = ContainerInfo(container, 'periodAllYear', version, project_year,
+                                                              ami_tag,
+                                                              output_format, output_base, input_datasets)
+                    else:
+                        all_year_containers[key].input_datasets += input_datasets
+    return input_containers, all_year_containers
 
-    # for input_container_info in input_containers.values():
-    #     result_containers, missing_containers, not_full_containers = check_all_output_dataset_exists(input_container_info, ddm)
-    #     if result_containers:
-    #         super_tag = f'{input_container_info.period},grp{input_container_info.project_year}_{input_container_info.version}_{input_container_info.ami_tag}'
-    #         comment = f'{input_container_info.output_format} {super_tag}'
-    #         result_dict.append(PreparedContainer(result_containers, comment, super_tag))
+
+def assemble_super_container(containers_info: [ContainerInfo]):
+    ddm = DDM()
+    result_dict = []
+    for input_container_info in containers_info.values():
+        result_containers, missing_containers, not_full_containers = check_all_output_dataset_exists(input_container_info, ddm)
+        super_tag = f'{input_container_info.period},grp{input_container_info.project_year}_{input_container_info.version}_{input_container_info.ami_tag}'
+        comment = f'{input_container_info.output_format} {super_tag}'
+        result_dict.append(PreparedContainer(result_containers, comment, super_tag, missing_containers, not_full_containers))
 
             # {'output_containers': result_containers,
             #                     'comment': comment,
             #                     'super_tag': super_tag})
-    return input_containers, all_input_datasets
+    return result_dict
 
 
-def assemble_super_container(containers_info: [ContainerInfo], all_datasets: [str]):
-    pass
+def create_super_container(production_request_id: int, use_grl: str) -> [PreparedContainer]:
+    containers_info, all_year_containers = prepare_super_container_creation(production_request_id)
+    if use_grl != '':
+        grl_runs = get_GRL_from_xml(use_grl)
+        for container_info in all_year_containers.values():
+            datasets = [x for x in container_info.input_datasets if any([str(run) in x for run in grl_runs])]
+            container_info.input_datasets = datasets
+        return assemble_super_container(all_year_containers)
+    else:
+        return assemble_super_container(containers_info)
 
 
 
@@ -1360,15 +1388,6 @@ def check_request_for_grl(production_request_id: int, grl_path: str, all_dataset
             verified_datasets += datasets
     return verified_datasets, missing_runs
 
-
-
-
-
-
-
-
-
-
 def get_GRL_from_xml(file_path: str) -> [int]:
     grl_xml_root = ET.parse(file_path).getroot()
     run_numbers = []
@@ -1377,3 +1396,27 @@ def get_GRL_from_xml(file_path: str) -> [int]:
         run_numbers.append(int(run_number))
     return run_numbers
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def physics_container_index(request):
+    try:
+        request_id = int(request.query_params.get('requestID'))
+        if request_id < 1000:
+            raise TRequest.DoesNotExist
+        production_request = TRequest.objects.get(reqid=request_id)
+        if production_request.request_type != 'GROUP':
+            raise "Request is not GROUP"
+        if not production_request.project.project.startswith('data'):
+            raise "Request is not data"
+        grl = request.query_params.get('grl')
+        grl_used = False
+        if not grl:
+            grl = SystemParametersHandler.get_grl_default_file().file_by_project.get(production_request.project.project, None)
+            containers = create_super_container(request_id, '')
+        else:
+            containers = create_super_container(request_id, grl)
+            grl_used = True
+        return Response({'containers':[x.to_dict() for x in containers], 'grl':grl, 'grl_used': grl_used})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

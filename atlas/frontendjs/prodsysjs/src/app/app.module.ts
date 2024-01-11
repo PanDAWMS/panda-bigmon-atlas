@@ -110,6 +110,8 @@ import { DataCarouselConfigComponent } from './DataCarousel/data-carousel-config
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { DerivationExtensionComponent } from './derivation-extension/derivation-extension.component';
 import {DEFAULTS} from "./common/constants/tasks_constants";
+import {DerivationPhysicContainerComponent} from "./derivation-physic-container/derivation-physic-container.component";
+import {McSubcampaignsStatComponent} from "./mc-subcampaigns-stat/mc-subcampaigns-stat.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -187,6 +189,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     resolve: {
       unmergedDatasets: UnmergeNotDeletedResolver,
     }},
+    {path: 'derivation-physics-container/:requestID', component: DerivationPhysicContainerComponent},
+  {path: 'mc-subcampaign-stats', component: McSubcampaignsStatComponent},
+
   // {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,
   //   resolve: {
   //     unmergedDatasets: UnmergeCleaningResolver,

@@ -4,11 +4,12 @@ from atlas.analysis_tasks.views import prepare_template_from_task, create_templa
     save_template_changes, get_all_patterns, create_analysis_request, analysis_request_action, \
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
     get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, add_delete_analysis_request_hashtag
-from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, extension_container_api, group_production_datasets_full
+from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
+    extension_container_api, group_production_datasets_full, physics_container_index
 from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
-    pattern_slices_derivation_request
+    pattern_slices_derivation_request, mc_subcampaign_stats
 from atlas.special_workflows.views import request_results, clone_active_learning_request
 from atlas.task_action.task_management import tasks_action
 
@@ -54,8 +55,10 @@ urlpatterns = [
     re_path(r'^form_pattern_for_derivation_request_extension/$', form_pattern_for_derivation_request_extension, name='form_pattern_for_derivation_request_extension'),
     re_path(r'^extend_derivation_request/$', extend_derivation_request, name='extend_derivation_request'),
     re_path(r'^pattern_slices_derivation_request/$', pattern_slices_derivation_request, name='pattern_slices_derivation_request'),
-
-
+    re_path(r'^physics_container_index/$', physics_container_index,
+            name='physics_container_index'),
+    re_path(r'^mc_subcampaign_stats/$', mc_subcampaign_stats,
+            name='mc_subcampaign_stats'),
 
 
 

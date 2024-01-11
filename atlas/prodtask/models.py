@@ -1135,6 +1135,7 @@ class SystemParametersHandler:
         MC_CAMPAGINS = 'MC_Campaigns'
         EXCLUDED_STAGING_SITES = 'ExcludedStagingSites'
         GRL_DEFAULT_FILE = 'GRLDefaultFile'
+        MCSubCampaignStats = 'MCSubCampaignStats'
 
 
     @dataclass
@@ -1155,6 +1156,11 @@ class SystemParametersHandler:
     class MC_Campaign:
         campaign: str
         subcampaigns: List[str]
+
+    @dataclass
+    class MCSubCampaignStats:
+        campaign: str
+        pile_suffix: str
 
     @dataclass
     class GRL_DEFAULT_FILE:
@@ -1192,6 +1198,15 @@ class SystemParametersHandler:
 
 
     @staticmethod
+    def get_mc_sub_campaigns_stats() -> List[MCSubCampaignStats]:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.MCSubCampaignStats)
+        return [SystemParametersHandler.MCSubCampaignStats(**x) for x in values]
+
+    @staticmethod
+    def set_mc_sub_campaigns_stats(values: [MCSubCampaignStats]):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MCSubCampaignStats,
+                                       [asdict(x) for x in values])
+    @staticmethod
     def get_mc_campaigns() -> List[MC_Campaign]:
         values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS)
         return [SystemParametersHandler.MC_Campaign(**x) for x in values]
@@ -1200,7 +1215,6 @@ class SystemParametersHandler:
     def set_mc_campaigns(values: [MC_Campaign]):
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS,
                                        [asdict(x) for x in values])
-
     @staticmethod
     def get_excluded_staging_sites() -> ExcludedStagingSites:
         values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.EXCLUDED_STAGING_SITES)
