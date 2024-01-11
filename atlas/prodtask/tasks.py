@@ -18,6 +18,7 @@ from functools import wraps
 
 import logging
 
+from atlas.production_request.views import fill_mc_stats_trend
 from atlas.task_action.task_management import TaskActionExecutor
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -131,6 +132,12 @@ def remove_stale_staging_rules():
 def clean_stale_action_task():
     clean_stale_actions()
     return None
+
+@app.task(ignore_result=True)
+def fill_mc_subcampaign_trend():
+    fill_mc_stats_trend()
+    return None
+
 
 @app.task(ignore_result=True)
 def rebalance_tape_carousel():

@@ -529,12 +529,51 @@ def extend_derivation_request(request):
 def mc_subcampaign_stats(request):
     try:
         total_stats = []
-        mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23a',':25ns'),
-                           SystemParametersHandler.MCSubCampaignStats('MC23:MC23c',':25ns'),
-                           SystemParametersHandler.MCSubCampaignStats('MC23:MC23d',':25ns'),]
+        # mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23a',':25ns'),
+        #                    SystemParametersHandler.MCSubCampaignStats('MC23:MC23c',':25ns'),
+        #                    SystemParametersHandler.MCSubCampaignStats('MC23:MC23d',':25ns'),]
+        mc_subcampaigns = SystemParametersHandler.get_mc_sub_campaigns_stats()
         for mc_subcampaign in mc_subcampaigns:
             stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign,{'pile':mc_subcampaign.pile_suffix})
             total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats})
         return Response(total_stats)
     except Exception as ex:
         return Response(f"Problem with mc sub campaign loading: {ex}", status=400)
+
+
+
+def fill_default_campaigns():
+    mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23d', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC23:MC23c', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC23:MC23a', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC20:MC20e', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC20:MC20d', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC20:MC20a', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC16:MC16e', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC16:MC16d', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC16:MC16c', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC16:MC16a', ':25ns'),
+                       ]
+    SystemParametersHandler.set_mc_sub_campaigns_stats(mc_subcampaigns)
+
+def fill_mc_stats_trend():
+    total_stats = []
+    mc_subcampaigns = SystemParametersHandler.get_mc_sub_campaigns_stats()
+    for mc_subcampaign in mc_subcampaigns:
+        stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign, {'pile': mc_subcampaign.pile_suffix})
+        total_events = {}
+        for step in ['evgen','simul', 'pile']:
+            if step != 'pile':
+                total_events[step] = sum([x['nevents'] for x in stats[step]])
+            else:
+                total_events[step] = sum([x['nevents'] for x in stats[step] if x['tag'].startswith('r')])
+        total_stats.append({'mc_subcampaign': mc_subcampaign.campaign, 'stats': total_events})
+    existing_stats = cache.get('mc_stats_trend')
+    if existing_stats is None:
+        existing_stats = []
+    if len(existing_stats) < 200:
+        existing_stats.append({'time': timezone.now(), 'stats': total_stats})
+    else:
+        existing_stats.pop(0)
+        existing_stats.append({'time': timezone.now(), 'stats': total_stats})
+    cache.set('mc_stats_trend', existing_stats, None)
