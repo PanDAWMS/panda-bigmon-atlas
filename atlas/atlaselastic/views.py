@@ -333,13 +333,14 @@ def opendistro_sql(query: str) -> any:
 
 def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
     stats = {}
+    output = {'evgen': 'EVNT', 'simul': 'HITS', 'pile': 'AOD'}
     for step in ['evgen','simul', 'pile']:
         stats[step] = []
         step_campaign = campaign
         if suffix.get(step):
             step_campaign = f"{campaign}{suffix.get(step)}"
         query = (f"select task_amitag, scope, sum(nevents) from atlas_datasets_info-* where type='output' and task_campaign='{step_campaign}' "
-                 f"and task_processingtype='{step}'  group by task_amitag, scope")
+                 f"and task_processingtype='{step}' and dataset_format='{output[step]}'  group by task_amitag, scope")
         result = opendistro_sql(query)
         if result.get('status') == 200:
             for row in result.get('datarows'):

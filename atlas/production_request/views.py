@@ -563,10 +563,7 @@ def fill_mc_stats_trend():
         stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign, {'pile': mc_subcampaign.pile_suffix})
         total_events = {}
         for step in ['evgen','simul', 'pile']:
-            if step != 'pile':
-                total_events[step] = sum([x['nevents'] for x in stats[step]])
-            else:
-                total_events[step] = sum([x['nevents'] for x in stats[step] if x['tag'].startswith('r')])
+            total_events[step] = sum([x['nevents'] for x in stats[step]])
         total_stats.append({'mc_subcampaign': mc_subcampaign.campaign, 'stats': total_events})
     existing_stats = cache.get('mc_stats_trend')
     if existing_stats is None:

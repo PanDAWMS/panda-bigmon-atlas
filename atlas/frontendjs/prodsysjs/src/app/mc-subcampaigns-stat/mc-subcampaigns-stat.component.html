@@ -8,7 +8,7 @@
     </div>
     <div class="flex space-x-4"> <!-- Flex container with spacing between items -->
         <div class="flex-1 bg-red-200 p-4">
-          <div class="font-bold mb-2">Evgen</div> <!-- Subcontainer Label -->
+          <div class="font-bold mb-2">Evgen (EVNT)</div> <!-- Subcontainer Label -->
 
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
@@ -17,7 +17,7 @@
         <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.evgen.tags}"></ng-container>
         </div> <!-- Each subcontainer takes equal width -->
         <div class="flex-1 bg-green-200 p-4">
-          <div class="font-bold mb-2">Simul</div> <!-- Subcontainer Label -->
+          <div class="font-bold mb-2">Simul (HITS)</div> <!-- Subcontainer Label -->
 
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
@@ -34,7 +34,7 @@
                   <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.simul.tags}"></ng-container>
         </div>
         <div class="flex-1 bg-blue-200 p-4">
-                    <div class="font-bold mb-2">Recon</div> <!-- Subcontainer Label -->
+                    <div class="font-bold mb-2">Recon (AOD)</div> <!-- Subcontainer Label -->
 
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
@@ -61,7 +61,7 @@
       </mat-expansion-panel-header>
       <ul class="mt-2 bg-white border rounded shadow">
         @for (tag of tags; track tag.tag){
-        <li class="p-2 border-b hover:bg-gray-100">{{tag.tag}}: {{tag.nevents | billion}}</li>
+          <li class="p-2 border-b hover:bg-gray-100"><a href="/dkb/#/task_keywords/(ctag:{{tag.tag}})">{{tag.tag}}: {{tag.nevents | billion}}</a></li>
         }
       </ul>
     </mat-expansion-panel>

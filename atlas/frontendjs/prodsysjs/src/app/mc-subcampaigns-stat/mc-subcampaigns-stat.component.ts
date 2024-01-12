@@ -57,13 +57,13 @@ export class McSubcampaignsStatComponent {
     return stats.map((stat: MCSubCampaignStats) => {
       // Count total events from all tags per mc_subcampaign
       const evgen = {total_events:  (stat.stats.evgen.map((x) => x.nevents)).reduce((a, b) => a + b, 0),
-        tags: stat.stats.evgen};
+        tags: stat.stats.evgen.sort((a, b) => b.nevents - a.nevents)};
       const simul = {total_events: (stat.stats.simul.map((x) => x.nevents)).reduce((a, b) => a + b, 0),
         fastsim_events: (stat.stats.simul.filter((x) => x.tag.startsWith('a')).map((x) => x.nevents)).reduce((a, b) => a + b, 0),
         fullsim_events: (stat.stats.simul.filter((x) => x.tag.startsWith('s')).map((x) => x.nevents)).reduce((a, b) => a + b, 0),
-        tags: stat.stats.simul};
+        tags: stat.stats.simul.sort((a, b) => b.nevents - a.nevents)};
       const pile = {total_events: (stat.stats.pile.filter((x) => x.tag.startsWith('r')).map((x) => x.nevents)).reduce((a, b) => a + b, 0),
-        tags: stat.stats.pile.filter((x) => x.tag.startsWith('r'))};
+        tags: stat.stats.pile.sort((a, b) => b.nevents - a.nevents)};
       return {
         mc_subcampaign: stat.mc_subcampaign,
         stats: {
