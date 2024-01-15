@@ -71,12 +71,16 @@ export class McSubcampaignsStatComponent {
       // convert timestamp from string to difference in second from now
       //
       const trendByDayEvgen: {evgen: number; simul: number; pile: number}[] = [];
+      let lastDayEventsn: {evgen: number; simul: number; pile: number} =
+        {evgen: evgen.total_events, simul: simul.total_events, pile:  pile.total_events};
       for (let i = 0; i < stat.trend.length; i++) {
         if ((stat.trend[i].seconds > (trendByDayEvgen.length + 1) * 24 * 3600) &&
           (stat.trend[i].seconds < (trendByDayEvgen.length + 1) * 28 * 3600)){
-          trendByDayEvgen.push({evgen: evgen.total_events - stat.trend[i].stats.evgen,
-            simul: simul.total_events - stat.trend[i].stats.simul,
-            pile: pile.total_events - stat.trend[i].stats.pile});
+          trendByDayEvgen.push({evgen: lastDayEventsn.evgen - stat.trend[i].stats.evgen,
+            simul: lastDayEventsn.simul - stat.trend[i].stats.simul,
+            pile: lastDayEventsn.pile - stat.trend[i].stats.pile});
+          lastDayEventsn = {evgen: stat.trend[i].stats.evgen, simul: stat.trend[i].stats.simul,
+            pile: stat.trend[i].stats.pile};
         }
       }
       // calculate average trend by day compare to current value
