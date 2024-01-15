@@ -13,6 +13,9 @@
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
                 <span >{{subCampaignStats.stats.evgen.total_events | billion}}</span>
+              @if(subCampaignStats.stats.evgen.trend>10000){
+                <span class="pl-1.5 text-green-900 font-bold">(+ {{subCampaignStats.stats.evgen.trend|billion}})</span>
+              }
             </div>
         <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.evgen.tags}"></ng-container>
         </div> <!-- Each subcontainer takes equal width -->
@@ -22,6 +25,9 @@
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
                 <span >{{subCampaignStats.stats.simul.total_events | billion}}</span>
+              @if(subCampaignStats.stats.simul.trend>10000){
+                <span class="pl-1.5 text-green-900 font-bold">(+ {{subCampaignStats.stats.simul.trend|billion}})</span>
+              }
             </div>
           <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>FullSim: </span>
@@ -39,6 +45,9 @@
             <div class="mb-4"> <!-- Parameter-Value Pair -->
                 <span>Total: </span>
                 <span >{{subCampaignStats.stats.pile.total_events | billion}}</span>
+              @if(subCampaignStats.stats.pile.trend>10000){
+                <span class="pl-1.5 text-green-900 font-bold">(+ {{subCampaignStats.stats.pile.trend|billion}})</span>
+              }
             </div>
         <ng-container *ngTemplateOutlet="tagTemplate; context: {tags: subCampaignStats.stats.pile.tags}"></ng-container>
 

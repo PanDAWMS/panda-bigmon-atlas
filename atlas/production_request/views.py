@@ -6,6 +6,7 @@ import re
 from dataclasses import asdict
 from functools import reduce
 
+import math
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.handlers.wsgi import WSGIRequest
@@ -533,9 +534,14 @@ def mc_subcampaign_stats(request):
         #                    SystemParametersHandler.MCSubCampaignStats('MC23:MC23c',':25ns'),
         #                    SystemParametersHandler.MCSubCampaignStats('MC23:MC23d',':25ns'),]
         mc_subcampaigns = SystemParametersHandler.get_mc_sub_campaigns_stats()
+        trends = cache.get('mc_stats_trend')
+        trends.reverse()
+        current_time = timezone.now()
         for mc_subcampaign in mc_subcampaigns:
             stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign,{'pile':mc_subcampaign.pile_suffix})
-            total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats})
+            current_trend = [(trend['time'],list(filter(lambda x: x['mc_subcampaign']==mc_subcampaign.campaign, trend['stats']))) for trend in trends]
+            trend = [{'seconds':math.ceil((current_time- x[0]).total_seconds()),'stats':x[1][0]['stats']} for x in current_trend if len(x)>0]
+            total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats, 'trend':trend})
         return Response(total_stats)
     except Exception as ex:
         return Response(f"Problem with mc sub campaign loading: {ex}", status=400)

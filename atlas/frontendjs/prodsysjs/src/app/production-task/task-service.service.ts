@@ -32,6 +32,8 @@ export interface MCSubCampaignStats{
   stats: {evgen: {tag: string; scope: string; nevents: number}[];
     simul: {tag: string; scope: string; nevents: number}[];
     pile: {tag: string; scope: string; nevents: number}[]};
+  trend: {stats: {evgen: number; simul: number; pile: number},
+    seconds: number}[];
 }
 
 export type ActionParams = number[]|string[]|boolean[]|null;
