@@ -544,6 +544,7 @@ def mc_subcampaign_stats(request):
             total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats, 'trend':trend})
         return Response(total_stats)
     except Exception as ex:
+        _logger.error(f'Problem with mc sub campaign loading: {ex}')
         return Response(f"Problem with mc sub campaign loading: {ex}", status=400)
 
 

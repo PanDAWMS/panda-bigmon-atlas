@@ -7,7 +7,7 @@ from atlas.settings.local import ATLAS_ES
 
 connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'],
                               ca_certs=ATLAS_ES['ca_cert'])
-ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'])
+ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'], timeout=5000)
 class LogsName():
     TASK_ACTIONS = "task_action.task_management"
     PRESTAGE_LOGS = "prestage.views"
@@ -327,9 +327,13 @@ def get_datasets_without_campaign() -> [str]:
     return response
 
 
-def opendistro_sql(query: str) -> any:
-    response = ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql', body={'query': query})
-    return response
+def opendistro_sql(query: str, fetch_size = None) -> any:
+    if fetch_size:
+        return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'fetch_size': fetch_size, 'query': query })
+    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'query': query})
+
+def opendistro_sql_translate(query: str, fetch_size = None) -> any:
+    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql/_explain', body={'query': query})
 
 def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
     stats = {}
@@ -349,3 +353,46 @@ def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
         else:
             raise Exception(f"Error in query {query}, {str(result)}")
     return stats
+
+
+def get_tasks_ids(**kwargs) -> any:
+    task_ids = []
+     # Transform kwargs to pair list
+    filters = []
+    for key, value in kwargs.items():
+        if type(value) == list:
+            tokens = [f"{key}='{x}'" for x in value]
+            filters.append(f"({' or '.join(tokens)})")
+        else:
+            filters.append(f"({key}='{value}')")
+    query = f"select distinct jeditaskid from atlas_datasets_info-* where type='output' and {' and '.join(filters)} LIMIT 40000"
+
+    result = opendistro_sql_translate(query)
+    q = result['root']['children'][0]['children'][0]['description']['request'].split(', ')[1].strip('sourceBuilder=')
+    json_query = json.loads(q)
+    #json_query['aggregations']['composite_buckets']['composite']['size'] = 40000
+    #pprint(json_query['query'])
+    #return result['root']['children'][0]['children'][0]['description']['request']
+    #search = Search(index='atlas_datasets_info-*').extra(size=40000).update_from_dict(json_query)
+    #response = search.execute()
+    doc_count = 0
+    resp = ATLAS_ES7.search(index='atlas_datasets_info-*', body={"size":2000, "fields":['jeditaskid'], "_source": False,"query":json_query["query"]}, scroll='1m')
+    result = [x['fields']['jeditaskid'][0] for x in resp['hits']['hits']]
+    # keep track of pass scroll _id
+    old_scroll_id = resp['_scroll_id']
+    # use a 'while' iterator to loop over document 'hits'
+    while len(resp['hits']['hits']):
+
+        # make a request using the Scroll API
+        resp = ATLAS_ES7.scroll(
+            scroll_id=old_scroll_id,
+            scroll='1m'  # length of time to keep search context
+        )
+
+        # iterate over the document hits for each 'scroll'
+        # for doc in resp['hits']['hits']:
+        #     doc_count += 1
+        result.extend([x['fields']['jeditaskid'][0] for x in resp['hits']['hits']])
+        old_scroll_id = resp['_scroll_id']
+
+    return result
