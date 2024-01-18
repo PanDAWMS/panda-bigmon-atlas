@@ -1,1 +1,73 @@
-{{preparedContainers$ | async | json}}
+
+ <label class="text-2xl" >Preparing for physics containers creation for request {{requestID}}</label>
+@if( preparedContainers$ | async; as preparedContainers){
+@if (!loading){
+  @if(preparedContainers !== undefined) {
+<div class="container mx-auto px-4">
+  <!-- First Section -->
+  <div class="mb-8">
+    @if (!preparedContainers.grl_used) {
+
+    <label class="block text-gray-700 text-sm font-bold mb-2">Physics containers based on input container</label>
+    } @else {
+    <label class="block text-gray-700 text-sm font-bold mb-2">Physics containers based on GRL</label>
+        <label class="block text-gray-700 text-sm font-bold mb-2">{{preparedContainers.grl}}</label>
+    }
+
+      <div class="space-y-4">
+      <!-- Repeat this block for each item -->
+      @for (container of preparedContainers.containers; track container.name) {
+      <div>
+        <div class="mb-2">
+          <p class="text-gray-600 text-sm">{{container.name}}</p>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <p class="text-gray-600 text-sm">Containers: {{container.output_containers.length}}</p>
+          <p class="text-red-400 text-sm">Missing containers: {{container.missing_containers.length}}</p>
+          <p class="text-orange-400 text-sm">Not done containers: {{container.not_full_containers.length}}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <p class="text-gray-600 text-sm">Comment: {{container.comment}}</p>
+          <p class="text-gray-600 text-sm">Super tag: {{container.super_tag}}</p>
+        </div>
+      </div>
+      }
+      <!-- End of block for each item -->
+        <div class="flex items-center justify-between py-2 px-4">
+        <div class="flex items-center">
+            <mat-slide-toggle [disabled]="!notFullExists" [(ngModel)]="allowNotFull" >Allow not full containers</mat-slide-toggle>
+        </div>
+        <button [disabled]="missingContainers || (notFullExists && !allowNotFull) " >
+          Create containers
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Section -->
+  <div>
+    <label class="block text-gray-700 text-sm font-bold mb-2">Use Grl instead</label>
+    <input [(ngModel)]="grlPath" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" placeholder="GRL CMVFS path">
+    <button  (click)="useGrl()">
+      Use grl
+    </button>
+  </div >
+</div>
+  }@else{
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+  <strong class="font-bold">Error!</strong>
+  <span class="block sm:inline">No containers found</span>
+</div>
+  }
+}
+}@else if (error) {
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+  <strong class="font-bold">Error!</strong>
+  <span class="block sm:inline pl-2">{{error}}</span>
+</div>
+}
+
+
+@if(loading){
+<mat-spinner diameter="50"></mat-spinner>
+}

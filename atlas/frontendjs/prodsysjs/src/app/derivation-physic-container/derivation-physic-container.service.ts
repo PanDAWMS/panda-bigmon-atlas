@@ -31,12 +31,13 @@ export class DerivationPhysicContainerService {
 
 
 
-  getPhysicContainers(requestID: string, grl: string): Observable<PhysicsContainer[]> {
-    return this.http.get<PhysicsContainer[]>(this.prPhysicsContainersURL, {params: {requestID, grl}});
+  getPhysicContainers(requestID: string, grl: string): Observable<PhysicsContainerIndex> {
+    return this.http.get<PhysicsContainerIndex>(this.prPhysicsContainersURL, {params: {requestID, grl}});
   }
 
   createPhysicsContainer(containers: PhysicsContainer[]): Observable<string[]> {
       return this.http.post<string[]>(this.prCreatePhysicsContainersURL, {containers});
   }
+
 }
 

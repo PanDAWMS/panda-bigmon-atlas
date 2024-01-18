@@ -1406,9 +1406,9 @@ def physics_container_index(request):
             raise TRequest.DoesNotExist
         production_request = TRequest.objects.get(reqid=request_id)
         if production_request.request_type != 'GROUP':
-            raise "Request is not GROUP"
+            raise Exception("Request is not GROUP")
         if not production_request.project.project.startswith('data'):
-            raise "Request is not data"
+            raise Exception("Request is not data")
         grl = request.query_params.get('grl')
         grl_used = False
         if not grl:
@@ -1418,5 +1418,28 @@ def physics_container_index(request):
             containers = create_super_container(request_id, grl)
             grl_used = True
         return Response({'containers':[x.to_dict() for x in containers], 'grl':grl, 'grl_used': grl_used})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def create_physics_container_in_ami(request):
+    try:
+        containers = request.data['containers']
+        # convert from dict to ContainerInfo dataclass
+        containers = [PreparedContainer(**x) for x in containers]
+        ami = AMIClient()
+        ddm = DDM()
+        existing_containers = []
+        for container in containers:
+                if ddm.dataset_exists(container.get_name()):
+                    existing_containers.append(container.get_name())
+        if existing_containers:
+            raise Exception('Container(s) already exist(s): %s'%existing_containers)
+        for container in containers:
+            #ami.create_physics_container(container.super_tag, container.output_containers, container.comment)
+            print(container.super_tag, container.output_containers, container.comment)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
