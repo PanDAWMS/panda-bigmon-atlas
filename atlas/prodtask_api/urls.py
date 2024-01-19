@@ -5,7 +5,7 @@ from atlas.analysis_tasks.views import prepare_template_from_task, create_templa
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
     get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, add_delete_analysis_request_hashtag
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
-    extension_container_api, group_production_datasets_full, physics_container_index
+    extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
 from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
@@ -59,7 +59,8 @@ urlpatterns = [
             name='physics_container_index'),
     re_path(r'^mc_subcampaign_stats/$', mc_subcampaign_stats,
             name='mc_subcampaign_stats'),
-
+    re_path(r'^create_physic_containers/$', create_physics_container_in_ami,
+            name='create_physic_containers'),
 
 
 ]

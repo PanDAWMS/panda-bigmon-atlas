@@ -49,6 +49,10 @@ class AMIClient(object):
     @staticmethod
     def _get_rows(content, rowset_type=None):
         rows = list()
+        if 'AMIMessage' not in content:
+            return content
+        if 'rowset' not in content['AMIMessage']:
+            return content['AMIMessage']
         for rowset in content['AMIMessage']['rowset']:
             if rowset_type is None or rowset.get('@type') == rowset_type:
                 for row in rowset['row']:
@@ -86,7 +90,13 @@ class AMIClient(object):
         return content
 
     def create_physics_container(self, super_tag: str, contained_datasets: [str], creation_comment: str):
-        datasets_str = ','.join(contained_datasets)
+        datasets = []
+        for dataset in contained_datasets:
+            if ':' not in dataset:
+                datasets.append(dataset)
+            else:
+                datasets.append(dataset.split(':')[1])
+        datasets_str = ','.join(datasets)
         return self._post_command('COMAPopulateSuperProductionDataset', None, superTag=super_tag, containedDatasets=datasets_str,
                                   separator=',', creationComment=creation_comment, selectionType='run_config', rucioRegistration='yes')
     def get_current_user(self):

@@ -1,5 +1,5 @@
 
- <label class="text-2xl" >Preparing for physics containers creation for request {{requestID}}</label>
+ <label class="text-2xl" >Preparing for period containers creation for request {{requestID}}</label>
 @if( preparedContainers$ | async; as preparedContainers){
 @if (!loading){
   @if(preparedContainers !== undefined) {
@@ -8,9 +8,9 @@
   <div class="mb-8">
     @if (!preparedContainers.grl_used) {
 
-    <label class="block text-gray-700 text-sm font-bold mb-2">Physics containers based on input container</label>
+    <label class="block text-gray-700 text-sm font-bold mb-2">Period containers based on input container</label>
     } @else {
-    <label class="block text-gray-700 text-sm font-bold mb-2">Physics containers based on GRL</label>
+    <label class="block text-gray-700 text-sm font-bold mb-2">Period containers based on GRL</label>
         <label class="block text-gray-700 text-sm font-bold mb-2">{{preparedContainers.grl}}</label>
     }
 
@@ -33,14 +33,35 @@
       </div>
       }
       <!-- End of block for each item -->
-        <div class="flex items-center justify-between py-2 px-4">
-        <div class="flex items-center">
-            <mat-slide-toggle [disabled]="!notFullExists" [(ngModel)]="allowNotFull" >Allow not full containers</mat-slide-toggle>
-        </div>
-        <button [disabled]="missingContainers || (notFullExists && !allowNotFull) " >
-          Create containers
-        </button>
-      </div>
+
+        @switch (createState){
+          @case ('not_send' ){
+            <div class="flex items-center justify-between py-2 px-4">
+              <div class="flex items-center">
+                  <mat-slide-toggle [disabled]="!notFullExists" [(ngModel)]="allowNotFull" >Allow not full containers</mat-slide-toggle>
+              </div>
+              <button [disabled]="missingContainers || (notFullExists && !allowNotFull) || (createState!=='not_send')" (click)="createPhysicsContainers()">
+                Create containers
+              </button>
+            </div>
+          }
+          @case ('sent') {
+            <mat-spinner diameter="50"></mat-spinner>
+          }
+          @case ('error') {
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong class="font-bold">Error!</strong>
+              <span class="block sm:inline pl-2">{{error}}</span>
+            </div>
+          }
+          @case ('created') {
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+              <strong class="font-bold">Done!</strong>
+              <span class="block sm:inline pl-2">Containers created</span>
+            </div>
+          }
+
+        }
     </div>
   </div>
 

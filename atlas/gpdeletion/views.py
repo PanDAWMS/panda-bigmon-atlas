@@ -1268,8 +1268,10 @@ class PreparedContainer:
     output_containers: [str]
     comment: str
     super_tag: str
+    name: str
     missing_containers: [str] = field(default_factory=list)
     not_full_containers: [str] = field(default_factory=list)
+
 
     def get_name(self):
         period = self.super_tag.split(',')[0]
@@ -1277,7 +1279,8 @@ class PreparedContainer:
         base = self.output_containers[0].split('.')[0]
         stream = self.output_containers[0].split('.')[2]
         output = self.output_containers[0].split('.')[4]
-        return f'{base}.{period}.{stream}.PhysCont.{output}.{postfix}'
+        self.name = f'{base}.{period}.{stream}.PhysCont.{output}.{postfix}'
+        return self.name
 
     def to_dict(self):
         return {'output_containers': self.output_containers,
@@ -1430,16 +1433,22 @@ def create_physics_container_in_ami(request):
         containers = request.data['containers']
         # convert from dict to ContainerInfo dataclass
         containers = [PreparedContainer(**x) for x in containers]
+        _jsonLogger.info('Creating period containers', extra={'user':request.user.username})
+        user = User.objects.get(username=request.user.username)
+        if not user.is_superuser:
+            return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         ami = AMIClient()
         ddm = DDM()
         existing_containers = []
         for container in containers:
-                if ddm.dataset_exists(container.get_name()):
+                if ddm.dataset_exists(container.get_name()) and len(ddm.dataset_in_container(container.get_name()))>0:
                     existing_containers.append(container.get_name())
         if existing_containers:
             raise Exception('Container(s) already exist(s): %s'%existing_containers)
         for container in containers:
-            #ami.create_physics_container(container.super_tag, container.output_containers, container.comment)
-            print(container.super_tag, container.output_containers, container.comment)
+            result = ami.create_physics_container(container.super_tag, container.output_containers, container.comment)
+            _logger.info(f'Period container created: {container} {str(result)}')
+            _jsonLogger.info('Period container created', extra={'user': request.user.username, 'container':container.get_name()})
+        return Response([x.get_name() for x in containers])
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
