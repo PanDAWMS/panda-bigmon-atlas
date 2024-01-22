@@ -99,7 +99,8 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
                              ['parent_tid'], TemplateVariable.VariableType.INTEGER))
     return task_params, template_variables
 
-def create_pattern_from_task(task_id: int, pattern_description: str, task_params: dict = None, source_action: str = '') -> AnalysisTaskTemplate:
+def create_pattern_from_task(task_id: int, pattern_description: str, task_params: dict = None, source_action: str = '',
+                             username: str = '') -> AnalysisTaskTemplate:
     task_template, template_variables = get_task_params(task_id, TTask.objects.get(id=task_id).jedi_task_parameters)
     new_pattern = AnalysisTaskTemplate()
     new_pattern.description = pattern_description
@@ -108,6 +109,7 @@ def create_pattern_from_task(task_id: int, pattern_description: str, task_params
     new_pattern.physics_group = task_params.get('workingGroup','VALI')
     new_pattern.variables_data = template_variables
     new_pattern.build_task = task_id
+    new_pattern.username = username
     if source_action:
         new_pattern.source_action = source_action
     new_pattern.save()
@@ -362,7 +364,7 @@ def create_template(request):
         _jsonLogger.info('Create template from task',extra={'user':request.user.username, 'template_task_id':request.data['taskID']})
 
         new_pattern = create_pattern_from_task(int(request.data['taskID']), request.data['description'],
-                                               request.data['taskTemplate'], request.data['sourceAction'])
+                                               request.data['taskTemplate'], request.data['sourceAction'], request.user.username)
         try:
             _jsonLogger.info('Submit source to rucio',
                              extra={'user': request.user.username, 'template_task_id': request.data['taskID']})
