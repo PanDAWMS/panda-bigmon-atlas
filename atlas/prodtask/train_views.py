@@ -533,6 +533,8 @@ def find_steps_for_derivation(mc_request_id: int) -> [StepExecution]:
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, None)
             AOD_input = False
+            if existed_foreign_step:
+                AOD_input = 'AOD' in existed_foreign_step.step_template.output_formats
             for step in step_as_in_page:
                 if step:
                     if step.status == 'Approved' and ((step.get_task_config('input_format')=='AOD' or AOD_input) and
