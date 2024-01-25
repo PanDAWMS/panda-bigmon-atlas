@@ -1049,6 +1049,7 @@ def find_merge_dataset_to_delete(is_mc = True):
     cache.set('deleted_datasets', deleted_datasets,None)
     cache.set('merge_deletion_update_time',timezone.now(),None)
 
+@app.task(time_limit=10800, ignore_result=True)
 def find_merge_dataset_not_delete(is_mc = True, days_from=356, days_to=60):
     ddm = DDM()
     prefix = 'mc'
