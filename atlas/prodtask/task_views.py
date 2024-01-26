@@ -1142,8 +1142,8 @@ def unmerge_datasets_not_deleted(request):
     result = {}
     result['outputs'] = {}
     prefix = 'mc'
-    if request.query_params.get('perfix'):
-        prefix = request.query_params.get('perfix')
+    if request.query_params.get('prefix'):
+        prefix = request.query_params.get('prefix')
     for output in OUTPUTS_TYPES:
         result['outputs'][output] = cache.get('not_deleted_unmerge_%s_%s'% (prefix, output))
     result['timestamp'] = timezone.now()
