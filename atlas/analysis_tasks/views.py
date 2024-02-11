@@ -223,10 +223,20 @@ def collect_all_output_datasets(request_id: int) -> [str]:
                             if dataset.type == 'tmpl_output':
                                 output_datasets.append(dataset.datasetname)
     return output_datasets
+
+
+def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
+    if (step_template.step_parameters.get(TemplateVariable.KEY_NAMES.INPUT_DS) is not None and
+        step_template.step_parameters.get(TemplateVariable.KEY_NAMES.nEVENTS) is not None):
+        raise Exception('Input dataset and nEvents are not allowed in the same task')
+    return True
+
+
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
     check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
+    check_parameters_for_task(step_template)
     task = TTask(id=task_id,
                           parent_tid=parent_tid,
                           status=ProductionTask.STATUS.WAITING,

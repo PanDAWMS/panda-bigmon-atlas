@@ -904,6 +904,8 @@ class TemplateVariable:
         SOURCE_PREPARED = 'source_prepared'
         NO_EMAIL = 'noEmail'
         OUTPUT_SCOPE = 'output_scope'
+        INPUT_DS = 'dsForIN'
+        nEVENTS = 'nEvents'
 
     KEYS_SEPARATOR = ','
 
@@ -1128,6 +1130,31 @@ class AnalysisStepTemplate(models.Model):
         db_table = '"T_AT_STEP_TEMPLATE"'
 
 
+from pydantic import BaseModel
+
+class MCWorkflowChanges(BaseModel):
+    class ChangeType(str, Enum):
+        REPLACE = 'replace'
+        APPEND = 'append'
+
+    name: str
+    value: str
+    type: ChangeType
+class MCWorkflowTransition(BaseModel):
+    class TransitionType(str, Enum):
+        VERTICAL = 'vertical'
+        HORIZONTAL = 'horizontal'
+
+    new_request: str
+    parent_step: str
+    transition_type: TransitionType
+    event_ratio: float = 0.0
+    pattern: Dict[str, int] = field(default_factory=dict)
+    changes: List[MCWorkflowChanges] = field(default_factory=list)
+
+
+class MCWorkflowRequest(BaseModel):
+    workflows: Dict[str, List[MCWorkflowTransition]] = field(default_factory=dict)
 
 class SystemParametersHandler:
     class PARAMETERS_NAMES:
@@ -1136,6 +1163,8 @@ class SystemParametersHandler:
         EXCLUDED_STAGING_SITES = 'ExcludedStagingSites'
         GRL_DEFAULT_FILE = 'GRLDefaultFile'
         MCSubCampaignStats = 'MCSubCampaignStats'
+        MCWorkflowRequest = 'MCWorkflowRequest'
+
 
 
     @dataclass
@@ -1175,6 +1204,14 @@ class SystemParametersHandler:
 
     # Get and set methods for GRL_DEFAULT_FILE
 
+    @staticmethod
+    def get_mc_workflow_request() -> MCWorkflowRequest:
+        return MCWorkflowRequest.model_validate(SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest))
+
+    @staticmethod
+    def set_mc_workflow_request(values: MCWorkflowRequest):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest,
+                                       values.model_dump())
     @staticmethod
     def get_grl_default_file() -> GRL_DEFAULT_FILE:
         values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.GRL_DEFAULT_FILE)
@@ -1711,7 +1748,11 @@ class DatasetStaging(models.Model):
             self.id = prefetch_id('deft','T_DATASET_STAGING_SEQ',"T_DATASET_STAGING",'DATASET_STAGING_ID')
         super(DatasetStaging, self).save(*args, **kwargs)
 
-
+    def active_tasks(self):
+        for action in ActionStaging.objects.filter(dataset_stage=self):
+            task = ProductionTask.objects.get(id=action.task)
+            if task.status not in ProductionTask.NOT_RUNNING:
+                yield task.id
 
     class Meta:
         db_table = '"T_DATASET_STAGING"'
