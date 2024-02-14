@@ -160,7 +160,13 @@ export class DynamicFormWFilterComponent implements OnChanges {
     this.formReset.next(this.jsonFormData);
   }
   onSubmit(): void {
-    this.jsonFormData.controls.forEach((control) => { control.value = this.mainForm.get('taskParams').get(control.name).value; });
+    this.jsonFormData.controls.forEach((control) => {
+      if (control.type === 'number') {
+        control.value = Number(this.mainForm.get('taskParams').get(control.name).value);
+      } else {
+        control.value = this.mainForm.get('taskParams').get(control.name).value;
+      }
+    });
     this.formSubmit.next(this.jsonFormData);
   }
 

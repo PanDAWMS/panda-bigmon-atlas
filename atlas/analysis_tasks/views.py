@@ -228,7 +228,7 @@ def collect_all_output_datasets(request_id: int) -> [str]:
 def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
     if (step_template.step_parameters.get(TemplateVariable.KEY_NAMES.INPUT_DS) is not None and
         step_template.step_parameters.get(TemplateVariable.KEY_NAMES.nEVENTS) is not None):
-        raise Exception('Input dataset and nEvents are not allowed in the same task')
+        raise Exception('Input dataset and nEvents are not allowed in the same task, please use nFiles instead')
     return True
 
 
