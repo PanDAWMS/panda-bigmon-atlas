@@ -44,3 +44,6 @@ class CRICClient(object):
 
     def get_panda_queues(self):
         return self._get_command('atlas/pandaqueue')
+
+    def get_panda_sites(self):
+        return self._get_command('atlas/site')

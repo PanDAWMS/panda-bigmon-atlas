@@ -127,5 +127,6 @@
   </mat-tab>
 </mat-tab-group>
 
-<a *ngIf="requestID" href="https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(user,message,action),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:'{{requestID}}'),type:phrase),query:(match_phrase:(prod_request:'{{requestID}}')))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:auto,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))">Logs</a>
+<a *ngIf="requestID" href="https://os-atlas.cern.ch/dashboards/app/data-explorer/discover/#?_a=(discover:(columns:!(user,message,action,_source),interval:auto,sort:!(!('@timestamp',desc))),metadata:(indexPattern:bce7ecb0-7533-11eb-ba28-77fe4323ac05,view:discover))&_q=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:'{{requestID}}'),type:phrase),query:(match_phrase:(prod_request:'{{requestID}}')))),query:(language:kuery,query:''))&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))"
+>Logs</a>
 <br><a [routerLink]="['/ga-api'] "> API description </a>

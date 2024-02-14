@@ -12,6 +12,7 @@
       <div><b>Original task: </b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
       <div><b>Description:</b> {{taskTemplate.description}}</div>
       <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
+      <div><b>Created by:</b> {{taskTemplate.username}}</div>
       <div><b>Software:</b> {{taskTemplate.software_release}}</div>
     <div><b>Source Tar: </b> <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a></div>
       <div><b>Source Action:</b> {{taskTemplate.source_action}}</div>

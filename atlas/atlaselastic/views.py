@@ -2,12 +2,20 @@ import dataclasses
 import json
 from dataclasses import dataclass
 from elasticsearch7 import Elasticsearch
-from elasticsearch7_dsl import Search, connections
+# from elasticsearch7_dsl import Search, connections
 from atlas.settings.local import ATLAS_ES
+from atlas.settings.local import ATLAS_OS
+from opensearchpy import OpenSearch, connections, Search
 
-connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'],
-                              ca_certs=ATLAS_ES['ca_cert'])
+# connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'],
+#                               ca_certs=ATLAS_ES['ca_cert'])
 ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'], timeout=5000)
+
+connections.create_connection(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'],
+                               ca_certs=ATLAS_OS['ca_cert'])
+#ATLAS_ES7 = OpenSearch(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'], ca_certs=ATLAS_OS['ca_cert'], timeout=5000)
+
+
 class LogsName():
     TASK_ACTIONS = "task_action.task_management"
     PRESTAGE_LOGS = "prestage.views"
@@ -331,9 +339,11 @@ def opendistro_sql(query: str, fetch_size = None) -> any:
     if fetch_size:
         return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'fetch_size': fetch_size, 'query': query })
     return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'query': query})
+#    return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql?format=json', body={'query': query})
+
 
 def opendistro_sql_translate(query: str, fetch_size = None) -> any:
-    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql/_explain', body={'query': query})
+    return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql/_explain', body={'query': query})
 
 def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
     stats = {}
