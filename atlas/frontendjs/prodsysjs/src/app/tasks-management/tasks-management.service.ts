@@ -29,7 +29,7 @@ export class TasksManagementService {
       }));
   }
 
-  getTasksByHashtag(hashtagString: string): Observable<ProductionTask[]> {
-    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString});
+  getTasksByHashtag(hashtagString: string, dkb: boolean = false): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, dkb});
   }
 }

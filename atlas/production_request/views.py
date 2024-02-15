@@ -15,12 +15,13 @@ from django.utils import timezone
 from rest_framework.request import Request
 
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
-from atlas.dkb.views import tasks_from_string
+from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
-    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler
+    JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
+    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -182,8 +183,13 @@ def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
 def production_task_for_request(request: Request) -> Response:
     try:
         if 'hashtagString' in request.data and request.data['hashtagString']:
-            tasks_id = tasks_from_string(request.data['hashtagString'])
-            tasks = ProductionTask.objects.filter(id__in=tasks_id)
+            if 'dkb' in request.data and request.data['dkb']:
+                tasks, _ ,_ = es_task_search_all({'search_string' :request.data['hashtagString']}, 'prod')
+                tasks_id = [x['taskid'] for x in tasks]
+                tasks = ProductionTask.objects.filter(id__in=tasks_id)
+            else:
+                tasks_id = tasks_from_string(request.data['hashtagString'])
+                tasks = ProductionTask.objects.filter(id__in=tasks_id)
         else:
             request_id = int(request.data['requestID'])
             if request_id < 1000:
@@ -581,3 +587,31 @@ def fill_mc_stats_trend():
         existing_stats.pop(0)
         existing_stats.append({'time': timezone.now(), 'stats': total_stats})
     cache.set('mc_stats_trend', existing_stats, None)
+
+def fill_default_workflows():
+    workflows = {('MC16a','evgen'): [], ('MC16a','simul'): [], ('MC16b','evgen'):[]}
+    mc16a_changes = [MCWorkflowChanges(name='project_base', value='mc16', type=MCWorkflowChanges.ChangeType.REPLACE),
+                     MCWorkflowChanges(name='description', value='(sim)', type=MCWorkflowChanges.ChangeType.APPEND)]
+    mc16a_evgen_simul_transition = MCWorkflowTransition(new_request=('MC16a','simul'), parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc16a_changes,
+                                                        pattern={'AF2':116,'FS':76} )
+    print(mc16a_evgen_simul_transition.model_dump_json())
+    workflows[('MC16a','evgen')].append(mc16a_evgen_simul_transition)
+    mc16a_mc16b_changes = [MCWorkflowChanges(name='subcampaign', value='mc16b', type=MCWorkflowChanges.ChangeType.REPLACE)]
+    mc16a_mc16b_transition = MCWorkflowTransition(new_request=('MC16b','evgen'), parent_step='Evgen', transition_type=MCWorkflowTransition.TransitionType.VERTICAL,
+                                                  changes=mc16a_mc16b_changes, event_ratio=1.2)
+    workflows[('MC16a','evgen')].append(mc16a_mc16b_transition)
+    workflows_requests = MCWorkflowRequest(workflows=workflows)
+    print(workflows_requests.model_dump_json())
+    SystemParametersHandler.set_mc_workflow_request(workflows_requests)
+
+
+def build_workflows_tree():
+    workflows = SystemParametersHandler.get_mc_workflow_request()
+    workflows_tree = {}
+    for workflow in workflows.workflows:
+        workflows_tree[workflow] = {}
+        for transition in workflows.workflows[workflow]:
+            workflows_tree[workflow][transition.new_request] = transition
+    return workflows_tree

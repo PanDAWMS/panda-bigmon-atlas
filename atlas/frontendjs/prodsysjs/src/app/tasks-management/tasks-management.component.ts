@@ -24,6 +24,10 @@ export class TasksManagementComponent implements OnInit {
       this.hashtagString = params.get('hashtagString').toString();
       this.showOwner = true;
       return this.taskManagementService.getTasksByHashtag(this.hashtagString);
+    } else if (params.get('dkbString')) {
+      this.hashtagString = this.route.snapshot.queryParamMap.get('search').toString();
+      this.showOwner = true;
+      return this.taskManagementService.getTasksByHashtag(this.hashtagString, true);
     }
     this.requestID = params.get('id').toString();
 

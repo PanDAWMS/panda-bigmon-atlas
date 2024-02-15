@@ -153,6 +153,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'request-tasks/:id', component: TasksManagementComponent},
   {path: 'request-tasks/:id/:slices', component: TasksManagementComponent},
   {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
+  {path: 'tasks-by-dkb/:dkbString', component: TasksManagementComponent},
+
     {path: 'analysis-template-creation', component: TaskTemplateSubmissionComponent},
 
 
