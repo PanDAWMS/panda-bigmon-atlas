@@ -106,7 +106,8 @@ class AMIClient(object):
     def get_ami_tag(self, tag_name):
         return self._post_command('AMIGetAMITagInfo', 'amiTagInfo', amiTag=tag_name)[0]
 
-
+    def set_ami_tag_invalid(self, tag_name):
+        return self._post_command('SetAMITagStatus', None, amiTag=tag_name, status='invalid')
 
     def ami_sw_tag_by_cache(self, cache):
         query = \

@@ -9,11 +9,11 @@ from opensearchpy import OpenSearch, connections, Search
 
 # connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'],
 #                               ca_certs=ATLAS_ES['ca_cert'])
-ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'], timeout=5000)
+#ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'], timeout=5000)
 
 connections.create_connection(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'],
                                ca_certs=ATLAS_OS['ca_cert'])
-#ATLAS_ES7 = OpenSearch(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'], ca_certs=ATLAS_OS['ca_cert'], timeout=5000)
+ATLAS_ES7 = OpenSearch(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'], ca_certs=ATLAS_OS['ca_cert'], timeout=5000)
 
 
 class LogsName():
@@ -338,12 +338,32 @@ def get_datasets_without_campaign() -> [str]:
 def opendistro_sql(query: str, fetch_size = None) -> any:
     if fetch_size:
         return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'fetch_size': fetch_size, 'query': query })
-    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=jdbc', body={'query': query})
+    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_sql?format=json', body={'query': query})
 #    return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql?format=json', body={'query': query})
 
-
+def opendistro_ppl(query: str) -> any:
+    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_ppl', body={'query': query})
 def opendistro_sql_translate(query: str, fetch_size = None) -> any:
     return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql/_explain', body={'query': query})
+
+# def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
+#     stats = {}
+#     output = {'evgen': 'EVNT', 'simul': 'HITS', 'pile': 'AOD'}
+#     for step in ['evgen','simul', 'pile']:
+#         stats[step] = []
+#         step_campaign = campaign
+#         if suffix.get(step):
+#             step_campaign = f"{campaign}{suffix.get(step)}"
+#         query = (f"select task_amitag, scope, sum(nevents) from atlas_datasets_info-* where type='output' and task_campaign='{step_campaign}' "
+#                  f"and task_processingtype='{step}' and dataset_format='{output[step]}'  group by task_amitag, scope")
+#         result = opendistro_sql(query)
+#         if result.get('status') == 200:
+#             for row in result.get('datarows'):
+#                 if row[2] > 0 and 'val' not in row[1]:
+#                     stats[step].append({'tag': row[0], 'scope': row[1], 'nevents': row[2]})
+#         else:
+#             raise Exception(f"Error in query {query}, {str(result)}")
+#     return stats
 
 def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
     stats = {}
@@ -353,17 +373,17 @@ def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
         step_campaign = campaign
         if suffix.get(step):
             step_campaign = f"{campaign}{suffix.get(step)}"
-        query = (f"select task_amitag, scope, sum(nevents) from atlas_datasets_info-* where type='output' and task_campaign='{step_campaign}' "
-                 f"and task_processingtype='{step}' and dataset_format='{output[step]}'  group by task_amitag, scope")
-        result = opendistro_sql(query)
-        if result.get('status') == 200:
-            for row in result.get('datarows'):
-                if row[2] > 0 and 'val' not in row[1]:
-                    stats[step].append({'tag': row[0], 'scope': row[1], 'nevents': row[2]})
-        else:
-            raise Exception(f"Error in query {query}, {str(result)}")
-    return stats
 
+        ppl_query = (f"source=atlas_datasets_info-* | where type='output' task_campaign='{step_campaign}' task_processingtype='{step}' dataset_format='{output[step]}' | "
+                     "  stats sum(nevents) by scope, task_amitag ")
+        result = opendistro_ppl(ppl_query)
+        if result.get('schema'):
+            for row in result.get('datarows'):
+                if row[0] > 0 and 'val' not in row[1]:
+                    stats[step].append({'tag': row[2], 'scope': row[1], 'nevents': row[0]})
+        else:
+            raise Exception(f"Error in query {ppl_query}, {str(result)}")
+    return stats
 
 def get_tasks_ids(**kwargs) -> any:
     task_ids = []
