@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
-    JediDatasets, JediDatasetContents, SystemParametersHandler
+    JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -853,6 +853,19 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
     finish_action = True
     fail_action = False
     for task in tasks:
+        if step.request.request_type in ['ANALYSIS'] and task.status == ProductionTask.STATUS.STAGING:
+            jedi_task = TTask.objects.get(id=task.id)
+            input_datasets = []
+            config = ActionDefault.objects.get(name='active_staging').get_config()
+            if not noidds:
+                config['level'] = 1
+            if level:
+                config['level'] = level
+            if TemplateVariable.KEY_NAMES.INPUT_DS in jedi_task.jedi_task_parameters:
+                input_container = jedi_task.jedi_task_parameters[TemplateVariable.KEY_NAMES.INPUT_DS]
+                input_datasets = ddm.dataset_in_container(input_container)
+            for dataset in input_datasets:
+                create_prestage(task, ddm, rule, dataset, config, special, destination)
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
                 if check_archive:
@@ -1074,6 +1087,8 @@ def find_active_staged_with_share():
                 priority = task.priority
                 if task.current_priority:
                     priority = task.current_priority
+                if priority is None:
+                    priority = 0
                 if dataset_stage.dataset not in result:
                     result[dataset_stage.dataset] = {'value':dataset_stage.staged_files,'tape':dataset_stage.source,
                                                      'total':dataset_stage.total_files,'share': share, 'priority':priority}
@@ -2361,3 +2376,34 @@ def data_carousel_config(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+def staging_analysis_step(task_id: int) -> StepExecution:
+    DEFAULT_REQUEST = 301
+    DEFAULT_SLICE = 0
+
+    if not ProductionTask.objects.filter(id=task_id).exists():
+        raise ValueError(f'Task {task_id} is not found')
+    current_step = ProductionTask.objects.get(id=task_id).step
+    if current_step.request.reqid == 32:
+        task = ProductionTask.objects.get(id=task_id)
+        current_step.id = None
+        current_step.request = TRequest.objects.get(reqid=DEFAULT_REQUEST)
+        current_step.slice = InputRequestList.objects.get(request=DEFAULT_REQUEST, slice=DEFAULT_SLICE)
+        current_step.save()
+        task.step = current_step
+        task.save()
+    return ProductionTask.objects.get(id=task_id).step
+
+
+def create_analyis_staging(task_id: int) -> int:
+    step = staging_analysis_step(task_id)
+    sa = StepAction()
+    sa.action = 14
+    sa.request = step.request
+    sa.step = step.id
+    sa.attempt = 0
+    sa.create_time = timezone.now()
+    sa.execution_time = timezone.now() + timedelta(minutes=2)
+    sa.status = 'active'
+    sa.save()
+    return sa.id
