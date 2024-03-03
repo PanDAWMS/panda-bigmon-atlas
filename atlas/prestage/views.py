@@ -717,6 +717,27 @@ def convert_input_to_physical_tape(input):
     return ad.get_config('su')
 
 
+def filter_replicas_without_rules(ddm, original_dataset):
+    replicas = ddm.full_replicas_per_type(original_dataset)
+    rules = list(ddm.list_dataset_rules(original_dataset))
+    rules_expression = []
+    staging_rule = None
+    for rule in rules:
+        if rule['account'] == 'prodsys' and rule['activity'] == 'Staging':
+            staging_rule = rule
+        else:
+            rules_expression.append(rule['rse_expression'])
+    new_replicas = {'tape':[],'data':[]}
+    for replica in replicas['tape']:
+        if replica['rse'] in rules_expression:
+            new_replicas['tape'].append(replica)
+    for replica in replicas['data']:
+        if staging_rule is not None or replica['rse'] in rules_expression:
+            new_replicas['data'].append(replica)
+    return new_replicas, staging_rule
+
+
+
 def create_prestage(task,ddm,rule, input_dataset,config, special=None, destination=None):
     #check that's only Tape replica
     original_data_replica = False
@@ -724,8 +745,9 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
     if '_sub' in input_dataset:
         original_dataset = translate_sub_dataset_name(input_dataset)
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
-    replicas = ddm.full_replicas_per_type(original_dataset)
-
+    replicas, staging_rule = filter_replicas_without_rules(ddm, original_dataset)
+    if staging_rule is not None and staging_rule['expires_at'] and  ((staging_rule['expires_at']-timezone.now().replace(tzinfo=None)) < timedelta(days=30)):
+        ddm.change_rule_lifetime(staging_rule['id'], 30 * 86400)
     if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
         start_stagind_task(task)
         return True
@@ -2344,9 +2366,12 @@ def staging_tasks_by_destination(destination_rse: str):
         # replicas = ddm.dataset_replicas(dataset_stage.dataset)
         # if destination_rse in [x['rse'] for x in replicas]:
         #     result.append(dataset_stage)
-        first_file = ddm.list_locks(dataset_stage.rse).__next__()
-        if first_file and first_file['rse'] == destination_rse:
-            result.append(dataset_stage)
+        try:
+            first_file = ddm.list_locks(dataset_stage.rse).__next__()
+            if first_file and first_file['rse'] == destination_rse:
+                result.append(dataset_stage)
+        except:
+            pass
     for dataset in result:
         tasks = [ProductionTask.objects.get(id=x) for x in ActionStaging.objects.filter(dataset_stage=dataset).values_list('task', flat=True)]
         destination_tasks += filter(lambda x: x.status not in ProductionTask.NOT_RUNNING, tasks)
