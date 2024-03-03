@@ -2181,8 +2181,8 @@ def find_stale_stages(days=10):
     ddm = DDM()
     task_to_resubmit_by_tape = {}
     for stage_request in stage_requests:
-        replicas = ddm.full_replicas_per_type(stage_request.dataset.dataset)
-        if len(replicas['tape']) > 1:
+        replicas, stage_rule = filter_replicas_without_rules(ddm, stage_request.dataset.dataset)
+        if len(replicas['tape']) > 1 and stage_rule is None:
             use_cern = False
             new_tape = ''
             if ('CERN' not in stage_request.dataset.source) and ('CERN' in ''.join([x['rse'] for x in replicas['tape']])):
