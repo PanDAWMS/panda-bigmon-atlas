@@ -23,6 +23,9 @@ import logging
 from django.dispatch import receiver
 _logger = logging.getLogger('prodtaskwebui')
 
+
+def days_ago(days: int): return timezone.now() - timedelta(days=days)
+
 MC_STEPS = ['Evgen',
             'Evgen Merge',
              'Simul',
