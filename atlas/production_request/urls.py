@@ -21,7 +21,7 @@ urlpatterns = [
     re_path(r'^derivation_input/$', derivation_input, name='derivation_input'),
     re_path(r'^production_task_for_request/$', production_task_for_request, name='production_task_for_request'),
     re_path(r'^production_request_info/$', production_request_info, name='production_request_info'),
-
+    re_path(r'^production_tasks_by_bigpanda_url/$', production_tasks_by_bigpanda_url, name='production_tasks_by_bigpanda_url'),
 
 
 ]

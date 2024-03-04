@@ -143,13 +143,11 @@ def request_tasks(request, rid = None):
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def request_tasks_by_url(request):
-    params_for_bigpanda = ''
     request_path = request.META['QUERY_STRING']
     if request_path:
-        params_for_bigpanda = "http://bigpanda.cern.ch/tasks/?" + request_path
-    return render(request, 'reqtask/_task_table.html',{ 'params_for_bigpanda':  params_for_bigpanda  , 'clouds': get_clouds(),
-                             'sites': get_sites(),'shares': get_global_shares(),
-                             'nucleus': get_nucleus(), 'get_tasks_by_url':True})
+        return HttpResponseRedirect(f'/ng/tasks-by-url?{request_path}')
+    return HttpResponseRedirect(f'/ng/tasks-by-url')
+
 
 
 

@@ -1,0 +1,24 @@
+<mat-form-field class="w-full">
+   <mat-label>Bigpanda url     </mat-label>
+<!--   input width whole page-->
+     <input  matInput  [(ngModel)]="bigpandaURL"  >
+ </mat-form-field>
+ <button (click)="getTasks()">Get tasks</button>
+
+ <br>
+@if (loadError !== '' && loadError !== undefined && loadError !== null && loadError !== 'null') {
+  <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4" role="alert">
+    <p class="font-bold">Error</p>
+    <p>{{loadError}}</p>
+  </div>
+}
+@if(loading) {
+      <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
+}
+@if(tasks$ | async; as tasks ) {
+
+    <app-production-task-table [tasks]="tasks"  [showOwner]="true" >
+  </app-production-task-table>
+
+}
+

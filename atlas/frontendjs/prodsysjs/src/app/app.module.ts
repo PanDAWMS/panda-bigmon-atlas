@@ -112,6 +112,7 @@ import { DerivationExtensionComponent } from './derivation-extension/derivation-
 import {DEFAULTS} from "./common/constants/tasks_constants";
 import {DerivationPhysicContainerComponent} from "./derivation-physic-container/derivation-physic-container.component";
 import {McSubcampaignsStatComponent} from "./mc-subcampaigns-stat/mc-subcampaigns-stat.component";
+import {TaskManagementByUrlComponent} from "./tasks-management/task-management-by-url/task-management-by-url.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -154,7 +155,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'request-tasks/:id/:slices', component: TasksManagementComponent},
   {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
   {path: 'tasks-by-dkb/:dkbString', component: TasksManagementComponent},
-
+  {path: 'tasks-by-url', component: TaskManagementByUrlComponent},
     {path: 'analysis-template-creation', component: TaskTemplateSubmissionComponent},
 
 
@@ -261,7 +262,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AnalysisApiDescriptionComponent,
     DataCarouselConfigComponent,
     ChatbotComponent,
-    DerivationExtensionComponent
+    DerivationExtensionComponent,
+    TaskManagementByUrlComponent
   ],
   imports: [
     BrowserModule,
@@ -308,12 +310,15 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     NgxMatSelectSearchModule
   ],
   providers: [
-        {
-           provide:  APP_BASE_HREF, useValue: '/ng',
-          useFactory: getBaseLocation
-        },
+    {
+      provide: APP_BASE_HREF, useValue: '/ng',
+      useFactory: getBaseLocation
+    },
     {provide: DATE_PIPE_DEFAULT_OPTIONS, useValue: {dateFormat: DEFAULTS.TIME_FORMAT, timezone: 'UTC'}},
-      ],
+  ],
+  exports: [
+    ProductionTaskTableComponent
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

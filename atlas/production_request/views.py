@@ -206,7 +206,29 @@ def production_task_for_request(request: Request) -> Response:
     except Exception as ex:
         return Response(f"Problem with task loading: {ex}", status=400)
 
-
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_tasks_by_bigpanda_url(request: Request) -> Response:
+    try:
+        bigpanda_url_parameters = request.data['tasksURL']
+        bigpanda_url = bigpanda_url_parameters
+        if not bigpanda_url_parameters.startswith('http'):
+            bigpanda_url = f'https://bigpanda.cern.ch/tasks/?{bigpanda_url_parameters}'
+        url = re.sub('&display_limit=(\d+)', '', bigpanda_url)
+        url = url.replace('https', 'http')
+        if 'json' not in url:
+            if url[-1] == '&':
+                url = url + '&'
+            else:
+                url = url + '&json'
+        resp = requests.get(url, headers= {'content-type': 'application/json', 'accept': 'application/json'})
+        data = resp.json()
+        tasks =  [ProductionTask.objects.get(id=x['jeditaskid']) for x in data]
+        tasks_serial = tasks_serialisation(tasks)
+        return Response(tasks_serial)
+    except Exception as ex:
+        return Response(f"Problem with task loading: {ex}", status=400)
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))

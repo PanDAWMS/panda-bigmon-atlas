@@ -13,6 +13,7 @@ export class TasksManagementService {
   constructor(private http: HttpClient) { }
   private prTasksByRequestUrl = '/production_request/production_task_for_request/';
   private prTasksPrRequestUrl = '/production_request/production_request_info';
+  private prTasksPrBigpandaUrl = '/production_request/production_tasks_by_bigpanda_url/';
 
   getProductionRequest(requestID: string): Observable<ProductionRequestBase> {
     return this.http.get<ProductionRequestBase>(this.prTasksPrRequestUrl, {params: {prodcution_request_id: requestID}});
@@ -31,5 +32,8 @@ export class TasksManagementService {
 
   getTasksByHashtag(hashtagString: string, dkb: boolean = false): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, dkb});
+  }
+  getTasksByBigpandaUrl(tasksURL: string): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksPrBigpandaUrl , {tasksURL});
   }
 }
