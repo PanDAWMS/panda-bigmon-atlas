@@ -183,6 +183,11 @@ class TestResource(ResourceQueue):
         self.__submit(self.find_submission())
 
 
+def weight_from_rule(rule: str) -> str|None:
+    if 'freespace' in rule:
+        return None
+    else:
+        return 'freespace'
 
 
 class TapeResource(ResourceQueue):
@@ -295,10 +300,12 @@ class TapeResource(ResourceQueue):
                 rule = None
                 lifetime = None
                 source_replica = None
+                weight = None
                 for dataset_staging in dataset_stagings:
                     if dataset_staging.step_action.status == 'active':
                         rule = dataset_staging.step_action.get_config('rule')
                         rule = prepare_rule(rule, self.resource_name)
+                        weight = weight_from_rule(rule)
                         lifetime = dataset_staging.step_action.get_config('lifetime')
                         source_replica =  dataset_staging.step_action.get_config('source_replica')
                 if rule and lifetime:
@@ -314,7 +321,7 @@ class TapeResource(ResourceQueue):
                                                                                                        rule=rule))
                                     _jsonLogger.info("Submit new rule for {resource}".format(resource=self.resource_name),extra={'dataset':x['dataset'],'resource':self.resource_name,
                                                                                                                              'rule':rule, 'files':x['value']})
-                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight=weight,
                                                             activity='Staging', notify='P')
                                 else:
                                     source_replica = fill_source_replica_template(self.ddm, x['dataset'], source_replica, self.resource_name)
@@ -323,7 +330,7 @@ class TapeResource(ResourceQueue):
                                                                                                        rule=rule, source=source_replica))
                                     _jsonLogger.info("Submit new rule for {resource}".format(resource=self.resource_name),extra={'dataset':x['dataset'],'resource':self.resource_name,
                                                                                                                                  'rule':rule, 'files':x['value']})
-                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+                                    self.ddm.add_replication_rule(x['dataset'], rule, copies=1, lifetime=lifetime*86400, weight=weight,
                                                             activity='Staging', notify='P', source_replica_expression=source_replica)
                             staging =  DatasetStaging.objects.get(id=x['id'])
                             staging.status = 'staging'
@@ -450,11 +457,12 @@ def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
         rse = ddm.active_staging_rule(input_dataset)
         if rse:
             return rse['id']
+        weight = weight_from_rule(rule)
         if not replicas:
-            ddm.add_replication_rule(input_dataset, rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+            ddm.add_replication_rule(input_dataset, rule, copies=1, lifetime=lifetime*86400, weight=weight,
                                     activity='Staging', notify='P')
         else:
-            ddm.add_replication_rule(input_dataset, rule, copies=1, lifetime=lifetime*86400, weight='freespace',
+            ddm.add_replication_rule(input_dataset, rule, copies=1, lifetime=lifetime*86400, weight=weight,
                                     activity='Staging', notify='P',source_replica_expression=replicas)
 
         return True
@@ -473,7 +481,7 @@ def append_excluded_rse(rule: str) -> str:
 def prepare_rule(original_rule: str, tape_name: str = '') -> str:
     return render_destination_rule(append_excluded_rse(original_rule), tape_name)
 
-def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None):
+def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None,data_replica_wihout_rule=False):
     step = task.step
     waiting_parameters_from_step = None
     if step.get_task_config('PDAParams'):
@@ -514,7 +522,8 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     else:
         dataset_staging = DatasetStaging.objects.filter(dataset=input_dataset,
                                                         status__in=DatasetStaging.ACTIVE_STATUS).last()
-    if dataset_staging.status == 'queued' and waiting_parameters_from_step and waiting_parameters_from_step.get('nowait', False):
+    if dataset_staging.status == 'queued' and ( data_replica_wihout_rule or
+                                                (waiting_parameters_from_step and waiting_parameters_from_step.get('nowait', False))):
         source_replica = fill_source_replica_template(ddm, input_dataset, replicas, dataset_staging.source)
         rule = prepare_rule(rule, dataset_staging.source)
         perfom_dataset_stage(input_dataset, ddm, rule, lifetime, source_replica)
@@ -728,13 +737,15 @@ def filter_replicas_without_rules(ddm, original_dataset):
         else:
             rules_expression.append(rule['rse_expression'])
     new_replicas = {'tape':[],'data':[]}
+    data_replica_exists = len(replicas['data']) > 0
     for replica in replicas['tape']:
         if replica['rse'] in rules_expression:
             new_replicas['tape'].append(replica)
     for replica in replicas['data']:
         if staging_rule is not None or replica['rse'] in rules_expression:
             new_replicas['data'].append(replica)
-    return new_replicas, staging_rule
+    all_data_replicas_without_rules = data_replica_exists and len(new_replicas['data']) == 0
+    return new_replicas, staging_rule, all_data_replicas_without_rules
 
 
 
@@ -745,7 +756,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
     if '_sub' in input_dataset:
         original_dataset = translate_sub_dataset_name(input_dataset)
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
-    replicas, staging_rule = filter_replicas_without_rules(ddm, original_dataset)
+    replicas, staging_rule, all_data_replicas_without_rules = filter_replicas_without_rules(ddm, original_dataset)
     if staging_rule is not None and staging_rule['expires_at'] and  ((staging_rule['expires_at']-timezone.now().replace(tzinfo=None)) < timedelta(days=30)):
         ddm.change_rule_lifetime(staging_rule['id'], 30 * 86400)
     if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
@@ -776,7 +787,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                     else:
                         input = random.choice(input)
         input=convert_input_to_physical_tape(input)
-        create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input)
+        create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input,all_data_replicas_without_rules)
 
 
 def remove_stale_rules(days_after_last_update):
@@ -2147,7 +2158,7 @@ def keep_failed_files(task_id):
                 ddm.register_dataset(new_name, files, meta={'task_id':task_id}, lifetime=lifetime)
                 for replica in data_replicas:
                     print(new_name, replica['rse'])
-                    ddm.add_replication_rule(new_name, replica['rse'], copies=1, lifetime=lifetime, weight='freespace',
+                    ddm.add_replication_rule(new_name, replica['rse'], copies=1, lifetime=lifetime, weight=None,
                                                            activity='Staging')
                 time.sleep(5)
                 replicas = list(ddm.list_dataset_rules(new_name))
@@ -2181,7 +2192,7 @@ def find_stale_stages(days=10):
     ddm = DDM()
     task_to_resubmit_by_tape = {}
     for stage_request in stage_requests:
-        replicas, stage_rule = filter_replicas_without_rules(ddm, stage_request.dataset.dataset)
+        replicas, stage_rule, data_replica_w_rule = filter_replicas_without_rules(ddm, stage_request.dataset.dataset)
         if len(replicas['tape']) > 1 and stage_rule is None:
             use_cern = False
             new_tape = ''
