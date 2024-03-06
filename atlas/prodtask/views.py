@@ -1974,6 +1974,7 @@ def request_table_view(request, rid=None, show_hidden=False):
             if cur_request.request_type == 'ANALYSIS':
                 return HttpResponseRedirect(f'/ng/analysis-request/{rid}')
             #steps_db =
+            ref_link_short = cur_request.ref_link.rsplit('/',1)[-1]
             _logger.debug(form_request_log(rid,request,'Start prepare data fro request page'))
             long_description = cur_request.info_field('long_description')
             original_spreadsheet = cur_request.info_field('data_source')
@@ -2584,6 +2585,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                 'limit_priority':limit_priority,
                 'async_task':async_task,
                 'tasks_by_status':tasks_by_status,
+                'ref_link_short': ref_link_short
                })
         except Exception as e:
             _logger.error("Problem with request list page data forming: %s" % e)

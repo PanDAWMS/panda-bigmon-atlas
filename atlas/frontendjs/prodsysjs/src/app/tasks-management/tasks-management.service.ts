@@ -30,8 +30,8 @@ export class TasksManagementService {
       }));
   }
 
-  getTasksByHashtag(hashtagString: string, dkb: boolean = false): Observable<ProductionTask[]> {
-    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, dkb});
+  getTasksByHashtag(hashtagString: string, source: 'dkb'|'jira'|'ht' = 'ht'): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, source});
   }
   getTasksByBigpandaUrl(tasksURL: string): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksPrBigpandaUrl , {tasksURL});

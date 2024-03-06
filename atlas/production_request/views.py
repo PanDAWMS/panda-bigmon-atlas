@@ -183,13 +183,17 @@ def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
 def production_task_for_request(request: Request) -> Response:
     try:
         if 'hashtagString' in request.data and request.data['hashtagString']:
-            if 'dkb' in request.data and request.data['dkb']:
+            if 'source' in request.data and request.data['source'] == 'dkb':
                 tasks, _ ,_ = es_task_search_all({'search_string' :request.data['hashtagString']}, 'prod')
                 tasks_id = [x['taskid'] for x in tasks]
                 tasks = ProductionTask.objects.filter(id__in=tasks_id)
+            elif 'source' in request.data and request.data['source'] == 'jira':
+                production_requests = TRequest.objects.filter(ref_link='https://its.cern.ch/jira/browse/'+request.data['hashtagString'])
+                tasks= ProductionTask.objects.filter(request__in=production_requests)
             else:
                 tasks_id = tasks_from_string(request.data['hashtagString'])
                 tasks = ProductionTask.objects.filter(id__in=tasks_id)
+
         else:
             request_id = int(request.data['requestID'])
             if request_id < 1000:

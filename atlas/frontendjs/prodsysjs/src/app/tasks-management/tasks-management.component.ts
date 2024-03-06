@@ -23,13 +23,16 @@ export class TasksManagementComponent implements OnInit {
     if (params.get('hashtagString') ) {
       this.hashtagString = params.get('hashtagString').toString();
       this.showOwner = true;
-      return this.taskManagementService.getTasksByHashtag(this.hashtagString);
+      return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'ht');
     } else if (params.get('dkbString')) {
       this.hashtagString = this.route.snapshot.queryParamMap.get('search').toString();
       this.showOwner = true;
-      return this.taskManagementService.getTasksByHashtag(this.hashtagString, true);
+      return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'dkb');
+    } else if (params.get('jira')){
+      this.hashtagString = params.get('jira').toString();
+      this.showOwner = true;
+      return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'jira');
     }
-    this.requestID = params.get('id').toString();
 
     if (params.get('slices')){
       this.slices = this.convertSliceString(params.get('slices'));
