@@ -4,7 +4,10 @@
      <input  matInput  [(ngModel)]="bigpandaURL"  >
  </mat-form-field>
  <button (click)="getTasks()">Get tasks</button>
-
+<!--red X in the normal buttonto clean url-->
+<button mat-icon-button *ngIf="bigpandaURL" (click)="cleanURL()">
+  <mat-icon>close</mat-icon>
+</button>
  <br>
 @if (loadError !== '' && loadError !== undefined && loadError !== null && loadError !== 'null') {
   <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4" role="alert">

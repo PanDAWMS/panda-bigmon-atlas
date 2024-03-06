@@ -54,5 +54,10 @@ export class TaskManagementByUrlComponent implements OnInit{
         return of([] as ProductionTask[]);
     }));
   }
-
+  cleanURL(): void {
+    this.bigpandaURL = '';
+    this.router.navigate(['.' ],
+        { queryParams: {}, relativeTo: this.route });
+    this.tasks$ = of([]);
+  }
 }
