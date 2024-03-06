@@ -883,7 +883,43 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
         deft_task.timestamp=timezone.now()
         deft_task.save()
 
-
+def create_user_task(task_id: int) -> int:
+    if not TTask.objects.filter(id=task_id).exists():
+        raise ValueError(f'Task with id {task_id} does not exist in JEDI')
+    t_task = TTask.objects.get(id=task_id)
+    if ProductionTask.objects.filter(id=task_id).exists():
+        return task_id
+    prod_task = ProductionTask(id=t_task.id,
+                               step=201,
+                               request=300,
+                               parent_id=t_task.parent_tid,
+                               name=t_task.name,
+                               project=t_task.name.split('.')[0],
+                               phys_group='',
+                               provenance='',
+                               status=t_task.status,
+                               total_events=0,
+                               total_req_jobs=0,
+                               total_done_jobs=0,
+                               submit_time=t_task.submit_time,
+                               bug_report=0,
+                               priority=t_task.priority,
+                               inputdataset='',
+                               timestamp=timezone.now(),
+                               vo='atlas',
+                               prodSourceLabel='user',
+                               username=t_task.username,
+                               chain_tid=t_task.chain_id,
+                               campaign='',
+                               subcampaign='',
+                               bunchspacing='',
+                               total_req_events=-1,
+                               simulation_type='notMC',
+                               primary_input='',
+                               ami_tag='',
+                               output_formats='')
+    prod_task.save()
+    return task_id
 def sync_deft_jedi_task(task_id):
     """
     Sync task between JEDI and DEFT DB.
@@ -1215,8 +1251,11 @@ def tasks_serialisation(tasks: [ProductionTask]) -> [dict]:
                 step_name = step_from_name[key]
                 break
         if not step_name:
-            step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
-            step_name = StepTemplate.objects.filter(id=step_id).values("step").get()['step']
+            if task.name.startswith('data') and '.merge.' in task.name:
+                step_name = 'Merge'
+            else:
+                step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
+                step_name = StepTemplate.objects.filter(id=step_id).values("step").get()['step']
         serial_task.update(dict(step_name=step_name))
         serial_task['failureRate'] = task.failure_rate or 0
         tasks_serial.append(serial_task)
