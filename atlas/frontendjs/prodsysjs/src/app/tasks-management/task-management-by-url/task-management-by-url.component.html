@@ -19,9 +19,9 @@
       <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
 }
 @if(tasks$ | async; as tasks ) {
-
+  @if(tasks.length !== 0) {
     <app-production-task-table [tasks]="tasks"  [showOwner]="true" >
   </app-production-task-table>
-
+  }
 }
 

@@ -59,5 +59,6 @@ export class TaskManagementByUrlComponent implements OnInit{
     this.router.navigate(['.' ],
         { queryParams: {}, relativeTo: this.route });
     this.tasks$ = of([]);
+    this.loadError = undefined;
   }
 }
