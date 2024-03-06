@@ -20,6 +20,7 @@ export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
  // @Input() taskStatusFiltered: {[status: string]: number};
   @Input() collectionStatus?: {[status: string]: string[]};
   @Input() statusOrder?: string[];
+  @Input() orientation: 'horizontal' | 'vertical' = 'horizontal';
 
   value: string[] = [];
   selectedStatus: SelectionModel<string> = new SelectionModel(true, []);

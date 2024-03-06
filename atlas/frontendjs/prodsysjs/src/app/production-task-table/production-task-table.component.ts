@@ -35,6 +35,9 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   public tasksSteps: {[status: string]: number} = {};
   public taskStatusControl = new UntypedFormControl([]);
   public taskStepControl = new UntypedFormControl([]);
+  public taskCommentsControl = new UntypedFormControl([]);
+  public taskComments: {[status: string]: number} = {};
+  public taskCommentsOrder: string[] = [];
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
@@ -166,7 +169,15 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     this.initTaskAGGrid();
 
   }
+  commentStringHash(originalString: string): string {
+    const noHtmlStr = originalString.replace(/<\/?[^>]+(>|$)/g, '');
 
+    // Replace numbers, floats, and simple date patterns with '*R*'
+    return  noHtmlStr
+      .replace(/\d{4}-\d{2}-\d{2}/g, '*R*') // Simple date pattern YYYY-MM-DD
+      .replace(/\b\d+\.\d+\b/g, '*R*') // Floats
+      .replace(/\b\d+\b/g, '*R*'); // Integers
+  }
   ngOnChanges(): void {
   }
   initTaskAGGrid(): void {
@@ -181,13 +192,29 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       } else {
         this.tasksSteps[task.step_name] = 1;
       }
+      if (task.jedi_info) {
+        const hashComment = this.commentStringHash(task.jedi_info);
+        if (this.taskComments[hashComment]) {
+          this.taskComments[hashComment] += 1;
+        } else {
+          this.taskComments[hashComment] = 1;
+        }
+      //   make a list of ordered this.taskComments keys by number of occurrences
+        this.taskCommentsOrder = ['total'].concat(
+          Object.keys(this.taskComments).sort((a, b) => this.taskComments[b] - this.taskComments[a]));
+      }
     }
     this.taskStepControl = new UntypedFormControl(Object.keys(this.tasksSteps));
     this.taskStatusControl = new UntypedFormControl(Object.keys(this.tasksStatus));
+    this.taskCommentsControl = new UntypedFormControl(Object.keys(this.taskComments));
+
     this.taskStepControl.valueChanges.subscribe( newValues => {
           this.tasksGrid.api.onFilterChanged();
     });
     this.taskStatusControl.valueChanges.subscribe( newValues => {
+          this.tasksGrid.api.onFilterChanged();
+    });
+    this.taskCommentsControl.valueChanges.subscribe( newValues => {
           this.tasksGrid.api.onFilterChanged();
     });
 
@@ -218,7 +245,9 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   doesExternalFilterPass(node: RowNode<ProductionTask>): boolean {
     const statusChecked = (this.taskStatusControl.value.length  === 0) || (this.taskStatusControl.value.includes(node.data.status));
     const stepChecked = (this.taskStepControl.value.length  === 0) || (this.taskStepControl.value.includes(node.data.step_name));
-    return statusChecked && stepChecked;
+    const commentChecked = (this.taskCommentsControl.value.length  === 0) ||
+      (this.taskCommentsControl.value.includes(this.commentStringHash(node.data.jedi_info)));
+    return statusChecked && stepChecked && commentChecked;
   }
 
   onSelectionChanged($event: SelectionChangedEvent<any>): void {

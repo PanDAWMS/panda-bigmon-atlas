@@ -1,3 +1,4 @@
+@if (orientation === 'horizontal'){
 
 <table>
   <tr>
@@ -17,5 +18,40 @@
     <input type="checkbox" [checked]="selectedStatus.isSelected(taskStatusItem.key)" (click)= "selectStatus(taskStatusItem.key);$event.stopPropagation()"  /></td></tr>
 </table>
 
+} @else {
+<table>
+  <!-- Loop for collectionKeys -->
+  <tr *ngFor="let taskStatusItem of collectionKeys | keyvalue: asIsOrder">
+    <td>
+      <span [ngClass]="['singleClick', 'taskStatus', taskStatusItem.key]" (click)="toggleCollection(taskStatusItem.key)">
+        {{ taskStatusItem.key }}
+      </span>
+    </td>
+    <td>
+      <span [ngClass]="['singleClick', 'taskStatus', taskStatusItem.key]" (click)="toggleCollection(taskStatusItem.key)">
+        {{ taskStatusItem.value }}
+      </span>
+    </td>
+    <td>
+      <input type="checkbox" [checked]="collectionKeysSelect.isSelected(taskStatusItem.key)" (click)="toggleCollection(taskStatusItem.key); $event.stopPropagation()" />
+    </td>
+  </tr>
 
-
+  <!-- Loop for taskStatusOrdered -->
+  <tr *ngFor="let taskStatusItem of taskStatusOrdered | keyvalue: asIsOrder">
+    <td>
+      <span [ngClass]="['singleClick', 'taskStatus', taskStatusItem.key]" (click)="selectSingleStatus(taskStatusItem.key)">
+        {{ taskStatusItem.key }}
+      </span>
+    </td>
+    <td>
+      <span [ngClass]="['singleClick', 'taskStatus', taskStatusItem.key]" (click)="selectSingleStatus(taskStatusItem.key)">
+        {{ taskStatusItem.value }}
+      </span>
+    </td>
+    <td>
+      <input type="checkbox" [checked]="selectedStatus.isSelected(taskStatusItem.key)" (click)="selectStatus(taskStatusItem.key); $event.stopPropagation()" />
+    </td>
+  </tr>
+</table>
+}

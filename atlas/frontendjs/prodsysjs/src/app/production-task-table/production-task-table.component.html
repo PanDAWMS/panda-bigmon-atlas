@@ -5,9 +5,23 @@
 </div>
   <div>
 <app-task-stats  [taskStatus]="tasksStatus"  [formControl]="taskStatusControl" [collectionStatus]="TaskStatusStep.TASKS_STATUS_GROUPING"
-                [statusOrder]="TaskStatusStep.TASKS_STATUS_ORDER"></app-task-stats>
+                [statusOrder]="TaskStatusStep.TASKS_STATUS_ORDER" ></app-task-stats>
     </div>
   </div>
+<mat-accordion>
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Processed JEDI info
+      </mat-panel-title>
+      <mat-panel-description>
+        Error/Info patterns
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <app-task-stats  [taskStatus]="taskComments"  [formControl]="taskCommentsControl"
+                [statusOrder]="taskCommentsOrder" [orientation]="'vertical'"></app-task-stats>
+  </mat-expansion-panel>
+</mat-accordion>
 <div class="task-table-wrapper">
 <div class="task-table-header">
   <div >
