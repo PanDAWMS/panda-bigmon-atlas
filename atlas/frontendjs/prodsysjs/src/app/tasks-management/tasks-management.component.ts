@@ -44,8 +44,12 @@ export class TasksManagementComponent implements OnInit {
     return of([]);
   }));
   requestInfo$ = this.route.paramMap.pipe(switchMap((params) => {
-    this.requestID = params.get('id').toString();
-    return this.taskManagementService.getProductionRequest(params.get('id'));
+    if (params.get('id')) {
+      this.requestID = params.get('id').toString();
+      return this.taskManagementService.getProductionRequest(params.get('id'));
+    }
+    return of(null);
+
   }));
 
   ngOnInit(): void {
