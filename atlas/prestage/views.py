@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
-    JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable
+    JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable, days_ago
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -504,6 +504,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
             dataset_staging.rse = None
             dataset_staging.source = None
             dataset_staging.end_time = None
+            dataset_staging.destination_rse = None
         else:
             dataset_staging = DatasetStaging()
             dataset_staging.dataset = input_dataset
@@ -992,6 +993,7 @@ def do_staging(action_step_id, ddm):
                         if dataset_stage.rse and dataset_stage.rse != existed_rule['id']:
                             _logger.error("do staging change rule from %s to %s for %s" % (str(dataset_stage.rse), str(existed_rule['id']),dataset_stage.dataset))
                         dataset_stage.rse = existed_rule['id']
+                        dataset_stage.destination_rse = None
                         if dataset_stage.staged_files != int(existed_rule['locks_ok_cnt']):
                             dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
                             dataset_stage.staged_size = int(dataset_stage.dataset_size * dataset_stage.staged_files / dataset_stage.total_files)
@@ -2165,6 +2167,7 @@ def keep_failed_files(task_id):
                 old_rule = dataset_stage.rse
                 if replicas:
                     dataset_stage.rse = replicas[0]['id']
+                    dataset_stage.destination_rse = None
                     dataset_stage.save()
                 ddm.delete_replication_rule(old_rule)
 
@@ -2369,24 +2372,25 @@ def staging_rule_file_errors(dataset: str):
 #     return True, False
 
 def staging_tasks_by_destination(destination_rse: str):
-    staging_datasets = DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING)
-    ddm = DDM()
-    result = []
+    staging_datasets = DatasetStaging.objects.filter(status__in=[DatasetStaging.STATUS.STAGING,DatasetStaging.STATUS.DONE],
+                                                     update_time__gte=days_ago(30), destination_rse=destination_rse)
     destination_tasks = []
-    for dataset_stage in staging_datasets:
-        # replicas = ddm.dataset_replicas(dataset_stage.dataset)
-        # if destination_rse in [x['rse'] for x in replicas]:
-        #     result.append(dataset_stage)
-        try:
-            first_file = ddm.list_locks(dataset_stage.rse).__next__()
-            if first_file and first_file['rse'] == destination_rse:
-                result.append(dataset_stage)
-        except:
-            pass
-    for dataset in result:
+    for dataset in staging_datasets:
         tasks = [ProductionTask.objects.get(id=x) for x in ActionStaging.objects.filter(dataset_stage=dataset).values_list('task', flat=True)]
         destination_tasks += filter(lambda x: x.status not in ProductionTask.NOT_RUNNING, tasks)
     return destination_tasks
+
+def fill_staging_destination():
+    ddm = DDM()
+    for dataset_stage in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+        if not dataset_stage.destination_rse:
+            try:
+                first_file = ddm.list_locks(dataset_stage.rse).__next__()
+                dataset_stage.destination_rse = first_file['rse']
+                dataset_stage.save()
+            except:
+                pass
+
 
 def recover_destination_excluded_from_nucleus(destination_rse: str):
     tasks = staging_tasks_by_destination(destination_rse)
