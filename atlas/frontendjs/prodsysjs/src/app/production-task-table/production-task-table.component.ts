@@ -130,7 +130,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
         suppressFilterButton: true,
       },
       cellRenderer: params => {
-        return `<a href="/prodtask/slice_by_task/${params.data.id}" >${params.value}</a>`;
+        return `<a href="/prodtask/slice_by_task_short/${params.data.id}" >${params.value}</a>`;
       },
     },
     {
@@ -174,9 +174,12 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
 
     // Replace numbers, floats, and simple date patterns with '*R*'
     return  noHtmlStr
-      .replace(/\d{4}-\d{2}-\d{2}/g, '*R*') // Simple date pattern YYYY-MM-DD
+      // /2024/03/13 06:24:37
+      .replace(/\d{4}\/\d{2}\/\d{2}/g, '*D*')
+      .replace(/\d{2}:\d{2}:\d{2}/g, '*T*')
       .replace(/\b\d+\.\d+\b/g, '*R*') // Floats
-      .replace(/\b\d+\b/g, '*R*'); // Integers
+      .replace(/\b(\d|x)+\b/g, '*R*')// Integers
+      .replace(/=\d+(MB|GB|TB|B)/g, '*R*'); // Integers
   }
   ngOnChanges(): void {
   }

@@ -654,6 +654,14 @@ def slice_by_task(request, task_id):
         return HttpResponseRedirect('/')
     return HttpResponseRedirect(reverse('prodtask:input_list_approve_full', args=[request_id])+'#inputList'+str(slice))
 
+def slice_by_task_short(request, task_id):
+    try:
+        task = ProductionTask.objects.get(id=task_id)
+        request_id = task.request_id
+        slice = task.step.slice.slice
+    except:
+        return HttpResponseRedirect('/')
+    return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=[request_id])+'#inputList'+str(slice))
 
 ALWAYS_ALLOWED = ['set_hashtag','remove_hashtag']
 

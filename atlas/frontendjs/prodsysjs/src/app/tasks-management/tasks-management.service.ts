@@ -30,7 +30,7 @@ export class TasksManagementService {
       }));
   }
 
-  getTasksByHashtag(hashtagString: string, source: 'dkb'|'jira'|'ht' = 'ht'): Observable<ProductionTask[]> {
+  getTasksByHashtag(hashtagString: string, source: 'dkb'|'jira'|'ht'|'taskStatus' = 'ht'): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, source});
   }
   getTasksByBigpandaUrl(tasksURL: string): Observable<ProductionTask[]> {

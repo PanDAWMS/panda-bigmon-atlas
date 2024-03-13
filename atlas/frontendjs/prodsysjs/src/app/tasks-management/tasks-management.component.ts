@@ -32,6 +32,10 @@ export class TasksManagementComponent implements OnInit {
       this.hashtagString = params.get('jira').toString();
       this.showOwner = true;
       return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'jira');
+    } else if (params.get('taskStatus')){
+      this.hashtagString = params.get('taskStatus').toString();
+      this.showOwner = true;
+      return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'taskStatus');
     }
 
     if (params.get('slices')){

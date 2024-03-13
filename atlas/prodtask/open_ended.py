@@ -157,7 +157,7 @@ def clean_open_ended(reqid):
     slices = list(InputRequestList.objects.filter(request=reqid).order_by('slice'))
     for slice in slices:
         if not slice.is_hide:
-            if not StepExecution.objects.filter(slice=slice).exists():
+            if not StepExecution.objects.filter(slice=slice, request=reqid).exists():
                 print(slice.request_id,slice.slice)
                 slice.is_hide = True
                 slice.save()

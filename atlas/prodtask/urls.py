@@ -85,6 +85,7 @@ urlpatterns = [
     re_path(r'^task_clone/(?P<rid>\d+)/$',  task_views.task_clone, name='task_clone'),
     re_path(r'^task_update/(?P<rid>\d+)/$', task_views.task_update, name='task_update'),
     re_path(r'^slice_by_task/(?P<task_id>\d+)/$',        task_views.slice_by_task, name='slice_by_task'),
+    re_path(r'^slice_by_task_short/(?P<task_id>\d+)/$', task_views.slice_by_task_short, name='slice_by_task_short'),
 
     re_path(r'^task_create/$',              task_views.task_create, name='task_create'),
     re_path(r'^unmerged_datasets_to_delete/$',              task_views.unmerged_datasets_to_delete, name='unmerged_datasets_to_delete'),

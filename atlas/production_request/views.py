@@ -21,7 +21,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
-    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest
+    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -190,6 +190,22 @@ def production_task_for_request(request: Request) -> Response:
             elif 'source' in request.data and request.data['source'] == 'jira':
                 production_requests = TRequest.objects.filter(ref_link='https://its.cern.ch/jira/browse/'+request.data['hashtagString'])
                 tasks= ProductionTask.objects.filter(request__in=production_requests)
+            elif 'source' in request.data and request.data['source'] == 'taskStatus':
+                task_staus = request.data['hashtagString']
+                days = 5
+                if 'days' in request.data:
+                    days = min([10,int(request.data['days'])])
+                if task_staus == 'active':
+                    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
+                    tasks = ProductionTask.objects.filter(status__in=ACTIVE_STATUS, request__reqid__gte=1000)
+                elif task_staus == 'active+':
+                    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
+                    tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS, request__reqid__gte=1000))
+                    tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.RED_STATUS,timestamp__gt=days_ago(2),  request__reqid__gte=1000))
+                elif task_staus not in ProductionTask.NOT_RUNNING:
+                    tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
+                else:
+                    tasks = ProductionTask.objects.filter(status=task_staus, timestamp__gt=days_ago(days), request__reqid__gte=1000)
             else:
                 tasks_id = tasks_from_string(request.data['hashtagString'])
                 tasks = ProductionTask.objects.filter(id__in=tasks_id)
