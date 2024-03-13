@@ -737,16 +737,18 @@ def filter_replicas_without_rules(ddm, original_dataset):
             staging_rule = rule
         else:
             rules_expression.append(rule['rse_expression'])
-    new_replicas = {'tape':[],'data':[]}
+    filtered_replicas = {'tape':[],'data':[]}
     data_replica_exists = len(replicas['data']) > 0
     for replica in replicas['tape']:
         if replica['rse'] in rules_expression:
-            new_replicas['tape'].append(replica)
+            filtered_replicas['tape'].append(replica)
+    if len(replicas['tape']) >= 1 and len(filtered_replicas['tape']) == 0 and len(rules) == 0:
+        filtered_replicas['tape'] = replicas['tape']
     for replica in replicas['data']:
         if staging_rule is not None or replica['rse'] in rules_expression:
-            new_replicas['data'].append(replica)
-    all_data_replicas_without_rules = data_replica_exists and len(new_replicas['data']) == 0
-    return new_replicas, staging_rule, all_data_replicas_without_rules
+            filtered_replicas['data'].append(replica)
+    all_data_replicas_without_rules = data_replica_exists and len(filtered_replicas['data']) == 0
+    return filtered_replicas, staging_rule, all_data_replicas_without_rules
 
 
 
