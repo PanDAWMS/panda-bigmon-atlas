@@ -188,7 +188,7 @@ def production_task_for_request(request: Request) -> Response:
                 tasks_id = [x['taskid'] for x in tasks]
                 tasks = ProductionTask.objects.filter(id__in=tasks_id)
             elif 'source' in request.data and request.data['source'] == 'jira':
-                production_requests = TRequest.objects.filter(ref_link='https://its.cern.ch/jira/browse/'+request.data['hashtagString'])
+                production_requests = TRequest.objects.filter(ref_link__endswith='/'+request.data['hashtagString'])
                 tasks= ProductionTask.objects.filter(request__in=production_requests)
             elif 'source' in request.data and request.data['source'] == 'taskStatus':
                 task_staus = request.data['hashtagString']
