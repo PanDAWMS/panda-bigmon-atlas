@@ -2389,6 +2389,7 @@ def fill_staging_destination():
             try:
                 first_file = ddm.list_locks(dataset_stage.rse).__next__()
                 dataset_stage.destination_rse = first_file['rse']
+                _logger.info(f"Fill destination for {dataset_stage.dataset} with {dataset_stage.destination_rse}")
                 dataset_stage.save()
             except:
                 pass
