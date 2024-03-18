@@ -11,31 +11,19 @@ from rest_framework.response import Response
 from django.shortcuts import render
 
 
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
-from atlas.settings.local import ESLogin
-
 from atlas.settings import OIDC_LOGIN_URL
 
-connections.create_connection(hosts=['http://aiatlas171.cern.ch:9200'], http_auth=(ESLogin['login'],ESLogin['password']), timeout=5000)
-_logger = logging.getLogger('prodtaskwebui')
-ES6 = Elasticsearch(hosts=['http://aiatlas171.cern.ch:9200'],http_auth=(ESLogin['login'],ESLogin['password']), timeout=5000)
 
 
-DKB_ES6_SEARCH = {'search': Search, 'prod': {'using':ES6,  'index':"apinestedproduction_tasks", 'doc_type':'task'},
-                  'analy': {'using':ES6,  'index':"apinestedanalysis_tasks", 'doc_type':'task'},
-                  'task_duration_script':"doc['end_time'].value - doc['start_time'].value"}
 
+from atlas.dkb.dkb2 import  DKB_OS2_SEARCH
 
-from atlas.dkb.dkb2 import DKB_ES7_SEARCH
-
-DEFAULT_SEARCH = DKB_ES7_SEARCH
+DEFAULT_SEARCH = DKB_OS2_SEARCH
 
 SIZE_TO_DISPLAY = 2000
 
-def test_connection():
-    return Search(index="prodsys", doc_type='MC16')
+
+_logger = logging.getLogger('prodtaskwebui')
 
 
 @api_view(['POST'])
@@ -224,7 +212,7 @@ def keyword_search_size_nested(keyword_string, is_analy=False):
     return query
 
 def wrong_deriv():
-    es_search = Search(index="test_prodsys_rucio_ami", doc_type='task')
+    es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
     query = {
               "size": 1000,
               "_source": ["taskid", "requested_events", "input_events", "n_files_per_job", "n_events_per_job", "n_files_to_be_used", "primary_input_events", "primary_input_deleted", "task_timestamp", "processed_events", "primary_input"],
@@ -287,7 +275,7 @@ def running_events_stat_deriv_new(search_dict, status, formats):
                     "bool": {
                       "must": [
                         search_dict,
-                        {"terms": {"status": status}},
+                          {"terms": {"status": status}},
                           {"nested": {
                               "path": "output_dataset",
                               "query": {"term": {"output_dataset.data_format.keyword": format}}
@@ -317,7 +305,7 @@ def running_events_stat_deriv_new(search_dict, status, formats):
         es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
         execute=None
         try:
-            aggregs = es_search.from_dict(query)
+            aggregs = es_search.update_from_dict(query)
             execute = aggregs.execute()
         except Exception as e:
             _logger.error("Problem with es deriv : %s" % (e))
@@ -963,3 +951,24 @@ def statistic_by_request_deriv_new(search_dict, formats):
         total_result.update(result)
 
     return total_result
+
+
+def verify_dkb(days):
+    from datetime import timedelta
+    from django.utils import timezone
+
+    tasks = ProductionTask.objects.filter(timestamp__gt=timezone.now()-timedelta(days=days), timestamp__lt=timezone.now()-timedelta(days=days-1),provenance__in=['AP','GP'])
+    for order, task in enumerate(tasks):
+        try:
+            es_tasks = es_by_keys_nested({'taskid': task.id})
+            if len(es_tasks) > 1:
+                print('Task %s is not unique in ES' % task.id)
+                continue
+            es_task = es_tasks[0]
+            if es_task['task_timestamp'] != task.timestamp.strftime('%d-%m-%Y %H:%M:%S'):
+                print(f'Task {task.id} timestamp is wrong timestamps: {es_task["task_timestamp"]} {task.timestamp.strftime("%d-%m-%Y %H:%M:%S")}')
+
+        except Exception as e:
+            print('Task %s is not in ES %s' % (task.id,str(e)))
+            break
+
