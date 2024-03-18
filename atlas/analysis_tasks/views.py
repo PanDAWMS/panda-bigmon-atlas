@@ -6,6 +6,7 @@ from pprint import pprint
 from time import sleep
 
 import requests
+from django.contrib.auth.models import User
 from django.http import HttpResponseBadRequest
 from django.utils import timezone
 from rest_framework.response import Response
@@ -122,20 +123,31 @@ def create_task_from_pattern(pattern_id: int, task_name: str, task_params: dict)
     return new_task
 
 
-def verify_step(step: AnalysisStepTemplate, ddm: DDM):
+def check_user_group(group: str, username: str):
+    user = User.objects.get(username=username)
+    user_groups = [group.name for group in user.groups.all()]
+    group_name = group.split('.')[1]
+    iam_group = f'IAM:atlas/{group_name}/production'
+    if iam_group not in user_groups:
+        raise Exception(f'User {username} is not in group {iam_group}')
+    return True
+
+
+def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
     prod_step = step.step_production_parent
     if not prod_step.step_parent or (prod_step.step_parent == prod_step):
         if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
             raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
+    if step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('group'):
+        check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username)
 
-
-def create_analy_task_for_slice(requestID: int, slice: int ) -> [int]:
+def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [int]:
     new_tasks = []
     ddm = DDM()
     steps = AnalysisStepTemplate.objects.filter(request=requestID, slice=InputRequestList.objects.get(slice=slice, request=requestID))
     for step in steps:
         if (step.status == AnalysisStepTemplate.STATUS.APPROVED) and (not ProductionTask.objects.filter(step=step.step_production_parent).exists()):
-            verify_step(step, ddm)
+            verify_step(step, ddm, username)
             task_id = TTask().get_id()
             prod_step = step.step_production_parent
             if not prod_step.step_parent or (prod_step.step_parent == prod_step):
@@ -824,7 +836,7 @@ def submit_analysis_slices(request):
                     # if (request.user.username in FIRST_ADOPTERS):
                         _jsonLogger.info('Submit analysis task for slice',
                             extra=form_json_request_dict( request_id, request, extra={'slice': slice.slice}))
-                        new_tasks += create_analy_task_for_slice(request_id, slice.slice)
+                        new_tasks += create_analy_task_for_slice(request_id, slice.slice, request.user.username)
                         submitted_slices.append(slice)
                         unset_slice_error(request.data['requestID'], slice.id)
                 except Exception as e:

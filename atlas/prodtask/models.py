@@ -1877,6 +1877,14 @@ class StorageResource(models.Model):
         app_label = 'dev'
         db_table = '"T_STORAGE_RESOURCE_STATE"'
 
+class IAM_USER(models.Model):
+    username = models.CharField(max_length=30, db_column='USERNAME', primary_key=True)
+    userID = models.CharField(max_length=50, db_column='USERID', null=False)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_IAM_USERS"'
+
 class ETAGRelease(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TAG_RELASE_ID', primary_key=True)
