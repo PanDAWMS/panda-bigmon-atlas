@@ -995,7 +995,7 @@ def do_staging(action_step_id, ddm):
                         if dataset_stage.rse and dataset_stage.rse != existed_rule['id']:
                             _logger.error("do staging change rule from %s to %s for %s" % (str(dataset_stage.rse), str(existed_rule['id']),dataset_stage.dataset))
                         dataset_stage.rse = existed_rule['id']
-                        dataset_stage.destination_rse = None
+                        # dataset_stage.destination_rse = None
                         if dataset_stage.staged_files != int(existed_rule['locks_ok_cnt']):
                             dataset_stage.staged_files = int(existed_rule['locks_ok_cnt'])
                             dataset_stage.staged_size = int(dataset_stage.dataset_size * dataset_stage.staged_files / dataset_stage.total_files)
