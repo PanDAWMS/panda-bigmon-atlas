@@ -1,5 +1,6 @@
 import json
 import logging
+import string
 import time
 from copy import deepcopy
 from pprint import pprint
@@ -7,7 +8,9 @@ from time import sleep
 
 import requests
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.http import HttpResponseBadRequest
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
 
@@ -24,7 +27,8 @@ from atlas.prodtask.hashtag import _set_request_hashtag, remove_hashtag_from_req
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError, \
-    HashTagToRequest, HashTag
+    HashTagToRequest, HashTag, SystemParametersHandler
+from atlas.prodtask.settings import APP_SETTINGS
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import hide_slice
 from atlas.prodtask.task_views import tasks_serialisation
@@ -132,6 +136,29 @@ def check_user_group(group: str, username: str):
         raise Exception(f'User {username} is not in group {iam_group}')
     return True
 
+
+def send_new_request_mail(request_id: int, template: AnalysisStepTemplate , username: str, link: str):
+        production_request = TRequest.objects.get(reqid=request_id)
+        short_description = ''.join([x for x in production_request.description if x in string.printable]).replace('\n',
+                                                                                                                  '').replace(
+            '\r', '')
+        subject = f'Analysis request {short_description} {production_request.phys_group}'
+        mail_body = f"""
+    New analysis request was created by {username} for the template {template.task_template.description}
+    
+    Best,
+
+
+    Details:
+    - Link to Request: {link}
+    """
+
+        mail_from = APP_SETTINGS['prodtask.email.from']
+        send_mail(subject,
+                  mail_body,
+                  mail_from,
+                  SystemParametersHandler.get_analysis_request_email().emails,
+                   fail_silently=True)
 
 def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
     prod_step = step.step_production_parent
@@ -520,6 +547,7 @@ def create_analysis_request(request):
                     output_format = slice['outputFormat']
                 steps.append(StepExecution.objects.get(request=input_request_id, slice=InputRequestList.objects.get(slice=slice['slice'], request=input_request_id)))
             add_child_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , steps, output_format)
+        send_new_request_mail(new_request.reqid, analysis_template, request.user.username, request.build_absolute_uri(reverse('prodtask:input_list_approve',args=(new_request.reqid,))))
         return Response(str(new_request.reqid))
 
     except Exception as e:

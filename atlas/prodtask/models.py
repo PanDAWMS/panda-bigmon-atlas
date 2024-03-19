@@ -1167,6 +1167,7 @@ class SystemParametersHandler:
         GRL_DEFAULT_FILE = 'GRLDefaultFile'
         MCSubCampaignStats = 'MCSubCampaignStats'
         MCWorkflowRequest = 'MCWorkflowRequest'
+        ANALYSIS_REQUEST_EMAIL = 'AnalysisRequestEmail'
 
 
 
@@ -1201,6 +1202,10 @@ class SystemParametersHandler:
     @dataclass
     class ExcludedStagingSites:
         sites: List[str]
+
+    @dataclass
+    class AnalysisRequestEmail:
+        emails: List[str]
 
     def __init__(self, name):
         self.name = name
@@ -1265,6 +1270,15 @@ class SystemParametersHandler:
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.EXCLUDED_STAGING_SITES,
                                        asdict(values))
 
+    @staticmethod
+    def get_analysis_request_email() -> AnalysisRequestEmail:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.ANALYSIS_REQUEST_EMAIL)
+        return SystemParametersHandler.AnalysisRequestEmail(**values)
+
+    @staticmethod
+    def set_analysis_request_email(values: AnalysisRequestEmail):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.ANALYSIS_REQUEST_EMAIL,
+                                       asdict(values))
 
 class SystemParameters(models.Model):
 
