@@ -137,14 +137,14 @@ def check_user_group(group: str, username: str):
     return True
 
 
-def send_new_request_mail(request_id: int, template: AnalysisStepTemplate , username: str, link: str):
+def send_new_request_mail(request_id: int, template: AnalysisTaskTemplate , username: str, link: str):
         production_request = TRequest.objects.get(reqid=request_id)
         short_description = ''.join([x for x in production_request.description if x in string.printable]).replace('\n',
                                                                                                                   '').replace(
             '\r', '')
         subject = f'Analysis request {short_description} {production_request.phys_group}'
         mail_body = f"""
-    New analysis request was created by {username} for the template {template.task_template.description}
+    New analysis request was created by {username} for the template {template.description}
     
     Best,
 
