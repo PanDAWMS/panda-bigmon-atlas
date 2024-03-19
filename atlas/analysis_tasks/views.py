@@ -142,7 +142,7 @@ def send_new_request_mail(request_id: int, template: AnalysisTaskTemplate , user
         short_description = ''.join([x for x in production_request.description if x in string.printable]).replace('\n',
                                                                                                                   '').replace(
             '\r', '')
-        subject = f'Analysis request {short_description} {production_request.phys_group}'
+        subject = f'Analysis request {short_description} {template.physics_group}'
         mail_body = f"""
     New analysis request was created by {username} for the template {template.description}
     
