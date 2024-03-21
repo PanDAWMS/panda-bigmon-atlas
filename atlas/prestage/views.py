@@ -760,13 +760,18 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
         original_dataset = translate_sub_dataset_name(input_dataset)
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
     replicas, staging_rule, all_data_replicas_without_rules = filter_replicas_without_rules(ddm, original_dataset)
-    if staging_rule is not None and staging_rule['expires_at'] and  ((staging_rule['expires_at']-timezone.now().replace(tzinfo=None)) < timedelta(days=30)):
-        ddm.change_rule_lifetime(staging_rule['id'], 30 * 86400)
     if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
         start_stagind_task(task)
+        if staging_rule:
+            try:
+                create_replica_extension(task.id, ddm)
+            except Exception as e:
+                _logger.error(f"Problem with replica extension {str(e)} task {task.id}" )
         return True
     else:
-
+        if staging_rule is not None and staging_rule['expires_at'] and (
+                (staging_rule['expires_at'] - timezone.now().replace(tzinfo=None)) < timedelta(days=30)):
+            ddm.change_rule_lifetime(staging_rule['id'], 30 * 86400)
         #No data replica - create a rule
         source_replicas = None
         input = None
