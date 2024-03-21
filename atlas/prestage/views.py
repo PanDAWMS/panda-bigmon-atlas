@@ -1188,11 +1188,11 @@ def find_repeated_tasks_to_follow():
                 repeated_tasks = ProductionTask.objects.filter(submit_time__gte=timezone.now()-timedelta(days=7), primary_input=dataset)
                 for rep_task in repeated_tasks:
                     if rep_task.status not in ProductionTask.NOT_RUNNING:
-                        ttask = TTask.objects.get(id=rep_task.id)
-                        if 'inputPreStaging' not  in ttask._jedi_task_parameters and not ActionStaging.objects.filter(task=rep_task.id).exists():
+                        if not ActionStaging.objects.filter(task=rep_task.id).exists():
                             to_repeat.append(rep_task.id)
         ddm = DDM()
         for task in to_repeat:
+            _logger.info(f"Check task to follow {task}")
             if create_replica_extension(task, ddm):
                 _logger.info("Task {task} is now following".format(task=task))
     except Exception as e:
@@ -1291,8 +1291,7 @@ def create_replica_extension(task_id, ddm):
     task = ProductionTask.objects.get(id=task_id)
     if task.status not in ProductionTask.NOT_RUNNING:
         input_dataset = task.input_dataset
-        replicas = ddm.full_replicas_per_type(input_dataset)
-        if (len(replicas['data']) == 1) and (DatasetStaging.objects.filter(dataset=input_dataset).exists()):
+        if DatasetStaging.objects.filter(dataset=input_dataset).exists():
             dataset_stage = DatasetStaging.objects.get(dataset=input_dataset)
             existed_rule = ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse)
             if existed_rule:
