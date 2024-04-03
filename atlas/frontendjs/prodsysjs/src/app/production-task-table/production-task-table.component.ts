@@ -230,11 +230,11 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   }
   onGridReady(params: GridReadyEvent<ProductionTask>): void {
     if (this.showOwner) {
-      params.columnApi.applyColumnState({
+      params.api.applyColumnState({
         state: [{colId: 'username', hide: false}],
       });
     }
-    params.columnApi.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
+    params.api.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
     if (this.taskToShow && this.tasks.filter(task => task.id.toString() === this.taskToShow).length > 0){
        // console.log('showing task', this.taskToShow);
         this.showTask(parseInt(this.taskToShow), false);
@@ -285,16 +285,18 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     });
   }
   onPageSizeChanged(): void {
-    this.tasksGrid.api.paginationSetPageSize(this.pageSize);
+    this.tasksGrid.api.setGridOption('paginationPageSize', this.pageSize);
   }
 
   onGridSizeChanged(params: GridSizeChangedEvent<any>): void {
-    params.columnApi.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
+    params.api.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
   }
 
-
+ redrawGrid(): void {
+    this.tasksGrid.api.redrawRows();
+ }
   onPaginationChanged(params: PaginationChangedEvent<any>): void {
-        params.columnApi.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
+        params.api.autoSizeColumns(this.taskAGColumns.map( column => column.field), true);
   }
 }
 

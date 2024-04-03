@@ -59,7 +59,7 @@
   <button mat-raised-button color="primary" (click)="showOutputs()">Show output datasets</button>
 </div>
 
-<mat-tab-group mat-stretch-tabs [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
+<mat-tab-group mat-stretch-tabs [color]="'primary'" [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
   <mat-tab label="Slices">
 <!--    Filter for datasets-->
 
@@ -79,7 +79,7 @@
      <div class="task-table-header">
   <div >
      Page Size:
-      <select style="width: 5em" (change)="onPageSizeChanged()" [(ngModel)]="pageSize" >
+      <select style="width: 5em" (change)="onPageSizeChanged()" [(ngModel)]="pageSizeSlices" >
         <option value="10" >10</option>
         <option value="20" selected="">20</option>
         <option value="50">50</option>
@@ -101,9 +101,9 @@
       [rowSelection]="'multiple'"
       [pagination]="true"
      [domLayout]="'autoHeight'"
-      [paginationPageSize]="pageSize"
+      [paginationPageSize]="pageSizeSlices"
       (selectionChanged)="onSelectionChanged($event)"
-          [gridOptions]="gridOptions"
+          [gridOptions]="gridOptionsSlices"
       (gridReady)="onGridReady($event)"
       (filterChanged)="filterChanged($event)"
     ></ag-grid-angular>
@@ -112,17 +112,17 @@
 <app-analy-request-actions [productionRequestID]="requestID" [selectedSlices]="selectedSlicesNumbers" (updateRequest)="updateRequest($event)"></app-analy-request-actions>
   </mat-tab>
   <mat-tab label="Tasks" >
-<mat-slide-toggle [(ngModel)]="taskForAllSlices" (ngModelChange)="changeSelectAllTasks()">Selected Slices - ALl</mat-slide-toggle>
+<mat-slide-toggle [(ngModel)]="taskForAllSlices" (ngModelChange)="changeSelectAllTasks()">Selected Slices - ALL</mat-slide-toggle>
     <h1 *ngIf="taskLoadError" style="color: red">Error loading tasks: {{taskLoadError}}</h1>
-
-    <div *ngIf="tasks$ | async as tasks; else loading">
-      <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="false" >
+    @if (tasks$ | async; as tasks){
+      <div>
+      <app-production-task-table #tasksTable [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="false" >
 
       </app-production-task-table>
-    </div>
-      <ng-template #loading>
-    <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
-  </ng-template>
+        </div>
+    } @else {
+          <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
+    }
 
   </mat-tab>
 </mat-tab-group>

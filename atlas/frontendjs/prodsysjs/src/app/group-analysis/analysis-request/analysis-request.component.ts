@@ -15,6 +15,7 @@ import {TASKS_CONSTANTS} from "../../common/constants/tasks_constants";
 import {FormControl} from "@angular/forms";
 import {COMMA, ENTER} from "@angular/cdk/keycodes";
 import {MatChipInputEvent} from "@angular/material/chips";
+import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
 
 
 
@@ -35,6 +36,7 @@ export class AnalysisRequestComponent implements OnInit {
     return this.taskManagementService.getProductionRequest(params.get('id'));
   }));
   @ViewChild('slicesGrid') slicesGrid!: AgGridAngular;
+  @ViewChild('tasksTable') tasksTable!: ProductionTaskTableComponent;
   public selectedSlices: AnalysisSlice[] = [];
   public selectedSlicesNumbers: number[] = [];
   public selectedTab  = 0;
@@ -46,7 +48,7 @@ export class AnalysisRequestComponent implements OnInit {
     public datasetFilter = '';
   public   sliceTypes: {[status: string]: number} ;
   public taskForAllSlices = true;
-  public gridOptions: GridOptions = {
+  public gridOptionsSlices: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
   };
@@ -71,7 +73,7 @@ export class AnalysisRequestComponent implements OnInit {
     return of([]);
   }));
  // public selectSlicesOrTasks$ = combineLatest([this.analysisSlices$, this.tasks$]);
-  public pageSize = 20;
+  public pageSizeSlices = 20;
 
   sliceAGColumns = [
     {
@@ -195,7 +197,7 @@ export class AnalysisRequestComponent implements OnInit {
     this.slicesGrid.api.selectAllFiltered();
   }
   onPageSizeChanged(): void {
-    this.slicesGrid.api.paginationSetPageSize(this.pageSize);
+    this.slicesGrid.api.setGridOption('paginationPageSize', this.pageSizeSlices);
   }
   gridFilterOrSelectionChanged(): void {
       this.selectedSlicesNumbers = [];
@@ -243,7 +245,9 @@ export class AnalysisRequestComponent implements OnInit {
     this.selectedTab = $event.index;
     if ((this.selectedTab === 1) && !this.taskForAllSlices) {
       this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, this.selectedSlices.map(s => s.slice.slice));
-      }
+    } else {
+      this.tasksTable.redrawGrid();
+    }
   }
 
   showOutputs(): void {
