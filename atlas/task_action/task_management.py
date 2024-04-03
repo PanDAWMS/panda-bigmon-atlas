@@ -443,7 +443,7 @@ class TaskManagementAuthorisation():
             task.phys_group = task_dict.get('phys_group')
             task.request_phys_group = task_dict.get('request__phys_group')
             task.is_group_production = (task_dict.get('request__request_type') == 'GROUP') and (task.phys_group not in ['VALI']) and (task.request_phys_group not in ['VALI'])
-            task.is_analy = task_dict.get('request_id') == 300
+            task.is_analy = (task_dict.get('request_id') == 300) or task_dict.get('request__request_type') == 'ANALYSIS'
         else:
             task_dict = JediTasks.objects.values('username', 'taskname', 'status').get(id=task_id)
             task.owner = task_dict.get('username')
