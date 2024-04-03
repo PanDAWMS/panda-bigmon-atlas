@@ -449,10 +449,10 @@ class TaskManagementAuthorisation():
             task.owner = task_dict.get('username')
             task.name = task_dict.get('taskname')
             task.status = task_dict.get('status')
-            if task.name.startswith('group'):
+            task.is_analy = True
+        if task.is_analy and task.name.startswith('group'):
                 task.phys_group = task.name.split('.')[1]
                 task.request_phys_group = task.phys_group
-            task.is_analy = True
         return task
 
     def task_user_rights(self, username: str, user_fullname:str =None):
@@ -463,6 +463,8 @@ class TaskManagementAuthorisation():
             user_groups = user.groups.all()
             for gp in user_groups:
                 group_permissions += list(gp.permissions.all())
+                if gp.name.startswith('IAM:atlas/') and gp.name.endswith('/production'):
+                    allowed_groups.append(gp.name.split('/')[-2])
             for gp in group_permissions:
                 if "has_" in gp.name and "_permissions" in gp.name:
                     allowed_groups.append(gp.codename)
@@ -491,8 +493,9 @@ class TaskManagementAuthorisation():
             return False
         else:
             if (f'{user.first_name} {user.last_name}' == task.owner) or (user_fullname and (user_fullname == task.owner)) or\
-                    (task.name.split('.')[1] == user.username):
+                    (task.name.split('.')[1] == user.username) or (task.phys_group in allowed_groups):
                 return True
+
         return False
 
 
