@@ -7,8 +7,10 @@ from pprint import pprint
 from time import sleep
 
 import requests
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.core.mail import send_mail
+from django.core.cache import cache
+
 from django.http import HttpResponseBadRequest
 from django.urls import reverse
 from django.utils import timezone
@@ -523,17 +525,20 @@ def create_analysis_request(request):
             new_request.save()
 
         analysis_template_base = request.data['templateBase']
+        new_scope = request.data['scope']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
         analysis_template.task_parameters = analysis_template_base['task_parameters']
-        if (analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE) and
-            analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('user')):
+        if analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE) != new_scope:
             old_scope = analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE)
-            new_scope = f'user.{request.user.username}'
-            analysis_template.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, f"{request.user.first_name} {request.user.last_name}")
+            if old_scope.startswith('user'):
+                analysis_template.change_variable(TemplateVariable.KEY_NAMES.USER_NAME, f"{request.user.first_name} {request.user.last_name}")
+            if new_scope.startswith('group'):
+                analysis_template.task_parameters[TemplateVariable.KEY_NAMES.WORKING_GROUP] = new_scope.split('.')[1]
+                analysis_template.change_variable(TemplateVariable.KEY_NAMES.WORKING_GROUP, new_scope.split('.')[1])
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE, new_scope)
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, analysis_template.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME).replace(old_scope, new_scope))
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE).replace(old_scope, new_scope))
-        new_request.manager = analysis_template.get_variable(TemplateVariable.KEY_NAMES.USER_NAME)
+        new_request.manager = f"{request.user.first_name} {request.user.last_name}"
         new_request.save()
         if 'inputContainers' in request.data:
             add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
@@ -1070,6 +1075,39 @@ def get_analysis_request_hashtags(request):
         if OFFICIAL_HASHTAG in hashtags:
             hashtags.pop(hashtags.index(OFFICIAL_HASHTAG))
         return Response(hashtags)
+    except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def all_groups() -> [str]:
+    if cache.get('all_group_scopes'):
+        return cache.get('all_group_scopes')
+    groups = []
+    for group in Group.objects.all():
+        if group.name.startswith('IAM:atlas/') and group.name.endswith('/production') and 'phys' in group.name:
+            groups.append(f'group.{group.name.split("/")[-2]}')
+    groups.sort()
+    cache.set('all_group_scopes', groups, 3600*5*24)
+    return groups
+def scopes_by_user(username: str) -> [str]:
+    scopes = [f'user.{username}']
+    for group in User.objects.get(username=username).groups.all():
+        if group.name.startswith('IAM:atlas/') and group.name.endswith('/production'):
+            scopes.append(f'group.{group.name.split("/")[-2]}')
+    return scopes + [scope for scope in all_groups() if scope not in scopes]
+
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_scopes_by_user(request):
+    try:
+
+        username = request.user.username
+        groups = scopes_by_user(username)
+        return Response(groups)
     except (TRequest.DoesNotExist, InputRequestList.DoesNotExist, AnalysisStepTemplate.DoesNotExist):
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

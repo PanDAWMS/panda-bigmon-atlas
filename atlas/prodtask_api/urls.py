@@ -3,7 +3,8 @@ from django.urls import  re_path
 from atlas.analysis_tasks.views import prepare_template_from_task, create_template, get_template, get_analysis_request, \
     save_template_changes, get_all_patterns, create_analysis_request, analysis_request_action, \
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
-    get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, add_delete_analysis_request_hashtag
+    get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, \
+    add_delete_analysis_request_hashtag, get_analysis_scopes_by_user
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
     extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
 from atlas.prestage.views import data_carousel_config
@@ -50,6 +51,7 @@ urlpatterns = [
     re_path(r'^get_analysis_pattern_view/$', get_analysis_pattern_view, name='get_analysis_pattern_view'),
     re_path(r'^get_derivation_slices/$', get_derivation_slices, name='get_derivation_slices'),
     re_path(r'^get_analysis_request_hashtags/$', get_analysis_request_hashtags, name='get_analysis_request_hashtags'),
+    re_path(r'^get_analysis_scopes_by_user/$', get_analysis_scopes_by_user, name='get_analysis_scopes_by_user'),
     re_path(r'^add_delete_analysis_request_hashtag/$', add_delete_analysis_request_hashtag, name='add_delete_analysis_request_hashtag'),
     re_path(r'^data_carousel_config/$', data_carousel_config, name='data_carousel_config'),
     re_path(r'^form_pattern_for_derivation_request_extension/$', form_pattern_for_derivation_request_extension, name='form_pattern_for_derivation_request_extension'),

@@ -73,9 +73,17 @@
     <form [formGroup]="requestDescriptionFormGroup">
       <ng-template matStepLabel>Request description</ng-template>
       <div *ngIf="chosenTemplate">Input Containers: {{containersCurrentList.length}}, template base: {{chosenTemplate.tag}}</div>
-      <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabDescription" >
+      <mat-form-field>
+            <mat-label>Choose scope</mat-label>
+        <mat-select  formControlName="requestScopeCtrl" [value]="scopeList[0]"  >
+          <mat-option *ngFor="let scope of scopeList" [value]="scope" >
+            {{scope}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabDescription" [color]="'primary'" >
         <mat-tab label="New request">
-          <mat-form-field>
+          <mat-form-field class="w-full">
             <mat-label>Enter a description</mat-label>
             <input matInput formControlName="requestDescriptionCtrl" placeholder="Description">
           </mat-form-field>

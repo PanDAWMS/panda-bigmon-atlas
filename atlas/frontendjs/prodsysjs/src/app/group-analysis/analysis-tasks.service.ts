@@ -48,6 +48,8 @@ export class AnalysisTasksService {
   private prGetParentDerivationUrl = '/api/get_derivation_slices/';
   private prGetAnalysisRequestHashtagsUrl = '/api/get_analysis_request_hashtags/';
   private prAddAnalysisRequestHashtagUrl = '/api/add_delete_analysis_request_hashtag/';
+  private prGetAnalysisScopesUrl = '/api/get_analysis_scopes_by_user/';
+
 
 
 
@@ -95,6 +97,10 @@ export class AnalysisTasksService {
   getAllActiveTemplates(status= 'ACTIVE'): Observable<TemplateBase[]> {
     return this.http.get<TemplateBase[]>(this.prGetAllTemplateUrl, {params: {status}});
   }
+
+  getAnalysisScopes(): Observable<string[]> {
+    return this.http.get<string[]>(this.prGetAnalysisScopesUrl);
+  }
   getAnalysisRequest(requestID: string): Observable<AnalysisSlice[]> {
     return this.http.get<AnalysisSlice[]>(this.prGetAnalysisRequestUrl, {params: {request_id: requestID}});
   }
@@ -112,8 +118,8 @@ export class AnalysisTasksService {
   setProductionRequestStatus(requestID: string, status: string): Observable<any> {
     return this.http.post(this.prAnalysisRequestActionUrl, {requestID, action: 'setStatus', status});
   }
-  createAnalysisRequest(description: string, requestExtID: string, templateBase: Partial<TemplateBase>, inputContainers: string[]): Observable<string> {
-    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputContainers});
+  createAnalysisRequest(description: string, scope: string, requestExtID: string, templateBase: Partial<TemplateBase>, inputContainers: string[]): Observable<string> {
+    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, scope, requestExtID, templateBase, inputContainers});
   }
 
   submitAnalysisRequestAction(requestID: string, action: string, slices: number[]): Observable<AnalysisRequestActionResponse> {
@@ -150,10 +156,10 @@ export class AnalysisTasksService {
     return this.http.get<ParentDerivationRequest>(this.prGetParentDerivationUrl, {params: {requestID: parentRequest}});
   }
 
-  createAnalysisRequestFromSlices(description: string, requestExtID: string, templateBase: Partial<TemplateBase>,
+  createAnalysisRequestFromSlices(description: string, scope: string, requestExtID: string, templateBase: Partial<TemplateBase>,
                                   inputSlices: {slice: number, outputFormat: string, requestID: string,
                                     container: string}[]): Observable<string> {
-    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, requestExtID, templateBase, inputSlices});
+    return this.http.post<string>(this.prCreateAnalysisRequestUrl, {description, scope, requestExtID, templateBase, inputSlices});
   }
 
   getAnalysisRequestHashtags(requestID: string): Observable<string[]> {

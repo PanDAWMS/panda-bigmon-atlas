@@ -30,6 +30,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
   requestDescriptionFormGroup = this.formBuilder.group({
     requestDescriptionCtrl: [''],
     requestExtentionCtrl: [''],
+    requestScopeCtrl: [''],
   });
   patternTag: string|null = null;
   containersCurrentList: InputContainerItem[] = [];
@@ -37,22 +38,26 @@ export class CreateAnalysisRequestComponent implements OnInit {
   editMode: editState = 'view';
   extendedRequest: number|null = null;
   submissionError = '';
+  originalScopes: string[] = [];
+  scopeList: string[] = [];
   creatingRequest = false;
   inputSlices: {slice: number; outputFormat: string; requestID: string; container: string}[] = [];
   selectedTabDescription = 0;
   containerListChanged$= new BehaviorSubject<string>('');
   containersChecked$ = new BehaviorSubject<boolean>(false);
-  patterns$ = combineLatest( [this.analysisTasksService.getAllActiveTemplates(), this.route.paramMap]).pipe(
-     map(([patterns, params]) => {
+  patterns$ = combineLatest( [this.analysisTasksService.getAllActiveTemplates(), this.route.paramMap, this.analysisTasksService.getAnalysisScopes()]).pipe(
+     map(([patterns, params, scopes]) => {
        if (params.has('tag')) {
          this.patternTag = params.get('tag');
        }
+       this.originalScopes = scopes;
        if (this.patternTag !== null && patterns.length > 0) {
         const requestedPattern = patterns.find((pattern) => pattern.tag === this.patternTag);
         if (requestedPattern) {
                   this.templateChoiceFormGroup.get('patternCntrl').setValue(requestedPattern);
                   this.chosenTemplate = requestedPattern;
         }
+        this.changeScopeList();
 
       }
        return patterns;
@@ -117,13 +122,20 @@ export class CreateAnalysisRequestComponent implements OnInit {
   onGridReady($event: GridReadyEvent<any>) {
 
   }
-
+  changeScopeList(): void {
+    this.scopeList = this.originalScopes;
+    if (this.chosenTemplate.task_parameters.workingGroup) {
+      const newScope = this.scopeList.filter((scope) => scope.includes(this.chosenTemplate.task_parameters.workingGroup))[0];
+      this.scopeList = [newScope].concat(this.scopeList.filter((scope) => scope !== newScope));
+    }
+  }
   changeTaskTemplate($event): void {
     console.log(this.templateChoiceFormGroup.get('patternCntrl').value);
     if (this.templateChoiceFormGroup.get('patternCntrl').value) {
       this.chosenTemplate = null;
       // deep copy
       this.chosenTemplate = JSON.parse(JSON.stringify(this.templateChoiceFormGroup.get('patternCntrl')?.value)) as TemplateBase;
+      this.changeScopeList();
     }
   }
 
@@ -140,6 +152,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
     this.creatingRequest = true;
     if (this.inputSlices.length === 0) {
       this.analysisTasksService.createAnalysisRequest(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
+        this.requestDescriptionFormGroup.get('requestScopeCtrl').value,
         this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
         this.chosenTemplate, this.containersCurrentList.map(container => container.containerName)).pipe(
         catchError(err => {
@@ -154,6 +167,7 @@ export class CreateAnalysisRequestComponent implements OnInit {
       });
     } else {
       this.analysisTasksService.createAnalysisRequestFromSlices(this.requestDescriptionFormGroup.get('requestDescriptionCtrl').value,
+        this.requestDescriptionFormGroup.get('requestScopeCtrl').value,
         this.requestDescriptionFormGroup.get('requestExtentionCtrl').value,
         this.chosenTemplate, this.inputSlices).pipe(
         catchError(err => {
