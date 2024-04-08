@@ -909,6 +909,7 @@ class TemplateVariable:
         OUTPUT_SCOPE = 'output_scope'
         INPUT_DS = 'dsForIN'
         nEVENTS = 'nEvents'
+        WORKING_GROUP = 'workingGroup'
 
     KEYS_SEPARATOR = ','
 

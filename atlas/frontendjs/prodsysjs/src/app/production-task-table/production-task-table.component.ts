@@ -169,7 +169,10 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     this.initTaskAGGrid();
 
   }
-  commentStringHash(originalString: string): string {
+  commentStringHash(originalString: string|undefined): string {
+    if (!originalString) {
+      return 'Undefined';
+    }
     const noHtmlStr = originalString.replace(/<\/?[^>]+(>|$)/g, '');
 
     // Replace numbers, floats, and simple date patterns with '*R*'
@@ -195,13 +198,14 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       } else {
         this.tasksSteps[task.step_name] = 1;
       }
+      let hashComment = 'Undefined';
       if (task.jedi_info) {
-        const hashComment = this.commentStringHash(task.jedi_info);
-        if (this.taskComments[hashComment]) {
+          hashComment = this.commentStringHash(task.jedi_info);
+        }
+      if (this.taskComments[hashComment]) {
           this.taskComments[hashComment] += 1;
         } else {
           this.taskComments[hashComment] = 1;
-        }
       //   make a list of ordered this.taskComments keys by number of occurrences
         this.taskCommentsOrder = ['total'].concat(
           Object.keys(this.taskComments).sort((a, b) => this.taskComments[b] - this.taskComments[a]));
