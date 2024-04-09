@@ -103,6 +103,8 @@ class TProject(models.Model):
 
         db_table = 'T_PROJECTS'
 
+
+
 class TRequest(models.Model):
     # PHYS_GROUPS=[(x,x) for x in ['physics','BPhysics','Btagging','DPC','Detector','EGamma','Exotics','HI','Higgs',
     #                              'InDet','JetMet','LAr','MuDet','Muon','SM','Susy','Tau','Top','Trigger','TrackingPerf',
@@ -264,6 +266,11 @@ class TRequest(models.Model):
     class Meta:
         db_table = 'T_PRODMANAGER_REQUEST'
 
+
+class ProductionRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TRequest
+        fields = '__all__'
 
 class RequestStatus(models.Model):
     STATUS_TYPES = (

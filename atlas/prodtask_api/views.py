@@ -12,7 +12,8 @@ from rest_framework.parsers import JSONParser
 
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging
+from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
+    ProductionRequestSerializer, RequestStatus
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.views import form_existed_step_list, set_request_status
@@ -214,5 +215,77 @@ def recreate_delete_dataset(request):
         return Response({'dataset': result_dataset, 'task_id': result_task_id})
     except Exception as e:
         error_message = f"Recreate deleted dataset failed {e}"
+        _jsonLogger.error(error_message)
+        return HttpResponseBadRequest(error_message)
+
+
+def deft_legacy_request_api_data(request_id: int) -> dict:
+    production_request = TRequest.objects.get(reqid=request_id)
+    request_data = ProductionRequestSerializer(production_request).data
+    request_data['reference'] = request_data.pop('jira_reference')
+    request_data.pop('is_fast', None)
+    request_data.pop('info_fields', None)
+
+    request_data['id'] = request_data.pop('reqid')
+
+    first_created_status = RequestStatus.objects.filter(request=request_id).order_by('timestamp')
+    if first_created_status:
+        request_data['creation_time'] = first_created_status[0].timestamp.strftime('%d-%m-%Y %H:%M:%S')
+    last_approved_status = RequestStatus.objects.filter(request=request_id, status='approved').order_by(
+        '-timestamp')
+    if last_approved_status:
+        request_data['approval_time'] = last_approved_status[0].timestamp.strftime('%d-%m-%Y %H:%M:%S')
+    try:
+        evgen_steps = []
+        input_slices = InputRequestList.objects.filter(request=request_id).order_by('slice')
+        for input_slice in input_slices:
+            try:
+                if input_slice.input_data and not input_slice.is_hide:
+                    if '/' not in input_slice.input_data:
+                        dsid = int(input_slice.input_data.split('.')[1])
+                        brief = input_slice.input_data.split('.')[2]
+                    else:
+                        dsid = int(input_slice.input_data.split('/')[0])
+                        brief = input_slice.input_data.split('/')[1].split('.')[1]
+                    evgen_request_steps = StepExecution.objects.filter(request=request_id,
+                                                               step_template__step__iexact='evgen',
+                                                               slice__slice=input_slice.slice)
+                    if evgen_request_steps:
+                        for evgen_step in evgen_request_steps:
+                            evgen_steps.append({'dsid': dsid,
+                                                'brief': brief,
+                                                'input_events': evgen_step.input_events,
+                                                'jo': evgen_step.slice.input_data,
+                                                'ctag': evgen_step.step_template.ctag,
+                                                'slice': int(evgen_step.slice.slice)})
+                    else:
+                        evgen_steps.append({'dsid': dsid,
+                                            'brief': brief,
+                                            'jo': input_slice.input_data,
+                                            'slice': int(input_slice.slice)})
+            except Exception as ex:
+                _logger.error(f'Exception occurred: {ex}')
+    except Exception as ex:
+        _logger.error(f'Exception occurred: {ex}')
+        evgen_steps = None
+    request_data['evgen_steps'] = evgen_steps
+    return request_data
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def deft_legacy_request(request, request_id):
+    """
+        Return data which was sent or error
+       :param any valid json
+
+
+    """
+
+    try:
+
+        return Response(deft_legacy_request_api_data(int(request_id)))
+    except Exception as e:
+        error_message = f"DEFT request {e}"
         _jsonLogger.error(error_message)
         return HttpResponseBadRequest(error_message)

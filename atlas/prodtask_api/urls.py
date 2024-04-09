@@ -63,6 +63,8 @@ urlpatterns = [
             name='mc_subcampaign_stats'),
     re_path(r'^create_physic_containers/$', create_physics_container_in_ami,
             name='create_physic_containers'),
+    re_path(r'^deft_request/(?P<request_id>\d+)/$', deft_legacy_request,
+            name='deft_legacy_request'),
 
 
 ]

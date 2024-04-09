@@ -21,7 +21,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
-    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago
+    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -31,7 +31,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
-from atlas.prodtask.views import clone_slices
+from atlas.prodtask.views import clone_slices, request_clone_slices, form_existed_step_list, get_full_patterns, \
+    form_step_in_page, create_steps, fill_request_events
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 from django.core.cache import cache
@@ -162,10 +163,7 @@ def production_task(request):
     except Exception as ex:
         return Response(f"Problem with task loading: {ex}", status=400)
 
-class ProductionRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TRequest
-        fields = '__all__'
+
 
 
 def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
@@ -657,3 +655,100 @@ def build_workflows_tree():
         for transition in workflows.workflows[workflow]:
             workflows_tree[workflow][transition.new_request] = transition
     return workflows_tree
+
+
+class WorkflowActions:
+    def __init__(self, workflows_tree):
+        self.workflows_tree = workflows_tree
+
+    @staticmethod
+    def clone_request(request_id: int, new_description: str, new_project: str) -> int:
+        production_request = TRequest.objects.get(reqid=request_id)
+        slices = [slice.slice for slice in InputRequestList.objects.filter(request=request_id).order_by("slice") if not slice.is_hide]
+        new_request_id = request_clone_slices(request_id, production_request.manager, new_description, production_request.jira_reference, slices,
+                             new_project)
+        return new_request_id
+
+
+    @staticmethod
+    def change_request_campaign(request_id: int, new_campaign: str, new_subcampaign: str):
+        production_request = TRequest.objects.get(reqid=request_id)
+        production_request.campaign = new_campaign
+        production_request.subcampaign = new_subcampaign
+        production_request.save()
+
+    @staticmethod
+    def change_input_events_number(request_id: int, ratio: float):
+        for slice in InputRequestList.objects.filter(request=request_id):
+            if not slice.is_hide:
+                ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice, request=request_id))
+                first_step = ordered_existed_steps[0]
+                input_events = first_step.input_events
+                new_input_events = math.ceil(input_events*ratio)
+                first_step.input_events = new_input_events
+                first_step.save()
+                slice.input_events = new_input_events
+                slice.save()
+        fill_request_events(request_id, request_id)
+
+
+
+    @staticmethod
+    def apply_pattern(request_id: int, pattern_name: str):
+        pattern = filter(lambda x: x[0] == pattern_name, get_full_patterns()).__next__()[1]
+        slices_steps = {}
+        first_pattern_step = None
+        for slice in InputRequestList.objects.filter(request=request_id):
+            if not slice.is_hide:
+                ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice, request=request_id))
+                step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
+                slice_steps = []
+                for index, step in enumerate(step_as_in_page):
+                    value = ''
+                    is_skipped = False
+                    changes = {}
+                    for element in pattern[index][1]:
+                        changes[element[0]] = str(element[1])
+                    if not pattern[index][0]:
+                        is_skipped = True
+                        if step:
+                            value = step.step_template.ctag
+                    else:
+                        value = pattern[index][0]
+                        if not first_pattern_step:
+                            first_pattern_step = index
+                    slice_steps.append({'value': value, 'is_skipped': is_skipped, 'formats': '', 'changes': changes})
+                if existed_foreign_step:
+                    slice_steps.append({'foreign_id': str(existed_foreign_step.id)})
+                else:
+                    slice_steps.append({'foreign_id': '0'})
+                slices_steps[slice.slice] = slice_steps
+        error_slices, _ = create_steps(None, slices_steps, request_id, STEPS=StepExecution.STEPS, approve_level=-1)
+        if error_slices:
+            raise Exception(f'Error in slices: {request_id} {error_slices} for pattern {pattern_name}')
+        return first_pattern_step
+
+    @staticmethod
+    def connect_requests(request_id: int, new_request_id: int, step_number: int):
+        parent_slices = [slice for slice in InputRequestList.objects.filter(request=request_id).order_by("slice") if not slice.is_hide]
+        for index, slice in enumerate(InputRequestList.objects.filter(request=new_request_id).order_by("slice")):
+            if not slice.is_hide:
+                parent_ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=parent_slices[index], request=request_id))
+                parent_step_as_in_page = form_step_in_page(parent_ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
+                parent_step = [x for index, x in enumerate(parent_step_as_in_page) if index < step_number][-1]
+                ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice, request=new_request_id))
+                step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
+                step_to_delete = []
+                for index, step in enumerate(step_as_in_page):
+                    if step and index < step_number:
+                        step_to_delete.append(step)
+                    if index == step_number:
+                        step.step_parent = parent_step
+                        step.set_task_config({'nEventsPerInputFile':''})
+                        step.save()
+                        break
+                for step in step_to_delete:
+                    step.delete()
+
+    def approve_request(self, request_id: int):
+        pass

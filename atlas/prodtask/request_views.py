@@ -20,8 +20,9 @@ from rucio.common.exception import DataIdentifierNotFound
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset, DDM
 from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, \
-    fill_request_events
+    fill_request_events, clone_slices
 from atlas.prodtask.spdstodb import fill_template
+from .hashtag import _set_request_hashtag
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
@@ -35,8 +36,9 @@ from .forms import RequestForm, RequestUpdateForm, TRequestMCCreateCloneForm, TR
     TRequestDPDCreateCloneForm, MCPatternForm, MCPatternUpdateForm, MCPriorityForm, MCPriorityUpdateForm, \
     TRequestReprocessingCreateCloneForm, TRequestHLTCreateCloneForm, TRequestEventIndexCreateCloneForm, \
     form_input_list_for_preview
-from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, get_default_nEventsPerJob_dict, \
-    ProductionTask, OpenEndedRequest, TrainProduction, ParentToChildRequest
+from .models import TRequest, InputRequestList, StepExecution, MCPattern, get_priority_object, RequestStatus, \
+    get_default_nEventsPerJob_dict, \
+    ProductionTask, OpenEndedRequest, TrainProduction, ParentToChildRequest, ProductionRequestSerializer
 from .models import MCPriority
 from .settings import APP_SETTINGS
 from .spdstodb import fill_steptemplate_from_gsprd, fill_steptemplate_from_file
@@ -2344,11 +2346,7 @@ def request_table_js(request):
     return TemplateResponse(request, 'prodtask/_new_request_table.html',
                             {'title': 'Production Requests Table', 'active_app': 'prodtask', 'parent_template': 'prodtask/_index.html'})
 
-class ProductionRequestSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = TRequest
-        fields = ('reqid', 'cstatus', 'description')
 
 
 
@@ -2404,3 +2402,68 @@ def change_campaign(production_request_id, newcampaign,newsubcampaign, file_name
     production_request.campaign = newcampaign
     production_request.subcampaign = newsubcampaign
     production_request.save()
+
+def find_all_inputs_per_phys_group(ami_tag: str, merge_tag,  subcampaign: str) -> dict:
+    tasks = ProductionTask.objects.filter(ami_tag=ami_tag)
+    filtered_tasks=[]
+    for task in tasks:
+        if task.status not in ProductionTask.BAD_STATUS and subcampaign.lower() in task.subcampaign.lower() and task.phys_group != 'VALI' and 'valid' not in task.name.split('.')[0]:
+            filtered_tasks.append(task)
+    task_per_type = {}
+    for task in filtered_tasks:
+        child_merge_tasks = ProductionTask.objects.filter(parent_id=task.id, ami_tag=merge_tag)
+        filtered_child_merge_tasks = None
+        for child_task in child_merge_tasks:
+            if child_task.id != task.id and child_task.status not in ProductionTask.BAD_STATUS:
+                if filtered_child_merge_tasks is None:
+                    filtered_child_merge_tasks = child_task
+                else:
+                    print(f'Double merge: {task.id} {child_task.id} {filtered_child_merge_tasks.id}')
+        if filtered_child_merge_tasks is None:
+            print(f'No merge: {task.id}')
+        else:
+            phys_group = task.phys_group
+            task_per_type[phys_group] = task_per_type.get(phys_group, []) + [filtered_child_merge_tasks]
+    return task_per_type
+
+
+def prepare_reprocessing(ami_tag: str, merge_tag: str, subcampaign: str, description: str, pattern_tag: str, pattern_request_id: int):
+    all_tasks = find_all_inputs_per_phys_group(ami_tag, merge_tag, subcampaign)
+    pattern_request = TRequest.objects.get(reqid=pattern_request_id)
+    new_requests = []
+    created_tasks = ProductionTask.objects.filter(ami_tag=pattern_tag)
+    created_parent_steps = []
+    for task in created_tasks:
+        created_parent_steps.append(task.step.step_parent)
+    processed_steps = []
+    for phys_group in all_tasks.keys():
+        new_request_id = request_clone_slices(pattern_request.reqid, pattern_request.manager,
+                                              description, pattern_request.ref_link, [], pattern_request.project,
+                                              False, False)
+        new_request = TRequest.objects.get(reqid=new_request_id)
+        new_request.phys_group = phys_group
+        new_request.save()
+        set_request_status('mborodin', new_request.reqid, TRequest.STATUS.REGISTERED, '', '', {})
+        _set_request_hashtag(new_request.reqid, 'MC23dReprocessing')
+        fill_request_events(new_request.reqid, new_request.reqid)
+        new_requests.append(new_request)
+        for task in all_tasks[phys_group]:
+            if task.step not in created_parent_steps and task.step not in processed_steps:
+                new_slice_id = clone_slices(pattern_request_id, new_request_id, [0],-1,False)[0]
+                new_slice = InputRequestList.objects.get(slice=new_slice_id, request=new_request)
+                new_slice.dataset = task.step.slice.dataset
+                new_slice.comment = task.step.slice.comment
+                new_slice.input_events = -1
+                new_slice.phys_comment = task.step.slice.phys_comment
+                new_slice.input_data = task.step.slice.input_data
+                new_slice.save()
+                new_steps = StepExecution.objects.filter(slice=new_slice, request=new_request )
+                ordered_steps, _ = form_existed_step_list(new_steps)
+                ordered_steps[0].step_parent = task.step
+                ordered_steps[0].input_events = -1
+                ordered_steps[0].save()
+                processed_steps.append(task.step)
+            else:
+                print(f'Already created: {task.id}')
+
+    return new_requests
