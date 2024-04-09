@@ -512,7 +512,7 @@ def find_pattern_derivation_request(campaign: str, subcampaign: str) -> (int, [s
     for pattern in all_patterns:
         if pattern.campaign == campaign and ( pattern.subcampaign == SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS
                                               or pattern.subcampaign == subcampaign) and pattern.status == SystemParametersHandler.DAOD_PHYS_Production.STATUS.ACTIVE:
-            return pattern.train_id, pattern.outputs
+            return pattern.train_id, pattern.outputs, pattern.fullSimOnly
     raise Exception('Pattern derivation request not found for campaign %s and subcampaign %s'%(campaign, subcampaign))
 
 def find_pattern_outputs(pattern_request_id: int, outputs: [str]):
@@ -524,11 +524,13 @@ def find_pattern_outputs(pattern_request_id: int, outputs: [str]):
             chosen_slices.append(output_slice)
     return chosen_slices, pattern_train.pattern_request_id
 
-def find_steps_for_derivation(mc_request_id: int) -> [StepExecution]:
+def find_steps_for_derivation(mc_request_id: int, full_sim_only = False) -> [StepExecution]:
     parent_steps = []
     ordered_slices = InputRequestList.objects.filter(request=mc_request_id).order_by('slice')
     for slice in ordered_slices:
         if not slice.is_hide:
+            if full_sim_only and 'fullsim' not in slice.comment.lower():
+                continue
             existed_steps = StepExecution.objects.filter(request=mc_request_id, slice=slice)
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
             step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, None)
@@ -544,13 +546,15 @@ def find_steps_for_derivation(mc_request_id: int) -> [StepExecution]:
     return parent_steps
 
 
-def filter_steps_for_derivation(parent_steps: [StepExecution], new_request: TRequest)-> [StepExecution]:
+def filter_steps_for_derivation(parent_steps: [StepExecution], new_request: TRequest, full_sim_only: bool = False)-> [StepExecution]:
     new_request_slices = list(InputRequestList.objects.filter(request=new_request).order_by('slice'))
     existed_parent_steps = []
     for slice in new_request_slices:
         if not slice.is_hide:
             existed_steps = StepExecution.objects.filter(request=new_request, slice=slice)
             ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
+            if full_sim_only and 'fullsim' not in slice.comment.lower():
+                    existed_foreign_step = None
             if existed_foreign_step:
                 existed_parent_steps.append(existed_foreign_step)
     return [x for x in parent_steps if x not in existed_parent_steps]
@@ -591,8 +595,8 @@ def submit_child_derivation(request, reqid):
 
 def submit_child_derivation_request(original_request_id: int) -> int:
     mc_request = TRequest.objects.get(reqid=original_request_id)
-    pattern_derivation_request, outputs = find_pattern_derivation_request(mc_request.campaign, mc_request.subcampaign)
-    parent_steps = find_steps_for_derivation(mc_request.reqid)
+    pattern_derivation_request, outputs, full_sim_only = find_pattern_derivation_request(mc_request.campaign, mc_request.subcampaign)
+    parent_steps = find_steps_for_derivation(mc_request.reqid, full_sim_only)
     pattern_outputs, pattern_derivation_request = find_pattern_outputs(pattern_derivation_request, outputs)
     if not ParentToChildRequest.objects.filter(parent_request=mc_request, relation_type='DP').exists():
         new_description = 'PHYS Derivation of %s'%mc_request.description
@@ -610,7 +614,7 @@ def submit_child_derivation_request(original_request_id: int) -> int:
         _set_request_hashtag(new_request.reqid, 'PHYSAutoProduction')
     else:
         new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
-        parent_steps = filter_steps_for_derivation(parent_steps, new_request)
+        parent_steps = filter_steps_for_derivation(parent_steps, new_request, full_sim_only)
     if parent_steps:
         create_steps_in_child_pattern(new_request, parent_steps,
                                       pattern_derivation_request,

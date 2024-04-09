@@ -1179,6 +1179,7 @@ class SystemParametersHandler:
         outputs: List[str]
         train_id: int
         status: str
+        fullSimOnly: bool = False
 
         ALL_SUBCAMPAIGNS = 'all'
 
