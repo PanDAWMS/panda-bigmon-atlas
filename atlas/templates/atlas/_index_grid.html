@@ -59,8 +59,8 @@
             <label>Request: <input type="text" id="RequestID"  value=""  /> </label>
         </div>
         <div class="column large-6">
-            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/input_list_approve_full/',$('#RequestID').val()||'');}">ProdSys</a>
-            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/reqtask/',$('#RequestID').val()||'');}">Tasks</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/prodtask/inputlist_with_request/',$('#RequestID').val()||'');}">ProdSys</a>
+            <a class="button" onclick="if(($('#RequestID').val()||'')!=''){window.location.href = construct_django_url('/ng/request-tasks/',$('#RequestID').val()||'');}">Tasks</a>
         </div>
         <div class="column large-8"></div>
     </div>

@@ -1,4 +1,4 @@
 
 {% for status in stat %}
-<a href="{% url 'prodtask:task_table' %}#/?request={{reqid}}{% if status.status != 'total' %}&status={{status.status}}{% endif %}" class="tooltiped" title="ProductionTask list '{{status.status}}' in Request №{{reqid}}"><span class="tstat {{status.status}}">{{ status.count }}</span></a>{% if forloop.first and not forloop.last %} || {%else%}{% if not forloop.last %} | {%endif%}{%endif%}
+<a href="{% url 'frontenddjango:index' %}request-tasks/{{reqid}}" class="tooltiped" title="ProductionTask list '{{status.status}}' in Request №{{reqid}}"><span class="tstat {{status.status}}">{{ status.count }}</span></a>{% if forloop.first and not forloop.last %} || {%else%}{% if not forloop.last %} | {%endif%}{%endif%}
 {% endfor %}

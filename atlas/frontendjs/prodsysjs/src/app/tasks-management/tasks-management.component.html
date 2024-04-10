@@ -1,5 +1,15 @@
 <div *ngIf="hashtagString !== ''; else requestTasks">
-  <h3>Tasks for {{hashtagString}}</h3>
+  @switch (hashtagString) {
+    @case ('active+'){
+      <h3>All active tasks and tasks failed during the last 2 days</h3>
+    }
+    @case ('derivation_monitoring'){
+      <h3>Derivation tasks for atlas-dpd-production for the last week </h3>
+    }
+    @default{
+      <h3>Tasks for {{hashtagString}}</h3>
+    }
+  }
 </div>
 <ng-template #requestTasks>
 <table *ngIf="requestInfo$ | async as requestInfo">

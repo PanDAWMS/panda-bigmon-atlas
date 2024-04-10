@@ -13,9 +13,9 @@ import {
 import {ActivatedRoute, Router} from "@angular/router";
 import * as path from "path";
 import {TasksManagementComponent} from "../tasks-management/tasks-management.component";
-import {APP_BASE_HREF} from "@angular/common";
+import {APP_BASE_HREF, formatDate} from "@angular/common";
 import {UntypedFormControl} from "@angular/forms";
-import {TASKS_CONSTANTS} from "../common/constants/tasks_constants";
+import {DEFAULTS, TASKS_CONSTANTS} from "../common/constants/tasks_constants";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef} from "@angular/material/dialog";
 import {TaskAction} from "../production-task/task-service.service";
 import {BehaviorSubject, Subject} from "rxjs";
@@ -80,6 +80,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       suppressMenu: true,
       filter: 'agTextColumnFilter',
       floatingFilter: true,
+      sort: 'desc',
       floatingFilterComponentParams: {
         suppressFilterButton: true,
       },
@@ -148,6 +149,15 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     {
       field: 'step_name',
       headerName: 'Step',
+    },
+    {
+      field: 'timestamp',
+      headerName: 'Timestamp',
+      cellRenderer: params => {
+        return formatDate(params.value, DEFAULTS.TIME_FORMAT, 'en-US');
+      },
+      maxWidth: 140,
+
     },
 
   ];
