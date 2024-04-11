@@ -10,6 +10,7 @@ from django.shortcuts import render
 from django.conf import settings
 import atlas.deftcore.api.client as deft
 from atlas.settings import OIDC_LOGIN_URL
+from atlas.task_action.task_management import TaskManagementAuthorisation, TaskActionExecutor, do_jedi_action
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -58,9 +59,7 @@ def jobs_action(request,action):
                       status=None, accepted=False, registered=False,
                       exception=None, exception_source=None)
 
-        if not is_superuser:
-            result['exception'] = "Permission denied"
-            return HttpResponse(json.dumps(result))
+
     except Exception as e:
         _logger.error("Problem during jobs action :%s" % str(e))
         result['exception'] = "Error"
@@ -80,25 +79,37 @@ def jobs_action(request,action):
                     else:
                         without_taskid.append(job['pandaid'])
                 _logger.info("Send DEFT job kills for %s jobs for %s tasks" % (str(len(chunk)),str(len(tasks.keys()))))
-                for task in tasks.keys():
-                    result.update(_do_deft_job_action(user, task, tasks[task], 'kill_job_by_task', *args))
+                if without_taskid and not is_superuser:
+                    result['exception'] = "Permission denied"
+                    return HttpResponse(json.dumps(result))
+                authentification_management = TaskManagementAuthorisation()
+                tasks_allowed = authentification_management.tasks_action_authorisation(tasks.keys(), user, 'kill_job',
+                                                                                        args)
+                if [task_verified for task_verified in tasks_allowed if not task_verified.user_allowed]:
+                    result['exception'] = "Permission denied"
+                    return HttpResponse(json.dumps(result))
+                executor = TaskActionExecutor(user, '')
+                for task, jobs in tasks.items():
+                    do_jedi_action(executor, task, 'kill_job', jobs, *args)
                     fin_res.append(result)
                 if without_taskid:
-                    result.update(_do_deft_job_action(user, None, without_taskid, 'kill_job_by_task', *args))
+                    do_jedi_action(executor, without_taskid, 'kill_jobs_without_task', *args)
                     fin_res.append(result)
-        elif action == 'reassign_jobs':
-            tasks = {}
+        elif action == 'set_debug_jobs':
+            if len(jobs) > 10:
+                result['exception'] = "Too many jobs to set debug mode"
+                return HttpResponse(json.dumps(result))
+            if not is_superuser:
+                result['exception'] = "Permission denied"
+                return HttpResponse(json.dumps(result))
             for job in jobs:
-                if job.get('taskid'):
-                    tasks[int(job['taskid'])] = tasks.get(int(job['taskid']),[])+[job['pandaid']]
-            for task in tasks.keys():
-                _logger.info("Send DEFT job reassing  %s task" % (str(task)))
-                result.update(_do_deft_job_action(user, task, tasks[task][0], 'reassign_jobs', *args))
+                if not job.get('taskid'):
+                    result['exception'] = "Taskid is missing"
+                    return HttpResponse(json.dumps(result))
+            executor = TaskActionExecutor(user, '')
+            for job in jobs:
+                do_jedi_action(executor, job['taskid'], action, job['pandaid'],  *args)
                 fin_res.append(result)
-        else:
-            for job in jobs:
-                    result.update(_do_deft_job_action(user, job['taskid'], job['pandaid'], action, *args))
-                    fin_res.append(result)
     except Exception as e:
         _logger.error("Problem during jobs action :%s" % str(e))
         result['exception'] = "Error"

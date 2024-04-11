@@ -72,6 +72,10 @@ class DEFTAction(ABC):
     def kill_jobs_in_task(self, task_id, jobs_id_str, code, keepUnmerged):
         pass
 
+    @abstractmethod
+    def set_jobs_debug(self, task_id, job_id):
+        pass
+
 
 @dataclass
 class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
@@ -375,9 +379,15 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         raise NotImplementedError("Not yet implemented")
 
     @_jedi_decorator
-    def kill_jobs_in_task(self, task_id, jobs_id_str, code=None, keepUnmerged=False):
-        jobs_id = [int(x) for x in re.split(r"[^a-zA-Z0-9]", str(jobs_id_str)) if x]
+    def kill_jobs_in_task(self, task_id, jobs_id, code=None, keepUnmerged=False):
         return self.jedi_client.killJobs(jobs_id, code=code, keepUnmerged=keepUnmerged)
+
+    def kill_jobs_without_task(self, jobs_id, code=None, keepUnmerged=False):
+        return self.jedi_client.killJobs(jobs_id, code=code, keepUnmerged=keepUnmerged)
+
+    @_jedi_decorator
+    def set_jobs_debug(self, task_id, job_id, debug_mode=True):
+        return self.jedi_client.setDebugMode(job_id, debug_mode)
 
 @dataclass
 class TaskActionAllowed():
@@ -414,7 +424,8 @@ class TaskManagementAuthorisation():
                                                             'pause_task', 'resume_task', 'trigger_task',
                                                             'avalanche_task', 'reload_input', 'release_task',
                                                             'increase_attempt_number', 'abort_unfinished_jobs',
-                                                          'disable_idds', 'kill_job', 'retry', 'finish_plus_reload'] +
+                                                          'disable_idds', 'kill_job', 'retry', 'finish_plus_reload',
+                                                          'set_debug_jobs', 'kill_jobs_without_task'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.FINISHED:
@@ -588,7 +599,9 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'sync_jedi': action_executor.sync_jedi,
             'disable_idds': action_executor.create_disable_idds_action,
             'finish_plus_reload': action_executor.create_finish_reload_action,
-            'release_task': action_executor.release_task
+            'release_task': action_executor.release_task,
+            'set_debug_jobs': action_executor.set_jobs_debug,
+            'kill_jobs_without_task': action_executor.kill_jobs_without_task,
         }
     if args == (None,):
          return action_translation[action](task_id)

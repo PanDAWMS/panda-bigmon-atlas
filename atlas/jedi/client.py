@@ -692,6 +692,10 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         data['killOpts'] = killOpts[:-1]
         return self._post_command('killJobs',data)
 
+    def setDebugMode(self, job_id, debug_mode):
+        data = {"pandaID": job_id, "modeOn": debug_mode}
+        return self._post_command('setDebugMode', data)
+
     @staticmethod
     def _jedi_output_distillation(jedi_respond_raw):
         jedi_respond = jedi_respond_raw
@@ -699,14 +703,20 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
             try:
                 jedi_respond = pickle.loads(jedi_respond_raw)
             except:
-                jedi_respond = json.loads(jedi_respond_raw)
+                try:
+                    jedi_respond = json.loads(jedi_respond_raw)
+                except:
+                    jedi_respond = [True, jedi_respond_raw.decode('utf-8')]
         return_code = -1
         return_info = ''
         if type(jedi_respond) is int:
             return_code = jedi_respond
         elif (type(jedi_respond) is tuple) or (type(jedi_respond) is list):
-            return_code = jedi_respond[0]
-            return_info = jedi_respond[1]
+            if len(jedi_respond) == 2 :
+                return_code = jedi_respond[0]
+                return_info = jedi_respond[1]
+            else:
+                return_code = jedi_respond[0]
         return return_code, return_info
 
     @staticmethod
