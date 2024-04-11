@@ -23,6 +23,9 @@ from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, 
     check_action_allowed
 from .task_views import get_permissions
 from .task_actions import do_action
+from ..jedi.client import JEDIClientTest
+from ..task_action.task_management import TaskManagementAuthorisation, TaskActionAllowed, TaskActionExecutor, \
+    do_jedi_action
 
 logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -93,8 +96,7 @@ def task_action_ext(request, action=None):
     action_username = ''
     task_id = None
     userfullname = ''
-    denied_tasks = []
-    not_allowed_tasks = []
+    tasks_allowed: [TaskActionAllowed] = []
     params = []
     try:
         data = request.data
@@ -105,7 +107,6 @@ def task_action_ext(request, action=None):
             error_message.append('username is required for task action')
 
         task_id = data.get('task')
-        is_analy = False
         if not task_id:
             error_message.append('task is required for task action')
         else:
@@ -113,8 +114,10 @@ def task_action_ext(request, action=None):
             userfullname = data.get('userfullname','')
         is_permitted = False
         if not error_message:
-            denied_tasks, not_allowed_tasks = check_action_allowed(action_username, [int(task_id)], action, params, userfullname)
-            is_permitted = (not denied_tasks) and (not not_allowed_tasks)
+            authentification_management = TaskManagementAuthorisation()
+            tasks_allowed = authentification_management.tasks_action_authorisation([task_id], action_username, action, params,
+                                                                                   userfullname)
+            is_permitted = tasks_allowed[0].user_allowed and tasks_allowed[0].action_allowed
     except Exception as e:
         error_message.append(str(e))
     if  error_message:
@@ -128,10 +131,10 @@ def task_action_ext(request, action=None):
     else:
         if not is_permitted:
             msg = "User '%s' can't perform %s:"%(action_username,action)
-            if denied_tasks:
-                msg += " no permissions to make action with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
-            if not_allowed_tasks:
-                msg += "action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
+            if tasks_allowed[0].user_allowed:
+                msg += " no permissions to make action with task(s) '%s';" %(','.join([str(x) for x in [task_id]]))
+            if tasks_allowed[0].action_allowed:
+                msg += "action isn't allowed for %s"%(','.join([str(x) for x in [task_id]]))
             content = {
                 'exception': msg,
                 'result': 'FAILED'
@@ -140,7 +143,11 @@ def task_action_ext(request, action=None):
             _jsonLogger.info(msg,extra={'user':action_username,'action':action})
         else:
             try:
-                response = do_tasks_action(action_username, [int(task_id)], action, *params)
+                executor = TaskActionExecutor(action_username, '')
+                if params:
+                    return_code, return_info = do_jedi_action(executor, task_id, action, *params)
+                else:
+                    return_code, return_info = do_jedi_action(executor, task_id, action, None)
                 content = {
                     'details': "Action '%s' will be performed by %s for task %s with parameters %s" %
                                  (action,action_username,task_id,str(params)),
@@ -149,7 +156,7 @@ def task_action_ext(request, action=None):
                  }
 
                 logger.debug("Action '%s' will be performed  by %s for task %s with parameters %s, response %s" %
-                                 (action,action_username,task_id,str(params),str(response)))
+                                 (action,action_username,task_id,str(params),str(return_info)))
             except Exception as e:
                     content = {
                         'exception': '; '.join(error_message),

@@ -1365,6 +1365,8 @@ class ProductionTask(models.Model):
         OBSOLETE = 'obsolete'
         ABORTING = 'aborting'
         FINISHING = 'finishing'
+        PENDING = 'pending'
+        SCOUTING = 'scouting'
 
 
     ALL_STATUS = [STATUS.WAITING, STATUS.STAGING, STATUS.REGISTERED, STATUS.ASSIGNING, STATUS.SUBMITTING,
