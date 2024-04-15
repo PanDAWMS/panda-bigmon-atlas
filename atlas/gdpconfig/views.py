@@ -21,6 +21,7 @@ from functools import reduce
 from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def gdpconfig(request, rid = None):
@@ -90,6 +91,8 @@ def config_action(request,action):
         return HttpResponse(json.dumps(result))
 
     _logger.info("GDPConfig: Update user:{user} new data:{old_data}".format(user=request.user.username,
+                                                                 old_data=list(qs.values())))
+    _jsonLogger.info("GDPConfig: Update user:{user} new data:{old_data}".format(user=request.user.username,
                                                                  old_data=list(qs.values())))
 
     return HttpResponse(json.dumps(result))
@@ -314,6 +317,7 @@ def global_share_change(request):
                 GlobalShare.objects.filter(name=share).update(value=data[share])
             _logger.info("GDPConfig - global share: Update user:{user} data:{log_str}".format(user=user.username,
                                                              log_str=log_str))
+            _jsonLogger.info("Global share: Update user:{user} data:{log_str}".format(user=user.username,log_str=log_str))
 
     except Exception as e:
         error_message.append(str(e))
