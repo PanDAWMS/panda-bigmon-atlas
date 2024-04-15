@@ -26,7 +26,9 @@ from django.conf import settings
 import atlas.deftcore.api.client as deft
 import ssl
 import certifi
-_deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
+
+from ..ami.client import AMIClient
+
 
 
 
@@ -296,7 +298,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                                 tag = translated_row[currentstep]
                                             else:
                                                 try:
-                                                    new_ami_tag = max([ x['AMITAG'] for x in _deft_client._get_tags('Gen_tf.py', translated_row.get('evgen_release',''))])
+                                                    ami = AMIClient()
+                                                    new_ami_tag = max([ x['AMITAG'] for x in ami.ami_list_tags('Gen_tf.py', translated_row.get('evgen_release',''))])
                                                     new_etag = ETAGRelease()
                                                     new_etag.ami_tag = new_ami_tag
                                                     new_etag.sw_release = translated_row['evgen_release']
