@@ -175,10 +175,25 @@ def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
     return child_tasks
 
 
+def filter_hidden(tasks: [ProductionTask]) -> [ProductionTask]:
+    filtered_tasks = []
+    hidden_slices_per_request = {}
+    steps_slices = {}
+    for task in tasks:
+        if task.request_id not in hidden_slices_per_request:
+            hidden_slices_per_request[task.request_id] = list(InputRequestList.objects.filter(is_hide=True, request=task.request_id).values_list('id', flat=True))
+            steps = list(StepExecution.objects.filter(request=task.request_id).values_list('id', 'slice_id'))
+            steps_slices.update({step:slice_id for step, slice_id in steps})
+        if steps_slices[task.step_id] not in hidden_slices_per_request[task.request_id]:
+            filtered_tasks.append(task)
+    return filtered_tasks
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def production_task_for_request(request: Request) -> Response:
+    DERIVAITON_USERS = ['atlas-phys-dpd-production']
     try:
         if 'hashtagString' in request.data and request.data['hashtagString']:
             if 'source' in request.data and request.data['source'] == 'dkb':
@@ -188,6 +203,7 @@ def production_task_for_request(request: Request) -> Response:
             elif 'source' in request.data and request.data['source'] == 'jira':
                 production_requests = TRequest.objects.filter(ref_link__endswith='/'+request.data['hashtagString'])
                 tasks= ProductionTask.objects.filter(request__in=production_requests)
+                tasks = filter_hidden(tasks)
             elif 'source' in request.data and request.data['source'] == 'taskStatus':
                 task_staus = request.data['hashtagString']
                 days = 5
@@ -200,6 +216,11 @@ def production_task_for_request(request: Request) -> Response:
                     ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
                     tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS, request__reqid__gte=1000))
                     tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.RED_STATUS,timestamp__gt=days_ago(2),  request__reqid__gte=1000))
+                elif task_staus == 'recent_derivation':
+                    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
+                    tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS,  username__in=DERIVAITON_USERS))
+                    tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.NOT_RUNNING,timestamp__gt=days_ago(7), username__in=DERIVAITON_USERS ))
+                    tasks = filter_hidden(tasks)
                 elif task_staus not in ProductionTask.NOT_RUNNING:
                     tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
                 else:
