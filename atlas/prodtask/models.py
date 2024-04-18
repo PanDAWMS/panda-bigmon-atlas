@@ -1675,9 +1675,12 @@ def get_bulk_hashtags_by_task(task_ids: [int]) -> Dict[int, List[str]]:
     cursor = None
     ht_id_task_id = []
     try:
+        cursor = connections['deft'].cursor()
         for task_chunk in tasks:
-            cursor = connections['deft'].cursor()
-            cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID in %s"%(HashTagToTask._meta.db_table,tuple(task_chunk)))
+            if len(task_chunk) > 1:
+                cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID in %s"%(HashTagToTask._meta.db_table,tuple(task_chunk)))
+            else:
+                cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID = %s"%(HashTagToTask._meta.db_table,task_chunk[0]))
             ht_id_task_id += cursor.fetchall()
     finally:
         if cursor:
