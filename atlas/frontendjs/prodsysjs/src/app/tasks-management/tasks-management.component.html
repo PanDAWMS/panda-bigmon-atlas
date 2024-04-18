@@ -6,6 +6,7 @@
     @case ('recent_derivation'){
       <h3>Derivation tasks for atlas-dpd-production for the last week </h3>
     }
+
     @default{
       <h3>Tasks for {{hashtagString}}</h3>
     }
@@ -38,7 +39,7 @@
 <p *ngIf="slices.length>0">Tasks for <b>{{slices.length}}</b> slices</p>
 <h1 *ngIf="loadError" style="color: red">Error loading tasks: {{loadError}}</h1>
 <div *ngIf="tasks$ | async as tasks; else loading">
-  <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="showOwner" >
+  <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="showOwner" [showHashTags]="showHashtags">
 
   </app-production-task-table>
 </div>

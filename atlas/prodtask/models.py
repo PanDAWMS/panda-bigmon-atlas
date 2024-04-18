@@ -1668,6 +1668,25 @@ def get_hashtags_by_task(task_id):
     hashtags = [HashTag.objects.get(id=x[0]) for x in hashtags_id]
     return hashtags
 
+def get_bulk_hashtags_by_task(task_ids: [int]) -> Dict[int, List[str]]:
+     # split tasks by chunks of 1000
+    tasks = [task_ids[i:i + 1000] for i in range(0, len(task_ids), 1000)]
+    result = {}
+    cursor = None
+    ht_id_task_id = []
+    try:
+        for task_chunk in tasks:
+            cursor = connections['deft'].cursor()
+            cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID in %s"%(HashTagToTask._meta.db_table,tuple(task_chunk)))
+            ht_id_task_id += cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+    known_ht_ids = set([x[1] for x in ht_id_task_id])
+    ht = {x.id:x.hashtag for x in HashTag.objects.filter(id__in=known_ht_ids)}
+    for task_id, ht_id in ht_id_task_id:
+        result[task_id] = result.get(task_id,[]) + [ht[ht_id]]
+    return result
 
 def remove_hashtag_from_task(task_id, hashtag):
     hashtag_id = HashTag.objects.get(hashtag=hashtag).id

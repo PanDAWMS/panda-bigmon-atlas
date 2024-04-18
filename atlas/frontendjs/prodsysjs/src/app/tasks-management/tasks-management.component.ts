@@ -15,6 +15,7 @@ export class TasksManagementComponent implements OnInit {
   public requestID = '';
   public taskID: string|null = null;
   public showOwner = false;
+  public showHashtags = false;
   public slices: number[] = [];
   public hashtagString = '';
   public loadError?: string;
@@ -35,6 +36,7 @@ export class TasksManagementComponent implements OnInit {
     } else if (params.get('taskStatus')){
       this.hashtagString = params.get('taskStatus').toString();
       this.showOwner = true;
+      this.showHashtags = true;
       return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'taskStatus');
     }
 
@@ -42,6 +44,7 @@ export class TasksManagementComponent implements OnInit {
       this.slices = this.convertSliceString(params.get('slices'));
       return this.taskManagementService.getTasksByRequestSlices(params.get('id'), this.slices);
     }
+    this.showHashtags = true;
     return this.taskManagementService.getTasksByRequestSlices(params.get('id'), null);
   }), catchError((err) => {
     this.loadError = err.toString();

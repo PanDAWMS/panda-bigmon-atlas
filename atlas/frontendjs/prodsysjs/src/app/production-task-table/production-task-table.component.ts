@@ -31,12 +31,16 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   @Input() taskToShow?: string;
   @Output() taskChosen = new EventEmitter<number>();
   @Input() showOwner = false;
+  @Input() showHashTags = false;
   public tasksStatus: {[status: string]: number} = {};
   public tasksSteps: {[status: string]: number} = {};
   public taskStatusControl = new UntypedFormControl([]);
   public taskStepControl = new UntypedFormControl([]);
   public taskCommentsControl = new UntypedFormControl([]);
+  public taskHashtagsControl = new UntypedFormControl([]);
   public taskComments: {[status: string]: number} = {};
+  public taskHashtags: {[status: string]: number} = {};
+  public taskHashtagsOrder: string[] = [];
   public taskCommentsOrder: string[] = [];
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
@@ -215,12 +219,25 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       if (this.taskComments[hashComment]) {
           this.taskComments[hashComment] += 1;
         } else {
-          this.taskComments[hashComment] = 1;
-      //   make a list of ordered this.taskComments keys by number of occurrences
-        this.taskCommentsOrder = ['total'].concat(
-          Object.keys(this.taskComments).sort((a, b) => this.taskComments[b] - this.taskComments[a]));
+        this.taskComments[hashComment] = 1;
+      }
+      if (this.showHashTags) {
+        if (!task.hashtags) {
+          task.hashtags = ['NoHashtags'];
+        }
+        for (const hashtag of task.hashtags) {
+          if (this.taskHashtags[hashtag]) {
+            this.taskHashtags[hashtag] += 1;
+          } else {
+            this.taskHashtags[hashtag] = 1;
+          }
+        }
       }
     }
+    this.taskCommentsOrder = ['total'].concat(
+          Object.keys(this.taskComments).sort((a, b) => this.taskComments[b] - this.taskComments[a]));
+    this.taskHashtagsOrder = ['total'].concat(
+      Object.keys(this.taskHashtags).sort((a, b) => this.taskHashtags[b] - this.taskHashtags[a]));
     this.taskStepControl = new UntypedFormControl(Object.keys(this.tasksSteps));
     this.taskStatusControl = new UntypedFormControl(Object.keys(this.tasksStatus));
     this.taskCommentsControl = new UntypedFormControl(Object.keys(this.taskComments));
@@ -232,6 +249,9 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
           this.tasksGrid.api.onFilterChanged();
     });
     this.taskCommentsControl.valueChanges.subscribe( newValues => {
+          this.tasksGrid.api.onFilterChanged();
+    });
+    this.taskHashtagsControl.valueChanges.subscribe( newValues => {
           this.tasksGrid.api.onFilterChanged();
     });
 
@@ -264,7 +284,10 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     const stepChecked = (this.taskStepControl.value.length  === 0) || (this.taskStepControl.value.includes(node.data.step_name));
     const commentChecked = (this.taskCommentsControl.value.length  === 0) ||
       (this.taskCommentsControl.value.includes(this.commentStringHash(node.data.jedi_info)));
-    return statusChecked && stepChecked && commentChecked;
+    const hashtagChecked = (this.taskHashtagsControl.value.length  === 0) ||
+      (!node.data.hashtags && this.taskHashtagsControl.value.includes('noHashtags')) ||
+      (node.data.hashtags && node.data.hashtags.some(hashtag => this.taskHashtagsControl.value.includes(hashtag)));
+    return statusChecked && stepChecked && commentChecked && hashtagChecked;
   }
 
   onSelectionChanged($event: SelectionChangedEvent<any>): void {

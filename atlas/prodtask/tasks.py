@@ -7,7 +7,7 @@ from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_up
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
     sync_cric_deft, find_repeated_tasks_to_follow, find_stage_task_replica_to_delete, remove_stale_rules, \
-    clean_stale_actions, find_stale_stages, fill_staging_destination
+    clean_stale_actions, find_stale_stages, fill_staging_destination, check_stale_staging_tasks
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.models import ProductionTask
@@ -166,4 +166,9 @@ def log_external_task_action(action, username, body, status):
 @app.task(ignore_result=True)
 def fill_staging_rse():
     fill_staging_destination()
+    return None
+
+@app.task(ignore_result=True)
+def resume_staling_staging_tasks():
+    check_stale_staging_tasks()
     return None

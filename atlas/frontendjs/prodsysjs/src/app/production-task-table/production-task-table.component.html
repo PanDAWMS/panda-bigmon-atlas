@@ -21,6 +21,19 @@
     <app-task-stats  [taskStatus]="taskComments"  [formControl]="taskCommentsControl"
                 [statusOrder]="taskCommentsOrder" [orientation]="'vertical'"></app-task-stats>
   </mat-expansion-panel>
+      @if (showHashTags){
+            <mat-expansion-panel>
+
+              <mat-expansion-panel-header>
+            <mat-panel-title>
+              Hashtags
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <app-task-stats  [taskStatus]="taskHashtags"  [formControl]="taskHashtagsControl"
+                      [statusOrder]="taskHashtagsOrder" [orientation]="'vertical'"></app-task-stats>
+        </mat-expansion-panel>
+      }
+
 </mat-accordion>
 <div class="task-table-wrapper">
 <div class="task-table-header">

@@ -2453,3 +2453,14 @@ def create_analyis_staging(task_id: int) -> int:
     sa.status = 'active'
     sa.save()
     return sa.id
+
+
+def check_stale_staging_tasks():
+    tasks = ProductionTask.objects.filter(status=ProductionTask.STATUS.STAGING)
+    for task in tasks:
+        if DatasetStaging.objects.filter(dataset=task.input_dataset).exists():
+            dataset_stage = DatasetStaging.objects.filter(dataset=task.input_dataset).last()
+            if dataset_stage.status == DatasetStaging.STATUS.DONE:
+                start_stagind_task(task)
+        else:
+            _logger.error(f"Staging dataset for task {task.id} is not found")

@@ -21,7 +21,8 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
-    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer
+    MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer, \
+    HashTag, HashTagToRequest, get_bulk_hashtags_by_task
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -175,12 +176,21 @@ def child_derivation_tasks(request_id: int, steps: [int]) -> [ProductionTask]:
     return child_tasks
 
 
-def filter_hidden(tasks: [ProductionTask]) -> [ProductionTask]:
+def filter_hidden(tasks: [ProductionTask], hashtag: str|None = None) -> [ProductionTask]:
     filtered_tasks = []
+    request_to_skip = []
     hidden_slices_per_request = {}
     steps_slices = {}
+    hashtag_id = None
+    if hashtag is not None:
+        hashtag_id = HashTag.objects.get(hashtag=hashtag).id
     for task in tasks:
+        if task.request_id  in request_to_skip:
+            continue
         if task.request_id not in hidden_slices_per_request:
+            if hashtag is not None and not HashTagToRequest.objects.filter(request_id=task.request_id, hashtag_id=hashtag_id).exists():
+                request_to_skip.append(task.request_id)
+                continue
             hidden_slices_per_request[task.request_id] = list(InputRequestList.objects.filter(is_hide=True, request=task.request_id).values_list('id', flat=True))
             steps = list(StepExecution.objects.filter(request=task.request_id).values_list('id', 'slice_id'))
             steps_slices.update({step:slice_id for step, slice_id in steps})
@@ -194,7 +204,9 @@ def filter_hidden(tasks: [ProductionTask]) -> [ProductionTask]:
 @permission_classes((IsAuthenticated,))
 def production_task_for_request(request: Request) -> Response:
     DERIVAITON_USERS = ['atlas-phys-dpd-production']
+
     try:
+        hashtags = None
         if 'hashtagString' in request.data and request.data['hashtagString']:
             if 'source' in request.data and request.data['source'] == 'dkb':
                 tasks, _ ,_ = es_task_search_all({'search_string' :request.data['hashtagString']}, 'prod')
@@ -220,7 +232,13 @@ def production_task_for_request(request: Request) -> Response:
                     ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
                     tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS,  username__in=DERIVAITON_USERS))
                     tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.NOT_RUNNING,timestamp__gt=days_ago(7), username__in=DERIVAITON_USERS ))
+                    hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
                     tasks = filter_hidden(tasks)
+                elif task_staus == 'recent_derivation_auto':
+                    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
+                    tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS,  username__in=DERIVAITON_USERS))
+                    tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.NOT_RUNNING,timestamp__gt=days_ago(7), username__in=DERIVAITON_USERS ))
+                    tasks = filter_hidden(tasks, 'PHYSAutoProduction')
                 elif task_staus not in ProductionTask.NOT_RUNNING:
                     tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
                 else:
@@ -240,7 +258,8 @@ def production_task_for_request(request: Request) -> Response:
                 tasks = list(ProductionTask.objects.filter(step__in=steps)) + child_derivation_tasks(request_id, steps)
             else:
                 tasks = list(ProductionTask.objects.filter(request_id=request_id))
-        tasks_serial = tasks_serialisation(tasks)
+            hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
+        tasks_serial = tasks_serialisation(tasks, hashtags)
         return Response(tasks_serial)
     except Exception as ex:
         return Response(f"Problem with task loading: {ex}", status=400)
