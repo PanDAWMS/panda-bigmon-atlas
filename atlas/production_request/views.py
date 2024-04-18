@@ -228,17 +228,13 @@ def production_task_for_request(request: Request) -> Response:
                     ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
                     tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS, request__reqid__gte=1000))
                     tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.RED_STATUS,timestamp__gt=days_ago(2),  request__reqid__gte=1000))
+                    hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
                 elif task_staus == 'recent_derivation':
                     ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
                     tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS,  username__in=DERIVAITON_USERS))
                     tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.NOT_RUNNING,timestamp__gt=days_ago(7), username__in=DERIVAITON_USERS ))
                     hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
                     tasks = filter_hidden(tasks)
-                elif task_staus == 'recent_derivation_auto':
-                    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
-                    tasks = list(ProductionTask.objects.filter(status__in=ACTIVE_STATUS,  username__in=DERIVAITON_USERS))
-                    tasks +=  list(ProductionTask.objects.filter(status__in=ProductionTask.NOT_RUNNING,timestamp__gt=days_ago(7), username__in=DERIVAITON_USERS ))
-                    tasks = filter_hidden(tasks, 'PHYSAutoProduction')
                 elif task_staus not in ProductionTask.NOT_RUNNING:
                     tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
                 else:
