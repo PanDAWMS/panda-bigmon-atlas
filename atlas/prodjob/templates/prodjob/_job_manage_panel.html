@@ -268,7 +268,7 @@ $(document).ready(function () {
             var jobs = table.rows('.selected').data().toArray();
             var jobs_to_send = [];
             for(var i=0;i<jobs.length;i++){
-                jobs_to_send.push({pandaid:jobs[i].pandaid,taskid:jobs[i].taskid});
+                jobs_to_send.push({pandaid:jobs[i].pandaid,taskid:jobs[i].jeditaskid});
             }
             var data = {'jobs' : jobs_to_send, 'parameters' : parameters};
             //alert( table.rows('.selected').data().length +' job(s) selected for ACTION' );
