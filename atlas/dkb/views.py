@@ -414,20 +414,22 @@ def output_hashtag_stat(request):
         hashtags_raw = request.data['hashtag']
         task_ids = tasks_from_string(hashtags_raw)
         steps={}
-        tasks = list(ProductionTask.objects.filter(id__in=task_ids).values('status','ami_tag','output_formats'))
-        for task in tasks:
-            step_name = task['output_formats']+' '+task['ami_tag']
-            if step_name not in steps:
-                steps[step_name] = {}
-            if task['status'] not in steps[step_name]:
-                steps[step_name][task['status']] = 0
-            steps[step_name][task['status']] += 1
-        status_dict = dict([(x['status'], x['count']) for x in
-              ProductionTask.objects.filter(id__in=task_ids).values('status').annotate(count=Count('id'))])
-        status_stat = [{'name':'total','count':sum(status_dict.values())}]
-        for status in ProductionTask.STATUS_ORDER:
-            if status in status_dict:
-                status_stat.append({'name': status, 'count': status_dict[status]})
+        status_stat = [{'name': 'total', 'count': None}]
+        if len(task_ids)<10000:
+            tasks = list(ProductionTask.objects.filter(id__in=task_ids).values('status','ami_tag','output_formats'))
+            for task in tasks:
+                step_name = task['output_formats']+' '+task['ami_tag']
+                if step_name not in steps:
+                    steps[step_name] = {}
+                if task['status'] not in steps[step_name]:
+                    steps[step_name][task['status']] = 0
+                steps[step_name][task['status']] += 1
+            status_dict = dict([(x['status'], x['count']) for x in
+                  ProductionTask.objects.filter(id__in=task_ids).values('status').annotate(count=Count('id'))])
+            status_stat = [{'name':'total','count':sum(status_dict.values())}]
+            for status in ProductionTask.STATUS_ORDER:
+                if status in status_dict:
+                    status_stat.append({'name': status, 'count': status_dict[status]})
         hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
         hashtags = [x.lower() for x in hashtags_split if x]
         #format_dict = deriv_formats({"terms": {"hashtag_list": hashtags}})
