@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import timedelta
 from enum import Enum, auto
 from pprint import pprint
-from typing import Dict, List
+from typing import Dict, List, Literal, Any
 from uuid import uuid1
 
 from django.core.cache import cache
@@ -226,6 +226,14 @@ class TRequest(models.Model):
                 return ''
         except:
             return ""
+
+    @property
+    def long_description(self):
+        if self.info_field('long_description'):
+            return self.info_field('long_description')
+        else:
+            return ''
+
 
     def update_priority(self, new_priorities):
         info_field_dict = {}
@@ -1141,14 +1149,16 @@ class AnalysisStepTemplate(models.Model):
         db_table = '"T_AT_STEP_TEMPLATE"'
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
+
 
 class MCWorkflowChanges(BaseModel):
     class ChangeType(str, Enum):
-        REPLACE = 'replace'
-        APPEND = 'append'
+        SUBCAMPAIGN = 'subcampaign'
+        PROJECT_BASE = 'project_base'
+        DESCRIPTION = 'description'
+        CAMPAIGN = 'campaign'
 
-    name: str
     value: str
     type: ChangeType
 class MCWorkflowTransition(BaseModel):
@@ -1156,16 +1166,29 @@ class MCWorkflowTransition(BaseModel):
         VERTICAL = 'vertical'
         HORIZONTAL = 'horizontal'
 
+    class SimulationType(str, Enum):
+        FULLSIM = 'fullsim'
+        FASTSIM = 'fastsim'
+        FULLSIM_BYRELEASE = 'fullsim_byrelease'
+        FASTSIM_BYRELEASE = 'fastsim_byrelease'
+
+
     new_request: str
     parent_step: str
     transition_type: TransitionType
     event_ratio: float = 0.0
-    pattern: Dict[str, int] = field(default_factory=dict)
+    pattern: Dict[str, Any] = field(default_factory=dict)
     changes: List[MCWorkflowChanges] = field(default_factory=list)
 
+class MCWorkflowSubCampaign(BaseModel):
+    BASE_REQUEST :  Literal['evgen'] = 'evgen'
 
+    campaign: str
+    subcampaign: str
+    project_base: str
+    transitions: List[MCWorkflowTransition] = field(default_factory=list)
 class MCWorkflowRequest(BaseModel):
-    workflows: Dict[str, List[MCWorkflowTransition]] = field(default_factory=dict)
+    workflows: Dict[str, MCWorkflowSubCampaign] = field(default_factory=dict)
 
 class SystemParametersHandler:
     class PARAMETERS_NAMES:
@@ -1931,6 +1954,40 @@ class IAM_USER(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = '"T_IAM_USERS"'
+
+class MultiCampaignRequestBase(models.Model):
+
+    class STATUS:
+        NOT_DEFINED = 'not_defined'
+        FILLED = 'filled'
+
+
+
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCRB_ID', primary_key=True)
+    value = models.JSONField(db_column='value')
+    production_request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    timestamp = models.DateTimeField(db_column='LAST_UPDATE')
+    username = models.CharField(max_length=30, db_column='USERNAME', primary_key=True)
+    status = models.CharField(max_length=20, db_column='STATUS',null=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = prefetch_id('dev_db','T_MCRB_SEQ',"T_MULTI_CAMPAIGN_REQ",'MCRB_ID')
+        self.timestamp = timezone.now()
+        super(MultiCampaignRequestBase, self).save(*args, **kwargs)
+
+    @property
+    def campaigns_ratio(self):
+        return  self.value.get('campaigns_ratio',None)
+
+    @campaigns_ratio.setter
+    def campaigns_ratio(self, value: dict[str,float]):
+        self.value = {'campaigns_ratio':value}
+
+    class Meta:
+        app_label = 'dev'
+        db_table = '"T_MULTI_CAMPAIGN_REQ"'
 
 class ETAGRelease(models.Model):
 

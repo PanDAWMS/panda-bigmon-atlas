@@ -196,6 +196,14 @@ export interface ProductionTask{
   // request: any;
 }
 
+export interface RequestTransitions{
+  request: ProductionRequestBase;
+  print_results: {name: string, transitions: string[]}[];
+  patterns: { [key: string]: number };
+  long_description: string;
+  number_of_slices: number;
+  all_patterns: {id: number, pattern: string}[];
+}
 export interface JEDITask{
   id: number;
   taskname: string;

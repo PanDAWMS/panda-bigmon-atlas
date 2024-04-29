@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {Observable, of, Subject} from "rxjs";
-import {ProductionRequests, ProductionRequestsJiraInfo, Slice, SliceBase, Step} from "./production-request-models";
+import {
+  ProductionRequests,
+  ProductionRequestsJiraInfo,
+  RequestTransitions,
+  Slice,
+  SliceBase,
+  Step
+} from "./production-request-models";
 import {catchError, map, tap} from "rxjs/operators";
 import {ExtensionRequest} from "../derivation-exclusion/gp-deletion-container";
 
@@ -18,6 +25,9 @@ export class ProductionRequestService {
   private prSaveSliceUrl = '/production_request/save_slice/';
   private prStepsJiraUrl = '/production_request/collect_steps_by_jira/';
   private prInfoJiraUrl = '/production_request/info_by_jira/';
+  private prGetSplitRequestUrl = '/production_request/prepare_horizontal_transition/';
+  private prDoHorizontalSplitUrl = '/production_request/submit_horizontal_transition/';
+
   private sliceModificationSource = new Subject<Slice>();
   private sliceSavedSource = new Subject<Slice>();
   sliceChanged$ = this.sliceModificationSource.asObservable();
@@ -49,7 +59,13 @@ export class ProductionRequestService {
   getInfoJira(jiraID: string): Observable<ProductionRequestsJiraInfo> {
     return this.http.get<ProductionRequestsJiraInfo>(this.prInfoJiraUrl, {params: {jira: jiraID }});
   }
+  getSplitByCampaign(requestID: string): Observable<RequestTransitions> {
+    return this.http.post<RequestTransitions>(this.prGetSplitRequestUrl, {requestID});
+  }
 
+  splitRequestHorizontaly(requestID: string, approve: boolean, patterns: {[key: string]: number }): Observable<number[]> {
+    return this.http.post<number[]>(this.prDoHorizontalSplitUrl, {requestID, approve, patterns});
+  }
   private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
 
@@ -165,5 +181,6 @@ export class ProductionRequestService {
       catchError(this.handleError<Slice>('askExtension'))
     );
   }
+
 
 }

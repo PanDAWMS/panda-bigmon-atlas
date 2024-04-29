@@ -1771,7 +1771,12 @@ def egroup_permissions(username):
         return []
     return return_list
 
+def get_all_patterns():
+    patterns = list(InputRequestList.objects.filter(request=29269).order_by('slice'))
+    return [{'id':x.slice,'pattern':x.brief} for x in patterns if x.slice > 0]
 
+def get_pattern_name(id: int) -> str:
+    return InputRequestList.objects.get(request=29269, slice=id).brief
 def get_full_patterns():
     result = []
     task_configs = {}

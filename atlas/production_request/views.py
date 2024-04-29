@@ -5,6 +5,8 @@ import os
 import re
 from dataclasses import asdict
 from functools import reduce
+from pprint import pprint
+from typing import Dict
 
 import math
 import requests
@@ -22,7 +24,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
     MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer, \
-    HashTag, HashTagToRequest, get_bulk_hashtags_by_task
+    HashTag, HashTagToRequest, get_bulk_hashtags_by_task, MCWorkflowSubCampaign, ETAGRelease
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -33,7 +35,7 @@ from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
 from atlas.prodtask.views import clone_slices, request_clone_slices, form_existed_step_list, get_full_patterns, \
-    form_step_in_page, create_steps, fill_request_events
+    form_step_in_page, create_steps, fill_request_events, get_pattern_name, set_request_status, get_all_patterns
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 from django.core.cache import cache
@@ -665,19 +667,113 @@ def fill_mc_stats_trend():
     cache.set('mc_stats_trend', existing_stats, None)
 
 def fill_default_workflows():
-    workflows = {('MC16a','evgen'): [], ('MC16a','simul'): [], ('MC16b','evgen'):[]}
-    mc16a_changes = [MCWorkflowChanges(name='project_base', value='mc16', type=MCWorkflowChanges.ChangeType.REPLACE),
-                     MCWorkflowChanges(name='description', value='(sim)', type=MCWorkflowChanges.ChangeType.APPEND)]
-    mc16a_evgen_simul_transition = MCWorkflowTransition(new_request=('MC16a','simul'), parent_step='Evgen',
+    workflows : Dict[str, MCWorkflowSubCampaign] = {}
+    mc16a_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim+reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc16a_evgen_simul_transition = MCWorkflowTransition(new_request='MC16a simul', parent_step='Evgen',
                                                         transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
                                                         changes=mc16a_changes,
-                                                        pattern={'AF2':116,'FS':76} )
-    print(mc16a_evgen_simul_transition.model_dump_json())
-    workflows[('MC16a','evgen')].append(mc16a_evgen_simul_transition)
-    mc16a_mc16b_changes = [MCWorkflowChanges(name='subcampaign', value='mc16b', type=MCWorkflowChanges.ChangeType.REPLACE)]
-    mc16a_mc16b_transition = MCWorkflowTransition(new_request=('MC16b','evgen'), parent_step='Evgen', transition_type=MCWorkflowTransition.TransitionType.VERTICAL,
+                                                        pattern={MCWorkflowTransition.SimulationType.FASTSIM_BYRELEASE: [(21,72),(23,116)],
+                                                                 MCWorkflowTransition.SimulationType.FULLSIM_BYRELEASE: [(21,77),(23,111)]} )
+    mc16a_mc16b_changes = [MCWorkflowChanges(value='MC16c', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN)]
+    mc16a_mc16b_transition = MCWorkflowTransition(new_request='MC16c evgen', parent_step='Evgen', transition_type=MCWorkflowTransition.TransitionType.VERTICAL,
                                                   changes=mc16a_mc16b_changes, event_ratio=1.2)
-    workflows[('MC16a','evgen')].append(mc16a_mc16b_transition)
+    workflows['MC16a simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16a', project_base='mc16', transitions=[])
+    mc16c_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc16d_changes = [MCWorkflowChanges(value='(reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION),
+                     MCWorkflowChanges(value='MC16d', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN)]
+    mc16c_evgen_simul_transition = MCWorkflowTransition(new_request='MC16c simul', parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc16c_changes,
+                                                        pattern={MCWorkflowTransition.SimulationType.FASTSIM_BYRELEASE: [(21,17),(23,117)],
+                                                                 MCWorkflowTransition.SimulationType.FULLSIM_BYRELEASE:[(21,52),(23, 112)]} )
+    mc16d_simul_reco_transition = MCWorkflowTransition(new_request='MC16d reco', parent_step='Simul',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc16d_changes,
+                                                        pattern={MCWorkflowTransition.SimulationType.FASTSIM: 73,
+                                                                 MCWorkflowTransition.SimulationType.FULLSIM:76} )
+    workflows['MC16d reco'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16d', project_base='mc16', transitions=[])
+    workflows['MC16c simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16c', project_base='mc16', transitions=[mc16d_simul_reco_transition])
+    workflows['MC16c evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16c', project_base='mc15', transitions=[mc16c_evgen_simul_transition])
+    mc16e_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim+reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc16e_evgen_simul_transition = MCWorkflowTransition(new_request='MC16e simul', parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc16e_changes,
+                                                        pattern={MCWorkflowTransition.SimulationType.FASTSIM_BYRELEASE: [(21,75),(23,118)],
+                                                                 MCWorkflowTransition.SimulationType.FULLSIM_BYRELEASE: [(21,80),(23,113)]})
+    workflows['MC16e simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16e', project_base='mc16', transitions=[])
+    workflows['MC16e evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16e', project_base='mc15', transitions=[mc16e_evgen_simul_transition])
+
+    mc16a_mc23a_changes = [MCWorkflowChanges(value='MC23a', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN),
+                           MCWorkflowChanges(value='mc23', type=MCWorkflowChanges.ChangeType.PROJECT_BASE)]
+    mc16a_mc23a_transition = MCWorkflowTransition(new_request='MC23a evgen', parent_step='Evgen', transition_type=MCWorkflowTransition.TransitionType.VERTICAL,
+                                                  changes=mc16a_mc23a_changes, event_ratio=1.2)
+    workflows['MC16a evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16a', project_base='mc15', transitions=[mc16a_evgen_simul_transition, mc16a_mc16b_transition, mc16a_mc23a_transition])
+    mc20a_simul_reco_changes = [MCWorkflowChanges(value='MC20a', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN),
+                           MCWorkflowChanges(value='mc20', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                                MCWorkflowChanges(value='(reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    workflows['MC20a reco'] = MCWorkflowSubCampaign(campaign='MC20', subcampaign='MC20a', project_base='mc20',
+                                                     transitions=[])
+    mc20a_simul_reco_transition = MCWorkflowTransition(new_request='MC20a reco', parent_step='Simul',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20a_simul_reco_changes,
+                                                        pattern={} )
+    workflows['MC20a simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16a', project_base='mc16',
+                                                     transitions=[mc20a_simul_reco_transition])
+    mc20a_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc20a_evgen_simul_transition = MCWorkflowTransition(new_request='MC20a simul', parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20a_changes,
+                                                        pattern={} )
+    workflows['MC20a evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16a', project_base='mc15', transitions=[mc20a_evgen_simul_transition])
+    workflows['MC20d reco'] = MCWorkflowSubCampaign(campaign='MC20', subcampaign='MC20d', project_base='mc20', transitions=[])
+    mc20d_changes = [MCWorkflowChanges(value='(reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION),
+                     MCWorkflowChanges(value='mc20', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='MC20d', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN)]
+    mc20d_simul_reco_transition = MCWorkflowTransition(new_request='MC20d reco', parent_step='Simul',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20d_changes,
+                                                        pattern={} )
+    workflows['MC20c simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16c', project_base='mc16', transitions=[mc20d_simul_reco_transition])
+
+    mc20c_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc20c_evgen_simul_transition = MCWorkflowTransition(new_request='MC20c simul', parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20c_changes,
+                                                        pattern={} )
+    workflows['MC20c evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16c', project_base='mc15', transitions=[mc20c_evgen_simul_transition])
+    mc20e_simul_reco_changes = [MCWorkflowChanges(value='MC20e', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN),
+                           MCWorkflowChanges(value='mc20', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                                MCWorkflowChanges(value='(reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    workflows['MC20e reco'] = MCWorkflowSubCampaign(campaign='MC20', subcampaign='MC20e', project_base='mc20',
+                                                     transitions=[])
+    mc20e_simul_reco_transition = MCWorkflowTransition(new_request='MC20e reco', parent_step='Simul',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20e_simul_reco_changes,
+                                                        pattern={} )
+    workflows['MC20e simul'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16e', project_base='mc16',
+                                                     transitions=[mc20e_simul_reco_transition])
+    mc20e_changes = [MCWorkflowChanges(value='mc16', type=MCWorkflowChanges.ChangeType.PROJECT_BASE),
+                     MCWorkflowChanges(value='(sim)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc20e_evgen_simul_transition = MCWorkflowTransition(new_request='MC20e simul', parent_step='Evgen',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc20e_changes,
+                                                        pattern={} )
+    workflows['MC20e evgen'] = MCWorkflowSubCampaign(campaign='MC16', subcampaign='MC16e', project_base='mc15', transitions=[mc20e_evgen_simul_transition])
+    workflows['MC23d reco'] = MCWorkflowSubCampaign(campaign='MC23', subcampaign='MC23d', project_base='mc23',
+                                                     transitions=[])
+    mc23d_changes = [MCWorkflowChanges(value='MC23d', type=MCWorkflowChanges.ChangeType.SUBCAMPAIGN),
+                     MCWorkflowChanges(value='(reco)', type=MCWorkflowChanges.ChangeType.DESCRIPTION)]
+    mc23d_simul_reco_transition = MCWorkflowTransition(new_request='MC23d reco', parent_step='Simul',
+                                                        transition_type=MCWorkflowTransition.TransitionType.HORIZONTAL,
+                                                        changes=mc23d_changes,
+                                                        pattern={} )
+    workflows['MC23c evgen'] = MCWorkflowSubCampaign(campaign='MC23', subcampaign='MC23c', project_base='mc23', transitions=[mc23d_simul_reco_transition])
+
     workflows_requests = MCWorkflowRequest(workflows=workflows)
     print(workflows_requests.model_dump_json())
     SystemParametersHandler.set_mc_workflow_request(workflows_requests)
@@ -692,16 +788,49 @@ def build_workflows_tree():
             workflows_tree[workflow][transition.new_request] = transition
     return workflows_tree
 
+def build_workflow_vertical(base_subcampaign: str):
+    workflows = SystemParametersHandler.get_mc_workflow_request().workflows
+    base_step = f'{base_subcampaign} evgen'
+    base_request = workflows[base_step]
+    sub_campaigns = {base_request.campaign: [base_step]}
+    request_to_process = [base_step]
+    while request_to_process:
+        current_request = request_to_process.pop()
+        base_request = workflows[current_request]
+        for transition in base_request.transitions:
+            if transition.transition_type == MCWorkflowTransition.TransitionType.VERTICAL:
+                current_campaign = workflows[transition.new_request].campaign
+                sub_campaigns[current_campaign] = sub_campaigns.get(current_campaign, []) + [transition.new_request]
+                request_to_process.append(transition.new_request)
+    result = []
+    pprint(sub_campaigns)
+
 
 class WorkflowActions:
-    def __init__(self, workflows_tree):
-        self.workflows_tree = workflows_tree
+    def __init__(self, base_request_id: int, workflows_tree=None):
+        if workflows_tree is None:
+            self.workflows_tree = SystemParametersHandler.get_mc_workflow_request().workflows
+        self.base_request_id = base_request_id
+        self.base_workflow = None
+        self.base_request = TRequest.objects.get(reqid=base_request_id)
+        self.print_result = []
+        self.found_patterns = {}
+        for name, workflow in self.workflows_tree.items():
+            subcmapaign_to_look = self.base_request.subcampaign
+            if 'mc20' in self.base_request.description:
+                subcmapaign_to_look = subcmapaign_to_look.replace('MC16', 'MC20')
+            if (workflow.campaign == self.base_request.campaign and workflow.subcampaign == self.base_request.subcampaign and
+                name == f'{subcmapaign_to_look} {workflow.BASE_REQUEST}'):
+                self.base_workflow = workflow
+                self.base_workflow_name = name
+                break
+
 
     @staticmethod
     def clone_request(request_id: int, new_description: str, new_project: str) -> int:
         production_request = TRequest.objects.get(reqid=request_id)
         slices = [slice.slice for slice in InputRequestList.objects.filter(request=request_id).order_by("slice") if not slice.is_hide]
-        new_request_id = request_clone_slices(request_id, production_request.manager, new_description, production_request.jira_reference, slices,
+        new_request_id = request_clone_slices(request_id, production_request.manager, new_description, production_request.ref_link, slices,
                              new_project)
         return new_request_id
 
@@ -759,6 +888,11 @@ class WorkflowActions:
                 else:
                     slice_steps.append({'foreign_id': '0'})
                 slices_steps[slice.slice] = slice_steps
+        for steps_status in list(slices_steps.values()):
+            for index, steps in enumerate(steps_status[:-2]):
+                if (StepExecution.STEPS[index] == 'Reco') or (StepExecution.STEPS[index] == 'Atlfast'):
+                    if not steps['formats']:
+                        steps['formats'] = 'AOD'
         error_slices, _ = create_steps(None, slices_steps, request_id, STEPS=StepExecution.STEPS, approve_level=-1)
         if error_slices:
             raise Exception(f'Error in slices: {request_id} {error_slices} for pattern {pattern_name}')
@@ -771,7 +905,7 @@ class WorkflowActions:
             if not slice.is_hide:
                 parent_ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=parent_slices[index], request=request_id))
                 parent_step_as_in_page = form_step_in_page(parent_ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
-                parent_step = [x for index, x in enumerate(parent_step_as_in_page) if index < step_number][-1]
+                parent_step = [x for index, x in enumerate(parent_step_as_in_page) if x and index < step_number][-1]
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice, request=new_request_id))
                 step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
                 step_to_delete = []
@@ -787,4 +921,171 @@ class WorkflowActions:
                     step.delete()
 
     def approve_request(self, request_id: int):
-        pass
+        slices = [x for x in InputRequestList.objects.filter(request=request_id).order_by("slice") if not x.is_hide]
+        for slice in slices:
+            for step in StepExecution.objects.filter(slice=slice, request=request_id):
+                if step.status == StepExecution.STATUS.NOT_CHECKED:
+                    step.status = StepExecution.STATUS.APPROVED
+                    step.save()
+        set_request_status('cron', request_id, 'approved', 'Automatic approve',
+                           'Request was approved')
+
+    def apply_transition(self, request_id: int, old_request_base: MCWorkflowSubCampaign, transition: MCWorkflowTransition, description:str,
+                         pattern_id: int| None = None, event_ratio: float | None = None):
+        original_request = TRequest.objects.get(reqid=request_id)
+        new_subcampaign = original_request.subcampaign
+        new_campaign = original_request.campaign
+        new_project = str(original_request.project)
+        for change in transition.changes:
+            if change.type == MCWorkflowChanges.ChangeType.SUBCAMPAIGN:
+                new_subcampaign = change.value
+            if change.type == MCWorkflowChanges.ChangeType.CAMPAIGN:
+                new_campaign = change.value
+            if change.type == MCWorkflowChanges.ChangeType.PROJECT_BASE:
+                new_project = new_project.replace(old_request_base.project_base, change.value)
+            if  change.type == MCWorkflowChanges.ChangeType.DESCRIPTION:
+                description = f'{change.value} {description}'
+        new_request = self.clone_request(request_id, description, new_project)
+        self.change_request_campaign(new_request, new_campaign, new_subcampaign)
+        if event_ratio is not None:
+            self.change_input_events_number(new_request, event_ratio)
+        if pattern_id is not None:
+            first_pattern_step = self.apply_pattern(new_request, get_pattern_name(pattern_id))
+            self.connect_requests(request_id, new_request, first_pattern_step)
+        return new_request
+
+    def print_transition(self, request_id: str, old_request_base: MCWorkflowSubCampaign, transition: MCWorkflowTransition, description:str,
+                          new_project: str=''):
+        if not request_id:
+            request_id = 'created on the previous step'
+        result = [f"Clone {request_id} "]
+        for change in transition.changes:
+            if change.type == MCWorkflowChanges.ChangeType.SUBCAMPAIGN:
+                result += [f'Change subcampaign to "{change.value}"']
+            if change.type == MCWorkflowChanges.ChangeType.CAMPAIGN:
+                result += [f'Change campaign to "{change.value}"']
+            if change.type == MCWorkflowChanges.ChangeType.PROJECT_BASE:
+                result += [f'Change project  to "{new_project.replace(old_request_base.project_base, change.value)}"']
+                new_project = new_project.replace(old_request_base.project_base, change.value)
+            if  change.type == MCWorkflowChanges.ChangeType.DESCRIPTION:
+                result += [f'Change description to "{change.value} {description}"']
+        result += [f'Apply pattern']
+        result += [f'Connect requests {request_id} with the new request']
+        return result, new_project
+
+    def submit_horizontal_transition(self, approve: bool = False, just_print: bool = False, selected_patterns: Dict[str, int]|None = None):
+        horizontal_transitions = [x for x in self.base_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
+        description = self.base_request.description
+        current_request_id = self.base_request_id
+        current_workflow = self.base_workflow
+        current_workflow_name = self.base_workflow_name
+        requests_to_approve = [current_request_id]
+        self.print_result = []
+        self.found_patterns = {}
+        current_project = str(self.base_request.project)
+        while horizontal_transitions:
+            transition = horizontal_transitions.pop()
+            if len(horizontal_transitions) > 0:
+                raise Exception(f'More than one horizontal transition in {current_request_id}')
+            if just_print:
+                try:
+                    self.found_patterns[current_workflow_name] = self.find_pattern( self.base_request_id, transition.pattern)
+                except:
+                    pass
+                current_transition, current_project  = self.print_transition(str(current_request_id),
+                                                                               current_workflow, transition, description, current_project)
+                self.print_result.append({'name':current_workflow_name,
+                                          'transitions':current_transition})
+                current_request_id = ''
+            else:
+                if selected_patterns is not None and current_workflow_name in selected_patterns:
+                    pattern_id = selected_patterns[current_workflow_name]
+                else:
+                    try:
+                        pattern_id = self.find_pattern(current_request_id, transition.pattern)
+                    except Exception as ex:
+                        raise Exception(f'Error in pattern {current_request_id} {ex}')
+                current_request_id = self.apply_transition(current_request_id, current_workflow, transition, description, pattern_id, None)
+                requests_to_approve.append(current_request_id)
+            current_workflow = self.workflows_tree[transition.new_request]
+            current_workflow_name = transition.new_request
+            horizontal_transitions += [x for x in current_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
+        if approve and not just_print:
+            for request_id in requests_to_approve:
+                self.approve_request(request_id)
+        return requests_to_approve
+
+
+
+
+    def find_pattern(self, request_id, patterns):
+        def get_request_evgen_release(slices, request_id):
+            release = None
+            tags = set()
+            for slice in slices:
+                steps = StepExecution.objects.filter(slice=slice, request=request_id)
+                for step in steps:
+                    if step.step_template.ctag not in tags:
+                        tags.add(step.step_template.ctag)
+                        if 'evgen' in step.step_template.step.lower():
+                            new_release = ETAGRelease.objects.get(ami_tag=step.step_template.ctag).sw_release
+                            if release and release != new_release:
+                                raise Exception(f'Evgen releases are different {request_id}')
+                            release = new_release
+            if not release:
+                raise Exception(f'No evgen steps {request_id}')
+            return release
+
+
+        slices = [x for x in InputRequestList.objects.filter(request=request_id).order_by("slice") if not x.is_hide]
+        is_full = False
+        for slice in slices:
+            if 'fullsim' in slice.comment.lower() or '(fs)' in slice.comment.lower():
+                is_full = True
+            else:
+                if is_full:
+                    raise Exception(f'Fullsim and fastsim slices are mixed {request_id}')
+        for pattern_type, pattern_id in patterns.items():
+            if not is_full and pattern_type == MCWorkflowTransition.SimulationType.FASTSIM:
+                return pattern_id
+            if is_full and pattern_type == MCWorkflowTransition.SimulationType.FULLSIM:
+                return pattern_id
+            if ((not is_full and pattern_type == MCWorkflowTransition.SimulationType.FASTSIM_BYRELEASE) or
+                (is_full and pattern_type == MCWorkflowTransition.SimulationType.FULLSIM_BYRELEASE)):
+                release = get_request_evgen_release(slices, request_id)
+                for pattern_by_request in pattern_id:
+                   if release.startswith(str(pattern_by_request[0])):
+                       return pattern_by_request[1]
+        raise Exception(f'No pattern for {request_id}')
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def submit_horizontal_transition(request):
+    try:
+        action = WorkflowActions(int(request.data['requestID']))
+        approve = request.data.get('approve', False)
+        patterns = request.data.get('patterns', None)
+        produced_requests = action.submit_horizontal_transition(approve=approve, just_print=False, selected_patterns=patterns)
+        return Response(produced_requests)
+    except Exception as ex:
+        return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def prepare_horizontal_transition(request):
+    try:
+        production_request_id = int(request.data['requestID'])
+        production_request = TRequest.objects.get(reqid=production_request_id)
+        action = WorkflowActions(production_request_id)
+        if not action.base_workflow:
+            raise Exception(f'No workflow found for {production_request_id}')
+        action.submit_horizontal_transition(approve=False, just_print=True)
+        return Response({'request': ProductionRequestSerializer(production_request).data, 'print_results': action.print_result,
+                         'patterns': action.found_patterns, 'long_description': production_request.long_description,
+                         'number_of_slices': len([x for x in InputRequestList.objects.filter(request=production_request_id) if not x.is_hide]),
+                                                 'all_patterns': get_all_patterns()})
+    except Exception as ex:
+        return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

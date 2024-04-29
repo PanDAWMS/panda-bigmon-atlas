@@ -22,6 +22,12 @@ urlpatterns = [
     re_path(r'^production_task_for_request/$', production_task_for_request, name='production_task_for_request'),
     re_path(r'^production_request_info/$', production_request_info, name='production_request_info'),
     re_path(r'^production_tasks_by_bigpanda_url/$', production_tasks_by_bigpanda_url, name='production_tasks_by_bigpanda_url'),
+    re_path(r'^prepare_horizontal_transition/$', prepare_horizontal_transition,
+            name='prepare_horizontal_transition'),
+    re_path(r'^prepare_horizontal_transition/$', prepare_horizontal_transition,
+            name='prepare_horizontal_transition'),
+    re_path(r'^submit_horizontal_transition/$', submit_horizontal_transition,
+            name='submit_horizontal_transition'),
 
 
 ]

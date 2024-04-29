@@ -3523,6 +3523,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 <li>         <a  href="/ng/create-analysis-request?parentRequest={{ pr_id }}">Group Analysis</a></li>
 
                     {% endif %}
+                {% if not needed_management_approve and trequest.request_type == "MC" %}
+                    <li><a href="/ng/split-subcampaigns/{{ pr_id }}">Split by subcampaign</a></li>
+                {% endif %}
              <li><a href="#" onclick="syncTasksJEDI(event);">Sync tasks with JEDI</a></li>
         {% else %}
           <li><a href="{% url 'sso_login' %}?next={{ request.get_full_path|urlencode }}">Login</a></li>

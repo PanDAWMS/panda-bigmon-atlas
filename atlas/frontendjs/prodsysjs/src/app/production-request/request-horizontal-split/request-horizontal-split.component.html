@@ -1,0 +1,105 @@
+
+@if(requestTransitions$ | async; as requestTransitions){
+      <div class="container mx-auto">
+        <!-- Parameters Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4"> {{requestTransitions.request.reqid}}</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                         {{requestTransitions.request.description}}
+                    </h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                        {{requestTransitions.request.campaign}}:{{requestTransitions.request.subcampaign}} project:{{requestTransitions.request.project}}
+                    </p>
+                </div>
+                <div class="border-t border-gray-200">
+                    <dl>
+                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Long description
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                {{requestTransitions.long_description}}
+                            </dd>
+                        </div>
+                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Manager
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                {{requestTransitions.request.manager}}
+                            </dd>
+                        </div>
+                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Slices
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                 {{requestTransitions.number_of_slices}}
+                            </dd>
+                        </div>
+                        <!-- More parameters can be added here -->
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Transitions</h2>
+            <div class="grid grid-cols-1 gap-4">
+              @for(transition of requestTransitions.print_results; track transition.name; let idx = $index){
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Transition {{idx}}</h3>
+                      @for(action of transition.transitions; track action){
+
+                        <p class="mt-1 text-sm text-gray-600">
+                          @if(action==="Apply pattern"){
+                            Apply pattern:
+                            <mat-form-field >
+                              <mat-label>Patterns</mat-label>
+                              <mat-select [(ngModel)]="mcPatternsSelectedPatterns[idx]" [panelWidth]="''" >
+                                <mat-option  [value]="0">
+                                  Select pattern
+                                </mat-option>
+                                <mat-option *ngFor="let pattern of requestTransitions.all_patterns" [value]="pattern.id">
+                                  {{pattern.pattern}}
+                                </mat-option>
+                              </mat-select>
+                           </mat-form-field>
+                          } @else {
+                            {{action}}
+
+                          }
+                        </p>
+                      }
+                    </div>
+                </div>
+              }
+                </div>
+        </div>
+        <mat-checkbox  [(ngModel)]="approveRequests">Approve requests</mat-checkbox>
+        <br>
+        <button  mat-raised-button color="primary"  (click)="onApply()" [disabled]="submitting||mcPatternsSelectedPatterns.includes(0)" >Apply</button>
+        @for (requestID of createdRequests; track requestID){
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+              <div class="p-6">
+                <a href="/prodtask/inputlist_with_request/{{requestID}}"> <h3 class="text-lg font-medium text-gray-900">Request {{requestID}}</h3></a>
+              </div>
+          </div>
+        }
+        @if(submitting){
+          <mat-spinner></mat-spinner>
+          It may take a while
+        }
+
+      </div>
+}
+
+    @if(errorMessage){
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{errorMessage}}</span>
+
+      </div>
+    }

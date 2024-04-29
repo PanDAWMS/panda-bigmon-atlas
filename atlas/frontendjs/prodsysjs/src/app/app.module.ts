@@ -113,6 +113,10 @@ import {DEFAULTS} from "./common/constants/tasks_constants";
 import {DerivationPhysicContainerComponent} from "./derivation-physic-container/derivation-physic-container.component";
 import {McSubcampaignsStatComponent} from "./mc-subcampaigns-stat/mc-subcampaigns-stat.component";
 import {TaskManagementByUrlComponent} from "./tasks-management/task-management-by-url/task-management-by-url.component";
+import {MultiRequestInitialComponent} from "./production-request/multi-request-initial/multi-request-initial.component";
+import {
+  RequestHorizontalSplitComponent
+} from "./production-request/request-horizontal-split/request-horizontal-split.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -196,7 +200,13 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
       unmergedDatasets: UnmergeNotDeletedResolver,
     }},
     {path: 'derivation-physics-container/:requestID', component: DerivationPhysicContainerComponent},
+      {path: 'split-subcampaigns/:requestID', component: RequestHorizontalSplitComponent},
+
+
   {path: 'mc-subcampaign-stats', component: McSubcampaignsStatComponent},
+    {path: 'multi-campaign', component: MultiRequestInitialComponent},
+
+
 
   // {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,
   //   resolve: {
