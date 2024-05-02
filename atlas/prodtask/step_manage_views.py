@@ -34,6 +34,7 @@ from time import time, sleep
 from atlas.celerybackend.celery import app, ProdSysTask
 from celery.result import AsyncResult
 from atlas.prodtask.tasks import test_async_progress
+from ..task_action.task_management import TaskActionExecutor
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -2583,7 +2584,8 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
                     if task.status != 'obsolete':
                         _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
                         number_of_obsolete_tasks += 1
-                        _do_deft_action('mborodin', int(task.id), 'obsolete')
+                        action_executor = TaskActionExecutor('mborodin', 'Obsolete task with output deleted')
+                        result, message = action_executor.obsolete_task(int(task.id))
     return number_of_obsolete_tasks
 
 @app.task(bind=True, base=ProdSysTask)
