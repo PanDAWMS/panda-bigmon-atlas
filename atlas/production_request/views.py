@@ -205,6 +205,11 @@ def filter_hidden(tasks: [ProductionTask], hashtag: str|None = None) -> [Product
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def production_task_for_request(request: Request) -> Response:
+    def chunks(lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
     DERIVAITON_USERS = ['atlas-phys-dpd-production']
 
     try:
@@ -243,7 +248,10 @@ def production_task_for_request(request: Request) -> Response:
                     tasks = ProductionTask.objects.filter(status=task_staus, timestamp__gt=days_ago(days), request__reqid__gte=1000)
             else:
                 tasks_id = tasks_from_string(request.data['hashtagString'])
-                tasks = ProductionTask.objects.filter(id__in=tasks_id)
+                # split on 10000 chunks tasks = list(ProductionTask.objects.filter(id__in=tasks_id))
+                tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
+
+
 
         else:
             request_id = int(request.data['requestID'])

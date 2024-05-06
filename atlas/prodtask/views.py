@@ -1773,7 +1773,8 @@ def egroup_permissions(username):
 
 def get_all_patterns():
     patterns = list(InputRequestList.objects.filter(request=29269).order_by('slice'))
-    return [{'id':x.slice,'pattern':x.brief} for x in patterns if x.slice > 0]
+    patterns.sort(key=lambda x:x.brief)
+    return [{'id':x.slice,'pattern':x.brief} for x in patterns if x.slice > 0 and not x.is_hide]
 
 def get_pattern_name(id: int) -> str:
     return InputRequestList.objects.get(request=29269, slice=id).brief

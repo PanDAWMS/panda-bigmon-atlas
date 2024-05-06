@@ -2565,6 +2565,7 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
         for dataset in datasets:
             tasks_set.update(ProductionTask.objects.filter(primary_input=dataset.split(':')[1], ami_tag=first_step_tag))
     tasks = list(tasks_set)
+    action_executor = TaskActionExecutor('mborodin', 'Obsolete task with output deleted')
     for task in tasks:
         if task.status in ['finished','done','obsolete']:
             to_delete = check_all_outputs_deleted(task, ddm)
@@ -2576,7 +2577,7 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
                             if check_all_outputs_deleted(child_task, ddm):
                                 _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
                                 number_of_obsolete_tasks += 1
-                                _do_deft_action('mborodin', int(child_task.id), 'obsolete')
+                                result, message = action_executor.obsolete_task(int(task.id))
                             elif  [x for x in outputs if x in child_task.output_formats.split('.')]:
                                 merge_is_empty = False
                                 break
@@ -2584,8 +2585,6 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
                     if task.status != 'obsolete':
                         _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
                         number_of_obsolete_tasks += 1
-                        action_executor = TaskActionExecutor('mborodin', 'Obsolete task with output deleted')
-                        result, message = action_executor.obsolete_task(int(task.id))
     return number_of_obsolete_tasks
 
 @app.task(bind=True, base=ProdSysTask)

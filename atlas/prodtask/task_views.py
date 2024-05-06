@@ -1250,6 +1250,7 @@ def tasks_serialisation(tasks: [ProductionTask], hashtags: Dict[int, str] = None
         '.deriv.': 'Deriv',
     }
     tasks_serial = []
+    step_template_name = {}
     for task in tasks:
         serial_task = task.__dict__
         if '_state' in serial_task:
@@ -1263,8 +1264,10 @@ def tasks_serialisation(tasks: [ProductionTask], hashtags: Dict[int, str] = None
             if task.name.startswith('data') and '.merge.' in task.name:
                 step_name = 'Merge'
             else:
-                step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
-                step_name = StepTemplate.objects.filter(id=step_id).values("step").get()['step']
+                if task.ami_tag not in step_template_name:
+                    step_id = StepExecution.objects.filter(id=task.step_id).values("step_template_id").get()['step_template_id']
+                    step_template_name[task.ami_tag] = StepTemplate.objects.filter(id=step_id).values("step").get()['step']
+                step_name = step_template_name[task.ami_tag]
         serial_task.update(dict(step_name=step_name))
         serial_task['failureRate'] = task.failure_rate or 0
         if hashtags and task.id in hashtags:
