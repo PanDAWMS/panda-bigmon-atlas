@@ -19,6 +19,7 @@ from rest_framework.request import Request
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jedi.client import JEDIClientTest
+from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
@@ -42,6 +43,7 @@ from django.core.cache import cache
 
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 
@@ -1075,9 +1077,12 @@ def submit_horizontal_transition(request):
         action = WorkflowActions(int(request.data['requestID']))
         approve = request.data.get('approve', False)
         patterns = request.data.get('patterns', None)
+        _jsonLogger.info('Split request by subcampaign', extra=form_json_request_dict(int(request.data['requestID']), request,
+                                                                                           {'patterns': str(patterns)}))
         produced_requests = action.submit_horizontal_transition(approve=approve, just_print=False, selected_patterns=patterns)
         return Response(produced_requests)
     except Exception as ex:
+        _logger.error(f'Problem with horizontal transition: {ex}')
         return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -1096,4 +1101,5 @@ def prepare_horizontal_transition(request):
                          'number_of_slices': len([x for x in InputRequestList.objects.filter(request=production_request_id) if not x.is_hide]),
                                                  'all_patterns': get_all_patterns()})
     except Exception as ex:
+
         return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
