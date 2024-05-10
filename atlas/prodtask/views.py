@@ -2949,10 +2949,25 @@ def create_steps_in_child_pattern(new_request, parent_steps, pattern_request, ou
                 spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
     make_slices_from_dict(new_request,spreadsheet_dict)
 
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Create slices from external input')
+def make_slices_from_dict_celery(self, req: int, file_dict):
+    production_request = TRequest.objects.get(reqid=req)
+    make_slices_from_dict(production_request, file_dict, self)
+    try:
+        fill_request_priority(production_request.reqid, production_request.reqid)
+        fill_request_events(production_request.reqid, production_request.reqid)
+    except:
+        pass
+    return True
 
-def make_slices_from_dict(req, file_dict):
+def make_slices_from_dict(req, file_dict, async_update=None):
         step_parent_dict = {}
+        slices_processed = 0
         for current_slice in file_dict:
+            if async_update is not None:
+                slices_processed += 1
+                async_update.progress_message_update(slices_processed,len(file_dict)+1)
             input_data = current_slice["input_dict"]
             input_data['request'] = req
             priority_obj = get_priority_object(input_data['priority'])

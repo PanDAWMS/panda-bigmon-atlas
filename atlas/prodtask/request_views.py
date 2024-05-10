@@ -25,7 +25,7 @@ from atlas.prodtask.spdstodb import fill_template
 from .hashtag import _set_request_hashtag
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
-from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions
+from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions, single_request_action_celery_task, make_slices_from_dict_celery
 from ..prodtask.views import set_request_status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -1711,6 +1711,10 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         except:
                             pass
                         step_parent_dict = {}
+                        if len(file_dict)>499:
+                            single_request_action_celery_task(req.reqid, make_slices_from_dict_celery, 'Create slices from external input',
+                                                              request.user.username,int(req.reqid), file_dict)
+                            return HttpResponseRedirect(reverse('prodtask:input_list_approve',args=(req.reqid,)))
                         for current_slice in file_dict:
                             input_data = current_slice["input_dict"]
                             input_data['request'] = req
