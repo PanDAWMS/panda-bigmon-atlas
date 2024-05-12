@@ -2094,24 +2094,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                     show_as_huge = True
                     do_all = False
                     pattern_steps = StepExecution.objects.filter(request=rid, slice=input_lists_pre[0])
-                    total_task_dict['red'] = 0
-                    total_task_dict['done'] = 0
-                    total_task_dict['finished'] = 0
-                    total_task_dict['blue'] = 0
-                    total_task_dict['running'] = 0
                     total_task_dict['total'] = ProductionTask.objects.filter(request=rid).count()
                     if total_task_dict['total'] != 0:
-                        failed_task_list = ProductionTask.objects.filter(Q(status__in=['failed','broken','aborted','obsolete']),Q(request=cur_request))
-                        total_task_dict['red'] = len(failed_task_list)
-                        total_task_dict['done'] = ProductionTask.objects.filter(Q(status='done'),Q(request=cur_request)).count()
-                        finished_task_list = ProductionTask.objects.filter(Q(status='finished'),Q(request=cur_request))
-                        total_task_dict['finished'] = len(finished_task_list)
-                        total_task_dict['running'] = ProductionTask.objects.filter(Q(status='running'),Q(request=cur_request)).count()
-                        total_task_dict['blue'] = total_task_dict['total'] - (total_task_dict['red'] +  total_task_dict['done'] + total_task_dict['finished'] + total_task_dict['running'])
+                        failed_task_list = list(ProductionTask.objects.filter(Q(status__in= ProductionTask.RED_STATUS + [ProductionTask.STATUS.OBSOLETE,ProductionTask.STATUS.EXHAUSTED, ProductionTask.STATUS.FINISHED]),Q(request=cur_request)))
                         #Find slices with broken slices
-                        if ((total_task_dict['red']+total_task_dict['finished'])>0)and(total_task_dict['red']<5000):
+                        if (len(failed_task_list)>0)and(len(failed_task_list)<5000):
                             list(map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list))
-                            list(map(lambda x: failed_slices.add(x.step.slice.id),finished_task_list))
                             cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
                             do_cloned_and_failed = True
                     input_lists_pre_pattern = deepcopy(input_lists_pre[0])
@@ -2152,6 +2140,29 @@ def request_table_view(request, rid=None, show_hidden=False):
                     else:
                         input_lists.append((slice_dict, slice_steps_ordered, 'not_submitted',
                                             False,False,'',-1,'no',False))
+                tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
+                tasks_status = {}
+                tasks = {}
+                for current_task in tasks_db:
+                    tasks[current_task['step_id']] = tasks.get(current_task['step_id'], []) + [current_task]
+                    tasks_status[current_task['status']] = tasks_status.get(current_task['status'], 0) + 1
+                tasks_status['total'] = len(tasks_db)
+                for status in ProductionTask.STATUS_ORDER:
+                    if tasks_status.get(status, 0) > 0:
+                        status_filter = None
+                        if not status in ProductionTask.NOT_RUNNING:
+                            status_filter = 'running_tasks'
+                        if status in ProductionTask.RED_STATUS:
+                            status_filter = 'aborted_tasks'
+                        if status in ['done', 'finished']:
+                            status_filter = 'no_running_tasks'
+                        if status in ['total']:
+                            status_filter = 'all'
+                        if status in ['staging']:
+                            status_filter = 'waiting'
+                        if status in ['exhausted']:
+                            status_filter = 'exhausted'
+                        tasks_by_status.append((status, tasks_status[status], status_filter))
                 if do_all or do_cloned_and_failed:
                     if do_all or ((len(cloned_slices)+len(failed_slices))>80):
                         steps_db = list(StepExecution.objects.filter(request=rid).values())
@@ -2169,34 +2180,12 @@ def request_table_view(request, rid=None, show_hidden=False):
                         pre_definition_actions_db = []
                         pre_definition_new_actions_db = []
                         steps_db = list(StepExecution.objects.filter(Q(request=rid),Q(slice_id__in=cloned_slices+list(failed_slices))).values())
-                    tasks_db = list(ProductionTask.objects.filter(request=rid).order_by('-submit_time').values())
                     step_templates_set = set()
                     steps = {}
                     for current_step in steps_db:
                         steps[current_step['slice_id']] = steps.get(current_step['slice_id'],[])+[current_step]
                         step_templates_set.add(current_step['step_template_id'])
-                    tasks = {}
-                    tasks_status = {}
-                    for current_task in tasks_db:
-                        tasks[current_task['step_id']] =  tasks.get(current_task['step_id'],[]) + [current_task]
-                        tasks_status[current_task['status']] = tasks_status.get(current_task['status'],0) + 1
-                    tasks_status['total'] = len(tasks_db)
-                    for status in ProductionTask.STATUS_ORDER:
-                        if tasks_status.get(status,0) > 0:
-                            status_filter = None
-                            if not status in ProductionTask.NOT_RUNNING:
-                                status_filter = 'running_tasks'
-                            if status in ProductionTask.RED_STATUS:
-                                status_filter = 'aborted_tasks'
-                            if status in ['done','finished']:
-                                status_filter = 'no_running_tasks'
-                            if status in ['total']:
-                                status_filter = 'all'
-                            if status in ['staging']:
-                                status_filter = 'waiting'
-                            if status in [ 'exhausted']:
-                                status_filter = 'exhausted'
-                            tasks_by_status.append((status,tasks_status[status],status_filter))
+
                     pre_definition_actions = {}
                     for current_action in pre_definition_actions_db:
                         current_action['progress'] = False

@@ -142,6 +142,9 @@ $.fn.mirror = function (selector) {
     });
 };
 $(document).ready(function(){
+        {% if async_task %}
+        progressCeleryBar('{{ async_task.id }}','{{ async_task.name }}','{{ async_task.user }}');
+    {% endif %}
 var temp_ref_link = '{{ trequest.ref_link}}';
 $('#request_link').html(temp_ref_link.slice(temp_ref_link.lastIndexOf('/')+1,temp_ref_link.length));
 {% if not edit_mode %}
@@ -415,9 +418,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         $('#longDescription').show();
 
     {% endif %}
-    {% if async_task %}
-        progressCeleryBar('{{ async_task.id }}','{{ async_task.name }}','{{ async_task.user }}');
-    {% endif %}
+
 });
 
     var csrftoken = $.cookie('csrftoken');
@@ -437,7 +438,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
         $('.makeJOUrl').each(function(){
 
               var joboptions = $(this).html().replace(/\s+/g,'');
-		      if ((joboptions!='')&&(joboptions!=undefined)) {
+		      if ((joboptions!='')&&(joboptions!=undefined)&&(joboptions.indexOf('&gt;') == -1)) {
                if (joboptions.indexOf('/') == -1){
                 var jo = joboptions.split(".");
                 var dsid = jo[1].substring(0, 3) + "xxx";
@@ -3736,10 +3737,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
             </div>
         </div>
     {% endif %}
-{% if show_as_huge  %}
-<u><a href="{% url "prodtask:task_table" %}#/?time_period=all&task_type=production&request={{ trequest.reqid}}">All task</a></u>
 
-{% endif %}
 
     <div class="row" >
         <div class="large-2 column"><button id="select_slice_checkobx" title="Select/unselect all" onclick="selectClick(event);">Select All</button></div>
@@ -3819,7 +3817,6 @@ ProjectModeForm.prototype.createForm = function(inputString){
 <span> Check these slices: </span><span id="wrongSliceString"></span></div>
 
 {% if show_as_huge %}
-    <div>
     <div class="row" >
         <div class="large-12 column">Steps:</div>
     </div>
@@ -3828,18 +3825,8 @@ ProjectModeForm.prototype.createForm = function(inputString){
         <div class="large-3 column">steps approved: {{ approved_steps }} </div>
         <div class="large-8 column"></div>
     </div>
-    <div class="row" >
-        <div class="large-12 column">Tasks:</div>
-    </div>
-    <div class="row" >
-        <div class="large-3 column"><span style="color: red">failed/broken/aborted {{ total_tasks.red }} </span></div>
-        <div class="large-2 column"><span style="color: green">done {{ total_tasks.done }} </span> </div>
-        <div class="large-2 column"><span style="color: green">finished {{ total_tasks.finished }} </span> </div>
-        <div class="large-2 column"><span style="color: greenyellow">running {{ total_tasks.running }} </span> </div>
-        <div class="large-2 column"><span style="color: blue">other states {{ total_tasks.blue }} </span> </div>
-        <div class="large-1 column"> </div>
-    </div>
-    </div>
+
+
 
 {% endif %}
 

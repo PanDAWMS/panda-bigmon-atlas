@@ -872,9 +872,9 @@ def mcfile_form_prefill(form_data, request):
     form_data['need_split'] = (check_need_split(spreadsheet_dict) > 0)
     # if form_data['need_split']:
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
-    if len(spreadsheet_dict)>1220:
+    if len(spreadsheet_dict)>1000:
         if (not request.user.is_superuser) and \
-                            ('MCCOORD' not in egroup_permissions(request.user.username)):
+                            ('MCCOORD' not in egroup_permissions(request.user.username)) and form_data.get('phys_group') != 'SUSY':
             eroor_message = "Too many samples selected for a single request - please factorise request into " \
                             "multiple smaller requests. For example, split up Full and Fast simulation and " \
                             "25 ns and 50 ns reconstruction and put them in separate requests. For special cases " \
