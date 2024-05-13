@@ -1115,7 +1115,7 @@ class WorkflowActions:
         cache.set(cache_key, {'id': celery_task.request.id, 'name': 'Subcampaign split', 'user': 'auto'},
                   TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
         
-@app.task(bind=True, base=ProdSysTask)
+@app.task(bind=True, base=ProdSysTask, time_limit=3600*4)
 @ProdSysTask.set_task_name('Split by sub campaigns')
 def split_horizontal_by_subcampaign(self, reqid, approve=False, selected_patterns=None):
     action = WorkflowActions(reqid, async_task=self)
