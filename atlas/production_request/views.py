@@ -1085,6 +1085,8 @@ class WorkflowActions:
 
         slices = [x for x in InputRequestList.objects.filter(request=request_id).order_by("slice") if not x.is_hide]
         is_full = False
+        if len(slices)>200:
+            slices = slices[:200]
         for slice in slices:
             if 'fullsim' in slice.comment.lower() or '(fs)' in slice.comment.lower():
                 is_full = True
