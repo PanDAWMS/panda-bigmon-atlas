@@ -824,7 +824,7 @@ class WorkflowActions:
 
     @dataclass
     class AsyncUpdates:
-        count: int = 0
+        count: int = 1
         total: int = 0
         requests_ids: List[int] = field(default_factory=list)
 
