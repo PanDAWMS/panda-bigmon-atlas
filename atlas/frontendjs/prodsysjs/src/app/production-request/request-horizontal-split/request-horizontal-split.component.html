@@ -81,19 +81,29 @@
         <mat-checkbox  [(ngModel)]="approveRequests">Approve requests</mat-checkbox>
         <br>
         <button  mat-raised-button color="primary"  (click)="onApply()" [disabled]="submitting||mcPatternsSelectedPatterns.includes(0)" >Apply</button>
-        @for (requestID of createdRequests; track requestID){
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-              <div class="p-6">
-                <a href="/prodtask/inputlist_with_request/{{requestID}}"> <h3 class="text-lg font-medium text-gray-900">Request {{requestID}}</h3></a>
-              </div>
-          </div>
-        }
-        @if(submitting){
-          <mat-spinner></mat-spinner>
-          It may take a while
-        }
+
+
 
       </div>
+  @if (asyncTaskStatus&&submitting){
+  <h2 class="text-2xl font-semibold mb-4">Progress:</h2>
+
+<mat-progress-bar mode="buffer" [value]="progressPercents" [bufferValue]="0" ></mat-progress-bar>
+}
+@if(createdRequests.length>0){
+<h2 class="text-2xl font-semibold mb-4">Created requests:</h2>
+
+    @for (requestID of createdRequests; track requestID){
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-6">
+            <a href="/prodtask/inputlist_with_request/{{requestID}}"> <h3 class="text-lg font-medium text-gray-900">Request {{requestID}}</h3></a>
+          </div>
+      </div>
+    }
+}
+}@else{
+<mat-spinner></mat-spinner>
+
 }
 
     @if(errorMessage){

@@ -3,13 +3,15 @@ import logging
 
 import os
 import re
-from dataclasses import asdict
+import time
+from dataclasses import asdict, dataclass, field
 from functools import reduce
 from pprint import pprint
-from typing import Dict
+from typing import Dict, List
 
 import math
 import requests
+from celery.result import AsyncResult
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest
@@ -17,6 +19,7 @@ from django.utils import timezone
 from rest_framework.request import Request
 
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
+from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jedi.client import JEDIClientTest
 from atlas.prodtask.helper import form_json_request_dict
@@ -36,7 +39,8 @@ from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
 from atlas.prodtask.views import clone_slices, request_clone_slices, form_existed_step_list, get_full_patterns, \
-    form_step_in_page, create_steps, fill_request_events, get_pattern_name, set_request_status, get_all_patterns
+    form_step_in_page, create_steps, fill_request_events, get_pattern_name, set_request_status, get_all_patterns, \
+    single_request_action_celery_task
 from atlas.production_request.derivation import find_all_inputs_by_tag
 from atlas.task_action.task_management import TaskActionExecutor
 from django.core.cache import cache
@@ -817,7 +821,15 @@ def build_workflow_vertical(base_subcampaign: str):
 
 
 class WorkflowActions:
-    def __init__(self, base_request_id: int, workflows_tree=None):
+
+    @dataclass
+    class AsyncUpdates:
+        count: int = 0
+        total: int = 0
+        requests_ids: List[int] = field(default_factory=list)
+
+
+    def __init__(self, base_request_id: int, workflows_tree=None, async_task:ProdSysTask|None=None):
         if workflows_tree is None:
             self.workflows_tree = SystemParametersHandler.get_mc_workflow_request().workflows
         self.base_request_id = base_request_id
@@ -825,6 +837,8 @@ class WorkflowActions:
         self.base_request = TRequest.objects.get(reqid=base_request_id)
         self.print_result = []
         self.found_patterns = {}
+        self.async_task = async_task
+        self.async_update_values = self.AsyncUpdates()
         for name, workflow in self.workflows_tree.items():
             subcmapaign_to_look = self.base_request.subcampaign
             if 'mc20' in self.base_request.description:
@@ -956,11 +970,15 @@ class WorkflowActions:
             if  change.type == MCWorkflowChanges.ChangeType.DESCRIPTION:
                 description = f'{change.value} {description}'
         new_request = self.clone_request(request_id, description, new_project)
+        if self.async_task is not None:
+            self.lock_request(new_request)
         self.change_request_campaign(new_request, new_campaign, new_subcampaign)
+        self.async_update()
         if event_ratio is not None:
             self.change_input_events_number(new_request, event_ratio)
         if pattern_id is not None:
             first_pattern_step = self.apply_pattern(new_request, get_pattern_name(pattern_id))
+            self.async_update()
             self.connect_requests(request_id, new_request, first_pattern_step)
         return new_request
 
@@ -983,6 +1001,12 @@ class WorkflowActions:
         result += [f'Connect requests {request_id} with the new request']
         return result, new_project
 
+
+    def async_update(self):
+        if self.async_task is not None:
+            self.async_task.progress_message_update(self.async_update_values.count, self.async_update_values.total,
+                                                    {'reqids':self.async_update_values.requests_ids})
+            self.async_update_values.count += 1
     def submit_horizontal_transition(self, approve: bool = False, just_print: bool = False, selected_patterns: Dict[str, int]|None = None):
         horizontal_transitions = [x for x in self.base_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
         description = self.base_request.description
@@ -990,13 +1014,22 @@ class WorkflowActions:
         current_workflow = self.base_workflow
         current_workflow_name = self.base_workflow_name
         requests_to_approve = [current_request_id]
+        transition_number = -1
+        while horizontal_transitions:
+            transition_number += 1
+            transition = horizontal_transitions.pop()
+            if len(horizontal_transitions) > 0:
+                raise Exception(f'More than one horizontal transition in {current_request_id}')
+            horizontal_transitions += [x for x in self.workflows_tree[transition.new_request].transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
+        horizontal_transitions = [x for x in self.base_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
+        self.async_update_values.total = transition_number * 3 + 2
+        self.async_update_values.requests_ids = requests_to_approve
+        self.async_update()
         self.print_result = []
         self.found_patterns = {}
         current_project = str(self.base_request.project)
         while horizontal_transitions:
             transition = horizontal_transitions.pop()
-            if len(horizontal_transitions) > 0:
-                raise Exception(f'More than one horizontal transition in {current_request_id}')
             if just_print:
                 try:
                     self.found_patterns[current_workflow_name] = self.find_pattern( self.base_request_id, transition.pattern)
@@ -1017,10 +1050,13 @@ class WorkflowActions:
                         raise Exception(f'Error in pattern {current_request_id} {ex}')
                 current_request_id = self.apply_transition(current_request_id, current_workflow, transition, description, pattern_id, None)
                 requests_to_approve.append(current_request_id)
+                self.async_update_values.requests_ids = requests_to_approve
+                self.async_update()
             current_workflow = self.workflows_tree[transition.new_request]
             current_workflow_name = transition.new_request
             horizontal_transitions += [x for x in current_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
         if approve and not just_print:
+            self.async_update()
             for request_id in requests_to_approve:
                 self.approve_request(request_id)
         return requests_to_approve
@@ -1068,6 +1104,23 @@ class WorkflowActions:
                        return pattern_by_request[1]
         raise Exception(f'No pattern for {request_id}')
 
+    def lock_request(self, new_request: int):
+        cache_key = 'celery_request_action' + str(new_request)
+        if cache.get(cache_key) and (type(cache.get(cache_key)) is dict):
+            async_task = cache.get(cache_key)
+            celery_task = AsyncResult(async_task.get('id'))
+            if celery_task.status in ['FAILURE', 'SUCCESS']:
+                cache.delete(cache_key)
+        celery_task = self.async_task
+        cache.set(cache_key, {'id': celery_task.request.id, 'name': 'Subcampaign split', 'user': 'auto'},
+                  TRequest.DEFAULT_ASYNC_ACTION_TIMEOUT)
+        
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Split by sub campaigns')
+def split_horizontal_by_subcampaign(self, reqid, approve=False, selected_patterns=None):
+    action = WorkflowActions(reqid, async_task=self)
+    return  action.submit_horizontal_transition(approve=approve, just_print=False, selected_patterns=selected_patterns)
+
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -1088,6 +1141,35 @@ def submit_horizontal_transition(request):
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
+def submit_horizontal_transition_async(request):
+    try:
+        production_request_id = int(request.data['requestID'])
+        approve = request.data.get('approve', False)
+        patterns = request.data.get('patterns', None)
+        _jsonLogger.info('Split request by subcampaign', extra=form_json_request_dict(production_request_id, request,
+                                                                                           {'patterns': str(patterns)}))
+        result = single_request_action_celery_task(production_request_id, split_horizontal_by_subcampaign, 'Split by sub campaigns',
+                                  request.user.username, production_request_id, approve, patterns)
+
+        # result = single_request_action_celery_task(production_request_id, test_async_progress_split, 'test task split', 'mborodin', [55974])
+        return Response(result['task_id'])
+    except Exception as ex:
+        _logger.error(f'Problem with horizontal async transition: {ex}')
+        return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('test task split')
+def test_async_progress_split(self, requests):
+    for i in range(10):
+        time.sleep(10)
+        self.progress_message_update(i*10, 100, additional_info={'reqids':requests})
+    if requests == []:
+        raise Exception('Something Wrong')
+    return requests
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
 def prepare_horizontal_transition(request):
     try:
         production_request_id = int(request.data['requestID'])
@@ -1096,10 +1178,19 @@ def prepare_horizontal_transition(request):
         if not action.base_workflow:
             raise Exception(f'No workflow found for {production_request_id}')
         action.submit_horizontal_transition(approve=False, just_print=True)
+        async_task_id = ''
+        cache_key = 'celery_request_action' + str(production_request_id)
+        async_task = cache.get(cache_key, None)
+        if async_task and (type(async_task) is dict):
+            async_task_id = async_task.get('id')
+            celery_task = AsyncResult(async_task.get('id'))
+            if celery_task.status in ['FAILURE', 'SUCCESS']:
+                cache.delete(cache_key)
+                async_task_id = ''
         return Response({'request': ProductionRequestSerializer(production_request).data, 'print_results': action.print_result,
                          'patterns': action.found_patterns, 'long_description': production_request.long_description,
                          'number_of_slices': len([x for x in InputRequestList.objects.filter(request=production_request_id) if not x.is_hide]),
-                                                 'all_patterns': get_all_patterns()})
+                                                 'all_patterns': get_all_patterns(), 'async_task_id': async_task_id})
     except Exception as ex:
 
         return Response(str(ex), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

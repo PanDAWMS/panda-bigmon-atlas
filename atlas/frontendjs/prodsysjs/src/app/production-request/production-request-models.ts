@@ -203,6 +203,7 @@ export interface RequestTransitions{
   long_description: string;
   number_of_slices: number;
   all_patterns: {id: number, pattern: string}[];
+  async_task_id: string;
 }
 export interface JEDITask{
   id: number;

@@ -26,8 +26,8 @@ urlpatterns = [
             name='prepare_horizontal_transition'),
     re_path(r'^prepare_horizontal_transition/$', prepare_horizontal_transition,
             name='prepare_horizontal_transition'),
-    re_path(r'^submit_horizontal_transition/$', submit_horizontal_transition,
-            name='submit_horizontal_transition'),
+    re_path(r'^submit_horizontal_transition/$', submit_horizontal_transition_async,
+            name='submit_horizontal_transition_async'),
 
 
 ]

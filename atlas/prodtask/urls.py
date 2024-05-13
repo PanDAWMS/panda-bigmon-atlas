@@ -180,6 +180,9 @@ urlpatterns = [
     re_path(r'^get_slices_bulk_info/(?P<reqid>\d+)/$', step_manage_views.get_slices_bulk_info, name='get_slices_bulk_info'),
     re_path(r'^test_celery_task/(?P<reqid>\d+)/$', step_manage_views.test_celery_task, name='test_celery_task'),
     re_path(r'^celery_task_status/(?P<celery_task_id>[\w-]+)/$', step_manage_views.celery_task_status, name='celery_task_status'),
+    re_path(r'^celery_task_status_full/(?P<celery_task_id>[\w-]+)/$', step_manage_views.celery_task_status_full,
+            name='celery_task_status_full'),
+
 
     re_path(r'^change_parent/(?P<reqid>\d+)/(?P<new_parent>[-+]?\d+)/$', step_manage_views.change_parent, name='change_parent'),
     re_path(r'^slice_steps/(?P<reqid>\d+)/(?P<slice_number>[-+]?\d+)/$', step_manage_views.slice_steps, name='slice_steps'),

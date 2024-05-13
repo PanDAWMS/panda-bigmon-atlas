@@ -2676,6 +2676,19 @@ def celery_task_status(request, celery_task_id):
         result = celery_task.result
     return Response({'status':celery_task.status, 'progress': progress, 'result':result, 'celery_task_name':celery_task_name})
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def celery_task_status_full(request, celery_task_id):
+    celery_task = AsyncResult(celery_task_id)
+    result = None
+    progress = {}
+    if (celery_task.status == 'PROGRESS') and celery_task.info:
+        progress = celery_task.info
+    if celery_task.status in ['SUCCESS', 'FAILURE']:
+        result = celery_task.result
+    return Response({'status':celery_task.status, 'progress': progress, 'result':result})
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))

@@ -1,5 +1,6 @@
 import os
 from functools import wraps
+from typing import Dict
 
 from celery import Celery, Task
 from celery.result import AsyncResult
@@ -62,12 +63,15 @@ class ProdSysTask(Task):
             _jsonLogger.info('Celery task finsihed', extra={'celery_task_id':task_id,'celery_task_name':self.name,'celery_status':status})
 
 
-    def progress_message_update(self, value, total=None):
+    def progress_message_update(self, value: int, total: int|None = None, additional_info: Dict=None):
             if not self.request.called_directly:
                 if total:
-                    self.update_state(state="PROGRESS", meta={'processed': value, 'total':total, 'name':self.prodsys_celery_task_name})
+                    meta={'processed': value, 'total':total, 'name':self.prodsys_celery_task_name}
                 else:
-                    self.update_state(state="PROGRESS", meta={'progress': value, 'name':self.prodsys_celery_task_name})
+                    meta={'progress': value, 'name':self.prodsys_celery_task_name}
+                if additional_info:
+                    meta.update(additional_info)
+                self.update_state(state="PROGRESS", meta=meta)
 
 
     @staticmethod

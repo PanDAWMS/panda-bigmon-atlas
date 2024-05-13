@@ -12,6 +12,20 @@ import {
 import {catchError, map, tap} from "rxjs/operators";
 import {ExtensionRequest} from "../derivation-exclusion/gp-deletion-container";
 
+
+export interface AsyncProdTaskSplitProgress {
+  processed: number;
+  total: number;
+  name: string;
+  reqids: number[];
+}
+export interface AsyncProdTaskSplitStatus {
+  status: string;
+  progress: undefined| AsyncProdTaskSplitProgress;
+  result: undefined | number[]| string;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -27,6 +41,7 @@ export class ProductionRequestService {
   private prInfoJiraUrl = '/production_request/info_by_jira/';
   private prGetSplitRequestUrl = '/production_request/prepare_horizontal_transition/';
   private prDoHorizontalSplitUrl = '/production_request/submit_horizontal_transition/';
+  private prAsyncTaskStatus = '/prodtask/celery_task_status_full/';
 
   private sliceModificationSource = new Subject<Slice>();
   private sliceSavedSource = new Subject<Slice>();
@@ -63,8 +78,12 @@ export class ProductionRequestService {
     return this.http.post<RequestTransitions>(this.prGetSplitRequestUrl, {requestID});
   }
 
-  splitRequestHorizontaly(requestID: string, approve: boolean, patterns: {[key: string]: number }): Observable<number[]> {
-    return this.http.post<number[]>(this.prDoHorizontalSplitUrl, {requestID, approve, patterns});
+  getAsyncTaskStatus(asyncTaskID: string): Observable<AsyncProdTaskSplitStatus> {
+    return this.http.get<AsyncProdTaskSplitStatus>(this.prAsyncTaskStatus + asyncTaskID);
+  }
+
+  splitRequestHorizontaly(requestID: string, approve: boolean, patterns: {[key: string]: number }): Observable<string> {
+    return this.http.post<string>(this.prDoHorizontalSplitUrl, {requestID, approve, patterns});
   }
   private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
