@@ -3414,7 +3414,7 @@ def clone_child_slices(parent_request, parent_steps):
             for child_step in child_steps:
                 if child_step.step_parent_id in list(parent_steps.keys()):
                     current_child_slice_set.add(child_step.slice.slice)
-            clone_slices(child_request, child_request, list(current_child_slice_set), -1, False, False, False, parent_steps)
+            clone_slices(child_request, child_request, list(current_child_slice_set), -1, False, True, False, parent_steps)
 
 
 def fill_request_priority(request_from, request_to):
