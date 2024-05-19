@@ -2098,9 +2098,9 @@ def request_table_view(request, rid=None, show_hidden=False):
                     if total_task_dict['total'] != 0:
                         failed_task_list = list(ProductionTask.objects.filter(Q(status__in= ProductionTask.RED_STATUS + [ProductionTask.STATUS.OBSOLETE,ProductionTask.STATUS.EXHAUSTED, ProductionTask.STATUS.FINISHED]),Q(request=cur_request)))
                         #Find slices with broken slices
-                        if (len(failed_task_list)>0)and(len(failed_task_list)<5000):
+                        cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
+                        if ((len(failed_task_list)+len(cloned_slices))>0)and(len(failed_task_list)<5000):
                             list(map(lambda x: failed_slices.add(x.step.slice.id),failed_task_list))
-                            cloned_slices = [x.id for x in input_lists_pre if x.cloned_from]
                             do_cloned_and_failed = True
                     input_lists_pre_pattern = deepcopy(input_lists_pre[0])
                     total_steps_count = StepExecution.objects.filter(request=rid).count()
