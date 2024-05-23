@@ -638,7 +638,7 @@ def mc_subcampaign_stats(request):
         for mc_subcampaign in mc_subcampaigns:
             stats = get_campaign_nevents_per_amitag(mc_subcampaign.campaign,{'pile':mc_subcampaign.pile_suffix})
             current_trend = [(trend['time'],list(filter(lambda x: x['mc_subcampaign']==mc_subcampaign.campaign, trend['stats']))) for trend in trends]
-            trend = [{'seconds':math.ceil((current_time- x[0]).total_seconds()),'stats':x[1][0]['stats']} for x in current_trend if len(x)>0]
+            trend = [{'seconds':math.ceil((current_time- x[0]).total_seconds()),'stats':x[1][0]['stats']} for x in current_trend if len(x)>0 and len(x[1])>0]
             total_stats.append({'mc_subcampaign':mc_subcampaign.campaign, 'stats':stats, 'trend':trend})
         return Response(total_stats)
     except Exception as ex:
@@ -648,7 +648,8 @@ def mc_subcampaign_stats(request):
 
 
 def fill_default_campaigns():
-    mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23d', ':25ns'),
+    mc_subcampaigns = [SystemParametersHandler.MCSubCampaignStats('MC23:MC23e', ':25ns'),
+                       SystemParametersHandler.MCSubCampaignStats('MC23:MC23d', ':25ns'),
                        SystemParametersHandler.MCSubCampaignStats('MC23:MC23c', ':25ns'),
                        SystemParametersHandler.MCSubCampaignStats('MC23:MC23a', ':25ns'),
                        SystemParametersHandler.MCSubCampaignStats('MC20:MC20e', ':25ns'),
@@ -1022,7 +1023,9 @@ class WorkflowActions:
                 raise Exception(f'More than one horizontal transition in {current_request_id}')
             horizontal_transitions += [x for x in self.workflows_tree[transition.new_request].transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
         horizontal_transitions = [x for x in self.base_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
-        self.async_update_values.total = transition_number * 3 + 2
+        self.async_update_values.total = transition_number * 3 + 3
+        if approve:
+            self.async_update_values.total += 1
         self.async_update_values.requests_ids = requests_to_approve
         self.async_update()
         self.print_result = []
@@ -1056,9 +1059,10 @@ class WorkflowActions:
             current_workflow_name = transition.new_request
             horizontal_transitions += [x for x in current_workflow.transitions if x.transition_type == MCWorkflowTransition.TransitionType.HORIZONTAL]
         if approve and not just_print:
-            self.async_update()
             for request_id in requests_to_approve:
                 self.approve_request(request_id)
+            self.async_update()
+
         return requests_to_approve
 
 
