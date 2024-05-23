@@ -3,6 +3,39 @@ export class DEFAULTS {
   public static readonly TIME_FORMAT = 'YYYY-MM-dd HH:mm';
 }
 
+export class PRODSYS_CONSTANTS {
+  public static readonly PHYSICS_GROUPS = ['BPHY',
+                                 'COSM',
+                                 'DAPR',
+                                 'EGAM',
+                                 'EXOT',
+                                 'FTAG',
+                                 'HDBS',
+                                 'HIGG',
+                                 'HION',
+                                 'IDET',
+                                 'IDTR',
+                                 'JETM',
+                                 'LARG',
+                                 'MCGN',
+                                 'MDET',
+                                 'MUON',
+                                 'PHYS',
+                                 'REPR',
+                                 'SIMU',
+                                 'SOFT',
+                                 'STDM',
+                                 'SUSY',
+                                 'TAUP',
+                                 'TCAL',
+                                 'TDAQ',
+                                 'TOPQ',
+                                 'THLT',
+                                 'TRIG',
+                                 'VALI',
+                                 'UPGR'];
+}
+
 export class TASKS_CONSTANTS {
   public static readonly TASKS_STATUS_ORDER = ['total', 'active', 'good', 'waiting', 'staging', 'registered', 'assigning',
     'submitting', 'ready', 'running', 'paused', 'exhausted', 'done', 'finished', 'toretry',

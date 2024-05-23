@@ -1,0 +1,125 @@
+<mat-horizontal-stepper [linear]="isLinear" #stepper>
+  <mat-step [stepControl]="firstStepFormGroup">
+    <form [formGroup]="firstStepFormGroup">
+      <ng-template matStepLabel>Initial input</ng-template>
+      <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>Short description</mat-label>
+              <textarea  cdkTextareaAutosize #autosize="cdkTextareaAutosize" cdkAutosizeMaxRows="3" matInput placeholder="" formControlName="descriptionCtrl" required></textarea>
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+Short description of request (will become request title)          </p>
+        </div>
+    </div>
+            <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>Ref Link</mat-label>
+              <input matInput type='url' placeholder="" formControlName="refLinkCtrl" required>
+
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+            Link to JIRA ticket for request
+          </p>
+        </div>
+            </div>
+                        <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>Phys Group</mat-label>
+              <mat-select formControlName="physGroupCtrl" required>
+                @for (group of PRODSYS_CONSTANTS.PHYSICS_GROUPS; track group){
+                                    <mat-option [value]="group">{{group}}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+            Physics Analysis/Combined Performance group
+          </p>
+        </div>
+            </div>
+                          <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>Long description</mat-label>
+                            <textarea  cdkTextareaAutosize #autosize="cdkTextareaAutosize" cdkAutosizeMinRows="4" cdkAutosizeMaxRows="15"
+                                       matInput placeholder="" formControlName="longDescriptionCtrl" required></textarea>
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+            This will be the body of the mail that will be sent to PMG/PC for approval (and read by production managers). It should contain a summary and technical details of the request. As a minimum it should contain the justification, requested events (per samples and in total) and priorities. Additional technical information should also be provided e.g. if the samples require 25 ns and/or 50 ns reconstruction, if a specific release is required for evgen, if RDOs or ESDs should be kept for reconstruction, pileup profile (only 2015 mu profile, no pileup etc), other special options (please write 'Please check the JIRA ticket for ...' )
+          </p>
+        </div>
+    </div>
+            <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>Spreadsheet Link</mat-label>
+              <input matInput type='url' placeholder="" formControlName="spreadsheetCtrl" required>
+
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+            Enter the "shareable" link to the google doc spreadsheet. (one format for all requests!) Link has to be "Google Sheets" not "XLSX".
+          </p>
+        </div>
+      <div>
+        <button mat-button matStepperNext>Next</button>
+      </div>
+            </div>
+    </form>
+  </mat-step>
+  <mat-step [stepControl]="secondFormGroup">
+    <form [formGroup]="secondFormGroup">
+      <ng-template matStepLabel>workflow definition</ng-template>
+
+                  <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+      <mat-form-field>
+        <mat-label>Energy gev</mat-label>
+        <input matInput placeholder="" type="number" formControlName="energyCtrl" required>
+      </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+           Collision centre-of-mass energy in GeV
+          </p>
+        </div>
+                                      </div>
+
+                          <div class="flex flex-wrap">
+        <div class="w-3/4 p-4">
+            <mat-form-field style="width: 100%">
+              <mat-label>CC</mat-label>
+              <input  matInput placeholder="" formControlName="ccCtrl" >
+            </mat-form-field>
+        </div>
+        <div class="w-1/4 p-4">
+              <p class="text-gray-700 text-base">
+Include email address(es) of relevant people, e.g. Group convenors          </p>
+        </div>
+    </div>
+      <div>
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </form>
+  </mat-step>
+  <mat-step>
+    <ng-template matStepLabel>Step 3</ng-template>
+    <p>You are now done.</p>
+    <div>
+      <button mat-button matStepperPrevious>Back</button>
+      <button mat-button (click)="stepper.reset()">Reset</button>
+    </div>
+  </mat-step>
+</mat-horizontal-stepper>

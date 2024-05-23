@@ -117,6 +117,7 @@ import {MultiRequestInitialComponent} from "./production-request/multi-request-i
 import {
   RequestHorizontalSplitComponent
 } from "./production-request/request-horizontal-split/request-horizontal-split.component";
+import {McRequestSubmissionComponent} from "./production-request/mc-request-submission/mc-request-submission.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -205,6 +206,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
 
   {path: 'mc-subcampaign-stats', component: McSubcampaignsStatComponent},
     {path: 'multi-campaign', component: MultiRequestInitialComponent},
+    {path: 'mc-submit', component: McRequestSubmissionComponent},
+
 
 
 
