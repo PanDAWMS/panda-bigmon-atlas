@@ -134,7 +134,7 @@ def check_user_group(group: str, username: str):
     user_groups = [group.name for group in user.groups.all()]
     group_name = group.split('.')[1]
     iam_group = f'IAM:atlas/{group_name}/production'
-    if iam_group not in user_groups:
+    if iam_group not in user_groups and not user.is_superuser:
         raise Exception(f'User {username} is not in group {iam_group}')
     return True
 
