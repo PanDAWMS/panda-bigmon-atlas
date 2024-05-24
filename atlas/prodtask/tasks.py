@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import time
 
+from atlas.auth.oidcsso.utils import fill_user_groups_from_iam
 from atlas.celerybackend.celery import app, ProdSysTask
 from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_update, clean_superceeded
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
@@ -171,4 +172,10 @@ def fill_staging_rse():
 @app.task(ignore_result=True)
 def resume_staling_staging_tasks():
     check_stale_staging_tasks()
+    return None
+
+
+@app.task(ignore_result=True)
+def sync_users_with_IAM(update_only_new=False):
+    fill_user_groups_from_iam(update_only_new)
     return None

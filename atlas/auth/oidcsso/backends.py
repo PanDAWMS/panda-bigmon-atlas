@@ -7,6 +7,8 @@ from rest_framework.authtoken.models import Token
 from django.conf import settings
 from django.utils import timezone
 
+from atlas.prodtask.tasks import sync_users_with_IAM
+
 _logger = logging.getLogger('prodtaskwebui')
 
 def get_group(group_name):
@@ -78,6 +80,10 @@ class OIDCCernSSOBackend(RemoteUserBackend):
             user.last_name = lastname
             user.password = '(not used)'
             user.save()
+            try:
+                sync_users_with_IAM.delay(True)
+            except:
+                pass
         existing_groups = [group for group in map(get_group, groups) if group]
         for group in existing_groups:
                 user.groups.add(group)
