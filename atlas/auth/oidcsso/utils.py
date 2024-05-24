@@ -5,7 +5,6 @@ from django.contrib.auth.models import User, Group
 
 from atlas.prodtask.models import IAM_USER
 from atlas.settings import OIDC_CLIENT_ID
-from atlas.settings.oidcclient import OIDC_SECRET
 from atlas.settings import IAM
 _logger = logging.getLogger('prodtaskwebui')
 
