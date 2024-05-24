@@ -1349,12 +1349,6 @@ def follow_repeated_staged(waiting_step, ddm):
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
-        if dataset_stage.status != 'done':
-            _logger.error("Follow staging action problem %s" % str(action_step.id))
-            action_step.status = 'failed'
-            action_step.message = 'Something wrong'
-            action_step.done_time = current_time
-            action_step.save()
         if task.status not in ProductionTask.NOT_RUNNING:
             action_finished = False
             existed_rule = ddm.dataset_active_rule_by_rule_id(dataset_stage.dataset, dataset_stage.rse)
@@ -1367,11 +1361,13 @@ def follow_repeated_staged(waiting_step, ddm):
                     except Exception as e:
                         _logger.error("Check replicas extension problem %s %s" % (str(e), str(waiting_step)))
             else:
+                if dataset_stage.status != 'done':
+                    _logger.error("Follow staging action problem %s" % str(action_step.id))
                 action_finished = True
 
     if action_finished :
         action_step.status = 'done'
-        action_step.message = 'All task started'
+        action_step.message = 'All task done'
         action_step.done_time = current_time
     else:
         action_step.execution_time = current_time + timedelta(hours=action_step.get_config('delay')*4)
