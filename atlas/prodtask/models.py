@@ -1606,7 +1606,7 @@ def last_task_for_hashtag(hashtag):
     last = None
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT TASKID from %s WHERE HT_ID=%s AND  ROWNUM<=1 ORDER BY TASKID ASC"%(HashTagToTask._meta.db_table,hashtag_id))
+        cursor.execute(f"SELECT TASKID from {HashTagToTask._meta.db_table} WHERE HT_ID=%s AND  ROWNUM<=1 ORDER BY TASKID ASC",[hashtag_id])
         result = cursor.fetchall()
         last = result[0][0]
     finally:
@@ -1632,7 +1632,7 @@ def set_hashtag(hashtag, tasks):
         for task in tasks:
             if type(task) != int:
                 raise ValueError('Wrong task type')
-            cursor.execute("insert into %s (HT_ID,TASKID) values(%s, %s)"%(HashTagToTask._meta.db_table,hashtag_id,task))
+            cursor.execute(f"insert into {HashTagToTask._meta.db_table} (HT_ID,TASKID) values(%s, %s)",(hashtag_id,task))
     finally:
         if cursor:
             cursor.close()
@@ -1644,7 +1644,7 @@ def count_tasks_by_hashtag(hashtag):
     total = 0
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT COUNT(TASKID) from %s WHERE HT_ID=%s"%(HashTagToTask._meta.db_table,hashtag_id))
+        cursor.execute(f"SELECT COUNT(TASKID) from {HashTagToTask._meta.db_table} WHERE HT_ID=%s",[hashtag_id])
         result = cursor.fetchall()
         total = result[0][0]
     finally:
@@ -1658,7 +1658,7 @@ def task_hashtag_exists(task_id,hashtag):
     cursor = None
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT TASKID,HT_ID from %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+        cursor.execute(f"SELECT TASKID,HT_ID from {HashTagToTask._meta.db_table} WHERE HT_ID=%s AND TASKID=%s",(hashtag_id,task_id))
         result = cursor.fetchall()
         if result:
             exists = True
@@ -1672,7 +1672,7 @@ def get_tasks_by_hashtag(hashtag):
     cursor = None
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT TASKID from %s WHERE HT_ID=%s"%(HashTagToTask._meta.db_table,hashtag_id))
+        cursor.execute(f"SELECT TASKID from {HashTagToTask._meta.db_table} WHERE HT_ID=%s",[hashtag_id])
         tasks = cursor.fetchall()
     finally:
         if cursor:
@@ -1683,13 +1683,16 @@ def get_hashtags_by_task(task_id):
     cursor = None
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT HT_ID from %s WHERE TASKID=%s"%(HashTagToTask._meta.db_table,task_id))
+        cursor.execute(f"SELECT HT_ID from {HashTagToTask._meta.db_table} WHERE TASKID=%s",[task_id])
         hashtags_id = cursor.fetchall()
     finally:
         if cursor:
             cursor.close()
     hashtags = [HashTag.objects.get(id=x[0]) for x in hashtags_id]
     return hashtags
+
+def in_statement_list(input_list: List[Any]) -> str:
+    return f"({','.join(['%s']*len(input_list))})"
 
 def get_bulk_hashtags_by_task(task_ids: [int]) -> Dict[int, List[str]]:
      # split tasks by chunks of 1000
@@ -1701,9 +1704,10 @@ def get_bulk_hashtags_by_task(task_ids: [int]) -> Dict[int, List[str]]:
         cursor = connections['deft'].cursor()
         for task_chunk in tasks:
             if len(task_chunk) > 1:
-                cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID in %s"%(HashTagToTask._meta.db_table,tuple(task_chunk)))
+                cursor.execute(f"SELECT TASKID, HT_ID from {HashTagToTask._meta.db_table} WHERE TASKID IN {in_statement_list(task_chunk)}",
+                               task_chunk)
             else:
-                cursor.execute("SELECT TASKID, HT_ID from %s WHERE TASKID = %s"%(HashTagToTask._meta.db_table,task_chunk[0]))
+                cursor.execute(f"SELECT TASKID, HT_ID from {HashTagToTask._meta.db_table} WHERE TASKID = %s",task_chunk)
             ht_id_task_id += cursor.fetchall()
     finally:
         if cursor:
@@ -1720,10 +1724,10 @@ def remove_hashtag_from_task(task_id, hashtag):
     deleted = False
     try:
         cursor = connections['deft'].cursor()
-        cursor.execute("SELECT TASKID,HT_ID from %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+        cursor.execute(f"SELECT TASKID,HT_ID from {HashTagToTask._meta.db_table} WHERE HT_ID=%s AND TASKID=%s",(hashtag_id,task_id))
         result = cursor.fetchall()
         if result:
-            cursor.execute("DELETE FROM %s WHERE HT_ID=%s AND TASKID=%s"%(HashTagToTask._meta.db_table,hashtag_id,task_id))
+            cursor.execute(f"DELETE FROM  {HashTagToTask._meta.db_table} WHERE HT_ID=%s AND TASKID=%s",(hashtag_id,task_id))
             deleted = True
     finally:
         if cursor:
