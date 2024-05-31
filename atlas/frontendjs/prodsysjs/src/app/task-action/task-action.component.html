@@ -39,7 +39,7 @@
       <div class="task-action-input-form">
         <mat-form-field class="task-action-button-field" appearance="fill"  (click)="$event.stopPropagation()">
           <mat-label>Sites</mat-label>
-          <mat-select #sites multiple [(value)]="selectedSites" (selectionChange)="emptySelectedList($event)">
+          <mat-select [panelWidth]="''" #sites multiple [(value)]="selectedSites" (selectionChange)="emptySelectedList($event)">
             <mat-option [value]="''" >Unselect Site</mat-option>
             <mat-option *ngFor="let site of reassignEntities.sites" [value]="site">
                   {{site}}
