@@ -556,6 +556,9 @@ def create_analysis_request(request):
         return Response(str(new_request.reqid))
 
     except Exception as e:
+        _jsonLogger.error(f'Create request problem {e}',
+                          extra={'user': request.user.username})
+
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
