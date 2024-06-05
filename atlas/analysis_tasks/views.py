@@ -538,7 +538,10 @@ def create_analysis_request(request):
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE, new_scope)
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, analysis_template.get_variable(TemplateVariable.KEY_NAMES.TASK_NAME).replace(old_scope, new_scope))
             analysis_template.change_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_BASE).replace(old_scope, new_scope))
-        new_request.manager = f"{request.user.first_name} {request.user.last_name}"
+        if len( f"{request.user.first_name} {request.user.last_name}") < 32:
+            new_request.manager = f"{request.user.first_name} {request.user.last_name}"
+        else:
+            new_request.manager = request.user.username
         new_request.save()
         if 'inputContainers' in request.data:
             add_analysis_slices_to_request(TRequest.objects.get(reqid=new_request.reqid),analysis_template , request.data['inputContainers'])
