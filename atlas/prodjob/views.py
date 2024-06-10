@@ -83,18 +83,24 @@ def jobs_action(request,action):
                     result['exception'] = "Permission denied"
                     return HttpResponse(json.dumps(result))
                 authentification_management = TaskManagementAuthorisation()
-                tasks_allowed = authentification_management.tasks_action_authorisation(tasks.keys(), user, 'kill_job',
-                                                                                        args)
-                if [task_verified for task_verified in tasks_allowed if not task_verified.user_allowed]:
-                    result['exception'] = "Permission denied"
-                    return HttpResponse(json.dumps(result))
                 executor = TaskActionExecutor(user, '')
+                tasks_done = set()
+                tasks_with_problems = set()
                 for task, jobs in tasks.items():
+                    user_allowed, action_allowed = authentification_management.task_action_authorisation(task, user, 'kill_job',
+                                                                                            args)
+                    if not user_allowed or not action_allowed:
+                        tasks_with_problems.add(task)
+                        continue
                     do_jedi_action(executor, task, 'kill_job', jobs, *args)
                     fin_res.append(result)
+                    tasks_done.add(task)
                 if without_taskid:
                     do_jedi_action(executor, without_taskid, 'kill_jobs_without_task', *args)
                     fin_res.append(result)
+                if len(list(tasks_with_problems))>0:
+                    result['exception'] = f"Action done for {len(list(tasks_done))} tasks, problem for {len(list(tasks_with_problems))} tasks"
+                    return HttpResponse(json.dumps(result))
         elif action == 'set_debug_jobs':
             if len(jobs) > 10:
                 result['exception'] = "Too many jobs to set debug mode"
