@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {HttpClient} from "@angular/common/http";
+import { HttpClient } from "@angular/common/http";
 import {Observable, of, throwError} from "rxjs";
 import {TaskInfo} from "../production-task/task-service.service";
 import {ProductionRequestBase, ProductionTask} from "../production-request/production-request-models";

@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute, DefaultUrlSerializer, Router} from "@angular/router";
 import {TasksManagementService} from "../tasks-management.service";
-import {HttpParams} from "@angular/common/http";
+import { HttpParams } from "@angular/common/http";
 import {catchError, switchMap, tap} from "rxjs/operators";
 import {Observable, of} from "rxjs";
 import {ProductionTask} from "../../production-request/production-request-models";

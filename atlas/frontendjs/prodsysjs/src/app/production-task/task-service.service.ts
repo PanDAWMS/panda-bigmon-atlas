@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {BehaviorSubject, Observable, of, Subject} from 'rxjs';
 import {JEDITask, ProductionTask, Slice} from '../production-request/production-request-models';
 import {GroupProductionStats} from '../derivation-exclusion/gp-stats/gp-stats';
