@@ -129,13 +129,15 @@ def create_task_from_pattern(pattern_id: int, task_name: str, task_params: dict)
     return new_task
 
 
-def check_user_group(group: str, username: str):
+def check_user_group(group: str, username: str, working_group: str) -> bool:
     user = User.objects.get(username=username)
     user_groups = [group.name for group in user.groups.all()]
     group_name = group.split('.')[1]
     iam_group = f'IAM:atlas/{group_name}/production'
     if iam_group not in user_groups and not user.is_superuser:
         raise Exception(f'User {username} is not in group {iam_group}')
+    if working_group != group_name:
+        raise Exception(f'Working group {working_group} does not match group {group_name}')
     return True
 
 
@@ -168,7 +170,10 @@ def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
         if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
             raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
     if step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('group'):
-        check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username)
+        check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username, step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP))
+    else:
+        if  step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP):
+            raise Exception(f'Working group {step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP)} does not match user scope')
 
 def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [int]:
     new_tasks = []
