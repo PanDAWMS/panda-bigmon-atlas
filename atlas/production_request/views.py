@@ -1246,8 +1246,8 @@ def read_from_spreadsheet(google_sprd: str):
 @permission_classes((IsAuthenticated,))
 def production_request_outputs(request, requestID):
     """
-    Get the outputs of the request - last step of each slice. If slice is split, the last step of the last slice is taken.
-    return: dictionary with keys as base slice and values as list of dictionaries with task, status and outputs
+    Get the outputs of the request - last step of each slice which is not hidden.
+    return: dictionary with keys as base slice and values as list of dictionaries with task, status, ami_tag and outputs
     """
     try:
         slices = InputRequestList.objects.filter(request=requestID).order_by('slice')
@@ -1259,18 +1259,14 @@ def production_request_outputs(request, requestID):
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(steps)
                 if ordered_existed_steps:
                     output_key = slice.slice
-                    if existed_foreign_step and existed_foreign_step.id in output_step:
-                        output_key = output_step[existed_foreign_step.id]
-                    else:
-                        for step in ordered_existed_steps:
-                            output_step[step.id] = output_key
                     for step in reversed(ordered_existed_steps):
                         if ProductionTask.objects.filter(step=step, request=requestID).exists():
                             outputs[output_key] = []
                             for task in ProductionTask.objects.filter(step=step, request=requestID):
-                                outputs[output_key].append({'task': task.id, 'status': task.status, 'outputs': task.output_non_log_datasets()})
+                                outputs[output_key].append({'task': task.id, 'status': task.status, 'outputs': task.output_non_log_datasets(), 'ami_tag': task.ami_tag})
                             break
         return Response(outputs)
 
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
