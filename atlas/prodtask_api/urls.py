@@ -10,7 +10,7 @@ from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_
 from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
-    pattern_slices_derivation_request, mc_subcampaign_stats
+    pattern_slices_derivation_request, mc_subcampaign_stats, production_request_outputs
 from atlas.special_workflows.views import request_results, clone_active_learning_request
 from atlas.task_action.task_management import tasks_action
 
@@ -65,6 +65,8 @@ urlpatterns = [
             name='create_physic_containers'),
     re_path(r'^deft_request/(?P<request_id>\d+)/$', deft_legacy_request,
             name='deft_legacy_request'),
+    re_path(r'^production_request_outputs/(?P<requestID>\d+)/$', production_request_outputs,
+            name='production_request_outputs'),
 
 
 ]
