@@ -509,10 +509,17 @@ class TaskManagementAuthorisation():
 
         return False
 
+    def additional_permissions(self, task: __AuthorisationTask, action: str) -> bool:
+        if task.is_analy:
+            if task.status in [ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN] and action == 'retry':
+                return True
+        return False
 
     def __task_action_check(self, task: __AuthorisationTask, user: User, allowed_groups: [str],  action: str, params, user_fullname) -> (bool, bool):
         user_is_allowed = False
         task_is_allowed = self.check_task_allowed(task.status, action)
+        if not task_is_allowed:
+            task_is_allowed = self.additional_permissions(task, action)
         if task_is_allowed:
             user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname)
         return task_is_allowed, user_is_allowed
