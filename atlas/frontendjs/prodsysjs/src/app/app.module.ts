@@ -6,7 +6,14 @@ import {APP_BASE_HREF, DATE_PIPE_DEFAULT_OPTIONS} from '@angular/common';
 import { AppComponent } from './app.component';
 import { DerivationExclusionComponent } from './derivation-exclusion/derivation-exclusion.component';
 import { ProductionRequestComponent } from './production-request/production-request.component';
-import {Routes, RouterModule, ExtraOptions, ActivatedRouteSnapshot} from '@angular/router';
+import {
+  Routes,
+  RouterModule,
+  ExtraOptions,
+  ActivatedRouteSnapshot,
+  provideRouter,
+  withComponentInputBinding
+} from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { DataCarouselComponent } from './data-carousel/data-carousel.component';
 import {MatTableModule} from '@angular/material/table';
@@ -178,7 +185,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
 
   {path: 'task/:id', component: ProductionTaskComponent, title: TaskTitleResolvel},
   {path: 'gp-deletion-request', component: GpDeletionRequestComponent},
-  {path: 'gp-api', component: GpApiInstructionComponent},
+  {path: 'gp-api', component: GpApiInstructionComponent, data: {currentAPI: 'gp'}},
+  {path: 'ap-api', component: GpApiInstructionComponent,
+      data: {currentAPI: 'ap'}},
     {path: 'ga-api', component: AnalysisApiDescriptionComponent},
   {path: 'input_by_ami_tag/:amiTag', component: DerivationFromTagComponent},
     {path: 'input_by_ami_tag', component: DerivationFromTagComponent},
@@ -329,6 +338,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
             cookieName: 'csrftoken',
             headerName: 'X-CSRFToken',
         })),
+          provideRouter(routes, withComponentInputBinding())
+
     ] })
 export class AppModule { }
 

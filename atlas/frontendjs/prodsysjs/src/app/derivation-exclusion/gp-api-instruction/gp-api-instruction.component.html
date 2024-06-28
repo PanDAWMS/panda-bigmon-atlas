@@ -34,7 +34,8 @@ json.loads(response.content)</pre>
 </mat-card>
 <mat-divider></mat-divider>
 <h3>APIs</h3>
-<p>
+@if (currentAPI ==='gp'){
+  <p>
 For Derivation superseded container management following APIs are avalaible:
 </p>
 <ul>
@@ -134,3 +135,38 @@ if result['containers_extented'] != len(containers):
     The same as gp_extension but instead of a list of containers it takes a name of a period container as a parameter "period_container"
   </li>
 </ul>
+} @else {
+    <p>
+For production activities following APIs are avalaible:
+</p>
+<ul>
+
+    <li>
+    <h5> <a href="https://prodtask-dev.cern.ch/api/production_request_outputs/56281/">production_request_outputs</a></h5>
+    </li>
+Get the outputs of the request - last step of each slice which is not hidden.
+return: dictionary with keys as base slice and values as list of dictionaries with task, status, ami_tag and outputs<br/>
+      <mat-card appearance="outlined">
+        <mat-card-title>
+          CURL example
+        </mat-card-title>
+        <mat-card-content>
+    <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/production_request_outputs/56281/"</pre>
+    </code>
+        </mat-card-content>
+      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        Example of output
+      </mat-card-title>
+      <mat-card-content>
+        <code>
+          <pre>{{prOutputExample |json}}</pre>
+
+        </code>
+      </mat-card-content>
+    </mat-card>
+</ul>
+}
+
