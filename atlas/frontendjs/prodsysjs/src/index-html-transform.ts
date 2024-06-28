@@ -29,6 +29,6 @@ export default (targetOptions: TargetOptions, indexHtml: string) => {
       result += djangoScriptTemplate(scriptFullName) + '\n';
     }
   }
-
+  console.log(result);
   return result;
 };
