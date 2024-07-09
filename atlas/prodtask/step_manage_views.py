@@ -1138,7 +1138,7 @@ def move_tasks_to_new_slice(source_request_id: int, destination_request_id: int,
     new_steps_ordered, parent_step = form_existed_step_list(new_steps)
     new_step_index = 0
     for index, step in enumerate(step_as_in_page):
-        if step and ((step.step_parent == parent_step) or (new_step_index > 0)):
+        if step and step.step_parent != step and ((step.step_parent == parent_step) or (new_step_index > 0)):
             tasks = list(ProductionTask.objects.filter(step=step, request=source_request_id))
             for task in tasks:
                 task.step = new_steps_ordered[new_step_index]
