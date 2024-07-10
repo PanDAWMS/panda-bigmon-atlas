@@ -683,7 +683,7 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         # serialize
         strIDs = pickle.dumps(ids, protocol=0).decode('utf-8')
 
-        data = {'ids': strIDs, 'code': code, 'useMailAsID': useMailAsID}
+        data = {'ids': strIDs, 'code': str(code), 'useMailAsID': useMailAsID}
         killOpts = ''
         if keepUnmerged:
             killOpts += 'keepUnmerged,'
