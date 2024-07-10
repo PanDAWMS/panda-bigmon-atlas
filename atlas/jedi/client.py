@@ -649,7 +649,7 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
                the list of clouds (or Nones if tasks are not yet assigned)
         """
 
-        data = {'jediTaskID': jediTaskID, 'code': code}
+        data = {'jediTaskID': jediTaskID, 'code': str(code)}
         return self._post_command('killUnfinishedJobs',data)
 
     def killJobs(self, ids, code=None, verbose=False, srvID=None, useMailAsID=False, keepUnmerged=False, jobSubStatus=None):
