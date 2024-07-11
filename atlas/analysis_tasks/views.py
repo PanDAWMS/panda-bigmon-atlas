@@ -69,6 +69,14 @@ def replace_template_by_variable(task_params: dict, variable: TemplateVariable, 
                     value[i] = replace_template_by_variable(value[i], variable, root+[key+TemplateVariable.KEYS_SEPARATOR+str(i)])
     return task_params
 
+def move_job_paramas_to_task_params(task_params: dict) -> dict:
+    if TemplateVariable.KEY_NAMES.JOB_PARAMETERS in task_params:
+        for job_parameter in task_params[TemplateVariable.KEY_NAMES.JOB_PARAMETERS]:
+            for key, value in job_parameter.items():
+                if key in TemplateVariable.JOB_TO_TASK_PARAMETERS:
+                    task_params[TemplateVariable.JOB_TO_TASK_PARAMETERS[key]] = value
+    return task_params
+
 
 def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateVariable]]:
     task = TTask.objects.get(id=task_id)
@@ -98,12 +106,13 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
     scope_variable = TemplateVariable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE, output_scope)
     task_params = replace_template_by_variable(task_params, scope_variable, [])
     template_variables.append(scope_variable)
-    template_variables.append(TemplateVariable(TemplateVariable.KEY_NAMES.TASK_PRIORITY, task_params.get('taskPriority',1000),
+    template_variables.append(TemplateVariable(TemplateVariable.KEY_NAMES.TASK_PRIORITY, task_params.get('taskPriority','1000'),
                                                ['taskPriority'], TemplateVariable.VariableType.INTEGER))
     if 'parent_tid' in task_params:
         template_variables.append(
             TemplateVariable(TemplateVariable.KEY_NAMES.PARENT_ID, task_params['parent_tid'],
                              ['parent_tid'], TemplateVariable.VariableType.INTEGER))
+    task_params = move_job_paramas_to_task_params(task_params)
     return task_params, template_variables
 
 def create_pattern_from_task(task_id: int, pattern_description: str, task_params: dict = None, source_action: str = '',
@@ -174,6 +183,11 @@ def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
     else:
         if  step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP):
             raise Exception(f'Working group {step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP)} does not match user scope')
+    if step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION]):
+        try:
+            rse_exists = ddm.list_rses(f"rse={step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION])}")
+        except Exception as e:
+            raise Exception(f'RSE {step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION])} does not exist')
 
 def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [int]:
     new_tasks = []
@@ -235,8 +249,11 @@ def check_name_version(step_template: AnalysisStepTemplate):
             new_name = name_base + '.v' + f'{version_number:02d}'
             if TTask.objects.filter(name=new_name+ '/').exists():
                 previous_task = TTask.objects.filter(name=new_name+ '/').last()
-                if ((TTask.objects.filter(name=new_name+ '/').last().status not in ProductionTask.BAD_STATUS) and
+                if ((previous_task.status not in ProductionTask.BAD_STATUS) and
                         input_dataset == previous_task.input_dataset):
+                    if (ProductionTask.objects.filter(id=previous_task.id).exists() and
+                        ProductionTask.objects.get(id=previous_task.id).status in [ProductionTask.STATUS.TOABORT]):
+                        continue
                     raise Exception(f'Task already exists: {previous_task.id}')
                 continue
             step_template.change_variable(TemplateVariable.KEY_NAMES.TASK_NAME, new_name+ '/')

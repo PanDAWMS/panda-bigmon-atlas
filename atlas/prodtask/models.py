@@ -911,7 +911,7 @@ class TemplateVariable:
     keys: [str] = field(default_factory=list)
     type: VariableType = VariableType.TEMPLATE
 
-
+    JOB_TO_TASK_PARAMETERS = {'destination':'destSE','token': 'spaceToken'}
     class KEY_NAMES:
         INPUT_BASE = 'input_base'
         OUTPUT_BASE = 'output_base'
@@ -925,6 +925,11 @@ class TemplateVariable:
         INPUT_DS = 'dsForIN'
         nEVENTS = 'nEvents'
         WORKING_GROUP = 'workingGroup'
+        JOB_PARAMETERS = 'jobParameters'
+        JOB_PARAMETER_TYPE = 'param_type'
+        OUTPUT_DATASET_TYPE = 'output'
+        DESTINATION = 'destination'
+        TOKEN = 'token'
 
     KEYS_SEPARATOR = ','
 
@@ -1099,8 +1104,26 @@ class AnalysisStepTemplate(models.Model):
                 return x.primary_key
         return None
 
+    @staticmethod
+    def render_job_parameters(task_params: dict) -> dict:
+        for job_parameter_key, job_parameter_value in TemplateVariable.JOB_TO_TASK_PARAMETERS.items():
+            current_value = task_params.pop(job_parameter_value, None)
+            if TemplateVariable.KEY_NAMES.JOB_PARAMETERS in task_params:
+                for job_parameter in task_params[TemplateVariable.KEY_NAMES.JOB_PARAMETERS]:
+                    if job_parameter_key in job_parameter:
+                        if current_value is not None:
+                            job_parameter[job_parameter_key] = current_value
+                        else:
+                            job_parameter.pop(job_parameter_key)
+                    elif (TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE in job_parameter and
+                          TemplateVariable.KEY_NAMES.OUTPUT_DATASET_TYPE == job_parameter[TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE]):
+                        if current_value is not None:
+                            job_parameter[job_parameter_key] = current_value
+        return task_params
+
     def render_task_template(self) -> dict:
         render_template = deepcopy(self.step_parameters)
+        render_template = self.render_job_parameters(render_template)
         key_values = {}
         for variable in self.variables_data:
             for key_chain in variable.keys:
@@ -1403,7 +1426,7 @@ class ProductionTask(models.Model):
     RED_STATUS = [STATUS.FAILED, STATUS.ABORTED, STATUS.BROKEN]
     NOT_RUNNING = RED_STATUS + [STATUS.FINISHED, STATUS.DONE, STATUS.OBSOLETE]
     OBSOLETE_READY_STATUS = [STATUS.FINISHED, STATUS.DONE, STATUS.OBSOLETE]
-    BAD_STATUS = RED_STATUS + [STATUS.OBSOLETE, STATUS.ABORTING, STATUS.TOABORT]
+    BAD_STATUS = RED_STATUS + [STATUS.OBSOLETE, STATUS.ABORTING, STATUS.TOABORT, STATUS.ABORTING]
 
 
 

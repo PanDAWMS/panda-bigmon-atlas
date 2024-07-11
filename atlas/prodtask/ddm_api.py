@@ -276,6 +276,11 @@ class DDM(object):
     def delete_replication_rule(self, rule_id):
         self.__ddm.delete_replication_rule(rule_id)
 
+    def dataset_is_in_container(self, dataset_name, container_name):
+        scope, name = self.rucio_convention(dataset_name)
+        container_scope, container_name = self.rucio_convention(container_name)
+        return scope+':'+name in [x['scope']+':'+x['name'] for x in self.__ddm.list_content(container_scope, container_name)]
+
     def dataset_in_container(self, container_name):
         """
 
