@@ -66,6 +66,20 @@ export class TASKS_CONSTANTS {
   public static readonly TASKS_PARAMS_FORM = {
   task_params_control: [
     {
+      name: 'destSE',
+      label: 'destination',
+      description: 'output destination',
+      type: 'text',
+      validators: {}
+    },
+    {
+      name: 'spaceToken',
+      label: 'token',
+      description: 'output token',
+      type: 'text',
+      validators: {}
+    },
+    {
       name: 'taskName',
       label: 'taskName',
       description: 'taskName',
