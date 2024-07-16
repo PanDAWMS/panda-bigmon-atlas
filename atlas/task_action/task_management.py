@@ -361,6 +361,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         task = ProductionTask.objects.get(id=task_id)
         hashtag = add_or_get_request_hashtag(hashtag_name)
         task.set_hashtag(hashtag)
+        task.timestamp = timezone.now()
+        task.save()
         return True, ''
 
     @_action_logger
@@ -368,6 +370,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         task = ProductionTask.objects.get(id=task_id)
         hashtag = add_or_get_request_hashtag(hashtag_name)
         task.remove_hashtag(hashtag)
+        task.timestamp = timezone.now()
+        task.save()
         return True, ''
 
     @_action_logger
