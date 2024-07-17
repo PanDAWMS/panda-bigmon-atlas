@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
+from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
@@ -196,6 +197,23 @@ def is_stage_rule_stuck_because_of_tape(request):
     except Exception as e:
         _jsonLogger.error(f"Check staging rule to be stuck failed {e}")
         return HttpResponseBadRequest(f"Check staging rule to be stuck failed {e}")
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def dsid_info(request):
+    """
+        Return information about dataset by dsid\n
+       * dsid: dataset id. Required\n
+
+    """
+    try:
+        dsid = request.query_params.get('dsid')
+
+        return Response(datasets_by_campaign(dsid))
+    except Exception as e:
+        _jsonLogger.error(f"Taken dsid info error {e}")
+        return HttpResponseBadRequest(f"Taken dsid info error {e}")
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

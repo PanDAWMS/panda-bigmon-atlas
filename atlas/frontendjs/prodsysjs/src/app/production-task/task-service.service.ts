@@ -116,7 +116,6 @@ export class TaskService {
   getTaskActionLogs(id: string): Observable<TaskActionLog[]> {
     return this.http.get<TaskActionLog[]>(this.prTaskActionsUrl, {params: {task_id: id }});
   }
-
   getTaskStats(id: string): Observable<TaskHS06> {
     return this.http.get<TaskHS06>(this.prTaskStatsUrl, {params: {task_id: id }});
   }

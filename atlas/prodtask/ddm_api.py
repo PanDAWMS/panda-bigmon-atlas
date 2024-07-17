@@ -187,7 +187,7 @@ class DDM(object):
         except Exception as e:
             raise e
 
-    def find_dataset(self, pattern):
+    def find_dataset(self, pattern, long=False):
         """
 
         :param pattern: Searching datasets and containers by pattern
@@ -196,14 +196,14 @@ class DDM(object):
         """
         _logger.debug('Search dataset with pattern: %s' % pattern)
         scope, name = self.rucio_convention(pattern)
-        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name}))
+        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},long=long))
         return output_datasets
 
 
-    def find_container(self, pattern):
+    def find_container(self, pattern, long=False):
         _logger.debug('Search container with pattern: %s' % pattern)
         scope, name = self.rucio_convention(pattern)
-        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},did_type='container'))
+        output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},did_type='container',long=long))
         return output_datasets
 
 
@@ -446,6 +446,14 @@ class DDM(object):
         scope, name = self.rucio_convention(dataset_name)
         events = self.__ddm.get_metadata(scope=scope,name=name)
         return events
+
+    def datasets_metadata(self, dataset_names: [str]):
+        """
+        :param dataset_names: list of dataset names
+        :return: list of metadata for each dataset
+        """
+        datasets_with_scope = list(map(lambda x: {'scope':x[0],'name':x[1]},[self.rucio_convention(dataset) for dataset in dataset_names]))
+        return list(self.__ddm.get_metadata_bulk(datasets_with_scope))
 
     def rse_attr(self, rse):
         return self.__ddm.list_rse_attributes(rse)

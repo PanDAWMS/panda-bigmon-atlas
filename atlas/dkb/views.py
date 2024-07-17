@@ -1,3 +1,6 @@
+import dataclasses
+from typing import Dict
+
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 import logging
@@ -5,6 +8,7 @@ import logging
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepTemplate, MCPriority, HashTag
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -585,26 +589,46 @@ def tasks_by_hashtag(hashtag):
         return tasks_hashtags
     return []
 #
-def es_by_keys_nested(values, size=10000):
+def es_by_keys_nested(values, size=10000, only_good_status=False):
     search_dict = []
     for x in values:
-        search_dict.append({'term':{x:values[x]}})
+        if type(values[x]) == list:
+            search_dict.append({'terms':{x:values[x]}})
+        else:
+            search_dict.append({'term':{x:values[x]}})
 
     es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
-    query = {
-        "query": {
-            "bool": {
-                "must": search_dict,
-                'should': {
-                    'nested': {
-                        'path': 'output_dataset',
-                        'score_mode': 'sum',
-                        'query': {'match_all': {}},
+    if not only_good_status:
+        query = {
+            "query": {
+                "bool": {
+                    "must": search_dict,
+                    'should': {
+                        'nested': {
+                            'path': 'output_dataset',
+                            'score_mode': 'sum',
+                            'query': {'match_all': {}},
+                        }
                     }
                 }
-            }
-        }, 'size':size
-    }
+            }, 'size':size
+        }
+    else:
+        query = {
+            "query": {
+                "bool": {
+                    "must": search_dict,
+                    'should': {
+                        'nested': {
+                            'path': 'output_dataset',
+                            'score_mode': 'sum',
+                            'query': {'match_all': {}},
+                        }
+                    },
+                    'must_not': [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]
+                }
+            }, 'size':size
+        }
     search = es_search.update_from_dict(query)
     response = search.execute()
     result = []
@@ -976,4 +1000,138 @@ def verify_dkb(days):
         except Exception as e:
             print('Task %s is not in ES %s' % (task.id,str(e)))
             break
+
+def total_events_per_campaign(run_number: int, step_name: str, use_taskname=False):
+    search_key = 'run_number' if not use_taskname else 'taskname'
+    query = {
+        "size": 0,
+        "query": {
+            "bool": {
+                "must": [
+                    {"term": {search_key: run_number}},
+                    {"term": {"step_name.keyword": step_name}},
+                    {"bool": {"must_not": [{"terms": {"status": ["aborted", "failed", "broken", "obsolete"]}}]}},
+                ]
+            }
+        },
+        "aggs": {
+            "by_campaign": {
+                "terms": {
+                    "field": "campaign.keyword",
+                    "size": 1000
+                },
+                "aggs": {
+                    "by_subcampaign": {
+                        "terms": {
+                            "field": "subcampaign.keyword",
+                            "size": 1000
+                        },
+                        "aggs": {
+                            "by_project": {
+                                "terms": {
+                                    "field": "project.keyword",
+                                    "size": 1000
+                                },
+                                "aggs": {
+                                    "total_processed_events": {
+                                        "sum": {
+                                            "field": "processed_events"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['prod'])
+    aggregs = es_search.update_from_dict(query)
+    execute = aggregs.execute()
+    result = []
+    for campaign in execute.aggregations.by_campaign.buckets:
+        for subcampaign in campaign.by_subcampaign.buckets:
+            for project in subcampaign.by_project.buckets:
+                if 'valid' not in project.key:
+                    result.append({'campaign': campaign.key, 'subcampaign': subcampaign.key, 'project': project.key, 'total_events': project.total_processed_events.value})
+    return result
+
+def dkb_datasets_by_dsid(dsid: int) -> [(dict, [str])]:
+    tasks = es_by_keys_nested({'run_number':dsid, 'step_name.keyword':'Rec Merge'},1000, True)
+    results = []
+    for task in tasks:
+            if 'valid' not in task['project']:
+                datasets = [x['name'] for x in task['output_dataset'] if x['data_format'] in ['AOD','DAOD_RPVLL']  and not x['deleted']]
+                results.append((task, datasets))
+    return results
+
+def datasets_by_dsid(dsid: int) -> [str]:
+    ddm = DDM()
+    datasets_from_dkb = dkb_datasets_by_dsid(dsid)
+    scopes = set([x[0]['project'] for x in datasets_from_dkb])
+    ami_tags = set([x[0]['ctag'] for x in datasets_from_dkb])
+    running_tasks_per_campaign = {}
+    for task, datasets in datasets_from_dkb:
+        if datasets:
+            container_name = ddm.get_sample_container_name(datasets[0])
+        else:
+            container_name = ddm.get_sample_container_name(task['primary_input'])
+        campaign = f"{task['campaign']}:{task['subcampaign']}"
+        if campaign not in running_tasks_per_campaign:
+            running_tasks_per_campaign[campaign] = {}
+            if container_name not in running_tasks_per_campaign[campaign]:
+                running_tasks_per_campaign[campaign][container_name] = []
+            if task['status'] not in ProductionTask.NOT_RUNNING:
+                running_tasks_per_campaign[campaign][container_name] += [task['taskid']]
+    datasets_from_rucio = []
+    for scope in scopes:
+        for ami_tag in ami_tags:
+            datasets = ddm.find_dataset(f'{scope}.{dsid}.%.merge.AOD.%{ami_tag}_tid%')
+            datasets += ddm.find_dataset(f'{scope}.{dsid}.%.merge.DAOD_RPVLL.%{ami_tag}_tid%')
+            datasets_from_rucio.extend(datasets)
+    return datasets_from_rucio, running_tasks_per_campaign
+
+
+
+@dataclasses.dataclass
+class CampaignContainer:
+    container: str
+    datasets: [str]
+    total_events: int
+    running_tasks: int
+
+@dataclasses.dataclass
+class CampaignForDSID:
+    dsid: int
+    campaign: str
+    containers: Dict[str, CampaignContainer] = dataclasses.field(default_factory=dict)
+
+def datasets_by_campaign(dsid: int):
+    datasets, running_tasks_per_campaign = datasets_by_dsid(dsid)
+    total_evgen_per_campaign = total_events_per_campaign(dsid, 'Evgen Merge', True)
+    ddm = DDM()
+    datasets_metadata = ddm.datasets_metadata(datasets)
+    dataset_per_campaign = {}
+    for dataset_metadata in datasets_metadata:
+        campaign = dataset_metadata['campaign']
+        container_name = ddm.get_sample_container_name(dataset_metadata['name'])
+        if campaign not in dataset_per_campaign:
+            dataset_per_campaign[campaign] = CampaignForDSID(dsid, campaign, {})
+        if container_name not in dataset_per_campaign[campaign].containers:
+            dataset_per_campaign[campaign].containers[container_name] = CampaignContainer(container_name, [],0, 0)
+        dataset_per_campaign[campaign].containers[container_name].datasets.append(dataset_metadata['name'])
+        dataset_per_campaign[campaign].containers[container_name].total_events += dataset_metadata['events']
+        if campaign in running_tasks_per_campaign and container_name in running_tasks_per_campaign[campaign]:
+            dataset_per_campaign[campaign].containers[container_name].running_tasks = len(running_tasks_per_campaign[campaign][container_name])
+            running_tasks_per_campaign[campaign].pop(container_name)
+    for campaign in running_tasks_per_campaign:
+        for container_name in running_tasks_per_campaign[campaign]:
+            if campaign not in dataset_per_campaign:
+                dataset_per_campaign[campaign] = CampaignForDSID(dsid, campaign, {})
+            dataset_per_campaign[campaign].containers[container_name] = CampaignContainer(container_name, [],0, len(running_tasks_per_campaign[campaign][container_name]))
+    evgen = [{'campaign':f'{evgen_events["campaign"]}:{evgen_events["subcampaign"]}', 'total_events':evgen_events['total_events']} for evgen_events in total_evgen_per_campaign]
+    return {'containers': {x: dataclasses.asdict(dataset_per_campaign[x]) for x in sorted(dataset_per_campaign.keys())}, 'evgen': evgen}
+
+
 

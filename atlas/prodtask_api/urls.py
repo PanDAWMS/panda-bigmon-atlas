@@ -67,6 +67,9 @@ urlpatterns = [
             name='deft_legacy_request'),
     re_path(r'^production_request_outputs/(?P<requestID>\d+)/$', production_request_outputs,
             name='production_request_outputs'),
+    re_path(r'^dsid_info/$', dsid_info,
+            name='dsid_info'),
+
 
 
 ]

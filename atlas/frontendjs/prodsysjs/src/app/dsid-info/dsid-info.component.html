@@ -1,0 +1,72 @@
+ <mat-form-field >
+   <mat-label>DSID     </mat-label>
+     <input matInput type="number" [(ngModel)]="formDSID"  >
+ </mat-form-field>
+    <button mat-raised-button color="primary" [routerLink]="['.']" [queryParams]="{'dsid':formDSID}" [queryParamsHandling]="'merge'" [disabled]="" >Get</button>
+ @if (isLoading()) {
+      <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
+
+    }
+    @if (dsidInfo()){
+<div class="container mx-auto">
+    <!-- EvgenDetail Table -->
+    <div class="mb-8">
+        <h2 class="text-xl font-bold mb-4">Evgen Details</h2>
+        <table class="min-w-full bg-white rounded-lg overflow-hidden shadow-lg">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="py-2 px-4">Campaign</th>
+                    <th class="py-2 px-4">Total Events</th>
+                </tr>
+            </thead>
+            <tbody>
+              @for (evgen of dsidInfo().evgen; track evgen.campaign){
+                <tr  class="border-t">
+                    <td class="py-2 px-4">{{ evgen.campaign }}</td>
+                    <td class="py-2 px-4">{{ evgen.total_events | number }}</td>
+                </tr>
+              }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Containers per Campaign -->
+    <div>
+        <h2 class="text-xl font-bold mb-4">AODs Containers per Campaign</h2>
+      @for (campaignKey of objectKeys(dsidInfo().containers); track  campaignKey){
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Campaign: {{ campaignKey }}</h3>
+          <table class="min-w-full bg-white rounded-lg overflow-hidden shadow-lg">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-2 px-4">Container</th>
+                        <th class="py-2 px-4">Events produced</th>
+                        <th class="py-2 px-4">Running Tasks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                 @for (containerKey of objectKeys(dsidInfo().containers[campaignKey].containers); track containerKey){
+                    <tr  class="border-t">
+                        <td class="py-2 px-4"><a href="{{ dsidInfo().containers[campaignKey].containers[containerKey].container | rucioURL }}">
+                          {{ dsidInfo().containers[campaignKey].containers[containerKey].container }}</a></td>
+                        <td class="py-2 px-4">{{ dsidInfo().containers[campaignKey].containers[containerKey].total_events | number }}</td>
+                        <td class="py-2 px-4"><a [routerLink]="'/tasks-by-dkb/dkb'" [queryParams]="{'search':getTasksUrl()}">{{ dsidInfo().containers[campaignKey].containers[containerKey].running_tasks }}</a></td>
+                    </tr>
+                 }
+                </tbody>
+            </table>
+
+        </div>
+      }
+    </div>
+</div>
+    }
+    @if (errorMessage()) {
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+
+      </div>
+
+    }
