@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from rest_framework.request import Request
 
 from atlas.JIRA.client import JIRAClient
-from atlas.jedi.client import JEDIClient, JEDITaskActionInterface, JEDIClientTest
+from atlas.jediinterface.client import JEDIClient, JEDITaskActionInterface, JEDIClientTest
 import logging
 from django.utils import timezone
 

@@ -23,7 +23,7 @@ from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, 
     check_action_allowed
 from .task_views import get_permissions
 from .task_actions import do_action
-from ..jedi.client import JEDIClientTest
+from ..jediinterface.client import JEDIClientTest
 from ..task_action.task_management import TaskManagementAuthorisation, TaskActionAllowed, TaskActionExecutor, \
     do_jedi_action
 
