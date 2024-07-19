@@ -21,7 +21,7 @@ from rest_framework.request import Request
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
 from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
-from atlas.jedi.client import JEDIClientTest
+from atlas.jediinterface.client import JEDIClientTest
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
