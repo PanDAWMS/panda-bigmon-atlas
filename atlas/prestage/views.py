@@ -2384,7 +2384,7 @@ def staging_tasks_by_destination(destination_rse: str):
 def fill_staging_destination():
     ddm = DDM()
     for dataset_stage in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
-        if not dataset_stage.destination_rse:
+        if not dataset_stage.destination_rse and dataset_stage.rse:
             try:
                 first_file = ddm.list_locks(dataset_stage.rse).__next__()
                 dataset_stage.destination_rse = first_file['rse']
@@ -2460,3 +2460,22 @@ def check_stale_staging_tasks():
                 start_stagind_task(task)
         else:
             _logger.error(f"Staging dataset for task {task.id} is not found")
+
+def check_staging_rules_on_lost_files():
+    staging_rules = DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING)
+    ddm = DDM()
+    for staging_rule in staging_rules:
+        if staging_rule.total_files > 0:
+            dataset_files = ddm.dataset_metadata(staging_rule.dataset)['length']
+            if dataset_files != staging_rule.total_files:
+                _logger.info(f"Staging rule {staging_rule.dataset} has {staging_rule.total_files} files, but {dataset_files} in Rucio")
+                staging_rule.total_files = dataset_files
+                staging_rule.save()
+            elif (staging_rule.total_files - staging_rule.staged_files < 10) and (staging_rule.update_time and (timezone.now() - staging_rule.update_time) > timedelta(days=5)):
+                full_replicas = ddm.full_replicas_per_type(staging_rule.dataset)
+                if len(full_replicas['tape']) + len(full_replicas['data']) ==0:
+                    _logger.info(f"Staging rule {staging_rule.dataset} has no replicas")
+                    # staging_rule.status = DatasetStaging.STATUS.CANCELED
+                    # staging_rule.save()
+
+
