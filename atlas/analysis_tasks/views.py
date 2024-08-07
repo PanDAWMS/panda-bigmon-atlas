@@ -206,16 +206,18 @@ def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [
             else:
                 input_tasks = ProductionTask.objects.filter(step=prod_step.step_parent)
                 for input_task in input_tasks:
+                    current_step = AnalysisStepTemplate.objects.get(id=step.id)
                     if input_task.status not in ProductionTask.BAD_STATUS:
                         for dataset in input_task.output_non_log_datasets():
-                            if step.slice.dataset ==  get_container_name(dataset):
-                                # step.change_step_input(dataset)
-                                step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, dataset)
+                            if current_step.slice.dataset ==  get_container_name(dataset):
+                                # current_step.change_step_input(dataset)
+                                current_step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, dataset)
                                 task_id = TTask().get_id()
-                                t_task, prod_task = register_analysis_task(step, task_id, input_task.id)
+                                t_task, prod_task = register_analysis_task(current_step, task_id, input_task.id)
                                 t_task.save()
                                 prod_task.save()
                                 new_tasks.append(task_id)
+                                current_step = None
 
     return new_tasks
 
