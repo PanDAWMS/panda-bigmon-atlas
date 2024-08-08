@@ -586,6 +586,23 @@ def submit_queued_rule(action_step_id):
             dataset_stage.start_time = timezone.now()
             dataset_stage.save()
 
+def submit_queued_dataset_staging(dataset: str):
+    dataset_staging = DatasetStaging.objects.filter(dataset=dataset).last()
+    ddm = DDM()
+    if dataset_staging.status == DatasetStaging.STATUS.QUEUED:
+        action_stages = ActionStaging.objects.filter(dataset_stage=dataset_staging)
+        for action_stage in action_stages:
+            if action_stage.step_action.status == 'active':
+                action_step = action_stage.step_action
+                source_replica = fill_source_replica_template(ddm, dataset_staging.dataset, action_step.get_config('source_replica'), dataset_staging.source)
+                rule = action_step.get_config('rule')
+                rule = prepare_rule(rule, dataset_staging.source)
+                perfom_dataset_stage(dataset_staging.dataset, ddm, rule, action_step.get_config('lifetime'), source_replica)
+                dataset_staging.status = 'staging'
+                dataset_staging.start_time = timezone.now()
+                dataset_staging.save()
+                return True
+    return False
 
 def submit_all_tapes():
     ddm = DDM()
@@ -795,7 +812,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                     else:
                         input = random.choice(input)
         input=convert_input_to_physical_tape(input)
-        create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input,all_data_replicas_without_rules)
+        create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input,data_replica_wihout_rule=all_data_replicas_without_rules)
 
 
 def remove_stale_rules(days_after_last_update):
