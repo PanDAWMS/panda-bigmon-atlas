@@ -420,8 +420,16 @@ def output_hashtag_stat(request):
             yield lst[i:i + n]
 
     try:
-        hashtags_raw = request.data['hashtag']
-        task_ids = tasks_from_string(hashtags_raw)
+        hashtags_raw: str = request.data['hashtag']
+        if hashtags_raw.startswith('requests:'):
+            pr_ids = [int(x) for x in hashtags_raw.split(':')[1].split(',')]
+            search_dict = {"terms": {"pr_id":pr_ids}}
+            task_ids = ProductionTask.objects.filter(request_id__in=pr_ids).values_list('id', flat=True)
+        else:
+            hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
+            hashtags = [x.lower() for x in hashtags_split if x]
+            search_dict = {"terms": {"hashtag_list": hashtags}}
+            task_ids = tasks_from_string(hashtags_raw)
         steps={}
         status_dict = {}
         tasks = sum([list(ProductionTask.objects.filter(id__in=chunk).values('status','ami_tag','output_formats')) for chunk in chunks(task_ids, 1000)], [])
@@ -437,13 +445,12 @@ def output_hashtag_stat(request):
         for status in ProductionTask.STATUS_ORDER:
             if status in status_dict:
                 status_stat.append({'name': status, 'count': status_dict[status]})
-        hashtags_split = hashtags_raw.replace('&',',').replace('|',',').split(',')
-        hashtags = [x.lower() for x in hashtags_split if x]
+
         #format_dict = deriv_formats({"terms": {"hashtag_list": hashtags}})
-        formats = get_format_by_request({"terms": {"hashtag_list": hashtags}})
-        statistics = statistic_by_request_deriv_new({"terms": {"hashtag_list": hashtags}}, formats)
-        running_stat = running_events_stat_deriv_new({"terms": {"hashtag_list": hashtags}},['running'], formats)
-        finished_stat = running_events_stat_deriv_new({"terms": {"hashtag_list": hashtags}},['finished','done'], formats)
+        formats = get_format_by_request(search_dict)
+        statistics = statistic_by_request_deriv_new(search_dict, formats)
+        running_stat = running_events_stat_deriv_new(search_dict,['running'], formats)
+        finished_stat = running_events_stat_deriv_new(search_dict,['finished','done'], formats)
         step_resut, total = form_statistic_per_step(statistics,running_stat, finished_stat, False, steps)
         result = {'steps':
                       step_resut,'status':status_stat, 'total_campaign': total}
