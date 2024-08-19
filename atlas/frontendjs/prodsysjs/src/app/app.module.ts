@@ -126,6 +126,7 @@ import {
 } from "./production-request/request-horizontal-split/request-horizontal-split.component";
 import {McRequestSubmissionComponent} from "./production-request/mc-request-submission/mc-request-submission.component";
 import {DsidInfoComponent} from "./dsid-info/dsid-info.component";
+import {ReproPatchComponent} from "./repro-patch/repro-patch.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -211,6 +212,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
       unmergedDatasets: UnmergeNotDeletedResolver,
     }},
     {path: 'derivation-physics-container/:requestID', component: DerivationPhysicContainerComponent},
+      {path: 'repro-patch/:requestID', component: ReproPatchComponent},
+
       {path: 'split-subcampaigns/:requestID', component: RequestHorizontalSplitComponent},
 
 
