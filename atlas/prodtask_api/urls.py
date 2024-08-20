@@ -69,6 +69,11 @@ urlpatterns = [
             name='production_request_outputs'),
     re_path(r'^dsid_info/$', dsid_info,
             name='dsid_info'),
+    re_path(r'^reprocessing_request_patch_info/(?P<requestID>\d+)/$', reprocessing_request_patch_info,
+            name='reprocessing_request_patch_info'),
+    re_path(r'^patch_reprocessing_request/(?P<requestID>\d+)/$', patch_reprocessing_request,
+            name='patch_reprocessing_request'),
+
 
 
 

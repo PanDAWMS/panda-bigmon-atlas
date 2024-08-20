@@ -1,8 +1,11 @@
 
 import json
 import logging
+from dataclasses import asdict
+from time import sleep
 
 from django.http.response import HttpResponseForbidden, HttpResponseBadRequest
+from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
@@ -15,6 +18,8 @@ from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus
+from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
+    ReprocessingTaskFix, patched_containers
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.views import form_existed_step_list, set_request_status
@@ -307,3 +312,36 @@ def deft_legacy_request(request, request_id):
         error_message = f"DEFT request {e}"
         _jsonLogger.error(error_message)
         return HttpResponseBadRequest(error_message)
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def reprocessing_request_patch_info(request, requestID):
+    try:
+        pathed_tasks = patched_containers(requestID)
+        tasks_to_fix = find_reprocessing_to_fix(requestID, pathed_tasks)
+        return Response( {'request': ProductionRequestSerializer(TRequest.objects.get(reqid=requestID)).data,
+                          'patchedTasks': pathed_tasks, "tasksToFix": [asdict(x) for x in tasks_to_fix]})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def patch_reprocessing_request(request, requestID):
+    try:
+        ami_tag = request.data.get('amiTag')
+        tasks_to_patch = request.data.get('tasksToPatch')
+        pathed_tasks = patched_containers(requestID)
+        tasks_to_fix: [ReprocessingTaskFix] = find_reprocessing_to_fix(requestID, pathed_tasks)
+        result = 0
+        for task in tasks_to_fix:
+            if task.original_task_id in tasks_to_patch:
+                clone_fix_reprocessing_task(task, ami_tag)
+                result += 1
+        return Response(result)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,10 +1,11 @@
 import {inject, Injectable} from '@angular/core';
-import {EMPTY, merge, Observable, Subject} from "rxjs";
+import {EMPTY, merge, Observable, of, Subject} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {catchError, map, switchMap, tap} from "rxjs/operators";
 import {setErrorMessage} from "../dsid-info/dsid-info.service";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {signalSlice} from "ngxtension/signal-slice";
+import {ProductionRequestBase} from "../production-request/production-request-models";
 
 interface TaskToFix {
     original_task_id: number;
@@ -23,6 +24,7 @@ interface SliceToClone {
 interface TaskPatchData {
     patchedTasks: number[];
     tasksToFix: TaskToFix[];
+    request: ProductionRequestBase;
 }
 
 
@@ -31,15 +33,19 @@ export interface ReproPatchState {
   taskPatchData: TaskPatchData | undefined;
   requestID: string | undefined;
   error: string | null;
-  uploaded: boolean;
+  patched: boolean;
 }
-
+export interface PatchData {
+  taskPatchData: TaskPatchData;
+  requestID: string;
+}
 @Injectable({
   providedIn: 'root'
 })
 export class ReproPatchService {
 
-  private prGetDSIDInfoUrl = '/api/reprocessing_request_patch_info/';
+  private prGetPatchInfoUrl = '/api/reprocessing_request_patch_info';
+  private prPostPatchUrl = '/api/patch_reprocessing_request';
   private http = inject(HttpClient);
 
 
@@ -48,11 +54,12 @@ export class ReproPatchService {
     taskPatchData: undefined,
     requestID: undefined,
     error: null,
-    uploaded: false
+    patched: false
   };
   private error$ = new Subject<string>();
   private isLoading$ = new Subject<boolean>();
   private requestID$ = new Subject<string>();
+  private patched$ = new Subject<boolean>();
   private requestInfo$ = this.requestID$.pipe(
     tap(() => this.isLoading$.next(true)),
     switchMap(requestID => this.repoPatchLoad(requestID)),
@@ -63,23 +70,52 @@ export class ReproPatchService {
   sources$ = merge(
     this.requestInfo$.pipe(map(taskPatchData => ({taskPatchData}))),
     this.error$.pipe(map(error => ({error}))),
-    this.isLoading$.pipe(map(isLoading => ({isLoading})))
+    this.isLoading$.pipe(map(isLoading => ({isLoading}))),
+    this.requestID$.pipe(map(requestID => ({requestID}))),
+    this.patched$.pipe(map(patched => ({patched})))
   );
   state = signalSlice({
     initialState: this.initialState,
-    sources: [this.sources$]
+    sources: [this.sources$],
+    selectors: (state) => ({
+      // count number of tasks to abort
+      tasksToAbort: () => state().taskPatchData?.tasksToFix.reduce((acc, task) => acc + task.tasks_to_abort.length, 0),
+      containers: () => state().taskPatchData?.tasksToFix.map(task => task.container),
+    }),
   });
   repoPatchLoad(requestID: string): Observable<TaskPatchData> {
-    return this.http.get<TaskPatchData>(`${this.prGetDSIDInfoUrl}/${requestID}`).pipe(
+    return this.http.get<TaskPatchData>(`${this.prGetPatchInfoUrl}/${requestID}/`).pipe(
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
+        this.isLoading$.next(false);
         return EMPTY;
       })
     );
   }
+  repoPatchRequest(requestID: string, tasksToPatch: number[], amiTag: string): Observable<number> {
+    return this.http.post<number>(`${this.prPostPatchUrl}/${requestID}/`, {tasksToPatch, amiTag}).pipe(
+      catchError((error: any) => {
+        this.error$.next(setErrorMessage(error));
+        this.isLoading$.next(false);
+        return of(0);
+      })
+    );
+  }
+
 
   public setRequestID(requestID: string): void {
       this.requestID$.next(requestID);
+  }
+
+  public applyPatch(amiTag): void {
+    const requestID = this.state().requestID;
+    // take only original_task_id list
+    const tasks = this.state().taskPatchData.tasksToFix.map(task => task.original_task_id);
+    this.isLoading$.next(true);
+    this.repoPatchRequest(requestID, tasks, amiTag).subscribe((patched) => {
+      this.isLoading$.next(false);
+      this.patched$.next(patched > 0);
+    });
   }
 
 

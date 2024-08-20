@@ -18,10 +18,8 @@ from atlas.prodtask.ddm_api import tid_from_container
 from atlas.prodtask.models import RequestStatus
 from ..prodtask.spdstodb import fill_template
 
-from atlas.prodtask.views import set_request_status, clone_slices
 from ..prodtask.helper import form_request_log
 #from ..prodtask.task_actions import do_action
-from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Count, Q
 
 from .models import StepExecution, InputRequestList, TRequest, ProductionTask, ProductionDataset, \

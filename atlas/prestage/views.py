@@ -31,7 +31,6 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
-from atlas.prodtask.task_actions import _do_deft_action
 from atlas.settings import OIDC_LOGIN_URL
 from atlas.task_action.task_management import TaskActionExecutor
 from elasticsearch7_dsl import Search, connections, A
@@ -413,7 +412,6 @@ def start_stagind_task(task):
     #Send resume command
     if(task.status in ['staging','waiting']):
         _logger.info('Resume task after pre stage %s ' % (str(task.id)))
-        #_do_deft_action('mborodin',int(task.id),'resume_task')
         action_executor = TaskActionExecutor('mborodin', 'Resume task after pre stage')
         result, message = action_executor.resumeTask(int(task.id))
         if not result or 'Command rejected' in (message or ''):
@@ -422,7 +420,8 @@ def start_stagind_task(task):
 
 
 def send_use_archive_task(task):
-    _do_deft_action('mborodin',int(task.id),'change_split_rule','UZ','1')
+    action_executor = TaskActionExecutor('mborodin', 'Resume task after pre stage')
+    result, message = action_executor.changeTaskSplitRule(int(task.id),'UZ','1')
 
 def translate_sub_dataset_name(dataset: str) -> str:
     if '_flt' in dataset:
@@ -1435,7 +1434,7 @@ def perfom_idds_disable(step_action_ids):
             if task_status in ProductionTask.NOT_RUNNING:
                 if task_status == 'finished':
                     _logger.info("Retry command with iDDS disabled is sent for %s" % (str(task_id)))
-                    _do_deft_action('mborodin',task_id,'retry', False, True)
+                    #_do_deft_action('mborodin',task_id,'retry', False, True)
                     action_step.status = 'done'
                     action_step.message = 'Command send'
                     action_step.done_time = current_time

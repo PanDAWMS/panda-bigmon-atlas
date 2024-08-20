@@ -11,7 +11,6 @@ from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset,
 import atlas.deftcore.api.client as deft
 from atlas.prodtask.task_views import sync_deft_jedi_task
 
-from atlas.prodtask.views import task_clone_with_skip_used
 from atlas.prodtask.ddm_api import DDM
 from atlas.task_action.task_management import TaskActionExecutor, do_jedi_action
 

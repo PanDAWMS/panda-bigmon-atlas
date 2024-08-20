@@ -1,5 +1,86 @@
-<p>repro-patch works!</p>
+ @if (isLoading()) {
+      <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
 
-{{ isLoading }}
-{{ error}}
-{{taskPatchData|json}}
+    }
+    @if (patched()) {
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Success!</strong>
+      </div>
+  } @else {
+      @if (taskPatchData()) {
+                <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Request: {{taskPatchData().request.reqid}}</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                         {{taskPatchData().request.description}}
+                    </h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                         project:{{taskPatchData().request.project}}
+                    </p>
+                </div>
+                <div class="border-t border-gray-200">
+                    <dl>
+                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Ticket
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                             <a href="{{taskPatchData().request.ref_link}}">   {{taskPatchData().request.ref_link}}</a>
+                            </dd>
+                        </div>
+                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Manager
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                {{taskPatchData().request.manager}}
+                            </dd>
+                        </div>
+                        <!-- More parameters can be added here -->
+                    </dl>
+                </div>
+            </div>
+        </div>
+        @if(taskPatchData().patchedTasks.length > 0) {
+          <div class="bg-black-100 border border-black-400 text-black-700 px-4 py-3 rounded relative" role="alert">
+      <h5 class="font-bold">{{taskPatchData().patchedTasks.length}} tasks already patched</h5>
+      </div>
+        }
+
+        @if (taskPatchData().tasksToFix.length === 0) {
+<!--          NOthing to patch big black message-->
+          <div class="bg-black-100 border border-black-400 text-black-700 px-4 py-3 rounded relative" role="alert">
+      <h2 class="font-bold">Nothing to patch!</h2>
+      </div>
+        } @else {
+          <h5 class="text-xl font-bold mb-4">Tasks to patch</h5>
+            <div class="flex justify-center items-center ">
+                <ul class="list-none">
+                    @for (container of containers(); track container){
+                        <li>{{container}}</li>
+                    }
+                </ul>
+            </div>
+          <h5 class="text-xl font-bold mb-4"> {{tasksToAbort()}} tasks will be aborted/obsolete</h5>
+
+           <mat-form-field >
+           <mat-label>Pathed AMI tag  </mat-label>
+             <input matInput type="" [(ngModel)]="amiTag"  >
+         </mat-form-field>
+              <button mat-raised-button color="primary" [disabled]="isLoading()||!amiTag" (click)="submitPatch()"  >Submit</button>
+
+        }
+
+    }
+    }
+   @if (error()) {
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline">{{ error() }}</span>
+
+    </div>
+
+  }
+

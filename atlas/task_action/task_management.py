@@ -160,6 +160,14 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     _jedi_decorator = staticmethod(_jedi_decorator)
     _action_logger = staticmethod(_action_logger)
 
+    def obsolete_or_abort_synced_task(self, task_id):
+        sync_deft_jedi_task(task_id)
+        task = ProductionTask.objects.get(id=task_id)
+        if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+            return self.obsolete_task(int(task.id))
+        elif task.status not in ProductionTask.NOT_RUNNING:
+            return self.killTask(int(task.id))
+
     @_jedi_decorator
     def changeTaskPriority(self, jediTaskID, newPriority):
         return self.jedi_client.changeTaskPriority(jediTaskID, newPriority)
