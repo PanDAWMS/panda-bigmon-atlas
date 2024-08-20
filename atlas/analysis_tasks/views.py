@@ -217,7 +217,7 @@ def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [
                                 t_task.save()
                                 prod_task.save()
                                 new_tasks.append(task_id)
-                                current_step = None
+                    current_step = None
 
     return new_tasks
 
