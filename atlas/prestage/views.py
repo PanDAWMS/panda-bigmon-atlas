@@ -215,8 +215,10 @@ class TapeResource(ResourceQueue):
                     current_priority = task.current_priority
                     if not current_priority:
                         current_priority = task.priority
-                    if current_priority > priority:
+                    if current_priority and current_priority > priority:
                         priority = current_priority
+                    else:
+                        priority = 1000
                     if not min_task or  task.id < min_task:
                         min_task = task.id
                     if task.request.phys_group == 'VALI':
@@ -768,7 +770,7 @@ def filter_replicas_without_rules(ddm, original_dataset):
 
 
 
-def create_prestage(task,ddm,rule, input_dataset,config, special=None, destination=None):
+def create_prestage(task,ddm,rule, input_dataset,config, special=None, destination=None, is_analy =False):
     #check that's only Tape replica
     original_data_replica = False
     original_dataset = input_dataset
@@ -777,7 +779,8 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
     replicas, staging_rule, all_data_replicas_without_rules = filter_replicas_without_rules(ddm, original_dataset)
     if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
-        start_stagind_task(task)
+        if not is_analy:
+            start_stagind_task(task)
         if staging_rule:
             try:
                 create_replica_extension(task.id, ddm)
@@ -914,15 +917,16 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
             jedi_task = TTask.objects.get(id=task.id)
             input_datasets = []
             config = ActionDefault.objects.get(name='active_staging').get_config()
-            if not noidds:
-                config['level'] = 1
-            if level:
-                config['level'] = level
+            config['level'] = 99
+            # if not noidds:
+            #     config['level'] = 1
+            # if level:
+            #     config['level'] = level
             if TemplateVariable.KEY_NAMES.INPUT_DS in jedi_task.jedi_task_parameters:
                 input_container = jedi_task.jedi_task_parameters[TemplateVariable.KEY_NAMES.INPUT_DS]
                 input_datasets = ddm.dataset_in_container(input_container)
             for dataset in input_datasets:
-                create_prestage(task, ddm, rule, dataset, config, special, destination)
+                create_prestage(task, ddm, rule, dataset, config, special, destination, is_analy=True)
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
                 if check_archive:
@@ -997,12 +1001,15 @@ def do_staging(action_step_id, ddm):
         action_step.save()
         return
     action_finished = True
+    task_to_start = {}
     for action_stage in ActionStaging.objects.filter(step_action=action_step):
         dataset_stage = action_stage.dataset_stage
         task = ProductionTask.objects.get(id=action_stage.task)
+        start_task = False
         if dataset_stage.status == 'done':
             if task.status not in ProductionTask.NOT_RUNNING:
-                start_stagind_task(task)
+                # start_stagind_task(task)
+                start_task = True
                 try:
                         ddm.change_rule_lifetime(dataset_stage.rse, 30 * 86400)
                         dataset_stage.update_time = current_time
@@ -1041,7 +1048,8 @@ def do_staging(action_step_id, ddm):
             if ((level == 100) and (dataset_stage.staged_files == dataset_stage.total_files)) or \
                     (((dataset_stage.total_files-dataset_stage.staged_files)<= ActionDefault.FILES_TO_RELEASE) and
                      ((float(dataset_stage.staged_files) / float(dataset_stage.total_files)) >= (float(level) / 100.0))) or ((level == 1) and (dataset_stage.staged_files >0) ):
-                start_stagind_task(task)
+                # start_stagind_task(task)
+                start_task = True
             if dataset_stage.staged_files != dataset_stage.total_files:
                 action_finished = False
             else:
@@ -1059,7 +1067,10 @@ def do_staging(action_step_id, ddm):
 
         elif dataset_stage.status == 'queued':
             action_finished = False
-
+        task_to_start[task.id] = task_to_start.get(task.id,[]) + [start_task]
+    for task_id in task_to_start:
+        if all(task_to_start[task_id]):
+            start_stagind_task(ProductionTask.objects.get(id=task_id))
     if action_finished :
         action_step.status = 'done'
         action_step.message = 'All task started'

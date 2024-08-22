@@ -3,10 +3,13 @@ import logging
 import string
 import time
 from copy import deepcopy
+import datetime
 from pprint import pprint
 from time import sleep
+from typing import Dict
 
 import requests
+from attr import dataclass
 from django.contrib.auth.models import User, Group
 from django.core.mail import send_mail
 from django.core.cache import cache
@@ -24,12 +27,13 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
+from atlas.prestage.views import step_action
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import _set_request_hashtag, remove_hashtag_from_request
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError, \
-    HashTagToRequest, HashTag, SystemParametersHandler
+    HashTagToRequest, HashTag, SystemParametersHandler, StepAction
 from atlas.prodtask.settings import APP_SETTINGS
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import hide_slice
@@ -178,6 +182,11 @@ def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
     if not prod_step.step_parent or (prod_step.step_parent == prod_step):
         if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
             raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
+        input_dataset = step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
+        if ddm.dataset_metadata(input_dataset)['did_type'] == 'CONTAINER':
+            datasets_in_container = ddm.dataset_in_container(input_dataset)
+            if len(datasets_in_container) == 0:
+                raise Exception(f'Container {input_dataset} is empty')
     if step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('group'):
         check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username, step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP))
     else:
@@ -188,6 +197,52 @@ def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
             rse_exists = ddm.list_rses(f"rse={step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION])}")
         except Exception as e:
             raise Exception(f'RSE {step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION])} does not exist')
+
+def possible_on_tape(dataset_name: str) -> bool:
+    if '.AOD.' in dataset_name:
+        return True
+    if '.DAOD_' in dataset_name and dataset_name.startswith('data') and 'tid' not in dataset_name:
+        return True
+    return False
+
+
+
+def create_data_carousel(analysis_step: AnalysisStepTemplate):
+    ddm = DDM()
+    input_dataset = analysis_step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
+    if ddm.dataset_metadata(input_dataset)['did_type'] == 'CONTAINER':
+        datasets = ddm.dataset_in_container(input_dataset)
+    else:
+        datasets = [input_dataset]
+    verify_on_tape = []
+    for dataset in datasets:
+        if possible_on_tape(dataset):
+            verify_on_tape.append(dataset)
+
+    for dataset in verify_on_tape:
+        full_replicas = ddm.full_replicas_per_type(dataset)
+        if len(full_replicas['data']) == 0 and len(full_replicas['tape']) > 0:
+            if not StepAction.objects.filter(step=int(analysis_step.step_production_parent.id), action=StepAction.STAGING_ACTION,
+                                             status__in=['active', 'executing', 'verify']).exists():
+                sa = StepAction()
+                sa.request = analysis_step.request
+                sa.step = analysis_step.step_production_parent.id
+                sa.attempt = 0
+                sa.create_time = timezone.now()
+                sa.execution_time = timezone.now() + datetime.timedelta(minutes=12)
+                sa.status = 'active'
+                sa.action = StepAction.STAGING_ACTION
+                sa.save()
+            analysis_step.change_variable(TemplateVariable.KEY_NAMES.TO_STAGING, 'True')
+            analysis_step.step_parameters[TemplateVariable.KEY_NAMES.TO_STAGING] = 'True'
+            analysis_step.save()
+            return analysis_step
+    return analysis_step
+
+
+
+
+
 
 def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [int]:
     new_tasks = []
@@ -299,6 +354,7 @@ def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
 
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
+    step_template = create_data_carousel(step_template)
     check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
     check_parameters_for_task(step_template)

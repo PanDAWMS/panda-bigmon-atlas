@@ -930,6 +930,7 @@ class TemplateVariable:
         OUTPUT_DATASET_TYPE = 'output'
         DESTINATION = 'destination'
         TOKEN = 'token'
+        TO_STAGING = 'toStaging'
 
     KEYS_SEPARATOR = ','
 
@@ -1766,6 +1767,7 @@ class StepAction(models.Model):
         CANCELED = 'canceled'
 
     ACTIVE_STATUS = [STATUS.ACTIVE, STATUS.EXECUTING]
+    STAGING_ACTION = 5
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ACTION_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
