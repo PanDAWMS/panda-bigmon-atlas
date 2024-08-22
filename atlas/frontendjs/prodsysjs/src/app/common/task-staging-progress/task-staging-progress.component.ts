@@ -7,7 +7,7 @@ import {StagingProgress} from "../../production-request/production-request-model
   styleUrls: ['./task-staging-progress.component.css']
 })
 export class TaskStagingProgressComponent implements OnInit {
-  @Input() stagingProgress: StagingProgress;
+  @Input() stagingProgress: StagingProgress[];
   constructor() { }
 
   ngOnInit(): void {

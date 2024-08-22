@@ -159,9 +159,26 @@ def production_task(request):
                     dataset_staging = DatasetStaging.objects.filter(dataset=production_task.input_dataset).last()
                     if ((dataset_staging.status in DatasetStaging.ACTIVE_STATUS) or
                             (dataset_staging.status==DatasetStaging.STATUS.DONE and dataset_staging.start_time>production_task.submit_time)):
-                        task_data['staging'] = {'status':dataset_staging.status,
+                        task_data['staging'] = [{'status':dataset_staging.status,
                                     'staged_files':dataset_staging.staged_files,'total_files':dataset_staging.total_files,
-                                                'rule':dataset_staging.rse,'source':dataset_staging.source_expression, 'dataset':production_task.input_dataset}
+                                                'rule':dataset_staging.rse,'source':dataset_staging.source_expression, 'dataset':production_task.input_dataset}]
+                else:
+                    if production_task.status in ProductionTask.STATUS.STAGING:
+                        if ActionStaging.objects.filter(task=task_id).exists():
+                            staging = []
+                            for action_staging in ActionStaging.objects.filter(task=task_id):
+                                dataset_staging = action_staging.dataset_stage
+                                if ((dataset_staging.status in DatasetStaging.ACTIVE_STATUS) or
+                                        (
+                                                dataset_staging.status == DatasetStaging.STATUS.DONE and dataset_staging.start_time > production_task.submit_time)):
+                                    staging += [{'status': dataset_staging.status,
+                                                             'staged_files': dataset_staging.staged_files,
+                                                             'total_files': dataset_staging.total_files,
+                                                             'rule': dataset_staging.rse,
+                                                             'source': dataset_staging.source_expression,
+                                                             'dataset': production_task.input_dataset}]
+                            if staging:
+                                task_data['staging'] = staging
             task_data['hashtags'] = [x.hashtag for x in production_task.hashtags]
         else:
             task_data = {'id': task_id, 'username': jedi_parameters_task.username,

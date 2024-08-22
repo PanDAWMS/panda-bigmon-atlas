@@ -189,7 +189,7 @@ export interface ProductionTask{
   projectMode?: string;
   failureRate?: number;
   hashtags?: string[];
-  staging?: StagingProgress;
+  staging?: StagingProgress[];
   inputEvents?: number;
   step_name?: string;
   // step: any;
