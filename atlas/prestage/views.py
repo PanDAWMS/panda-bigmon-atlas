@@ -2486,7 +2486,8 @@ def check_stale_staging_tasks():
             if dataset_stage.status == DatasetStaging.STATUS.DONE:
                 start_stagind_task(task)
         else:
-            _logger.error(f"Staging dataset for task {task.id} is not found")
+            if task.request.request_type not in ["ANALYSIS"]:
+                _logger.error(f"Staging dataset for task {task.id} is not found")
 
 def check_staging_rules_on_lost_files():
     staging_rules = DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING)
