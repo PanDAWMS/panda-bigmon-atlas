@@ -95,7 +95,7 @@ def prepare_staging_task_info(task_id: int, dataset: str| None = None, source: s
         is_really_bad = False
         for attempt, stat in enumerate(stats):
             if successful_transfer and stat['event_type'] == 'transfer-done':
-                current_spans.append({'x': file, 'y': [stat['created_at'], stat['transferred_at']], 'fillColor': '#b9770e'})
+                current_spans.append({'x': file, 'y': [stat['created_at'], stat['transferred_at']], 'fillColor': '#775DD0'})
                 done_attempts_after_success += 1
                 is_really_bad = True
             if successful_transfer and stat['event_type'] == 'transfer-failed':
@@ -104,12 +104,11 @@ def prepare_staging_task_info(task_id: int, dataset: str| None = None, source: s
                 failed_attempts_after_success += 1
             if not successful_transfer and stat['event_type'] == 'transfer-done':
                 current_spans.append({'x': file, 'y': [stat['created_at'], stat['submitted_at']], 'fillColor': '#f7dc6f'})
-                current_spans.append({'x': file, 'y': [stat['submitted_at'], stat['transferred_at']], 'fillColor': '#229954'})
+                current_spans.append({'x': file, 'y': [stat['submitted_at'], stat['transferred_at']], 'fillColor': '#00E396'})
                 successful_transfer = True
                 done_attempts[attempt] += 1
             if not successful_transfer and stat['event_type'] == 'transfer-failed':
-                current_spans.append({'x': file, 'y': [stat['created_at'], stat['submitted_at']], 'fillColor': '#922b21'})
-                current_spans.append({'x': file, 'y': [stat['submitted_at'], stat['transferred_at']], 'fillColor': '#922b21'})
+                current_spans.append({'x': file, 'y': [stat['created_at'], stat['transferred_at']], 'fillColor': '#FF4560'})
         if is_really_bad or file in sample_files:
             spans += current_spans
     if sum(done_attempts) > 0:

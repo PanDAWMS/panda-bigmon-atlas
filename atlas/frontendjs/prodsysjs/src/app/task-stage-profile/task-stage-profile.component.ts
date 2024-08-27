@@ -4,7 +4,7 @@ import {
   ApexAxisChartSeries,
   ApexChart,
   ApexPlotOptions,
-  ApexXAxis, ApexYAxis, ApexTooltip
+  ApexXAxis, ApexYAxis, ApexTooltip, ApexLegend
 } from "ng-apexcharts";
 import {StageProfileSpans, TaskStageProfile, TaskStageProfileService} from "./task-stage-profile.service";
 import {JsonPipe} from "@angular/common";
@@ -19,6 +19,7 @@ export type ChartOptions = {
   plotOptions: ApexPlotOptions;
   tooltip: ApexTooltip;
   animations: any;
+  legend: ApexLegend;
 };
 
 @Component({
@@ -80,7 +81,7 @@ export class TaskStageProfileComponent implements OnInit {
         zoom: {
           enabled: false,
         },
-        redrawOnWindowResize: false
+        redrawOnWindowResize: false,
       },
       plotOptions: {
         bar: {
@@ -99,6 +100,20 @@ export class TaskStageProfileComponent implements OnInit {
       // tooltip: {
       //   enabled: false,
       // },
+      legend: {
+        customLegendItems: ['created_at-submitted_at transfer-done', 'submitted_at-transferred_at transfer-done',
+          'created_at-transferred_at transfer-failed', 'created_at-transferred_at transfer-done repeated',
+        'created_at-transferred_at transfer-failed repeated'],
+        labels: {
+          colors: ['#f7dc6f', '#00E396', '#FF4560', '#775DD0', '#6c3483'],
+        },
+        onItemClick: {
+            toggleDataSeries: false
+          },
+          onItemHover: {
+              highlightDataSeries: false
+          },
+      }
 
     };
 
@@ -111,14 +126,14 @@ export class TaskStageProfileComponent implements OnInit {
           this.stageProfile.set(data);
           this.chartOptions.series = [{
             data: data.spans
-          }];
+          },{data:[]},{data:[]},{data:[]},{data:[]}];
         });
       } else {
         this.taskStageProfileService.getTaskStageProfile(this.taskPageID).subscribe((data) => {
           this.stageProfile.set(data);
           this.chartOptions.series = [{
             data: data.spans
-          }];
+          },{data:[]},{data:[]},{data:[]},{data:[]}];
         });
       }
     });
