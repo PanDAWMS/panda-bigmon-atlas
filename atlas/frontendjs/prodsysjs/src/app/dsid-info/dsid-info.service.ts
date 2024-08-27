@@ -120,7 +120,7 @@ export function setErrorMessage(err: HttpErrorResponse): string {
     } else {
       // The backend returned an unsuccessful response code.
       // The response body may contain clues as to what went wrong,
-      errorMessage = `Backend returned code ${err.status}: ${err.message}`;
+      errorMessage = `Backend returned code ${err.status}: ${err.message} ${err.error}`;
     }
     console.error(err);
     return errorMessage;

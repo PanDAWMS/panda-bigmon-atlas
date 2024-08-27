@@ -1,0 +1,31 @@
+   @if (errorMessage() !== '') {
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline">{{ errorMessage() }}</span>
+
+    </div>
+
+  }
+
+@if(stageProfile().dataset !== ''){
+<p>Staged profile for {{stageProfile().dataset}} used in task {{stageProfile().task}} for
+  period {{stageProfile().date_since}} - {{stageProfile().date_until}} from {{stageProfile().source}}</p>
+<p>Dataset has {{stageProfile().total_files}} from them {{stageProfile().files_staged}} was staged in total {{stageProfile().total_attempts}} attempts</p>
+@if(stageProfile().done_attempts_after_success + stageProfile().failed_attempts_after_success > 0) {
+  <p style="color: red"> {{stageProfile().done_attempts_after_success }} successful attempts
+    and {{stageProfile().failed_attempts_after_success}} failed attempts were done after file being staged!</p>
+}
+
+
+  <apx-chart
+    [series]="chartOptions.series"
+    [chart]="chartOptions.chart"
+    [plotOptions]="chartOptions.plotOptions"
+    [xaxis]="chartOptions.xaxis"
+    [yaxis]="chartOptions.yaxis"
+    [tooltip]="chartOptions.tooltip"
+  ></apx-chart>
+} @else {
+        <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
+}

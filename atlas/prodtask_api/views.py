@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
+from atlas.atlaselastic.monit_views import prepare_staging_task_info
 from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.ddm_api import DDM
@@ -326,7 +327,22 @@ def reprocessing_request_patch_info(request, requestID):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def stage_profile(request, taskID):
+    try:
+        dataset = request.query_params.get('dataset')
+        source = request.query_params.get('source')
+        if dataset and source:
+            result = prepare_staging_task_info(taskID, dataset, source)
+        else:
+            result = prepare_staging_task_info(taskID)
 
+
+        return Response(asdict(result) )
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

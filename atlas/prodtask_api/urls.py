@@ -73,6 +73,8 @@ urlpatterns = [
             name='reprocessing_request_patch_info'),
     re_path(r'^patch_reprocessing_request/(?P<requestID>\d+)/$', patch_reprocessing_request,
             name='patch_reprocessing_request'),
+    re_path(r'^stage_profile/(?P<taskID>\d+)/$', stage_profile,
+            name='stage_profile'),
 
 
 
