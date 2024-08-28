@@ -1286,4 +1286,137 @@ def production_request_outputs(request, requestID):
 
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@dataclass
+class PileupProvenance:
+    main_input: [str]
+    pileup_inputs: [str]
+    pileup_minbias: [str]
+    output: str
+    merged_rdo_input: str = ''
 
+
+
+def get_plileup_provenance_from_task_digi(task_id: int) -> Dict[str, PileupProvenance]:
+    datasets = list(JediDatasets.objects.filter(id=task_id))
+    jobs = {}
+    hits_files = []
+    for dataset in datasets:
+        if dataset.streamname == 'IN_HITS':
+            hits_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+    for hits_file in hits_files:
+        jobs[hits_file.pandaid] = PileupProvenance(main_input=[hits_file.lfn], pileup_inputs=[hits_file.lfn], pileup_minbias=[], output='')
+    for dataset in datasets:
+        if dataset.streamname == 'OUTPUT0':
+            output_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+            for output_file in output_files:
+                jobs[output_file.pandaid].output = output_file.lfn
+        if dataset.streamname.startswith('IN_MINBIAS'):
+            pileup_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+            for pileup_file in pileup_files:
+                jobs[pileup_file.pandaid].pileup_minbias = jobs[pileup_file.pandaid].pileup_minbias + [pileup_file.lfn]
+    for job in jobs:
+        pileup = jobs[job].pileup_minbias
+        pileup.sort()
+        jobs[job].pileup_minbias = pileup
+    result_by_output = {}
+    for job in jobs:
+        result_by_output[jobs[job].output] = jobs[job]
+    return result_by_output
+
+
+def get_plileup_provenance_from_task_digi_merge(task_id: int, digi_dict: Dict[str, PileupProvenance]) -> Dict[str, PileupProvenance]:
+    jobs: Dict[str, PileupProvenance] = {}
+    dataset = JediDatasets.objects.get(id=task_id, streamname='IN_RDO')
+    RDO_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+    for rdo_file in RDO_files:
+        jobs[rdo_file.pandaid] = jobs.get(rdo_file.pandaid, PileupProvenance(main_input=[], pileup_inputs=[], pileup_minbias=[], output=''))
+        jobs[rdo_file.pandaid].main_input.append(rdo_file.lfn)
+    dataset = JediDatasets.objects.get(id=task_id, streamname='OUTPUT0')
+    output_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+    for output_file in output_files:
+        jobs[output_file.pandaid].output = output_file.lfn
+    for job in jobs:
+        original_pileups = []
+        original_hits = []
+        for rdo_input in jobs[job].main_input:
+            original_pileups += digi_dict[rdo_input].pileup_minbias
+            original_hits += digi_dict[rdo_input].pileup_inputs
+        original_pileups.sort()
+        original_hits.sort()
+        jobs[job].pileup_minbias = original_pileups
+        jobs[job].pileup_inputs = original_hits
+    result_by_output = {}
+    for job in jobs:
+        result_by_output[jobs[job].output] = jobs[job]
+    return result_by_output
+
+def  get_plileup_provenance_from_task_reco(task_id: int, digi_merge_dict: Dict[str, PileupProvenance]) -> Dict[str, PileupProvenance]:
+    jobs: Dict[str, PileupProvenance] = {}
+    dataset = JediDatasets.objects.get(id=task_id, streamname='IN_HITS')
+    hits_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid,status__in=['finished', 'running']))
+    for hits_file in hits_files:
+        jobs[hits_file.pandaid] = PileupProvenance(main_input=[hits_file.lfn], pileup_inputs=[], pileup_minbias=[], output='')
+    dataset = JediDatasets.objects.get(id=task_id, streamname='OUTPUT0')
+    output_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid,status__in=['finished', 'running']))
+    for output_file in output_files:
+        jobs[output_file.pandaid].output = output_file.lfn
+    dataset = JediDatasets.objects.get(id=task_id, streamname='IN_ZERO_BIAS_BS')
+    rdo_files = list(JediDatasetContents.objects.filter(datasetid=dataset.datasetid, status__in=['finished', 'running']))
+    for rdo_file in rdo_files:
+        jobs[rdo_file.pandaid].merged_rdo_input = rdo_file.lfn
+    for job in jobs:
+        jobs[job].pileup_minbias = digi_merge_dict[jobs[job].merged_rdo_input].pileup_minbias
+        jobs[job].pileup_inputs = digi_merge_dict[jobs[job].merged_rdo_input].pileup_inputs
+    result_by_output = {}
+    for job in jobs:
+        result_by_output[jobs[job].output] = jobs[job]
+    return result_by_output
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def pileup_task_provenance(request, taskID):
+    """
+    Return the pileup provenance for the task. It works for RDO production, RDO merge and Reco tasks.
+    return: dictionary with keys as output file name for the task and values as
+    @dataclass
+    class PileupProvenance:
+        main_input: [str]
+        pileup_inputs: [str]
+        pileup_minbias: [str]
+        output: str
+        merged_rdo_input: str = ''
+    where main_input - list of input files for the task, pileup_inputs - sorted list of original pileup HITS input files, pileup_minbias - sorted list of original HITS minbias files,
+     output - output file name, merged_rdo_input - for Reco task the merged RDO input file name
+    """
+    try:
+        task = ProductionTask.objects.get(id=taskID)
+        result_dict = {}
+        if 'digit' in task.name:
+            result_dict = get_plileup_provenance_from_task_digi(taskID)
+        elif 'merge' in task.name:
+            parent_task_id = task.parent_id
+            if parent_task_id == taskID:
+                dataset = task.inputdataset
+                parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
+            digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
+            result_dict = get_plileup_provenance_from_task_digi_merge(taskID, digi_dict)
+        elif 'reco' in task.name:
+            merge_dataset = JediDatasets.objects.get(id=taskID, streamname='IN_ZERO_BIAS_BS')
+            merge_task_id = int(merge_dataset.datasetname[merge_dataset.datasetname.rfind('tid') + 3:merge_dataset.datasetname.rfind('_')])
+            merge_task = ProductionTask.objects.get(id=merge_task_id)
+            parent_task_id = merge_task.parent_id
+            if parent_task_id == taskID:
+                dataset = task.inputdataset
+                parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
+            digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
+            digi_merge_dict = get_plileup_provenance_from_task_digi_merge(merge_task_id, digi_dict)
+            result_dict = get_plileup_provenance_from_task_reco(taskID, digi_merge_dict)
+        prepared_response = {}
+        for output in result_dict:
+            prepared_response[output] = asdict(result_dict[output])
+
+        return Response(prepared_response)
+
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
