@@ -203,5 +203,5 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
     action_executor = TaskActionExecutor('mborodin', 'Abort tasks to be patched')
     for task_to_abort in  reprocessing_task.tasks_to_abort:
             pass
-            #action_executor.obsolete_or_abort_synced_task(task_to_abort)
+            action_executor.obsolete_or_abort_synced_task(task_to_abort)
     return new_slices
