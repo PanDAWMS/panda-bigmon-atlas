@@ -13,6 +13,7 @@ from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.models import ProductionTask
 from atlas.prodtask.open_ended import check_open_ended
+from atlas.prodtask.patch_reprocessing import find_done_patched_tasks
 from atlas.prodtask.task_actions import do_new_action
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container
 from functools import wraps
@@ -174,6 +175,10 @@ def resume_staling_staging_tasks():
     check_stale_staging_tasks()
     return None
 
+@app.task(ignore_result=True)
+def find_reprocessing_patched_tasks():
+    find_done_patched_tasks()
+    return None
 
 @app.task(ignore_result=True)
 def sync_users_with_IAM(update_only_new=False):

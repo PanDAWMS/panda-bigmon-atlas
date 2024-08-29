@@ -5,7 +5,7 @@ from django.db.models import Q
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import InputRequestList, StepExecution, ProductionTask, HashTag
 from atlas.prodtask.spdstodb import fill_template
-from atlas.prodtask.views import clone_slices, form_existed_step_list
+from atlas.prodtask.views import clone_slices, form_existed_step_list, set_request_status
 from atlas.task_action.task_management import TaskActionExecutor
 
 
@@ -104,6 +104,7 @@ def change_step_repro_fix(request_id: int, base_new_slice: InputRequestList, ori
     new_step.update_project_mode('patchRepro',original_task_id)
     new_step.step_template = fill_template(task.step.step_template.step, ami_tag, task.step.step_template.priority,
                                              task.step.step_template.output_formats, task.step.step_template.memory)
+    new_step.status = StepExecution.STATUS.APPROVED
     new_step.save()
     return new_step
 
@@ -144,7 +145,7 @@ def approve_merge_patch_slices(request_id: int, container_identifier: str):
             for step in ordered_existed_steps:
                 if  step.status == StepExecution.STATUS.SKIPPED and step.get_project_mode('patchRepro') and step.get_project_mode('patchRepro') == 'wait':
                     step.remove_project_mode('patchRepro')
-                    step.status = StepExecution.STATUS.NOT_CHECKED
+                    step.status = StepExecution.STATUS.APPROVED
                     step.save()
 
 def find_done_patched_tasks():
@@ -171,6 +172,8 @@ def unleash_repro_patch_merge(task_id: int):
         output_name = dataset.split('.')[-2]
         ddm.register_datasets_in_container(container_by_output[output_name], [dataset])
     approve_merge_patch_slices(request.reqid, '.'.join(task.name.split('.')[1:2]))
+    set_request_status('cron', request.reqid, 'approved', 'Reprocessing patch',
+                       'Request was automatically approved')
     return True
 
 def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag: str):
@@ -202,6 +205,5 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
         change_slice_to_container(request_id, new_slices[slise_index+1], reprocessing_task.original_task_id, slices_to_clone[original_slice].replace_first_step)
     action_executor = TaskActionExecutor('mborodin', 'Abort tasks to be patched')
     for task_to_abort in  reprocessing_task.tasks_to_abort:
-            pass
             action_executor.obsolete_or_abort_synced_task(task_to_abort)
     return new_slices

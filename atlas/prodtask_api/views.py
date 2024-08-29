@@ -358,6 +358,9 @@ def patch_reprocessing_request(request, requestID):
             if task.original_task_id in tasks_to_patch:
                 clone_fix_reprocessing_task(task, ami_tag)
                 result += 1
+        if result > 0:
+            set_request_status('cron', requestID, 'approved', 'Reprocessing patch',
+                               'Request was automatically approved')
         return Response(result)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
