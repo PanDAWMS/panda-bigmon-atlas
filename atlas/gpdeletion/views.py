@@ -1,4 +1,5 @@
 import glob
+import gzip
 from dataclasses import dataclass, field
 import xml.etree.ElementTree as ET
 from django.contrib.auth.models import User
@@ -35,7 +36,7 @@ _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'MUON', 'NCB', 'PHYS',
+FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'LLJ', 'MUON', 'NCB', 'PHYS',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH']
 
 CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
@@ -1216,9 +1217,12 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
     :return: list of DAODs to delete
     """
     all_daod_datasets_to_delete = []
-    with open(daod_lifetime_filepath, 'r') as f:
+    dataset_size = {}
+    with  gzip.open(daod_lifetime_filepath, 'rt') as f:
         for line in f:
             all_daod_datasets_to_delete.append(line.strip().split(' ')[0])
+            if  line.strip().split(' ')[2] != 'None':
+                dataset_size[line.strip().split(' ')[0]] = int(line.strip().split(' ')[2])
     all_containers = GroupProductionDeletion.objects.filter(extensions_number__gte=1).values('container',
                                                                                         'extensions_number',
                                                                                         'last_extension_time',
@@ -1232,6 +1236,7 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
     for extension in extensions:
         extensions_dict[containers_by_id[extension['container_id']]['container']] = extension
     result = []
+    size = 0
     for dataset in all_daod_datasets_to_delete:
         container_name = get_container_name(dataset)
         if container_name in all_containers_dict:
@@ -1241,15 +1246,17 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
                 last_time = container_info['update_time']
             if ((last_time - timezone.now()).days +
                 container_info['extensions_number'] * 60 + 60 > 0):
-                extension = extensions_dict.get(container_name,{'user': 'none', 'message': 'missing'})
-                result.append((dataset,extension['user'],extension['message']))
+                if dataset in dataset_size:
+                    extension = extensions_dict.get(container_name,{'user': 'none', 'message': 'missing'})
+                    result.append((dataset,extension['user'],extension['message']))
+                    size += dataset_size[dataset]
     with open(output_daods_file, 'w') as f:
         for dataset in result:
             f.write('%s\n'%(dataset[0]))
     with open(output_daods_file_ext, 'w') as f:
         for dataset in result:
             f.write('%s %s %s\n'%(dataset[0],dataset[1],dataset[2]))
-    return result
+    return size
 
 
 @dataclass
