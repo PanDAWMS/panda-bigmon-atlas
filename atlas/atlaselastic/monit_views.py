@@ -30,6 +30,8 @@ class StagedTaskInfo:
     total_attempts: int
 
 def prepare_staging_task_info(task_id: int, dataset: str| None = None, source: str | None = None):
+    SPANS_LIMIT = 1400
+
     task = ProductionTask.objects.get(id=task_id)
     ddm = DDM()
     src_tape = None
@@ -109,7 +111,7 @@ def prepare_staging_task_info(task_id: int, dataset: str| None = None, source: s
                 done_attempts[attempt] += 1
             if not successful_transfer and stat['event_type'] == 'transfer-failed':
                 current_spans.append({'x': file, 'y': [stat['created_at'], stat['transferred_at']], 'fillColor': '#FF4560'})
-        if is_really_bad or file in sample_files:
+        if (len(spans) + len(current_spans) < SPANS_LIMIT) and (is_really_bad or file in sample_files):
             spans += current_spans
     if sum(done_attempts) > 0:
         done_attempts = done_attempts[:[i for i, e in enumerate(done_attempts) if e != 0][-1]+1]
