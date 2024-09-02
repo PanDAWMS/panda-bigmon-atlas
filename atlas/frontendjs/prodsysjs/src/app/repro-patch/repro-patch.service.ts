@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {EMPTY, merge, Observable, of, Subject} from "rxjs";
+import {BehaviorSubject, combineLatestWith, EMPTY, merge, Observable, of, Subject} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {catchError, map, switchMap, tap} from "rxjs/operators";
 import {setErrorMessage} from "../dsid-info/dsid-info.service";
@@ -32,6 +32,7 @@ export interface ReproPatchState {
   isLoading: boolean;
   taskPatchData: TaskPatchData | undefined;
   requestID: string | undefined;
+  selectedTask: string | undefined;
   error: string | null;
   patched: boolean;
 }
@@ -53,16 +54,18 @@ export class ReproPatchService {
     isLoading: false,
     taskPatchData: undefined,
     requestID: undefined,
+    selectedTask: undefined,
     error: null,
     patched: false
   };
   private error$ = new Subject<string>();
   private isLoading$ = new Subject<boolean>();
   private requestID$ = new Subject<string>();
+  private selectedTask$ = new Subject<string>();
   private patched$ = new Subject<boolean>();
-  private requestInfo$ = this.requestID$.pipe(
+  private requestInfo$ = this.requestID$.pipe(combineLatestWith(this.selectedTask$),
     tap(() => this.isLoading$.next(true)),
-    switchMap(requestID => this.repoPatchLoad(requestID)),
+    switchMap(([requestID, selectedTask]) => this.repoPatchLoad(requestID, selectedTask)),
     tap(() => this.isLoading$.next(false)),
     takeUntilDestroyed()
   );
@@ -83,8 +86,8 @@ export class ReproPatchService {
       containers: () => state().taskPatchData?.tasksToFix.map(task => task.container),
     }),
   });
-  repoPatchLoad(requestID: string): Observable<TaskPatchData> {
-    return this.http.get<TaskPatchData>(`${this.prGetPatchInfoUrl}/${requestID}/`).pipe(
+  repoPatchLoad(requestID: string, selectedTask: string = ''): Observable<TaskPatchData> {
+    return this.http.get<TaskPatchData>(`${this.prGetPatchInfoUrl}/${requestID}/`, {params: {selectedTask}}).pipe(
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
         this.isLoading$.next(false);
@@ -105,6 +108,10 @@ export class ReproPatchService {
 
   public setRequestID(requestID: string): void {
       this.requestID$.next(requestID);
+  }
+
+    public setSelectedTask(selectedTask: string): void {
+      this.selectedTask$.next(selectedTask);
   }
 
   public applyPatch(amiTag): void {

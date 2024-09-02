@@ -321,7 +321,10 @@ def deft_legacy_request(request, request_id):
 def reprocessing_request_patch_info(request, requestID):
     try:
         pathed_tasks = patched_containers(requestID)
+        selected_task = request.query_params.get('selectedTask')
         tasks_to_fix = find_reprocessing_to_fix(requestID, pathed_tasks)
+        if selected_task:
+            tasks_to_fix = [x for x in tasks_to_fix if x.original_task_id == int(selected_task)]
         return Response( {'request': ProductionRequestSerializer(TRequest.objects.get(reqid=requestID)).data,
                           'patchedTasks': pathed_tasks, "tasksToFix": [asdict(x) for x in tasks_to_fix]})
     except Exception as e:

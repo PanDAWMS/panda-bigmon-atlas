@@ -214,6 +214,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     }},
     {path: 'derivation-physics-container/:requestID', component: DerivationPhysicContainerComponent},
       {path: 'repro-patch/:requestID', component: ReproPatchComponent},
+        {path: 'repro-patch/:requestID/:selectedTask', component: ReproPatchComponent},
+
 
       {path: 'split-subcampaigns/:requestID', component: RequestHorizontalSplitComponent},
  {path: 'stage-profile/:taskID', component: TaskStageProfileComponent},
@@ -260,7 +262,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         ProductionTaskComponent,
         TaskActionComponent,
         DialogTaskSubmissionComponent,
-        BPTaskComponent,
         RequestsliceComponent,
         TaskStagingProgressComponent,
         TaskProgressComponent,
@@ -334,7 +335,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AgGridModule,
     MatStepperModule,
     MatSlideToggleModule,
-    NgxMatSelectSearchModule, RucioURLPipe], providers: [
+    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent], providers: [
         {
             provide: APP_BASE_HREF, useValue: '/ng',
             useFactory: getBaseLocation

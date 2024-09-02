@@ -6,11 +6,15 @@
     @if (patched()) {
       <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
       <strong class="font-bold">Success!</strong>
+
       </div>
+      Back to <a href="/prodtask/inputlist_with_request/{{taskPatchData().request.reqid}}">{{taskPatchData().request.reqid}}</a>
+      Back to patch <a [routerLink]="['/repro-patch/', taskPatchData().request.reqid]">{{taskPatchData().request.reqid}} patch</a>
   } @else {
-      @if (taskPatchData()) {
+      @if (taskPatchData() && !isLoading()) {
+
                 <div class="mb-8">
-            <h2 class="text-2xl font-semibold mb-4">Request: {{taskPatchData().request.reqid}}</h2>
+            <h2 class="text-2xl font-semibold mb-4">Request:  <a  href="/prodtask/inputlist_with_request/{{taskPatchData().request.reqid}}">{{taskPatchData().request.reqid}}</a></h2>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="px-4 py-5 sm:px-6">
                     <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -58,8 +62,9 @@
           <h5 class="text-xl font-bold mb-4">Tasks to patch</h5>
             <div class="flex justify-center items-center ">
                 <ul class="list-none">
-                    @for (container of containers(); track container){
-                        <li>{{container}}</li>
+                    @for (tasksToFix of taskPatchData().tasksToFix; track tasksToFix.original_task_id){
+                        <li>{{tasksToFix.container}} - <app-bptask [task]="tasksToFix.original_task_id"></app-bptask> -
+                          <button [routerLink]="['/repro-patch', taskPatchData().request.reqid,tasksToFix.original_task_id ]" >Patch single</button> </li>
                     }
                 </ul>
             </div>
