@@ -2575,15 +2575,16 @@ def obsolete_old_task_for_slice(request_id, slice_number, ddm, is_derivation = F
                     for child_task in ProductionTask.objects.filter(parent_id=task.id):
                         if child_task.status in ['finished','done'] and '.merge.' in child_task.name:
                             if check_all_outputs_deleted(child_task, ddm):
-                                _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                                _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=child_task.id))
                                 number_of_obsolete_tasks += 1
-                                result, message = action_executor.obsolete_task(int(task.id))
+                                result, message = action_executor.obsolete_task(int(child_task.id))
                             elif  [x for x in outputs if x in child_task.output_formats.split('.')]:
                                 merge_is_empty = False
                                 break
                 if merge_is_empty:
                     if task.status != 'obsolete':
                         _logger.info('Obsolecence: {taskid} is obsolete because all output is deleted'.format(taskid=task.id))
+                        result, message = action_executor.obsolete_task(int(task.id))
                         number_of_obsolete_tasks += 1
     return number_of_obsolete_tasks
 
