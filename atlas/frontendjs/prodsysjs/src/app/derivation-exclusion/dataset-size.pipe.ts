@@ -15,12 +15,8 @@ const defaultPrecisionMap: unitPrecisionMap = {
   PB: 2
 };
 
-
-@Pipe({ name: 'datasetSize' })
-export class DatasetSizePipe implements PipeTransform {
-  private readonly units: unit[] = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-  transform(bytes: number = 0, precision: number | unitPrecisionMap = defaultPrecisionMap): string {
+const units: unit[] = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+export function convertBytes(bytes: number = 0, precision: number | unitPrecisionMap = defaultPrecisionMap): string {
     if (isNaN(parseFloat(String(bytes))) || !isFinite(bytes)) { return '?'; }
 
     let unitIndex = 0;
@@ -30,11 +26,19 @@ export class DatasetSizePipe implements PipeTransform {
       unitIndex++;
     }
 
-    const currentUnit = this.units[unitIndex];
+    const currentUnit = units[unitIndex];
 
     if (typeof precision === 'number') {
       return `${bytes.toFixed(+precision)} ${currentUnit}`;
     }
     return `${bytes.toFixed(precision[currentUnit])} ${currentUnit}`;
+  }
+
+
+@Pipe({ name: 'datasetSize' })
+export class DatasetSizePipe implements PipeTransform {
+
+  transform(bytes: number = 0, precision: number | unitPrecisionMap = defaultPrecisionMap): string {
+    return convertBytes(bytes, precision);
   }
 }

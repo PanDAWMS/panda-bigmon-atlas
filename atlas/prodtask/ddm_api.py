@@ -351,9 +351,14 @@ class DDM(object):
     def list_rses(self, filter = ''):
         return self.__ddm.list_rses(filter)
 
+    def get_unavailable_rses(self):
+        if self.__unavailable_rses is None:
+            self.__unavailable_rses = [x['rse'] for x in self.list_rses() if x['availability'] == 0]
+        return self.__unavailable_rses
 
     __tape_rse = None
     __datadisk_rse = None
+    __unavailable_rses = None
 
 
 
@@ -419,6 +424,19 @@ class DDM(object):
         rules = self.__ddm.list_did_rules(scope, name)
         return rules
 
+    def list_parent_containers(self, dataset_name):
+        scope, name = self.rucio_convention(dataset_name)
+        return list(self.__ddm.list_parent_dids(scope, name))
+
+    def check_only_unavailable_rse(self, dataset_name: str) -> [str]:
+        full_replicas = self.full_replicas_per_type(dataset_name)
+        if full_replicas['tape']:
+            return []
+        unavailable_rses = self.get_unavailable_rses()
+        for replica in full_replicas['data']:
+            if replica['rse'] not in unavailable_rses:
+                return []
+        return [x['rse'] for x in full_replicas['data']]
 
     def find_disk_for_tape(self, tape_rse):
         rses = [x for x in list(self.list_rses('type=DATADISK')) if x['rse'].startswith(tape_rse.split('_')[0])]

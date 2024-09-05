@@ -1,0 +1,62 @@
+ @if (isLoading()) {
+      <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
+
+    }
+
+ @if(tsData() && !isLoading()){
+
+             <app-task-stats  [taskStatus]="sites"  [formControl]="sitesControl"
+                      [statusOrder]="sitesOrder" [orientation]="'vertical'"></app-task-stats>
+               <ag-grid-angular
+                 #agGrid
+          style="width: 100%; "
+          class="ag-theme-alpine"
+          [rowData]="tsData()?.datasets"
+          [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions"
+                 (selectionChanged)="onSelectionChanged($event)"
+    [rowSelection]="'multiple'"
+
+     [domLayout]="'autoHeight'"
+    [rowHeight]="22"
+                  ></ag-grid-angular>
+  <div>
+  <button mat-raised-button color="primary" (click)="selectFiltered()">Select Filtered</button>
+  <button mat-raised-button color="primary" (click)="submitRequests()" [disabled]="true">Submit Request for {{selectedDatasets.length}}</button>
+  </div>
+   <div class="max-w-4xl mx-auto p-4">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Downtimes</h2>
+  @for(downtime of tsData().downtimes; track downtime){
+  <div class="bg-white shadow-md rounded-lg p-6 mb-4 border border-gray-200">
+    <div class="mb-2">
+      <h3 class="text-lg font-semibold text-gray-900">Endpoint: {{ downtime.endpoint }}</h3>
+      <span
+        class="text-sm font-medium inline-block px-3 py-1 rounded-full"
+        [ngClass]="downtime.status === 'DOWNTIME' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
+      >
+        {{ downtime.status }}
+      </span>
+    </div>
+    <p class="text-gray-700 mb-2">
+      <span class="font-semibold">Expiration:</span> {{ downtime.expiration | date:'medium' }}
+    </p>
+    <p class="text-gray-700 mb-2">
+      <span class="font-semibold">Reason:</span> {{ downtime.reason }}
+    </p>
+  </div>
+  }
+</div>
+
+<!--          (gridReady)="onGridReady($event)"-->
+
+
+ }
+ @if (error()) {
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline">{{ error() }}</span>
+
+    </div>
+
+  }

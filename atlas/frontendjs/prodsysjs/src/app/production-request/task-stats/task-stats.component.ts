@@ -1,6 +1,7 @@
 import {ChangeDetectorRef, Component, Input, OnInit} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {SelectionModel} from "@angular/cdk/collections";
+import {KeyValuePipe, NgClass, NgForOf} from "@angular/common";
 
 @Component({
   selector: 'app-task-stats',
@@ -13,6 +14,12 @@ import {SelectionModel} from "@angular/cdk/collections";
       multi: true,
     },
   ],
+  imports: [
+    KeyValuePipe,
+    NgClass,
+    NgForOf
+  ],
+  standalone: true
 })
 export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
 

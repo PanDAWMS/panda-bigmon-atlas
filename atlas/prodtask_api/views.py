@@ -14,11 +14,13 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 
 from atlas.atlaselastic.monit_views import prepare_staging_task_info
+from atlas.cric.client import CRICClient
 from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
+from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
-    ProductionRequestSerializer, RequestStatus
+    ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers
 from atlas.prodtask.spdstodb import fill_template
@@ -365,5 +367,39 @@ def patch_reprocessing_request(request, requestID):
             set_request_status('cron', requestID, 'approved', 'Reprocessing patch',
                                'Request was automatically approved')
         return Response(result)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def unavailable_datasets_info(request):
+    try:
+        dataset = request.query_params.get('dataset')
+        task_id = request.query_params.get('taskID')
+        username = request.query_params.get('username')
+        if dataset:
+            task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+        result = {}
+        if task_id:
+            result = get_unavalaible_daod_input_datasets([int(task_id)])
+        elif username:
+            if username == 'all':
+
+                tasks = JediTasks.objects.filter(id__gte=40700000, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING], prodsourcelabel='user')
+                tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
+            else:
+                tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING])
+                tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
+            result = get_unavalaible_daod_input_datasets(tasks_id)
+
+        sites = set()
+        for dataset_info in result:
+            sites.update(dataset_info.replicas)
+        cric_client = CRICClient()
+        downtimes = [cric_client.get_ddm_endpoint_wan(x) for x in sites]
+
+        return Response({'datasets': [asdict(x) for x in result], 'downtimes':downtimes} )
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

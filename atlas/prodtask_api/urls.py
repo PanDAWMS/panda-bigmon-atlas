@@ -77,6 +77,8 @@ urlpatterns = [
             name='stage_profile'),
     re_path(r'^pileup_task_provenance/(?P<taskID>\d+)/$', pileup_task_provenance,
             name='pileup_task_provenance'),
+    re_path(r'^unavailable_datasets_info/$', unavailable_datasets_info,
+            name='unavailable_datasets_info'),
 
 
 

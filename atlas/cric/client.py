@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-
+from django.core.cache import cache
 import requests
 
 from ..settings import cricclient as cric_settings
@@ -47,3 +47,19 @@ class CRICClient(object):
 
     def get_panda_sites(self):
         return self._get_command('atlas/site')
+
+    def get_ddmendpointstatus(self):
+        return self._get_command('atlas/ddmendpointstatus')
+
+    def get_ddm_endpoint_wan(self, endpoint):
+        if cache.get(f'ddm_status_{endpoint}'):
+            return cache.get(f'ddm_status_{endpoint}')
+        all_endpoints_status = self.get_ddmendpointstatus()
+        if endpoint in all_endpoints_status:
+            status = {'status': all_endpoints_status[endpoint]['read_wan']['status']['probe'],
+                      'endpoint': endpoint,
+                      'reason': all_endpoints_status[endpoint]['read_wan']['status']['reason'],
+                      'expiration': all_endpoints_status[endpoint]['read_wan']['status']['expiration']}
+            cache.set(f'ddm_status_{endpoint}', status, 3600)
+            return status
+        return None

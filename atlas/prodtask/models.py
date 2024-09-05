@@ -830,6 +830,7 @@ class TaskTemplate(models.Model):
         db_table =  "T_TASK_TEMPLATE"
 
 
+
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
     parent_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=True)
@@ -2666,3 +2667,72 @@ class JediTasks(models.Model):
         db_table = '"ATLAS_PANDA"."JEDI_TASKS"'
 
 
+class DatasetRecovery(models.Model):
+
+    class STATUS:
+        PENDING = 'pending'
+        SUBMITTED = 'submitted'
+        RUNNING = 'running'
+        DONE = 'done'
+
+    class TYPE:
+        RECOVERY = 'recovery'
+        BACKUP = 'backup'
+        RESTORE = 'restore'
+
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DS_RECOVERY_ID', primary_key=True)
+    original_dataset = models.CharField(max_length=200, db_column='ORIGINAL_DATASET')
+    status = models.CharField(max_length=12, db_column='STATUS')
+    type = models.CharField(max_length=12, db_column='TYPE')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    original_task = models.ForeignKey(ProductionTask, db_column='TASK_ID', on_delete=CASCADE)
+    requestor = models.CharField(max_length=200, db_column='REQUESTOR', null=True)
+    submitter = models.CharField(max_length=200, db_column='SUBMITTER', null=True)
+    size = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES', null=True)
+    sites = models.CharField(max_length=2000, db_column='SITES', null=True)
+    recovery_task = models.ForeignKey(ProductionTask, db_column='RECOVERY_TASK_ID', on_delete=CASCADE, null=True)
+
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        if ':' in self.original_dataset:
+            self.original_dataset = self.original_dataset.split(':')[1]
+        super(DatasetRecovery, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_DATASET_RECOVERY"
+
+
+class DatasetRecoveryInfo(models.Model):
+
+
+    @dataclass
+    class Info:
+        recovery_request: int | None = None
+        recovery_task: int | None = None
+        recovery_slice: int | None = None
+        comment: str = ''
+        containers: List[str] = field(default_factory=list)
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DS_RECOVERY_INFO_ID', primary_key=True)
+    dataset_recovery = models.ForeignKey(DatasetRecovery, db_column='DS_RECOVERY_ID', on_delete=CASCADE)
+    error = models.CharField(max_length=2000, db_column='ERROR', null=True)
+    info =  models.JSONField(db_column='INFO')
+
+
+    def save(self, *args, **kwargs):
+        super(DatasetRecoveryInfo, self).save(*args, **kwargs)
+
+    @property
+    def info_obj(self):
+        return self.Info(**self.info)
+
+    @info_obj.setter
+    def info_obj(self, value):
+        self.info = asdict(value)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_DATASET_RECOVERY_INFO"

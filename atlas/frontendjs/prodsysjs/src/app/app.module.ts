@@ -128,6 +128,7 @@ import {McRequestSubmissionComponent} from "./production-request/mc-request-subm
 import {DsidInfoComponent} from "./dsid-info/dsid-info.component";
 import {ReproPatchComponent} from "./repro-patch/repro-patch.component";
 import {TaskStageProfileComponent} from "./task-stage-profile/task-stage-profile.component";
+import {DatasetRecoveryComponent} from "./dataset-recovery/dataset-recovery.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -224,6 +225,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'multi-campaign', component: MultiRequestInitialComponent},
     {path: 'mc-submit', component: McRequestSubmissionComponent},
   {path: 'dsid', component: DsidInfoComponent},
+  {path: 'dataset-recovery', component: DatasetRecoveryComponent},
 
 
 
@@ -256,7 +258,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         SliceDetailsDialogComponent,
         GpDeletionRequestComponent,
         ChipsMultiSelectColoredComponent,
-        TaskStatsComponent,
         UnmergeCleaningComponent,
         UnmergeDatasetsComponent,
         ProductionTaskComponent,
@@ -335,7 +336,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AgGridModule,
     MatStepperModule,
     MatSlideToggleModule,
-    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent], providers: [
+    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent], providers: [
         {
             provide: APP_BASE_HREF, useValue: '/ng',
             useFactory: getBaseLocation
