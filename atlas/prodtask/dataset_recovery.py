@@ -59,6 +59,8 @@ class TaskDatasetRecover:
 
 
 def check_unavailable_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| None:
+    if ':' in dataset:
+        dataset = dataset.split(':')[-1]
     input_unavailable = ddm.check_only_unavailable_rse(dataset)
     if input_unavailable:
         size = ddm.dataset_metadata(dataset)['bytes']
@@ -121,6 +123,8 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
     requests_registered = []
     for dataset_info in datasets_info:
         dataset = dataset_info.input_dataset
+        if ':' in dataset:
+            dataset = dataset.split(':')[-1]
         if DatasetRecovery.objects.filter(original_dataset=dataset).exists():
             dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
             if dataset_recovery.status != DatasetRecovery.STATUS.DONE:
@@ -135,8 +139,6 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
                 dataset_recovery_info.save()
             requests_registered.append(dataset_recovery.id)
         else:
-            if ':' in dataset:
-                dataset = dataset.split(':')[-1]
             dataset_recovery = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.PENDING, size=dataset_info.size)
             dataset_recovery.requestor = username
             dataset_recovery.type = DatasetRecovery.TYPE.RECOVERY
