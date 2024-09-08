@@ -117,6 +117,8 @@ export class DatasetRecoveryComponent {
 constructor() {
   effect(() => {
     if (this.tsData()?.datasets !== undefined) {
+      this.sites = {};
+      this.sitesOrder = [];
       for (const datasetInfo of this.tsData().datasets) {
         for (const replica of datasetInfo.replicas) {
           if (this.sites[replica] === undefined) {
