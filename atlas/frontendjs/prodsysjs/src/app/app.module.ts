@@ -129,6 +129,9 @@ import {DsidInfoComponent} from "./dsid-info/dsid-info.component";
 import {ReproPatchComponent} from "./repro-patch/repro-patch.component";
 import {TaskStageProfileComponent} from "./task-stage-profile/task-stage-profile.component";
 import {DatasetRecoveryComponent} from "./dataset-recovery/dataset-recovery.component";
+import {
+  RecoveryRequestsApproveComponent
+} from "./dataset-recovery/recovery-requests-approve/recovery-requests-approve.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -226,8 +229,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'mc-submit', component: McRequestSubmissionComponent},
   {path: 'dsid', component: DsidInfoComponent},
   {path: 'dataset-recovery', component: DatasetRecoveryComponent},
-
-
+   {path: 'recovery-requests', component: RecoveryRequestsApproveComponent},
 
 
   // {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,

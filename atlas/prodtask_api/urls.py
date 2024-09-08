@@ -79,6 +79,10 @@ urlpatterns = [
             name='pileup_task_provenance'),
     re_path(r'^unavailable_datasets_info/$', unavailable_datasets_info,
             name='unavailable_datasets_info'),
+    re_path(r'^request_recreation/$', request_recreation,
+            name='request_recreation'),
+    re_path(r'^get_all_recovery_requests/$', get_all_recovery_requests,
+            name='get_all_recovery_requests'),
 
 
 

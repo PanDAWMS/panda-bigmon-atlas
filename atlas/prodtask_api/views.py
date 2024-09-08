@@ -5,7 +5,7 @@ from dataclasses import asdict
 from time import sleep
 
 from django.http.response import HttpResponseForbidden, HttpResponseBadRequest
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
@@ -17,10 +17,11 @@ from atlas.atlaselastic.monit_views import prepare_staging_task_info
 from atlas.cric.client import CRICClient
 from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
-from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets
+from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets, TaskDatasetRecover, \
+    register_recreation_request, get_unavaliaible_dataset_info
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
-    ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks
+    ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers
 from atlas.prodtask.spdstodb import fill_template
@@ -379,10 +380,10 @@ def unavailable_datasets_info(request):
         dataset = request.query_params.get('dataset')
         task_id = request.query_params.get('taskID')
         username = request.query_params.get('username')
+        result = []
         if dataset:
-            task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
-        result = {}
-        if task_id:
+            result = get_unavaliaible_dataset_info(dataset)
+        elif task_id:
             result = get_unavalaible_daod_input_datasets([int(task_id)])
         elif username:
             if username == 'all':
@@ -393,7 +394,6 @@ def unavailable_datasets_info(request):
                 tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING])
                 tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
             result = get_unavalaible_daod_input_datasets(tasks_id)
-
         sites = set()
         for dataset_info in result:
             sites.update(dataset_info.replicas)
@@ -401,5 +401,48 @@ def unavailable_datasets_info(request):
         downtimes = [cric_client.get_ddm_endpoint_wan(x) for x in sites]
 
         return Response({'datasets': [asdict(x) for x in result], 'downtimes':downtimes} )
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def request_recreation(request):
+    try:
+        datasets_info: [TaskDatasetRecover] = request.data.get('datasets')
+        username = request.user.username
+        comment = request.data.get('comment')
+        requests_registered = register_recreation_request([TaskDatasetRecover(**x) for x in datasets_info], username, comment)
+        return Response(len(requests_registered))
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DatasetRecoverySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DatasetRecovery
+        fields = '__all__'
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_all_recovery_requests(request):
+    try:
+        result = []
+        requests = DatasetRecovery.objects.all()
+        for recovery_request in requests:
+            serialized_request = DatasetRecoverySerializer(recovery_request).data
+            serialized_request['comment'] = ''
+            serialized_request['error'] = ''
+            if recovery_request.status != DatasetRecovery.STATUS.DONE:
+                if DatasetRecoveryInfo.objects.filter(dataset_recovery=recovery_request).exists():
+                    dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=recovery_request)
+                    serialized_request['error'] = dataset_recovery_info.error
+                    if recovery_request.status not in [DatasetRecovery.STATUS.RUNNING, DatasetRecovery.STATUS.SUBMITTED]:
+                        serialized_request['comment'] = dataset_recovery_info.info_obj.comment
+            result.append(serialized_request)
+
+        return Response(result)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

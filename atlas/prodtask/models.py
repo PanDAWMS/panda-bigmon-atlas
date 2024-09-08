@@ -2711,10 +2711,10 @@ class DatasetRecoveryInfo(models.Model):
     @dataclass
     class Info:
         recovery_request: int | None = None
-        recovery_task: int | None = None
         recovery_slice: int | None = None
         comment: str = ''
         containers: List[str] = field(default_factory=list)
+        linked_tasks: List[int] = field(default_factory=list)
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DS_RECOVERY_INFO_ID', primary_key=True)
     dataset_recovery = models.ForeignKey(DatasetRecovery, db_column='DS_RECOVERY_ID', on_delete=CASCADE)

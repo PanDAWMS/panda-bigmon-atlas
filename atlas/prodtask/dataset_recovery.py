@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 
+from celery import current_task
+from django.db.models.fields import return_None
+
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestList, ParentToChildRequest, TRequest, \
-    TTask, TemplateVariable, DatasetRecovery
+    TTask, TemplateVariable, DatasetRecovery, DatasetRecoveryInfo
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices, request_clone_slices, form_existed_step_list
 
@@ -55,7 +58,24 @@ class TaskDatasetRecover:
 
 
 
+def check_unavailable_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| None:
+    input_unavailable = ddm.check_only_unavailable_rse(dataset)
+    if input_unavailable:
+        size = ddm.dataset_metadata(dataset)['bytes']
+        status = 'unavailable'
+        if DatasetRecovery.objects.filter(original_dataset=dataset).exists():
+            dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
+            if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
+                status = 'pending'
+            else:
+                status = 'submitted'
+        return TaskDatasetRecover(None, dataset, size, status, input_unavailable)
+    else:
+        return None
 
+def get_unavaliaible_dataset_info(dataset: str):
+    ddm = DDM()
+    return [check_unavailable_datasets(dataset, ddm)]
 
 def get_unavalaible_daod_input_datasets(task_ids: [int]) -> [TaskDatasetRecover]:
     ddm = DDM()
@@ -71,17 +91,10 @@ def get_unavalaible_daod_input_datasets(task_ids: [int]) -> [TaskDatasetRecover]
                 else:
                     input_datasets = ddm.dataset_in_container(input_container)
             for input_dataset in input_datasets:
-                input_unavailable = ddm.check_only_unavailable_rse(input_dataset)
-                if input_unavailable:
-                    size = ddm.dataset_metadata(input_dataset)['bytes']
-                    status = 'unavailable'
-                    if DatasetRecovery.objects.filter(original_dataset=input_dataset).exists():
-                        dataset_recovery = DatasetRecovery.objects.get(original_dataset=input_dataset)
-                        if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
-                            status = 'pending'
-                        else:
-                            status = 'submitted'
-                    result.append(TaskDatasetRecover(task_id, input_dataset, size, status, input_unavailable))
+                verify_dataset = check_unavailable_datasets(input_dataset, ddm)
+                if verify_dataset:
+                    verify_dataset.task_id = task_id
+                    result.append(verify_dataset)
     return result
 
 
@@ -101,3 +114,133 @@ def recreate_stuck_replica_task(task_id: int):
         return recreate_existing_outputs(task_id, output_formats_to_recreate)
 
     return None
+
+
+def register_recreation_request(datasets_info: [TaskDatasetRecover], username: str, comment: str) -> [int]:
+    ddm = DDM()
+    requests_registered = []
+    for dataset_info in datasets_info:
+        dataset = dataset_info.input_dataset
+        if DatasetRecovery.objects.filter(original_dataset=dataset).exists():
+            dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
+            if dataset_recovery.status != DatasetRecovery.STATUS.DONE:
+                if username not in dataset_recovery.requestor:
+                    dataset_recovery.requestor += ',' + username
+                dataset_recovery.replicas = ','.join(dataset_info.replicas)
+                dataset_recovery.save()
+                dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+                dataset_recovery_info.info_obj.linked_tasks.append(datasets_info.task_id)
+                if comment:
+                    dataset_recovery_info.info_obj.comment = "\n".join([dataset_recovery_info.info_obj.comment, f'{username}: {comment}'])
+                dataset_recovery_info.save()
+            requests_registered.append(dataset_recovery.id)
+        else:
+            if ':' in dataset:
+                dataset = dataset.split(':')[-1]
+            dataset_recovery = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.PENDING, size=dataset_info.size)
+            dataset_recovery.requestor = username
+            dataset_recovery.type = DatasetRecovery.TYPE.RECOVERY
+            original_task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+            dataset_recovery.original_task = ProductionTask.objects.get(id=original_task_id)
+            dataset_recovery.sites = ','.join(dataset_info.replicas)
+            dataset_recovery.save()
+            dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
+            dataset_recovery_info = DatasetRecoveryInfo(dataset_recovery=dataset_recovery)
+            parent_containers = list(ddm.list_parent_containers(dataset))
+            if comment:
+                comment = f'{username}: {comment}'
+            dataset_recovery_info.info_obj = DatasetRecoveryInfo.Info(comment=comment, containers=parent_containers, linked_tasks=[int(dataset_recovery.original_task.id)])
+            dataset_recovery_info.save()
+            requests_registered.append(dataset_recovery.id)
+    return requests_registered
+
+
+
+def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
+    for dataset_recovery in DatasetRecovery.objects.filter(id__in=dataset_recovery_ids):
+        if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
+            dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+            try:
+                result = recreate_stuck_replica_task(dataset_recovery.original_task.id)
+                # ToDo: check if more than one dataset is recreated
+                if result:
+                    dataset_recovery_info.info_obj.recovery_request = result[0]
+                    dataset_recovery_info.info_obj.recovery_slice = result[1]
+                    dataset_recovery_info.save()
+                else:
+                    dataset_recovery_info.error = 'No outputs to recreate'
+                    dataset_recovery_info.save()
+                    continue
+            except Exception as e:
+                dataset_recovery_info.error = str(e)
+                dataset_recovery_info.save()
+                continue
+            dataset_recovery.status = DatasetRecovery.STATUS.SUBMITTED
+            dataset_recovery.save()
+        else:
+            raise Exception('Dataset recovery request is not pending')
+
+
+def finish_dataset_recovery(dataset_recovery_id: int):
+    dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
+    dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+    ddm = DDM()
+    task = dataset_recovery.recovery_task
+    outputs = list(task.output_non_log_datasets())
+    original_format = dataset_recovery.original_dataset.split('.')[-1]
+    recreated_dataset = [output for output in outputs if output.split('.')[-1] == original_format][0]
+    for container in dataset_recovery_info.info_obj.containers:
+        # try:
+        #     ddm.register_datasets_in_container(container, [recreated_dataset])
+        # except Exception as e:
+        #     pass
+        pass
+
+    for task_id in dataset_recovery_info.info_obj.linked_tasks:
+        # Send reload command to the task
+        pass
+
+    dataset_recovery.status = DatasetRecovery.STATUS.DONE
+    dataset_recovery.save()
+
+
+
+def check_submitted_recovery_requests():
+    for dataset_recovery in DatasetRecovery.objects.filter(status=DatasetRecovery.STATUS.SUBMITTED):
+        dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+        if dataset_recovery_info.info_obj.recovery_request and dataset_recovery_info.info_obj.recovery_slice:
+            try:
+                step = StepExecution.objects.get(request=dataset_recovery_info.info_obj.recovery_request,
+                                                 slice=InputRequestList.objects.get(request=dataset_recovery_info.info_obj.recovery_request, slice=dataset_recovery_info.info_obj.recovery_slice))
+                if ProductionTask.objects.filter(step=step, request=dataset_recovery_info.info_obj.recovery_request).exists():
+                    task = ProductionTask.objects.get(step=step, request=dataset_recovery_info.info_obj.recovery_request)
+                    dataset_recovery.recovery_task = task
+                    dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
+                    dataset_recovery.save()
+                    if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                        finish_dataset_recovery(dataset_recovery.id)
+            except Exception as e:
+                dataset_recovery_info.error = str(e)
+                dataset_recovery_info.save()
+                continue
+
+
+def find_fixed_recovery(dataset_recovery_id):
+    dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
+    current_task = dataset_recovery.recovery_task
+    for task in ProductionTask.objects.filter(request=current_task.request):
+        if task.inputdataset == current_task.inputdataset and task.output_formats == current_task.output_formats:
+            dataset_recovery.recovery_task = task
+            dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
+            dataset_recovery.save()
+            if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                finish_dataset_recovery(dataset_recovery.id)
+            return
+
+def check_running_recovery_requests():
+    for dataset_recovery in DatasetRecovery.objects.filter(status=DatasetRecovery.STATUS.RUNNING):
+        if dataset_recovery.recovery_task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+            finish_dataset_recovery(dataset_recovery.id)
+        else:
+            if dataset_recovery.recovery_task.status in ProductionTask.BAD_STATUS:
+                find_fixed_recovery(dataset_recovery.id)

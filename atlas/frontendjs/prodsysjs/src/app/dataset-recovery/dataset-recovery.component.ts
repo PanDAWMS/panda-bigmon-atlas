@@ -4,11 +4,14 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {AsyncPipe, DatePipe, JsonPipe, NgClass} from "@angular/common";
 import {AgGridAngular} from "ag-grid-angular";
 import {GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from "ag-grid-community";
-import {ProductionTask} from "../production-request/production-request-models";
 import {convertBytes} from "../derivation-exclusion/dataset-size.pipe";
-import {ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
+import {FormsModule, ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
 import {TaskStatsComponent} from "../production-request/task-stats/task-stats.component";
 import {MatButton} from "@angular/material/button";
+import {MatFormField, MatLabel} from "@angular/material/form-field";
+import {MatInput} from "@angular/material/input";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
+import {MatIcon} from "@angular/material/icon";
 
 @Component({
   selector: 'app-dataset-recovery',
@@ -22,17 +25,27 @@ import {MatButton} from "@angular/material/button";
     AsyncPipe,
     TaskStatsComponent,
     ReactiveFormsModule,
-    MatButton
+    MatButton,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    FormsModule,
+    RouterLink,
+    MatIcon
   ],
   templateUrl: './dataset-recovery.component.html',
   styleUrl: './dataset-recovery.component.css'
 })
 export class DatasetRecoveryComponent {
 
-  @Input() set username(value: string) {
-    this.datasetRecoveryService.setUsername(value);
-  }
+  // @Input() set username(value: string) {
+  //   this.datasetRecoveryService.setUsername(value);
+  // }
+  router = inject(Router);
+  route = inject(ActivatedRoute);
   @ViewChild('agGrid') datasetsGrid!: AgGridAngular;
+
+  public comment = '';
   public sitesControl = new UntypedFormControl([]);
   public sites: {[status: string]: number} = {};
   public sitesOrder: string[] = [];
@@ -41,10 +54,14 @@ export class DatasetRecoveryComponent {
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
   };
  datasetRecoveryService = inject(DatasetRecoveryService);
+  public username = '';
+  public taskID = '';
+  public dataset = '';
   isLoading = this.datasetRecoveryService.state.isLoading;
   error = this.datasetRecoveryService.state.error;
   tsData: Signal<TSData> = this.datasetRecoveryService.state.tsData;
   submitted = this.datasetRecoveryService.state.submitted;
+  submitting = this.datasetRecoveryService.state.submitting;
   columnDefs = [
     {
       field: 'task_id',
@@ -64,9 +81,9 @@ export class DatasetRecoveryComponent {
           case 'unavailable':
             return '<span style="color: gray">O</span>';
           case 'pending':
-            return '<mat-icon style="color: orange" >hourglass_empty</mat-icon>';
+            return '<span style="color: orange;">⌛</span>';
           case 'submitted':
-            return '<mat-icon style="color: green" >done</mat-icon>';
+            return '<span style="color: green;">✔</span>';
           default:
             return '';
 
@@ -96,6 +113,7 @@ export class DatasetRecoveryComponent {
 
   ];
   selectedDatasets: Dataset[] = [];
+   message: string;
 constructor() {
   effect(() => {
     if (this.tsData()?.datasets !== undefined) {
@@ -115,9 +133,30 @@ constructor() {
       } );
     }
   });
+  this.route.queryParamMap.subscribe(queryParamMap => {
+    if (queryParamMap.get('dataset')){
+      this.datasetRecoveryService.setInputValues('', queryParamMap.get('dataset') , '');
+      this.message = `Dataset: ${queryParamMap.get('dataset')}`;
+      this.dataset = queryParamMap.get('dataset');
+      this.username = '';
+      this.taskID = '';
+    } else if (queryParamMap.get('taskID')) {
+      this.datasetRecoveryService.setInputValues('', '',  queryParamMap.get('taskID'));
+      this.message = `Unavailable datasets for the task ${queryParamMap.get('taskID')}`;
+      this.dataset = '';
+      this.username = '';
+      this.taskID = queryParamMap.get('taskID');
+    } else if (queryParamMap.get('username')) {
+      this.datasetRecoveryService.setInputValues(queryParamMap.get('username'), '' , '');
+      this.message = `Unavailable datasets for the pending ${queryParamMap.get('username')} tasks`;
+      this.dataset = '';
+      this.username = queryParamMap.get('username');
+      this.taskID = '';
+    }
+  });
 }
   submitRequests(): void {
-    this.datasetRecoveryService.submit();
+    this.datasetRecoveryService.submit(this.datasetsGrid.api.getSelectedRows(), this.comment);
   }
 
   onGridReady($event: GridReadyEvent<Dataset>) {
@@ -147,4 +186,5 @@ constructor() {
   onSelectionChanged($event: SelectionChangedEvent<any>) {
     this.selectedDatasets = $event.api.getSelectedRows();
   }
+
 }
