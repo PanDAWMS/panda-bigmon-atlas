@@ -1,13 +1,13 @@
+import logging
 from dataclasses import dataclass
-
-from celery import current_task
-from django.db.models.fields import return_None
 
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestList, ParentToChildRequest, TRequest, \
     TTask, TemplateVariable, DatasetRecovery, DatasetRecoveryInfo
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices, request_clone_slices, form_existed_step_list
+from atlas.task_action.task_management import TaskActionExecutor
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 
 def recreate_existing_outputs(task_id: int, outputs: [str]):
@@ -105,16 +105,26 @@ def recreate_stuck_replica_task(task_id: int):
     outputs = list(task.output_non_log_datasets())
     ddm = DDM()
     output_formats_to_recreate = []
+    deleted_datasets = []
     for output in outputs:
-        if ddm.check_only_unavailable_rse(output):
+        if not ddm.dataset_exists(output):
             output_formats_to_recreate.append(output.split('.')[-1])
+            deleted_datasets.append(output)
+        elif ddm.check_only_unavailable_rse(output):
+            output_formats_to_recreate.append(output.split('.')[-1])
+            deleted_datasets.append(output)
+    action_executor = TaskActionExecutor('mborodin', 'Obsolete tash to be recreated')
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
-        return recreate_existing_outputs(task_id, [])
+        action_executor.obsolete_task(task_id)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, [])
+        return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
-        return recreate_existing_outputs(task_id, output_formats_to_recreate)
-
+        for output_format in output_formats_to_recreate:
+            action_executor.obsolete_task_output(task_id, output_format)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate)
+        return recovery_request, recovery_slice, deleted_datasets
     return None
 
 
@@ -125,6 +135,8 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
         dataset = dataset_info.input_dataset
         if ':' in dataset:
             dataset = dataset.split(':')[-1]
+        _jsonLogger.info('Register recreation request',
+                         extra={'dataset': dataset, 'username': username, 'comment': comment})
         if DatasetRecovery.objects.filter(original_dataset=dataset).exists():
             dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
             if dataset_recovery.status != DatasetRecovery.STATUS.DONE:
@@ -157,15 +169,40 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
     return requests_registered
 
 
+def create_dataset_recovery_for_different_formats(dataset_recovery_id: int, datasets: [str], recovery_request: int, recovery_slice: int):
+    dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
+    for dataset in datasets:
+        if ':' in dataset:
+            dataset = dataset.split(':')[-1]
+        if dataset != dataset_recovery.original_dataset and DatasetRecovery.objects.filter(original_dataset=dataset).exists():
+            raise Exception('Dataset recovery for %s already exists' % dataset)
+        dataset_recovery_new = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.RUNNING, size=0)
+        dataset_recovery_new.requestor = 'mborodin'
+        dataset_recovery_new.type = DatasetRecovery.TYPE.RECOVERY
+        dataset_recovery_new.original_task = dataset_recovery.original_task
+        dataset_recovery_new.sites = ''
+        dataset_recovery_new.save()
+        dataset_recovery_new = DatasetRecovery.objects.get(original_dataset=dataset)
+        dataset_recovery_info = DatasetRecoveryInfo(dataset_recovery=dataset_recovery_new)
+        parent_containers = []
+        comment = 'Recreated as accompanying dataset for %s' % dataset_recovery.original_dataset
+        dataset_recovery_info.info_obj = DatasetRecoveryInfo.Info(comment=comment, containers=parent_containers,
+                                                                  linked_tasks=[], recovery_request=recovery_request, recovery_slice=recovery_slice)
+        dataset_recovery_info.save()
+
+
 
 def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
     for dataset_recovery in DatasetRecovery.objects.filter(id__in=dataset_recovery_ids):
         if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
             dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
             try:
+                _jsonLogger.info('Submit recreation request',
+                                 extra={'dataset': dataset_recovery.original_dataset})
                 result = recreate_stuck_replica_task(dataset_recovery.original_task.id)
-                # ToDo: check if more than one dataset is recreated
                 if result:
+                    if len(result[2]) > 1:
+                        create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
                     dataset_recovery_info.info_obj.recovery_request = result[0]
                     dataset_recovery_info.info_obj.recovery_slice = result[1]
                     dataset_recovery_info.save()
@@ -174,6 +211,8 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
                     dataset_recovery_info.save()
                     continue
             except Exception as e:
+                _jsonLogger.error('Error during recreation request',
+                                  extra={'dataset': dataset_recovery.original_dataset, 'error': str(e)})
                 dataset_recovery_info.error = str(e)
                 dataset_recovery_info.save()
                 continue
@@ -185,6 +224,8 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
 
 def finish_dataset_recovery(dataset_recovery_id: int):
     dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
+    _jsonLogger.info('Finish dataset recovery',
+                     extra={'dataset': dataset_recovery.original_dataset})
     dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
     ddm = DDM()
     task = dataset_recovery.recovery_task
@@ -219,9 +260,13 @@ def check_submitted_recovery_requests():
                     dataset_recovery.recovery_task = task
                     dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
                     dataset_recovery.save()
+                    _jsonLogger.info('Recovery task found',
+                                     extra={'dataset': dataset_recovery.original_dataset, 'task_id': task.id})
                     if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
                         finish_dataset_recovery(dataset_recovery.id)
             except Exception as e:
+                _jsonLogger.error('Error during recovery task search',
+                                  extra={'dataset': dataset_recovery.original_dataset, 'error': str(e)})
                 dataset_recovery_info.error = str(e)
                 dataset_recovery_info.save()
                 continue
