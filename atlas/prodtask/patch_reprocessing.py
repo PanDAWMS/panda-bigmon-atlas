@@ -185,7 +185,7 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
     new_base_slice = None
     parent_steps = {}
     if slices_to_clone[slices_to_clone_keys[0]].steps_number > 1:
-        new_base_slice = clone_slices(request_id, request_id, slices_to_clone_keys[0], -1, True)[0]
+        new_base_slice = clone_slices(request_id, request_id, slices_to_clone_keys[0], -1, False)[0]
         original_ordered_existed_steps, parent_step = (
             form_existed_step_list(list(
                 StepExecution.objects.filter(slice=InputRequestList.objects.get(request=request_id, slice=slices_to_clone_keys[0]),
@@ -196,7 +196,7 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
         for index, step in enumerate(original_ordered_existed_steps[1:]):
             parent_steps[step.id] = new_steps[index]
 
-    new_slices = clone_slices(request_id, request_id, slices_to_clone_keys, -1, True, predefined_parrent=parent_steps)
+    new_slices = clone_slices(request_id, request_id, slices_to_clone_keys, -1, False, predefined_parrent=parent_steps)
     base_new_slice = InputRequestList.objects.get(request=request_id, slice=new_slices[0])
     change_step_repro_fix(request_id, base_new_slice, reprocessing_task.original_task_id, ami_tag)
     if new_base_slice:
