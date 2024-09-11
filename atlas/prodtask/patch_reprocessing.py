@@ -151,7 +151,7 @@ def approve_merge_patch_slices(request_id: int, container_identifier: str):
 def find_done_patched_tasks():
     REPRO_PATCH_HASHTAG = 'ReproPatch'
     ht = HashTag.objects.get(hashtag=REPRO_PATCH_HASHTAG)
-    tasks = ht.tasks.filter(status=ProductionTask.STATUS.DONE)
+    tasks = ht.tasks.filter(status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED] )
     for task in tasks:
         unleash_repro_patch_merge(task.id)
         task.remove_hashtag(ht)
