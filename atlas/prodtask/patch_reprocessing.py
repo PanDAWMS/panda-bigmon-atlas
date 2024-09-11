@@ -155,6 +155,9 @@ def find_done_patched_tasks():
     for task in tasks:
         unleash_repro_patch_merge(task.id)
         task.remove_hashtag(ht)
+    failed_tasks = ht.tasks.filter(status__in=ProductionTask.BAD_STATUS)
+    for task in failed_tasks:
+        task.remove_hashtag(ht)
 
 def unleash_repro_patch_merge(task_id: int):
     task = ProductionTask.objects.get(id=task_id)
