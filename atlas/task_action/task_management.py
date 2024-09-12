@@ -12,8 +12,8 @@ from django.utils import timezone
 
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks
-from atlas.prodtask.task_views import sync_deft_jedi_task
+from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag
+from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
@@ -47,6 +47,11 @@ class DEFTAction(ABC):
     @abstractmethod
     def obsolete_task(self, task_id):
         pass
+
+    @abstractmethod
+    def obsolete_task_output(self, task_id, output_format):
+        pass
+
 
     @abstractmethod
     def sync_jedi(self, task_id):
@@ -86,6 +91,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     #ES_PATTERN = "https://es-atlas.cern.ch/kibana/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(task,action,params,prod_request,user,return_code,return_message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:_log_production_task_action_message),type:phrase),query:(match_phrase:(funcName:_log_production_task_action_message))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:{0}),type:phrase),query:(match_phrase:(prod_request:{0})))),index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,interval:M,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))"
     ES_PATTERN = "https://os-atlas.cern.ch/dashboards/app/data-explorer/discover/#?_a=(discover:(columns:!(task,action,params,prod_request,user,return_code,return_message,_source),interval:M,sort:!(!('@timestamp',desc))),metadata:(indexPattern:bce7ecb0-7533-11eb-ba28-77fe4323ac05,view:discover))&_q=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:_log_production_task_action_message),type:phrase),query:(match_phrase:(funcName:_log_production_task_action_message))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:prod_request,negate:!f,params:(query:{0}),type:phrase),query:(match_phrase:(prod_request:{0})))),query:(language:kuery,query:''))&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))"
     JIRA_MESSAGE_TEMPLATE = "Tasks actions for this request can be found [os-atlas|{link}]"
+    HT_ANALYSIS_RELOAD = 'analysis_auto_reload'
+
 
     def __init__(self, username, comment='', jedi_client=JEDIClient()):
         self.jedi_client = jedi_client
@@ -313,8 +320,18 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
 
     @_action_logger
     def create_finish_reload_action(self, task_id):
+        if not ProductionTask.objects.filter(id=task_id).exists():
+            if TTask.objects.filter(id=task_id).exists():
+                create_user_task(task_id)
+            else:
+                return False, 'Task not found'
         task = ProductionTask.objects.get(id=task_id)
-        if task.total_files_finished > 0:
+        if (task.request_id == 300) or task.request.request_type == 'ANALYSIS':
+            return_result = self.finishTask(task_id, True)
+            if return_result[0]:
+                task.set_hashtag(add_or_get_request_hashtag(self.HT_ANALYSIS_RELOAD))
+            return return_result
+        elif task.total_files_finished > 0:
             step = task.step
             actions = StepAction.objects.filter(step=step.id, action=13, status__in=['active','executing'])
             action_exists = False
@@ -334,6 +351,20 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 new_action.save()
                 return self.finishTask(task_id, True)
         return False, 'Command rejected: No jobs are finished yet'
+
+    @_action_logger
+    def obsolete_task_output(self, task_id, output_format):
+        task = ProductionTask.objects.get(id=task_id)
+        if task.status in ProductionTask.OBSOLETE_READY_STATUS:
+            output_datasets = list(task.output_non_log_datasets())
+            for output_dataset in output_datasets:
+                if f'.{output_format}.' in output_dataset:
+                    ddm = DDM()
+                    ddm.deleteDataset(output_dataset)
+                    task.timestamp = timezone.now()
+                    task.save()
+        return True, ''
+
 
     @_action_logger
     def obsolete_task(self, task_id):
@@ -441,7 +472,7 @@ class TaskManagementAuthorisation():
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.FINISHED:
-                self.allowed_task_actions[status].extend(['retry', 'obsolete', 'retry_new', 'finish', 'reload_input', 'disable_idds', 'finish_plus_reload'] +
+                self.allowed_task_actions[status].extend(['retry', 'obsolete', 'obsolete_output', 'retry_new', 'finish', 'reload_input', 'disable_idds', 'finish_plus_reload'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.DONE:
@@ -523,7 +554,7 @@ class TaskManagementAuthorisation():
 
     def additional_permissions(self, task: __AuthorisationTask, action: str) -> bool:
         if task.is_analy:
-            if task.status in [ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN] and action == 'retry':
+            if task.status in [ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN] and action in ['retry', 'reload_input']:
                 return True
         return False
 
@@ -605,6 +636,7 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'delete_output': action_executor.clean_task_carriages,
             'kill_job': action_executor.kill_jobs_in_task,
             'obsolete': action_executor.obsolete_task,
+            'obsolete_output': action_executor.obsolete_task_output,
             'change_core_count': action_executor.changeTaskAttribute,
             'change_split_rule': action_executor.changeTaskSplitRule,
             'pause_task': action_executor.pauseTask,
@@ -625,3 +657,12 @@ def do_jedi_action(action_executor, task_id, action, *args):
     if args == (None,):
          return action_translation[action](task_id)
     return action_translation[action](task_id, *args)
+
+def reload_analysis_tasks():
+    tasks = HashTag.objects.get(hashtag=TaskActionExecutor.HT_ANALYSIS_RELOAD).tasks.all()
+    for task in tasks:
+        jedi_task = JediTasks.objects.get(id=task.id)
+        if jedi_task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE, ProductionTask.STATUS.FAILED]:
+            action_executor = TaskActionExecutor('taskbot', 'Auto reload')
+            action_executor.reloadInput(jedi_task.id)
+            task.remove_hashtag(TaskActionExecutor.HT_ANALYSIS_RELOAD)

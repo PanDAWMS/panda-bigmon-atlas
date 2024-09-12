@@ -21,7 +21,7 @@ from functools import wraps
 import logging
 
 from atlas.production_request.views import fill_mc_stats_trend
-from atlas.task_action.task_management import TaskActionExecutor
+from atlas.task_action.task_management import TaskActionExecutor, reload_analysis_tasks
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -183,4 +183,9 @@ def find_reprocessing_patched_tasks():
 @app.task(ignore_result=True)
 def sync_users_with_IAM(update_only_new=False):
     fill_user_groups_from_iam(update_only_new)
+    return None
+
+@app.task(ignore_result=True)
+def run_reload_tasks():
+    reload_analysis_tasks()
     return None
