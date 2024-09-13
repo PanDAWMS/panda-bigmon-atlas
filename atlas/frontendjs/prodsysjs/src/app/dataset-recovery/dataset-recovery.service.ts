@@ -1,6 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {EMPTY, merge, Observable, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatestWith, EMPTY, merge, Observable, Subject} from 'rxjs';
 import {catchError, map, switchMap, tap} from 'rxjs/operators';
 import {signalSlice} from 'ngxtension/signal-slice';
 import {setErrorMessage} from '../dsid-info/dsid-info.service';
@@ -72,13 +72,14 @@ export class DatasetRecoveryService {
 
   private error$ = new Subject<string>();
   private isLoading$ = new Subject<boolean>();
-  private submitted$ = new Subject<boolean>();
+  private submitted$ = new BehaviorSubject<boolean>(false);
   private submitting$ = new Subject<boolean>();
   private inputValues$ = new Subject<{username: string, dataset: string, taskID: string}>();
   private datasetsInfo$ = this.inputValues$.pipe(
+    combineLatestWith(this.submitted$),
     tap(() => this.isLoading$.next(true)),
     tap(() => this.error$.next(null)),
-    switchMap((inputValues) => this.getDatasetRecoveryInfo(inputValues.username, inputValues.dataset, inputValues.taskID)),
+    switchMap(([inputValues, _]) => this.getDatasetRecoveryInfo(inputValues.username, inputValues.dataset, inputValues.taskID)),
     tap(() => this.isLoading$.next(false)),
     takeUntilDestroyed()
   );

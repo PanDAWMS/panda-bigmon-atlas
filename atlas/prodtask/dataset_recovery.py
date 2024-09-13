@@ -145,7 +145,8 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
                 dataset_recovery.replicas = ','.join(dataset_info.replicas)
                 dataset_recovery.save()
                 dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
-                dataset_recovery_info.info_obj.linked_tasks.append(datasets_info.task_id)
+                if dataset_info.task_id not in dataset_recovery_info.info_obj.linked_tasks:
+                    dataset_recovery_info.info_obj.linked_tasks.append(dataset_info.task_id)
                 if comment:
                     dataset_recovery_info.info_obj.comment = "\n".join([dataset_recovery_info.info_obj.comment, f'{username}: {comment}'])
                 dataset_recovery_info.save()
