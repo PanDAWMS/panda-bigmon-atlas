@@ -119,6 +119,8 @@ constructor() {
     if (this.tsData()?.datasets !== undefined) {
       this.sites = {};
       this.sitesOrder = [];
+      this.selectedDatasets = [];
+      this.comment = '';
       for (const datasetInfo of this.tsData().datasets) {
         for (const replica of datasetInfo.replicas) {
           if (this.sites[replica] === undefined) {
