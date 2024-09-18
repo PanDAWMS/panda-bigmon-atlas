@@ -145,10 +145,12 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
                 dataset_recovery.replicas = ','.join(dataset_info.replicas)
                 dataset_recovery.save()
                 dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+                info_obj = dataset_recovery_info.info_obj
                 if dataset_info.task_id not in dataset_recovery_info.info_obj.linked_tasks:
-                    dataset_recovery_info.info_obj.linked_tasks.append(dataset_info.task_id)
+                    info_obj.linked_tasks.append(dataset_info.task_id)
                 if comment:
-                    dataset_recovery_info.info_obj.comment = "\n".join([dataset_recovery_info.info_obj.comment, f'{username}: {comment}'])
+                    info_obj.comment = "\n".join([dataset_recovery_info.info_obj.comment, f'{username}: {comment}'])
+                dataset_recovery_info.info_obj = info_obj
                 dataset_recovery_info.save()
             requests_registered.append(dataset_recovery.id)
         else:
@@ -204,8 +206,10 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
                 if result:
                     if len(result[2]) > 1:
                         create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
-                    dataset_recovery_info.info_obj.recovery_request = result[0]
-                    dataset_recovery_info.info_obj.recovery_slice = result[1]
+                    info_obj = dataset_recovery_info.info_obj
+                    info_obj.recovery_request = result[0]
+                    info_obj.recovery_slice = result[1]
+                    dataset_recovery_info.info_obj = info_obj
                     dataset_recovery_info.save()
                 else:
                     dataset_recovery_info.error = 'No outputs to recreate'
@@ -231,13 +235,15 @@ def finish_dataset_recovery(dataset_recovery_id: int):
     ddm = DDM()
     task = dataset_recovery.recovery_task
     outputs = list(task.output_non_log_datasets())
-    original_format = dataset_recovery.original_dataset.split('.')[-1]
-    recreated_dataset = [output for output in outputs if output.split('.')[-1] == original_format][0]
+    original_format = dataset_recovery.original_dataset.split('.')[-2]
+    recreated_dataset = [output for output in outputs if output.split('.')[-2] == original_format][0]
     for container in dataset_recovery_info.info_obj.containers:
-        # try:
-        #     ddm.register_datasets_in_container(container, [recreated_dataset])
-        # except Exception as e:
-        #     pass
+        try:
+            if dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
+                ddm.delete_datasets_from_container(container, [dataset_recovery.original_dataset])
+            ddm.register_datasets_in_container(container, [recreated_dataset])
+        except Exception as e:
+            pass
         pass
 
     for task_id in dataset_recovery_info.info_obj.linked_tasks:
@@ -252,7 +258,7 @@ def finish_dataset_recovery(dataset_recovery_id: int):
 def check_submitted_recovery_requests():
     for dataset_recovery in DatasetRecovery.objects.filter(status=DatasetRecovery.STATUS.SUBMITTED):
         dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
-        if dataset_recovery_info.info_obj.recovery_request and dataset_recovery_info.info_obj.recovery_slice:
+        if dataset_recovery_info.info_obj.recovery_request:
             try:
                 step = StepExecution.objects.get(request=dataset_recovery_info.info_obj.recovery_request,
                                                  slice=InputRequestList.objects.get(request=dataset_recovery_info.info_obj.recovery_request, slice=dataset_recovery_info.info_obj.recovery_slice))

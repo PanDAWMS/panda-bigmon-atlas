@@ -426,7 +426,7 @@ class DDM(object):
 
     def list_parent_containers(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
-        return list(self.__ddm.list_parent_dids(scope, name))
+        return [x['name'] for x in self.__ddm.list_parent_dids(scope, name)]
 
     def check_only_unavailable_rse(self, dataset_name: str) -> [str]:
         full_replicas = self.full_replicas_per_type(dataset_name)
