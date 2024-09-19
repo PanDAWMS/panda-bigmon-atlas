@@ -7,11 +7,8 @@ app_name='gdpconfig'
 
 urlpatterns = [
     re_path(r'^$', gdpconfig, name='gdpconfig'),
-    re_path(r'^fairshare/$', fairshare, name='fairshare'),
     re_path(r'^config_action/(?P<action>\w+)/$', config_action, name='config_action'),
-    re_path(r'^fairshare_action/(?P<action>\w+)/$', fairshare_action, name='fairshare_action'),
     re_path(r'^get_config/$', get_config, name='get_config'),
-    re_path(r'^get_fairshare/$', get_fairshare, name='get_fairshare'),
     re_path(r'^login/$', login, name='login'),
     re_path(r'^logout/$', logout, name='logout'),
     re_path(r'^global_share/$', global_share, name='global_share'),

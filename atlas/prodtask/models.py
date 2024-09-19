@@ -2476,38 +2476,6 @@ class GlobalShare(models.Model):
 
 
 
-class Cloudconfig(models.Model):
-    name = models.CharField(max_length=20, primary_key=True, db_column='NAME') # Field name made lowercase.
-    description = models.CharField(max_length=50, db_column='DESCRIPTION') # Field name made lowercase.
-    tier1 = models.CharField(max_length=20, db_column='TIER1') # Field name made lowercase.
-    tier1se = models.CharField(max_length=400, db_column='TIER1SE') # Field name made lowercase.
-    relocation = models.CharField(max_length=10, db_column='RELOCATION', blank=True) # Field name made lowercase.
-    weight = models.IntegerField(db_column='WEIGHT') # Field name made lowercase.
-    server = models.CharField(max_length=100, db_column='SERVER') # Field name made lowercase.
-    status = models.CharField(max_length=20, db_column='STATUS') # Field name made lowercase.
-    transtimelo = models.IntegerField(db_column='TRANSTIMELO') # Field name made lowercase.
-    transtimehi = models.IntegerField(db_column='TRANSTIMEHI') # Field name made lowercase.
-    waittime = models.IntegerField(db_column='WAITTIME') # Field name made lowercase.
-#    comment_ = models.CharField(max_length=600, db_column='COMMENT_', blank=True) # Field name made lowercase.
-    comment_ = models.CharField(max_length=200, db_column='COMMENT_', blank=True)  # Field name made lowercase.
-    space = models.IntegerField(db_column='SPACE') # Field name made lowercase.
-    moduser = models.CharField(max_length=30, db_column='MODUSER', blank=True) # Field name made lowercase.
-    modtime = models.DateTimeField(db_column='MODTIME') # Field name made lowercase.
-    validation = models.CharField(max_length=20, db_column='VALIDATION', blank=True) # Field name made lowercase.
-    mcshare = models.IntegerField(db_column='MCSHARE') # Field name made lowercase.
-    countries = models.CharField(max_length=80, db_column='COUNTRIES', blank=True) # Field name made lowercase.
-    fasttrack = models.CharField(max_length=20, db_column='FASTTRACK', blank=True) # Field name made lowercase.
-    nprestage = models.BigIntegerField(db_column='NPRESTAGE') # Field name made lowercase.
-    pilotowners = models.CharField(max_length=300, db_column='PILOTOWNERS', blank=True) # Field name made lowercase.
-    dn = models.CharField(max_length=100, db_column='DN', blank=True) # Field name made lowercase.
-    email = models.CharField(max_length=60, db_column='EMAIL', blank=True) # Field name made lowercase.
-    fairshare = models.CharField(max_length=256, db_column='FAIRSHARE', blank=True) # Field name made lowercase.
-
-
-    class Meta:
-        app_label = 'panda'
-        db_table = '"ATLAS_PANDAMETA"."CLOUDCONFIG"'
-
 
 
 class JediDatasets(models.Model):

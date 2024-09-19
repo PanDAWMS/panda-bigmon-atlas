@@ -3,7 +3,7 @@ import json
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from atlas.prodtask.models import GDPConfig, Cloudconfig, GlobalShare
+from atlas.prodtask.models import GDPConfig, GlobalShare
 
 from decimal import Decimal
 from datetime import datetime
@@ -29,10 +29,7 @@ def gdpconfig(request, rid = None):
     return render(request, 'gdpconfig/_config_table.html')
 
 
-@login_required(login_url=OIDC_LOGIN_URL)
-def fairshare(request, rid = None):
 
-    return render(request, 'gdpconfig/_fairshare_table.html')
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def config_action(request,action):
@@ -97,52 +94,7 @@ def config_action(request,action):
 
     return HttpResponse(json.dumps(result))
 
-@login_required(login_url=OIDC_LOGIN_URL)
-def fairshare_action(request,action):
-    """
 
-    :type request: object
-    """
-    result = dict(status=None,exception=None)
-
-    if not request.user.user_permissions.filter(name='Can edit GDPConfig').exists():
-        result['status']='Failed'
-        result['exception'] = 'Permission denied'
-        return HttpResponse(json.dumps(result))
-
-
-
-    data_json = request.body
-
-    if not data_json:
-        result["exception"] = "Request data is empty"
-        return HttpResponse(json.dumps(result))
-
-    data = json.loads(data_json)
-
-    sRow = data.get("srow")
-    if not sRow:
-        result["exception"] = "Row is empty"
-        return HttpResponse(json.dumps(result))
-
-    param = data.get("parameters")
-
-
-    qs = Cloudconfig.objects.filter(name=sRow['name'])
-
-    _logger.info("GDPConfig - Fairshare: Update user:{user} old data:{old_data}".format(user=request.user.username,
-                                                                 old_data=list(qs.values())))
-
-    try:
-        qs.update(fairshare=param)
-    except:
-        result["exception"] = "Can't update DB"
-        return HttpResponse(json.dumps(result))
-
-    _logger.info("GDPConfig - Fairshare: Update user:{user} new data:{old_data}".format(user=request.user.username,
-                                                                 old_data=list(qs.values())))
-
-    return HttpResponse(json.dumps(result))
 
 def str_to_type (s):
     """ Get possible cast type for a string
@@ -177,25 +129,6 @@ def get_config(request):
     return HttpResponse(data)
 
 
-@login_required(login_url=OIDC_LOGIN_URL)
-def get_fairshare(request):
-    qs_val = Cloudconfig.objects.all().values('name','fairshare')
-
-    # def decimal_default(obj):
-    #     if isinstance(obj, Decimal):
-    #
-    #         return float(obj)
-    #     if isinstance(obj, datetime):
-    #
-    #         return obj.isoformat()
-    #
-    #     raise TypeError
-    #
-    # data= json.dumps(list(qs_val),default = decimal_default)
-
-    data = json.dumps(list(qs_val))
-
-    return HttpResponse(data)
 
 
 @login_required(login_url=OIDC_LOGIN_URL)
