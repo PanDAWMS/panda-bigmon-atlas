@@ -48,6 +48,7 @@ export interface DatasetRequest {
   recovery_task: number | null;
   comment: string;
   error: string;
+  containers: string[];
 }
 
 @Injectable({
@@ -58,6 +59,8 @@ export class DatasetRecoveryService {
   private prGetDatasetRecoveryUrl = '/api/unavailable_datasets_info';
   private prSubmitDatasetRecoveryRequestUrl = '/api/request_recreation/';
   private prAllRequestUrl = '/api/get_all_recovery_requests/';
+  private prSubmitRecoveryUrl = '/api/submit_recreation/';
+
 
 
   private http = inject(HttpClient);
@@ -125,6 +128,22 @@ export class DatasetRecoveryService {
   submit(datasets: Dataset[], comment: string): void {
     this.submitting$.next(true);
     this.http.post(this.prSubmitDatasetRecoveryRequestUrl, {datasets, comment}).pipe(
+      catchError((error: any) => {
+        this.error$.next(setErrorMessage(error));
+        this.submitting$.next(false);
+        return EMPTY;
+      })
+    ).subscribe(() => {
+      this.submitted$.next(true);
+      this.submitting$.next(false);
+
+    });
+
+  }
+
+  submitRecovery(requestRequestsIDs: string[]): void {
+    this.submitting$.next(true);
+    this.http.post(this.prSubmitRecoveryUrl, {IDs: requestRequestsIDs}).pipe(
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
         this.submitting$.next(false);

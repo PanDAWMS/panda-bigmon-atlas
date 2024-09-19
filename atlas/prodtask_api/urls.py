@@ -83,7 +83,8 @@ urlpatterns = [
             name='request_recreation'),
     re_path(r'^get_all_recovery_requests/$', get_all_recovery_requests,
             name='get_all_recovery_requests'),
-
+    re_path(r'^submit_recreation/$', submit_recreation,
+            name='submit_recreation'),
 
 
 

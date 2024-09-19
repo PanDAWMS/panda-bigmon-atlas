@@ -1,4 +1,4 @@
-import {Component, effect, inject, ViewChild} from '@angular/core';
+import {Component, computed, effect, inject, Signal, ViewChild} from '@angular/core';
 import {AgGridAngular} from "ag-grid-angular";
 import {TaskStatsComponent} from "../../production-request/task-stats/task-stats.component";
 import {ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
@@ -7,6 +7,9 @@ import {Dataset, DatasetRecoveryService, DatasetRequest} from "../dataset-recove
 import {convertBytes} from "../../derivation-exclusion/dataset-size.pipe";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {MatButton} from "@angular/material/button";
+import {NgClass} from "@angular/common";
+import {BPTaskComponent} from "../../common/bptask/bptask.component";
+import {RucioURLPipe} from "../../derivation-exclusion/rucio-url.pipe";
 
 @Component({
   selector: 'app-recovery-requests-approve',
@@ -15,7 +18,10 @@ import {MatButton} from "@angular/material/button";
     AgGridAngular,
     TaskStatsComponent,
     ReactiveFormsModule,
-    MatButton
+    MatButton,
+    NgClass,
+    BPTaskComponent,
+    RucioURLPipe
   ],
   templateUrl: './recovery-requests-approve.component.html',
   styleUrl: './recovery-requests-approve.component.css'
@@ -31,6 +37,8 @@ export class RecoveryRequestsApproveComponent {
   };
   datasetRecoveryService = inject(DatasetRecoveryService);
   allRequests = toSignal(this.datasetRecoveryService.getAllRequests());
+  pendingRequests = computed(() => this.allRequests()?.filter(request => request.status === 'pending'));
+  runningRequests: Signal<DatasetRequest[]> = computed(() => this.allRequests()?.filter(request => (request.status === 'running' || request.status === 'submitted')));
     columnDefs = [
     {
       field: 'original_task',
@@ -88,11 +96,14 @@ export class RecoveryRequestsApproveComponent {
 
   ];
     error = this.datasetRecoveryService.state.error;
+    submitted = this.datasetRecoveryService.state.submitted;
+    submitting = this.datasetRecoveryService.state.submitting;
   selectedDatasets: DatasetRequest[] = [];
   constructor() {
     effect(() => {
-      if (this.allRequests() !== undefined) {
-        for (const datasetInfo of this.allRequests()) {
+      this.selectedDatasets = [];
+      if (this.pendingRequests() !== undefined) {
+        for (const datasetInfo of this.pendingRequests()) {
           for (const replica of datasetInfo.sites.split(',')) {
             if (this.sites[replica] === undefined) {
               this.sites[replica] = 1;
@@ -133,6 +144,25 @@ export class RecoveryRequestsApproveComponent {
 
   onSelectionChanged($event: SelectionChangedEvent<any>): void {
     this.selectedDatasets = $event.api.getSelectedRows();
+  }
+
+  submitRequests(): void {
+    this.datasetRecoveryService.submitRecovery(this.selectedDatasets.map(dataset => dataset.id));
+  }
+
+  statusClass(status: string): string {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-500';
+      case 'submitted':
+        return 'text-blue-500';
+      case 'running':
+        return 'text-indigo-500';
+      case 'done':
+        return 'text-green-500';
+      default:
+        return 'text-gray-500';
+    }
   }
 }
 

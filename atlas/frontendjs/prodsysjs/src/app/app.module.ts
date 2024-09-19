@@ -132,6 +132,7 @@ import {DatasetRecoveryComponent} from "./dataset-recovery/dataset-recovery.comp
 import {
   RecoveryRequestsApproveComponent
 } from "./dataset-recovery/recovery-requests-approve/recovery-requests-approve.component";
+import {RecoveredDatasetsComponent} from "./dataset-recovery/recovered-datasets/recovered-datasets.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -229,7 +230,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'mc-submit', component: McRequestSubmissionComponent},
   {path: 'dsid', component: DsidInfoComponent},
   {path: 'dataset-recovery', component: DatasetRecoveryComponent},
-   {path: 'recovery-requests', component: RecoveryRequestsApproveComponent},
+   {path: 'recovery-requests-approve', component: RecoveryRequestsApproveComponent},
+     {path: 'recovery', component: RecoveredDatasetsComponent},
+
 
 
   // {path: 'unmerged-deletion/:prefix/:output', component: UnmergeDatasetsComponent,

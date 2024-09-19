@@ -9,6 +9,7 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
     delete_done_staging_rules, \
     sync_cric_deft, find_repeated_tasks_to_follow, find_stage_task_replica_to_delete, remove_stale_rules, \
     clean_stale_actions, find_stale_stages, fill_staging_destination, check_stale_staging_tasks
+from atlas.prodtask.dataset_recovery import check_running_recovery_requests, check_submitted_recovery_requests
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db
 from atlas.prodtask.models import ProductionTask
@@ -188,4 +189,14 @@ def sync_users_with_IAM(update_only_new=False):
 @app.task(ignore_result=True)
 def run_reload_tasks():
     reload_analysis_tasks()
+    return None
+
+@app.task(ignore_result=True)
+def check_submitted_recovery_requests_task():
+    check_submitted_recovery_requests()
+    return None
+
+@app.task(ignore_result=True)
+def check_running_recovery_requests_task():
+    check_running_recovery_requests()
     return None

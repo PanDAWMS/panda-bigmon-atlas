@@ -196,6 +196,7 @@ def create_dataset_recovery_for_different_formats(dataset_recovery_id: int, data
 
 
 def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
+    submitted_requests = []
     for dataset_recovery in DatasetRecovery.objects.filter(id__in=dataset_recovery_ids):
         if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
             dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
@@ -223,8 +224,10 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
                 continue
             dataset_recovery.status = DatasetRecovery.STATUS.SUBMITTED
             dataset_recovery.save()
+            submitted_requests.append(dataset_recovery.id)
         else:
             raise Exception('Dataset recovery request is not pending')
+    return submitted_requests
 
 
 def finish_dataset_recovery(dataset_recovery_id: int):

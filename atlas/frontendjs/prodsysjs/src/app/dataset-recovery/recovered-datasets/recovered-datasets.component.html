@@ -1,0 +1,50 @@
+  <div class="flex space-x-2">
+    <mat-form-field  class="flex-grow border border-gray-300 rounded py-2 px-4">
+   <mat-label>Filter     </mat-label>
+     <input matInput type="text"  (input)="changeRouterFilter($event)" [ngModel]="formValue" >
+ </mat-form-field>
+
+  </div>
+
+@for(request of goodRequests(); track request.id){
+  <div  class="p-4 border-b border-gray-300">
+    <!-- First Row: original_dataset and original_task -->
+    <div class="flex justify-between mb-2 gap-x-4">
+      <div>
+        <span class="font-semibold">Original Dataset:</span> {{ request.original_dataset }}
+      </div>
+      <div>
+        <span class="font-semibold">Original Task:</span> <app-bptask [task]="request.original_task"></app-bptask>
+      </div>
+    </div>
+
+    <!-- Second Row: status -->
+    <div class="mb-2">
+      <span class="font-semibold">Status:</span>
+      <span [ngClass]="statusClass(request.status)">
+        {{ request.status }}
+      </span>
+    </div>
+
+    <!-- Third Row: recovery_task -->
+    <div class="mb-2">
+      <span class="font-semibold">Recovery Task:</span>
+      <span >
+        <app-bptask [task]="request?.recovery_task"></app-bptask>
+      </span>
+    </div>
+
+    <!-- Fourth Row: containers -->
+
+      <div class="mb-2">
+    <span class="font-semibold">Containers:</span>
+    <ul class="list-disc pl-5">
+      @for (container of request.containers; track container){
+        <li>
+         <a href="{{container| rucioURL}}"> {{ container }}</a>
+        </li>
+      }
+    </ul>
+  </div>
+  </div>
+}

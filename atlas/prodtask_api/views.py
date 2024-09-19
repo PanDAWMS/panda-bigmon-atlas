@@ -18,7 +18,7 @@ from atlas.cric.client import CRICClient
 from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets, TaskDatasetRecover, \
-    register_recreation_request, get_unavaliaible_dataset_info
+    register_recreation_request, get_unavaliaible_dataset_info, submit_dataset_recovery_requests
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo
@@ -435,14 +435,28 @@ def get_all_recovery_requests(request):
             serialized_request = DatasetRecoverySerializer(recovery_request).data
             serialized_request['comment'] = ''
             serialized_request['error'] = ''
+            serialized_request['containers'] = []
             if recovery_request.status != DatasetRecovery.STATUS.DONE:
                 if DatasetRecoveryInfo.objects.filter(dataset_recovery=recovery_request).exists():
                     dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=recovery_request)
                     serialized_request['error'] = dataset_recovery_info.error
                     if recovery_request.status not in [DatasetRecovery.STATUS.RUNNING, DatasetRecovery.STATUS.SUBMITTED]:
                         serialized_request['comment'] = dataset_recovery_info.info_obj.comment
+                    if recovery_request.status in [DatasetRecovery.STATUS.DONE]:
+                        serialized_request['containers'] = dataset_recovery_info.info_obj.containers
             result.append(serialized_request)
 
         return Response(result)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def submit_recreation(request):
+    try:
+        ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
+        requests_submitted = submit_dataset_recovery_requests(ids)
+        return Response(len(requests_submitted))
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
