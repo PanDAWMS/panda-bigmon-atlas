@@ -106,6 +106,8 @@ def recreate_stuck_replica_task(task_id: int):
     ddm = DDM()
     output_formats_to_recreate = []
     deleted_datasets = []
+    if not ddm.dataset_exists(task.inputdataset):
+        raise Exception('Original task input dataset does not exist')
     for output in outputs:
         if not ddm.dataset_exists(output):
             output_formats_to_recreate.append(output.split('.')[-1])
@@ -116,14 +118,14 @@ def recreate_stuck_replica_task(task_id: int):
     action_executor = TaskActionExecutor('mborodin', 'Obsolete tash to be recreated')
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
-        action_executor.obsolete_task(task_id)
         recovery_request, recovery_slice = recreate_existing_outputs(task_id, [])
+        action_executor.obsolete_task(task_id)
         return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate)
         for output_format in output_formats_to_recreate:
             action_executor.obsolete_task_output(task_id, output_format)
-        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate)
         return recovery_request, recovery_slice, deleted_datasets
     return None
 
