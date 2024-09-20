@@ -111,9 +111,12 @@ export class DatasetRecoveryService {
   }
 
   getAllRequests(): Observable<DatasetRequest[]> {
+    this.isLoading$.next(true);
     return this.http.get<DatasetRequest[]>(this.prAllRequestUrl).pipe(
+      tap(() => this.isLoading$.next(false)),
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
+        this.isLoading$.next(false);
         return EMPTY;
       })
     );

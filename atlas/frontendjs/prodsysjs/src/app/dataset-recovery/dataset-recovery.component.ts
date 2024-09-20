@@ -1,7 +1,7 @@
-import {Component, computed, effect, inject, Input, Signal, ViewChild} from '@angular/core';
+import {Component, computed, effect, Inject, inject, Input, Signal, ViewChild} from '@angular/core';
 import {Dataset, DatasetRecoveryService, TSData} from "./dataset-recovery.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {AsyncPipe, DatePipe, JsonPipe, NgClass} from "@angular/common";
+import {APP_BASE_HREF, AsyncPipe, DatePipe, JsonPipe, NgClass} from "@angular/common";
 import {AgGridAngular} from "ag-grid-angular";
 import {GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from "ag-grid-community";
 import {convertBytes} from "../derivation-exclusion/dataset-size.pipe";
@@ -95,6 +95,9 @@ export class DatasetRecoveryComponent {
     {headerName: 'Dataset Name', field: 'input_dataset', sortable: true, filter: false, resizable: false, flex: 3,
               cellRenderer: params => {
       // shorten name to 100 and put ... at the end
+      if (params.data.status === 'submitted') {
+        return `<a href="${this.router.createUrlTree([this.baseHref, 'recovery'], {queryParams: {filter: params.value}})}" >${params.value}</a>`;
+      }
       return params.value.length > 100 ? params.value.substring(0, 100) + '...' : params.value;
       },
       tooltipField: 'input_dataset',
@@ -114,7 +117,7 @@ export class DatasetRecoveryComponent {
   ];
   selectedDatasets: Dataset[] = [];
    message: string;
-constructor() {
+constructor(@Inject(APP_BASE_HREF) private baseHref: string) {
   effect(() => {
     if (this.tsData()?.datasets !== undefined) {
       this.sites = {};

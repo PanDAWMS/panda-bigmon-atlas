@@ -9,6 +9,7 @@ import {MatButton} from "@angular/material/button";
 import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
 
 @Component({
   selector: 'app-recovered-datasets',
@@ -23,15 +24,18 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
     MatFormField,
     MatInput,
     MatLabel,
-    RouterLink
+    RouterLink,
+    MatProgressSpinner
   ],
   templateUrl: './recovered-datasets.component.html',
   styleUrl: './recovered-datasets.component.css'
 })
 export class RecoveredDatasetsComponent {
-  @Input() set filter(value: string) {
-    this.filter$.set(value);
-    this.formValue = value;
+  @Input() set filter(value: string|undefined) {
+    if (value !== undefined) {
+        this.filter$.set(value);
+        this.formValue = value;
+    }
   }
   filter$ = signal('');
   formValue = '';
@@ -40,9 +44,11 @@ export class RecoveredDatasetsComponent {
   route = inject(ActivatedRoute);
   allRequests = toSignal(this.datasetRecoveryService.getAllRequests());
   goodRequests = computed(() =>
-    this.allRequests()?.filter(request => (request.status === 'done' || request.status === 'running')).
-    filter(request => request.original_dataset.includes(this.filter$())));
-
+  this.allRequests()?.filter(request => (request.status === 'done' || request.status === 'running')).
+    filter(request => (request.original_dataset.includes(this.filter$()) || request.requestor.includes(this.filter$()) ))
+  );
+  isLoading = this.datasetRecoveryService.state.isLoading;
+  error = this.datasetRecoveryService.state.error;
   statusClass(status: string): string {
     switch (status) {
       case 'pending':

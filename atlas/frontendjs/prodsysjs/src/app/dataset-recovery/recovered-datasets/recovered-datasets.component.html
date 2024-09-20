@@ -5,7 +5,19 @@
  </mat-form-field>
 
   </div>
+@if (isLoading()) {
+  <div class="flex items-center justify-center h-64">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}
+   @if (error()) {
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold mr-2">Error!</strong>
+      <span class="block sm:inline">{{ error() }}</span>
 
+    </div>
+
+  }
 @for(request of goodRequests(); track request.id){
   <div  class="p-4 border-b border-gray-300">
     <!-- First Row: original_dataset and original_task -->
@@ -14,21 +26,30 @@
         <span class="font-semibold">Original Dataset:</span> {{ request.original_dataset }}
       </div>
       <div>
-        <span class="font-semibold">Original Task:</span> <app-bptask [task]="request.original_task"></app-bptask>
+        <span class="font-semibold mr-2">Original Task:</span> <app-bptask [task]="request.original_task"></app-bptask>
       </div>
     </div>
 
     <!-- Second Row: status -->
-    <div class="mb-2">
+        <div class="flex justify-between mb-2 gap-x-4">
+
+    <div >
       <span class="font-semibold">Status:</span>
       <span [ngClass]="statusClass(request.status)">
         {{ request.status }}
       </span>
     </div>
+              <div >
+      <span class="font-semibold">Requesters:</span>
+      <span >
+        {{ request.requestor }}
+      </span>
+    </div>
+        </div>
 
     <!-- Third Row: recovery_task -->
     <div class="mb-2">
-      <span class="font-semibold">Recovery Task:</span>
+      <span class="font-semibold mr-2">Recovery Task:</span>
       <span >
         <app-bptask [task]="request?.recovery_task"></app-bptask>
       </span>

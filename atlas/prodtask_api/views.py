@@ -27,6 +27,7 @@ from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.views import form_existed_step_list, set_request_status
+from atlas.task_action.task_management import TaskManagementAuthorisation
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -455,8 +456,13 @@ def get_all_recovery_requests(request):
 @permission_classes((IsAuthenticated,))
 def submit_recreation(request):
     try:
-        ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
-        requests_submitted = submit_dataset_recovery_requests(ids)
-        return Response(len(requests_submitted))
+        task_management = TaskManagementAuthorisation()
+        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        if request.user.is_superuser or 'DPD' in allowed_groups:
+            ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
+            requests_submitted = submit_dataset_recovery_requests(ids)
+            return Response(len(requests_submitted))
+        else:
+            return Response('User is not allowed to submit requests', status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
