@@ -437,14 +437,14 @@ def get_all_recovery_requests(request):
             serialized_request['comment'] = ''
             serialized_request['error'] = ''
             serialized_request['containers'] = []
-            if recovery_request.status != DatasetRecovery.STATUS.DONE:
-                if DatasetRecoveryInfo.objects.filter(dataset_recovery=recovery_request).exists():
-                    dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=recovery_request)
+            if DatasetRecoveryInfo.objects.filter(dataset_recovery=recovery_request).exists():
+                dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=recovery_request)
+                if recovery_request.status != DatasetRecovery.STATUS.DONE:
                     serialized_request['error'] = dataset_recovery_info.error
                     if recovery_request.status not in [DatasetRecovery.STATUS.RUNNING, DatasetRecovery.STATUS.SUBMITTED]:
                         serialized_request['comment'] = dataset_recovery_info.info_obj.comment
-                    if recovery_request.status in [DatasetRecovery.STATUS.DONE]:
-                        serialized_request['containers'] = dataset_recovery_info.info_obj.containers
+                if recovery_request.status in [DatasetRecovery.STATUS.DONE]:
+                    serialized_request['containers'] = dataset_recovery_info.info_obj.containers
             result.append(serialized_request)
 
         return Response(result)
