@@ -476,7 +476,7 @@ class TaskManagementAuthorisation():
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.DONE:
-                self.allowed_task_actions[status].extend(['obsolete'])
+                self.allowed_task_actions[status].extend(['obsolete',  'reload_input'])
             if status == ProductionTask.STATUS.OBSOLETE:
                 self.allowed_task_actions[status].extend(['obsolete'])
 
