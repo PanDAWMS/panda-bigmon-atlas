@@ -49,7 +49,7 @@
     <form [formGroup]="templateChoiceFormGroup">
       <ng-template matStepLabel>Check the list</ng-template>
       <ng-container *ngIf="patterns$ | async as patterns">
-      <mat-form-field>
+      <mat-form-field  style="width: 100ch">
         <mat-label>Choose a pattern</mat-label>
         <mat-select  formControlName="patternCntrl"  (selectionChange)="changeTaskTemplate($event)">
           <mat-option *ngFor="let pattern of patterns" [value]="pattern" >

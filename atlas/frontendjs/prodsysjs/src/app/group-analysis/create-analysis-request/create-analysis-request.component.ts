@@ -50,6 +50,8 @@ export class CreateAnalysisRequestComponent implements OnInit {
        if (params.has('tag')) {
          this.patternTag = params.get('tag');
        }
+       // sort patterns by tag
+       patterns.sort((a, b) => a.tag.localeCompare(b.tag));
        this.originalScopes = scopes;
        if (this.patternTag !== null && patterns.length > 0) {
         const requestedPattern = patterns.find((pattern) => pattern.tag === this.patternTag);

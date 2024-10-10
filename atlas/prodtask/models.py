@@ -912,7 +912,9 @@ class TemplateVariable:
     keys: [str] = field(default_factory=list)
     type: VariableType = VariableType.TEMPLATE
 
-    JOB_TO_TASK_PARAMETERS = {'destination':'destSE','token': 'spaceToken'}
+    JOB_TO_TASK_PARAMETERS = {'destination':'destSE','token': 'spaceToken','include':'match'}
+    OUTPUTS_JOB_PARAMETERS = ['destination','token']
+    INPUT_JOB_PARAMETERS = ['include']
     class KEY_NAMES:
         INPUT_BASE = 'input_base'
         OUTPUT_BASE = 'output_base'
@@ -929,8 +931,10 @@ class TemplateVariable:
         JOB_PARAMETERS = 'jobParameters'
         JOB_PARAMETER_TYPE = 'param_type'
         OUTPUT_DATASET_TYPE = 'output'
+        INPUT_DATASET_TYPE = 'input'
         DESTINATION = 'destination'
         TOKEN = 'token'
+        INCLUDE = 'include'
         TO_STAGING = 'toStaging'
 
     KEYS_SEPARATOR = ','
@@ -1118,9 +1122,17 @@ class AnalysisStepTemplate(models.Model):
                         else:
                             job_parameter.pop(job_parameter_key)
                     elif (TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE in job_parameter and
-                          TemplateVariable.KEY_NAMES.OUTPUT_DATASET_TYPE == job_parameter[TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE]):
+                          job_parameter_key in TemplateVariable.OUTPUTS_JOB_PARAMETERS and
+                          job_parameter[TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE] in [ TemplateVariable.KEY_NAMES.OUTPUT_DATASET_TYPE]):
                         if current_value is not None:
                             job_parameter[job_parameter_key] = current_value
+                    elif (TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE in job_parameter and
+                          job_parameter_key in TemplateVariable.INPUT_JOB_PARAMETERS and
+                          job_parameter[TemplateVariable.KEY_NAMES.JOB_PARAMETER_TYPE] in [ TemplateVariable.KEY_NAMES.INPUT_DATASET_TYPE]):
+                        if current_value is not None:
+                            job_parameter[job_parameter_key] = current_value
+
+
         return task_params
 
     def render_task_template(self) -> dict:

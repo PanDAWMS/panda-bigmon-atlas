@@ -66,6 +66,13 @@ export class TASKS_CONSTANTS {
   public static readonly TASKS_PARAMS_FORM = {
   task_params_control: [
     {
+      name: 'match',
+      label: 'match',
+      description: 'input match',
+      type: 'text',
+      validators: {}
+    },
+    {
       name: 'destSE',
       label: 'destination',
       description: 'output destination',
