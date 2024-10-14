@@ -5,6 +5,8 @@ from copy import deepcopy
 
 from dataclasses import dataclass, field
 from typing import List
+
+import requests
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
@@ -36,6 +38,7 @@ from atlas.task_action.task_management import TaskActionExecutor
 from elasticsearch7_dsl import Search, connections, A
 from elasticsearch7 import Elasticsearch
 from atlas.settings.local import MONIT_ES
+from ..settings import cricclient as cric_settings
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -645,6 +648,11 @@ def submit_all_tapes_processed_with_shares():
     active_staged = find_active_staged_with_share()
     for tape in ActionDefault.objects.filter(type='PHYSICAL_TAPE'):
         if tape.get_config('active'):
+            if tape.get_config('buffer_full'):
+                current_level = get_tape_buffer_fullness(tape.name)
+                if current_level > tape.get_config('buffer_full'):
+                    _logger.info("Buffer full for tape {tape} {current}/{full}".format(tape=tape.name,current=current_level,full=tape.get_config('buffer_full')))
+                    continue
             if DatasetStaging.objects.filter(source=tape.name,status='queued').exists():
                 active_for_tape = [active_staged[x] for x in active_staged.keys() if
                                    active_staged[x]['tape'] == tape.name]
@@ -2506,4 +2514,26 @@ def check_staging_rules_on_lost_files():
                     # staging_rule.status = DatasetStaging.STATUS.CANCELED
                     # staging_rule.save()
 
+def get_tape_buffer_fullness_INFN_T1() -> int:
+    try:
+        infn_config = ActionDefault.objects.get(type='PHYSICAL_TAPE', name='INFN-T1_TAPE')
+        response = requests.get(infn_config.get_config('buffer_url'), cert=cric_settings.CERTIFICAT, verify=False)
+        if response.status_code == 200:
+            content = json.loads(response.content)
+            mc_buffer = [x for x in content['storageservice']['storageshares'] if x['name'] == 'ATLASMCTAPE'][0]
+            mv_buffer_fullness = int(mc_buffer['usedsize'] / mc_buffer['totalsize'] * 100)
+            _logger.info(f"INFN-T1 tape mc buffer fullness {mv_buffer_fullness}")
+            data_buffer = [x for x in content['storageservice']['storageshares'] if x['name'] == 'ATLASDATATAPE'][0]
+            data_buffer_fullness = int(data_buffer['usedsize'] / data_buffer['totalsize'] * 100)
+            _logger.info(f"INFN-T1 tape data buffer fullness {data_buffer_fullness}")
+            return max(mv_buffer_fullness, data_buffer_fullness)
+        else:
+            return 0
+    except Exception as e:
+        _logger.error(f"Problem with tape buffer fullness {str(e)}")
+        return 0
 
+def get_tape_buffer_fullness(tape_name: str) -> int:
+    match tape_name:
+        case 'INFN-T1_TAPE': return get_tape_buffer_fullness_INFN_T1()
+        case _: return 0
