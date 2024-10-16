@@ -867,8 +867,8 @@ def get_derivation_phys_pattern(request):
     mc_campaigns = SystemParametersHandler.get_mc_campaigns()
     result_campaigns = []
     for mc_campaign in mc_campaigns:
-        #mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS] + mc_campaign.subcampaigns
-        mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS]
+        mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS] + mc_campaign.subcampaigns
+        #mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS]
         result_campaigns.append(mc_campaign)
     current_patterns_dict = [dict(request_id=TrainProduction.objects.get(id=x.train_id).pattern_request_id, **asdict(x)) for x in current_patterns]
 
