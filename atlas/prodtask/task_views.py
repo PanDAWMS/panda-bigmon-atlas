@@ -1024,6 +1024,23 @@ def get_mc_container_name(dataset_name):
 
 
 
+def fill_main_container(production_request_id):
+    tasks = ProductionTask.objects.filter(request_id=production_request_id, status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED])
+    ddm = DDM()
+    for task in tasks:
+        if 'merge' in task.name:
+            for dataset in task.output_non_log_datasets():
+                if 'tid' in dataset :
+                    container_name = dataset.split('_tid')[0]
+                    if not ddm.dataset_exists(container_name):
+                        ddm.register_container(container_name, [dataset])
+                        print(f"Container {container_name} does not exist {dataset}")
+                    else:
+                        if not ddm.dataset_is_in_container(dataset, container_name):
+                            ddm.register_datasets_in_container(container_name, [dataset])
+                            print(f"Dataset {dataset} is not in container {container_name}")
+
+
 
 
 def check_merge_container(days, days_till=1):
@@ -1217,12 +1234,16 @@ def special_datasets_to_delete(request):
 def recover_obsolete(task_id):
     task = ProductionTask.objects.get(id=task_id)
     if task.status == 'obsolete':
+        ddm = DDM()
         tt_task = TTask.objects.get(id=task_id)
         task.status = tt_task.status
         task.save()
         datasets = ProductionDataset.objects.filter(task_id=task.id)
         for dataset in datasets:
-            if 'log' not in dataset.name and 'waitdeleted' in dataset.status.lower():
+            if not ddm.dataset_exists(dataset.name):
+                print(f"Recover {dataset.name}")
+                continue
+            if 'log' not in dataset.name and dataset.status.lower() != 'done':
                 dataset.status = 'done'
                 dataset.save()
 
