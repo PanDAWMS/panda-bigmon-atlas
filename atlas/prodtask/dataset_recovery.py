@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
+from typing import Optional
 
+from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestList, ParentToChildRequest, TRequest, \
     TTask, TemplateVariable, DatasetRecovery, DatasetRecoveryInfo
@@ -10,7 +12,7 @@ from atlas.task_action.task_management import TaskActionExecutor
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-def recreate_existing_outputs(task_id: int, outputs: [str]):
+def recreate_existing_outputs(task_id: int, outputs: [str], parent_task_id: Optional[int] = None):
     task = ProductionTask.objects.get(id=task_id)
     slice = task.step.slice
     step_execs = StepExecution.objects.filter(slice=slice,request=task.request)
@@ -31,12 +33,22 @@ def recreate_existing_outputs(task_id: int, outputs: [str]):
                                               production_request.project.project)
     new_slice_number = clone_slices(production_request.reqid, new_request_id, [slice.slice], -1, True, False)[0]
     new_slice = InputRequestList.objects.get(request=new_request_id, slice=new_slice_number)
-    new_slice.dataset = task.inputdataset
+    new_parent_step = None
+    if parent_task_id is not None:
+        parent_task = ProductionTask.objects.get(id=parent_task_id)
+        new_slice.dataset = next(parent_task.output_non_log_datasets())
+        if parent_task.status not in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+            new_parent_step = parent_task.step
+    else:
+        new_slice.dataset = task.inputdataset
     new_slice.save()
 
     new_step = StepExecution.objects.get(request=new_request_id, slice=InputRequestList.objects.get(request=new_request_id, slice=new_slice_number))
+    new_step.update_project_mode('taskRecreation', 'yes')
     if new_step.step_parent_id != new_step.id:
         new_step.step_parent = new_step
+    if new_parent_step is not None:
+        new_step.step_parent = new_parent_step
     if outputs:
         new_step_template = fill_template(new_step.step_template.step, new_step.step_template.ctag,
                                           new_step.step_template.priority, '.'.join(outputs), new_step.step_template.memory)
@@ -75,6 +87,14 @@ def check_unavailable_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| No
     else:
         return None
 
+def check_empty_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| None:
+    if ':' in dataset:
+        dataset = dataset.split(':')[-1]
+    if not ddm.dataset_exists(dataset):
+        return TaskDatasetRecover(None, dataset, 0, 'unavailable', [])
+    else:
+        return None
+
 def get_unavaliaible_dataset_info(dataset: str):
     ddm = DDM()
     return [check_unavailable_datasets(dataset, ddm)]
@@ -100,14 +120,38 @@ def get_unavalaible_daod_input_datasets(task_ids: [int]) -> [TaskDatasetRecover]
     return result
 
 
+def find_deleted_input(dataset: str, child_task_id: int):
+    task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
+    return find_recreated_task(task_id, child_task_id)
+
+
+def find_recreated_task(original_task_id: int, task_id_gt: int):
+    task = ProductionTask.objects.get(id=original_task_id)
+    if ProductionTask.objects.filter(name=task.name, id__gt = task_id_gt).exists():
+        chain_tasks = []
+        original_task_dkb = es_by_keys_nested({'taskid': original_task_id})
+        if original_task_dkb and 'chain_data' in original_task_dkb[0]:
+            chain_tasks = original_task_dkb[0]['chain_data']
+        for task in ProductionTask.objects.filter(name=task.name, id__gt = task_id_gt):
+            if task.status not in ProductionTask.BAD_STATUS:
+                task_dkb = es_by_keys_nested({'taskid': task.id})
+                if task_dkb and 'chain_data' in task_dkb[0]:
+                    if set(chain_tasks) - set(task_dkb[0]['chain_data']) !=  set(chain_tasks):
+                        return task.id
+    return None
+
 def recreate_stuck_replica_task(task_id: int):
     task = ProductionTask.objects.get(id=task_id)
     outputs = list(task.output_non_log_datasets())
     ddm = DDM()
     output_formats_to_recreate = []
     deleted_datasets = []
+    recreated_task = None
     if not ddm.dataset_exists(task.inputdataset):
-        raise Exception('Original task input dataset does not exist')
+        recreated_task = find_deleted_input(task.inputdataset, task_id)
+        if recreated_task is None:
+            raise Exception('Original task input dataset does not exist')
+
     for output in outputs:
         if not ddm.dataset_exists(output):
             output_formats_to_recreate.append(output.split('.')[-1])
@@ -115,15 +159,16 @@ def recreate_stuck_replica_task(task_id: int):
         elif ddm.check_only_unavailable_rse(output):
             output_formats_to_recreate.append(output.split('.')[-1])
             deleted_datasets.append(output)
-    action_executor = TaskActionExecutor('mborodin', 'Obsolete tash to be recreated')
+    action_executor = TaskActionExecutor('mborodin', 'Obsolete task to be recreated')
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
-        recovery_request, recovery_slice = recreate_existing_outputs(task_id, [])
-        action_executor.obsolete_task(task_id)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, [], recreated_task)
+        if recreated_task is None:
+            action_executor.obsolete_task(recreated_task)
         return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
-        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate, recreated_task)
         for output_format in output_formats_to_recreate:
             action_executor.obsolete_task_output(task_id, output_format)
         return recovery_request, recovery_slice, deleted_datasets
@@ -242,6 +287,10 @@ def finish_dataset_recovery(dataset_recovery_id: int):
     outputs = list(task.output_non_log_datasets())
     original_format = dataset_recovery.original_dataset.split('.')[-2]
     recreated_dataset = [output for output in outputs if output.split('.')[-2] == original_format][0]
+    if task.step != task.step.step_parent:
+        if dataset_recovery.original_task.status not in ProductionTask.BAD_STATUS:
+            action_executor = TaskActionExecutor('mborodin', f'Obsolete task as it\'s recreated {task.id}')
+            action_executor.obsolete_task(dataset_recovery.original_task.id)
     for container in dataset_recovery_info.info_obj.containers:
         try:
             if dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
