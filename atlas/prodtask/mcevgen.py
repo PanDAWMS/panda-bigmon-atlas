@@ -56,7 +56,6 @@ def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOption
             new_dsid_jo.dsid = int(dsid)
             do_update = True
         if do_update:
-            print('JO updated %s' %  dsid_to_update[dsid]['physic_short'])
             new_dsid_jo.physic_short = dsid_to_update[dsid]['physic_short']
             new_dsid_jo.events_per_job = dsid_to_update[dsid]['events_per_job']
             new_dsid_jo.files_per_job = dsid_to_update[dsid]['files_per_job']

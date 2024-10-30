@@ -8,7 +8,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from atlas.prodtask.views import tasks_progress, prepare_step_statistic
-#from ..prodtask.task_actions import do_action
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 
 from .models import ProductionTask

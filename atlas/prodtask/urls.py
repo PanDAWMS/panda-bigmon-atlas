@@ -106,7 +106,6 @@ urlpatterns = [
     re_path(r'^sync_request_tasks/(?P<reqid>\d+)/$', task_views.sync_request_tasks, name='sync_request_tasks'),
 
     re_path(r'^task_manage/$',              task_manage_views.task_manage, name='task_manage'),
-    re_path(r'^task_manage/actions/(?P<action>\w+)/$', task_manage_views.tasks_action, name='tasks_action'),
     re_path(r'^task_action_ext/(?P<action>\w+)/$', task_manage_views.task_action_ext, name='task_action_ext'),
     re_path(r'^task_action_ext/$', task_manage_views.task_action_ext, name='task_action_ext'),
     re_path(r'^task_chain_obsolete_action/$', task_manage_views.task_chain_obsolete_action, name='task_chain_obsolete_action'),

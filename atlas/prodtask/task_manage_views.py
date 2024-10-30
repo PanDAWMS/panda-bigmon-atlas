@@ -22,7 +22,6 @@ from .models import ProductionTask, TRequest, StepExecution, JediTasks
 from .task_views import ProductionTaskTable, Parameters, get_clouds, get_sites, get_nucleus, get_global_shares, \
     check_action_allowed
 from .task_views import get_permissions
-from .task_actions import do_action
 from ..jediinterface.client import JEDIClientTest
 from ..task_action.task_management import TaskManagementAuthorisation, TaskActionAllowed, TaskActionExecutor, \
     do_jedi_action
@@ -31,31 +30,7 @@ logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-def do_tasks_action(owner, tasks, action, *args):
-    """
-    Performing tasks actions
-    :param tasks: list of tasks IDs affected
-    :param action: name of the action
-    :param args: additional arguments
-    :return: array of per-task actions' statuses
-    """
-    # TODO: add local logging
-    if not tasks:
-        return
 
-    #result = {}
-    result = []
-
-    for task in tasks:
-        _jsonLogger.info("Tasks action executed",extra={'task':str(task),'user':owner,'action':action,'params':json.dumps(args)})
-        req_info = do_action(owner, task, action, *args)
-        #if req_info['exception']:
-            #return req_info
-        #result =req_info
-        result.append(req_info)
-
-
-    return result
 
 
 
@@ -172,101 +147,49 @@ def task_action_ext(request, action=None):
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def task_chain_obsolete_action(request):
-    error_message = []
-    try:
-       data = request.data
-       tasks_id = data.get('tasks')
-       if len(tasks_id)>100:
-           raise ValueError('Too much tasks to obsolete. Please contact DPA')
-       params = data.get('parameters', [])
-       user = request.user
-       obsolete_list = []
-       abort_list = []
-       tasks = ProductionTask.objects.filter(id__in=tasks_id)
-       for task in tasks:
-           if task.status in ProductionTask.NOT_RUNNING:
-                obsolete_list.append(int(task.id))
-           else:
-                abort_list.append(int(task.id))
-       if not user.user_permissions.filter(name='Can obsolete chain').exists():
-           raise LookupError('User %s has no permission for chain task obsoleting '% user.username)
-       else:
-            if  obsolete_list:
-                response = do_tasks_action(user.username, [obsolete_list], "obsolete_entity", *params)
-                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(obsolete_list),user,"obsolete_entity",str(params),str(response)))
-            if abort_list:
-                params = []
-                response = do_tasks_action(user.username, abort_list, "abort", *params)
-                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(abort_list),user,"abort",str(params),str(response)))
-            #print user, tasks_id, params
+    pass
+    # error_message = []
+    # try:
+    #    data = request.data
+    #    tasks_id = data.get('tasks')
+    #    if len(tasks_id)>100:
+    #        raise ValueError('Too much tasks to obsolete. Please contact DPA')
+    #    params = data.get('parameters', [])
+    #    user = request.user
+    #    obsolete_list = []
+    #    abort_list = []
+    #    tasks = ProductionTask.objects.filter(id__in=tasks_id)
+    #    for task in tasks:
+    #        if task.status in ProductionTask.NOT_RUNNING:
+    #             obsolete_list.append(int(task.id))
+    #        else:
+    #             abort_list.append(int(task.id))
+    #    if not user.user_permissions.filter(name='Can obsolete chain').exists():
+    #        raise LookupError('User %s has no permission for chain task obsoleting '% user.username)
+    #    else:
+    #         if  obsolete_list:
+    #             response = do_tasks_action(user.username, [obsolete_list], "obsolete_entity", *params)
+    #             logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(obsolete_list),user,"obsolete_entity",str(params),str(response)))
+    #         if abort_list:
+    #             params = []
+    #             response = do_tasks_action(user.username, abort_list, "abort", *params)
+    #             logger.info("Tasks action - tasks:%s user:%s action:%s params:%s response:%s"%(str(abort_list),user,"abort",str(params),str(response)))
+    #         #print user, tasks_id, params
+    #
+    # except Exception as e:
+    #     error_message.append(str(e))
+    #
+    # if not error_message:
+    #     content = {'result': 'OK'}
+    # else:
+    #     content = {
+    #                'result': 'FAILED',
+    #                'exception': '; '.join(error_message)
+    #                }
+    #
+    # return Response(content)
 
-    except Exception as e:
-        error_message.append(str(e))
 
-    if not error_message:
-        content = {'result': 'OK'}
-    else:
-        content = {
-                   'result': 'FAILED',
-                   'exception': '; '.join(error_message)
-                   }
-
-    return Response(content)
-
-
-@csrf_protect
-def tasks_action(request, action):
-    """
-    Handling task actions requests
-    :param request: HTTP request object
-    :param action: action name
-    :return: HTTP response with action status (JSON)
-    """
-
-    response = {"action": action}
-
-    if request.method != 'POST':
-        response["exception"] = \
-            "Request method %s is not supported" % request.method
-        return _http_json_response(response)
-
-    owner = request.user.username
-    if not owner:
-        response["exception"] = "Username is empty"
-        return _http_json_response(response)
-
-    data_json = request.body
-    if not data_json:
-        response["exception"] = "Request data is empty"
-        return _http_json_response(response)
-
-    data = json.loads(data_json)
-
-    tasks = data.get("tasks")
-    if not tasks:
-        response["exception"] = "Tasks list is empty"
-        return _http_json_response(response)
-    tasks_ids = list(map(int, tasks))
-    params = data.get("parameters", [])
-    try:
-        denied_tasks, not_allowed_tasks = check_action_allowed(owner, tasks_ids, action, params)
-        if denied_tasks or not_allowed_tasks:
-                msg = "User '%s' can't perform %s:"%(owner,action)
-                if denied_tasks:
-                    msg += " no permissions to make action with task(s) '%s';" %(','.join([str(x) for x in denied_tasks]))
-                if not_allowed_tasks:
-                    msg += " action isn't allowed for %s"%(','.join([str(x) for x in not_allowed_tasks]))
-                logger.error(msg)
-                response["exception"] = msg
-                _jsonLogger.info(msg,extra={'user':owner,'action':action})
-
-        else:
-                response = do_tasks_action(owner, tasks, action, *params)
-                logger.info("Tasks action - tasks:%s user:%s action:%s params:%s"%(str(tasks),owner,action,str(params)))
-    except Exception as e:
-        response["exception"] = str(e)
-        logger.error("Tasks action error: %s" % (str(e)))
-    return _http_json_response(response)
 
 
 @never_cache

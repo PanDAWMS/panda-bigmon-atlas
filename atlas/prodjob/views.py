@@ -8,13 +8,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.conf import settings
-import atlas.deftcore.api.client as deft
 from atlas.settings import OIDC_LOGIN_URL
 from atlas.task_action.task_management import TaskManagementAuthorisation, TaskActionExecutor, do_jedi_action
 
 _logger = logging.getLogger('prodtaskwebui')
 
-_deft_client = deft.Client(auth_user=settings.DEFT_AUTH_USER, auth_key=settings.DEFT_AUTH_KEY,base_url=settings.BASE_DEFT_API_URL)
 
 _deft_job_actions = {
 
@@ -190,42 +188,4 @@ def get_outputs_for_jobs(panda_ids):
     return result
 
 def _do_deft_job_action(owner, task_id, job_id, action, *args):
-    """
-    Perform task action using DEFT API
-    :param owner: username form which task action will be performed
-    :param task_id: task ID
-    :param action: action name
-    :param args: additional arguments for the action (if needed)
-    :return: dictionary with action execution details
-    """
-
-    result = dict(owner=owner, job=job_id, task=task_id, action=action, args=args,
-                  status=None, accepted=False, registered=False,
-                  exception=None, exception_source=None)
-
-    try:
-
-        func = getattr(_deft_client, _deft_job_actions[action])
-    except AttributeError as e:
-        result.update(exception=str(e))
-        return result
-
-    try:
-        request_id = func(owner, task_id, job_id, *args)
-    except Exception as e:
-        result.update(exception=str(e),
-                      exception_source=_deft_client.__class__.__name__)
-        return result
-
-    result['accepted'] = True
-
-    try:
-        status = _deft_client.get_status(request_id)
-    except Exception as e:
-        result.update(exception=str(e),
-                      exception_source=_deft_client.__class__.__name__)
-        return result
-
-    result.update(registered=True, status=status)
-
-    return result
+    raise NotImplementedError("Deprecated function")

@@ -23,7 +23,6 @@ from .xls_parser_new import XlrParser
 from .models import get_default_nEventsPerJob_dict
 
 from django.conf import settings
-import atlas.deftcore.api.client as deft
 import ssl
 import certifi
 

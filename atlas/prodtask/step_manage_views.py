@@ -1,6 +1,8 @@
 import functools
 import json
 import logging
+from dataclasses import dataclass
+from typing import List, Optional, Dict, Any
 
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden
@@ -14,15 +16,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
-from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError
-#from ..prodtask.spdstodb import fill_template
-from atlas.prodtask.task_actions import _do_deft_action, _deft_client
+from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError, StepTemplate
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, single_request_action_celery_task
 from atlas.prodtask.spdstodb import fill_template
 from .hashtag import _set_request_hashtag
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from .ddm_api import dataset_events
-#from ..prodtask.task_actions import do_action
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update
 from django.db.models import Q
 from rest_framework.response import Response
@@ -2433,18 +2432,6 @@ def convert_old_patterns(request_id):
             pass
 
 
-def obsolete_deleted_tasks(production_request):
-    tasks = ProductionTask.objects.filter(request=production_request,status__in = ['finished','done'])
-    ddm = DDM()
-    for task in tasks:
-        output_datasets = ProductionDataset.objects.filter(task_id=task.id)
-        to_delete = True
-        for output_datset in output_datasets:
-            if ('log' not in output_datset.name) and ddm.dataset_exists(output_datset.name):
-                to_delete = False
-        if to_delete:
-            print(task.id,task.name)
-            _do_deft_action('mborodin', int(task.id), 'obsolete')
 
 
 def fix_fahui_error(request_id, tasks):
@@ -2729,9 +2716,11 @@ def fix_resim(request, slice):
                 if t_resim_task.jedi_task_parameters['nEventsPerInputFile'] != t_simul_task.jedi_task_parameters['nEventsPerJob']:
                     make_fix = True
                     if t_resim_task.status in ['done','finished']:
-                        _do_deft_action('mborodin', int(t_resim_task.id), 'obsolete')
+                        # action('mborodin', int(t_resim_task.id), 'obsolete')
+                        pass
                     elif t_resim_task.status not in ProductionTask.NOT_RUNNING:
-                        _do_deft_action('mborodin', int(t_resim_task.id), 'abort')
+                        pass
+                        # action('mborodin', int(t_resim_task.id), 'abort')
             if make_fix:
                 simul_step.set_task_config({'nEventsPerJob':t_simul_task.jedi_task_parameters['nEventsPerJob']})
                 simul_step.save()
@@ -2768,3 +2757,98 @@ def recreate_output(task_id: int, output: str) -> (int, str):
 
     new_task = ProductionTask.objects.get(step=step)
     return new_task.id, new_task.output_dataset
+
+
+@dataclass
+class Task:
+    id: int
+    step_id: int
+    status: str
+    output_formats: str
+    primary_input: str
+
+@dataclass
+class Step:
+    id: int
+    slice_id: int
+    status: str
+    step_parent_id: int
+    step_template_id: int
+    input_events: int
+    step_name: str
+    ctag: str
+    output_formats: str
+    tasks: List[Task]
+
+@dataclass
+class DataSlice:
+    id: int
+    dataset: str
+    request_id: int
+    slice: int
+    brief: str
+    phys_comment: str
+    comment: str
+    input_data: str
+    project_mode: str
+    priority: int
+    input_events: int
+    is_hide: Optional[bool]
+    cloned_from_id: Optional[int]
+    steps: List[Step]
+
+
+
+def get_all_entities(request_id: int) -> List[DataSlice]:
+    slices = list(InputRequestList.objects.filter(request=request_id).values().order_by('slice'))
+    steps = list(StepExecution.objects.filter(request=request_id).values('id','slice_id','status','step_parent_id','step_template_id','input_events'))
+    tasks = list(ProductionTask.objects.filter(request=request_id).values('id','step_id','status','output_formats','primary_input'))
+    tasks_by_step = { }
+    for task in tasks:
+        tasks_by_step[task['step_id']] = tasks_by_step.get(task['step_id'],[]) + [Task(**task)]
+    step_templates_ids = set([step['step_template_id'] for step in steps])
+    step_templates = list(StepTemplate.objects.filter(id__in=step_templates_ids).values('id','step','ctag','output_formats'))
+    step_template_by_id = { step['id']: step for step in step_templates }
+    steps_by_slice_with_tasks  = { }
+    for step in steps:
+        step['tasks'] = tasks_by_step.get(step['id'],[])
+        step['step_name'] = step_template_by_id[step['step_template_id']]['step']
+        step['ctag'] = step_template_by_id[step['step_template_id']]['ctag']
+        step['output_formats'] = step_template_by_id[step['step_template_id']]['output_formats']
+        steps_by_slice_with_tasks[step['slice_id']] = steps_by_slice_with_tasks.get(step['slice_id'],[]) + [Step(**step)]
+    for slice in slices:
+        slice['steps'] = steps_by_slice_with_tasks.get(slice['id'],[])
+    return [DataSlice(**slice) for slice in slices]
+
+
+def find_used_input_slices(request_id: int) -> [int]:
+    slices = get_all_entities(request_id)
+    ddm = DDM()
+    slices_to_hide = []
+    for slice in slices:
+        if slice.is_hide or not slice.steps:
+            continue
+        if slice.steps and slice.steps[0].tasks:
+            continue
+        step = slice.steps[0]
+        datasets = ddm.dataset_in_container(slice.dataset)
+        hide_slice = True
+        for dataset in datasets:
+            if (not ProductionTask.objects.filter(primary_input=dataset, output_formats=step.output_formats, ami_tag=step.ctag,
+                                             status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]).exists() and
+                not ProductionTask.objects.filter(primary_input=dataset.split(':')[1], output_formats=step.output_formats, ami_tag=step.ctag,
+                                                status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]).exists()):
+                hide_slice = False
+                break
+        if hide_slice:
+            slices_to_hide.append(slice.slice)
+
+    return slices_to_hide
+
+def hide_used_input_slices(request_id: int) -> None:
+    slices = find_used_input_slices(request_id)
+    all_slices = list(InputRequestList.objects.filter(request_id=request_id))
+    _jsonLogger.info('Hide %s slices for request %s'%(str(len(slices)),request_id), extra={'prod_request': request_id})
+    for slice in all_slices:
+        if slice.slice in slices:
+            hide_slice(slice)

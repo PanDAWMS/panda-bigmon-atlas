@@ -1248,7 +1248,7 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
                 container_info['extensions_number'] * 60 + 60 > 0):
                 if dataset in dataset_size:
                     extension = extensions_dict.get(container_name,{'user': 'none', 'message': 'missing'})
-                    result.append((dataset,extension['user'],extension['message']))
+                    result.append((dataset,extension['user'],extension['message'].replace('\n',' ')))
                     size += dataset_size[dataset]
     with open(output_daods_file, 'w') as f:
         for dataset in result:
