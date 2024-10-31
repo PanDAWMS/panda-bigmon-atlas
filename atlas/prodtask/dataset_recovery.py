@@ -3,9 +3,6 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import Optional
-
-from django.contrib.auth.password_validation import password_validators_help_text_html
-
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestList, ParentToChildRequest, TRequest, \
