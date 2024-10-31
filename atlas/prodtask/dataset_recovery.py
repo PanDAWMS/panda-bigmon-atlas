@@ -241,14 +241,15 @@ def register_recreation_request(datasets_info: [TaskDatasetRecover], username: s
 
 def create_dataset_recovery_for_different_formats(dataset_recovery_id: int, datasets: [str], recovery_request: int, recovery_slice: int):
     dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
+    ddm= DDM()
     for dataset in datasets:
         if ':' in dataset:
             dataset = dataset.split(':')[-1]
         if dataset != dataset_recovery.original_dataset and DatasetRecovery.objects.filter(original_dataset=dataset).exists():
-            raise Exception('Dataset recovery for %s already exists' % dataset)
+            continue
         if dataset == dataset_recovery.original_dataset:
             continue
-        dataset_recovery_new = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.PENDING, size=0)
+        dataset_recovery_new = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.ACCOMPANY, size=0)
         dataset_recovery_new.requestor = 'mborodin'
         dataset_recovery_new.type = DatasetRecovery.TYPE.RECOVERY
         dataset_recovery_new.original_task = dataset_recovery.original_task
@@ -256,7 +257,7 @@ def create_dataset_recovery_for_different_formats(dataset_recovery_id: int, data
         dataset_recovery_new.save()
         dataset_recovery_new = DatasetRecovery.objects.get(original_dataset=dataset)
         dataset_recovery_info = DatasetRecoveryInfo(dataset_recovery=dataset_recovery_new)
-        parent_containers = []
+        parent_containers = list(ddm.list_parent_containers(dataset))
         comment = 'Recreated as accompanying dataset for %s' % dataset_recovery.original_dataset
         dataset_recovery_info.info_obj = DatasetRecoveryInfo.Info(comment=comment, containers=parent_containers,
                                                                   linked_tasks=[], recovery_request=recovery_request, recovery_slice=recovery_slice)
@@ -274,8 +275,8 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
                                  extra={'dataset': dataset_recovery.original_dataset})
                 result = recreate_stuck_replica_task(dataset_recovery.original_task.id)
                 if result:
-                    # if len(result[2]) > 1:
-                    #     create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
+                    if len(result[2]) > 1:
+                        create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
                     info_obj = dataset_recovery_info.info_obj
                     info_obj.recovery_request = result[0]
                     info_obj.recovery_slice = result[1]
@@ -321,7 +322,21 @@ def finish_dataset_recovery(dataset_recovery_id: int):
         except Exception as e:
             pass
         pass
-
+    for acc_dataset_recovery in DatasetRecovery.objects.filter(original_task=dataset_recovery.original_task, status=DatasetRecovery.STATUS.ACCOMPANY):
+        acc_dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=acc_dataset_recovery)
+        acc_original_format = acc_dataset_recovery.original_dataset.split('.')[-2]
+        acc_recreated_dataset = [output for output in outputs if output.split('.')[-2] == acc_original_format][0]
+        for container in acc_dataset_recovery_info.info_obj.containers:
+            try:
+                if acc_dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
+                    ddm.delete_datasets_from_container(container, [acc_dataset_recovery.original_dataset])
+                ddm.register_datasets_in_container(container, [acc_recreated_dataset])
+            except Exception as e:
+                pass
+            pass
+        acc_dataset_recovery.status = DatasetRecovery.STATUS.DONE
+        acc_dataset_recovery.recovery_task = task
+        acc_dataset_recovery.save()
     for task_id in dataset_recovery_info.info_obj.linked_tasks:
         # Send reload command to the task
         pass
