@@ -1,6 +1,10 @@
+import gzip
 import logging
+import re
 from dataclasses import dataclass
 from typing import Optional
+
+from django.contrib.auth.password_validation import password_validators_help_text_html
 
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
@@ -124,20 +128,39 @@ def find_deleted_input(dataset: str, child_task_id: int):
     task_id = int(dataset[dataset.rfind('tid')+3:dataset.rfind('_')])
     return find_recreated_task(task_id, child_task_id)
 
+def extract_chain_input_from_datasets(dataset_name: str, chain: [int] = None) -> int:
+    result = re.match(r'^.+_tid(?P<tid>\d+)_00$', dataset_name)
+    if result:
+        parent_task = ProductionTask.objects.get(id=int(result.groupdict()['tid']))
+        if chain is None:
+            chain = []
+        chain.append(parent_task.id)
+        if parent_task.inputdataset:
+            return extract_chain_input_from_datasets(parent_task.inputdataset, chain)
+        else:
+            return chain
+    else:
+        return chain
 
 def find_recreated_task(original_task_id: int, task_id_gt: int):
     task = ProductionTask.objects.get(id=original_task_id)
-    if ProductionTask.objects.filter(name=task.name, id__gt = task_id_gt).exists():
-        chain_tasks = []
+    similar_tasks = list(ProductionTask.objects.filter(name=task.name, id__gt = task_id_gt))
+    if similar_tasks:
         original_task_dkb = es_by_keys_nested({'taskid': original_task_id})
         if original_task_dkb and 'chain_data' in original_task_dkb[0]:
             chain_tasks = original_task_dkb[0]['chain_data']
-        for task in ProductionTask.objects.filter(name=task.name, id__gt = task_id_gt):
+        else:
+            chain_tasks = extract_chain_input_from_datasets(task.inputdataset)
+        for task in similar_tasks:
             if task.status not in ProductionTask.BAD_STATUS:
                 task_dkb = es_by_keys_nested({'taskid': task.id})
                 if task_dkb and 'chain_data' in task_dkb[0]:
-                    if set(chain_tasks) - set(task_dkb[0]['chain_data']) !=  set(chain_tasks):
-                        return task.id
+                    chain_recovery = task_dkb[0]['chain_data']
+                else:
+                    chain_recovery = extract_chain_input_from_datasets(task.inputdataset)
+                if set(chain_tasks) - set(chain_recovery) !=  set(chain_tasks):
+                    return task.id
+
     return None
 
 def recreate_stuck_replica_task(task_id: int):
@@ -164,7 +187,7 @@ def recreate_stuck_replica_task(task_id: int):
         #obsolete task
         recovery_request, recovery_slice = recreate_existing_outputs(task_id, [], recreated_task)
         if recreated_task is None:
-            action_executor.obsolete_task(recreated_task)
+            action_executor.obsolete_task(task_id)
         return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
@@ -226,7 +249,9 @@ def create_dataset_recovery_for_different_formats(dataset_recovery_id: int, data
             dataset = dataset.split(':')[-1]
         if dataset != dataset_recovery.original_dataset and DatasetRecovery.objects.filter(original_dataset=dataset).exists():
             raise Exception('Dataset recovery for %s already exists' % dataset)
-        dataset_recovery_new = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.RUNNING, size=0)
+        if dataset == dataset_recovery.original_dataset:
+            continue
+        dataset_recovery_new = DatasetRecovery(original_dataset=dataset, status=DatasetRecovery.STATUS.PENDING, size=0)
         dataset_recovery_new.requestor = 'mborodin'
         dataset_recovery_new.type = DatasetRecovery.TYPE.RECOVERY
         dataset_recovery_new.original_task = dataset_recovery.original_task
@@ -252,8 +277,8 @@ def submit_dataset_recovery_requests(dataset_recovery_ids: [int]):
                                  extra={'dataset': dataset_recovery.original_dataset})
                 result = recreate_stuck_replica_task(dataset_recovery.original_task.id)
                 if result:
-                    if len(result[2]) > 1:
-                        create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
+                    # if len(result[2]) > 1:
+                    #     create_dataset_recovery_for_different_formats(dataset_recovery.id, result[2], result[0], result[1])
                     info_obj = dataset_recovery_info.info_obj
                     info_obj.recovery_request = result[0]
                     info_obj.recovery_slice = result[1]
@@ -352,3 +377,66 @@ def check_running_recovery_requests():
         else:
             if dataset_recovery.recovery_task.status in ProductionTask.BAD_STATUS:
                 find_fixed_recovery(dataset_recovery.id)
+
+
+def deleted_aods(lifetime_filepath: str) -> [str]:
+    """
+    Find all DAODs which are not in the list of DAODs to save
+    :param daod_lifetime_filepath: path to file with DAODs to save
+    :param output_daods_file: path to file with all DAODs
+    :return: list of DAODs to delete
+    """
+    all_AOD_datasets_to_delete = []
+    with  gzip.open(lifetime_filepath, 'rt') as f:
+        for line in f:
+            dataset = line.strip().split(' ')[0]
+            #if ('.DAOD_RPVLL.' in dataset) or ('.DAOD_IDTIDE.' in dataset):
+            if ('.AOD.' in dataset):
+                all_AOD_datasets_to_delete.append(dataset)
+    return all_AOD_datasets_to_delete
+
+def check_dataset_recreated(dataset: str) -> Optional[int]:
+    ddm = DDM()
+    if ddm.dataset_exists(dataset):
+        return None
+    result = re.match(r'^.+_tid(?P<tid>\d+)_00$', dataset)
+    if result:
+        try:
+            task = ProductionTask.objects.get(id=int(result.groupdict()['tid']))
+            dkb_task = es_by_keys_nested({'taskid': task.id})[0]
+            if 'chain_data' in dkb_task:
+                chain_tasks = dkb_task['chain_data']
+            else:
+                chain_tasks = extract_chain_input_from_datasets(task.inputdataset)
+            similar_tasks = es_by_keys_nested({'taskname.keyword': task.name})
+            for similar_task in similar_tasks:
+                if similar_task['taskid'] > task.id:
+                    similar_dkb_task = es_by_keys_nested({'taskid': similar_task['taskid']})[0]
+                    if 'chain_data' in similar_dkb_task:
+                        chain_recovery = similar_dkb_task['chain_data']
+                        if set(chain_tasks) - set(chain_recovery) != set(chain_tasks):
+                            return similar_task['taskid']
+        except:
+            pass
+    return None
+
+@dataclass
+class DatasetRecoveryProcedure():
+    pass
+
+
+def find_deleted_datasets(container: str) -> [int]:
+    container = container.split('_tid')[0].split(':')[-1]
+    ami_tags = container.split('.')[-1].split('_')
+    possible_tasks = ProductionTask.objects.filter(name__startswith='.'.join(container.split('.')[:3]), ami_tag=ami_tags[0]).order_by('-id')
+    tasks_to_check = []
+    for task in possible_tasks:
+        if task.status in ProductionTask.BAD_STATUS and task.status != ProductionTask.STATUS.OBSOLETE:
+            continue
+        if all([ami_tag in task.name for ami_tag in ami_tags]):
+            tasks_to_check.append(task.id)
+
+    return tasks_to_check
+
+def find_steps_to_recover(dataset: str) -> DatasetRecoveryProcedure:
+    pass
