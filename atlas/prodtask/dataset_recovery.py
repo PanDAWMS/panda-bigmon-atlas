@@ -179,18 +179,13 @@ def recreate_stuck_replica_task(task_id: int):
         elif ddm.check_only_unavailable_rse(output):
             output_formats_to_recreate.append(output.split('.')[-1])
             deleted_datasets.append(output)
-    action_executor = TaskActionExecutor('mborodin', 'Obsolete task to be recreated')
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
         recovery_request, recovery_slice = recreate_existing_outputs(task_id, [], recreated_task)
-        if recreated_task is None:
-            action_executor.obsolete_task(task_id)
         return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
         recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate, recreated_task)
-        for output_format in output_formats_to_recreate:
-            action_executor.obsolete_task_output(task_id, output_format)
         return recovery_request, recovery_slice, deleted_datasets
     return None
 
@@ -308,12 +303,10 @@ def finish_dataset_recovery(dataset_recovery_id: int):
     ddm = DDM()
     task = dataset_recovery.recovery_task
     outputs = list(task.output_non_log_datasets())
+    outputs_to_delete = []
     original_format = dataset_recovery.original_dataset.split('.')[-2]
     recreated_dataset = [output for output in outputs if output.split('.')[-2] == original_format][0]
-    if task.step != task.step.step_parent:
-        if dataset_recovery.original_task.status not in ProductionTask.BAD_STATUS:
-            action_executor = TaskActionExecutor('mborodin', f'Obsolete task as it\'s recreated {task.id}')
-            action_executor.obsolete_task(dataset_recovery.original_task.id)
+    outputs_to_delete.append(dataset_recovery.original_dataset)
     for container in dataset_recovery_info.info_obj.containers:
         try:
             if dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
@@ -337,6 +330,15 @@ def finish_dataset_recovery(dataset_recovery_id: int):
         acc_dataset_recovery.status = DatasetRecovery.STATUS.DONE
         acc_dataset_recovery.recovery_task = task
         acc_dataset_recovery.save()
+        outputs_to_delete.append(acc_dataset_recovery.original_dataset)
+    action_executor = TaskActionExecutor('mborodin', f'Obsolete task as it\'s recreated {task.id}')
+    if dataset_recovery.original_task.status != ProductionTask.STATUS.OBSOLETE:
+        if len(outputs_to_delete) == len(list(dataset_recovery.original_task.output_non_log_datasets())):
+            if dataset_recovery.original_task.status != ProductionTask.STATUS.OBSOLETE:
+                action_executor.obsolete_task(dataset_recovery.original_task.id)
+        else:
+            for output in outputs_to_delete:
+                action_executor.obsolete_task_output(dataset_recovery.original_task.id, output.split('.')[-1])
     for task_id in dataset_recovery_info.info_obj.linked_tasks:
         # Send reload command to the task
         pass

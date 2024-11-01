@@ -810,26 +810,26 @@ class StepExecution(models.Model):
 
 
 
-class TaskTemplate(models.Model):
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_TEMPLATE_ID', primary_key=True)
-    step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
-    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
-    parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID')
-    name = models.CharField(max_length=130, db_column='TASK_NAME')
-    timestamp = models.DateTimeField(db_column='TIMESTAMP')
-    template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
-    task_template = models.JSONField(db_column='TEMPLATE')
-    task_error = models.CharField(max_length=4000, db_column='TRASK_ERROR', null=True)
-    build = models.CharField(max_length=200, db_column='TAG', null=True)
-
-
-    def save(self, *args, **kwargs):
-        self.timestamp = timezone.now()
-        super(TaskTemplate, self).save(*args, **kwargs)
-
-    class Meta:
-        app_label = 'dev'
-        db_table =  "T_TASK_TEMPLATE"
+# class TaskTemplate(models.Model):
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_TEMPLATE_ID', primary_key=True)
+#     step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
+#     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+#     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID')
+#     name = models.CharField(max_length=130, db_column='TASK_NAME')
+#     timestamp = models.DateTimeField(db_column='TIMESTAMP')
+#     template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
+#     task_template = models.JSONField(db_column='TEMPLATE')
+#     task_error = models.CharField(max_length=4000, db_column='TRASK_ERROR', null=True)
+#     build = models.CharField(max_length=200, db_column='TAG', null=True)
+#
+#
+#     def save(self, *args, **kwargs):
+#         self.timestamp = timezone.now()
+#         super(TaskTemplate, self).save(*args, **kwargs)
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table =  "T_TASK_TEMPLATE"
 
 
 
@@ -2653,6 +2653,7 @@ class DatasetRecovery(models.Model):
 
     class STATUS:
         PENDING = 'pending'
+        ACCOMPANY = 'accompany'
         SUBMITTED = 'submitted'
         RUNNING = 'running'
         DONE = 'done'
