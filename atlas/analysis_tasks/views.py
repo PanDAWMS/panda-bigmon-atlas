@@ -354,7 +354,7 @@ def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
 
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
-    step_template = create_data_carousel(step_template)
+    #step_template = create_data_carousel(step_template)
     check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
     check_parameters_for_task(step_template)
