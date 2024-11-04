@@ -206,6 +206,9 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
         change_slice_to_container(request_id, new_base_slice, reprocessing_task.original_task_id, True)
     for slise_index, original_slice in enumerate(slices_to_clone_keys[1:]):
         change_slice_to_container(request_id, new_slices[slise_index+1], reprocessing_task.original_task_id, slices_to_clone[original_slice].replace_first_step)
+    ddm = DDM()
+    for output_dataset in original_task.output_non_log_datasets():
+        ddm.keepDataset(output_dataset)
     action_executor = TaskActionExecutor('mborodin', 'Abort tasks to be patched')
     for task_to_abort in  reprocessing_task.tasks_to_abort:
             action_executor.obsolete_or_abort_synced_task(task_to_abort)
