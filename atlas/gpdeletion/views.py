@@ -32,6 +32,8 @@ from atlas.celerybackend.celery import app
 
 from django.core.cache import cache
 
+from atlas.task_action.task_management import TaskManagementAuthorisation
+
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
@@ -1063,8 +1065,9 @@ def set_datasets_to_delete(request):
         username = request.user.username
         deadline = datetime.strptime(request.data['deadline'],"%Y-%m-%dT%H:%M:%S.%fZ")
         start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
-        user = User.objects.get(username=username)
-        if not user.is_superuser:
+        task_management = TaskManagementAuthorisation()
+        user, allowed_groups = task_management.task_user_rights(username)
+        if request.user.is_superuser or 'DPD' in allowed_groups:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         last_record = GroupProductionDeletionRequest.objects.last()
         if deadline.replace(tzinfo=pytz.utc) < last_record.start_deletion:
