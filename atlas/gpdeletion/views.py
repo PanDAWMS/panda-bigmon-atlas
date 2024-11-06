@@ -1067,7 +1067,7 @@ def set_datasets_to_delete(request):
         start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
         task_management = TaskManagementAuthorisation()
         user, allowed_groups = task_management.task_user_rights(username)
-        if request.user.is_superuser or 'DPD' in allowed_groups:
+        if not request.user.is_superuser or 'DPD' not in allowed_groups:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         last_record = GroupProductionDeletionRequest.objects.last()
         if deadline.replace(tzinfo=pytz.utc) < last_record.start_deletion:
