@@ -22,6 +22,8 @@ class ProdMonDBRouter(object):
             return 'dev_db'
         if model._meta.app_label == 'django_cache':
             return 'deft'
+        if model._meta.app_label == 'grisli':
+            return 'grisli_adcr_panda'
 
         return None
 
@@ -49,10 +51,11 @@ class ProdMonDBRouter(object):
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
-        if ((obj1._meta.app_label == 'prodtask') and (obj2._meta.app_label == 'dev')) or\
-                ((obj1._meta.app_label == 'dev') and (obj2._meta.app_label == 'dev')) or \
+        if (((obj1._meta.app_label == 'prodtask') and (obj2._meta.app_label == 'dev')) or
+                ((obj1._meta.app_label == 'dev') and (obj2._meta.app_label == 'dev')) or
                 ((obj1._meta.app_label == 'auth') and (obj2._meta.app_label == 'authtoken') or
-                ((obj1._meta.app_label == 'panda') and (obj2._meta.app_label == 'panda'))):
+                ((obj1._meta.app_label == 'panda') and (obj2._meta.app_label == 'panda'))) or
+                ((obj1._meta.app_label == 'django_celery_beat') and (obj2._meta.app_label == 'django_celery_beat'))):
             return True
         return None
 

@@ -72,7 +72,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast','locked']
 
     def clean(self):
         cleaned_data = super(TRequestCreateCloneConfirmation, self).clean()
@@ -125,7 +125,7 @@ class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields', 'is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields', 'is_fast', 'locked']
 
 
 
@@ -145,7 +145,7 @@ class TRequestDPDCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields' ,'is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields' ,'is_fast','locked']
 
 
 class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
@@ -164,7 +164,7 @@ class TRequestHLTCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast','locked']
 
 class PatternTextInput(widgets.MultiWidget):
     def __init__(self, attrs={'0':None,'1':None}):
@@ -225,7 +225,7 @@ class TRequestReprocessingCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast','locked']
 
 class TRequestEventIndexCreateCloneForm(TRequestCreateCloneConfirmation):
     excellink = CharField(required=False, label="First step LIST link",widget=forms.HiddenInput)
@@ -242,7 +242,7 @@ class TRequestEventIndexCreateCloneForm(TRequestCreateCloneConfirmation):
 
     class Meta:
         model = TRequest
-        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast']
+        exclude = ['reqid','is_error','jira_reference','info_fields','is_fast','locked']
 
 
 class RetryErrorsForm(ModelForm):

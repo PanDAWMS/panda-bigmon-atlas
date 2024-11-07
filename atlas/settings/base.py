@@ -39,6 +39,7 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS_BIGPANDAMON_ATLAS = (
+   #"daphne",
     'django.contrib.auth',
     'django.contrib.staticfiles',
     'django.contrib.contenttypes',
@@ -68,7 +69,8 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'atlas.frontendjs',
     'atlas.frontenddjango',
     'atlas.prodtask_api',
-    'atlas.gpdeletion'
+    'atlas.gpdeletion',
+    'atlas.deftcore',
 
 
 )
@@ -94,6 +96,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
             'loaders': TEMPLATE_LOADERS,
+            'builtins': ['atlas.deftcore.protocol']
 
         },
     },
@@ -127,6 +130,7 @@ SITE_ID = 2
 # email
 EMAIL_SUBJECT_PREFIX = 'bigpandamon-atlas: '
 
+#ASGI_APPLICATION = "atlas.asgi.application"
 
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_BROKER_URL = MY_CELERY

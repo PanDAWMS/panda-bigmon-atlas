@@ -1,9 +1,13 @@
 
 import logging
 import os
+import datetime
+import re
+import random
 
+import math
 from rucio.common.exception import DataIdentifierNotFound
-
+from django.utils import timezone
 from ..prodtask.models import ProductionDataset, ProductionTask
 from ..getdatasets.models import  TaskProdSys1
 from ..settings import dq2client as dq2_settings
@@ -177,6 +181,19 @@ class DDM(object):
         output_list = list(self.__ddm.list_files(scope, name))
         return output_list
 
+    def list_file_long(self, dsn):
+        scope, dataset = self.rucio_convention(dsn)
+        files = list(self.__ddm.list_files(scope, dataset, long=True))
+        return files
+
+    def list_files_name_in_dataset(self, dsn):
+        filename_list = list()
+        scope, dataset = self.rucio_convention(dsn)
+        files = self.__ddm.list_files(scope, dataset, long=False)
+        for file_name in [e['name'] for e in files]:
+            filename_list.append(file_name)
+        return filename_list
+
     def dataset_exists(self, dsn):
         scope, name = self.rucio_convention(dsn)
         try:
@@ -186,6 +203,107 @@ class DDM(object):
             return False
         except Exception as e:
             raise e
+
+    def is_dsn_exists_with_rule_or_replica(self, dataset):
+        DELITION_PERIOD_HOURS = 24
+
+        scope, dataset = self.rucio_convention(dataset)
+        dataset_exists = self.dataset_exists(dataset)
+        if not dataset_exists:
+            return False
+        if not list(self.__ddm.list_dataset_replicas(scope, dataset)) and not(list(self.__ddm.list_did_rules(scope, dataset))):
+            return False
+        if self.dataset_metadata(dataset).get('expired_at'):
+            if ((self.dataset_metadata(dataset).get('expired_at') - timezone.now().replace(tzinfo=None)) <
+                    datetime.timedelta(hours=DELITION_PERIOD_HOURS)):
+                return False
+        return True
+
+    def list_datasets_by_pattern(self, pattern):
+        result = list()
+        match = re.match(r'^\*', pattern)
+        if not match:
+            scope, dataset = self.rucio_convention(pattern)
+            collection = 'dataset'
+            if pattern.endswith('/'):
+                collection = 'container'
+            filters = {'name': dataset}
+            for name in self.__ddm.list_dids(scope, filters, did_type=collection):
+                result.append('{0}:{1}'.format(scope, name))
+        return result
+
+    def is_dsn_container(self, dataset):
+        scope, dataset = self.rucio_convention(dataset)
+        metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
+        return bool(metadata['did_type'] == 'CONTAINER')
+
+    def list_datasets_in_container(self, container):
+        dataset_names = list()
+
+        if container.endswith('/'):
+            container = container[:-1]
+
+        scope, container_name = self.rucio_convention(container)
+
+        try:
+            if self.__ddm.get_metadata(scope, container_name)['did_type'] == 'CONTAINER':
+                for e in self.__ddm.list_content(scope, container_name):
+                    dataset = '{0}:{1}'.format(e['scope'], e['name'])
+                    if e['type'] == 'DATASET':
+                        dataset_names.append(dataset)
+                    elif e['type'] == 'CONTAINER':
+                        names = self.list_datasets_in_container(dataset)
+                        dataset_names.extend(names)
+        except DataIdentifierNotFound:
+            pass
+        return dataset_names
+    def is_dsn_dataset(self, dsn):
+        scope, dataset = self.rucio_convention(dsn)
+        metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
+        return bool(metadata['did_type'] == 'DATASET')
+
+    def get_datasets_and_containers(self, input_data_name, datasets_contained_only=False):
+        data_dict = {'containers': list(), 'datasets': list()}
+
+        if input_data_name[-1] == '/':
+            input_container_name = input_data_name
+            input_data_name = input_data_name[:-1]
+        else:
+            input_container_name = '{0}/'.format(input_data_name)
+
+        # searching containers first
+        for name in self.list_datasets_by_pattern(input_container_name):
+            if self.is_dsn_container(name):
+                if name[-1] == '/':
+                    data_dict['containers'].append(name)
+                else:
+                    data_dict['containers'].append('{0}/'.format(name))
+
+        # searching datasets
+        if datasets_contained_only and len(data_dict['containers']):
+            for container_name in data_dict['containers']:
+                dataset_names = self.list_datasets_in_container(container_name)
+                data_dict['datasets'].extend(dataset_names)
+        else:
+            enable_pattern_search = True
+            names = self.list_datasets_by_pattern(input_data_name)
+            if len(names) > 0:
+                if names[0].split(':')[-1] == input_data_name.split(':')[-1] and self.is_dsn_dataset(names[0]):
+                    data_dict['datasets'].append(names[0])
+                    enable_pattern_search = False
+            if enable_pattern_search:
+                for name in self.list_datasets_by_pattern("{0}*".format(input_data_name)):
+                    # FIXME
+                    is_sub_dataset = \
+                        re.match(r"%s.*_(sub|dis)\d*" % input_data_name.split(':')[-1], name.split(':')[-1],
+                                 re.IGNORECASE)
+                    is_o10_dataset = \
+                        re.match(r"%s.*.o10$" % input_data_name.split(':')[-1], name.split(':')[-1], re.IGNORECASE)
+                    if not self.is_dsn_container(name) and not is_sub_dataset and not is_o10_dataset:
+                        data_dict['datasets'].append(name)
+
+        return data_dict
+
 
     def find_dataset(self, pattern, long=False):
         """
@@ -329,14 +447,34 @@ class DDM(object):
                 return False
         return True
 
+    def get_nevents_per_file(self, dsn):
+        number_files = self.get_number_files(dsn)
+        if not number_files:
+            raise ValueError('Dataset {0} has no files'.format(dsn))
+        number_events = self.get_number_events(dsn)
+        if not number_files:
+            raise ValueError('Dataset {0} has no events or corresponding metadata (nEvents)'.format(dsn))
+        return math.ceil(float(number_events) / float(number_files))
+
     def dataset_replicas(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
 
         return list(self.__ddm.list_dataset_replicas(scope=scope, name=name))
 
+    def get_dataset_rses(self, dsn):
+        if not self.is_dsn_dataset(dsn):
+            raise Exception('{0} is not dataset'.format(dsn))
+        scope, dataset = self.rucio_convention(dsn)
+        return [replica['rse'] for replica in self.__ddm.list_dataset_replicas(scope, dataset)]
+
     def list_file_replicas(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
         return list(self.__ddm.list_replicas([{'scope':scope,'name':name}]))
+
+    def choose_random_files(self, list_files, files_number, random_seed=None, previously_used=None):
+        lookup_list = [x for x in list_files if x not in (previously_used or [])]
+        random.seed(random_seed)
+        return random.sample(lookup_list, files_number)
 
     def staged_percent(self, dataset_name):
         staged = 0
@@ -508,6 +646,26 @@ class DDM(object):
             datasets_with_scopes.append({'scope': dataset_scope, 'name': dataset_name})
         self.__ddm.add_datasets_to_container(scope=scope, name=name, dsns=datasets_with_scopes)
 
+    def list_files_with_scope_in_dataset(self, dsn, skip_short=False):
+        filename_list = []
+        scope, dataset = self.rucio_convention(dsn)
+        files = list(self.__ddm.list_files(scope, dataset, long=False))
+        if skip_short:
+            sizes = [x['events'] for x in  files]
+            sizes.sort()
+            filter_size = sizes[-1]
+            for file_name in [e['scope']+':'+e['name'] for e in files if e['events'] == filter_size]:
+                filename_list.append(file_name)
+        else:
+            for file_name in [e['scope']+':'+e['name'] for e in files]:
+                filename_list.append(file_name)
+        return filename_list
+
+    def get_campaign(self, dsn):
+        scope, dataset = self.rucio_convention(dsn)
+        metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
+        return str(metadata['campaign'])
+
     def register_dataset(self, dsn, files=None, statuses=None, meta=None, lifetime=None):
         """
         :param dsn: the DID name
@@ -525,11 +683,40 @@ class DDM(object):
                 file_dids.append({'scope': file_scope, 'name': file_name})
         self.__ddm.add_dataset(scope, name, statuses=statuses, meta=meta, lifetime=lifetime, files=file_dids)
 
+    def register_files_in_dataset(self, dsn, files):
+        scope, name = self.rucio_convention(dsn)
+        dids = list()
+        for file_ in files:
+            file_scope, file_name = self.rucio_convention(file_)
+            dids.append({'scope': file_scope, 'name': file_name})
+        self.__ddm.attach_dids(scope, name, dids)
+
     def get_production_container_name(self, dataset):
         if '_tid' in dataset:
             return dataset[:dataset.rfind('_tid')]
         else:
             return dataset
+    def get_number_files(self, dsn):
+        number_files = 0
+        if self.is_dsn_container(dsn):
+            for name in self.list_datasets_in_container(dsn):
+                number_files += self.get_number_files_from_metadata(name)
+        else:
+            number_files += self.get_number_files_from_metadata(dsn)
+        return number_files
+
+    def get_number_events(self, dsn):
+        scope, dataset = self.rucio_convention(dsn)
+        metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
+        return int(metadata['events'] or 0)
+
+    def get_number_files_from_metadata(self, dsn):
+        scope, dataset = self.rucio_convention(dsn)
+        try:
+            metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
+            return int(metadata['length'] or 0)
+        except Exception as ex:
+            raise Exception('DDM Error: rucio_client.get_metadata failed ({0}) ({1})'.format(str(ex), dataset))
 
     @staticmethod
     def ami_tags_reduction_w_data(postfix: str, data=False) -> str:

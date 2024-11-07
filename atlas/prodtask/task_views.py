@@ -347,7 +347,7 @@ class ProductionTaskTable(datatables.DataTable):
 #        sSearch='user',
         )
 
-    chain_tid = datatables.Column(
+    chain_id = datatables.Column(
         label='Chain',
         bVisible='false',
 #        sSearch='user',
@@ -548,7 +548,7 @@ class Parameters(datatables.Parametrized):
     request = datatables.Parameter(label='Request ID', model_field='request__reqid')
     request_id_gt = datatables.Parameter(label='Request ID <=', get_Q=lambda v: Q( **{ 'request__reqid__lte' : v } ) )
     request_id_lt = datatables.Parameter(label='Request ID >=', get_Q=lambda v: Q( **{ 'request__reqid__gte' : v } ) )
-    chain = datatables.Parameter(label='Chain', model_field='chain_tid')
+    chain = datatables.Parameter(label='Chain', model_field='chain_id')
     provenance = datatables.Parameter(label='Provenance')
 
     phys_group = datatables.Parameter(label='Phys Group')
@@ -793,7 +793,7 @@ def create_fake_task(step_id,task_id):
     new_fake_task.step = step
     new_fake_task.request = step.request
     new_fake_task.parent_id = task_id
-    new_fake_task.chain_tid = task_id
+    new_fake_task.chain_id = task_id
     new_fake_task.submit_time = timezone.now()
     new_fake_task.reference = ''
     new_fake_task.campaign = ''
@@ -918,7 +918,7 @@ def create_user_task(task_id: int) -> int:
                                vo='atlas',
                                prodSourceLabel='user',
                                username=t_task.username,
-                               chain_tid=t_task.chain_id,
+                               chain_id=t_task.chain_id,
                                campaign='',
                                subcampaign='',
                                bunchspacing='',

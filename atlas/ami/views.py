@@ -23,7 +23,7 @@ def amitag(request, amitag):
     sw_containers = []
     try:
         ami = AMIClient()
-        tag = ami.get_ami_tag(amitag)
+        tag = ami.get_ami_tag_prodsys(amitag)
         if tag['tagType'] != 'sw':
             sw_containers = sw_by_amitag(ami,tag['baseRelease'])
         else:
@@ -63,7 +63,7 @@ def sw_by_amitag(ami, amitag):
 def sw_containers_by_amitag(request,amitag):
     try:
         ami = AMIClient()
-        tag = ami.get_ami_tag(amitag)
+        tag = ami.get_ami_tag_prodsys(amitag)
         result = sw_by_amitag(ami,tag['baseRelease'])
 
     except Exception as e:

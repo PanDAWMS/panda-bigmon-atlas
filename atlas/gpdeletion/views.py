@@ -710,7 +710,7 @@ def fill_db(output, data, is_skim, test=True):
 def update_tag_from_ami(tag, is_data=False):
     ami = AMIClient()
     gp_tag = GroupProductionAMITag()
-    ami_tag = ami.get_ami_tag(tag)
+    ami_tag = ami.get_ami_tag_prodsys(tag)
     gp_tag.cache = ami_tag['cacheName']
     if 'passThrough' in ami_tag:
         gp_tag.skim = 'n'

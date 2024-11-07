@@ -253,6 +253,7 @@ def deft_legacy_request_api_data(request_id: int) -> dict:
     request_data['reference'] = request_data.pop('jira_reference')
     request_data.pop('is_fast', None)
     request_data.pop('info_fields', None)
+    request_data.pop('locked', None)
 
     request_data['id'] = request_data.pop('reqid')
 

@@ -390,7 +390,7 @@ def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, pa
                                vo=step_template.vo,
                                prodSourceLabel=step_template.prodSourceLabel,
                                username=task.username,
-                               chain_tid=task.id,
+                               chain_id=task.id,
                                #dynamic_jobdef=None,
                                campaign='',
                                subcampaign='',

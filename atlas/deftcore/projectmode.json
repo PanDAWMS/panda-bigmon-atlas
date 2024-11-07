@@ -1,0 +1,614 @@
+{
+  "allowInputLAN": {
+    "type": "str",
+    "description": ""
+  },
+  "allowInputWAN": {
+    "type": "bool",
+    "description": ""
+  },
+  "allowNoOutput": {
+    "type": "str",
+    "description": ""
+  },
+  "altStageOut": {
+    "type": "str",
+    "description": ""
+  },
+  "baseRamCount": {
+    "type": "int",
+    "description": ""
+  },
+  "baseWalltime": {
+    "type": "int",
+    "description": ""
+  },
+  "bunchspacing": {
+    "type": "str",
+    "description": ""
+  },
+  "changeType": {
+    "type": "str",
+    "description": ""
+  },
+  "cloud": {
+    "type": "str",
+    "description": ""
+  },
+  "cmtconfig": {
+    "type": "str",
+    "description": ""
+  },
+  "commonOffset": {
+    "type": "str",
+    "description": ""
+  },
+  "coreCount": {
+    "type": "int",
+    "description": ""
+  },
+  "cpuEfficiency": {
+    "type": "int",
+    "description": ""
+  },
+  "cpuTime": {
+    "type": "int",
+    "description": ""
+  },
+  "cpuTimeUnit": {
+    "type": "str",
+    "description": ""
+  },
+  "disableAutoFinish": {
+    "type": "bool",
+    "description": ""
+  },
+  "disableReassign": {
+    "type": "bool",
+    "description": ""
+  },
+  "emptyTrfParams": {
+    "type": "str",
+    "description": ""
+  },
+  "env": {
+    "type": "str",
+    "description": ""
+  },
+  "esConsumers": {
+    "type": "int",
+    "description": ""
+  },
+  "esConvertible": {
+    "type": "bool",
+    "description": ""
+  },
+  "esFraction": {
+    "type": "float",
+    "description": ""
+  },
+  "esMaxAttempt": {
+    "type": "int",
+    "description": ""
+  },
+  "esMaxAttemptJob": {
+    "type": "int",
+    "description": ""
+  },
+  "esMerging": {
+    "type": "bool",
+    "description": ""
+  },
+  "esProcessingType": {
+    "type": "str",
+    "description": ""
+  },
+  "eventRatio": {
+    "type": "str",
+    "description": ""
+  },
+  "eventRatioHigh": {
+    "type": "str",
+    "description": ""
+  },
+  "eventRatioLow": {
+    "type": "str",
+    "description": ""
+  },
+  "failWhenGoalUnreached": {
+    "type": "bool",
+    "description": ""
+  },
+  "fixedMaxEvents": {
+    "type": "bool",
+    "description": ""
+  },
+  "forceSplitInput": {
+    "type": "bool",
+    "description": ""
+  },
+  "goal": {
+    "type": "str",
+    "description": ""
+  },
+  "hiddenOutput": {
+    "type": "str",
+    "description": ""
+  },
+  "ignoreTrfParams": {
+    "type": "str",
+    "description": ""
+  },
+  "indexConsistent": {
+    "type": "str",
+    "description": ""
+  },
+  "inFilePosEvtNum": {
+    "type": "bool",
+    "description": ""
+  },
+  "ipConnectivity": {
+    "type": "str",
+    "description": ""
+  },
+  "isMergeTask": {
+    "type": "bool",
+    "description": ""
+  },
+  "isOTF": {
+    "type": "bool",
+    "description": ""
+  },
+  "isSmallEvents": {
+    "type": "bool",
+    "description": ""
+  },
+  "leaveLog": {
+    "type": "bool",
+    "description": ""
+  },
+  "lumiblock": {
+    "type": "bool",
+    "description": ""
+  },
+  "maxAttemptES": {
+    "type": "int",
+    "description": ""
+  },
+  "maxEvents": {
+    "type": "int",
+    "description": ""
+  },
+  "maxWalltime": {
+    "type": "int",
+    "description": ""
+  },
+  "mergeCont": {
+    "type": "bool",
+    "description": ""
+  },
+  "merging": {
+    "type": "str",
+    "description": ""
+  },
+  "minGranularity": {
+    "type": "int",
+    "description": ""
+  },
+  "maxEventsPerJob": {
+    "type": "int",
+    "description": ""
+  },
+  "nEsConsumers": {
+    "type": "int",
+    "description": ""
+  },
+  "nEventsPerInputFile": {
+    "type": "int",
+    "description": ""
+  },
+  "nEventsPerJob": {
+    "type": "int",
+    "description": ""
+  },
+  "nEventsPerRange": {
+    "type": "int",
+    "description": ""
+  },
+  "nEventsPerWorker": {
+    "type": "int",
+    "description": ""
+  },
+  "nJumboJobs": {
+    "type": "int",
+    "description": ""
+  },
+  "nMaxFilesPerJob": {
+    "type": "int",
+    "description": ""
+  },
+  "noOutput": {
+    "type": "bool",
+    "description": ""
+  },
+  "notDiscardEvents": {
+    "type": "bool",
+    "description": ""
+  },
+  "noThrottle": {
+    "type": "bool",
+    "description": ""
+  },
+  "noWaitParent": {
+    "type": "bool",
+    "description": ""
+  },
+  "npileup": {
+    "type": "float",
+    "description": ""
+  },
+  "npileuphigh": {
+    "type": "float",
+    "description": ""
+  },
+  "npileuplow": {
+    "type": "float",
+    "description": ""
+  },
+  "nSitesPerJob": {
+    "type": "int",
+    "description": ""
+  },
+  "nucleus": {
+    "type": "str",
+    "description": ""
+  },
+  "orderByLB": {
+    "type": "bool",
+    "description": ""
+  },
+  "outDiskCount": {
+    "type": "int",
+    "description": ""
+  },
+  "outputEIFile": {
+    "type": "str",
+    "description": ""
+  },
+  "outputRatio": {
+    "type": "int",
+    "description": ""
+  },
+  "preventBlacklistedInput": {
+    "type": "bool",
+    "description": ""
+  },
+  "primaryInputOffset": {
+    "type": "int",
+    "description": ""
+  },
+  "processingType": {
+    "type": "str",
+    "description": ""
+  },
+  "prodSourceLabel": {
+    "type": "str",
+    "description": ""
+  },
+  "ramCount": {
+    "type": "int",
+    "description": ""
+  },
+  "ramUnit": {
+    "type": "str",
+    "description": ""
+  },
+  "randomSeedOffset": {
+    "type": "int",
+    "description": ""
+  },
+  "registerEsFiles": {
+    "type": "bool",
+    "description": ""
+  },
+  "reprocessing": {
+    "type": "bool",
+    "description": ""
+  },
+  "respectSplitRule": {
+    "type": "bool",
+    "description": ""
+  },
+  "reuseInput": {
+    "type": "int",
+    "description": ""
+  },
+  "runOnlyCampaign": {
+    "type": "str",
+    "description": ""
+  },
+  "scoutSuccessRate": {
+    "type": "int",
+    "description": ""
+  },
+  "secondaryInputOffset": {
+    "type": "int",
+    "description": ""
+  },
+  "site": {
+    "type": "str",
+    "description": ""
+  },
+  "skip_events_forced": {
+    "type": "int",
+    "description": ""
+  },
+  "skipCMTConfigCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipEvgenCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipFilesUsedBy": {
+    "type": "int",
+    "description": ""
+  },
+  "skipProdStepCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipScout": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipShortInput": {
+    "type": "bool",
+    "description": ""
+  },
+  "spacetoken": {
+    "type": "str",
+    "description": ""
+  },
+  "splitEvgen": {
+    "type": "bool",
+    "description": ""
+  },
+  "t1Weight": {
+    "type": "int",
+    "description": ""
+  },
+  "testES": {
+    "type": "bool",
+    "description": ""
+  },
+  "tgtMaxOutputForNG": {
+    "type": "int",
+    "description": ""
+  },
+  "tgtNumEventsPerJob": {
+    "type": "int",
+    "description": ""
+  },
+  "toStaging": {
+    "type": "bool",
+    "description": ""
+  },
+  "transUsesPrefix": {
+    "type": "str",
+    "description": ""
+  },
+  "truncateOutputFormats": {
+    "type": "bool",
+    "description": ""
+  },
+  "useContainerName": {
+    "type": "bool",
+    "description": ""
+  },
+  "useDatasetName": {
+    "type": "bool",
+    "description": ""
+  },
+  "useDirectIo": {
+    "type": "bool",
+    "description": ""
+  },
+  "useJobCloning": {
+    "type": "str",
+    "description": ""
+  },
+  "usePrefetcher": {
+    "type": "bool",
+    "description": ""
+  },
+  "useRealEventsCont": {
+    "type": "bool",
+    "description": ""
+  },
+  "useRealNumEvents": {
+    "type": "bool",
+    "description": ""
+  },
+  "useZipToPin": {
+    "type": "bool",
+    "description": ""
+  },
+  "workDiskCount": {
+    "type": "int",
+    "description": ""
+  },
+  "workDiskUnit": {
+    "type": "str",
+    "description": ""
+  },
+  "workQueueName": {
+    "type": "str",
+    "description": ""
+  },
+  "splitEvgenOffsetByLast": {
+    "type": "bool",
+    "description": ""
+  },
+  "checkOutputDeleted": {
+    "type": "bool",
+    "description": ""
+  },
+  "inputPreStaging": {
+    "type": "bool",
+    "description": ""
+  },
+  "containerName": {
+    "type": "str",
+    "description": ""
+  },
+  "nocvmfs": {
+    "type": "bool",
+    "description": ""
+  },
+  "noprestage": {
+    "type": "bool",
+    "description": ""
+  },
+  "gshare": {
+    "type": "str",
+    "description": ""
+  },
+  "randomMCOverlay": {
+    "type": "str",
+    "description": ""
+  },
+  "rivet": {
+    "type": "str",
+    "description": ""
+  },
+  "optimalFirstEvent": {
+    "type": "bool",
+    "description": ""
+  },
+  "noLoopingCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "useDestForLogs": {
+    "type": "bool",
+    "description": ""
+  },
+  "taskBrokerOnMaster": {
+    "type": "bool",
+    "description": ""
+  },
+  "releasePerLB": {
+    "type": "bool",
+    "description": ""
+  },
+  "splitPileupInput": {
+    "type": "bool",
+    "description": ""
+  },
+  "ignoreBlacklist": {
+    "type": "bool",
+    "description": ""
+  },
+  "ignoreTestLHE": {
+    "type": "bool",
+    "description": ""
+  },
+  "enableJobNumber": {
+    "type": "bool",
+    "description": ""
+  },
+  "keepUnmerged": {
+    "type": "str",
+    "description": ""
+  },
+  "GRL": {
+    "type": "str",
+    "description": ""
+  },
+  "FLD": {
+    "type": "str",
+    "description": ""
+  },
+  "GoogleFullChain": {
+    "type": "bool",
+    "description": ""
+  },
+  "onSiteMerging": {
+    "type": "bool",
+    "description": ""
+  },
+  "fullChain": {
+    "type": "str",
+    "description": ""
+  },
+  "orderInputBy": {
+    "type": "str",
+    "description": ""
+  },
+  "excludedSites": {
+    "type": "str",
+    "description": ""
+  },
+  "nEventsPerOutputFile": {
+    "type": "int",
+    "description": ""
+  },
+    "intermediateTask": {
+    "type": "bool",
+    "description": ""
+  },
+  "rawOutputFiles": {
+    "type": "bool",
+    "description": ""
+  },
+  "iointensity": {
+    "type": "int",
+    "description": ""
+  },
+  "skipTRFParamCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "allowEmptyInput": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipHEPMCCheck": {
+    "type": "bool",
+    "description": ""
+  },
+  "skipShortOutput": {
+    "type": "bool",
+    "description": ""
+  },
+  "maxCoreCount": {
+    "type": "int",
+    "description": ""
+  },
+  "noInputSimul": {
+    "type": "bool",
+    "description": ""
+  },
+  "nChunksToWait": {
+    "type": "int",
+    "description": ""
+  },
+  "useRandomBkg": {
+    "type": "bool",
+    "description": ""
+  },
+  "patchRepro": {
+    "type": "str",
+    "description": ""
+  },
+  "taskRecreation": {
+    "type": "str",
+    "description": ""
+  },
+  "orderedOutput": {
+    "type": "bool",
+    "description": ""
+  }
+}

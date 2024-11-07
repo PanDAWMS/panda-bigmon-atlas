@@ -261,6 +261,9 @@ appendLogger('prodtaskwebui', loggerlevel=SPECIAL_LOG_LEVEL)
 ### postproduction
 appendLogger('postproduction')
 
+appendLogger('deftcore', loggerlevel=SPECIAL_LOG_LEVEL)
+
+
 appendLogger('prodtask_messaging', loggerlevel=logging.INFO, backupCount=0)
 
 appendJsonLogger('prodtask_ELK')

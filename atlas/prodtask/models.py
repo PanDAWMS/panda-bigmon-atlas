@@ -7,6 +7,7 @@ from pprint import pprint
 from typing import Dict, List, Literal, Any
 from uuid import uuid1
 
+import math
 from django.core.cache import cache
 from django.db.models.signals import post_save
 from django.core.exceptions import ObjectDoesNotExist
@@ -91,10 +92,10 @@ class TProject(models.Model):
     end_time = models.DecimalField(decimal_places=0, max_digits=10, db_column='END_TIME')
     status = models.CharField(max_length=8, db_column='STATUS')
     description = models.CharField(max_length=500, db_column='DESCRIPTION')
-    time_stamp = models.DecimalField(decimal_places=0, max_digits=10, db_column='TIMESTAMP')
+    timestamp = models.DecimalField(decimal_places=0, max_digits=10, db_column='TIMESTAMP')
 
-    def save(self, *args, **kwargs):
-        raise NotImplementedError
+    # def save(self, *args, **kwargs):
+    #     raise NotImplementedError
 
     def __str__(self):
         return "%s" % self.project
@@ -177,7 +178,7 @@ class TRequest(models.Model):
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
     is_fast = models.BooleanField(db_column='IS_FAST', null=True, blank=False)
-    #locked = models.DecimalField(decimal_places=0, max_digits=1, db_column='LOCKED', null=True)
+    locked = models.DecimalField(decimal_places=0, max_digits=1, db_column='LOCKED', null=True)
 
     def get_next_slice(self):
         if InputRequestList.objects.filter(request=self).count() == 0:
@@ -380,6 +381,9 @@ class ProductionDataset(models.Model):
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
     campaign = models.CharField(max_length=32, db_column='campaign', null=False, blank=True)
+    container_flag = \
+        models.DecimalField(decimal_places=0, max_digits=3, db_column='CONTAINER_FLAG', default=0, null=True)
+    container_time = models.DateTimeField(db_column='CONTAINER_TIME', null=True)
     ddm_timestamp = models.DateTimeField(db_column='ddm_timestamp')
     ddm_status = models.CharField(max_length=32, db_column='DDM_STATUS', null=True)
 
@@ -393,6 +397,10 @@ class ProductionContainer(models.Model):
     rid = models.DecimalField(decimal_places=0, max_digits=12, db_column='PR_ID', null=True)
     phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
+    #     c_time = models.DateTimeField(db_column='C_TIME', null=False)
+    #     d_time = models.DateTimeField(db_column='D_TIME', null=False)
+    #     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
+    #     ddm_timestamp = models.DateTimeField(db_column='DDM_TIMESTAMP', null=True)
 
     class Meta:
         #db_table = u'T_PRODUCTION_DATASET'
@@ -830,8 +838,73 @@ class StepExecution(models.Model):
 #     class Meta:
 #         app_label = 'dev'
 #         db_table =  "T_TASK_TEMPLATE"
+class TaskTemplate(models.Model):
 
+    class TEMPLATE_TYPE():
+        SAMPLE = 'SAMPLE'
+        TEST = 'TEST'
+        USER = 'USER'
 
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_TEMPLATE_ID', primary_key=True)
+    step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
+    request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+    parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID')
+    name = models.CharField(max_length=130, db_column='TASK_NAME')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
+    task_template = models.JSONField(db_column='TEMPLATE')
+    task_error = models.CharField(max_length=4000, db_column='TASK_ERROR', null=True)
+    build = models.CharField(max_length=200, db_column='TAG', null=True)
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(TaskTemplate, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table =  "T_TASK_TEMPLATE"
+class TConfig(models.Model):
+    app = models.CharField(max_length=64, db_column='APP', null=False)
+    component = models.CharField(max_length=64, db_column='COMPONENT', null=False)
+    key = models.CharField(max_length=64, db_column='KEY', null=False, primary_key=True)
+    value = models.CharField(max_length=1024, db_column='VALUE', null=False)
+    type = models.CharField(max_length=32, db_column='TYPE', null=False)
+    description = models.CharField(max_length=256, db_column='DESCRIPTION')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', null=False)
+
+    def save(self, *args, **kwargs):
+        self.type = type(self.value).__name__
+        self.timestamp = timezone.now()
+        super(TConfig, self).save(args, kwargs)
+
+    @staticmethod
+    def get_ttcr(project, prod_step, provenance):
+        key = '{0}.{1}.{2}'.format(project, prod_step.lower(), provenance)
+        ttcr = TConfig.objects.filter(app='deftcore', component='ttcr', key=key)
+        if len(ttcr) == 0:
+            return 0
+        return int(ttcr[0].value)
+
+    @staticmethod
+    def set_ttcr(offsets):
+        for key in list(offsets.keys()):
+            if type(offsets[key]) != int:
+                raise Exception('Wrong format of TTCR time offsets package')
+            param = TConfig(app='deftcore', component='ttcr', key=key, value=offsets[key])
+            param.save()
+
+    @staticmethod
+    def get(app, component, key):
+        param = TConfig.objects.filter(app=app, component=component, key=key)
+        if len(param) == 0:
+            return None
+        module_ = __import__('__builtin__')
+        cls = getattr(module_, param[0].type)
+        return cls(param[0].value)
+
+    class Meta:
+        unique_together = (('app', 'component', 'key'),)
+        db_table = '"ATLAS_DEFT"."T_CONFIG"'
 
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
@@ -862,6 +935,58 @@ class TTask(models.Model):
                 return
         return  self.__params
 
+    def _get_task_params(self):
+        return self.jedi_task_parameters
+
+    def get_job_parameter(self, value, parameter_key):
+        params = self._get_task_params()
+        job_params = params.get('jobParameters')
+        if not job_params:
+            return None
+        for param in job_params:
+            if ('value' in param) and ('%s=' % value in param['value']) and (parameter_key in param):
+                return param[parameter_key]
+        return None
+
+    @property
+    def events_per_job(self):
+        value = 0
+        params = self._get_task_params()
+        if params:
+            value = params.get('nEventsPerJob', 0)
+        if not value:
+            if self.total_done_jobs:
+                value = math.ceil(float(self.total_events) / float(self.total_done_jobs))
+        return value
+
+    @property
+    def events_per_file(self):
+        value = 0
+        params = self._get_task_params()
+        if params:
+            value = params.get('nEventsPerInputFile', 0)
+        if not value:
+            if self.parent_tid and self.parent_tid != self.id:
+                parent_task = TTask.objects.get(id=self.parent_tid)
+                value = parent_task.events_per_job
+        return value
+
+    @property
+    def number_of_files(self):
+        value = 0
+        params = self._get_task_params()
+        if params:
+            value = params.get('nFiles', 0)
+        return value
+
+    @property
+    def number_of_events(self):
+        value = 0
+        params = self._get_task_params()
+        if params:
+            value = params.get('nEvents', 0)
+        return value
+
     @property
     def input_dataset(self):
         return self._get_dataset('input') or ""
@@ -883,9 +1008,11 @@ class TTask(models.Model):
                 return dataset.rstrip('/')
         return None
 
-#    def save(self, **kwargs):
-#        """ Read-only access to the table """
-#        raise NotImplementedError
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = self.get_id()
+        super(TTask, self).save(*args, **kwargs)
 
     def get_id(self):
         return prefetch_id('deft', 'ATLAS_DEFT.PRODSYS2_TASK_ID_SEQ', 'T_TASK', 'TASKID')
@@ -1451,7 +1578,7 @@ class ProductionTask(models.Model):
     step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID', null=False)
-    chain_tid = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=False)
+    chain_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='CHAIN_TID', null=False)
     name = models.CharField(max_length=130, db_column='TASKNAME', null=True)
     project = models.CharField(max_length=60, db_column='PROJECT', null=True)
     username = models.CharField(max_length=128, db_column='USERNAME', null=True)
@@ -1499,6 +1626,9 @@ class ProductionTask(models.Model):
     pileup = models.DecimalField(decimal_places=0, max_digits=1, db_column='PILEUP', null=True)
     subcampaign = models.CharField(max_length=32, db_column='SUBCAMPAIGN', null=True)
     bunchspacing = models.CharField(max_length=32, db_column='BUNCHSPACING', null=True)
+    end_time = models.DateTimeField(db_column='ENDTIME', null=True)
+    pp_flag = models.DecimalField(decimal_places=0, max_digits=3, db_column='PPFLAG', null=True)
+    pp_grace_period = models.DecimalField(decimal_places=0, max_digits=4, db_column='PPGRACEPERIOD', null=True)
 
 #    def save(self):
 #         raise NotImplementedError
@@ -1533,6 +1663,22 @@ class ProductionTask(models.Model):
         except:
             return ""
         return dataset
+
+    @property
+    def events_per_job(self):
+        return TTask.objects.get(id=self.id).events_per_job
+
+    @property
+    def events_per_file(self):
+        return TTask.objects.get(id=self.id).events_per_file
+
+    @property
+    def number_of_files(self):
+        return TTask.objects.get(id=self.id).number_of_files
+
+    @property
+    def number_of_events(self):
+        return TTask.objects.get(id=self.id).number_of_events
 
     @property
     def hashtags(self):
@@ -1783,6 +1929,7 @@ class StepAction(models.Model):
 
     ACTIVE_STATUS = [STATUS.ACTIVE, STATUS.EXECUTING]
     STAGING_ACTION = 5
+    STAGING_ARCHIVE_ACTION = 8
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ACTION_ID', primary_key=True)
     request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
@@ -2719,3 +2866,55 @@ class DatasetRecoveryInfo(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = "T_DATASET_RECOVERY_INFO"
+
+class ProductionTag(models.Model):
+    name = models.CharField(max_length=15, db_column='NAME', primary_key=True)
+    trf_name = models.CharField(max_length=60, db_column='TRF_NAME', null=False)
+    trf_cache = models.CharField(max_length=60, db_column='TRF_CACHE', null=False)
+    trf_release = models.CharField(max_length=60, db_column='TRF_RELEASE', null=False)
+    tag_parameters = models.TextField(db_column='TAG_PARAMETERS', null=False)
+    username = models.CharField(max_length=60, db_column='USERNAME', null=False)
+    created = models.DateTimeField(db_column='CREATED', null=False)
+    task_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', null=False)
+    step_template_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_T_ID', null=False)
+
+    class Meta:
+        db_table = '"ATLAS_DEFT"."T_PRODUCTION_TAG"'
+
+class PhysicsContainer(models.Model):
+    name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
+    created = models.DateTimeField(db_column='CREATED', null=False)
+    last_modified = models.DateTimeField(db_column='LAST_MODIFIED', null=True)
+    username = models.CharField(max_length=60, db_column='USERNAME', null=False)
+    project = models.CharField(max_length=40, db_column='PROJECT', null=True)
+    data_type = models.CharField(max_length=40, db_column='DATA_TYPE', null=True)
+    run_number = models.CharField(max_length=15, db_column='RUN_NUMBER', null=True)
+    stream_name = models.CharField(max_length=40, db_column='STREAM_NAME', null=True)
+    prod_step = models.CharField(max_length=15, db_column='PROD_STEP', null=True)
+
+    class Meta:
+        db_table = '"ATLAS_DEFT"."T_PHYSICS_CONTAINER"'
+
+class TTrfConfig(models.Model):
+    tag = models.CharField(max_length=1, db_column='TAG', null=False)
+    cid = models.DecimalField(decimal_places=0, max_digits=5, db_column='CID', primary_key=True)
+    trf = models.CharField(max_length=80, db_column='TRF', null=True)
+    lparams = models.CharField(max_length=2048, db_column='LPARAMS', null=True)
+    vparams = models.CharField(max_length=4000, db_column='VPARAMS', null=True)
+    trf_version = models.CharField(max_length=40, db_column='TRFV', null=True)
+    status = models.CharField(max_length=12, db_column='STATUS', null=True)
+    ami_flag = models.DecimalField(decimal_places=0, max_digits=10, db_column='AMI_FLAG', null=True)
+    created_by = models.CharField(max_length=60, db_column='CREATEDBY', null=True)
+    input = models.CharField(max_length=20, db_column='INPUT', null=True)
+    prod_step = models.CharField(max_length=12, db_column='STEP', null=True)
+    formats = models.CharField(max_length=256, db_column='FORMATS', null=True)
+    cache = models.CharField(max_length=32, db_column='CACHE', null=True)
+    cpu_per_event = models.DecimalField(decimal_places=0, max_digits=5, db_column='CPU_PER_EVENT', null=True)
+    memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY')
+    priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY')
+    events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB')
+    comment = models.CharField(max_length=2048, db_column='COMMENT_', null=True)
+
+    class Meta:
+        app_label = 'grisli'
+        db_table = '"ATLAS_GRISLI"."T_TRF_CONFIG"'
