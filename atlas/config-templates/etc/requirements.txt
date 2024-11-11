@@ -66,3 +66,4 @@ vine==5.0.0
 wcwidth==0.2.6
 websocket-client==1.6.1
 xlrd==2.0.1
+deepdiff==8.0.1

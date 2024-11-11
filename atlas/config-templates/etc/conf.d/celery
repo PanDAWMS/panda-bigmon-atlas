@@ -1,10 +1,11 @@
 # Name of nodes to start
 # here we have a single node
-CELERYD_NODES="aipanda014"
+CELERYD_NODES=""
 
 # Absolute or relative path to the 'celery' command:
 CELERY_BIN="/opt/deft/bin/celery"
 
+CELERYD_QUEUES="default,deftcore"
 # App instance to use
 # comment out this line if you don't use an app
 CELERY_APP="celerybackend"

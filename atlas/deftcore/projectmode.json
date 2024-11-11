@@ -610,5 +610,9 @@
   "orderedOutput": {
     "type": "bool",
     "description": ""
+  },
+  "repeatDoneTaskInput": {
+    "type": "str",
+    "description": ""
   }
 }

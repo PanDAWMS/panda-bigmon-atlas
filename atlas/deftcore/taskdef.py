@@ -23,8 +23,9 @@ from django.template import Context, Template
 from django.utils import timezone
 from distutils.version import LooseVersion
 from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, StepExecution, ProductionDataset, HashTag,
-                                   HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError, TaskTemplate,
-                                   TConfig, JediDatasets, ProductionTask, TTask)
+                                   HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError,
+                                   TaskTemplate,
+                                   TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
 from .taskreg import TaskRegistration
@@ -719,6 +720,26 @@ class TaskDefinition(object):
                     filtered_files.append(input_file)
                     break
         logger.info("GRL files filtered for dataset %s with %d files from %d" % (dataset,  len(filtered_files), len(files_in_dataset)))
+        return filtered_files, len(filtered_files) == len(files_in_dataset)
+
+    def _filter_input_dataset_by_previous_task(self, dataset: str, previous_task_id: int):
+        files_in_dataset = self.rucio_client.list_file_long(dataset)
+        if JediDatasets.objects.filter(id=int(previous_task_id), datasetname=dataset).exists():
+            jedi_dataset = JediDatasets.objects.get(id=int(previous_task_id), datasetname=dataset)
+        else:
+            if ':' in dataset:
+                dataset = dataset.split(':')[-1]
+            else:
+                dataset = dataset.split('.')[0] + ':' + dataset
+            jedi_dataset = JediDatasets.objects.get(id=previous_task_id, datasetname=dataset)
+        files_in_filter_dataset_names = [x.lfn for x in JediDatasetContents.objects.filter(jeditaskid=previous_task_id, datasetid=jedi_dataset.datasetid, status='finished')]
+        filtered_files = []
+        for input_file in files_in_dataset:
+            if input_file['name'] in files_in_filter_dataset_names:
+                filtered_files.append(input_file)
+        logger.info(f"List files filtered for dataset {dataset} from {previous_task_id} with {len(filtered_files)} files from {len(files_in_dataset)}" )
+        if not filtered_files:
+            raise GRLInputException(f'No files are found in the dataset {dataset} from {previous_task_id}')
         return filtered_files, len(filtered_files) == len(files_in_dataset)
 
     def _filter_input_dataset_by_FLD(self, dataset, filter_dataset):
@@ -1836,8 +1857,11 @@ class TaskDefinition(object):
 
     def  _set_pre_stage(self, step, task_proto_dict, project_mode):
         # set staging if input is only on Tape
-        if not project_mode.noprestage and not project_mode.patchRepro and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']:
+        if (not project_mode.noprestage and not project_mode.patchRepro and not project_mode.repeatDoneTaskInput
+                and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']):
             primary_input = self._get_primary_input(task_proto_dict['job_params'])['dataset']
+            if 'sub' in primary_input:
+                return
             if self.rucio_client.dataset_exists(primary_input) and self.rucio_client.only_tape_replica(primary_input):
                 sa = StepAction()
                 task_config = ProjectMode.get_task_config(step)
@@ -3902,15 +3926,17 @@ class TaskDefinition(object):
             # https://twiki.cern.ch/twiki/bin/view/AtlasComputing/ProdSys#Default_base_RamCount_ramCount_r
             if step.request.request_type.lower() == 'MC'.lower():
                 if prod_step.lower() == 'simul'.lower():
-                    task_proto_dict.update({'cpu_time': 3000})
-                    task_proto_dict.update({'cpu_time_unit': 'HS06sPerEvent'})
+                    cpu_time = 3000
                     if core_count > 1:
                         if [x for x in job_parameters if 'multithreaded' in x.get('value','')]:
                             memory = 150
                             base_memory = 2200
+                            cpu_time = 1500
                         else:
                             memory = 500
                             base_memory = 1000
+                    task_proto_dict.update({'cpu_time': cpu_time})
+                    task_proto_dict.update({'cpu_time_unit': 'HS06sPerEvent'})
                 elif prod_step.lower() == 'recon'.lower() or is_pile_task:
                     if core_count > 1:
                         memory = 1750
@@ -4589,9 +4615,11 @@ class TaskDefinition(object):
                 if mc_pileup_overlay['is_overlay'] and not self.template_type:
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
                     self._register_mc_overlay_dataset(mc_pileup_overlay, self._get_total_number_of_jobs(task, number_of_events), task_id, task, split_by_datasets)
-                if project_mode.GRL or project_mode.FLD:
+                if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput:
                     primary_input = self._get_primary_input(task['jobParameters'])
                     primary_input_dataset = primary_input['dataset']
+                    filtered_files = []
+                    whole_dataset = False
                     if project_mode.GRL:
                         grl_file = self._find_grl_xml_file(input_data_name.split(':')[0].split('.')[0], project_mode.GRL)
                         grl_range = self._get_GRL_from_xml(grl_file)
@@ -4599,6 +4627,8 @@ class TaskDefinition(object):
                         filtered_files, whole_dataset = self._filter_input_dataset_by_GRL(primary_input_dataset, grl_range)
                     elif project_mode.FLD:
                         filtered_files, whole_dataset = self._filter_input_dataset_by_FLD(primary_input_dataset, project_mode.FLD)
+                    elif project_mode.repeatDoneTaskInput:
+                        filtered_files, whole_dataset = self._filter_input_dataset_by_previous_task(primary_input_dataset, project_mode.repeatDoneTaskInput)
                     if not whole_dataset:
                         new_input_name, new_dataset = self._find_grl_dataset_input_name(primary_input_dataset, filtered_files)
                         if new_dataset:
@@ -5465,18 +5495,26 @@ class TaskDefinition(object):
             task_template.save()
             self.template_results[step.id] = task_template
 
-    def _define_tasks_for_requests(self, requests, jira_client, restart=False, template_type=None):
-        for request in requests:
+    def _define_tasks_for_request(self, request_id, jira_client, restart=False, template_type=None):
+        request = TRequest.objects.get(reqid=request_id)
+        if request.locked:
+            logger.info("Request %d is locked by other thread" % request.reqid)
+            return
+        if DistributedLock.acquire_lock(f'process_request_{request_id}', 5):
             request.locked = True
             request.save()
             logger.info("Request %d is locked" % request.reqid)
+        else:
+            logger.info("Request %d is locked by other thread" % request.reqid)
+            return
         self.lock_request_time = timezone.now()
         logger.info("Processing production requests")
-        logger.info("Requests to process: %s" % str([int(req.reqid) for req in requests]))
+        logger.info(f"Requests to process: {request_id}")
         self.template_type = template_type
         if self.template_type:
             self.template_results = {}
         keep_approved = False
+        requests = [request]
         for request in requests:
             try:
                 logger.info("Processing request %d" % request.reqid)
@@ -5711,14 +5749,13 @@ class TaskDefinition(object):
                 request.save()
                 logger.info("Request %s is unlocked" % request.reqid)
 
-    def force_process_requests(self, requests_ids, restart=False):
+    def force_process_requests(self, request_id, restart=False):
         jira_client = JIRAClient()
         try:
             jira_client.authorize()
         except Exception as ex:
             logger.exception('JIRAClient::authorize failed: {0}'.format(str(ex)))
-        requests = TRequest.objects.filter(reqid__in=requests_ids)
-        self._define_tasks_for_requests(requests, jira_client, restart)
+        self._define_tasks_for_request(request_id, jira_client, restart)
 
     def test_process_requests(self, request_id, template_type=None):
         jira_client = JIRAClient()
@@ -5726,25 +5763,20 @@ class TaskDefinition(object):
             jira_client.authorize()
         except Exception as ex:
             logger.exception('JIRAClient::authorize failed: {0}'.format(str(ex)))
-        requests = [TRequest.objects.get(reqid=request_id)]
-        self._define_tasks_for_requests(requests, jira_client, False, template_type)
+        self._define_tasks_for_request(request_id, jira_client, False, template_type)
 
-    def process_requests(self, restart=False, no_wait=False, debug_only=False, request_types=None):
+    def process_requests(self, restart=False, no_wait=False, request_types=None):
         jira_client = JIRAClient()
         try:
             jira_client.authorize()
         except Exception as ex:
             logger.exception('JIRAClient::authorize failed: {0}'.format(str(ex)))
         request_status = self.protocol.REQUEST_STATUS[RequestStatusEnum.APPROVED]
-        if not debug_only:
-            requests = TRequest.objects.filter(~Q(locked=True) & ~Q(description__contains='_debug'),
-                                               reqid__gt=800,
-                                               status=request_status).order_by('id')
-        else:
-            requests = TRequest.objects.filter(~Q(locked=True),
-                                               description__contains='_debug',
-                                               reqid__gt=800,
-                                               status=request_status).order_by('id')
+
+        requests = TRequest.objects.filter(~Q(locked=True),
+                                           reqid__gt=800,
+                                           status=request_status).order_by('id')
+
         if request_types and requests:
             requests = requests.filter(request_type__in=request_types)
         if len(requests) == 0:
@@ -5764,8 +5796,8 @@ class TaskDefinition(object):
                 logger.info("Request %d is skipped, another request is in progress" % request.reqid)
                 continue
             ready_request_list.append(request)
-        requests = ready_request_list[:1]
-        self._define_tasks_for_requests(requests, jira_client, restart)
+        request = ready_request_list[0]
+        self._define_tasks_for_request(request.reqid, jira_client, restart)
 
     def _check_evgen_hepmc(self, trf_cache, trf_release, campaign):
         if (trf_cache+trf_release+campaign) in self._verified_evgen_releases:

@@ -134,9 +134,10 @@ EMAIL_SUBJECT_PREFIX = 'bigpandamon-atlas: '
 
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_BROKER_URL = MY_CELERY
+CELERY_TASK_ROUTES = {'atlas.deftcore.tasks.*': {'queue': 'deftcore'}}
 if DEVELOPMENT:
-    CELERY_TASK_ROUTES = {'atlas.prodtask.tasks.test_async_progress': {'queue': 'test'},
-                          'atlas.prodtask.step_manage_views.async_obsolete_old_task_for_slices': {'queue': 'test'}}
+    CELERY_TASK_ROUTES.update({'atlas.prodtask.tasks.test_async_progress': {'queue': 'test'},
+                          'atlas.prodtask.step_manage_views.async_obsolete_old_task_for_slices': {'queue': 'test'}})
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50214400
 

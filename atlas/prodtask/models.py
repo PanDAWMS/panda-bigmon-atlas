@@ -11,7 +11,7 @@ import math
 from django.core.cache import cache
 from django.db.models.signals import post_save
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction, DatabaseError
 from django.db import connection
 from django.db import connections
 from django.db.models import CASCADE
@@ -2918,3 +2918,41 @@ class TTrfConfig(models.Model):
     class Meta:
         app_label = 'grisli'
         db_table = '"ATLAS_GRISLI"."T_TRF_CONFIG"'
+
+
+class DistributedLock(models.Model):
+    lock_name = models.CharField(max_length=200,  db_column='LOCK_NAME',  primary_key=True)
+    locked_until = models.DateTimeField( db_column='LOCKED_UNTIL')
+    locked_type = models.CharField(max_length=20,  db_column='LOCK_TYPE', default='default')
+
+    @staticmethod
+    def acquire_lock(lock_name: str, lock_timeout: int = 10):
+        expiration_time = timezone.now() + timedelta(seconds=lock_timeout)
+        try:
+            with transaction.atomic(using="dev_db_wr"):
+                lock, created = DistributedLock.objects.select_for_update().get_or_create(
+                    lock_name=lock_name,
+                    defaults={'locked_until': expiration_time, 'locked_type': 'default'}
+                )
+
+                # Check if the lock is still active
+                if not created and lock.locked_until > timezone.now():
+                    return False  # Lock is already held
+
+                # Update the lock's expiration time
+                lock.locked_until = expiration_time
+                lock.save()
+                return True  # Lock acquired
+
+        except DatabaseError as e:
+            return False  # Could not acquire lock
+
+    @staticmethod
+    def release_lock(lock_name: str):
+        DistributedLock.objects.filter(lock_name=lock_name).delete()
+
+    class Meta:
+        app_label = 'dev'
+        db_table = 'T_DEFT_DISTR_LOCK'
+
+
