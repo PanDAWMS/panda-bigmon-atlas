@@ -5775,7 +5775,7 @@ class TaskDefinition(object):
 
         requests = TRequest.objects.filter(~Q(locked=True),
                                            reqid__gt=800,
-                                           status=request_status).order_by('id')
+                                           cstatus=request_status).order_by('id')
         logger.info("Search for %s requests" % request_types)
 
         if request_types and requests:
