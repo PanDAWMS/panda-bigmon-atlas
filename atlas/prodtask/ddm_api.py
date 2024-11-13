@@ -445,7 +445,7 @@ class DDM(object):
             if  not (rule['account'] == 'prodsys' and rule['activity'] == 'Staging'):
                 rules_expression.append(rule['rse_expression'])
         for replica in replicas['data']:
-            if replica in rules_expression:
+            if replica['rse'] in rules_expression:
                 return False
         return [x['rse'] for x in replicas['tape']]
 
