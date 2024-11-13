@@ -1860,7 +1860,7 @@ class TaskDefinition(object):
         if (not project_mode.noprestage and not project_mode.patchRepro and not project_mode.repeatDoneTaskInput
                 and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']):
             primary_input = self._get_primary_input(task_proto_dict['job_params'])['dataset']
-            if 'sub' in primary_input:
+            if '_sub' in primary_input:
                 return
             if self.rucio_client.dataset_exists(primary_input) and self.rucio_client.only_tape_replica(primary_input):
                 sa = StepAction()

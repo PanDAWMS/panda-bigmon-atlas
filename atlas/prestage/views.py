@@ -753,28 +753,6 @@ def convert_input_to_physical_tape(input):
     return ad.get_config('su')
 
 
-def filter_replicas_without_rules(ddm, original_dataset):
-    replicas = ddm.full_replicas_per_type(original_dataset)
-    rules = list(ddm.list_dataset_rules(original_dataset))
-    rules_expression = []
-    staging_rule = None
-    for rule in rules:
-        if rule['account'] == 'prodsys' and rule['activity'] == 'Staging':
-            staging_rule = rule
-        else:
-            rules_expression.append(rule['rse_expression'])
-    filtered_replicas = {'tape':[],'data':[]}
-    data_replica_exists = len(replicas['data']) > 0
-    for replica in replicas['tape']:
-        if replica['rse'] in rules_expression:
-            filtered_replicas['tape'].append(replica)
-    if len(replicas['tape']) >= 1 and len(filtered_replicas['tape']) == 0 and len(rules) == 0:
-        filtered_replicas['tape'] = replicas['tape']
-    for replica in replicas['data']:
-        if staging_rule is not None or replica['rse'] in rules_expression:
-            filtered_replicas['data'].append(replica)
-    all_data_replicas_without_rules = data_replica_exists and len(filtered_replicas['data']) == 0
-    return filtered_replicas, staging_rule, all_data_replicas_without_rules
 
 
 
@@ -785,7 +763,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
     if '_sub' in input_dataset:
         original_dataset = translate_sub_dataset_name(input_dataset)
         original_data_replica = len(ddm.full_replicas_per_type(input_dataset)['data']) > 0
-    replicas, staging_rule, all_data_replicas_without_rules = filter_replicas_without_rules(ddm, original_dataset)
+    replicas, staging_rule, all_data_replicas_without_rules = ddm.filter_replicas_without_rules(original_dataset)
     if ((len(replicas['data']) > 0) or original_data_replica) and not destination:
         if not is_analy:
             start_stagind_task(task)
@@ -2231,7 +2209,7 @@ def find_stale_stages(days=10):
     ddm = DDM()
     task_to_resubmit_by_tape = {}
     for stage_request in stage_requests:
-        replicas, stage_rule, data_replica_w_rule = filter_replicas_without_rules(ddm, stage_request.dataset.dataset)
+        replicas, stage_rule, data_replica_w_rule = ddm.filter_replicas_without_rules(stage_request.dataset.dataset)
         if len(replicas['tape']) > 1 and stage_rule is None:
             use_cern = False
             new_tape = ''

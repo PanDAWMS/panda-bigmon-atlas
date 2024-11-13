@@ -438,14 +438,40 @@ class DDM(object):
         return full_replicas
 
     def only_tape_replica(self, dataset_name):
-        scope, name = self.rucio_convention(dataset_name)
-        replicas = self.dataset_replicas(dataset_name)
-        if not replicas:
-            return False
-        for replica in replicas:
-            if ('TAPE' not in replica['rse']) and ('RAW' not in replica['rse']):
+        replicas = self.full_replicas_per_type(dataset_name)
+        rules = list(self.list_dataset_rules(dataset_name))
+        rules_expression = []
+        for rule in rules:
+            if  not (rule['account'] == 'prodsys' and rule['activity'] == 'Staging'):
+                rules_expression.append(rule['rse_expression'])
+        for replica in replicas['data']:
+            if replica in rules_expression:
                 return False
-        return True
+        return [x['rse'] for x in replicas['tape']]
+
+
+    def filter_replicas_without_rules(self, original_dataset:str) -> tuple:
+        replicas = self.full_replicas_per_type(original_dataset)
+        rules = list(self.list_dataset_rules(original_dataset))
+        rules_expression = []
+        staging_rule = None
+        for rule in rules:
+            if rule['account'] == 'prodsys' and rule['activity'] == 'Staging':
+                staging_rule = rule
+            else:
+                rules_expression.append(rule['rse_expression'])
+        filtered_replicas = {'tape': [], 'data': []}
+        data_replica_exists = len(replicas['data']) > 0
+        for replica in replicas['tape']:
+            if replica['rse'] in rules_expression:
+                filtered_replicas['tape'].append(replica)
+        if len(replicas['tape']) >= 1 and len(filtered_replicas['tape']) == 0 and len(rules) == 0:
+            filtered_replicas['tape'] = replicas['tape']
+        for replica in replicas['data']:
+            if staging_rule is not None or replica['rse'] in rules_expression:
+                filtered_replicas['data'].append(replica)
+        all_data_replicas_without_rules = data_replica_exists and len(filtered_replicas['data']) == 0
+        return filtered_replicas, staging_rule, all_data_replicas_without_rules
 
     def get_nevents_per_file(self, dsn):
         number_files = self.get_number_files(dsn)

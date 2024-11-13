@@ -1,6 +1,8 @@
 import logging
 import unittest
-from atlas.prodtask.models import TRequest, InputRequestList, TaskTemplate, StepExecution, ProductionTask
+from typing import Optional
+
+from atlas.prodtask.models import TRequest, InputRequestList, TaskTemplate, StepExecution, ProductionTask, TTask
 import time
 from .taskdef import TaskDefinition
 from deepdiff import DeepDiff
@@ -88,3 +90,30 @@ def run_test_interactive():
         suite.addTest(ParametrizedTestCase.parametrize(VerifyWorkflowInRequest, param=request_id))
     runner = unittest.TextTestRunner()
     runner.run(suite)
+
+def compare_slices(source_request_id: int, source_slices: [int], target_slices: [int], target_request_id: Optional[int] = None):
+
+    def get_tasks_slices(request_id, slices) -> [ProductionTask]:
+        steps = StepExecution.objects.filter(request=request_id, slice__in=InputRequestList.objects.filter(request=request_id, slice__in=slices))
+        return ProductionTask.objects.filter(step__in=steps, request=request_id).order_by('id')
+
+    if not target_request_id:
+        target_request_id = source_request_id
+    source_tasks: [ProductionTask] = get_tasks_slices(source_request_id, source_slices)
+    target_tasks: [ProductionTask] = get_tasks_slices(target_request_id, target_slices)
+
+    assert source_tasks.count() == target_tasks.count(), f"Number of tasks is different {source_tasks.count()} != {target_tasks.count()}"
+    for source_task, target_task in zip(source_tasks, target_tasks):
+        print(f"Comparing tasks {source_task.id} == {target_task.id}")
+        source_ttask_json_str = TTask.objects.get(id=source_task.id)._jedi_task_parameters
+        target_ttask_json_str = TTask.objects.get(id=target_task.id)._jedi_task_parameters
+        source_ttask_json_str = (source_ttask_json_str.replace(str(source_task.id),'task_id').replace(str(source_task.project),'project').
+                                 replace(str(source_task.parent_id),'parent_id'))
+        target_ttask_json_str = (target_ttask_json_str.replace(str(target_task.id),'task_id').replace(str(target_task.project),'project').
+                                replace(str(target_task.parent_id),'parent_id'))
+        deep_diff = DeepDiff(json.loads(source_ttask_json_str), json.loads(target_ttask_json_str),
+                             exclude_paths=['ttcrTimestamp'], ignore_order=True, view='tree', exclude_regex_paths=r"root\['jobParameters'\]\[\d+\]\['dataset'\]")
+        if deep_diff:
+            print(deep_diff)
+        assert str(DeepDiff(json.loads(source_ttask_json_str), json.loads(target_ttask_json_str), exclude_regex_paths=r"root\['jobParameters'\]\[\d+\]\['dataset'\]",
+                            exclude_paths=['ttcrTimestamp'], ignore_order=True, view='tree')) == '{}', f"Tasks are different {source_task.id} != {target_task.id}"
