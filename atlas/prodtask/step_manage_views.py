@@ -2513,7 +2513,7 @@ def compare_two_slices(production_request, slice1, slice2):
 
 
 def check_all_outputs_deleted(task, ddm):
-    number_of_outputs = len(task.output_formats.split('.'))
+    number_of_outputs = len(set(task.output_formats.split('.')))
     output_datasets = ProductionDataset.objects.filter(task_id=task.id)
     to_delete = True
     for output_datset in output_datasets:
@@ -2749,11 +2749,11 @@ def recreate_output(task_id: int, output: str) -> (int, str):
                                       step.step_template.priority, output, step.step_template.memory)
     step.step_template = new_step_template
     step.save()
-    requset_id = _deft_client.force_request('mborodin', task.request_id)
-    result = _deft_client.get_status(requset_id)
-    while not result:
-        sleep(1)
-        result = _deft_client.get_status(requset_id)
+    # requset_id = _deft_client.force_request('mborodin', task.request_id)
+    # result = _deft_client.get_status(requset_id)
+    # while not result:
+    #     sleep(1)
+    #     result = _deft_client.get_status(requset_id)
 
     new_task = ProductionTask.objects.get(step=step)
     return new_task.id, new_task.output_dataset
