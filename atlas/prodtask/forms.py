@@ -355,6 +355,7 @@ class MCPriorityUpdateForm(MCPriorityForm):
 class RequestUpdateForm(ModelForm):
     class Meta:
         model = TRequest
+        exclude = ['locked']
         fields = '__all__'
         widgets = {
             'reqid': TextInput(attrs={'readonly': 'readonly'}),
