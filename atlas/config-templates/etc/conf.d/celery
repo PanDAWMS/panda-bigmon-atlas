@@ -3,7 +3,7 @@
 CELERYD_NODES=""
 
 # Absolute or relative path to the 'celery' command:
-CELERY_BIN="/opt/deft/bin/celery"
+CELERY_BIN="/opt/prod/bin/celery"
 
 CELERYD_QUEUES="default,deftcore"
 # App instance to use
