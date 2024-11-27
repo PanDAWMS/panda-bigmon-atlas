@@ -2690,6 +2690,7 @@ class TaskDefinition(object):
                         use_lhe_filter = True
 
             # proto_fix
+            use_input_with_dataset = False
             if trf_name.lower() == 'Trig_reco_tf.py'.lower() or trf_name.lower() == 'TrigMT_reco_tf.py'.lower():
                 trf_options.update({'separator': ' '})
                 for name in trf_params:
@@ -2739,6 +2740,9 @@ class TaskDefinition(object):
                         del input_params[key]
             elif trf_name.lower() == 'ReSim_tf.py'.lower():
                 trf_options.update({'separator': ' '})
+            elif trf_name.lower() == 'HISTPostProcess_tf.py'.lower():
+                trf_options.update({'separator': ' '})
+                use_input_with_dataset = True
 
             input_data_name = None
             skip_check_input = False
@@ -3509,6 +3513,7 @@ class TaskDefinition(object):
                             continue
                     if re.match(r'^(--)?inputHISTFile', name, re.IGNORECASE) and 'HIST'.lower() in ','.join(
                             [e.lower() for e in list(input_params.keys())]):
+
                         param_name = self._get_input_output_param_name(input_params, 'HIST')
                         if not param_name:
                             continue
@@ -3545,6 +3550,8 @@ class TaskDefinition(object):
                     param_dict.update(trf_options)
                     if use_direct_io:
                         input_param = self.protocol.render_param(TaskParamName.INPUT_DIRECT_IO, param_dict)
+                    elif use_input_with_dataset:
+                        input_param = self.protocol.render_param(TaskParamName.INPUT_WITH_DATASET, param_dict)
                     else:
                         input_param = self.protocol.render_param(TaskParamName.INPUT, param_dict)
                     job_parameters.append(input_param)
@@ -4218,6 +4225,10 @@ class TaskDefinition(object):
 
             if project_mode.nSitesPerJob:
                 task_proto_dict.update({'number_of_sites_per_job': project_mode.nSitesPerJob})
+
+            if project_mode.superBoost:
+                task_proto_dict.update({'use_job_cloning':'runonce'})
+                task_proto_dict.update({'number_of_sites_per_job': 2})
 
             if project_mode.altStageOut is not None:
                 task_proto_dict.update({'alt_stage_out': project_mode.altStageOut})

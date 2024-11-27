@@ -614,5 +614,9 @@
   "repeatDoneTaskInput": {
     "type": "str",
     "description": ""
+  },
+  "superBoost": {
+    "type": "bool",
+    "description": ""
   }
 }

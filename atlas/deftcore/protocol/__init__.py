@@ -69,6 +69,7 @@ class TaskParamName(Enum):
     DB_RELEASE = auto()
     INPUT = auto()
     INPUT_DIRECT_IO = auto()
+    INPUT_WITH_DATASET = auto()
     OUTPUT = auto()
     ORDERED_OUTPUT = auto()
     RAW_OUTPUT = auto()
@@ -174,6 +175,13 @@ class Protocol(object):
             "param_type": "input",
             "type": "template",
             "value": "{{name}}=${IN{{postfix}}/L}"
+        }""",
+        TaskParamName.INPUT_WITH_DATASET: """{
+        "dataset": "{{dataset}}",
+        "offset": 0,
+        "param_type": "input",
+        "type": "template",
+        "value": "{{name}}={{dataset}}#${IN{{postfix}}/L}"
         }""",
         TaskParamName.INPUT_DIRECT_IO: """{
             "dataset": "{{dataset}}",
