@@ -260,10 +260,13 @@ class ProjectMode(object):
                                 setattr(self, 'cmtconfig', cmtconfig_list[1])
                                 return
                             else:
-                                # if len(cmtconfig_list) == 2 and len(set([cmtconfig.split('-')[0] for cmtconfig in cmtconfig_list])) == 2:
-                                #     self._cmt_config_list = cmtconfig_list
-                                #     setattr(self, 'cmtconfig',f"({'|'.join(cmtconfig_list)})")
-                                #     return
+                                if (len(cmtconfig_list) == 2 and len(
+                                        set([cmtconfig.split('-')[0] for cmtconfig in cmtconfig_list])) == 2 and
+                                        len(set([cmtconfig.split('-', 1)[1] for cmtconfig in cmtconfig_list])) == 1):
+                                    self._cmt_config_list = cmtconfig_list
+                                    joined_cmtconfig = f'({cmtconfig_list[0].split("-")[0]}|{cmtconfig_list[1].split("-")[0]})-{cmtconfig_list[0].split("-", 1)[1]}'
+                                    setattr(self, 'cmtconfig', joined_cmtconfig)
+                                    return
                                 value = str(','.join(cmtconfig_list))
                                 raise Exception(
                                     'cmtconfig is not specified but more than one cmtconfig is available ({0}).'.format(
@@ -290,11 +293,13 @@ class ProjectMode(object):
                                 logger.error(f'{self.cache} is not registered in CRIC')
                                 cmtconfig_list = self._get_cmtconfig_from_cvmfs(self.cache)
                                 if len(cmtconfig_list) != 1 :
-                                    # if len(cmtconfig_list) == 2 and len(
-                                    #         set([cmtconfig.split('-')[0] for cmtconfig in cmtconfig_list])) == 2:
-                                    #     self._cmt_config_list = cmtconfig_list
-                                    #     setattr(self, 'cmtconfig', f"({'|'.join(cmtconfig_list)})")
-                                    #     return
+                                    if (len(cmtconfig_list) == 2 and len(
+                                            set([cmtconfig.split('-')[0] for cmtconfig in cmtconfig_list])) == 2 and
+                                        len(set([cmtconfig.split('-',1)[1] for cmtconfig in cmtconfig_list])) == 1):
+                                        self._cmt_config_list = cmtconfig_list
+                                        joined_cmtconfig = f'({cmtconfig_list[0].split("-")[0]}|{cmtconfig_list[1].split("-")[0]})-{cmtconfig_list[0].split("-",1)[1]}'
+                                        setattr(self, 'cmtconfig', joined_cmtconfig)
+                                        return
                                     raise Exception(f'{self.cache} is not registered in CRIC and {cmtconfig_list} found in CVMFS')
                                 else:
                                     setattr(self, 'cmtconfig', cmtconfig_list[0])
