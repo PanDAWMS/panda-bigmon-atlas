@@ -548,7 +548,7 @@ class AMIClient(object):
                                                                'OverlayChain_tf.py', 'TrigFTKTM64SM1Un_tf.py',
                                                                'TrigFTKSMUn_Tower22_tf.py', 'Digi_tf.py',
                                                                'HITSMerge_tf.py',
-                                                               'AODMerge_tf.py', 'EVNTMerge_tf.py']]) or
+                                                               'AODMerge_tf.py', 'EVNTMerge_tf.py' , 'HISTPostProcess_tf.py']]) or
                     trf_transform.lower().endswith('Merge_tf.py'.lower())):
                 default_sub_steps = ['AODtoRED', 'FTKRecoRDOtoESD', 'all', 'n2n', 'AODtoHIST', 'DQHistogramMerge',
                                      'NTUPtoRED', 'SPSim', 'AODtoTAG', 'AtlasG4Tf', 'ESDtoAOD', 'e2d', 'e2a',
