@@ -1444,8 +1444,9 @@ def create_physics_container_in_ami(request):
         # convert from dict to ContainerInfo dataclass
         containers = [PreparedContainer(**x) for x in containers]
         _jsonLogger.info('Creating period containers', extra={'user':request.user.username})
-        user = User.objects.get(username=request.user.username)
-        if not user.is_superuser:
+        task_management = TaskManagementAuthorisation()
+        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        if not request.user.is_superuser and 'DPD' not in allowed_groups:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         ami = AMIClient()
         ddm = DDM()
