@@ -67,10 +67,13 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     disable_idds: {name: 'Push staging rule', params_name: []},
     finish_plus_reload:  {name: 'Finish + reload', params_name: []},
     release_task: {name: 'Release', params_name: []},
+    enable_job_cloning: {name: 'Enable job cloning', params_name: ['mode']},
+
   };
    SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete'];
    comment = '';
   selectedSites: string[] = [];
+  jobCloningMode = 'runonce';
 
   constructor(private taskService: TaskService, public dialog: MatDialog) { }
 

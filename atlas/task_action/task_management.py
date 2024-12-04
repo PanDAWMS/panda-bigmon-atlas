@@ -1,6 +1,7 @@
 import json
 import re
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from django.contrib.auth.models import User
 from rest_framework.request import Request
@@ -137,6 +138,20 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             logger.error(f"Action logging problem: {ex}")
             print(f"Action logging problem: {ex}")
 
+    def _jedi_new_api_decorator(func):
+        def inner(self, task_id, *args, **kwargs):
+            try:
+                result = func(self, task_id, *args, **kwargs)
+                logger.info(f"JEDI action {task_id} {func.__name__} with parameters {args} from {self.username} result  {result}")
+                return_code = result['success']
+                return_message = f'{result["message"]}'
+                self._log_action_message(task_id, func.__name__, bool(return_code), return_message, *args)
+                return bool(return_code), return_message
+            except Exception as ex:
+                self._log_action_message(task_id, func.__name__, False, str(ex), *args)
+                return False, str(ex)
+        return inner
+
 
     def _jedi_decorator(func):
         def inner(self, task_id, *args, **kwargs):
@@ -166,6 +181,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
 
     _jedi_decorator = staticmethod(_jedi_decorator)
     _action_logger = staticmethod(_action_logger)
+    _jedi_new_api_decorator = staticmethod(_jedi_new_api_decorator)
 
     def obsolete_or_abort_synced_task(self, task_id):
         sync_deft_jedi_task(task_id)
@@ -240,6 +256,10 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             except:
                 pass
         return result
+
+    @_jedi_new_api_decorator
+    def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
+        return self.jedi_client.enable_job_cloning(jedi_task_id, mode, multiplicity, num_sites)
 
     @_jedi_decorator
     def reloadInput(self, jediTaskID, verbose=False):
@@ -468,7 +488,7 @@ class TaskManagementAuthorisation():
                                                             'avalanche_task', 'reload_input', 'release_task',
                                                             'increase_attempt_number', 'abort_unfinished_jobs',
                                                           'disable_idds', 'kill_job', 'retry', 'finish_plus_reload',
-                                                          'set_debug_jobs', 'kill_jobs_without_task'] +
+                                                          'set_debug_jobs', 'kill_jobs_without_task', 'enable_job_cloning'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.FINISHED:
@@ -653,6 +673,7 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'release_task': action_executor.release_task,
             'set_debug_jobs': action_executor.set_jobs_debug,
             'kill_jobs_without_task': action_executor.kill_jobs_without_task,
+            'enable_job_cloning': action_executor.enable_job_cloning
         }
     if args == (None,):
          return action_translation[action](task_id)

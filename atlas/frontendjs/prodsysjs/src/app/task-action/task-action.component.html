@@ -228,6 +228,17 @@
       <button mat-raised-button color="primary" (click)="executeAction('release_task',[])">Release (skip iDDS)</button>
     </div>
     <mat-divider></mat-divider>
+        <div class="action-menu-row">
+      <div class="task-action-input-form">
+        <mat-radio-group [(ngModel)]="jobCloningMode"  (click)="$event.stopPropagation()" >
+            <mat-radio-button value="runonce">Run once </mat-radio-button>
+            <mat-radio-button value="storeonce">Store once </mat-radio-button>
+        </mat-radio-group>
+      </div>
+        <button mat-raised-button style="height: auto" color="primary" (click)="executeAction('enable_job_cloning',[jobCloningMode])">Job Cloning</button>
+      </div>
+        <mat-divider></mat-divider>
+
     <div class="action-menu-row">
         <div class="task-action-input-form">
           <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">

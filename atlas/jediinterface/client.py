@@ -4,6 +4,8 @@ import gzip
 import pickle
 from copy import deepcopy
 from abc import ABC, abstractmethod
+from typing import Optional
+
 import requests
 from urllib.parse import urlencode
 from ..settings import jediclient as jedi_settings
@@ -99,6 +101,10 @@ class JEDITaskActionInterface(ABC):
     def killUnfinishedJobs(self, jediTaskID, code, verbose, srvID, useMailAsID):
         pass
 
+    @abstractmethod
+    def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
+        pass
+
 
 class JEDIJobsActionInterface(ABC):
 
@@ -139,6 +145,20 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
         return self._jedi_output_distillation(response.content)
+
+    def  _post_new_api_command(self, command, data):
+        url = self._form_url(command).replace('server/panda/', '')
+        headers = self._headers.copy()
+        headers['Accept'] = 'application/json'
+        response = requests.post(url, cert=self.cert, json=data,
+                                headers=headers, verify='/etc/ssl/certs/CERN-bundle.pem')
+        if response.status_code != requests.codes.ok:
+            response.raise_for_status()
+        return response.json()
+
+    def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
+        data = {'jedi_task_id': int(jedi_task_id), 'mode': mode, 'multiplicity': multiplicity, 'num_sites': num_sites}
+        return self._post_new_api_command('api/v1/task/enable_job_cloning', data)
 
     # change task priority
     def changeTaskPriority(self, jediTaskID, newPriority):
