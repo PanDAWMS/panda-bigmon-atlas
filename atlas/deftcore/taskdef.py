@@ -1824,7 +1824,7 @@ class TaskDefinition(object):
             if random_seed_param:
                 random_seed_param['offset'] = number_of_input_files_used
             if prod_step.lower() == 'evgen'.lower():
-                if project_mode.optimalFirstEvent or task_config.get('optimalFirstEvent'):
+                if  project_mode.optimalFirstEvent or (project_mode.optimalFirstEvent is None and task_config.get('optimalFirstEvent')):
                     max_offset = self._find_optimal_evnt_offset(task['taskName'])
                     random_seed_param['offset'] = max(max_offset,math.ceil(number_of_input_files_used / task['nFilesPerJob']))
                 else:
