@@ -78,6 +78,13 @@ class AMIClient(object):
     def _get_url(self, command):
         return '{0}command/{1}/json'.format(self._base_url, command)
 
+    def _get_rows_if_available(self,content, rowset_type=None):
+        if 'AMIMessage' not in content:
+            return content
+        if 'rowset' not in content['AMIMessage']:
+            return content['AMIMessage']
+        return self._get_rows(content, rowset_type)
+
     @staticmethod
     def _get_rows(content, rowset_type=None):
         rows = list()
@@ -120,6 +127,28 @@ class AMIClient(object):
         self.raise_for_errors(content)
         return self._get_rows(content, rowset_type)
 
+    def _post_universal_command(self, command, rowset_type=None, **kwargs):
+
+        response = None
+        try:
+            url = self._get_url(command)
+            response = requests.post(url, headers=self._headers, data=json.dumps(kwargs),
+                                     verify=self._verify_server_cert)
+        except Exception as ex:
+            logger.exception("AMI failed: %s" % str(ex))
+        if response is None or response.status_code == 403:
+            logger.warning('Access error, try to re-connect')
+            self._acquire_token(response is None)
+            url = self._get_url(command)
+            response = requests.post(url, headers=self._headers, data=json.dumps(kwargs),
+                                     verify=self._verify_server_cert)
+        if response.status_code != requests.codes.ok:
+            response.raise_for_status()
+        content = json.loads(response.content)
+        self.raise_for_errors(content)
+        return self._get_rows_if_available(content, rowset_type)
+
+
     def _get_command(self, command):
         url = self._get_url(command).replace('json', 'help/json')
         # url='https://ami.in2p3.fr/AMI/api/'
@@ -137,7 +166,7 @@ class AMIClient(object):
             else:
                 datasets.append(dataset.split(':')[1])
         datasets_str = ','.join(datasets)
-        return self._post_command('COMAPopulateSuperProductionDataset', None, superTag=super_tag,
+        return self._post_universal_command('COMAPopulateSuperProductionDataset', None, superTag=super_tag,
                                   containedDatasets=datasets_str,
                                   separator=',', creationComment=creation_comment, selectionType='run_config',
                                   rucioRegistration='yes')
