@@ -40,7 +40,7 @@
               <div class="flex items-center">
                   <mat-slide-toggle [disabled]="!notFullExists" [(ngModel)]="allowNotFull" >Allow not full containers</mat-slide-toggle>
               </div>
-              <button [disabled]="missingContainers || (notFullExists && !allowNotFull) || (createState!=='not_send')" (click)="createPhysicsContainers()">
+              <button [disabled]="missingContainers || (notFullExists && !allowNotFull) || ((createState!=='not_send'))" (click)="createPhysicsContainers()">
                 Create containers
               </button>
             </div>
@@ -53,6 +53,11 @@
               <strong class="font-bold">Error!</strong>
               <span class="block sm:inline pl-2">{{error}}</span>
             </div>
+            <div>
+                          <button  (click)="repeatContainerCreation()">
+                Repeat
+              </button>
+              </div>
           }
           @case ('created') {
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">

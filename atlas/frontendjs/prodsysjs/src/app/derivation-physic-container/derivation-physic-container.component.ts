@@ -103,4 +103,9 @@ export class DerivationPhysicContainerComponent {
         }
     });
   }
+
+  repeatContainerCreation(): void {
+    this.createState = 'not_send';
+    this.error = undefined;
+  }
 }
