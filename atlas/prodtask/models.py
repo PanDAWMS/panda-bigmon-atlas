@@ -1,10 +1,11 @@
 import json
+import time
 from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import timedelta
 from enum import Enum, auto
 from pprint import pprint
-from typing import Dict, List, Literal, Any
+from typing import Dict, List, Literal, Any, Optional
 from uuid import uuid1
 
 import math
@@ -2953,6 +2954,25 @@ class DistributedLock(models.Model):
     @staticmethod
     def release_lock(lock_name: str):
         DistributedLock.objects.filter(lock_name=lock_name).delete()
+
+    @staticmethod
+    def check_lock(lock_name: str):
+        lock = DistributedLock.objects.filter(lock_name=lock_name).first()
+        if lock and lock.locked_until > timezone.now():
+            return True
+        return False
+
+
+    @staticmethod
+    def wait_lock(lock_name: str, timeout: Optional[float] = 10, interval: float = 1):
+        while True:
+            if not DistributedLock.check_lock(lock_name):
+                return
+            time.sleep(interval)
+            if timeout is not None:
+                timeout -= interval
+                if timeout <= 0:
+                    return
 
     class Meta:
         app_label = 'dev'

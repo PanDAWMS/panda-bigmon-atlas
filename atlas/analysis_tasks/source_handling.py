@@ -5,9 +5,9 @@ from uuid import uuid1
 
 import requests
 import logging
-
+from django.core.cache import cache
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import AnalysisTaskTemplate
+from atlas.prodtask.models import AnalysisTaskTemplate, TTask, DistributedLock
 from atlas.settings.analysisconf import ANALYSIS_CONF
 _logger = logging.getLogger('prodtaskwebui')
 from atlas.celerybackend.celery import app
@@ -126,3 +126,35 @@ def submit_source_to_rucio(analisys_pattern_id: int):
         except Exception as e:
             _jsonLogger.error('Failed to upload source file to rucio',extra={'error':str(e)})
             raise e
+
+def check_source_exists(archive_name, source_panda_cache):
+    source_url = f'{source_panda_cache}/cache/{archive_name}'
+    response = requests.head(source_url)
+    if response.status_code != 200:
+        return False
+    return True
+
+@app.task()
+def check_tag_source(tag: str):
+    if DistributedLock.acquire_lock(f'tag_source_{tag}', 60*10):
+        try:
+            result = reinitialise_tag(tag)
+            cache.set(f'tag_source__checked_{tag}', result, 60*10)
+        except Exception as e:
+            _jsonLogger.error('Failed to reinitialise tag',extra={'tag':tag,'error':str(e)})
+        finally:
+            DistributedLock.release_lock(f'tag_source_{tag}')
+
+
+def reinitialise_tag(tag: str):
+    template = AnalysisTaskTemplate.objects.filter(tag=tag).last()
+    archive_name = template.task_parameters['buildSpec']['archiveName']
+    source_panda_cache = template.task_parameters['sourceURL']
+    if check_source_exists(archive_name, source_panda_cache):
+        new_task = submit_task_for_rucio_file(template.source_tar)
+        task = TTask.objects.get(id=new_task)
+        template.task_parameters['buildSpec']['archiveName'] = task.jedi_task_parameters['buildSpec']['archiveName']
+        template.task_parameters['sourceURL'] = task.jedi_task_parameters['sourceURL']
+        template.save()
+        return new_task
+    return None
