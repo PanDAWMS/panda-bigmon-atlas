@@ -25,7 +25,8 @@ from rest_framework.authentication import TokenAuthentication, BasicAuthenticati
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
-from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task
+from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task, \
+    submit_task_for_rucio_file, check_tag_source, check_source_exists
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prestage.views import step_action
 from atlas.prodtask.ddm_api import DDM
@@ -33,7 +34,7 @@ from atlas.prodtask.hashtag import _set_request_hashtag, remove_hashtag_from_req
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError, \
-    HashTagToRequest, HashTag, SystemParametersHandler, StepAction
+    HashTagToRequest, HashTag, SystemParametersHandler, StepAction, DistributedLock
 from atlas.prodtask.settings import APP_SETTINGS
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import hide_slice
@@ -322,13 +323,18 @@ def check_name_version(step_template: AnalysisStepTemplate):
 
 
 def check_input_source_exists(step_template: AnalysisStepTemplate):
-    archive_name = step_template.step_parameters['buildSpec']['archiveName']
-    source_panda_cache = step_template.step_parameters['sourceURL']
-    source_url = f'{source_panda_cache}/cache/{archive_name}'
-    response = requests.head(source_url)
-    if response.status_code != 200:
-        raise Exception(f'Input source does not exist: {source_url}')
-    return True
+    if not check_source_exists(step_template.step_parameters['buildSpec']['archiveName'], step_template.step_parameters['sourceURL']):
+            task_template =  AnalysisTaskTemplate.objects.get(id=step_template.task_template.id)
+            if task_template.task_parameters['buildSpec']['archiveName'] != step_template.step_parameters['buildSpec']['archiveName']:
+                if not check_source_exists(task_template.task_parameters['buildSpec']['archiveName'], task_template.task_parameters['sourceURL']):
+                        raise Exception(f'Source tarball {task_template.task_parameters["buildSpec"]["archiveName"]} does not exist')
+                step_template.step_parameters['buildSpec']['archiveName'] = task_template.task_parameters['buildSpec']['archiveName']
+                step_template.step_parameters['sourceURL'] = task_template.task_parameters['sourceURL']
+                step_template.save()
+                return step_template
+            _jsonLogger.error(f'Failed to reinitialise tag {step_template.task_template.tag}')
+            raise Exception(f"Source tarball {step_template.step_parameters['buildSpec']['archiveName']} does not exist")
+    return step_template
 
 def collect_all_output_datasets(request_id: int) -> [str]:
     output_datasets = []
@@ -355,7 +361,7 @@ def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
     #step_template = create_data_carousel(step_template)
-    check_input_source_exists(step_template)
+    step_template = check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
     check_parameters_for_task(step_template)
     task = TTask(id=task_id,
@@ -607,6 +613,7 @@ def create_analysis_request(request):
         analysis_template_base = request.data['templateBase']
         new_scope = request.data['scope']
         analysis_template = AnalysisTaskTemplate.objects.get(id=analysis_template_base['id'])
+        check_tag_source.delay(analysis_template.tag)
         analysis_template.task_parameters = analysis_template_base['task_parameters']
         if analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE) != new_scope:
             old_scope = analysis_template.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE)

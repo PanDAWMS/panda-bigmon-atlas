@@ -141,6 +141,7 @@ def check_tag_source(tag: str):
         try:
             result = reinitialise_tag(tag)
             cache.set(f'tag_source__checked_{tag}', result, 60*10)
+            return result
         except Exception as e:
             _jsonLogger.error('Failed to reinitialise tag',extra={'tag':tag,'error':str(e)})
         finally:
