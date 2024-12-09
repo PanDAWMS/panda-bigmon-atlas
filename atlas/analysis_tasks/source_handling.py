@@ -72,7 +72,7 @@ def modify_input_source(rucio_file, original_input, new_datasets):
     with open(new_input, "w") as f:
         f.write(json.dumps(new_datasets))
     result = subprocess.run([ANALYSIS_CONF.MODIFY_EL_SCRIPT, tmp_path,ANALYSIS_CONF.DEFAULT_EL_ASETUP, original_source_file,
-                          ANALYSIS_CONF.MODIFY_JOBDEF_PYTHON, original_input, new_input], capture_output=True)
+                          ANALYSIS_CONF.MODIFY_JOBDEF_PYTHON, original_input, new_input], capture_output=True, cwd=tmp_path)
     if result.returncode != 0:
      raise Exception(f'Failed to modify input source: {result.stderr}')
     return os.path.join(tmp_path, 'source.modified.tar')
@@ -87,13 +87,13 @@ def upload_source_to_rucio(archive_name, source_panda_cache):
 
 
 def download_from_rucio(script_path, proxy_path, rucio_account, output_dir, file_pfn):
-    result = subprocess.run([script_path, proxy_path, rucio_account, output_dir, file_pfn], capture_output=True)
+    result = subprocess.run([script_path, proxy_path, rucio_account, output_dir, file_pfn], capture_output=True, cwd=output_dir)
     if result.returncode != 0:
         raise Exception(f'Failed to download file from Rucio: {result.stderr}')
     return os.path.join(output_dir, file_pfn.split(':')[0], file_pfn.split(':')[1])
 
 def upload_to_rucio(script_path, proxy_path, rucio_account, file_path, rse, dataset, scope):
-    result = subprocess.run([script_path, proxy_path, rucio_account, rse, file_path, dataset, scope], capture_output=True)
+    result = subprocess.run([script_path, proxy_path, rucio_account, rse, file_path, dataset, scope], capture_output=True, cwd=ANALYSIS_CONF.DEFAULT_DOWNLOAD_DIR)
     if result.returncode != 0:
         raise Exception(f'Failed to upload file to Rucio: {result.stderr}')
     return ':'.join([scope, os.path.basename(file_path)])
