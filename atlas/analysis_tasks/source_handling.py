@@ -99,7 +99,8 @@ def upload_to_rucio(script_path, proxy_path, rucio_account, file_path, rse, data
     return ':'.join([scope, os.path.basename(file_path)])
 
 def submit_JEDI_source(script_path, proxy_path, panda_account, input_tarball, output_dataset):
-    result = subprocess.run([script_path, proxy_path, panda_account, input_tarball, output_dataset], text=True, capture_output=True)
+    result = subprocess.run([script_path, proxy_path, panda_account, input_tarball, output_dataset], text=True, capture_output=True,
+                            cwd=ANALYSIS_CONF.DEFAULT_DOWNLOAD_DIR)
     if result.returncode != 0:
         raise Exception(f'Failed to submit source task to panda: {result.stderr}')
     for line in result.stdout.splitlines():
