@@ -150,7 +150,7 @@ def reinitialise_tag(tag: str):
     template = AnalysisTaskTemplate.objects.filter(tag=tag).last()
     archive_name = template.task_parameters['buildSpec']['archiveName']
     source_panda_cache = template.task_parameters['sourceURL']
-    if check_source_exists(archive_name, source_panda_cache):
+    if not check_source_exists(archive_name, source_panda_cache):
         new_task = submit_task_for_rucio_file(template.source_tar)
         task = TTask.objects.get(id=new_task)
         template.task_parameters['buildSpec']['archiveName'] = task.jedi_task_parameters['buildSpec']['archiveName']
