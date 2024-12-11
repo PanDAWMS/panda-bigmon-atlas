@@ -248,8 +248,12 @@
                 var row_value = rowData["value"];
                 //console.log(row_value);
                 document.getElementById("value").value = row_value;
-
-                $('#myModal').foundation('reveal', 'open');
+                if(rowData["type"]==="json"){
+                    window.location.href = "/ng/json-gdpconfig/"+rowData["key"];
+                }
+                else{
+                    $('#myModal').foundation('reveal', 'open');
+                }
 
                 //$(this).fnDeselect();
 {#                var oTT = TableTools.fnGetInstance('example');#}

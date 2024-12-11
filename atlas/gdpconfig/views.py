@@ -264,3 +264,20 @@ def global_share_change(request):
                    }
 
     return Response(content)
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
+def get_json_param(request):
+    try:
+        field = request.query_params.get('key')
+        if field:
+            gdp_param = GDPConfig.objects.get(key=field)
+            if gdp_param.type != 'json':
+                raise Exception('The parameter is not json')
+            else:
+                return Response(gdp_param.value_json)
+        raise Exception('No field specified')
+    except Exception as e:
+        return HttpResponse(str(e), content_type='application/json',status=500)

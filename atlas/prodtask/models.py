@@ -2614,6 +2614,7 @@ class GDPConfig(models.Model):
     key = models.CharField(max_length=64, db_column='KEY')
     vo = models.CharField(max_length=16, db_column='VO')
     value = models.CharField(max_length=256, db_column='VALUE')
+    value_json = models.JSONField(db_column='VALUE_JSON')
     type = models.CharField(max_length=64, db_column='TYPE')
     descr = models.CharField(max_length=256, db_column='DESCR')
 

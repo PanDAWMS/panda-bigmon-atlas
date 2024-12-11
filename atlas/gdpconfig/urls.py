@@ -13,7 +13,8 @@ urlpatterns = [
     re_path(r'^logout/$', logout, name='logout'),
     re_path(r'^global_share/$', global_share, name='global_share'),
     re_path(r'^global_share_tree/$', global_share_tree, name='global_share_tree'),
-    re_path(r'^global_share_change/$', global_share_change, name='global_share_change')
+    re_path(r'^global_share_change/$', global_share_change, name='global_share_change'),
+    re_path(r'^get_json_param/$', get_json_param, name='get_json_param')
 
 ]
 

@@ -1,0 +1,46 @@
+<h5>"{{parameter$()}}" panda parameter modification</h5>
+@if (isLoading()){
+        <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
+}
+@if(errorMessage()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+  </div>
+}
+
+@if(mode==='edit'){
+  <div style="height: 80vh">
+<app-prodsys-jsoneditor [schema]="schema" [(errorState)]="errorState" [editorOptions]="editorOptions" [(modelJson)]="workingData" ></app-prodsys-jsoneditor>
+</div>
+  @if(schema){
+  <div>
+
+    <mat-accordion>
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Schema exists
+      </mat-panel-title>
+      <mat-panel-description>
+        Show
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+   <pre> {{schema |json}}</pre>
+  </mat-expansion-panel>
+    </mat-accordion>
+
+    </div>
+  }
+  <button mat-raised-button color="primary" (click)="mode='preview'" [disabled]="(JSON.stringify(originalData)===JSON.stringify(workingData))||errorState">Preview</button>
+
+} @else if (mode==='preview'){
+  <div style="height: 80vh">
+    <app-jsondiff [originalJSON]="originalData" [modifiedJSON]="workingData"></app-jsondiff>
+  </div>
+  <button mat-raised-button color="primary" (click)="mode='edit'">Edit</button>
+  <button mat-raised-button color="primary" [disabled]="true">Save</button>
+}
+<a href="/gdpconfig/"><button mat-raised-button>Back</button></a>
+
