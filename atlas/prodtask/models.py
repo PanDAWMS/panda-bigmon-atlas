@@ -2609,9 +2609,9 @@ class Site(models.Model):
         db_table = '"ATLAS_PANDA"."SITE"'
 
 class GDPConfig(models.Model):
-    app = models.CharField(max_length=64, db_column='APP', primary_key=True)
+    app = models.CharField(max_length=64, db_column='APP')
     component = models.CharField(max_length=64, db_column='COMPONENT')
-    key = models.CharField(max_length=64, db_column='KEY')
+    key = models.CharField(max_length=64, db_column='KEY', primary_key=True)
     vo = models.CharField(max_length=16, db_column='VO')
     value = models.CharField(max_length=256, db_column='VALUE')
     value_json = models.JSONField(db_column='VALUE_JSON')

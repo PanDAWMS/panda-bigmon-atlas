@@ -281,3 +281,34 @@ def get_json_param(request):
         raise Exception('No field specified')
     except Exception as e:
         return HttpResponse(str(e), content_type='application/json',status=500)
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes((IsAuthenticated,))
+def save_json_param(request):
+    try:
+        user = request.user
+        if not user.user_permissions.filter(name='Can edit GDPConfig').exists():
+           return HttpResponse('User %s has no permission for global share change '% user.username, content_type='application/json',status=403)
+        field = request.data['key']
+        if field:
+            gdp_param = GDPConfig.objects.get(key=field)
+            new_json = request.data['value']
+            if gdp_param.type != 'json':
+                raise Exception('The parameter is not json')
+            else:
+                old_data = json.dumps(gdp_param.value_json)
+
+                gdp_param.value_json = new_json
+                gdp_param.save()
+                _logger.info(f"GDPConfig: Update user:{user.username} json field {field} ")
+                _jsonLogger.info(f"GDPConfig: Update user:{user} json field {field}",extra={'user':user.username,
+                                                                                            'key':field,
+                                                                                            'old_data':old_data,
+                                                                                            'new_data':json.dumps(new_json)})
+                return Response(new_json)
+
+        raise Exception('No field specified')
+    except Exception as e:
+        _logger.error(f"GDPConfig: {str(e)}")
+        return HttpResponse(str(e), content_type='application/json',status=500)
