@@ -5804,7 +5804,7 @@ class TaskDefinition(object):
                 if (not no_wait) and (not is_fast):
                     logger.info("Request %d is skipped, approved at %s" % (request.reqid, last_access_timestamp))
                     continue
-            if request.phys_group != 'VALI' and TRequest.objects.filter(locked=True, phys_group=request.phys_group, request_type=request.request_type).count()>1:
+            if request.phys_group != 'VALI' and TRequest.objects.filter(locked=True, phys_group=request.phys_group, request_type=request.request_type).count()>3:
                 logger.info("Request %d is skipped, another request is in progress" % request.reqid)
                 continue
             ready_request_list.append(request)
