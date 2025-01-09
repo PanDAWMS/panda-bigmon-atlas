@@ -1295,8 +1295,7 @@ class AnalysisStepTemplate(models.Model):
                         rendered_template = current_template.render(key_values[key_chain])
                         leaf_parent[current_key] = rendered_template
                         rendered_keys.append(key_chain)
-        if TemplateVariable.KEY_NAMES.FRAMEWORK not in render_template:
-            render_template[TemplateVariable.KEY_NAMES.FRAMEWORK] = 'ProdSys'
+        render_template[TemplateVariable.KEY_NAMES.FRAMEWORK] = 'ProdSys'
 
         return render_template
 
