@@ -132,7 +132,7 @@ class TRequest(models.Model):
                                  'EXOT',
                                  'FTAG',
                                  'HDBS',
-                                 'HIGG',
+                                 # 'HIGG',
                                  'HIGP',
                                  'HION',
                                  'HMBS',
@@ -158,6 +158,8 @@ class TRequest(models.Model):
                                  'VALI',
                                  'UPGR']]
 
+    OBSOLETE_PHYS_GROUPS = [(x,x) for x in ['HIGG']]
+
     REQUEST_TYPE = [(x,x) for x in ['MC','GROUP','REPROCESSING','ANALYSIS','HLT','TIER0','EVENTINDEX']]
     PROVENANCE_TYPE = [(x,x) for x in ['AP','GP','XP']]
     TERMINATE_STATE = ['test','cancelled']
@@ -172,7 +174,7 @@ class TRequest(models.Model):
     request_type = models.CharField(max_length=32, db_column='REQUEST_TYPE',choices=REQUEST_TYPE, null=False, blank=True)
     campaign = models.CharField(max_length=32, db_column='CAMPAIGN', null=False, blank=True)
     subcampaign = models.CharField(max_length=32, db_column='SUB_CAMPAIGN', null=False, blank=True)
-    phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS, blank=True)
+    phys_group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=PHYS_GROUPS+OBSOLETE_PHYS_GROUPS, blank=True)
     energy_gev = models.DecimalField(decimal_places=0, max_digits=8, db_column='ENERGY_GEV', null=False, blank=True)
     project = models.ForeignKey(TProject,db_column='PROJECT', on_delete=CASCADE, null=True, blank=False)
     is_error = models.BooleanField(db_column='EXCEPTION', null=True, blank=False)
@@ -2433,7 +2435,7 @@ class TrainProductionLoad(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TC_ID', primary_key=True)
     train = models.ForeignKey(TrainProduction,db_column='TRAIN_NUMBER', null=False, on_delete=CASCADE)
-    group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS)
+    group = models.CharField(max_length=20, db_column='PHYS_GROUP', null=False, choices=TRequest.PHYS_GROUPS+TRequest.OBSOLETE_PHYS_GROUPS)
     datasets = models.TextField( db_column='DATASETS')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     #output_formats = models.CharField(max_length=250, db_column='OUTPUT_FORMATS', null=True)
