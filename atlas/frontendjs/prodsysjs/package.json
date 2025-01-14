@@ -33,7 +33,7 @@
     "material-design-icons": "^3.0.1",
     "ng-apexcharts": "^1.11.0",
     "ngx-mat-select-search": "^7.0.9",
-    "ngxtension": "^4.0.0",
+    "ngxtension": "^4.2.0",
     "rxjs": "~7.8.1",
     "tslib": "^2.0.0",
     "zone.js": "~0.15.0"
