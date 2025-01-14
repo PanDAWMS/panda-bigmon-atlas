@@ -22,11 +22,11 @@ const COLOR_ORDER = [
 ];
 
 @Component({
-  selector: 'app-slice',
-  templateUrl: './slice.component.html',
-  styleUrls: ['./slice.component.css', '../production-request.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-
+    selector: 'app-slice',
+    templateUrl: './slice.component.html',
+    styleUrls: ['./slice.component.css', '../production-request.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 
 export class SliceComponent implements OnInit {
@@ -133,10 +133,11 @@ export class SliceComponent implements OnInit {
 // type SliceFields = "input_data" | "input_events" | "dataset" | "comment";
 
 @Component( {
-  selector: 'app-slice-details-dialog',
-  templateUrl: 'slice-details-dialog.html',
-  styleUrls: ['./slice.component.css', '../production-request.component.css'],
-  })
+    selector: 'app-slice-details-dialog',
+    templateUrl: 'slice-details-dialog.html',
+    styleUrls: ['./slice.component.css', '../production-request.component.css'],
+    standalone: false
+})
 export class SliceDetailsDialogComponent implements OnInit{
   panelOpenState: boolean;
   sliceForm = this.fb.group({

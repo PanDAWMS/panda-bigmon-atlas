@@ -9,9 +9,10 @@ import {FormControl} from "@angular/forms";
 import {AgGridAngular} from "ag-grid-angular";
 
 @Component({
-  selector: 'app-parent-drivation-for-analysis',
-  templateUrl: './parent-drivation-for-analysis.component.html',
-  styleUrls: ['./parent-drivation-for-analysis.component.css']
+    selector: 'app-parent-drivation-for-analysis',
+    templateUrl: './parent-drivation-for-analysis.component.html',
+    styleUrls: ['./parent-drivation-for-analysis.component.css'],
+    standalone: false
 })
 export class ParentDrivationForAnalysisComponent {
 

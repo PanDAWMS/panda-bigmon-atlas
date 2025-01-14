@@ -12,19 +12,18 @@ import {BPTaskComponent} from "../../common/bptask/bptask.component";
 import {RucioURLPipe} from "../../derivation-exclusion/rucio-url.pipe";
 
 @Component({
-  selector: 'app-recovery-requests-approve',
-  standalone: true,
-  imports: [
-    AgGridAngular,
-    TaskStatsComponent,
-    ReactiveFormsModule,
-    MatButton,
-    NgClass,
-    BPTaskComponent,
-    RucioURLPipe
-  ],
-  templateUrl: './recovery-requests-approve.component.html',
-  styleUrl: './recovery-requests-approve.component.css'
+    selector: 'app-recovery-requests-approve',
+    imports: [
+        AgGridAngular,
+        TaskStatsComponent,
+        ReactiveFormsModule,
+        MatButton,
+        NgClass,
+        BPTaskComponent,
+        RucioURLPipe
+    ],
+    templateUrl: './recovery-requests-approve.component.html',
+    styleUrl: './recovery-requests-approve.component.css'
 })
 export class RecoveryRequestsApproveComponent {
   @ViewChild('agGrid') datasetsGrid!: AgGridAngular;

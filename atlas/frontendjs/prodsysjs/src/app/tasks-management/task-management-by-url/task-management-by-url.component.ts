@@ -7,9 +7,10 @@ import {Observable, of} from "rxjs";
 import {ProductionTask} from "../../production-request/production-request-models";
 
 @Component({
-  selector: 'app-task-management-by-url',
-  templateUrl: './task-management-by-url.component.html',
-  styleUrl: './task-management-by-url.component.css'
+    selector: 'app-task-management-by-url',
+    templateUrl: './task-management-by-url.component.html',
+    styleUrl: './task-management-by-url.component.css',
+    standalone: false
 })
 export class TaskManagementByUrlComponent implements OnInit{
   bigpandaURL$ = this.route.queryParams.pipe(switchMap((params) => {

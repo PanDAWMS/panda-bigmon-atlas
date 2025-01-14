@@ -14,24 +14,23 @@ import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
 import {MatProgressBarModule} from "@angular/material/progress-bar";
 
 @Component({
-  selector: 'app-request-horizontal-split',
-  standalone: true,
-  imports: [
-    AsyncPipe,
-    JsonPipe,
-    MatFormFieldModule,
-    MatOptionModule,
-    MatSelectModule,
-    NgForOf,
-    ReactiveFormsModule,
-    FormsModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatProgressBarModule
-  ],
-  templateUrl: './request-horizontal-split.component.html',
-  styleUrl: './request-horizontal-split.component.css'
+    selector: 'app-request-horizontal-split',
+    imports: [
+        AsyncPipe,
+        JsonPipe,
+        MatFormFieldModule,
+        MatOptionModule,
+        MatSelectModule,
+        NgForOf,
+        ReactiveFormsModule,
+        FormsModule,
+        MatCheckboxModule,
+        MatButtonModule,
+        MatProgressSpinnerModule,
+        MatProgressBarModule
+    ],
+    templateUrl: './request-horizontal-split.component.html',
+    styleUrl: './request-horizontal-split.component.css'
 })
 export class RequestHorizontalSplitComponent {
 

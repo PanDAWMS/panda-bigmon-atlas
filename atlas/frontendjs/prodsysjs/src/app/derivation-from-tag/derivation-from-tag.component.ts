@@ -41,9 +41,10 @@ function get_output(output: string): string {
 }
 
 @Component({
-  selector: 'app-derivation-from-tag',
-  templateUrl: './derivation-from-tag.component.html',
-  styleUrls: ['./derivation-from-tag.component.css'],
+    selector: 'app-derivation-from-tag',
+    templateUrl: './derivation-from-tag.component.html',
+    styleUrls: ['./derivation-from-tag.component.css'],
+    standalone: false
 })
 export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
   @ViewChild('paginator') paginator: MatPaginator;
@@ -259,9 +260,10 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
 }
 
 @Component({
-  selector: 'app-dialog-container-details',
-  templateUrl: 'dialog-container-details.html',
-  styleUrls: ['./derivation-from-tag.component.css']
+    selector: 'app-dialog-container-details',
+    templateUrl: 'dialog-container-details.html',
+    styleUrls: ['./derivation-from-tag.component.css'],
+    standalone: false
 })
 export class DialogContainerDetails {
   constructor(
@@ -271,9 +273,10 @@ export class DialogContainerDetails {
 }
 
 @Component({
-  selector: 'app-dialog-selected-containers',
-  templateUrl: 'dialog-selected-containers.html',
-  styleUrls: ['./derivation-from-tag.component.css']
+    selector: 'app-dialog-selected-containers',
+    templateUrl: 'dialog-selected-containers.html',
+    styleUrls: ['./derivation-from-tag.component.css'],
+    standalone: false
 })
 export class DialogSelectedContainers {
   constructor(

@@ -16,9 +16,10 @@ import {MatSelectChange} from "@angular/material/select";
 
 
 @Component({
-  selector: 'app-task-action',
-  templateUrl: './task-action.component.html',
-  styleUrls: ['./task-action.component.css']
+    selector: 'app-task-action',
+    templateUrl: './task-action.component.html',
+    styleUrls: ['./task-action.component.css'],
+    standalone: false
 })
 
 export class TaskActionComponent implements OnInit, OnDestroy {
@@ -250,8 +251,9 @@ export class TaskActionComponent implements OnInit, OnDestroy {
 }
 
 @Component({
-  selector: 'app-dialog-task-action',
-  templateUrl: 'dialog-task-action.html'
+    selector: 'app-dialog-task-action',
+    templateUrl: 'dialog-task-action.html',
+    standalone: false
 })
 export class DialogTaskSubmissionComponent implements OnInit{
 

@@ -5,9 +5,10 @@ import {switchMap, tap} from "rxjs/operators";
 import {FormArray, FormBuilder, FormControl} from "@angular/forms";
 
 @Component({
-  selector: 'app-derivation-phys-pattern',
-  templateUrl: './derivation-phys-pattern.component.html',
-  styleUrls: ['./derivation-phys-pattern.component.css']
+    selector: 'app-derivation-phys-pattern',
+    templateUrl: './derivation-phys-pattern.component.html',
+    styleUrls: ['./derivation-phys-pattern.component.css'],
+    standalone: false
 })
 export class DerivationPhysPatternComponent implements OnInit {
 

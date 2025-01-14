@@ -40,19 +40,18 @@ interface MCSubCampaignStatsInterface {
   };
 }
 @Component({
-  selector: 'app-mc-subcampaigns-stat',
-  standalone: true,
-  imports: [
-    AsyncPipe,
-    JsonPipe,
-    MatProgressSpinnerModule,
-    NgIf,
-    MatExpansionModule,
-    NgTemplateOutlet,
-    BillionPipe
-  ],
-  templateUrl: './mc-subcampaigns-stat.component.html',
-  styleUrl: './mc-subcampaigns-stat.component.css'
+    selector: 'app-mc-subcampaigns-stat',
+    imports: [
+        AsyncPipe,
+        JsonPipe,
+        MatProgressSpinnerModule,
+        NgIf,
+        MatExpansionModule,
+        NgTemplateOutlet,
+        BillionPipe
+    ],
+    templateUrl: './mc-subcampaigns-stat.component.html',
+    styleUrl: './mc-subcampaigns-stat.component.css'
 })
 export class McSubcampaignsStatComponent {
 

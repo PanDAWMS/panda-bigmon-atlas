@@ -21,9 +21,10 @@ import {TaskAction} from "../production-task/task-service.service";
 import {BehaviorSubject, Subject} from "rxjs";
 import {MatIcon} from "@angular/material/icon";
 @Component({
-  selector: 'app-production-task-table',
-  templateUrl: './production-task-table.component.html',
-  styleUrls: ['./production-task-table.component.css']
+    selector: 'app-production-task-table',
+    templateUrl: './production-task-table.component.html',
+    styleUrls: ['./production-task-table.component.css'],
+    standalone: false
 })
 export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestroy {
 
@@ -339,8 +340,9 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
 
 // Dialog to show task details
 @Component({
-  selector: 'app-dialog-task-details',
-  templateUrl: './task-details.component.html',
+    selector: 'app-dialog-task-details',
+    templateUrl: './task-details.component.html',
+    standalone: false
 })
 export class DialogTaskDetailsComponent implements OnInit {
 
@@ -375,12 +377,13 @@ export class DialogTaskDetailsComponent implements OnInit {
 }
 
 @Component({
-  selector: 'btn-cell-renderer',
-  template: `
+    selector: 'btn-cell-renderer',
+    template: `
     <a  style="color: #43a047; cursor: pointer" (click)="btnClickedHandler()"><mat-icon class="more">
 more
 </mat-icon></a>
   `,
+    standalone: false
 })
 export class BtnCellRenderer implements ICellRendererAngularComp {
   private params: any;

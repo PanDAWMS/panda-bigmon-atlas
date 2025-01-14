@@ -9,16 +9,17 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatChip, MatChipListbox } from '@angular/material/chips';
 
 @Component({
-  selector: 'app-chips-multi-select',
-  templateUrl: './multi-select-colored-chips.component.html',
-  styleUrls: ['./multi-select-colored-chips.component.css', '../production-request/production-request.component.css'],
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: ChipsMultiSelectColoredComponent,
-      multi: true,
-    },
-  ],
+    selector: 'app-chips-multi-select',
+    templateUrl: './multi-select-colored-chips.component.html',
+    styleUrls: ['./multi-select-colored-chips.component.css', '../production-request/production-request.component.css'],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: ChipsMultiSelectColoredComponent,
+            multi: true,
+        },
+    ],
+    standalone: false
 })
 
 export class ChipsMultiSelectColoredComponent

@@ -27,9 +27,10 @@ export interface StatsByOutputBase{
 }
 
 @Component({
-  selector: 'app-gp-stats',
-  templateUrl: './gp-stats.component.html',
-  styleUrls: ['./gp-stats.component.css']
+    selector: 'app-gp-stats',
+    templateUrl: './gp-stats.component.html',
+    styleUrls: ['./gp-stats.component.css'],
+    standalone: false
 })
 export class GpStatsComponent implements OnInit, AfterViewInit {
   gpStats: GroupProductionStats[];

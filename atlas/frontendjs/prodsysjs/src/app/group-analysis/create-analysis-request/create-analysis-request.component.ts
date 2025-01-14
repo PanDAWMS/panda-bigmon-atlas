@@ -14,9 +14,10 @@ export interface InputContainerItem {
   datasetNumber: number|null;
 }
 @Component({
-  selector: 'app-create-analysis-request',
-  templateUrl: './create-analysis-request.component.html',
-  styleUrls: ['./create-analysis-request.component.css']
+    selector: 'app-create-analysis-request',
+    templateUrl: './create-analysis-request.component.html',
+    styleUrls: ['./create-analysis-request.component.css'],
+    standalone: false
 })
 export class CreateAnalysisRequestComponent implements OnInit {
   // Map of container names to dataset numbers

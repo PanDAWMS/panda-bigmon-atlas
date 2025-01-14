@@ -7,9 +7,10 @@ import {GridOptions, RowNode} from "ag-grid-community";
 import {ProductionTask} from "../../production-request/production-request-models";
 
 @Component({
-  selector: 'app-analy-request-actions',
-  templateUrl: './analy-request-actions.component.html',
-  styleUrls: ['./analy-request-actions.component.css']
+    selector: 'app-analy-request-actions',
+    templateUrl: './analy-request-actions.component.html',
+    styleUrls: ['./analy-request-actions.component.css'],
+    standalone: false
 })
 export class AnalyRequestActionsComponent implements OnInit {
   @Input() selectedSlices: number[] = [];
@@ -77,8 +78,9 @@ export class AnalyRequestActionsComponent implements OnInit {
 
 
 @Component({
-  selector: 'app-dialog-slice-modification',
-  templateUrl: './slice-modification.component.html',
+    selector: 'app-dialog-slice-modification',
+    templateUrl: './slice-modification.component.html',
+    standalone: false
 })
 export class DialogSliceModificationComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: {slices: number, template: Partial<TaskTemplate>}, public dialogRef: MatDialogRef<DialogSliceModificationComponent>) { }

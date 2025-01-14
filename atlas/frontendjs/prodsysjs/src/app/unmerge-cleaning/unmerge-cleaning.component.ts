@@ -15,9 +15,10 @@ export interface DatasetToDelete {
 }
 
 @Component({
-  selector: 'app-unmerge-cleaning',
-  templateUrl: './unmerge-cleaning.component.html',
-  styleUrls: ['./unmerge-cleaning.component.css']
+    selector: 'app-unmerge-cleaning',
+    templateUrl: './unmerge-cleaning.component.html',
+    styleUrls: ['./unmerge-cleaning.component.css'],
+    standalone: false
 })
 export class UnmergeCleaningComponent implements OnInit {
 

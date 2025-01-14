@@ -2,11 +2,10 @@ import {Component, effect, input, model, OnInit, viewChild, ViewContainerRef} fr
 import JSONEditor, {JSONEditorOptions} from 'jsoneditor';
 
 @Component({
-  selector: 'app-prodsys-jsoneditor',
-  standalone: true,
-  imports: [],
-  template: `<div #editor style="height: 100%"></div>`,
-  styleUrl: './prodsys-jsoneditor.component.css'
+    selector: 'app-prodsys-jsoneditor',
+    imports: [],
+    template: `<div #editor style="height: 100%"></div>`,
+    styleUrl: './prodsys-jsoneditor.component.css'
 })
 export class ProdsysJsoneditorComponent implements OnInit {
     baseContainer = viewChild('editor', {read: ViewContainerRef});

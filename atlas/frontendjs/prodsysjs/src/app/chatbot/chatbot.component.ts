@@ -10,9 +10,10 @@ export interface ChatBotMessage {
 }
 
 @Component({
-  selector: 'app-chatbot',
-  templateUrl: './chatbot.component.html',
-  styleUrls: ['./chatbot.component.css']
+    selector: 'app-chatbot',
+    templateUrl: './chatbot.component.html',
+    styleUrls: ['./chatbot.component.css'],
+    standalone: false
 })
 export class ChatbotComponent implements OnInit{
 

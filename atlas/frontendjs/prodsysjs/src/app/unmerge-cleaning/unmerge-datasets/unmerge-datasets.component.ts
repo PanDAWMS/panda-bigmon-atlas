@@ -8,9 +8,10 @@ import {MatPaginator} from "@angular/material/paginator";
 import {MatSort} from "@angular/material/sort";
 
 @Component({
-  selector: 'app-unmerge-datasets',
-  templateUrl: './unmerge-datasets.component.html',
-  styleUrls: ['./unmerge-datasets.component.css']
+    selector: 'app-unmerge-datasets',
+    templateUrl: './unmerge-datasets.component.html',
+    styleUrls: ['./unmerge-datasets.component.css'],
+    standalone: false
 })
 export class UnmergeDatasetsComponent implements OnInit, AfterViewInit {
 

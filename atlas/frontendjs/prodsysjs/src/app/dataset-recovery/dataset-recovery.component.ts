@@ -14,27 +14,26 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {MatIcon} from "@angular/material/icon";
 
 @Component({
-  selector: 'app-dataset-recovery',
-  standalone: true,
-  imports: [
-    MatProgressSpinner,
-    JsonPipe,
-    NgClass,
-    DatePipe,
-    AgGridAngular,
-    AsyncPipe,
-    TaskStatsComponent,
-    ReactiveFormsModule,
-    MatButton,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    FormsModule,
-    RouterLink,
-    MatIcon
-  ],
-  templateUrl: './dataset-recovery.component.html',
-  styleUrl: './dataset-recovery.component.css'
+    selector: 'app-dataset-recovery',
+    imports: [
+        MatProgressSpinner,
+        JsonPipe,
+        NgClass,
+        DatePipe,
+        AgGridAngular,
+        AsyncPipe,
+        TaskStatsComponent,
+        ReactiveFormsModule,
+        MatButton,
+        MatFormField,
+        MatInput,
+        MatLabel,
+        FormsModule,
+        RouterLink,
+        MatIcon
+    ],
+    templateUrl: './dataset-recovery.component.html',
+    styleUrl: './dataset-recovery.component.css'
 })
 export class DatasetRecoveryComponent {
 

@@ -12,9 +12,10 @@ export interface PatternChanges {
 
 export type editState = 'edit' | 'view' | 'disabled';
 @Component({
-  selector: 'app-pattern-edit',
-  templateUrl: './pattern-edit.component.html',
-  styleUrls: ['./pattern-edit.component.css']
+    selector: 'app-pattern-edit',
+    templateUrl: './pattern-edit.component.html',
+    styleUrls: ['./pattern-edit.component.css'],
+    standalone: false
 })
 export class PatternEditComponent implements OnInit, OnChanges {
   @Input() pattern: Partial<TaskTemplate>;

@@ -9,9 +9,10 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component";
 
 @Component({
-  selector: 'app-task-template-submission',
-  templateUrl: './task-template-submission.component.html',
-  styleUrls: ['./task-template-submission.component.css']
+    selector: 'app-task-template-submission',
+    templateUrl: './task-template-submission.component.html',
+    styleUrls: ['./task-template-submission.component.css'],
+    standalone: false
 })
 export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
    @ViewChild('taskTemplateStepper') stepper: MatStepper;

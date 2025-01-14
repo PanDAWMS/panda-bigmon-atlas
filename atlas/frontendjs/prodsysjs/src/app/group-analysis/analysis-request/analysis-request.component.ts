@@ -20,9 +20,10 @@ import {ProductionTaskTableComponent} from "../../production-task-table/producti
 
 
 @Component({
-  selector: 'app-analysis-request',
-  templateUrl: './analysis-request.component.html',
-  styleUrls: ['./analysis-request.component.css']
+    selector: 'app-analysis-request',
+    templateUrl: './analysis-request.component.html',
+    styleUrls: ['./analysis-request.component.css'],
+    standalone: false
 })
 export class AnalysisRequestComponent implements OnInit {
     readonly separatorKeysCodes = [ENTER, COMMA] as const;
@@ -304,8 +305,9 @@ export class AnalysisRequestComponent implements OnInit {
 
 // Dialog to show requests outputs
 @Component({
-  selector: 'app-dialog-request-outputs',
-  templateUrl: './request-outputs.component.html',
+    selector: 'app-dialog-request-outputs',
+    templateUrl: './request-outputs.component.html',
+    standalone: false
 })
 export class DialogRequestOutputsComponent implements OnInit {
   outputs: string[] = [];

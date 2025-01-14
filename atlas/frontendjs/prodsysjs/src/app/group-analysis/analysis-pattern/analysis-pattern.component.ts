@@ -7,9 +7,10 @@ import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component"
 import {FormBuilder} from "@angular/forms";
 
 @Component({
-  selector: 'app-analysis-pattern',
-  templateUrl: './analysis-pattern.component.html',
-  styleUrls: ['./analysis-pattern.component.css']
+    selector: 'app-analysis-pattern',
+    templateUrl: './analysis-pattern.component.html',
+    styleUrls: ['./analysis-pattern.component.css'],
+    standalone: false
 })
 export class AnalysisPatternComponent implements OnInit {
 

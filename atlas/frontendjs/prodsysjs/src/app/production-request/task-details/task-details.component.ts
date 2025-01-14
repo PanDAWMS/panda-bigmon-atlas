@@ -7,9 +7,10 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {DEFAULTS} from "../../common/constants/tasks_constants";
 
 @Component({
-  selector: 'app-task-full-details',
-  templateUrl: './task-details.component.html',
-  styleUrls: ['./task-details.component.css']
+    selector: 'app-task-full-details',
+    templateUrl: './task-details.component.html',
+    styleUrls: ['./task-details.component.css'],
+    standalone: false
 })
 export class TaskDetailsComponent implements OnInit, OnChanges {
   @Input() taskID: number;

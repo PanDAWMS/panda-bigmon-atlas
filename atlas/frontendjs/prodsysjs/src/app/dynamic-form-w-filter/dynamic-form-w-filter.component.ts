@@ -45,10 +45,11 @@ export interface JsonFormData {
   controls: JsonFormControls[];
 }
 @Component({
-  selector: 'app-dynamic-form-w-filter',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './dynamic-form-w-filter.component.html',
-  styleUrls: ['./dynamic-form-w-filter.component.css']
+    selector: 'app-dynamic-form-w-filter',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    templateUrl: './dynamic-form-w-filter.component.html',
+    styleUrls: ['./dynamic-form-w-filter.component.css'],
+    standalone: false
 })
 export class DynamicFormWFilterComponent implements OnChanges {
 

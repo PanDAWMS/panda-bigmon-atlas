@@ -19,13 +19,14 @@ import {debounceTime, distinctUntilChanged} from "rxjs/operators";
 
 
 @Component({
-  selector: 'app-production-request',
-  templateUrl: './production-request.component.html',
-  styleUrls: ['./production-request.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [
-    {provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: { clickAction: 'noop' } as MatCheckboxDefaultOptions}
-  ]
+    selector: 'app-production-request',
+    templateUrl: './production-request.component.html',
+    styleUrls: ['./production-request.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [
+        { provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: { clickAction: 'noop' } as MatCheckboxDefaultOptions }
+    ],
+    standalone: false
 })
 export class ProductionRequestComponent implements OnInit, AfterViewInit {
 

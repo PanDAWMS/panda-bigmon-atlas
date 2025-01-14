@@ -2,9 +2,10 @@ import {Component, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core'
 import {ProductionTask} from "../../production-request/production-request-models";
 
 @Component({
-  selector: 'app-task-progress',
-  templateUrl: './task-progress.component.html',
-  styleUrls: ['./task-progress.component.css']
+    selector: 'app-task-progress',
+    templateUrl: './task-progress.component.html',
+    styleUrls: ['./task-progress.component.css'],
+    standalone: false
 })
 export class TaskProgressComponent implements OnChanges {
   @Input() task: ProductionTask;

@@ -5,9 +5,10 @@ import {catchError, switchMap} from "rxjs/operators";
 import {of} from "rxjs";
 
 @Component({
-  selector: 'app-tasks-management',
-  templateUrl: './tasks-management.component.html',
-  styleUrls: ['./tasks-management.component.css']
+    selector: 'app-tasks-management',
+    templateUrl: './tasks-management.component.html',
+    styleUrls: ['./tasks-management.component.css'],
+    standalone: false
 })
 export class TasksManagementComponent implements OnInit {
 

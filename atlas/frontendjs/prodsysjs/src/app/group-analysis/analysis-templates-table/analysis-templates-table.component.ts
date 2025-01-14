@@ -7,9 +7,10 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {APP_BASE_HREF} from "@angular/common";
 
 @Component({
-  selector: 'app-analysis-templates-table',
-  templateUrl: './analysis-templates-table.component.html',
-  styleUrls: ['./analysis-templates-table.component.css']
+    selector: 'app-analysis-templates-table',
+    templateUrl: './analysis-templates-table.component.html',
+    styleUrls: ['./analysis-templates-table.component.css'],
+    standalone: false
 })
 export class AnalysisTemplatesTableComponent implements OnInit {
   public statusFilter = 'ACTIVE';

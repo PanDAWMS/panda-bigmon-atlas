@@ -9,9 +9,10 @@ import {MatTableDataSource} from '@angular/material/table';
 
 
 @Component({
-  selector: 'app-data-carousel',
-  templateUrl: './data-carousel.component.html',
-  styleUrls: ['./data-carousel.component.css']
+    selector: 'app-data-carousel',
+    templateUrl: './data-carousel.component.html',
+    styleUrls: ['./data-carousel.component.css'],
+    standalone: false
 })
 
 

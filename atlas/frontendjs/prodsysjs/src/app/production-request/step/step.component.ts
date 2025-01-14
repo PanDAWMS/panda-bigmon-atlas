@@ -2,9 +2,10 @@ import {Component, Input, OnInit} from '@angular/core';
 import {Step} from "../production-request-models";
 
 @Component({
-  selector: 'app-step',
-  templateUrl: './step.component.html',
-  styleUrls: ['./step.component.css']
+    selector: 'app-step',
+    templateUrl: './step.component.html',
+    styleUrls: ['./step.component.css'],
+    standalone: false
 })
 export class StepComponent implements OnInit {
   @Input() step: Step;

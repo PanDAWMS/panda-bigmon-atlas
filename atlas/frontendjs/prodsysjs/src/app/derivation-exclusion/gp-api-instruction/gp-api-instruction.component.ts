@@ -3,9 +3,10 @@ import {Component, Input, OnInit} from '@angular/core';
 
 export type API_TYPES = 'gp' | 'ap' ;
 @Component({
-  selector: 'app-gp-api-instruction',
-  templateUrl: './gp-api-instruction.component.html',
-  styleUrls: ['./gp-api-instruction.component.css'],
+    selector: 'app-gp-api-instruction',
+    templateUrl: './gp-api-instruction.component.html',
+    styleUrls: ['./gp-api-instruction.component.css'],
+    standalone: false
 })
 export class GpApiInstructionComponent implements OnInit {
 

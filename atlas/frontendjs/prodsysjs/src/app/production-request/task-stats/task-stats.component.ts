@@ -4,22 +4,21 @@ import {SelectionModel} from "@angular/cdk/collections";
 import {KeyValuePipe, NgClass, NgForOf} from "@angular/common";
 
 @Component({
-  selector: 'app-task-stats',
-  templateUrl: './task-stats.component.html',
-  styleUrls: ['./task-stats.component.css', '../production-request.component.css'],
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: TaskStatsComponent,
-      multi: true,
-    },
-  ],
-  imports: [
-    KeyValuePipe,
-    NgClass,
-    NgForOf
-  ],
-  standalone: true
+    selector: 'app-task-stats',
+    templateUrl: './task-stats.component.html',
+    styleUrls: ['./task-stats.component.css', '../production-request.component.css'],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: TaskStatsComponent,
+            multi: true,
+        },
+    ],
+    imports: [
+        KeyValuePipe,
+        NgClass,
+        NgForOf
+    ]
 })
 export class TaskStatsComponent implements OnInit, ControlValueAccessor  {
 

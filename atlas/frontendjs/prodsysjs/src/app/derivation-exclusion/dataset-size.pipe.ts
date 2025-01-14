@@ -35,7 +35,10 @@ export function convertBytes(bytes: number = 0, precision: number | unitPrecisio
   }
 
 
-@Pipe({ name: 'datasetSize' })
+@Pipe({
+    name: 'datasetSize',
+    standalone: false
+})
 export class DatasetSizePipe implements PipeTransform {
 
   transform(bytes: number = 0, precision: number | unitPrecisionMap = defaultPrecisionMap): string {

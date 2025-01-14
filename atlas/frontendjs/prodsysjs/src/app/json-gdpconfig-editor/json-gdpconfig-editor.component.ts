@@ -18,21 +18,20 @@ import {MatButton} from "@angular/material/button";
 
 
 @Component({
-  selector: 'app-json-gdpconfig-editor',
-  standalone: true,
-  imports: [
-    ProdsysJsoneditorComponent,
-    JsondiffComponent,
-    JsonPipe,
-    MatProgressSpinner,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
-    MatButton,
-  ],
-  templateUrl: './json-gdpconfig-editor.component.html',
-  styleUrl: './json-gdpconfig-editor.component.css'
+    selector: 'app-json-gdpconfig-editor',
+    imports: [
+        ProdsysJsoneditorComponent,
+        JsondiffComponent,
+        JsonPipe,
+        MatProgressSpinner,
+        MatAccordion,
+        MatExpansionPanel,
+        MatExpansionPanelTitle,
+        MatExpansionPanelHeader,
+        MatButton,
+    ],
+    templateUrl: './json-gdpconfig-editor.component.html',
+    styleUrl: './json-gdpconfig-editor.component.css'
 })
 export class JsonGDPConfigEditorComponent{
 

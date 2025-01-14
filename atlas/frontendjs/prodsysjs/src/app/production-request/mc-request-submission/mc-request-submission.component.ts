@@ -8,18 +8,17 @@ import {MatSelectModule} from "@angular/material/select";
 import {PRODSYS_CONSTANTS} from "../../common/constants/tasks_constants";
 
 @Component({
-  selector: 'app-mc-request-submission',
-  standalone: true,
-  imports: [
-    MatStepperModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSelectModule
-  ],
-  templateUrl: './mc-request-submission.component.html',
-  styleUrl: './mc-request-submission.component.css'
+    selector: 'app-mc-request-submission',
+    imports: [
+        MatStepperModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatSelectModule
+    ],
+    templateUrl: './mc-request-submission.component.html',
+    styleUrl: './mc-request-submission.component.css'
 })
 export class McRequestSubmissionComponent implements OnInit {
   isLinear = false;

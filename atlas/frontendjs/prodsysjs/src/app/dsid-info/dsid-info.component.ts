@@ -11,23 +11,22 @@ import {RouterLink} from "@angular/router";
 import {RucioURLPipe} from "../derivation-exclusion/rucio-url.pipe";
 
 @Component({
-  selector: 'app-dsid-info',
-  standalone: true,
-  imports: [
-    MatProgressSpinner,
-    JsonPipe,
-    DecimalPipe,
-    MatButton,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    RouterLink,
-    RucioURLPipe
-  ],
-  templateUrl: './dsid-info.component.html',
-  styleUrl: './dsid-info.component.css'
+    selector: 'app-dsid-info',
+    imports: [
+        MatProgressSpinner,
+        JsonPipe,
+        DecimalPipe,
+        MatButton,
+        MatFormField,
+        MatInput,
+        MatLabel,
+        ReactiveFormsModule,
+        FormsModule,
+        RouterLink,
+        RucioURLPipe
+    ],
+    templateUrl: './dsid-info.component.html',
+    styleUrl: './dsid-info.component.css'
 })
 export class DsidInfoComponent {
 

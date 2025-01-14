@@ -23,15 +23,14 @@ export type ChartOptions = {
 };
 
 @Component({
-  selector: 'app-task-stage-profile',
-  standalone: true,
-  imports: [
-    NgApexchartsModule,
-    JsonPipe,
-    MatProgressSpinner
-  ],
-  templateUrl: './task-stage-profile.component.html',
-  styleUrl: './task-stage-profile.component.css'
+    selector: 'app-task-stage-profile',
+    imports: [
+        NgApexchartsModule,
+        JsonPipe,
+        MatProgressSpinner
+    ],
+    templateUrl: './task-stage-profile.component.html',
+    styleUrl: './task-stage-profile.component.css'
 })
 export class TaskStageProfileComponent implements OnInit {
   @ViewChild("chart") chart: ChartComponent;

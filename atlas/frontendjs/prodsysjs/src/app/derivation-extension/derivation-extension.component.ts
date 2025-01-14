@@ -10,9 +10,10 @@ import {InputContainerItem} from "../group-analysis/create-analysis-request/crea
 import {uniqByForEach} from "../common/tools";
 
 @Component({
-  selector: 'app-derivation-extension',
-  templateUrl: './derivation-extension.component.html',
-  styleUrls: ['./derivation-extension.component.css']
+    selector: 'app-derivation-extension',
+    templateUrl: './derivation-extension.component.html',
+    styleUrls: ['./derivation-extension.component.css'],
+    standalone: false
 })
 export class DerivationExtensionComponent implements OnInit {
   containersFormGroup = this.formBuilder.group({

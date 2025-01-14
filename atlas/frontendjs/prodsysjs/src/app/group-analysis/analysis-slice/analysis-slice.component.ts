@@ -2,9 +2,10 @@ import {Component, Input, OnInit} from '@angular/core';
 import {AnalysisSlice, AnalysisStep} from "../analysis-task-model";
 
 @Component({
-  selector: 'app-analysis-slice',
-  templateUrl: './analysis-slice.component.html',
-  styleUrls: ['./analysis-slice.component.css']
+    selector: 'app-analysis-slice',
+    templateUrl: './analysis-slice.component.html',
+    styleUrls: ['./analysis-slice.component.css'],
+    standalone: false
 })
 export class AnalysisSliceComponent implements OnInit {
 

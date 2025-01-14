@@ -11,9 +11,10 @@ import {MatSort} from "@angular/material/sort";
 
 
 @Component({
-  selector: 'app-gp-deletion-request',
-  templateUrl: './gp-deletion-request.component.html',
-  styleUrls: ['./gp-deletion-request.component.css']
+    selector: 'app-gp-deletion-request',
+    templateUrl: './gp-deletion-request.component.html',
+    styleUrls: ['./gp-deletion-request.component.css'],
+    standalone: false
 })
 export class GpDeletionRequestComponent implements OnInit {
 

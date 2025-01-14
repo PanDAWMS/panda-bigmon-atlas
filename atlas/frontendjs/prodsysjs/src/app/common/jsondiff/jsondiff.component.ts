@@ -4,11 +4,10 @@ import * as htmlFormatter from 'jsondiffpatch/formatters/html';
 import {SafeHTMLPipe} from "../safe-html.pipe";
 
 @Component({
-  selector: 'app-jsondiff',
-  standalone: true,
-  imports: [SafeHTMLPipe],
-  template: `<div [innerHTML]="deltaHtml() | safeHTML" style="height: 100%; overflow: auto;"></div>`,
-  styleUrl: './jsondiff.component.css'
+    selector: 'app-jsondiff',
+    imports: [SafeHTMLPipe],
+    template: `<div [innerHTML]="deltaHtml() | safeHTML" style="height: 100%; overflow: auto;"></div>`,
+    styleUrl: './jsondiff.component.css'
 })
 export class JsondiffComponent {
     originalJSON = input({});

@@ -12,23 +12,22 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 
 @Component({
-  selector: 'app-recovered-datasets',
-  standalone: true,
-  imports: [
-    BPTaskComponent,
-    NgClass,
-    RucioURLPipe,
-    JsonPipe,
-    FormsModule,
-    MatButton,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    RouterLink,
-    MatProgressSpinner
-  ],
-  templateUrl: './recovered-datasets.component.html',
-  styleUrl: './recovered-datasets.component.css'
+    selector: 'app-recovered-datasets',
+    imports: [
+        BPTaskComponent,
+        NgClass,
+        RucioURLPipe,
+        JsonPipe,
+        FormsModule,
+        MatButton,
+        MatFormField,
+        MatInput,
+        MatLabel,
+        RouterLink,
+        MatProgressSpinner
+    ],
+    templateUrl: './recovered-datasets.component.html',
+    styleUrl: './recovered-datasets.component.css'
 })
 export class RecoveredDatasetsComponent {
   @Input() set filter(value: string|undefined) {

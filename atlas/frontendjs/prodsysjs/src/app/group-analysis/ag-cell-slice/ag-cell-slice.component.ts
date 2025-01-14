@@ -8,9 +8,10 @@ import {AnalysisTasksService} from "../analysis-tasks.service";
 import {BehaviorSubject} from "rxjs";
 
 @Component({
-  selector: 'app-ag-cell-slice',
-  templateUrl: './ag-cell-slice.component.html',
-  styleUrls: ['./ag-cell-slice.component.css']
+    selector: 'app-ag-cell-slice',
+    templateUrl: './ag-cell-slice.component.html',
+    styleUrls: ['./ag-cell-slice.component.css'],
+    standalone: false
 })
 export class AgCellSliceComponent implements ICellRendererAngularComp {
   public analysisSlice: AnalysisSlice;
@@ -47,8 +48,9 @@ export class AgCellSliceComponent implements ICellRendererAngularComp {
 
 // Dialog to show slice details
 @Component({
-  selector: 'app-dialog-slice-details',
-  templateUrl: './slice-details.component.html',
+    selector: 'app-dialog-slice-details',
+    templateUrl: './slice-details.component.html',
+    standalone: false
 })
 export class DialogSliceDetailsComponent implements OnInit {
   dataset: string;

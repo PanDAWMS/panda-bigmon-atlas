@@ -10,25 +10,24 @@ import {RouterLink} from "@angular/router";
 import {BPTaskComponent} from "../common/bptask/bptask.component";
 
 @Component({
-  selector: 'app-repro-patch',
-  standalone: true,
-  imports: [
-    JsonPipe,
-    AsyncPipe,
-    MatProgressSpinner,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    DecimalPipe,
-    MatButton,
-    NgIf,
-    RouterLink,
-    BPTaskComponent
-  ],
-  templateUrl: './repro-patch.component.html',
-  styleUrl: './repro-patch.component.css'
+    selector: 'app-repro-patch',
+    imports: [
+        JsonPipe,
+        AsyncPipe,
+        MatProgressSpinner,
+        MatFormField,
+        MatInput,
+        MatLabel,
+        ReactiveFormsModule,
+        FormsModule,
+        DecimalPipe,
+        MatButton,
+        NgIf,
+        RouterLink,
+        BPTaskComponent
+    ],
+    templateUrl: './repro-patch.component.html',
+    styleUrl: './repro-patch.component.css'
 })
 export class ReproPatchComponent {
 

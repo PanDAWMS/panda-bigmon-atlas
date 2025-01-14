@@ -13,17 +13,16 @@ import {FormsModule} from "@angular/forms";
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 
 @Component({
-  selector: 'app-derivation-physic-container',
-  standalone: true,
-  imports: [
-    AsyncPipe,
-    JsonPipe,
-    MatProgressSpinnerModule,
-    FormsModule,
-    MatSlideToggleModule
-  ],
-  templateUrl: './derivation-physic-container.component.html',
-  styleUrl: './derivation-physic-container.component.css'
+    selector: 'app-derivation-physic-container',
+    imports: [
+        AsyncPipe,
+        JsonPipe,
+        MatProgressSpinnerModule,
+        FormsModule,
+        MatSlideToggleModule
+    ],
+    templateUrl: './derivation-physic-container.component.html',
+    styleUrl: './derivation-physic-container.component.css'
 })
 export class DerivationPhysicContainerComponent {
 

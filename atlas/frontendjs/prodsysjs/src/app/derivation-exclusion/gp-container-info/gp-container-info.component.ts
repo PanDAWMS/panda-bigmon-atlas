@@ -4,9 +4,10 @@ import {ContainerAllInfo, Dataset, Extension, GpContainerInfoService} from "./gp
 import {MatTableDataSource} from "@angular/material/table";
 
 @Component({
-  selector: 'app-gp-container-info',
-  templateUrl: './gp-container-info.component.html',
-  styleUrls: ['./gp-container-info.component.css']
+    selector: 'app-gp-container-info',
+    templateUrl: './gp-container-info.component.html',
+    styleUrls: ['./gp-container-info.component.css'],
+    standalone: false
 })
 export class GpContainerInfoComponent implements OnInit {
   container: string;
