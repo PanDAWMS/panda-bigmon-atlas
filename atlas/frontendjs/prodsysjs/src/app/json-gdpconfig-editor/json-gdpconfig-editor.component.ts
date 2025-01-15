@@ -46,13 +46,14 @@ export class JsonGDPConfigEditorComponent{
   isLoading = this.gdpConfigService.isLoading;
   errorMessage = this.gdpConfigService.errorMessage;
   saved = this.gdpConfigService.saved;
+  description = this.gdpConfigService.description;
   preparedData = toObservable(this.data);
   parameter$ = signal('');
 
 
   originalData: any = {};
   workingData: any = {};
-  schema: any  = {};
+  schema: any  = undefined;
 
   haveMetadata = false;
     mode: 'edit'|'preview' = 'edit';
@@ -76,7 +77,8 @@ export class JsonGDPConfigEditorComponent{
         this.workingData = {...data};
         this.haveMetadata = false;
       }
-      if (this.haveMetadata && 'schema' in data.metadata) {
+      if (this.haveMetadata && 'schema' in data.metadata && data.metadata.schema != null &&
+        !((typeof data.metadata.schema === 'object' && Object.keys(data.metadata.schema).length === 0))) {
         this.schema = data.metadata.schema;
       }
     });

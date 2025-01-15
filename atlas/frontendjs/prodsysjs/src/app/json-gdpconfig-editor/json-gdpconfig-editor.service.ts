@@ -10,6 +10,7 @@ class JSONGDPConfigEditorState {
     isLoading: boolean;
     value: any | undefined;
     key: string | undefined;
+    description: string | undefined;
     saved: boolean;
     error: string | null;
 }
@@ -26,6 +27,7 @@ export class JsonGdpconfigEditorService {
     isLoading: false,
     value: undefined,
     key: undefined,
+    description: undefined,
     saved: false,
     error: null
   });
@@ -37,6 +39,7 @@ export class JsonGdpconfigEditorService {
   value = computed(() => this.state().value);
   errorMessage = computed(() => this.state().error);
   saved = computed(() => this.state().saved);
+  description = computed(() => this.state().description);
 
 
 
@@ -46,7 +49,7 @@ export class JsonGdpconfigEditorService {
       tap(key => this.setKeyState(key)),
       switchMap(key => this.getGDPJsonParam(key)),
       takeUntilDestroyed()
-    ).subscribe(value => this.setValue(value));
+    ).subscribe(param => {this.setValue(param.value); this.setDescription(param.description); });
     this.saveKey$.pipe(
       tap(() => this.setSavedState(false)),
       tap(() => this.setLoadingIndicator(true)),
@@ -66,7 +69,7 @@ export class JsonGdpconfigEditorService {
   public cleanSavedState(): void {
     this.setSavedState(false);
   }
-  getGDPJsonParam(key: string): Observable<any> {
+  getGDPJsonParam(key: string): Observable<{description: string, value: any}> {
     return this.http.get(this.prGetGDPJsonParamURL, {params: {key}}).pipe(catchError(err => this.setError(err)));
   }
   saveGDPJsonParam(key: string, value: any): Observable<any> {
@@ -110,4 +113,10 @@ export class JsonGdpconfigEditorService {
       return of(undefined);
   }
 
+  private setDescription(description: string): void {
+    this.state.update(state => ({
+      ...state,
+      description
+    }));
+  }
 }

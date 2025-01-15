@@ -277,7 +277,7 @@ def get_json_param(request):
             if gdp_param.type != 'json':
                 raise Exception('The parameter is not json')
             else:
-                return Response(gdp_param.value_json)
+                return Response({'description' : gdp_param.descr, 'value': gdp_param.value_json})
         raise Exception('No field specified')
     except Exception as e:
         return HttpResponse(str(e), content_type='application/json',status=500)
