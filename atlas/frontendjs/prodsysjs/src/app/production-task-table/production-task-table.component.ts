@@ -68,6 +68,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
         floatingFilter: true,
         suppressFloatingFilterButton: true,
         checkboxSelection: true,
+        minWidth: 50,
       },
     {
       field: 'id',
@@ -81,9 +82,8 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       floatingFilter: true,
       sort: 'desc',
       suppressFloatingFilterButton: true,
-
-            maxWidth: 90,
-
+      maxWidth: 90,
+      minWidth: 50,
     },
 
     {
@@ -94,7 +94,6 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       maxWidth: 88,
       cellClass: params => ['taskStatus', params.value],
 
-
     },
 
       {
@@ -104,8 +103,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       filter: 'agTextColumnFilter',
       floatingFilter: true,
       suppressFloatingFilterButton: true,
-
-
+      minWidth: 50,
     },
     {
       field: 'username',
@@ -115,6 +113,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       floatingFilter: true,
       suppressFloatingFilterButton: true,
       hide: true,
+      minWidth: 50,
     },
     {
       field: 'request_id',
@@ -126,6 +125,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       cellRenderer: params => {
         return `<a href="/prodtask/slice_by_task_short/${params.data.id}" >${params.value}</a>`;
       },
+      minWidth: 50,
     },
     {
       field: 'priority',

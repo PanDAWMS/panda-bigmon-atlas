@@ -185,6 +185,10 @@
         </div>
         <button mat-raised-button color="primary" (click)="executeAction('change_split_rule',[splitRuleParameterInput.value,splitRuleValueInput.value])">Set</button>
       </div>
+        <mat-divider></mat-divider>
+    <div class="action-menu-row">
+        <a href="https://panda-wms.readthedocs.io/en/latest/advanced/task_params.html">Help</a>
+    </div>
   </mat-menu>
 
 <button mat-raised-button (click)="executeAction('obsolete', null)"  color="accent" class="action-button-menu" >Obsolete</button>

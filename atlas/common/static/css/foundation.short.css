@@ -1778,9 +1778,9 @@ input[type="radio"]
     /*
     ,
     select
-    */{
-    margin: 0 0 1em 0; }
-
+    {
+    margin: 0 0 1em 0; }*/
+{}
 /* Normalize file input width */
 input[type="file"] {
     width: 100%; }
