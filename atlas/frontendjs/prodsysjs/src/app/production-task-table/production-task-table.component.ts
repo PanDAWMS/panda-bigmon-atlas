@@ -8,18 +8,14 @@ import {
   GridSizeChangedEvent,
   ICellRendererParams, PaginationChangedEvent,
   RowNode,
-  SelectionChangedEvent
+  SelectionChangedEvent, AllCommunityModule, ModuleRegistry, provideGlobalGridOptions
 } from "ag-grid-community";
 import {ActivatedRoute, Router} from "@angular/router";
-import * as path from "path";
-import {TasksManagementComponent} from "../tasks-management/tasks-management.component";
 import {APP_BASE_HREF, formatDate} from "@angular/common";
 import {UntypedFormControl} from "@angular/forms";
 import {DEFAULTS, TASKS_CONSTANTS} from "../common/constants/tasks_constants";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef} from "@angular/material/dialog";
-import {TaskAction} from "../production-task/task-service.service";
-import {BehaviorSubject, Subject} from "rxjs";
-import {MatIcon} from "@angular/material/icon";
+
 @Component({
     selector: 'app-production-task-table',
     templateUrl: './production-task-table.component.html',
@@ -67,12 +63,10 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       {
         field: 'name',
         headerName: 'Name',
-        suppressMenu: true,
+        suppressHeaderFilterButton: true,
         filter: 'agTextColumnFilter',
         floatingFilter: true,
-        floatingFilterComponentParams: {
-          suppressFilterButton: true,
-        },
+        suppressFloatingFilterButton: true,
         checkboxSelection: true,
       },
     {
@@ -82,13 +76,12 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       //  return `<a href="${this.router.createUrlTree([this.baseHref, 'task', params.value])}" >${params.value}</a>`;
         return `<a href="https://bigpanda.cern.ch/task/${params.value}" >${params.value}</a>`;
       },
-      suppressMenu: true,
+      suppressHeaderFilterButton: true,
       filter: 'agTextColumnFilter',
       floatingFilter: true,
       sort: 'desc',
-      floatingFilterComponentParams: {
-        suppressFilterButton: true,
-      },
+      suppressFloatingFilterButton: true,
+
             maxWidth: 90,
 
     },
@@ -97,7 +90,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       field: 'status',
       headerName: 'Status',
       filter: true,
-      suppressMenu: true,
+      suppressHeaderFilterButton: true,
       maxWidth: 88,
       cellClass: params => ['taskStatus', params.value],
 
@@ -107,34 +100,29 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       {
       field: 'ami_tag',
       headerName: 'AMI',
-      suppressMenu: true,
+      suppressHeaderFilterButton: true,
       filter: 'agTextColumnFilter',
       floatingFilter: true,
-      floatingFilterComponentParams: {
-        suppressFilterButton: true,
-      },
+      suppressFloatingFilterButton: true,
+
 
     },
     {
       field: 'username',
       headerName: 'Owner',
-      suppressMenu: true,
+      suppressHeaderFilterButton: true,
       filter: 'agTextColumnFilter',
       floatingFilter: true,
-      floatingFilterComponentParams: {
-        suppressFilterButton: true,
-      },
+      suppressFloatingFilterButton: true,
       hide: true,
     },
     {
       field: 'request_id',
       headerName: 'ReqID',
-      suppressMenu: true,
+      suppressHeaderFilterButton: true,
       filter: 'agTextColumnFilter',
       floatingFilter: true,
-      floatingFilterComponentParams: {
-        suppressFilterButton: true,
-      },
+      suppressFloatingFilterButton: true,
       cellRenderer: params => {
         return `<a href="/prodtask/slice_by_task_short/${params.data.id}" >${params.value}</a>`;
       },
@@ -173,6 +161,8 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   public selectedTasks: ProductionTask[] = [];
   public pageSize = 20;
   public dialogRef: MatDialogRef<DialogTaskDetailsComponent, any>;
+  rowSelection = "multiple";
+
   constructor(private router: Router, private route: ActivatedRoute,  @Inject(APP_BASE_HREF) private baseHref: string,
               public dialog: MatDialog) {
   }

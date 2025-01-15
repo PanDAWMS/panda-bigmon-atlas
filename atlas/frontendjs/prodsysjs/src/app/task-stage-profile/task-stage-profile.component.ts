@@ -26,7 +26,6 @@ export type ChartOptions = {
     selector: 'app-task-stage-profile',
     imports: [
         NgApexchartsModule,
-        JsonPipe,
         MatProgressSpinner
     ],
     templateUrl: './task-stage-profile.component.html',

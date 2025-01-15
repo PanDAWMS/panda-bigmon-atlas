@@ -17,7 +17,6 @@ import {MatProgressBarModule} from "@angular/material/progress-bar";
     selector: 'app-request-horizontal-split',
     imports: [
         AsyncPipe,
-        JsonPipe,
         MatFormFieldModule,
         MatOptionModule,
         MatSelectModule,

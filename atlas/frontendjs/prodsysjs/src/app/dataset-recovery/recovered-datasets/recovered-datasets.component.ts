@@ -17,13 +17,10 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
         BPTaskComponent,
         NgClass,
         RucioURLPipe,
-        JsonPipe,
         FormsModule,
-        MatButton,
         MatFormField,
         MatInput,
         MatLabel,
-        RouterLink,
         MatProgressSpinner
     ],
     templateUrl: './recovered-datasets.component.html',

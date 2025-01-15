@@ -17,11 +17,9 @@ import {MatIcon} from "@angular/material/icon";
     selector: 'app-dataset-recovery',
     imports: [
         MatProgressSpinner,
-        JsonPipe,
         NgClass,
         DatePipe,
         AgGridAngular,
-        AsyncPipe,
         TaskStatsComponent,
         ReactiveFormsModule,
         MatButton,
@@ -30,7 +28,6 @@ import {MatIcon} from "@angular/material/icon";
         MatLabel,
         FormsModule,
         RouterLink,
-        MatIcon
     ],
     templateUrl: './dataset-recovery.component.html',
     styleUrl: './dataset-recovery.component.css'

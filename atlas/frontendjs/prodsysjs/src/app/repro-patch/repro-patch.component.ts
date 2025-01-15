@@ -12,17 +12,13 @@ import {BPTaskComponent} from "../common/bptask/bptask.component";
 @Component({
     selector: 'app-repro-patch',
     imports: [
-        JsonPipe,
-        AsyncPipe,
         MatProgressSpinner,
         MatFormField,
         MatInput,
         MatLabel,
         ReactiveFormsModule,
         FormsModule,
-        DecimalPipe,
         MatButton,
-        NgIf,
         RouterLink,
         BPTaskComponent
     ],

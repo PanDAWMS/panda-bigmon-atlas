@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import {MCSubCampaignStats, TaskActionLog, TaskService} from "../production-task/task-service.service";
-import {AsyncPipe, JsonPipe, NgIf, NgTemplateOutlet} from "@angular/common";
+import {MCSubCampaignStats, TaskService} from "../production-task/task-service.service";
+import {AsyncPipe, NgTemplateOutlet} from "@angular/common";
 import {catchError, map} from "rxjs/operators";
 import {Observable} from "rxjs";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
@@ -43,9 +43,7 @@ interface MCSubCampaignStatsInterface {
     selector: 'app-mc-subcampaigns-stat',
     imports: [
         AsyncPipe,
-        JsonPipe,
         MatProgressSpinnerModule,
-        NgIf,
         MatExpansionModule,
         NgTemplateOutlet,
         BillionPipe

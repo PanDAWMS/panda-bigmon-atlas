@@ -16,7 +16,6 @@ import {MatSlideToggleModule} from "@angular/material/slide-toggle";
     selector: 'app-derivation-physic-container',
     imports: [
         AsyncPipe,
-        JsonPipe,
         MatProgressSpinnerModule,
         FormsModule,
         MatSlideToggleModule

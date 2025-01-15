@@ -25,6 +25,11 @@
               "input": "src/index.html",
               "output": "../../templates/frontendjs/_ng_template.html"
             },
+            "allowedCommonJsDependencies": [
+              "jsoneditor",
+              "rfdc",
+              "apexcharts"
+            ],
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",

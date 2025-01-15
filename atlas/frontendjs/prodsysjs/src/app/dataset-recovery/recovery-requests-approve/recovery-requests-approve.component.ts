@@ -20,7 +20,6 @@ import {RucioURLPipe} from "../../derivation-exclusion/rucio-url.pipe";
         MatButton,
         NgClass,
         BPTaskComponent,
-        RucioURLPipe
     ],
     templateUrl: './recovery-requests-approve.component.html',
     styleUrl: './recovery-requests-approve.component.css'

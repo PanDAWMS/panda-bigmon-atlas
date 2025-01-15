@@ -34,7 +34,7 @@
     <!-- Containers per Campaign -->
     <div>
         <h2 class="text-xl font-bold mb-4">AODs Containers per Campaign</h2>
-      @for (campaignKey of objectKeys(dsidInfo().containers); track  campaignKey){
+      @for (campaignKey of Object.keys(dsidInfo().containers); track  campaignKey){
         <div class="mb-8">
             <h3 class="text-lg font-semibold mb-2">Campaign: {{ campaignKey }}</h3>
           <table class="min-w-full bg-white rounded-lg overflow-hidden shadow-lg">
