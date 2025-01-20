@@ -134,6 +134,7 @@ import {
 } from "./dataset-recovery/recovery-requests-approve/recovery-requests-approve.component";
 import {RecoveredDatasetsComponent} from "./dataset-recovery/recovered-datasets/recovered-datasets.component";
 import {JsonGDPConfigEditorComponent} from "./json-gdpconfig-editor/json-gdpconfig-editor.component";
+import {ConfigEditorComponent} from "./config-editor/config-editor.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -234,6 +235,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
    {path: 'recovery-requests-approve', component: RecoveryRequestsApproveComponent},
      {path: 'recovery', component: RecoveredDatasetsComponent},
   {path: 'json-gdpconfig/:parameter', component: JsonGDPConfigEditorComponent},
+  {path: 'config-editor/:name', component: ConfigEditorComponent},
 
 
 

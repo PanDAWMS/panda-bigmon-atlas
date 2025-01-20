@@ -1320,7 +1320,7 @@ class AnalysisStepTemplate(models.Model):
         db_table = '"T_AT_STEP_TEMPLATE"'
 
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel
 
 
 class MCWorkflowChanges(BaseModel):
@@ -1489,6 +1489,7 @@ class SystemParameters(models.Model):
 
     name = models.CharField(max_length=128, db_column='NAME', primary_key=True)
     value = models.JSONField(db_column='value')
+    schema = models.JSONField(db_column='schema')
     typeName = models.CharField(max_length=128, db_column='TYPENAME')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     cacheable = models.BooleanField(db_column='CACHEABLE')

@@ -21,7 +21,8 @@ from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets,
     register_recreation_request, get_unavaliaible_dataset_info, submit_dataset_recovery_requests
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
-    ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo
+    ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
+    SystemParameters, SystemParametersHandler, MCWorkflowRequest
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers
 from atlas.prodtask.spdstodb import fill_template
@@ -465,5 +466,36 @@ def submit_recreation(request):
             return Response(len(requests_submitted))
         else:
             return Response('User is not allowed to submit requests', status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def config_parameter(request, name):
+    try:
+        parameter = SystemParameters.objects.get(name=name)
+        return Response({'value': parameter.value, 'description': '' ,'name': name, 'schema': parameter.schema})
+
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def set_config_parameter(request, name):
+    try:
+        match name:
+            case SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest:
+                task_management = TaskManagementAuthorisation()
+                user, allowed_groups = task_management.task_user_rights(request.user.username)
+                if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
+                    return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
+                workflows = MCWorkflowRequest.model_validate(request.data)
+                SystemParametersHandler.set_mc_workflow_request(workflows)
+                return Response(request.data)
+            case _ :
+                return Response('Parameter name not found', status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

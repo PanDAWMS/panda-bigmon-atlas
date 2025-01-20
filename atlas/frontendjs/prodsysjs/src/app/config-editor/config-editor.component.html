@@ -1,0 +1,29 @@
+<h5>"{{prodsysConfigService.parameterName()}}"  modification</h5>
+
+@if(isLoading()){
+        <div>Loading ...</div>
+      <mat-spinner></mat-spinner>
+}
+
+
+
+@if(errorMessage()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+  </div>
+}
+
+@if(mode==='edit'){
+
+<div style="height: 75vh">
+  <app-prodsys-jsoneditor [schema]="schema" [(errorState)]="errorState" [editorOptions]="editorOptions" [(modelJson)]="value" ></app-prodsys-jsoneditor>
+</div>
+  <button mat-raised-button color="primary" (click)="mode='preview'" [disabled]="(JSON.stringify(value)===JSON.stringify(prodsysConfigService.configParameter()?.value))||errorState">Preview</button>
+} @else if (mode==='preview') {
+  <div style="height: 80vh">
+    <app-jsondiff [originalJSON]="prodsysConfigService.configParameter()?.value" [modifiedJSON]="value"></app-jsondiff>
+  </div>
+  <button mat-raised-button color="primary" (click)="mode='edit'">Edit</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="saving">Save</button>
+}

@@ -85,6 +85,11 @@ urlpatterns = [
             name='get_all_recovery_requests'),
     re_path(r'^submit_recreation/$', submit_recreation,
             name='submit_recreation'),
+    re_path(r'^config_parameter/(?P<name>\w+)/$', config_parameter,
+            name='config_parameter'),
+    re_path(r'^set_config_parameter/(?P<name>\w+)/$', set_config_parameter,
+            name='set_config_parameter'),
+
 
 
 
