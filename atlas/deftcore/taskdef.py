@@ -1858,7 +1858,7 @@ class TaskDefinition(object):
     def  _set_pre_stage(self, step, task_proto_dict, project_mode):
         # set staging if input is only on Tape
         if (not project_mode.noprestage and not project_mode.patchRepro and not project_mode.repeatDoneTaskInput
-                and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']):
+                and not project_mode.FLD and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']):
             primary_input = self._get_primary_input(task_proto_dict['job_params'])['dataset']
             if '_sub' in primary_input:
                 return
