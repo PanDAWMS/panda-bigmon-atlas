@@ -1909,7 +1909,9 @@ def recover_stale(task_id, replica=None):
         if dataset_stage.status != 'staging':
             return False
         ddm = DDM()
-        data_replica = ddm.biggest_datadisk(dataset_stage.dataset)
+        data_replica = dataset_stage.destination_rse
+        if not data_replica:
+            return False
         replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
         if replica is not None and replica not in [x['rse'] for x in replicas['tape']]:
             return False
@@ -1920,13 +1922,13 @@ def recover_stale(task_id, replica=None):
                 if (new_replica_storage != dataset_stage.source) and (new_replica['rse'] != dataset_stage.source ):
                     replica = new_replica['rse']
                     break
-                if replica is None:
-                    return  False
+            if replica is None:
+                return  False
         _logger.info("Create recovery replica for dataset {dataset}: from {source} to  {destinattion}".format(dataset=dataset_stage.dataset,
-                                                                                                source=replica,destinattion=data_replica['rse']))
-        ddm.add_replication_rule(dataset_stage.dataset, data_replica['rse'],
+                                                                                                source=replica,destinattion=data_replica))
+        ddm.add_replication_rule(dataset_stage.dataset, data_replica,
                                  activity='Staging', source_replica_expression=replica)
-        return (data_replica['rse'], replica)
+        return (data_replica, replica)
     else:
         return False
 
@@ -2495,6 +2497,8 @@ def check_staging_rules_on_lost_files():
 def get_tape_buffer_fullness_INFN_T1() -> int:
     try:
         infn_config = ActionDefault.objects.get(type='PHYSICAL_TAPE', name='INFN-T1_TAPE')
+        if not infn_config.get_config('buffer_url'):
+            return 0
         response = requests.get(infn_config.get_config('buffer_url'), cert=cric_settings.CERTIFICAT, verify=False)
         if response.status_code == 200:
             content = json.loads(response.content)
