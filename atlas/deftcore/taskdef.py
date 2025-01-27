@@ -1833,7 +1833,7 @@ class TaskDefinition(object):
                     if first_event_param:
                         first_event_param['offset'] = number_of_input_files_used * events_per_file
             else:
-                if number_input_files_requested <= 0:
+                if (number_input_files_requested <= 0) and (primary_input_total_files+number_of_input_files_used>0):
                     logger.error('[ERROR] number_input_files_requested={0}, request={1}, chain={2} ({3})'.format(
                         number_input_files_requested, step.request.reqid, step.slice.slice, step.id))
                     raise NoMoreInputFiles("No more input files. requested/used/total = %d/%d/%d, previous_tasks = %s" %
