@@ -1836,7 +1836,7 @@ class TaskDefinition(object):
                 if number_input_files_requested <= 0:
                     logger.error('[ERROR] number_input_files_requested={0}, request={1}, chain={2} ({3})'.format(
                         number_input_files_requested, step.request.reqid, step.slice.slice, step.id))
-                raise NoMoreInputFiles("No more input files. requested/used/total = %d/%d/%d, previous_tasks = %s" %
+                    raise NoMoreInputFiles("No more input files. requested/used/total = %d/%d/%d, previous_tasks = %s" %
                                        (number_input_files_requested, number_of_input_files_used,
                                         primary_input_total_files,
                                         str(previous_tasks)))
