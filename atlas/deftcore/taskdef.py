@@ -1832,6 +1832,14 @@ class TaskDefinition(object):
                     first_event_param = self._get_job_parameter('firstEvent', task['jobParameters'])
                     if first_event_param:
                         first_event_param['offset'] = number_of_input_files_used * events_per_file
+            else:
+                if number_input_files_requested <= 0:
+                    logger.error('[ERROR] number_input_files_requested={0}, request={1}, chain={2} ({3})'.format(
+                        number_input_files_requested, step.request.reqid, step.slice.slice, step.id))
+                raise NoMoreInputFiles("No more input files. requested/used/total = %d/%d/%d, previous_tasks = %s" %
+                                       (number_input_files_requested, number_of_input_files_used,
+                                        primary_input_total_files,
+                                        str(previous_tasks)))
 
         if evgen_params and prod_step.lower() == 'evgen'.lower():
             random_seed_param = self._get_job_parameter('randomSeed', task['jobParameters'])
