@@ -1280,7 +1280,7 @@ def production_request_outputs(request, requestID):
                         if ProductionTask.objects.filter(step=step, request=requestID).exists():
                             outputs[output_key] = []
                             for task in ProductionTask.objects.filter(step=step, request=requestID):
-                                outputs[output_key].append({'task': task.id, 'status': task.status, 'outputs': task.output_non_log_datasets(), 'ami_tag': task.ami_tag})
+                                outputs[output_key].append({'task': task.id, 'status': task.status, 'outputs': task.output_non_log_datasets(), 'ami_tag': task.ami_tag, 'produced_events': task.total_events})
                             break
         return Response(outputs)
 
@@ -1372,6 +1372,54 @@ def  get_plileup_provenance_from_task_reco(task_id: int, digi_merge_dict: Dict[s
         result_by_output[jobs[job].output] = jobs[job]
     return result_by_output
 
+def get_pileup_from_task(taskID) -> Dict[str, PileupProvenance]:
+    task = ProductionTask.objects.get(id=taskID)
+    result_dict = {}
+    if 'digit' in task.name:
+        result_dict = get_plileup_provenance_from_task_digi(taskID)
+    elif 'merge' in task.name:
+        parent_task_id = task.parent_id
+        if parent_task_id == taskID:
+            dataset = task.inputdataset
+            parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
+        digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
+        result_dict = get_plileup_provenance_from_task_digi_merge(taskID, digi_dict)
+    elif 'reco' in task.name:
+        merge_dataset = JediDatasets.objects.get(id=taskID, streamname='IN_ZERO_BIAS_BS')
+        merge_task_id = int(
+            merge_dataset.datasetname[merge_dataset.datasetname.rfind('tid') + 3:merge_dataset.datasetname.rfind('_')])
+        merge_task = ProductionTask.objects.get(id=merge_task_id)
+        parent_task_id = merge_task.parent_id
+        if parent_task_id == taskID:
+            dataset = task.inputdataset
+            parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
+        digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
+        digi_merge_dict = get_plileup_provenance_from_task_digi_merge(merge_task_id, digi_dict)
+        result_dict = get_plileup_provenance_from_task_reco(taskID, digi_merge_dict)
+    return result_dict
+
+def compare_two_tasks_pileup(task1: int, task2: int) -> Dict[str, int]:
+    """
+    Compare two tasks and return the differences in the output files
+    """
+    task1_dict = get_pileup_from_task(task1)
+    task2_dict = get_pileup_from_task(task2)
+    task1_by_htis: Dict[str, PileupProvenance] = {}
+    for job in task1_dict:
+        task1_by_htis[''.join(task1_dict[job].pileup_inputs)] = task1_dict[job]
+    task1_job_order = list(task1_dict.keys())
+    task1_job_order.sort()
+    task2_job_order = list(task2_dict.keys())
+    task2_job_order.sort()
+    result = {'total': min(len(task1_job_order),len(task2_job_order)), 'same_pileup': 0, 'same_pileup_ordered': 0}
+    for job in task2_dict:
+        key_by_pileup = ''.join(task2_dict[job].pileup_inputs)
+        if key_by_pileup in task1_by_htis and task1_by_htis[key_by_pileup].pileup_minbias == task2_dict[job].pileup_minbias:
+            result['same_pileup'] += 1
+            if task1_job_order.index(task1_by_htis[''.join(task2_dict[job].pileup_inputs)].output) == task2_job_order.index(job):
+                result['same_pileup_ordered'] += 1
+    return result
+
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -1390,28 +1438,7 @@ def pileup_task_provenance(request, taskID):
      output - output file name, merged_rdo_input - for Reco task the merged RDO input file name
     """
     try:
-        task = ProductionTask.objects.get(id=taskID)
-        result_dict = {}
-        if 'digit' in task.name:
-            result_dict = get_plileup_provenance_from_task_digi(taskID)
-        elif 'merge' in task.name:
-            parent_task_id = task.parent_id
-            if parent_task_id == taskID:
-                dataset = task.inputdataset
-                parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
-            digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
-            result_dict = get_plileup_provenance_from_task_digi_merge(taskID, digi_dict)
-        elif 'reco' in task.name:
-            merge_dataset = JediDatasets.objects.get(id=taskID, streamname='IN_ZERO_BIAS_BS')
-            merge_task_id = int(merge_dataset.datasetname[merge_dataset.datasetname.rfind('tid') + 3:merge_dataset.datasetname.rfind('_')])
-            merge_task = ProductionTask.objects.get(id=merge_task_id)
-            parent_task_id = merge_task.parent_id
-            if parent_task_id == taskID:
-                dataset = task.inputdataset
-                parent_task_id = int(dataset[dataset.rfind('tid') + 3:dataset.rfind('_')])
-            digi_dict = get_plileup_provenance_from_task_digi(parent_task_id)
-            digi_merge_dict = get_plileup_provenance_from_task_digi_merge(merge_task_id, digi_dict)
-            result_dict = get_plileup_provenance_from_task_reco(taskID, digi_merge_dict)
+        result_dict = get_pileup_from_task(taskID)
         prepared_response = {}
         for output in result_dict:
             prepared_response[output] = asdict(result_dict[output])
@@ -1420,3 +1447,14 @@ def pileup_task_provenance(request, taskID):
 
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def recreate_in_recovery_scope(task_id: int, recovery_scope: str):
+    task = ProductionTask.objects.get(id=task_id)
+    if task.status != ProductionTask.STATUS.RUNNING:
+        raise Exception(f'Task {task_id} is not running')
+    if task.recovery_scope == recovery_scope:
+        raise Exception(f'Task {task_id} already has recovery scope {recovery_scope}')
+    task.recovery_scope = recovery_scope
+    task.save()
+    return task_id
