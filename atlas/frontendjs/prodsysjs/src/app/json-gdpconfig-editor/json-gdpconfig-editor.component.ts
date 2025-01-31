@@ -86,6 +86,9 @@ export class JsonGDPConfigEditorComponent{
       if (this.haveMetadata && 'schema' in data.metadata && data.metadata.schema != null &&
         !((typeof data.metadata.schema === 'object' && Object.keys(data.metadata.schema).length === 0))) {
         this.schema = data.metadata.schema;
+        this.schema['$schema'] = 'http://json-schema.org/draft-07/schema#';
+
+
       }
     });
   }
@@ -94,7 +97,6 @@ export class JsonGDPConfigEditorComponent{
     if (this.haveMetadata) {
       this.gdpConfigService.saveKey(this.parameter$(), {metadata: this.data().metadata, data: this.workingData});
     } else {
-      console.log(this.workingData);
       this.gdpConfigService.saveKey(this.parameter$(), this.workingData);
     }
     this.mode = 'edit';
