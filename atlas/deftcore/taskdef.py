@@ -2696,6 +2696,8 @@ class TaskDefinition(object):
                         if number_files_per_job > 1:
                             max_events_forced = min_events
                         use_lhe_filter = True
+                if len(input_types) == 0 and 'nEventsPerInputFile' not in task_config:
+                    task_config['nEventsPerInputFile'] = int(task_config['nEventsPerJob'])
 
             # proto_fix
             use_input_with_dataset = False
