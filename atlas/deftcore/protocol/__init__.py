@@ -74,6 +74,7 @@ class TaskParamName(Enum):
     ORDERED_OUTPUT = auto()
     RAW_OUTPUT = auto()
     TXT_OUTPUT = auto()
+    HEPMC_OUTPUT = auto()
     SECONDARY_INPUT_MINBIAS = auto()
     SECONDARY_INPUT_CAVERN = auto()
     SECONDARY_INPUT_ZERO_BIAS_BS = auto()
@@ -221,6 +222,14 @@ class Protocol(object):
             "token": "ATLASDATADISK",
             "type": "template",
             "value": "{{name}}={{data_type}}.{{task_id|stringformat:\".08d\"}}._${SN}.tar.gz"
+        }""",
+        TaskParamName.HEPMC_OUTPUT: """{
+            "dataset": "{{dataset}}",
+            "offset": 0,
+            "param_type": "output",
+            "token": "ATLASDATADISK",
+            "type": "template",
+            "value": "{{name}}={{data_type}}.{{task_id|stringformat:\".08d\"}}._${SN}.hepmc"
         }""",
         # FIXME: OverlayTest
         TaskParamName.TXT_EVENTID_OUTPUT: """{

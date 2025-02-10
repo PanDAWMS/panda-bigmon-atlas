@@ -3655,6 +3655,8 @@ class TaskDefinition(object):
                         proto_key = TaskParamName.TXT_OUTPUT
                     elif re.match(r'^(--)?outputTAR_CONFIGFile$', name, re.IGNORECASE):
                         proto_key = TaskParamName.TAR_CONFIG_OUTPUT
+                    elif re.match(r'^(--)?outputHEPMCFile$', name, re.IGNORECASE):
+                        proto_key = TaskParamName.HEPMC_OUTPUT
                     elif re.match(r'^(--)?outputArchFile$', name, re.IGNORECASE):
                         proto_key = TaskParamName.ZIP_OUTPUT
                         arch_param_dict = {'idx': 0}
