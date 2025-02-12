@@ -116,7 +116,7 @@ def format_check(format):
         raise ValueError('Wrong format: %s'%format)
 
 
-FORMAT_BY_STEP = {'Evgen':['TXT']}
+FORMAT_BY_STEP = {'Evgen':['TXT','HEPMC']}
 
 def format_splitting(format_string, events_number):
 
@@ -276,7 +276,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                             if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0) or translated_row.get('evgen_release','') )\
                                     and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
                                 translated_row[currentstep]='e9999'
-                            if format and (not [x for x in ['LHE','TXT','EVNT'] if x in format]) and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
+                            if format and (not [x for x in ['LHE','TXT','EVNT', 'HEPMC'] if x in format]) and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
                             if format and (currentstep == 'Rec Merge') and reduce_input_format and (not translated_row.get(currentstep,'').strip()):
                                 translated_row[currentstep]='p9999'
@@ -319,6 +319,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 if currentstep == 'Evgen':
                                     if translated_row.get('type','') == 'LHE':
                                         formats = 'TXT'
+                                        additional_formats.pop('Evgen',None)
                                     else:
                                         formats = STEP_FORMAT[currentstep]
                                     if translated_row.get('rivet',''):
