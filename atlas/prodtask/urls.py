@@ -31,6 +31,9 @@ urlpatterns = [
     re_path(r'^request_clone_async/(?P<reqid>\d+)/$',   request_views.request_clone_async,   name='request_clone_async'),
 
     re_path(r'^request_update/(?P<reqid>\d+)/$',  request_views.request_update,  name='request_update'),
+    re_path(r'^opensearch_by_request/(?P<reqid>\d+)/$', request_views.opensearch_by_request, name='opensearch_by_request'),
+    re_path(r'^opensearch_by_jira/(?P<jira>[\w,\-]+)/$', request_views.opensearch_by_jira,
+            name='opensearch_by_jira'),
 
     re_path(r'^request_comments/(?P<reqid>\d+)/$',  request_views.request_comments,  name='request_comments'),
     re_path(r'^protected/$', views.protected, name='protected'),

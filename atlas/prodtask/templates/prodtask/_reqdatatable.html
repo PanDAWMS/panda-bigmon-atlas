@@ -3484,6 +3484,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
   <th>Request ID:</th>
   <th>Description:</th>
   <th>Reference:</th>
+  <th>Stats:</th>
   <th>Manager:</th>
   <th>Physic group:</th>
 {% if trequest.request_type == "MC" %}
@@ -3539,8 +3540,13 @@ ProjectModeForm.prototype.createForm = function(inputString){
   </td>
   <td>{{ trequest.reqid}}</td>
   <td>{{ trequest.description}}</td>
-  <td><a href='{{trequest.ref_link}}' >{{ ref_link_short}}</a>
-  <a class='button tiny' href="/ng/tasks-by-jira/{{ ref_link_short}}" style="margin-left: 3px"><i class="fa fa-table"></i></a></td>
+  <td><a href='{{trequest.ref_link}}' >{{ ref_link_short}}</a></td>
+          <td>
+      {% if trequest.ref_link %}
+
+  <a class='button tiny' href="/ng/tasks-by-jira/{{ ref_link_short}}" style="margin-left: 3px"><i class="fa fa-table"></i></a>
+  <a class='button tiny' href="/prodtask/opensearch_by_jira/{{ ref_link_short }}/" style="margin-left: 3px"><i class="fa fa-bar-chart"></i></a>
+{% endif %}</td>
   <td><span id="ownerName">{{ trequest.manager}}</span><a class='button tiny btn_is_authenticated' onclick="showOwnerChangeModal(event);"><i class="fa fa-edit"></i></a></td>
   <td>{{ trequest.phys_group}}</td>
 {% if trequest.request_type == "MC" %}
@@ -3709,7 +3715,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
     {% if  tasks_by_status     %}
         <div class="row">
-        <div class="large-10 columns">
+        <div class="large-8 columns">
             <table>
             <tr>
                 {% for  status, number, filter in tasks_by_status%}
@@ -3739,6 +3745,11 @@ ProjectModeForm.prototype.createForm = function(inputString){
 {#                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/reqtask/','{{ pr_id }}');">Manage all</a>#}
                 <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/ng/request-tasks/','{{ pr_id }}');">Manage all</a>
             </div>
+            <div class="large-2 columns">
+{#                <a class="button btn_is_authenticated" onclick="window.location.href = construct_django_url('/reqtask/','{{ pr_id }}');">Manage all</a>#}
+                <a  href ='/prodtask/opensearch_by_request/{{ pr_id }}/' >OpenSearch</a>
+            </div>
+
         </div>
     {% endif %}
 

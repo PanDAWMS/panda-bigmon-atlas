@@ -2471,3 +2471,23 @@ def prepare_reprocessing(ami_tag: str, merge_tag: str, subcampaign: str, descrip
                 print(f'Already created: {task.id}')
 
     return new_requests
+
+BASE_OS_HTML = 'https://monit-grafana.cern.ch/d/5ROeg3QZk/jobs-monitoring-grid?orgId=17&var-filter=data.adcactivity%7C%21%3D%7CGroup%20Analysis&var-filter=data.adcactivity%7C%21%3D%7CUser%20Analysis'
+OS_REQID_VAR = 'var-reqids'
+
+def form_os_requests_link(requests_ids):
+    requests_link_postfix = '&'.join([OS_REQID_VAR+'='+str(x) for x in requests_ids])
+    os_link = f'{BASE_OS_HTML}&{requests_link_postfix}'
+    return os_link
+
+def opensearch_by_jira(request, jira:str):
+    requests_ids = []
+    if jira:
+        requests_ids = TRequest.objects.filter(ref_link__endswith=f'{jira}').values_list('reqid', flat=True)
+    return HttpResponseRedirect(form_os_requests_link(requests_ids))
+
+def opensearch_by_request(request, reqid:int):
+    requests_ids = []
+    if reqid:
+        requests_ids = [reqid]
+    return HttpResponseRedirect(form_os_requests_link(requests_ids))
