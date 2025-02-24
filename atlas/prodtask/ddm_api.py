@@ -350,7 +350,7 @@ class DDM(object):
     def get_replica_pre_stage_rule_by_rse(self, rse):
         #rse_attr = self.__ddm.list_rse_attributes(rse)
         # return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
-        return '{destination_by_tape}', 'type=DATADISK|{source_tape}', rse
+        return '{destination_by_tape}', 'rse_type=DISK|{source_tape}', rse
         # if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
         #         #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
         #         return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
@@ -456,7 +456,7 @@ class DDM(object):
         rules_expression = []
         staging_rule = None
         for rule in rules:
-            if rule['account'] == 'prodsys' and rule['activity'] == 'Staging':
+            if rule['account'] in ['prodsys','panda'] and rule['activity'] == 'Staging':
                 staging_rule = rule
             else:
                 rules_expression.append(rule['rse_expression'])
@@ -758,6 +758,8 @@ class DDM(object):
             first_letter = token[0]
         return '_'.join(new_postfix)
 
+    def get_did_by_guid(self, guid: str) -> [str]:
+        return list(self.__ddm.get_dataset_by_guid(guid))
 
     def get_sample_container_name(self, dataset_name: str) -> str:
         container_name = '.'.join(dataset_name.split('.')[:-1] + [self.ami_tags_reduction_w_data(dataset_name.split('.')[-1],
