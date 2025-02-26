@@ -204,12 +204,16 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                         pass
                 else:
                     translated_row['joboptions'] =  find_jo_by_dsid(translated_row['joboptions'])
+            is_hepmc = False
             if ('events' in translated_row):
                 processing_type = translated_row.get('type','')
                 if processing_type == 'AF2':
                     translated_row['eva2'] = translated_row['events']
                 elif processing_type == 'Evgen':
                     translated_row['evevgen'] = translated_row['events']
+                elif processing_type == 'HEPMC':
+                    is_hepmc = True
+                    translated_row['evfs'] = translated_row['events']
                 else:
                     translated_row['evfs'] = translated_row['events']
             if ('joboptions' in translated_row) and (('evfs' in translated_row) or ('eva2' in translated_row) or ('evevgen' in translated_row)):
@@ -274,7 +278,7 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                         step_index = 0
                         for currentstep in StepExecution.STEPS:
                             if ((total_input_events_evgen != 0) or additional_formats.get(currentstep,[]) or (filter_eff!=0) or translated_row.get('evgen_release','') )\
-                                    and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) :
+                                    and (currentstep == 'Evgen') and (not translated_row.get(currentstep,'').strip()) and not(is_hepmc):
                                 translated_row[currentstep]='e9999'
                             if format and (not [x for x in ['LHE','TXT','EVNT', 'HEPMC'] if x in format]) and (currentstep == 'Reco') and (not translated_row.get(currentstep,'').strip()) and (is_fullsym):
                                 translated_row[currentstep]='r9999'
@@ -282,13 +286,15 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 translated_row[currentstep]='p9999'
                             if format and (currentstep == 'Atlfast') and (not translated_row.get(currentstep,'').strip()) and (not is_fullsym):
                                 translated_row[currentstep]='a9999'
+                            if format and (currentstep == 'Deriv') and is_hepmc:
+                                translated_row[currentstep]='e9999'
                             if translated_row.get(currentstep):
                                 st = currentstep
                                 tag = translated_row[currentstep]
                                 task_config = {}
                                 project_mode_addition = []
                                 # Store input events only for evgen
-                                if StepExecution.STEPS.index(currentstep)==0:
+                                if currentstep in ['Evgen', 'Deriv']:
                                     if tag=='e9999':
                                         sexec = dict(status='NotChecked', input_events=int(input_events))
                                         if translated_row.get('evgen_release','') :
@@ -325,6 +331,9 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                     if translated_row.get('rivet',''):
                                         project_mode_addition.append('rivet='+translated_row.get('rivet',''))
 
+                                elif currentstep == 'Deriv' and is_hepmc:
+                                    formats = 'HEPMC'
+                                    project_mode_addition.append('forceSplitInput=yes')
                                 else:
                                     formats = None
                                 if do_split:
@@ -333,7 +342,9 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                 else:
                                     task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':3,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
-
+                                if is_hepmc:
+                                    task_config.update({'maxFailure':3,'nFilesPerJob':1})
+                                    task_config.pop('nEventsPerJob',None)
                                 if reduce_input_format:
                                     task_config.update({'input_format':reduce_input_format})
                                     reduce_input_format = None

@@ -439,7 +439,7 @@ def create_steps(prodsys_async_task, slice_steps, reqid, STEPS=StepExecution.STE
                                     else:
                                         total_events = step_in_db.input_events
 
-                            if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and still_skipped:
+                            if ('nEventsPerInputFile' not in step_value['changes']) and (not task_config.get('nEventsPerInputFile','')) and still_skipped and not task_config.get('nFilesPerJob',''):
                                 events_per_input_file(index,STEPS,task_config,parent_step)
                             if step_in_db.status not in SKIPPED_STATUS:
                                 total_events = -1

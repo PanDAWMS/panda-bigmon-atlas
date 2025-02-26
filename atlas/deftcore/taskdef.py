@@ -2388,7 +2388,10 @@ class TaskDefinition(object):
                         self._checked_ami_tags.append(ctag_name)
             skip_evgen_check = project_mode.skipEvgenCheck or False
             use_real_nevents = project_mode.useRealNumEvents
-
+            is_hepmc = output_types == ['HEPMC']
+            hepmc_prodstep = prod_step
+            if is_hepmc:
+                prod_step = 'deriv'
             use_containers = False
             if step.request.request_type.lower() == 'MC'.lower():
                 if prod_step.lower() == 'evgen'.lower() or prod_step.lower() == 'simul'.lower():
@@ -2788,7 +2791,8 @@ class TaskDefinition(object):
 
             if input_data_dict['project'].lower().startswith('mc') and project.lower().startswith('data'):
                 raise Exception("The project 'data' is invalid for MC inputs")
-
+            if is_hepmc:
+                prod_step = hepmc_prodstep
             taskname = self._construct_taskname(input_data_name, project, prod_step, ctag_name, trf_name)
             if not self.template_type:
                 task_proto_id = self.task_reg.register_task_id()
@@ -2865,7 +2869,7 @@ class TaskDefinition(object):
             skip_check_input_ne = False
             evgen_input_formats = list()
 
-            if prod_step.lower() == 'evgen'.lower():
+            if prod_step.lower() == 'evgen'.lower() and not is_hepmc:
                 evgen_number_input_files = 0
                 for key in list(input_params.keys()):
                     if re.match(r'^(--)?input.*File$', key, re.IGNORECASE):
@@ -4630,10 +4634,14 @@ class TaskDefinition(object):
                 self._check_campaign_subcampaign(step)
                 set_mc_reprocessing_hashtag = False
                 if not skip_check_input:
+                    if is_hepmc:
+                        prod_step = 'deriv'
                     self._check_task_input(task, task_id, number_of_events, task_config, parent_task_id,
                                            input_data_name, step, primary_input_offset, prod_step,
                                            reuse_input=reuse_input, evgen_params=evgen_params,
                                            task_common_offset=task_common_offset)
+                    if is_hepmc:
+                        prod_step = hepmc_prodstep
                     set_mc_reprocessing_hashtag = self._check_task_recreated(task, step)
                 if mc_pileup_overlay['is_overlay'] and not self.template_type:
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
