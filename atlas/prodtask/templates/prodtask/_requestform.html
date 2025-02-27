@@ -365,7 +365,7 @@
 var currentTree = {};
 var field_id =   {description_id:"{{ form.description.auto_id }}",long_description_id:"{{ form.long_description.auto_id }}",
     excellink:"{{ form.excellink.auto_id }}",ref_link:"{{ form.ref_link.auto_id }}",phys_group:"{{ form.phys_group.auto_id }}",
-energy_gev:"{{ form.energy_gev.auto_id }}",project:"{{ form.project.auto_id }}",cc:"{{ form.cc.auto_id }}",
+energy_gev:"{{ form.energy_gev.auto_id }}",project:"{{ form.project.auto_id }}",cc:"{{ form.cc.auto_id }}",excelfile: "{{ form.excelfile.auto_id }}",
     request_type:"{{ form.request_type.auto_id }}", campaign:"{{ form.campaign.auto_id }}", subcampaign:"{{ form.subcampaign.auto_id }}"};
 
 var helpText = {description_id:"Short description of request (will become request title)",
@@ -379,7 +379,9 @@ long_description_id:"This will be the body of the mail that will\n" +
 "pileup profile (only 2015 mu profile, no pileup etc), other special options (please write 'Please check the JIRA ticket for ...' ) ",
    excellink:'Enter the "shareable" link to the google doc spreadsheet.' +
        '  <a href="https://twiki.cern.ch/twiki/bin/view/AtlasProtected/MC16SpreadSheet">(one format for all requests!)</a>' +
-       ' Link has to be "Google Sheets" not "XLSX".',    ref_link:'Link to JIRA ticket for request',
+       ' Link has to be "Google Sheets" not "XLSX".',
+    excelfile: 'Upload the spreadsheet from the file in  "xlsx" format. Spreadsheet should have the same format as the one in the link above. Always prefer the link to the google doc file.',
+    ref_link:'Link to JIRA ticket for request',
     phys_group:'Physics Analysis/Combined Performance group',
     energy_gev:'Collision centre-of-mass energy in GeV',
     project: 'Dataset project name, e.g mc15_13TeV',

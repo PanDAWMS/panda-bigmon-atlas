@@ -111,7 +111,7 @@ class TRequestCreateCloneConfirmation(ModelForm):
 class TRequestMCCreateCloneForm(TRequestCreateCloneConfirmation):
 
     excellink = CharField(required=False, label="Spreadsheet Link")
-    #excelfile = FileField(required=False, label="Spreadsheet File")
+    excelfile = FileField(required=False, label="Spreadsheet File")
     manager = CharField(widget=forms.HiddenInput, required=False)
     request_type = CharField(initial='MC', required=True)
     project = ModelChoiceField(queryset=TProject.objects.filter(Q(project__startswith='mc')&Q(project__contains='_')|~Q(project__startswith='mc')),required=False)

@@ -839,7 +839,7 @@ def mcfile_form_prefill(form_data, request):
         elif form_data.get('excelfile'):
             input_excel = request.FILES['excelfile']
             _logger.debug('Try to read data from %s' % input_excel)
-            spreadsheet_dict += fill_steptemplate_from_file(input_excel)
+            spreadsheet_dict += fill_steptemplate_from_file(input_excel, form_data['version'])
     except Exception as e:
         _logger.error('Problem with data gathering %s' % e)
         return {}, str(e)

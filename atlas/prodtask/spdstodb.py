@@ -398,13 +398,17 @@ def fill_steptemplate_from_gsprd(gsprd_link, version='2.0'):
             raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format. \n Error: %s"%str(e))
 
 
-def fill_steptemplate_from_file(file_obj):
+def fill_steptemplate_from_file(file_obj, version='2.0'):
         try:
             excel_parser = XlrParser()
             excel_dict = excel_parser.open_by_open_file(file_obj)[0]
         except Exception as e:
             raise RuntimeError("Problem with file openning, \n %s" % e)
-        return translate_excl_to_dict(excel_dict)  
+        try:
+            result = translate_excl_to_dict(excel_dict, version)
+            return result
+        except Exception as e:
+            raise RuntimeError("Problem with spreadsheet parsing, please check spreadsheet format. \n Error: %s"%str(e))
 
 
  

@@ -118,7 +118,7 @@ var field_id =   {description_id:"{{ form.description.auto_id }}",long_descripti
 energy_gev:"{{ form.energy_gev.auto_id }}",project:"{{ form.project.auto_id }}",cc:"{{ form.cc.auto_id }}",
     request_type:"{{ form.request_type.auto_id }}", campaign:"{{ form.campaign.auto_id }}", subcampaign:"{{ form.subcampaign.auto_id }}",
 manager:"{{ form.manager.auto_id }}",provenance:"{{ form.provenance.auto_id }}",need_approve:"{{ form.need_approve.auto_id }}",
-train:"{{ form.train.auto_id }}"};
+train:"{{ form.train.auto_id }}",excelfile: "{{ form.excelfile.auto_id }}"};
 
 var helpText = {description_id:"Short description of request (will become request title)",
 long_description_id:"This will be the body of the mail that will\n" +
@@ -132,6 +132,7 @@ long_description_id:"This will be the body of the mail that will\n" +
    excellink:'Enter the "shareable" link to the google doc spreadsheet.' +
        '  <a href="https://twiki.cern.ch/twiki/bin/view/AtlasProtected/MC16SpreadSheet">(one format for all requests!)</a>' +
        ' Link has to be "Google Sheets" not "XLSX".',
+    excelfile: 'Upload the spreadsheet from the file in  "xlsx" format. Spreadsheet should have the same format as the one in the link above. Always prefer the link to the google doc file.',
     ref_link:'Link to JIRA ticket for request',
     phys_group:'Physics Analysis/Combined Performance group',
     energy_gev:'Collision centre-of-mass energy in GeV',
