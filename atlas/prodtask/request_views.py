@@ -1681,6 +1681,7 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                             req.info_fields = info_fields[:1999]
                             req.save()
                         req.info_fields = info_fields
+                        req.is_fast = True
                         req.save()
 
                         request_status = RequestStatus(request=req,comment='Request created by WebUI',owner=owner,
