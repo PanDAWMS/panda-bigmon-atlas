@@ -184,16 +184,19 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
             translated_row = {}
             for key in excel_dict[row]:
                 if key < len(translate_list):
-                    if translate_list[key] in STRIPPED_FIELDS:
-                        if excel_dict[row][key].strip():
-                            translated_row[translate_list[key]] = excel_dict[row][key].strip()
-                    elif translate_list[key] in NUMERIC_FIELDS:
-                        if isinstance(excel_dict[row][key],float) or isinstance(excel_dict[row][key],int):
-                           translated_row[translate_list[key]] = excel_dict[row][key]
-                        elif excel_dict[row][key].strip().isdigit():
-                            translated_row[translate_list[key]] = int(excel_dict[row][key].strip())
-                    else:
-                        translated_row[translate_list[key]] = excel_dict[row][key]
+                    try:
+                        if translate_list[key] in STRIPPED_FIELDS:
+                                if excel_dict[row][key].strip():
+                                    translated_row[translate_list[key]] = excel_dict[row][key].strip()
+                        elif translate_list[key] in NUMERIC_FIELDS:
+                            if isinstance(excel_dict[row][key],float) or isinstance(excel_dict[row][key],int):
+                               translated_row[translate_list[key]] = excel_dict[row][key]
+                            elif excel_dict[row][key].strip().isdigit():
+                                translated_row[translate_list[key]] = int(excel_dict[row][key].strip())
+                        else:
+                            translated_row[translate_list[key]] = excel_dict[row][key]
+                    except Exception as e:
+                        raise RuntimeError(f"row: {row} column: {key} value: {excel_dict[row][key]} Error: {str(e)}")
             if ('joboptions' not in translated_row) and ('ds' in translated_row):
                 translated_row['joboptions'] = str(int(translated_row['ds']))
                 if translated_row['joboptions'].startswith('421') or int(translated_row['ds']) >= 500000:
