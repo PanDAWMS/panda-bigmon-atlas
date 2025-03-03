@@ -123,6 +123,7 @@ class TRequest(models.Model):
         REMONITORING = 'remonitoring'
         CANCELLED = 'cancelled'
         TEST = 'test'
+        DONE = 'done'
 
 
     PHYS_GROUPS=[(x,x) for x in ['BPHY',
@@ -2802,6 +2803,40 @@ class JediTasks(models.Model):
         app_label = 'panda'
         db_table = '"ATLAS_PANDA"."JEDI_TASKS"'
 
+class PandaDatasetStaging(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='request_id', primary_key=True)
+    dataset = models.CharField(max_length=255, db_column='DATASET', null=True)
+    destination_rse = models.CharField(max_length=100, db_column='destination_rse')
+    status = models.CharField(max_length=20, db_column='STATUS', null=True)
+    source = models.CharField(max_length=200, db_column='SOURCE_RSE', null=True)
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Read only')
+
+    def active_tasks(self):
+        tasks_ids = PandaDatasetStagingRelationship.objects.filter(request_id=self.id).values_list('task_id', flat=True)
+        for task_id in tasks_ids:
+                task = JediTasks.objects.get(id=task_id)
+                if task.status not in ProductionTask.NOT_RUNNING:
+                    yield task.id
+
+    class Meta:
+        app_label = 'panda'
+        db_table = '"ATLAS_PANDA"."data_carousel_requests"'
+
+class PandaDatasetStagingRelationship(models.Model):
+
+    request_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='request_id', primary_key=True)
+    task_id = models.BigIntegerField(primary_key=True, db_column='TASK_ID')
+
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError('Read only')
+
+    class Meta:
+        app_label = 'panda'
+        db_table = '"ATLAS_PANDA"."data_carousel_relations"'
 
 class DatasetRecovery(models.Model):
 

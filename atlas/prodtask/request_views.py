@@ -1896,7 +1896,7 @@ def do_mc_management_hold(request, reqid):
 @csrf_protect
 def change_production_request_status(request, reqid, new_status):
     if new_status in ['not-taken','working','monitoring','finished','reworking','remonitoring','cancelled',
-                      'test','registered','approved','processed','waiting', 'hold']:
+                      'test','registered','approved','processed','waiting', 'hold','done']:
         return change_request_status(request, reqid, new_status,
                                      'Request status was changed to %s by %s' %(new_status, request.user.username),
                                      'Request status is changed to %s by WebUI' % new_status)
