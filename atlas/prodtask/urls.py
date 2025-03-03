@@ -116,7 +116,7 @@ urlpatterns = [
 
     re_path(r'^step_approve/(?P<stepexid>\d+)/(?P<reqid>\d+)/(?P<sliceid>\d+)/$', views.step_approve, name='step_approve'),
 
-    re_path(r'^request_steps_approve/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/$', views.request_steps_approve,
+    re_path(r'^request_steps_approve/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/(?P<delay>\d+)/$', views.request_steps_approve,
         name='request_steps_approve'),
 
     re_path(r'^request_steps_approve_split/(?P<reqid>\d+)/(?P<approve_level>\d+)/(?P<waiting_level>\d+)/$', views.request_steps_approve_split,

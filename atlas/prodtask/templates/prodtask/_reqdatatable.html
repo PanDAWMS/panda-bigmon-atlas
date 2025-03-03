@@ -494,7 +494,7 @@ function saveChangesAsync(sendData){
 
 }
 
-    function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets){
+    function saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay){
                 $( "#waitingDialog" ).dialog();
 
                 var ajaxURL = '';
@@ -503,7 +503,7 @@ function saveChangesAsync(sendData){
                     if (doSplit){
                         ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve_split/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
                     } else{
-                        ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+                        ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/'+delay.toString()+'/';
                     }
 
                 } else {
@@ -647,7 +647,7 @@ function saveChangesAsync(sendData){
                 });
     }
 
-function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets){
+function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay){
     $( "#progressSliceSaved" ).dialog();
 
     var ajaxURL = '';
@@ -656,7 +656,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
         if (doSplit){
             ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve_split/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
         } else{
-            ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/';
+            ajaxURL = "{% url 'prodtask:home' %}" +"request_steps_approve/{{ pr_id }}/"+approveLevel.toString()+'/'+waitingLevel.toString()+'/'+delay.toString()+'/';
         }
 
     } else {
@@ -810,7 +810,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
     }
 }
 
-    function approveSlices(isApprove, approveLevel, waitingLevel, slices, isAsync){
+    function approveSlices(isApprove, approveLevel, waitingLevel, slices, isAsync, delay){
 
         var toChangeDatasets = [];
         var startFindig = false;
@@ -913,9 +913,9 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
 
                               if (doSplit) {
                                   doReload = true;
-                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay);
                               } else {
-                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                                  saveChanges(isApprove, doSplit, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay);
                               }
 
                           }
@@ -925,13 +925,13 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
 
             } else {
                 if (toChangeDatasets.length!==0){
-                    saveChangesWithInput(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                    saveChangesWithInput(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay);
                 } else {
                     if (isAsync){
                         saveChangesAsync(sendData);
                     }
                     else {
-                        saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets);
+                        saveChanges(isApprove, false, sendData, doReload, startFindig, approveLevel, waitingLevel, toChangeDatasets, delay);
                     }
                 }
 
@@ -942,7 +942,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
     }
 
 
-    function approveClick(event,isApprove, approveLevel, isWaiting,isAsync){
+    function approveClick(event,isApprove, approveLevel, isWaiting,isAsync,delay){
         event.preventDefault();
         var slices = [];
         var waitingLevel=99;
@@ -957,12 +957,12 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 slices.push(sliceID);
             }
         });
-        approveSlices(isApprove,approveLevel,waitingLevel, slices,isAsync );
+        approveSlices(isApprove,approveLevel,waitingLevel, slices,isAsync, delay );
     };
     function approveEmpty(event){
         event.preventDefault();
         var slices = [];
-        approveSlices(true,99, 99, slices);
+        approveSlices(true,99, 99, slices, false, 0);
     };
 
     function emptyPattern(){
@@ -2190,7 +2190,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
             if (!slices.includes((sliceID))){
                 slices.push(sliceID);
             }
-            approveSlices(false,99,99,slices);
+            approveSlices(false,99,99,slices,false,0);
         }
         function checkSliceIsSaved(sliceNumber){
             var is_equal = undefined;
@@ -2323,7 +2323,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                      changeSliceChanges($('.storeOutputSlice.'+key));
                  }
             }
-            approveSlices(false,99,99,slices);
+            approveSlices(false,99,99,slices,false,0);
             changeMode = false;
             $('#slicesBulkChangeModal').foundation('reveal', 'close');
 
@@ -4134,19 +4134,20 @@ ProjectModeForm.prototype.createForm = function(inputString){
                     >Login</a>
                 {% endif %}
 
-            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,false);">Save</button>
+            <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,false,0);">Save</button>
             {% if trequest.request_type == "MC" %}
 {#                true#}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true,false);">Submit</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',true,false,0);">Submit</button>
             {% else  %}
-                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false,false);">Approve</button>
+                <button class="btn_is_authenticated" id="approveButton" title="Approve selected slices" onclick="approveClick(event,true,'99',false,false,0);">Approve</button>
 
             {% endif %}
+            <button class="btn_is_authenticated" id="SubmitButtonDown" title="Submit without delay"  href="#" data-dropdown="dropSubmitMenu" style="width: 1em; padding-left: 0; padding-right: 0">▼</button>
             <button class="btn_is_authenticated" title="Clone slices" onclick="cloneSlicesClick(event,'0',-1);">Clone </button>
             <button class="btn_is_authenticated"  title="Fix slices" href="#" data-dropdown="dropCloneMenu">Fix </button>
             <button class="btn_is_authenticated" id="rejectSlice" title="Reject slices, if tasks are not started yet" onclick="rejectSlicesClick(event);">Reject </button>
             <button class="btn_is_authenticated" id="hideButton" title="Hide slices from request page" onclick="hideClick(event);">Hide</button>
-            <button class="btn_is_authenticated" id="hideButton" title="Hide Broken tasks from slices"  href="#" data-dropdown="dropHideMenu" style="width: 1em; padding-left: 0; padding-right: 0">▼</button>
+            <button class="btn_is_authenticated" id="hideButtonDown" title="Hide Broken tasks from slices"  href="#" data-dropdown="dropHideMenu" style="width: 1em; padding-left: 0; padding-right: 0">▼</button>
 
             <button class="btn_is_authenticated" id="checkInputButton" title="Find input data for skipped steps" onclick="findInputClick(event);">Find input</button>
 
@@ -4176,6 +4177,14 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  <button id="hidePartialSlice" class="btn_is_authenticated" title="Hide Broken tasks from slices" onclick="hidePartialClick(event);">Hide bad tasks</button>
              </div>
         </div>
+                <div id="dropSubmitMenu" class="f-dropdown content" data-dropdown-content>
+             <div class="row">
+                 <button id="submitImmedietly" class="btn_is_authenticated" title="Submit without delay" onclick="approveClick(event,true,'99',false,false,1);">Process immedietly</button>
+             </div>
+                    <div class="row">
+                    <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,true);">Save Async</button>
+                      </div>
+                </div>
     </div>
     <div class="row">
                 <div class="large-3 columns">
@@ -4286,7 +4295,7 @@ ProjectModeForm.prototype.createForm = function(inputString){
 
                 </div>
         </div>
-        <div class="large-1 columns"><button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,true);">Save Async</button></div>
+        <div class="large-1 columns"></div>
 
     </div>
  </form>

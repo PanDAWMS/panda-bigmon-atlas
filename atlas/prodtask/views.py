@@ -35,6 +35,7 @@ from atlas.prodtask.models import HashTagToRequest, HashTag, StepAction, ActionS
     ActionDefault, SliceError, TTask, MCJobOptions
 from atlas.prodtask.spdstodb import fill_template
 from .settings import APP_SETTINGS
+from ..deftcore.tasks import submit_request
 
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from ..prodtask.ddm_api import find_dataset_events, DDM
@@ -1244,7 +1245,7 @@ def any_group_check(username):
 
 
 @csrf_protect
-def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False):
+def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False, render_immediately=False):
     results = {'success':False}
     try:
         data = request.body
@@ -1346,6 +1347,8 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
                     request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
                                                    status=req.cstatus)
                     request_status.save_with_current_time()
+                    if render_immediately:
+                        submit_request.delay(reqid)
             if req.request_type == 'MC':
                 if do_split:
                     split_request(reqid,[x for x in map(int,slices) if x not in error_slices])
@@ -1488,6 +1491,7 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
                 request_status = RequestStatus(request=req,comment='Request approved by WebUI',owner=owner,
                                                status=req.cstatus)
                 request_status.save_with_current_time()
+                submit_request.delay(reqid)
             if req.request_type == 'MC':
                 if do_split:
                     split_request(reqid,[x for x in map(int,slices) if x not in error_slices])
@@ -1600,9 +1604,12 @@ def request_steps_save_async(request, reqid):
 
 
 @csrf_protect
-def request_steps_approve(request, reqid, approve_level, waiting_level):
+def request_steps_approve(request, reqid, approve_level, waiting_level, delay):
     if request.method == 'POST':
-        return request_steps_approve_or_save(request, reqid, int(approve_level)-1, int(waiting_level))
+        render_immediately = True
+        if delay == '0':
+            render_immediately = False
+        return request_steps_approve_or_save(request, reqid, int(approve_level)-1, int(waiting_level), render_immediately=render_immediately)
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=(reqid,)))
 
 
