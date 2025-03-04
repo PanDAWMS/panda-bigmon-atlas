@@ -347,9 +347,11 @@ class DDM(object):
         self.__ddm.set_metadata(scope=scope, name=name, key='campaign', value=campaign)
 
 
-    def get_replica_pre_stage_rule_by_rse(self, rse):
+    def get_replica_pre_stage_rule_by_rse(self, rse: str):
         #rse_attr = self.__ddm.list_rse_attributes(rse)
         # return 'type=DATADISK&datapolicynucleus=True', 'type=DATADISK|{source_tape}', rse
+        if rse.startswith('INFN'):
+            return '{destination_by_tape}', '', rse
         return '{destination_by_tape}', 'rse_type=DISK|{source_tape}', rse
         # if rse not in ['CERN-PROD_TEST-CTA', 'CERN-PROD_RAW']:
         #         #return 'cloud=%s&type=DATADISK&datapolicynucleus=True' % rse_attr['cloud'], 'tier=1&type=DATATAPE', rse
