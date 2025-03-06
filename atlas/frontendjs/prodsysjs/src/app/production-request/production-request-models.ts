@@ -228,3 +228,21 @@ export interface JEDITask{
   basewalltime: number;
   errordialog: string;
 }
+
+export interface PatternSteps{
+  step: string;
+  tag?: string;
+}
+
+export interface MCPattern{
+  id: number;
+  pattern: string;
+  steps: PatternSteps[];
+}
+
+export interface CampaignPattern{
+  campaign: string;
+  subcampaing: string;
+  project: string;
+  patterns: MCPattern[];
+}
