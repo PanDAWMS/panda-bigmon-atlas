@@ -241,6 +241,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                     input_events_format, additional_formats = format_splitting(translated_row.get('format', ''),total_input_events)
                     if (not additional_formats) and translated_row.get('joboptions', ''):
                         additional_formats = format_from_jo(translated_row.get('joboptions', ''))
+                    if len(input_events_format) == 1 and is_hepmc:
+                        input_events_format = [(input_events_format[0][0], 'HEPMC', False)]
                     for input_events, format, do_split in input_events_format:
                         irl = {}
                         st_sexec_list = []
