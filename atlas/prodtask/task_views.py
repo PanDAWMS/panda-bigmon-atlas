@@ -899,8 +899,8 @@ def create_user_task(task_id: int) -> int:
     if ProductionTask.objects.filter(id=task_id).exists():
         return task_id
     prod_task = ProductionTask(id=t_task.id,
-                               step=201,
-                               request=300,
+                               step=StepExecution.objects.get(id=201),
+                               request=TRequest.objects.get(reqid=300),
                                parent_id=t_task.parent_tid,
                                name=t_task.name,
                                project=t_task.name.split('.')[0],
@@ -1041,7 +1041,20 @@ def fill_main_container(production_request_id):
                             print(f"Dataset {dataset} is not in container {container_name}")
 
 
-
+def fill_single_tag_container(production_request_id):
+    tasks = ProductionTask.objects.filter(request_id=production_request_id, status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED])
+    ddm = DDM()
+    for task in tasks:
+        if 'merge' in task.name or 'deriv' in task.name:
+            for dataset in task.output_non_log_datasets():
+                if 'tid' in dataset and ddm.dataset_exists(dataset):
+                    container_name = ddm.get_sample_container_name(dataset)
+                    if not ddm.dataset_exists(container_name):
+                        ddm.register_container(container_name, [dataset])
+                        print(f"Container {container_name} does not exist {dataset}")
+                    if not ddm.dataset_is_in_container(dataset, container_name):
+                        ddm.register_datasets_in_container(container_name, [dataset])
+                        print(f"Dataset {dataset} is not in container {container_name}")
 
 def check_merge_container(days, days_till=1):
     time_since = timezone.now() - timedelta(days=days)
@@ -1295,3 +1308,29 @@ def tasks_serialisation(tasks: [ProductionTask], hashtags: Dict[int, str] = None
             serial_task['hashtags'] = hashtags[task.id]
         tasks_serial.append(serial_task)
     return tasks_serial
+
+def retry_exhausted_user_tasks_after_downtime(rse):
+    tasks = JediTasks.objects.filter(status='exhausted', prodsourcelabel='user')
+    task_to_check = []
+    for t in tasks:
+        if 'incomplete at storages that are currently not in downtime' in t.errordialog:
+            task_to_check.append(t)
+    tasks_to_retry = []
+    ddm = DDM()
+    for t in task_to_check:
+        tt = TTask.objects.get(id=t.id)
+        datasets = []
+        if ',' in tt.input_dataset:
+            containers = tt.input_dataset.split(',')
+            for container in containers:
+                datasets += ddm.dataset_in_container(container)
+        elif ddm.dataset_metadata(tt.input_dataset)['did_type'] == 'CONTAINER':
+            datasets = ddm.dataset_in_container(tt.input_dataset)
+        else:
+            datasets = [tt.input_dataset]
+        for d in datasets:
+            if rse in [x['rse'] for x in ddm.full_replicas_per_type(d)['data']]:
+                print('retry', tt.id, d)
+                tasks_to_retry.append(tt.id)
+                break
+    return tasks_to_retry

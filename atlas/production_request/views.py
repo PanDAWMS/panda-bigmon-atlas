@@ -38,7 +38,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import parser_classes
 
 from atlas.prodtask.spdstodb import fill_steptemplate_from_gsprd
-from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation
+from atlas.prodtask.task_views import get_sites, get_nucleus, get_global_shares, tasks_serialisation, create_user_task
 from atlas.prodtask.views import clone_slices, request_clone_slices, form_existed_step_list, get_full_patterns, \
     form_step_in_page, create_steps, fill_request_events, get_pattern_name, set_request_status, get_all_patterns, \
     single_request_action_celery_task
@@ -312,6 +312,10 @@ def production_tasks_by_bigpanda_url(request: Request) -> Response:
                 url = url + '&json'
         resp = requests.get(url, headers= {'content-type': 'application/json', 'accept': 'application/json'})
         data = resp.json()
+        task_ids =  [x['jeditaskid'] for x in data]
+        for task_id in task_ids:
+            if not ProductionTask.objects.filter(id=task_id).exists():
+                create_user_task(task_id)
         tasks =  [ProductionTask.objects.get(id=x['jeditaskid']) for x in data]
         tasks_serial = tasks_serialisation(tasks)
         return Response(tasks_serial)
