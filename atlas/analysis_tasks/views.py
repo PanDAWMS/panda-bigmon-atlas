@@ -364,6 +364,7 @@ def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, pa
     step_template = check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
     check_parameters_for_task(step_template)
+    pprint(step_template.step_parameters)
     task = TTask(id=task_id,
                           parent_tid=parent_tid,
                           status=ProductionTask.STATUS.WAITING,
@@ -948,35 +949,44 @@ def submit_analysis_slices(request):
         production_request = TRequest.objects.get(reqid=request_id)
         if production_request.cstatus in [TRequest.STATUS.CANCELLED]:
             raise Exception('Request is cancelled')
-        for slice_number in slices:
-            slice = InputRequestList.objects.get(slice=slice_number, request_id=request_id)
-            analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request_id, slice=slice).order_by('id'))
-            for step in analysis_steps:
-                step.status = AnalysisStepTemplate.STATUS.APPROVED
-                prod_step = step.step_production_parent
-                prod_step.status = StepExecution.STATUS.APPROVED
-                step.save()
-                prod_step.save()
-                try:
-                    # from atlas.settings.local import FIRST_ADOPTERS
-                    # if (request.user.username in FIRST_ADOPTERS):
-                        _jsonLogger.info('Submit analysis task for slice',
-                            extra=form_json_request_dict( request_id, request, extra={'slice': slice.slice}))
-                        new_tasks += create_analy_task_for_slice(request_id, slice.slice, request.user.username)
-                        submitted_slices.append(slice)
-                        unset_slice_error(request.data['requestID'], slice.id)
-                except Exception as e:
-                    _jsonLogger.error(f'Submit analysis task for slice failed {e}',
-                                      extra=form_json_request_dict(request_id, request, extra={'slice': slice.slice}))
-                    step.status = AnalysisStepTemplate.STATUS.NOT_CHECKED
+        # set the lock
+        if DistributedLock.acquire_lock(f'submit_analysis_slices_{request_id}', 360):
+            _jsonLogger.info(f'Lock acquired for submit_analysis_slices_{request_id}')
+        else:
+            _jsonLogger.info(f'Lock not acquired for submit_analysis_slices_{request_id}')
+            return Response('Request is being processed, please repeat later', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            for slice_number in slices:
+                slice = InputRequestList.objects.get(slice=slice_number, request_id=request_id)
+                analysis_steps = list(AnalysisStepTemplate.objects.filter(request=request_id, slice=slice).order_by('id'))
+                for step in analysis_steps:
+                    step.status = AnalysisStepTemplate.STATUS.APPROVED
                     prod_step = step.step_production_parent
-                    prod_step.status = StepExecution.STATUS.NOT_CHECKED
+                    prod_step.status = StepExecution.STATUS.APPROVED
                     step.save()
                     prod_step.save()
-                    set_slice_error(request_id, slice.id, 'default', str(e))
-        if new_tasks:
-            set_analysis_request_hashtags(request_id, new_tasks)
-        check_request_status(production_request)
+                    try:
+                        # from atlas.settings.local import FIRST_ADOPTERS
+                        # if (request.user.username in FIRST_ADOPTERS):
+                            _jsonLogger.info('Submit analysis task for slice',
+                                extra=form_json_request_dict( request_id, request, extra={'slice': slice.slice}))
+                            new_tasks += create_analy_task_for_slice(request_id, slice.slice, request.user.username)
+                            submitted_slices.append(slice)
+                            unset_slice_error(request.data['requestID'], slice.id)
+                    except Exception as e:
+                        _jsonLogger.error(f'Submit analysis task for slice failed {e}',
+                                          extra=form_json_request_dict(request_id, request, extra={'slice': slice.slice}))
+                        step.status = AnalysisStepTemplate.STATUS.NOT_CHECKED
+                        prod_step = step.step_production_parent
+                        prod_step.status = StepExecution.STATUS.NOT_CHECKED
+                        step.save()
+                        prod_step.save()
+                        set_slice_error(request_id, slice.id, 'default', str(e))
+            if new_tasks:
+                set_analysis_request_hashtags(request_id, new_tasks)
+            check_request_status(production_request)
+        finally:
+            DistributedLock.release_lock('submit_analysis_slices_%s' % request_id)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response({'result':f"{len(slices)} submitted"}, status=status.HTTP_200_OK)
