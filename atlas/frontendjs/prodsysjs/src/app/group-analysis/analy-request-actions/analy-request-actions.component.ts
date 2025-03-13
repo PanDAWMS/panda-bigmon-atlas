@@ -17,6 +17,7 @@ export class AnalyRequestActionsComponent implements OnInit {
   @Input() productionRequestID: string;
   @Output() updateRequest = new EventEmitter<boolean>();
   public sendMessage = '';
+  submitting = false;
 
   constructor(private analysisTaskService: AnalysisTasksService, public dialog: MatDialog) { }
 
@@ -26,8 +27,14 @@ export class AnalyRequestActionsComponent implements OnInit {
   executeAction(action: string): void {
     this.sendMessage = 'loading...';
     if (action === 'submit') {
+      this.submitting = true;
       this.analysisTaskService.submitAnalysisRequestAction(this.productionRequestID, 'submit', this.selectedSlices).subscribe(
         (response) => {
+          this.submitting = false;
+          if (response?.error){
+            this.sendMessage = response.error;
+            return;
+          }
           this.sendMessage = response.result;
           this.updateRequest.emit(true);
         }
