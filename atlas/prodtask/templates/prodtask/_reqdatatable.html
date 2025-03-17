@@ -217,6 +217,7 @@ $('#radioSetStepBulk').change(function(){changeStepBulk();});
 
                 }
                 i = {{  forloop.counter0 }};
+                patternDict[i] = {};
                     {% for field_name, field_value in fields %}
                         patternDict[i]['{{ field_name }}']='{{ field_value }}';
 
