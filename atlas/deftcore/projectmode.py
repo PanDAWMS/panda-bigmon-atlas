@@ -118,6 +118,9 @@ class ProjectMode(object):
                 agis_cmtconfig_list = self._get_cmtconfig_from_cvmfs(cache)
             except:
                 agis_cmtconfig_list = []
+        if '|' in cmtconfig or ',' in cmtconfig:
+            if len(agis_cmtconfig_list) == 1:
+                return False
         for agis_cmtconfig in agis_cmtconfig_list:
             if re.search(f'^{cmtconfig}$', agis_cmtconfig):
                 return True
