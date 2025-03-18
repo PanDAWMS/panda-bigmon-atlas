@@ -137,6 +137,19 @@ class ProjectMode(object):
         cmt_config_from_cvmfs = [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
         return cmt_config_from_cvmfs
 
+    def _get_cmtconfig_for_container(self, cache: str, container_name: str, archs: [str], user_cmt_config: str):
+        release = cache.split('-')[-1]
+        project = cache.split('-')[0]
+        cmt_config_from_cvmfs = []
+        for arch in archs:
+            path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(release=release,project=project,container_name=container_name,arch=arch)
+            if not os.path.exists(path):
+                raise Exception(f'Path {path} does not exist, cahce {cache} is missing in CVMFS')
+            cmt_config_from_cvmfs += [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
+        for cmt_config in cmt_config_from_cvmfs:
+            if not re.search(f'^{user_cmt_config}$', cmt_config):
+                raise Exception(f' {cmt_config} does not match {user_cmt_config}')
+
 
     def cmt_config_addon(self, cmt_config):
         addon = None
@@ -171,6 +184,7 @@ class ProjectMode(object):
 
 
     def set_multiple_cmtconfig(self):
+        archs = []
         if ',' in self.cmtconfig:
             if '#' in self.cmtconfig:
                 raise Exception('cmtconfig \"{0}\" specified by the user is not valid'.format(self.cmtconfig))
@@ -179,8 +193,11 @@ class ProjectMode(object):
             if len(list(set([len(token) for token in tokens]))) > 1:
                 raise Exception('cmtconfig \"{0}\" specified by the user is not valid'.format(self.cmtconfig))
             new_cmtconfig_base_tokens = []
+            archs = []
             for token_number in range(len(tokens[0])):
                 if len(list(set([token[token_number] for token in tokens]))) > 1:
+                    if token_number == 0:
+                        archs = [token[token_number] for token in tokens]
                     new_cmtconfig_base_tokens.append(f"({'|'.join([token[token_number] for token in tokens])})")
                 else:
                     new_cmtconfig_base_tokens.append(tokens[0][token_number])
@@ -188,9 +205,10 @@ class ProjectMode(object):
             setattr(self, 'cmtconfig', new_cmtconfig_base)
         if self.cache and not self.skipCMTConfigCheck:
             architecture = self.cmtconfig.split('#')[0]
+            if not archs:
+                archs = architecture.split('-')[0].strip('()').split('|')
             if self.container_name:
-                    raise Exception('cmtconfig \"{0}\" specified by the user is not supported for containers'.format(
-                        self.cmtconfig))
+                self._get_cmtconfig_for_container(self.cache, self.container_name, archs, architecture)
             else:
                 if not self._is_cmtconfig_exist(self.cache, architecture):
                     available_cmtconfig_list = self._get_cmtconfig_list(self.cache)
@@ -234,9 +252,10 @@ class ProjectMode(object):
                     cache_exists = True
                     break
             if not cache_exists and not self.skipCMTConfigCheck:
-                raise Exception(
-                    'Cache \"{0}\" is not found in the container \"{1}\" '.format(
-                        self.cache, self.container_name))
+                self._get_cmtconfig_for_container(self.cache, self.container_name, [self.cmtconfig.split('-')[0]], self.cmtconfig)
+                # raise Exception(
+                #     'Cache \"{0}\" is not found in the container \"{1}\" '.format(
+                #         self.cache, self.container_name))
 
 
 
