@@ -3,7 +3,7 @@ import random
 import time
 from copy import deepcopy
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List
 
 import requests
@@ -11,10 +11,12 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.core.cache import cache
 
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
-    JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable, days_ago
+    JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable, days_ago, \
+    PandaDatasetStaging
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -2519,3 +2521,78 @@ def get_tape_buffer_fullness(tape_name: str) -> int:
     match tape_name:
         case 'INFN-T1_TAPE': return get_tape_buffer_fullness_INFN_T1()
         case _: return 0
+
+@dataclass
+class DatasetStagingRule:
+    dataset: str
+    scope: str
+    data_type: str
+    status: str
+    rse: str
+    source: str
+    destination: str
+    total_files: int
+    staged_files: int
+    start_time: str
+    update_time: str
+    number_active_tasks: int
+    bytes: int = 0
+
+
+def get_all_active_staging_rules() -> List[DatasetStagingRule]:
+    """
+    Get all active staging rules
+    :return:
+    """
+    rules = []
+    for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+        update_time = dataset_staging.update_time
+        if not update_time:
+            update_time = dataset_staging.start_time
+        if dataset_staging.destination_rse:
+            rules.append(
+                DatasetStagingRule(dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
+                                   data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
+                                   rse=dataset_staging.rse, source=dataset_staging.source,
+                                   destination=dataset_staging.destination_rse,
+                                   total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
+                                   start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
+                                   update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                                   number_active_tasks=1,
+                                   bytes=int(dataset_staging.dataset_size)),
+
+
+            )
+    for dataset_staging in PandaDatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+        if dataset_staging.destination_rse:
+            update_time = dataset_staging.update_time
+            if not update_time:
+                update_time = dataset_staging.start_time
+            rules.append(
+                DatasetStagingRule(dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
+                                   data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
+                                   rse=dataset_staging.rse, source=dataset_staging.source_tape,
+                                   destination=dataset_staging.destination_rse,
+                                   total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
+                                   start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
+                                   update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                                   number_active_tasks=1,
+                                   bytes=int(dataset_staging.dataset_size))
+            )
+    return rules
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_staging_rules(request):
+    """
+    Get all active staging rules
+    :return:
+    """
+    try:
+        # rules = cache.get_or_set("datacarousel_rules", get_all_active_staging_rules, 60*10)
+        rules = get_all_active_staging_rules()
+        return Response(map(asdict, rules), status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

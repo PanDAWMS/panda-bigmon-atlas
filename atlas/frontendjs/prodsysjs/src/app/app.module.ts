@@ -136,6 +136,7 @@ import {RecoveredDatasetsComponent} from "./dataset-recovery/recovered-datasets/
 import {JsonGDPConfigEditorComponent} from "./json-gdpconfig-editor/json-gdpconfig-editor.component";
 import {ConfigEditorComponent} from "./config-editor/config-editor.component";
 import {MainRequestComponent} from "./production-request/main-request/main-request.component";
+import {StagingManagementComponent} from "./DataCarousel/staging-management/staging-management.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -238,6 +239,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'json-gdpconfig/:parameter', component: JsonGDPConfigEditorComponent},
   {path: 'config-editor/:name', component: ConfigEditorComponent},
     {path: 'test-request', component: MainRequestComponent},
+    {path: 'staging-rules', component: StagingManagementComponent},
 
 
 

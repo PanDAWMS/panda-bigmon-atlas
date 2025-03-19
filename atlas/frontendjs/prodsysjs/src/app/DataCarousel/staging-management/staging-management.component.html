@@ -1,0 +1,50 @@
+<p>Active staging rules (both Production and Analysis)</p>
+@if(loading()){
+  <mat-spinner></mat-spinner>
+}
+
+    <app-select-with-search
+      [formControl]="selectedDestinations"
+      [options]="allDestinations"
+      [multiple]="true"
+      (selectionChange)="filterChanged$.next(1)"
+    [label]="'Destinations'">
+
+    </app-select-with-search>
+
+
+    <app-select-with-search
+      [formControl]="selectedSources"
+      [options]="allSources"
+      [multiple]="true"
+      (selectionChange)="filterChanged$.next(1)"
+    [label]="'Sources'">
+    </app-select-with-search>
+
+<mat-form-field appearance="fill">
+    <mat-label>General filter</mat-label>
+      <input matInput [formControl]="generalFilter" (change)="filterChanged$.next(1)" >
+    </mat-form-field>
+               <ag-grid-angular
+                 #agGrid
+          style="width: 100%; "
+          class="ag-theme-alpine"
+          [rowData]="stagingRules()"
+          [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions"
+                 (selectionChanged)="onSelectionChanged($event)"
+    [rowSelection]="'multiple'"
+            [pagination]="true"
+          [paginationPageSize]="20"
+     [domLayout]="'autoHeight'"
+    [rowHeight]="22"
+                 (gridReady)="onGridReady($event)"
+                 (filterChanged)="adjustColumns($event)"
+                  ></ag-grid-angular>
+<div>
+      <button  [disabled]="true">Change destination</button>
+      <button [disabled]="true">Change source</button>
+      <button  [disabled]="true">Release tasks</button>
+      <button  [disabled]="true">Show tasks</button>
+
+</div>

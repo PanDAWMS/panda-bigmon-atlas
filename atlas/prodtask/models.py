@@ -1071,6 +1071,7 @@ class TemplateVariable:
         TO_STAGING = 'toStaging'
         FRAMEWORK = 'framework'
 
+
     KEYS_SEPARATOR = ','
 
     @staticmethod
@@ -2805,11 +2806,26 @@ class JediTasks(models.Model):
 
 class PandaDatasetStaging(models.Model):
 
+    class STATUS:
+        QUEUED = 'queued'
+        STAGING = 'staging'
+        DONE = 'done'
+        CANCELLED = 'cancelled'
+
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='request_id', primary_key=True)
     dataset = models.CharField(max_length=255, db_column='DATASET', null=True)
     destination_rse = models.CharField(max_length=100, db_column='destination_rse')
     status = models.CharField(max_length=20, db_column='STATUS', null=True)
     source = models.CharField(max_length=200, db_column='SOURCE_RSE', null=True)
+    rse = models.CharField(max_length=100, db_column='ddm_rule_id', null=True)
+    start_time = models.DateTimeField(db_column='START_TIME')
+    end_time = models.DateTimeField(db_column='END_TIME')
+    total_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='TOTAL_FILES')
+    staged_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='STAGED_FILES')
+    update_time = models.DateTimeField(db_column='modification_time')
+    dataset_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='dataset_size', null=True)
+    staged_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='staged_size', null=True)
+    source_tape =  models.CharField(max_length=200, db_column='SOURCE_TAPE', null=True)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError('Read only')

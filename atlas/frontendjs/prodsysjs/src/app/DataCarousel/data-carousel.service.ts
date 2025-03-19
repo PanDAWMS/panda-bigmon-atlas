@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import {computed, Injectable} from '@angular/core';
+import {HttpClient, httpResource} from "@angular/common/http";
+import {Observable} from "rxjs";
+import {SelectionChangedEvent} from "ag-grid-community";
 
 export interface CarouselTapeConfig {
   tapeName: string;
@@ -15,6 +17,22 @@ export interface CarouselConfig {
   excludeSites: string[];
 }
 
+
+export interface StagingRule {
+  dataset: string;
+  scope: string;
+  data_type: string;
+  status: string;
+  rse: string;
+  source: string;
+  destination: string;
+  total_files: number;
+  staged_files: number;
+  start_time: string;
+  update_time: string;
+  number_active_tasks: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,9 +40,13 @@ export class DataCarouselService {
 
   constructor(private http: HttpClient) { }
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
+  private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
+  datasetStagingRulesResource = httpResource<StagingRule[]>(this.prGetStagingRulesUrl);
 
-  getDataCarouselConfig() {
+
+  getDataCarouselConfig(): Observable<CarouselConfig> {
     return this.http.get<CarouselConfig>(this.prDataCarouselConfigUrl);
   }
+
 
 }
