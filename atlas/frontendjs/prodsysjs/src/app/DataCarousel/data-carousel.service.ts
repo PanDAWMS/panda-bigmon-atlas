@@ -19,6 +19,7 @@ export interface CarouselConfig {
 
 
 export interface StagingRule {
+  id: number;
   dataset: string;
   scope: string;
   data_type: string;
@@ -31,6 +32,8 @@ export interface StagingRule {
   start_time: string;
   update_time: string;
   number_active_tasks: number;
+  dc_type: string;
+  owners: string[];
 }
 
 @Injectable({

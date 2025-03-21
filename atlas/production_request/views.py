@@ -28,7 +28,8 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
     MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer, \
-    HashTag, HashTagToRequest, get_bulk_hashtags_by_task, MCWorkflowSubCampaign, ETAGRelease, MCPriority
+    HashTag, HashTagToRequest, get_bulk_hashtags_by_task, MCWorkflowSubCampaign, ETAGRelease, MCPriority, \
+    PandaDatasetStaging, PandaDatasetStagingRelationship
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -270,12 +271,23 @@ def production_task_for_request(request: Request) -> Response:
                     tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
                 else:
                     tasks = ProductionTask.objects.filter(status=task_staus, timestamp__gt=days_ago(days), request__reqid__gte=1000)
+            elif 'source' in request.data and request.data['source'] == 'DCRules':
+                rules = request.data['rulesIDs']
+                prod_rules = [x['id'] for x in rules if x['dc_type'] == 'p']
+                panda_rules = [x['id'] for x in rules if x['dc_type'] == 'a']
+                panda_staging = list(PandaDatasetStaging.objects.filter(id__in=panda_rules))
+                panda_tasks = [y.task_id for y in list(
+                    PandaDatasetStagingRelationship.objects.filter(request_id__in=[x.id for x in panda_staging]))]
+                prodsys_staging = list(DatasetStaging.objects.filter(id__in=prod_rules))
+                prod_tasks = [y.task for y in list(ActionStaging.objects.filter(dataset_stage__in=prodsys_staging))]
+                tasks_id = list(set(prod_tasks + panda_tasks))
+                tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
+                tasks = [x for x in tasks if x.status not in ProductionTask.NOT_RUNNING]
+                hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
             else:
                 tasks_id = tasks_from_string(request.data['hashtagString'])
                 # split on 10000 chunks tasks = list(ProductionTask.objects.filter(id__in=tasks_id))
                 tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
-
-
 
         else:
             request_id = int(request.data['requestID'])

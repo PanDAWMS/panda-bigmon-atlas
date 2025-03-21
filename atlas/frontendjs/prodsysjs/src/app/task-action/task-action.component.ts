@@ -9,17 +9,63 @@ import {
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Observable} from 'rxjs';
 import {filter, map, switchMap, tap} from 'rxjs/operators';
-import {MatSelectChange} from "@angular/material/select";
+import {MatFormField, MatOption, MatSelect, MatSelectChange} from "@angular/material/select";
+import {MatMenu, MatMenuTrigger} from "@angular/material/menu";
+import {MatButton} from "@angular/material/button";
+import {MatDivider} from "@angular/material/divider";
+import {MatCheckbox} from "@angular/material/checkbox";
+import {FormsModule} from "@angular/forms";
+import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
+import {MatProgressBar} from "@angular/material/progress-bar";
+import {AsyncPipe, NgForOf, NgIf} from "@angular/common";
+import {MatCard} from "@angular/material/card";
+import {MatIcon} from "@angular/material/icon";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import {MatList, MatListItem} from "@angular/material/list";
+import {MatInput} from "@angular/material/input";
+import {MatLabel} from "@angular/material/form-field";
 
 
 
 
 
 @Component({
-    selector: 'app-task-action',
-    templateUrl: './task-action.component.html',
-    styleUrls: ['./task-action.component.css'],
-    standalone: false
+  selector: 'app-task-action',
+  templateUrl: './task-action.component.html',
+  styleUrls: ['./task-action.component.css'],
+  imports: [
+    MatMenuTrigger,
+    MatMenu,
+    MatButton,
+    MatDivider,
+    MatCheckbox,
+    MatFormField,
+    FormsModule,
+    MatSelect,
+    MatOption,
+    MatRadioGroup,
+    MatRadioButton,
+    MatProgressBar,
+    AsyncPipe,
+    MatCard,
+    MatIcon,
+    MatAccordion,
+    MatExpansionPanelHeader,
+    MatExpansionPanel,
+    MatExpansionPanelTitle,
+    MatLabel,
+    MatList,
+    MatListItem,
+    MatInput,
+    NgIf,
+    NgForOf
+  ],
+  standalone: true
 })
 
 export class TaskActionComponent implements OnInit, OnDestroy {

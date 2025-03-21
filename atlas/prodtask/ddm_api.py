@@ -387,6 +387,9 @@ class DDM(object):
     def change_rule_lifetime(self, rule_id, lifetime):
         self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})
 
+    def change_rule_source(self, rule_id, new_source):
+        self.__ddm.update_replication_rule(rule_id,{'source_replica_expression':new_source})
+
     def get_rule(self, rule_id):
         return self.__ddm.get_replication_rule(rule_id)
 

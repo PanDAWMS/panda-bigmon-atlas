@@ -16,7 +16,7 @@ from django.core.cache import cache
 from atlas.cric.client import CRICClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, JediTasks, HashTag, \
     JediDatasets, JediDatasetContents, SystemParametersHandler, TRequest, TemplateVariable, days_ago, \
-    PandaDatasetStaging
+    PandaDatasetStaging, PandaDatasetStagingRelationship
 from datetime import timedelta
 
 from atlas.prodtask.ddm_api import DDM
@@ -40,6 +40,8 @@ from atlas.task_action.task_management import TaskActionExecutor
 from elasticsearch7_dsl import Search, connections, A
 from elasticsearch7 import Elasticsearch
 from atlas.settings.local import MONIT_ES
+
+from ..prodjob.views import chunks
 from ..settings import cricclient as cric_settings
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -2524,6 +2526,7 @@ def get_tape_buffer_fullness(tape_name: str) -> int:
 
 @dataclass
 class DatasetStagingRule:
+    id: int
     dataset: str
     scope: str
     data_type: str
@@ -2536,6 +2539,8 @@ class DatasetStagingRule:
     start_time: str
     update_time: str
     number_active_tasks: int
+    dc_type: str
+    owners: List[str] = field(default_factory=list)
     bytes: int = 0
 
 
@@ -2545,40 +2550,84 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
     :return:
     """
     rules = []
-    for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+    dataset_staging_rules = list(DatasetStaging.objects.filter(status__in=DatasetStaging.ACTIVE_STATUS))
+    task_by_ds = {}
+    ds_by_task = {}
+    dataset_task_ids = [(y.dataset_stage_id, y.task) for y in list(ActionStaging.objects.filter(dataset_stage__in=dataset_staging_rules))]
+    task_ids = [x[1] for x in dataset_task_ids]
+    for dataset_task_id in dataset_task_ids:
+        ds_by_task[dataset_task_id[1]] = dataset_task_id[0]
+    tasks = sum([list(ProductionTask.objects.filter(id__in=chunk).values('id','status','username')) for chunk in chunks(task_ids, 1000)], [])
+    for task in tasks:
+        if task['status'] not in ProductionTask.NOT_RUNNING:
+            task_by_ds[ds_by_task[task['id']]] = task_by_ds.get(ds_by_task[task['id']],[]) + [task]
+    for dataset_staging in dataset_staging_rules:
         update_time = dataset_staging.update_time
+        owners = []
+        number_active_tasks = 0
+        for task in task_by_ds.get(dataset_staging.id, []):
+            number_active_tasks += 1
+            owners += [task['username']]
+        owners = list(set(owners))
         if not update_time:
             update_time = dataset_staging.start_time
-        if dataset_staging.destination_rse:
-            rules.append(
-                DatasetStagingRule(dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
-                                   data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
-                                   rse=dataset_staging.rse, source=dataset_staging.source,
-                                   destination=dataset_staging.destination_rse,
-                                   total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-                                   start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
-                                   update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
-                                   number_active_tasks=1,
-                                   bytes=int(dataset_staging.dataset_size)),
+        rule = dataset_staging.rse
+        if dataset_staging.status == DatasetStaging.STATUS.QUEUED:
+            rule = 'queued'
+        if not rule:
+            rule = 'waiting'
+
+        rules.append(
+            DatasetStagingRule(id=int(dataset_staging.id), dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
+                               data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
+                               rse=rule, source=dataset_staging.source,
+                               destination=dataset_staging.destination_rse,
+                               total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
+                               start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               number_active_tasks=len(task_by_ds.get(dataset_staging.id,[])), dc_type = 'p',
+                               owners=owners,
+                               bytes=int(dataset_staging.dataset_size)),
 
 
-            )
-    for dataset_staging in PandaDatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
-        if dataset_staging.destination_rse:
-            update_time = dataset_staging.update_time
-            if not update_time:
-                update_time = dataset_staging.start_time
-            rules.append(
-                DatasetStagingRule(dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
-                                   data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
-                                   rse=dataset_staging.rse, source=dataset_staging.source_tape,
-                                   destination=dataset_staging.destination_rse,
-                                   total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-                                   start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
-                                   update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
-                                   number_active_tasks=1,
-                                   bytes=int(dataset_staging.dataset_size))
-            )
+        )
+    dataset_staging_rules = list(PandaDatasetStaging.objects.filter(status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]))
+    dataset_staging_rules_ids = [x.id for x in dataset_staging_rules]
+    task_by_ds = {}
+    ds_by_task = {}
+    dataset_task_ids = [(y.request_id, y.task_id) for y in list(PandaDatasetStagingRelationship.objects.filter(request_id__in=dataset_staging_rules_ids))]
+    task_ids = [x[1] for x in dataset_task_ids]
+    for dataset_task_id in dataset_task_ids:
+        ds_by_task[dataset_task_id[1]] = dataset_task_id[0]
+    tasks = sum([list(ProductionTask.objects.filter(id__in=chunk).values('id','status','username')) for chunk in chunks(task_ids, 1000)], [])
+    for task in tasks:
+        if task['status'] not in ProductionTask.NOT_RUNNING:
+            task_by_ds[ds_by_task[task['id']]] = task_by_ds.get(ds_by_task[task['id']],[]) + [task]
+    for dataset_staging in dataset_staging_rules:
+        update_time = dataset_staging.update_time
+        owners = []
+        number_active_tasks = 0
+        for task in task_by_ds.get(dataset_staging.id, []):
+            number_active_tasks += 1
+            owners += [task['username']]
+        if not update_time:
+            update_time = dataset_staging.start_time
+        rule = dataset_staging.rse
+        if dataset_staging.status == PandaDatasetStaging.STATUS.QUEUED:
+            rule = 'queued'
+        if not rule:
+            rule = 'waiting'
+        rules.append(
+            DatasetStagingRule(id=int(dataset_staging.id), dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
+                               data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
+                               rse=rule, source=dataset_staging.source_tape,
+                               destination=dataset_staging.destination_rse,
+                               total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
+                               start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a',
+                               bytes=int(dataset_staging.dataset_size))
+        )
     return rules
 
 
@@ -2596,3 +2645,4 @@ def get_staging_rules(request):
         return Response(map(asdict, rules), status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

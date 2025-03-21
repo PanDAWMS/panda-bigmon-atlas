@@ -275,7 +275,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         UnmergeCleaningComponent,
         UnmergeDatasetsComponent,
         ProductionTaskComponent,
-        TaskActionComponent,
         DialogTaskSubmissionComponent,
         RequestsliceComponent,
         TaskStagingProgressComponent,
@@ -283,11 +282,9 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         DerivationFromTagComponent,
         DialogContainerDetails,
         DialogSelectedContainers,
-        ProductionTaskTableComponent,
         TasksManagementComponent,
         TaskDetailsComponent,
         DialogTaskDetailsComponent,
-        BtnCellRenderer,
         TaskTemplateSubmissionComponent,
         PatternEditComponent,
         AnalysisPatternComponent,
@@ -311,7 +308,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         TaskManagementByUrlComponent
     ],
   exports: [
-    ProductionTaskTableComponent,
 
   ],
     bootstrap: [AppComponent], imports: [BrowserModule,
@@ -350,7 +346,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AgGridModule,
     MatStepperModule,
     MatSlideToggleModule,
-    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent], providers: [
+    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent, ProductionTaskTableComponent, TaskActionComponent], providers: [
         {
             provide: APP_BASE_HREF, useValue: '/ng',
             useFactory: getBaseLocation

@@ -12,15 +12,38 @@ import {
 } from "ag-grid-community";
 import {ActivatedRoute, Router} from "@angular/router";
 import {APP_BASE_HREF, formatDate} from "@angular/common";
-import {UntypedFormControl} from "@angular/forms";
+import {FormsModule, ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
 import {DEFAULTS, TASKS_CONSTANTS} from "../common/constants/tasks_constants";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef} from "@angular/material/dialog";
+import {MatIcon} from "@angular/material/icon";
+import {TaskActionComponent} from "../task-action/task-action.component";
+import {MatButton} from "@angular/material/button";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelDescription, MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import {TaskStatsComponent} from "../production-request/task-stats/task-stats.component";
 
 @Component({
-    selector: 'app-production-task-table',
-    templateUrl: './production-task-table.component.html',
-    styleUrls: ['./production-task-table.component.css'],
-    standalone: false
+  selector: 'app-production-task-table',
+  templateUrl: './production-task-table.component.html',
+  styleUrls: ['./production-task-table.component.css'],
+  imports: [
+    FormsModule,
+    AgGridAngular,
+    TaskActionComponent,
+    MatButton,
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelTitle,
+    MatExpansionPanelDescription,
+     MatExpansionPanelHeader,
+    TaskStatsComponent,
+    ReactiveFormsModule
+  ],
+  standalone: true
 })
 export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestroy {
 
@@ -288,7 +311,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
 
   selectFiltered(): void {
     this.tasksGrid.api.deselectAll();
-    this.tasksGrid.api.selectAllFiltered();
+    this.tasksGrid.api.selectAll('filtered');
   }
 
   clearSelection(): void {
@@ -367,13 +390,18 @@ export class DialogTaskDetailsComponent implements OnInit {
 }
 
 @Component({
-    selector: 'btn-cell-renderer',
-    template: `
-    <a  style="color: #43a047; cursor: pointer" (click)="btnClickedHandler()"><mat-icon class="more">
-more
-</mat-icon></a>
+  selector: 'btn-cell-renderer',
+  template: `
+    <a style="color: #43a047; cursor: pointer" (click)="btnClickedHandler()">
+      <mat-icon class="more">
+        more
+      </mat-icon>
+    </a>
   `,
-    standalone: false
+  imports: [
+    MatIcon
+  ],
+  standalone: true
 })
 export class BtnCellRenderer implements ICellRendererAngularComp {
   private params: any;

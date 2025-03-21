@@ -33,6 +33,10 @@ export class TasksManagementService {
   getTasksByHashtag(hashtagString: string, source: 'dkb'|'jira'|'ht'|'taskStatus' = 'ht'): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {hashtagString, source});
   }
+
+  getTasksByDCRules(DCRules: {id: number, dc_type: string}[]): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {rulesIDs: DCRules, source: 'DCRules', hashtagString: 'present'});
+  }
   getTasksByBigpandaUrl(tasksURL: string): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksPrBigpandaUrl , {tasksURL});
   }

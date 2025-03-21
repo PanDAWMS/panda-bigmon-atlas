@@ -2,8 +2,8 @@ import {Component, computed, inject, OnInit, ViewChild} from '@angular/core';
 import {DataCarouselService, StagingRule} from "../data-carousel.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {toObservable} from "@angular/core/rxjs-interop";
-import {map, switchMap, take, takeUntil, tap} from "rxjs/operators";
-import {BehaviorSubject, ReplaySubject, Subject} from "rxjs";
+import {catchError, map, switchMap, take, takeUntil, tap} from "rxjs/operators";
+import {BehaviorSubject, of, ReplaySubject, Subject} from "rxjs";
 import {AgGridAngular} from "ag-grid-angular";
 import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from "ag-grid-community";
 import {NgxMatSelectSearchModule} from "ngx-mat-select-search";
@@ -14,6 +14,9 @@ import {convertBytes} from "../../derivation-exclusion/dataset-size.pipe";
 import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";
 import {MatButton} from "@angular/material/button";
+import {TasksManagementService} from "../../tasks-management/tasks-management.service";
+import {ProductionTask} from "../../production-request/production-request-models";
+import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
 
 @Component({
   selector: 'app-staging-management',
@@ -26,7 +29,8 @@ import {MatButton} from "@angular/material/button";
     MatFormField,
     MatInput,
     MatLabel,
-    MatButton
+    MatButton,
+    ProductionTaskTableComponent,
   ],
   templateUrl: './staging-management.component.html',
   styleUrl: './staging-management.component.css',
@@ -36,7 +40,7 @@ export class StagingManagementComponent implements OnInit {
   private dataCarouselService = inject(DataCarouselService);
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
-
+  private taskManagementService = inject(TasksManagementService);
   @ViewChild('agGrid') rulesGrid!: AgGridAngular;
   stagingRules = computed(() => this.dataCarouselService.datasetStagingRulesResource.value() ?? []);
   filterParameters = toObservable(this.stagingRules).pipe(
@@ -45,6 +49,8 @@ export class StagingManagementComponent implements OnInit {
       this.allDestinations = Array.from(new Set(rules.map(rule => rule.destination)));
       // Get all distinct sources from the rules
       this.allSources = Array.from(new Set(rules.map(rule => rule.source)));
+      // Get all distinct owners from the rules without flatMap
+      this.allOwners = Array.from(new Set(rules.reduce((acc, rule) => acc.concat(rule.owners), [])));
       this.selectedDestinations.setValue(this.allDestinations);
       this.selectedSources.setValue(this.allSources);
       this.activatedRoute.queryParams.pipe(take(1)).subscribe(params => {
@@ -64,6 +70,22 @@ export class StagingManagementComponent implements OnInit {
         } else {
           this.selectedSources.setValue(this.allSources);
         }
+        const usernameParam = params.username;
+        if (usernameParam && Array.isArray(usernameParam)) {
+          this.selectedUsernames.setValue(usernameParam);
+        } else if (usernameParam && typeof usernameParam === 'string') {
+          this.selectedUsernames.setValue([usernameParam]);
+        } else {
+          this.selectedUsernames.setValue(this.allOwners);
+        }
+        const statusParam = params.status;
+        if (statusParam && Array.isArray(statusParam)) {
+          this.selectedStatus.setValue(statusParam);
+        } else if (statusParam && typeof statusParam === 'string') {
+          this.selectedStatus.setValue([statusParam]);
+        } else {
+          this.selectedStatus.setValue(this.allStatus);
+        }
         const generalParam = params.filter;
         if (generalParam) {
           this.generalFilter.setValue(generalParam);
@@ -77,10 +99,17 @@ export class StagingManagementComponent implements OnInit {
   selectedDestinations = new FormControl([]);
   public allDestinations: string[] = [];
   public allSources: string[] = [];
+  public allOwners: string[] = [];
+  public allStatus: string[] = ['staging', 'queued'];
   public selectedSources = new FormControl([]);
+  public selectedUsernames = new FormControl([]);
+  public selectedStatus = new FormControl([]);
   public generalFilter = new FormControl('');
   public filterChanged$: Subject<number> = new Subject<number>();
-
+  public selectedRules = [];
+  public selectedRulesString = '';
+  public tasksToShow: ProductionTask[] = [];
+  public taskLoading = false;
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
@@ -107,7 +136,7 @@ export class StagingManagementComponent implements OnInit {
     // display only first and last 3 letters
     cellRenderer: params => {
       const rse = params.value;
-      if (rse.length > 6) {
+      if (rse.length > 9) {
         return `<a href="https://rucio-ui.cern.ch/rule?rule_id=${rse}">${rse.substring(0, 3)}...${rse.substring(rse.length - 3, rse.length)}</a>`;
       }
       return rse;
@@ -132,29 +161,17 @@ export class StagingManagementComponent implements OnInit {
         // Subscribe to selectedDestinations changes and update URL query parameter
 
     this.selectedDestinations.valueChanges.subscribe(selected => {
-      if (
-        !selected ||
-        selected.length === 0 ||
-        (this.allDestinations && JSON.stringify(selected.sort()) === JSON.stringify(this.allDestinations.sort()))
-      ) {
-        // Remove parameter if ALL or none selected
-        this.router.navigate([], {queryParams: {destination: null}, queryParamsHandling: 'merge'});
-      } else {
-        this.router.navigate([], {queryParams: {destination: selected}, queryParamsHandling: 'merge'});
-      }
       this.filterChanged$.next(1);
     });
     this.selectedSources.valueChanges.subscribe( selected => {
-        if (
-          !selected ||
-          selected.length === 0 ||
-          (this.allSources && JSON.stringify(selected.sort()) === JSON.stringify(this.allSources.sort()))
-        ) {
-          // Remove parameter if ALL or none selected
-          this.router.navigate([], {queryParams: {source: null}, queryParamsHandling: 'merge'});
-        } else {
-          this.router.navigate([], {queryParams: {source: selected}, queryParamsHandling: 'merge'});
-        }
+        this.filterChanged$.next(1);
+      }
+    );
+    this.selectedStatus.valueChanges.subscribe( selected => {
+        this.filterChanged$.next(1);
+      }
+    );
+    this.selectedUsernames.valueChanges.subscribe( selected => {
         this.filterChanged$.next(1);
       }
     );
@@ -187,21 +204,44 @@ export class StagingManagementComponent implements OnInit {
     const selectedDestinations = this.selectedDestinations.value;
     const selectedSources = this.selectedSources.value;
     const generalFilter = this.generalFilter.value;
-
+    const selectedStatus = this.selectedStatus.value;
+    const selectedUsernames = this.selectedUsernames.value;
     const destinationFilter = selectedDestinations.length === 0 || selectedDestinations.includes(node.data.destination);
     const sourceFilter = selectedSources.length === 0 || selectedSources.includes(node.data.source);
+    const statusFilter = selectedStatus.length === 0 || selectedStatus.includes(node.data.status);
+    // get intersection of owners and selectedUsernames
+    const usernameFilter = selectedUsernames.length === 0 || node.data.owners.some(owner => selectedUsernames.includes(owner));
     const generalFilterRegex = new RegExp(generalFilter, 'i');
     const generalFilterPass = node.data && (
       Boolean(node.data.dataset.match(generalFilterRegex)) ||
-      Boolean(node.data.rse.match(generalFilterRegex)) ||
-      Boolean(node.data.source.match(generalFilterRegex)) ||
-      Boolean(node.data.destination.match(generalFilterRegex))
+      Boolean(node.data.rse.match(generalFilterRegex))
     );
-    return destinationFilter && sourceFilter && generalFilterPass;
+    return destinationFilter && sourceFilter && generalFilterPass && statusFilter && usernameFilter;
 
   }
   onSelectionChanged($event: SelectionChangedEvent<any>): void {
-    console.log($event.api.getSelectedRows());
+    this.selectedRules = $event.api.getSelectedRows();
+    let stagedFiles = 0;
+    let totalFiles = 0;
+    let bytes = 0;
+    const usernames = new Set<string>();
+    let activeTasksNumber = 0;
+    for (const rule of this.selectedRules) {
+      stagedFiles += rule.staged_files;
+      totalFiles += rule.total_files;
+      bytes += rule.bytes;
+      activeTasksNumber += rule.number_active_tasks;
+      rule.owners.forEach(owner => usernames.add(owner));
+    }
+    let userNameSting = '';
+    if (usernames.size < 5 ) {
+      userNameSting = Array.from(usernames).join(', ');
+    } else {
+      userNameSting = `${usernames.size} users`;
+    }
+    const totalSize = convertBytes(bytes);
+    this.selectedRulesString = `Selected ${this.selectedRules.length} rules with ${stagedFiles} staged files, ${totalFiles} total files, ${totalSize}, ${activeTasksNumber} active tasks and for ${userNameSting}`;
+
   }
 
 
@@ -211,5 +251,38 @@ export class StagingManagementComponent implements OnInit {
 
   adjustColumns(params: FilterChangedEvent<any>) {
         params.api.autoSizeColumns(this.columnDefs.map( column => column.field), true);
+  }
+
+  showTasks() {
+    const DCRules: {id: number, dc_type: string}[] = this.selectedRules.map(
+      rule => {
+        return {
+          id: rule.id,
+          dc_type: rule.dc_type
+        };
+      }
+    );
+    this.tasksToShow = [];
+    this.taskLoading = true;
+    this.taskManagementService.getTasksByDCRules(DCRules).pipe(
+      catchError( err => {
+        this.taskLoading = false;
+        return of([] as ProductionTask[]);
+      })
+    ).subscribe(
+      tasks => {
+        this.tasksToShow = tasks;
+        this.taskLoading = false;
+      }
+    );
+  }
+
+  selectFiltered() {
+    this.rulesGrid.api.deselectAll();
+    this.rulesGrid.api.selectAll('filtered');
+  }
+
+  clearSelection() {
+    this.rulesGrid.api.deselectAll();
   }
 }

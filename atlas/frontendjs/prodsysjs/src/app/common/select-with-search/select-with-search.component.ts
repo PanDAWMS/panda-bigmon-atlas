@@ -1,5 +1,5 @@
 import { CommonModule, NgForOf, AsyncPipe } from '@angular/common';
-import {Component, Input, OnDestroy, OnInit, forwardRef, EventEmitter, Output} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit, forwardRef, EventEmitter, Output, inject} from '@angular/core';
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { MatOptionModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
@@ -7,6 +7,7 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 import {MatFormField, MatLabel} from "@angular/material/form-field";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-select-with-search',
@@ -58,6 +59,7 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
   @Input() multiple = false;
   @Input() searchPlaceholder = 'Search';
   @Input() label = '';
+  @Input() urlUpdateParamName = '';
   @Output() selectionChange = new EventEmitter<any>();
 
   selectControl = new FormControl();
@@ -65,7 +67,7 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
   filteredOptions$: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
   private destroy$ = new Subject<void>();
   @Input() displayFn: (option: any) => string = (option) => option;
-
+  private router = inject(Router);
   private onChangeFn: any = () => {};
   private onTouchedFn: any = () => {};
 
@@ -84,6 +86,20 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
     this.selectControl.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(value => {
+        if (this.urlUpdateParamName !== '') {
+             const newQueryParams = {queryParams: {}};
+             if (
+                !value ||
+                value.length === 0 ||
+                (this.options && JSON.stringify(value.sort()) === JSON.stringify(this.options.sort()))
+              ) {
+                // Remove parameter if ALL or none selected
+                newQueryParams.queryParams[this.urlUpdateParamName] = null;
+              } else {
+                newQueryParams.queryParams[this.urlUpdateParamName] = value;
+              }
+             this.router.navigate([], {queryParams: newQueryParams.queryParams, queryParamsHandling: 'merge'});
+        }
         this.onChangeFn(value);
       });
   }

@@ -8,6 +8,7 @@
       [options]="allDestinations"
       [multiple]="true"
       (selectionChange)="filterChanged$.next(1)"
+      [urlUpdateParamName]="'destination'"
     [label]="'Destinations'">
 
     </app-select-with-search>
@@ -18,13 +19,39 @@
       [options]="allSources"
       [multiple]="true"
       (selectionChange)="filterChanged$.next(1)"
+      [urlUpdateParamName]="'source'"
     [label]="'Sources'">
     </app-select-with-search>
-
-<mat-form-field appearance="fill">
-    <mat-label>General filter</mat-label>
+    <app-select-with-search
+      [formControl]="selectedUsernames"
+      [options]="allOwners"
+      [multiple]="true"
+      (selectionChange)="filterChanged$.next(1)"
+      [urlUpdateParamName]="'username'"
+    [label]="'Usernames'">
+    </app-select-with-search>
+    <app-select-with-search
+      [formControl]="selectedStatus"
+      [options]="allStatus"
+      [multiple]="true"
+      (selectionChange)="filterChanged$.next(1)"
+      [urlUpdateParamName]="'status'"
+    [label]="'Status'">
+    </app-select-with-search>
+<div>
+<mat-form-field appearance="fill" style="width: 100%;">
+    <mat-label>Filter by dataset and rule id</mat-label>
       <input matInput [formControl]="generalFilter" (change)="filterChanged$.next(1)" >
     </mat-form-field>
+  </div>
+<div class="task-table-wrapper">
+<div class="task-table-header">
+
+  <div>
+  <button mat-raised-button color="primary" (click)="selectFiltered()">Select Filtered</button>
+  <button mat-raised-button color="primary" (click)="clearSelection()">Clear selection</button>
+  </div>
+</div>
                <ag-grid-angular
                  #agGrid
           style="width: 100%; "
@@ -41,10 +68,19 @@
                  (gridReady)="onGridReady($event)"
                  (filterChanged)="adjustColumns($event)"
                   ></ag-grid-angular>
+</div>
+<div><h5>{{selectedRulesString}}</h5></div>
 <div>
       <button  [disabled]="true">Change destination</button>
       <button [disabled]="true">Change source</button>
       <button  [disabled]="true">Release tasks</button>
-      <button  [disabled]="true">Show tasks</button>
+      <button  (click)="showTasks()" [disabled]="taskLoading">Show tasks</button>
 
 </div>
+@if(taskLoading){
+  <mat-spinner></mat-spinner>
+}
+@if(tasksToShow.length > 0){
+    <app-production-task-table [tasks]="tasksToShow"  [showOwner]="true" >
+  </app-production-task-table>
+}
