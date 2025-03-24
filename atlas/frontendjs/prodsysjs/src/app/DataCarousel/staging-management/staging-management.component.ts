@@ -1,29 +1,28 @@
 import {Component, computed, inject, OnInit, ViewChild} from '@angular/core';
-import {DataCarouselService, StagingRule} from "../data-carousel.service";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {toObservable} from "@angular/core/rxjs-interop";
-import {catchError, map, switchMap, take, takeUntil, tap} from "rxjs/operators";
-import {BehaviorSubject, of, ReplaySubject, Subject} from "rxjs";
-import {AgGridAngular} from "ag-grid-angular";
-import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from "ag-grid-community";
-import {NgxMatSelectSearchModule} from "ngx-mat-select-search";
-import {FormControl, ReactiveFormsModule} from "@angular/forms";
+import {DataCarouselService, StagingRule} from '../data-carousel.service';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {toObservable} from '@angular/core/rxjs-interop';
+import {catchError, map, switchMap, take, takeUntil, tap} from 'rxjs/operators';
+import {BehaviorSubject, of, ReplaySubject, Subject} from 'rxjs';
+import {AgGridAngular} from 'ag-grid-angular';
+import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from 'ag-grid-community';
+import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
-import {SelectWithSearchComponent} from "../../common/select-with-search/select-with-search.component";
-import {convertBytes} from "../../derivation-exclusion/dataset-size.pipe";
-import {MatFormField, MatLabel} from "@angular/material/form-field";
-import {MatInput} from "@angular/material/input";
-import {MatButton} from "@angular/material/button";
-import {TasksManagementService} from "../../tasks-management/tasks-management.service";
-import {ProductionTask} from "../../production-request/production-request-models";
-import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
+import {FilterBase, SelectWithSearchComponent} from '../../common/select-with-search/select-with-search.component';
+import {convertBytes} from '../../derivation-exclusion/dataset-size.pipe';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatButton} from '@angular/material/button';
+import {TasksManagementService} from '../../tasks-management/tasks-management.service';
+import {ProductionTask} from '../../production-request/production-request-models';
+import {ProductionTaskTableComponent} from '../../production-task-table/production-task-table.component';
+import {MatSlideToggle} from "@angular/material/slide-toggle";
 
 @Component({
   selector: 'app-staging-management',
   imports: [
     MatProgressSpinner,
     AgGridAngular,
-    NgxMatSelectSearchModule,
     ReactiveFormsModule,
     SelectWithSearchComponent,
     MatFormField,
@@ -31,6 +30,8 @@ import {ProductionTaskTableComponent} from "../../production-task-table/producti
     MatLabel,
     MatButton,
     ProductionTaskTableComponent,
+    MatSlideToggle,
+    FormsModule,
   ],
   templateUrl: './staging-management.component.html',
   styleUrl: './staging-management.component.css',
@@ -41,75 +42,53 @@ export class StagingManagementComponent implements OnInit {
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
   private taskManagementService = inject(TasksManagementService);
+  public filters = {
+    source: new FilterBase('Source', [], 'source'),
+    destination: new FilterBase('Destination', [], 'destination'),
+    status: new FilterBase('Status', ['staging', 'queued'], 'status'),
+    username: new FilterBase('Username', [], 'username'),
+  };
   @ViewChild('agGrid') rulesGrid!: AgGridAngular;
-  stagingRules = computed(() => this.dataCarouselService.datasetStagingRulesResource.value() ?? []);
+  stagingRules = computed(() => this.dataCarouselService.datasetStagingRulesResource.value()?.rules ?? []);
+  fullRSEs = computed(() => this.dataCarouselService.datasetStagingRulesResource.value()?.fullRSEs ?? []);
   filterParameters = toObservable(this.stagingRules).pipe(
     tap((rules) => {
-      // Get all distinct destinations from the rules
-      this.allDestinations = Array.from(new Set(rules.map(rule => rule.destination)));
-      // Get all distinct sources from the rules
-      this.allSources = Array.from(new Set(rules.map(rule => rule.source)));
-      // Get all distinct owners from the rules without flatMap
-      this.allOwners = Array.from(new Set(rules.reduce((acc, rule) => acc.concat(rule.owners), [])));
-      this.selectedDestinations.setValue(this.allDestinations);
-      this.selectedSources.setValue(this.allSources);
+      this.filters.destination.updateValues(
+        Array.from(
+          new Set(
+            rules
+              .map(rule => rule.destination)
+              .filter(destination => destination && destination.trim() !== '')
+          )
+        )
+      );
+      this.filters.source.updateValues(Array.from(new Set(rules.map(rule => rule.source))));
+      this.filters.username.updateValues(Array.from(new Set(rules.reduce((acc, rule) => acc.concat(rule.owners), []))));
       this.activatedRoute.queryParams.pipe(take(1)).subscribe(params => {
-        const destParam = params.destination;
-        if (destParam && Array.isArray(destParam)) {
-          this.selectedDestinations.setValue(destParam);
-        } else if (destParam && typeof destParam === 'string') {
-          this.selectedDestinations.setValue([destParam]);
-        } else {
-          this.selectedDestinations.setValue(this.allDestinations);
+        for (const filter of Object.values(this.filters)) {
+          filter.takeValuesFromParams(params);
         }
-        const sourceParam = params.source;
-        if (sourceParam && Array.isArray(sourceParam)) {
-          this.selectedSources.setValue(sourceParam);
-        } else if (sourceParam && typeof sourceParam === 'string') {
-          this.selectedSources.setValue([sourceParam]);
-        } else {
-          this.selectedSources.setValue(this.allSources);
-        }
-        const usernameParam = params.username;
-        if (usernameParam && Array.isArray(usernameParam)) {
-          this.selectedUsernames.setValue(usernameParam);
-        } else if (usernameParam && typeof usernameParam === 'string') {
-          this.selectedUsernames.setValue([usernameParam]);
-        } else {
-          this.selectedUsernames.setValue(this.allOwners);
-        }
-        const statusParam = params.status;
-        if (statusParam && Array.isArray(statusParam)) {
-          this.selectedStatus.setValue(statusParam);
-        } else if (statusParam && typeof statusParam === 'string') {
-          this.selectedStatus.setValue([statusParam]);
-        } else {
-          this.selectedStatus.setValue(this.allStatus);
-        }
+
         const generalParam = params.filter;
         if (generalParam) {
           this.generalFilter.setValue(generalParam);
         } else {
           this.generalFilter.setValue('');
         }
+        if (params.fullrses) {
+          this.showOnlyFullRSEs.setValue(true);
+        }
       });
     } ),
   );
-  loading = this.dataCarouselService.datasetStagingRulesResource.isLoading;
-  selectedDestinations = new FormControl([]);
-  public allDestinations: string[] = [];
-  public allSources: string[] = [];
-  public allOwners: string[] = [];
-  public allStatus: string[] = ['staging', 'queued'];
-  public selectedSources = new FormControl([]);
-  public selectedUsernames = new FormControl([]);
-  public selectedStatus = new FormControl([]);
+  ruleLoading = this.dataCarouselService.datasetStagingRulesResource.isLoading;
   public generalFilter = new FormControl('');
   public filterChanged$: Subject<number> = new Subject<number>();
   public selectedRules = [];
   public selectedRulesString = '';
   public tasksToShow: ProductionTask[] = [];
   public taskLoading = false;
+  public showOnlyFullRSEs = new FormControl<boolean>(false);
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
@@ -131,7 +110,15 @@ export class StagingManagementComponent implements OnInit {
       tooltipField: 'dataset',
     },
     {field: 'source', headerName: 'Source'},
-    {field: 'destination', headerName: 'Destination'},
+    {field: 'destination', headerName: 'Destination',
+      cellRenderer: params => {
+        if (this.fullRSEs().includes(params.value)){
+          return `<span style="color: red">${params.value}</span>`;
+        } else {
+          return params.value;
+        }
+      }
+    },
     {field: 'rse', headerName: 'Rule',
     // display only first and last 3 letters
     cellRenderer: params => {
@@ -160,21 +147,19 @@ export class StagingManagementComponent implements OnInit {
     this.filterParameters.subscribe();
         // Subscribe to selectedDestinations changes and update URL query parameter
 
-    this.selectedDestinations.valueChanges.subscribe(selected => {
+    for (const filter of Object.values(this.filters)) {
+      filter.selectedValues.valueChanges.subscribe((selected) => {
+        this.filterChanged$.next(1);
+      });
+      }
+    this.showOnlyFullRSEs.valueChanges.subscribe(filter => {
+      if (filter) {
+        this.router.navigate([], {queryParams: {fullrses: true}, queryParamsHandling: 'merge'});
+      } else {
+        this.router.navigate([], {queryParams: {fullrses: null}, queryParamsHandling: 'merge'});
+      }
       this.filterChanged$.next(1);
     });
-    this.selectedSources.valueChanges.subscribe( selected => {
-        this.filterChanged$.next(1);
-      }
-    );
-    this.selectedStatus.valueChanges.subscribe( selected => {
-        this.filterChanged$.next(1);
-      }
-    );
-    this.selectedUsernames.valueChanges.subscribe( selected => {
-        this.filterChanged$.next(1);
-      }
-    );
     this.generalFilter.valueChanges.subscribe( filter => {
       if (filter) {
         this.router.navigate([], {queryParams: {filter}, queryParamsHandling: 'merge'});
@@ -201,22 +186,27 @@ export class StagingManagementComponent implements OnInit {
 
 
   doesExternalFilterPass(node: RowNode<StagingRule>): boolean {
-    const selectedDestinations = this.selectedDestinations.value;
-    const selectedSources = this.selectedSources.value;
+    const selectedDestinations = this.filters.destination.selectedValues.value;
+    const selectedSources = this.filters.source.selectedValues.value;
     const generalFilter = this.generalFilter.value;
-    const selectedStatus = this.selectedStatus.value;
-    const selectedUsernames = this.selectedUsernames.value;
+    const selectedStatus = this.filters.status.selectedValues.value;
+    const selectedUsernames = this.filters.username.selectedValues.value;
+    const fullRSEsFilter = ! this.showOnlyFullRSEs.value || this.fullRSEs().includes(node.data.destination);
     const destinationFilter = selectedDestinations.length === 0 || selectedDestinations.includes(node.data.destination);
     const sourceFilter = selectedSources.length === 0 || selectedSources.includes(node.data.source);
     const statusFilter = selectedStatus.length === 0 || selectedStatus.includes(node.data.status);
     // get intersection of owners and selectedUsernames
     const usernameFilter = selectedUsernames.length === 0 || node.data.owners.some(owner => selectedUsernames.includes(owner));
-    const generalFilterRegex = new RegExp(generalFilter, 'i');
-    const generalFilterPass = node.data && (
-      Boolean(node.data.dataset.match(generalFilterRegex)) ||
-      Boolean(node.data.rse.match(generalFilterRegex))
-    );
-    return destinationFilter && sourceFilter && generalFilterPass && statusFilter && usernameFilter;
+    let generalFilterPass = true;
+    if (generalFilter) {
+        const generalFilterRegex = new RegExp(generalFilter, 'i');
+        generalFilterPass = node.data && (
+          Boolean(node.data.dataset.match(generalFilterRegex)) ||
+          Boolean(node.data.rse.match(generalFilterRegex))
+        );
+    }
+
+    return fullRSEsFilter && destinationFilter && sourceFilter && generalFilterPass && statusFilter && usernameFilter;
 
   }
   onSelectionChanged($event: SelectionChangedEvent<any>): void {

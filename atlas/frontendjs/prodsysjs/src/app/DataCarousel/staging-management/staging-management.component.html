@@ -1,43 +1,36 @@
 <p>Active staging rules (both Production and Analysis)</p>
-@if(loading()){
+@if(ruleLoading()){
   <mat-spinner></mat-spinner>
 }
-
     <app-select-with-search
-      [formControl]="selectedDestinations"
-      [options]="allDestinations"
+      [formControl]="filters.source.selectedValues"
+      [filterBase]="filters.source"
+      [multiple]="true"
+      (selectionChange)="filterChanged$.next(1)">
+    </app-select-with-search>
+    <app-select-with-search
+      [formControl]="filters.destination.selectedValues"
+      [filterBase]="filters.destination"
       [multiple]="true"
       (selectionChange)="filterChanged$.next(1)"
-      [urlUpdateParamName]="'destination'"
-    [label]="'Destinations'">
+      >
 
     </app-select-with-search>
 
 
     <app-select-with-search
-      [formControl]="selectedSources"
-      [options]="allSources"
+      [formControl]="filters.username.selectedValues"
+      [filterBase]="filters.username"
       [multiple]="true"
-      (selectionChange)="filterChanged$.next(1)"
-      [urlUpdateParamName]="'source'"
-    [label]="'Sources'">
+      (selectionChange)="filterChanged$.next(1)">
     </app-select-with-search>
     <app-select-with-search
-      [formControl]="selectedUsernames"
-      [options]="allOwners"
+      [formControl]="filters.status.selectedValues"
+      [filterBase]="filters.status"
       [multiple]="true"
-      (selectionChange)="filterChanged$.next(1)"
-      [urlUpdateParamName]="'username'"
-    [label]="'Usernames'">
+      (selectionChange)="filterChanged$.next(1)">
     </app-select-with-search>
-    <app-select-with-search
-      [formControl]="selectedStatus"
-      [options]="allStatus"
-      [multiple]="true"
-      (selectionChange)="filterChanged$.next(1)"
-      [urlUpdateParamName]="'status'"
-    [label]="'Status'">
-    </app-select-with-search>
+    <mat-slide-toggle [formControl]="showOnlyFullRSEs" > Only Full RSEs</mat-slide-toggle>
 <div>
 <mat-form-field appearance="fill" style="width: 100%;">
     <mat-label>Filter by dataset and rule id</mat-label>
@@ -71,10 +64,11 @@
 </div>
 <div><h5>{{selectedRulesString}}</h5></div>
 <div>
+        <button  (click)="showTasks()" [disabled]="taskLoading" >Show tasks</button>
+      <span>|Action: </span>
       <button  [disabled]="true">Change destination</button>
       <button [disabled]="true">Change source</button>
       <button  [disabled]="true">Release tasks</button>
-      <button  (click)="showTasks()" [disabled]="taskLoading">Show tasks</button>
 
 </div>
 @if(taskLoading){

@@ -7,7 +7,39 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 import {MatFormField, MatLabel} from "@angular/material/form-field";
-import {Router} from "@angular/router";
+import {Params, Router} from "@angular/router";
+
+export class FilterBase {
+  public allValues: string[] = [];
+  public selectedValues: FormControl<string[]> = new FormControl([]);
+  public label: string;
+  public urlUpdateParamName: string;
+
+
+  constructor(label: string, initialValues: string[] = [],  urlUpdateParamName: string = '') {
+    this.label = label;
+    this.urlUpdateParamName = urlUpdateParamName;
+    this.allValues = initialValues;
+    this.selectedValues.setValue([]);
+  }
+
+  updateValues(values: string[]): void {
+    this.allValues = values;
+    this.selectedValues.setValue([]);
+  }
+
+  takeValuesFromParams(params: Params): void {
+      const valuesParam = params[this.urlUpdateParamName];
+      if (valuesParam && Array.isArray(valuesParam)) {
+        this.selectedValues.setValue(valuesParam);
+      } else if (valuesParam && typeof valuesParam === 'string') {
+        this.selectedValues.setValue([valuesParam]);
+      } else {
+        this.selectedValues.setValue([]);
+      }
+
+  }
+}
 
 @Component({
   selector: 'app-select-with-search',
@@ -26,8 +58,8 @@ import {Router} from "@angular/router";
   ],
   template: `
     <mat-form-field appearance="fill">
-  <mat-label>{{label}}</mat-label>
-    <mat-select [formControl]="selectControl" [multiple]="multiple" (selectionChange)="onSelectionChange($event)">
+  <mat-label>{{filterBase.label}}</mat-label>
+    <mat-select [panelWidth]="''" [formControl]="selectControl" [multiple]="multiple" (selectionChange)="onSelectionChange($event)">
       <mat-option>
         <ngx-mat-select-search
           [showToggleAllCheckbox]="multiple"
@@ -55,13 +87,10 @@ import {Router} from "@angular/router";
   ]
 })
 export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValueAccessor {
-  @Input() options: any[] = [];
   @Input() multiple = false;
   @Input() searchPlaceholder = 'Search';
-  @Input() label = '';
-  @Input() urlUpdateParamName = '';
+  @Input() filterBase: FilterBase;
   @Output() selectionChange = new EventEmitter<any>();
-
   selectControl = new FormControl();
   searchFilterControl = new FormControl('');
   filteredOptions$: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
@@ -73,8 +102,7 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
 
   ngOnInit() {
     // Initialize filtered options
-    this.filteredOptions$.next(this.options.slice());
-
+    this.filteredOptions$.next(this.filterBase.allValues.slice());
     // Set up search filter
     this.searchFilterControl.valueChanges
       .pipe(takeUntil(this.destroy$))
@@ -86,17 +114,17 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
     this.selectControl.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(value => {
-        if (this.urlUpdateParamName !== '') {
+        if (this.filterBase.urlUpdateParamName !== '') {
              const newQueryParams = {queryParams: {}};
              if (
                 !value ||
                 value.length === 0 ||
-                (this.options && JSON.stringify(value.sort()) === JSON.stringify(this.options.sort()))
+                (this.filterBase.allValues && JSON.stringify(value.sort()) === JSON.stringify(this.filterBase.allValues.sort()))
               ) {
                 // Remove parameter if ALL or none selected
-                newQueryParams.queryParams[this.urlUpdateParamName] = null;
+                newQueryParams.queryParams[this.filterBase.urlUpdateParamName] = null;
               } else {
-                newQueryParams.queryParams[this.urlUpdateParamName] = value;
+                newQueryParams.queryParams[this.filterBase.urlUpdateParamName] = value;
               }
              this.router.navigate([], {queryParams: newQueryParams.queryParams, queryParamsHandling: 'merge'});
         }
@@ -167,14 +195,14 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
   }
 
   filterOptions(): void {
-    if (!this.options) {
+    if (!this.filterBase.allValues) {
       return;
     }
 
     // Get the search keyword
     let search = this.searchFilterControl.value;
     if (!search) {
-      this.filteredOptions$.next(this.options.slice());
+      this.filteredOptions$.next(this.filterBase.allValues.slice());
       return;
     }
 
@@ -182,7 +210,7 @@ export class SelectWithSearchComponent implements OnInit, OnDestroy, ControlValu
 
     // Filter the options
     this.filteredOptions$.next(
-      this.options.filter(option =>
+      this.filterBase.allValues.filter(option =>
         this.displayOption(option).toLowerCase().includes(search)
       )
     );

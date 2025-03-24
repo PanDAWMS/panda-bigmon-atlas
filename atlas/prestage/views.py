@@ -2631,6 +2631,25 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
     return rules
 
 
+def cache_full_rses():
+    if cache.get('FULL_RSES'):
+        return cache.get('FULL_RSES')
+    destinations = set()
+    for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+        if dataset_staging.destination_rse:
+            destinations.add(dataset_staging.destination_rse)
+    for dataset_staging in PandaDatasetStaging.objects.filter(status=PandaDatasetStaging.STATUS.STAGING):
+        if dataset_staging.destination_rse:
+            destinations.add(dataset_staging.destination_rse)
+    full_rse = []
+    ddm = DDM()
+    for rse in destinations:
+        if int(ddm.rse_attr(rse)['freespace']) < DatasetStaging.SITE_LIMIT:
+            full_rse.append(rse)
+    cache.set('FULL_RSES', full_rse, 60*30)
+    return full_rse
+
+
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -2642,7 +2661,8 @@ def get_staging_rules(request):
     try:
         # rules = cache.get_or_set("datacarousel_rules", get_all_active_staging_rules, 60*10)
         rules = get_all_active_staging_rules()
-        return Response(map(asdict, rules), status=status.HTTP_200_OK)
+        full_rse = cache_full_rses()
+        return Response({ 'rules': map(asdict, rules), 'fullRSEs': full_rse}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

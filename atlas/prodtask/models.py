@@ -1991,7 +1991,7 @@ class StepAction(models.Model):
 class DatasetStaging(models.Model):
 
     ACTIVE_STATUS = ['queued','staging']
-
+    SITE_LIMIT = 300
     class STATUS:
         QUEUED = 'queued'
         STAGING = 'staging'

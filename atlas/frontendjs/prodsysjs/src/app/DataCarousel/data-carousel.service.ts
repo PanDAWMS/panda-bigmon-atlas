@@ -35,7 +35,10 @@ export interface StagingRule {
   dc_type: string;
   owners: string[];
 }
-
+export interface StagingRuleResponse {
+  rules: StagingRule[];
+  fullRSEs: string[];
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -44,7 +47,7 @@ export class DataCarouselService {
   constructor(private http: HttpClient) { }
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
-  datasetStagingRulesResource = httpResource<StagingRule[]>(this.prGetStagingRulesUrl);
+  datasetStagingRulesResource = httpResource<StagingRuleResponse>(this.prGetStagingRulesUrl);
 
 
   getDataCarouselConfig(): Observable<CarouselConfig> {
