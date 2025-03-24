@@ -456,7 +456,16 @@ def render_destination_rule(rule: str, tape_name: str) -> str:
     if tape_name and '{destination_by_tape}' in rule:
         destination_config = ActionDefault.objects.get(name=tape_name).get_config().get('destination')
         if destination_config:
-            return rule.replace('{destination_by_tape}', destination_config)
+            ddm = DDM()
+            rule_filter = rule.replace('{destination_by_tape}', destination_config)
+            rule_filter= f'{rule_filter}&availability_write&availability_read'
+            possible_destinations = [x['rse'] for x in ddm.list_rses(rule_filter)]
+            excluded_rses = SystemParametersHandler.get_excluded_staging_sites().sites
+            possible_destinations = [x for x in possible_destinations if x not in excluded_rses]
+            if possible_destinations:
+                return random.choice(possible_destinations)
+            else:
+                raise Exception('Destination is not found')
     return rule
 
 def perfom_dataset_stage(input_dataset, ddm, rule, lifetime, replicas=None):
@@ -487,7 +496,7 @@ def append_excluded_rse(rule: str) -> str:
     return rule
 
 def prepare_rule(original_rule: str, tape_name: str = '') -> str:
-    return render_destination_rule(append_excluded_rse(original_rule), tape_name)
+    return render_destination_rule(original_rule, tape_name)
 
 def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,source=None,lifetime=None,data_replica_wihout_rule=False):
     step = task.step

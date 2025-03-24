@@ -520,6 +520,9 @@ class DDM(object):
     def list_rses(self, filter = ''):
         return self.__ddm.list_rses(filter)
 
+    def get_rse(self, rse):
+        return self.__ddm.get_rse(rse)
+
     def get_unavailable_rses(self):
         if self.__unavailable_rses is None:
             self.__unavailable_rses = [x['rse'] for x in self.list_rses() if x['availability'] == 0]
