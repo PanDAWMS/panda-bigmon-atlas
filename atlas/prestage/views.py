@@ -311,7 +311,7 @@ class TapeResource(ResourceQueue):
                 weight = None
                 for dataset_staging in dataset_stagings:
                     if dataset_staging.step_action.status == 'active':
-                        rule = dataset_staging.step_action.get_config('rule')
+                        rule = '{destination_by_tape}'
                         rule = prepare_rule(rule, self.resource_name)
                         weight = weight_from_rule(rule)
                         lifetime = dataset_staging.step_action.get_config('lifetime')
@@ -571,7 +571,7 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
                 level = 95
         action_step.set_config({'level':level})
         action_step.set_config({'lifetime':lifetime})
-        action_step.set_config({'rule': rule})
+        action_step.set_config({'rule': '{destination_by_tape}'})
         if replicas:
             action_step.set_config({'source_replica': replicas})
         if source:
@@ -811,7 +811,7 @@ def create_prestage(task,ddm,rule, input_dataset,config, special=None, destinati
                     if input_without_cern:
                             rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input_without_cern))
                     else:
-                        input = random.choice(input)
+                        rule, source_replicas, input = ddm.get_replica_pre_stage_rule_by_rse(random.choice(input))
         input=convert_input_to_physical_tape(input)
         create_staging_action(input_dataset,task,ddm,rule,config,source_replicas,input,data_replica_wihout_rule=all_data_replicas_without_rules)
 
@@ -1304,7 +1304,7 @@ def follow_staged(waiting_step, ddm):
             else:
                 _logger.error("Check follow staged problem rule for %s was deleted step %s new rule will be created" % (dataset_stage.dataset, str(waiting_step)))
                 source_replica = fill_source_replica_template(ddm, dataset_stage.dataset, action_step.get_config('source_replica'), dataset_stage.source)
-                rule = action_step.get_config('rule')
+                rule = '{destination_by_tape}'
                 rule = prepare_rule(rule, dataset_stage.source)
                 perfom_dataset_stage(dataset_stage.dataset, ddm, rule, action_step.get_config('lifetime'), source_replica)
 
@@ -1658,7 +1658,7 @@ def step_action_in_request(request, reqid):
                     rse = staging.dataset_stage.rse
                     current_action['dataset'] = '<a href="https://rucio-ui.cern.ch/did?name={name}">Dataset</a>'.format(name=str(dataset))
                     current_action['rse'] = '<a href="https://rucio-ui.cern.ch/rule?rule_id={rule_id}">rule</a>'.format(
-                        rule_id=rse, rule_rse=action_step.get_config('rule'))
+                        rule_id=rse)
                     if action_step.get_config('tape'):
                         current_action['tape'] = str(action_step.get_config('tape'))
 
@@ -2088,9 +2088,8 @@ def change_replica_by_task(ddm, task_id, replica=None):
             dataset_stage.source = physical_tape
             dataset_stage.save()
         rule, source_replicas, source = ddm.get_replica_pre_stage_rule_by_rse(replica)
-        print(rule, source_replicas, source)
-        rule = append_excluded_rse(rule)
-        action_step.set_config({'rule': rule})
+        print('{destination_by_tape}', source_replicas, source)
+        action_step.set_config({'rule': '{destination_by_tape}'})
         action_step.set_config({'tape': convert_input_to_physical_tape(source)})
         action_step.set_config({'source_replica': source_replicas})
         action_step.save()
