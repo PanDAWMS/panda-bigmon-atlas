@@ -2548,7 +2548,10 @@ class DatasetStagingRule:
     update_time: str
     number_active_tasks: int
     dc_type: str
+    stuck: bool
+    stuck_error: str
     owners: List[str] = field(default_factory=list)
+    tasks_ids: List[int] = field(default_factory=list)
     bytes: int = 0
 
 
@@ -2561,6 +2564,9 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
     dataset_staging_rules = list(DatasetStaging.objects.filter(status__in=DatasetStaging.ACTIVE_STATUS))
     task_by_ds = {}
     ds_by_task = {}
+    stuck_rules = cache.get('STUCK_DC_RULES', {})
+    if not stuck_rules:
+        stuck_rules = get_stuck_requests()
     dataset_task_ids = [(y.dataset_stage_id, y.task) for y in list(ActionStaging.objects.filter(dataset_stage__in=dataset_staging_rules))]
     task_ids = [x[1] for x in dataset_task_ids]
     for dataset_task_id in dataset_task_ids:
@@ -2572,10 +2578,14 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
     for dataset_staging in dataset_staging_rules:
         update_time = dataset_staging.update_time
         owners = []
+        tasks_ids = []
         number_active_tasks = 0
+        stuck = dataset_staging.rse in stuck_rules
+        stuck_error = stuck_rules.get(dataset_staging.rse, '')
         for task in task_by_ds.get(dataset_staging.id, []):
             number_active_tasks += 1
             owners += [task['username']]
+            tasks_ids += [task['id']]
         owners = list(set(owners))
         if not update_time:
             update_time = dataset_staging.start_time
@@ -2594,8 +2604,8 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
                                start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
                                update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
                                number_active_tasks=len(task_by_ds.get(dataset_staging.id,[])), dc_type = 'p',
-                               owners=owners,
-                               bytes=int(dataset_staging.dataset_size)),
+                               owners=owners, tasks_ids=tasks_ids,
+                               bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error),
 
 
         )
@@ -2613,13 +2623,20 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
             task_by_ds[ds_by_task[task['id']]] = task_by_ds.get(ds_by_task[task['id']],[]) + [task]
     for dataset_staging in dataset_staging_rules:
         update_time = dataset_staging.update_time
+        start_time = dataset_staging.start_time
         owners = []
+        tasks_ids = []
         number_active_tasks = 0
+        stuck = dataset_staging.rse in stuck_rules
+        stuck_error = stuck_rules.get(dataset_staging.rse, '')
         for task in task_by_ds.get(dataset_staging.id, []):
             number_active_tasks += 1
             owners += [task['username']]
+            tasks_ids += [task['id']]
+        if not start_time:
+            start_time = timezone.now()
         if not update_time:
-            update_time = dataset_staging.start_time
+            update_time = start_time
         rule = dataset_staging.rse
         if dataset_staging.status == PandaDatasetStaging.STATUS.QUEUED:
             rule = 'queued'
@@ -2631,16 +2648,16 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
                                rse=rule, source=dataset_staging.source_tape,
                                destination=dataset_staging.destination_rse,
                                total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-                               start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               start_time=start_time.strftime('%d-%m-%Y %H:%M:%S'),
                                update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
-                               number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a',
-                               bytes=int(dataset_staging.dataset_size))
+                               number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a', tasks_ids=tasks_ids,
+                               bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error)
         )
     return rules
 
 
-def cache_full_rses():
-    if cache.get('FULL_RSES'):
+def cache_full_rses(force=False):
+    if not force and cache.get('FULL_RSES'):
         return cache.get('FULL_RSES')
     destinations = set()
     for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
@@ -2656,6 +2673,26 @@ def cache_full_rses():
             full_rse.append(rse)
     cache.set('FULL_RSES', full_rse, 60*30)
     return full_rse
+
+def get_stuck_requests():
+    """
+    Get all requests which are stuck for more than 10 days
+    :return:
+    """
+    stuck_requests = {}
+    ddm = DDM()
+    for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
+        if dataset_staging.rse:
+            rule = ddm.get_rule(dataset_staging.rse)
+            if rule['state'] == 'STUCK':
+                stuck_requests[dataset_staging.rse] = rule['error']
+    for dataset_staging in PandaDatasetStaging.objects.filter(status=PandaDatasetStaging.STATUS.STAGING):
+        if dataset_staging.rse:
+            rule = ddm.get_rule(dataset_staging.rse)
+            if rule['state'] == 'STUCK':
+                stuck_requests[dataset_staging.rse] = rule['error']
+    cache.set('STUCK_DC_RULES', stuck_requests, 60 * 60)
+    return stuck_requests
 
 
 @api_view(['GET'])

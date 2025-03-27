@@ -5,3 +5,9 @@
   align-items: center;
   margin: 10px;
 }
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

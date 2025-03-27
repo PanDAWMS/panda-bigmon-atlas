@@ -1,0 +1,68 @@
+.action-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin-left: 20px;
+}
+.action-menu-vertical-fields {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.action-menu-row .mat-mdc-raised-button {
+  height: 40px;
+  margin: 0 13px;
+}
+.action-menu-row .mat-mdc-raised-button, .task-action-button-field, .action-label,
+.action-menu-vertical-fields .mat-raised-button, .action-button-column .mat-raised-button {
+    font-size: 16px;
+}
+ .action-checkbox {
+    font-size: 20px;
+    margin: 3px 8px;
+}
+.task-action-button-field {
+  width: 180px;
+}
+
+.task-action-input-form {
+  width: 180px;
+}
+
+.action-label {
+  text-align: center;
+}
+
+.action-button-column{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+
+.action-button-column .mat-mdc-raised-button {
+  margin: 5px 8px;
+}
+
+.mat-mdc-radio-button {
+  margin-left: 8px;
+}
+.task-action-comment-field {
+  font-size: 13px;
+  margin-top: 8px;
+  width: 180px;
+}
+.action-result-icon-error {
+  color: red;
+  margin-right: 10px;
+}
+
+.action-result-icon-task_alt {
+  color: green;
+  margin-right: 10px;
+}
+
+.action-result-icon-warning {
+  color: darkgoldenrod;
+  margin-right: 10px;
+}

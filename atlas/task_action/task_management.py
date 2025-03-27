@@ -13,7 +13,8 @@ from django.utils import timezone
 
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag
+from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag, \
+    DatasetStaging, PandaDatasetStaging
 from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -115,6 +116,12 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                                 'return_code': str(return_code), 'return_message': return_message})
 
 
+    def _log_rule_action_message(self, dataset, action, return_code, return_message, *args):
+        _jsonLogger.info("Rule action",
+                         extra={'dataset': str(dataset), 'user': self.username, 'comment': self.comment,
+                                'action': action, 'params': json.dumps(args),
+                                'return_code': str(return_code), 'return_message': return_message})
+
     def _log_action_message(self, task_id, action, return_code, return_message, *args):
         try:
 
@@ -137,6 +144,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         except Exception as ex:
             logger.error(f"Action logging problem: {ex}")
             print(f"Action logging problem: {ex}")
+
 
     def _jedi_new_api_decorator(func):
         def inner(self, task_id, *args, **kwargs):
@@ -168,6 +176,17 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 return False, str(ex)
         return inner
 
+    def _rule_action_logger(func):
+        def inner(self, dataset, *args, **kwargs):
+            try:
+                return_code, return_message = func(self, dataset, *args, **kwargs)
+                self._log_rule_action_message(dataset, func.__name__, return_code, return_message, *args)
+                return return_code, return_message
+            except Exception as ex:
+                self._log_rule_action_message(dataset, func.__name__, False, str(ex), *args)
+                return False, str(ex)
+        return inner
+
     def _action_logger(func):
         def inner(self, task_id, *args, **kwargs):
             try:
@@ -182,6 +201,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     _jedi_decorator = staticmethod(_jedi_decorator)
     _action_logger = staticmethod(_action_logger)
     _jedi_new_api_decorator = staticmethod(_jedi_new_api_decorator)
+    _rule_action_logger = staticmethod(_rule_action_logger)
 
     def obsolete_or_abort_synced_task(self, task_id):
         sync_deft_jedi_task(task_id)
@@ -338,6 +358,28 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                     return False, 'Task has no finished jobs'
         return False, 'Command rejected: No staging rule is found'
 
+    @_rule_action_logger
+    def alter_source_replication_rule(self, dataset, mode, cancel=False):
+        try:
+            dataset_stage = None
+            rule_id = None
+            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
+                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
+            elif PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).exists():
+                raise Exception('Only Production task for a time being')
+            if dataset_stage and dataset_stage.rse:
+                rule_id = dataset_stage.rse
+            #     ddm = DDM()
+            #     ddm.change_rule_source(rule_id, '')
+            if not rule_id:
+                raise Exception('Rule ID not found')
+            if mode == 'drop':
+                return 'True', f'Source replication rule {rule_id} dropped with cancel: {cancel}'
+            else:
+                return 'True', f'Source replication rule {rule_id} changed with cancel: {cancel}'
+        except Exception as e:
+            return False, f'Command rejected: str(e)'
+
     @_action_logger
     def create_finish_reload_action(self, task_id):
         if not ProductionTask.objects.filter(id=task_id).exists():
@@ -455,6 +497,12 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
 @dataclass
 class TaskActionAllowed():
     id: int
+    action_allowed: bool = False
+    user_allowed: bool = False
+
+@dataclass
+class RuleActionAllowed():
+    dataset: str
     action_allowed: bool = False
     user_allowed: bool = False
 
@@ -587,6 +635,16 @@ class TaskManagementAuthorisation():
             user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname)
         return task_is_allowed, user_is_allowed
 
+    def rules_action_authorisation(self, datasets: str, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
+        user, allowed_groups = self.task_user_rights(username, user_fullname)
+        result = []
+        for dataset in datasets:
+            if user.is_superuser:
+                result.append(RuleActionAllowed(dataset, True, True))
+            else:
+                result.append(RuleActionAllowed(dataset, True, False))
+        return result
+
 
     def task_action_authorisation(self, task_id: int, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
         user, allowed_groups = self.task_user_rights(username, user_fullname)
@@ -604,6 +662,7 @@ class TaskManagementAuthorisation():
 
     def __init__(self):
         self.define_allowed_task_actions()
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -637,6 +696,48 @@ def tasks_action(request: Request):
     except Exception as ex:
         return Response(data=f"Task action execution problem: {ex}", status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def rules_action(request: Request):
+    try:
+        datasets = request.data['datasets']
+        action = request.data['action']
+        params =  request.data['params']
+        username = request.user.username
+        user_fullname = None
+        if 'user_fullname' in request.data:
+             user_fullname = request.data['user_fullname']
+        authentification_management = TaskManagementAuthorisation()
+        rules_allowed = authentification_management.rules_action_authorisation(datasets, username, action, params, user_fullname)
+        for rule_verified in rules_allowed:
+            if not rule_verified.user_allowed or not rule_verified.action_allowed:
+                logger.error(f"Action {action} for user {username} is not allowed for datasets")
+                return Response({'action_sent':False, 'action_verification': [asdict(x) for x in rules_allowed], 'result': None})
+        comment = request.data['comment']
+        executor = TaskActionExecutor(username, comment)
+        result = []
+        if params:
+            for dataset in datasets:
+                return_code, return_info = do_jedi_rule_action(executor, dataset, action, *params)
+                result.append({'dataset':dataset, 'return_code': return_code, 'return_info': return_info})
+        else:
+            for dataset in datasets:
+                return_code, return_info = do_jedi_rule_action(executor, dataset, action, None)
+                result.append({'dataset':dataset, 'return_code': return_code, 'return_info': return_info})
+        return Response({'action_sent':True, 'result': result, 'action_verification':None})
+    except Exception as ex:
+        return Response(data=f"Task action execution problem: {ex}", status=status.HTTP_400_BAD_REQUEST)
+
+
+def do_jedi_rule_action(action_executor, dataset, action, *args):
+    action_translation = {
+            'alter_source_replication_rule': action_executor.alter_source_replication_rule,
+        }
+    if args == (None,):
+         return action_translation[action](dataset)
+    return action_translation[action](dataset, *args)
 
 def do_jedi_action(action_executor, task_id, action, *args):
     action_translation = {
@@ -673,7 +774,7 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'release_task': action_executor.release_task,
             'set_debug_jobs': action_executor.set_jobs_debug,
             'kill_jobs_without_task': action_executor.kill_jobs_without_task,
-            'enable_job_cloning': action_executor.enable_job_cloning
+            'enable_job_cloning': action_executor.enable_job_cloning,
         }
     if args == (None,):
          return action_translation[action](task_id)

@@ -36,7 +36,7 @@ export interface MCSubCampaignStats{
     seconds: number}[];
 }
 
-export type ActionParams = number[]|string[]|boolean[]|null;
+export type ActionParams = (number|string|boolean)[]|number[]|string[]|boolean[]|null;
 
 export interface TaskAction {
   tasks: ProductionTask[];
@@ -47,13 +47,29 @@ export interface TaskAction {
   params_name: string[]|null;
 
 }
+export interface RuleAction {
+  datasets: string[];
+  action: string;
+  params: ActionParams;
+  comment: string;
+  action_name: string;
+  params_name: string[]|null;
 
+}
 export interface TaskActionResult{
   action_sent: boolean;
   result: {task_id: number, return_code: string, return_info: string}[]|null;
   action_verification: {id: number, action_allowed: boolean, user_allowed: boolean}[]|null;
   action?: string;
   tasksID?: number[];
+  error?: string;
+}
+export interface RuleActionResult{
+  action_sent: boolean;
+  result: {dataset: string, return_code: string, return_info: string}[]|null;
+  action_verification: {dataset: string, action_allowed: boolean, user_allowed: boolean}[]|null;
+  action?: string;
+  datasets?: string[];
   error?: string;
 }
 export interface ReassignDestination{
@@ -75,6 +91,9 @@ export interface TaskInfo {
   providedIn: 'root'
 })
 export class TaskService {
+  private actionRuleResults$: BehaviorSubject<RuleActionResult|null> = new BehaviorSubject(null);
+
+  private actionRuleSubject$: Subject<RuleAction|null> = new Subject();
 
   constructor(private http: HttpClient) { }
   private prTaskUrl = '/production_request/task';
@@ -85,6 +104,8 @@ export class TaskService {
   private prErrorLogsUrl = '/production_request/production_error_logs/';
   private prTaskExtensionUrl = '/production_request/production_task_extensions/';
   private prGetMCSubCampaignUrl = '/api/mc_subcampaign_stats/';
+  private prRuleActionUrl = '/api/rules_action/';
+
 
 
 
@@ -130,7 +151,7 @@ export class TaskService {
   }
 
   submitTaskAction(tasksID: number[], action: string, comment: string,
-                   params: number[]|string[]|boolean[]|null): Observable<TaskActionResult>{
+                   params: ActionParams): Observable<TaskActionResult>{
     return this.http.post<TaskActionResult>(this.prTaskActionUrl, {tasksID, action, comment, params}).pipe(
       map( result => {
         return {tasksID, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification};
@@ -143,9 +164,25 @@ export class TaskService {
       tap(result => this.actionResults$.next(result))
     );
   }
-
+    submitRuleAction(datasets: string[], action: string, comment: string,
+                     params: ActionParams): Observable<RuleActionResult>{
+    return this.http.post<RuleActionResult>(this.prRuleActionUrl, {datasets, action, comment, params}).pipe(
+      map( result => {
+        return {datasets, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification};
+      }),
+      catchError( err => {
+        const result: RuleActionResult = {datasets, action, action_sent: false, result: null, action_verification: null,
+          error:  `Backend returned code ${err.status}, body was: ${err.error}`};
+        return of(result);
+      }),
+      tap(result => this.actionRuleResults$.next(result))
+    );
+  }
   getActionList(): Observable<TaskAction|null>{
     return this.actionSubject$;
+  }
+  getRuleActionList(): Observable<RuleAction|null>{
+    return this.actionRuleSubject$;
   }
   getMCSubCampaignStats(): Observable<MCSubCampaignStats[]>{
     return this.http.get<MCSubCampaignStats[]>(this.prGetMCSubCampaignUrl);
@@ -153,6 +190,10 @@ export class TaskService {
 
   addAction(taskAction: TaskAction): void{
     this.actionSubject$.next(taskAction);
+  }
+
+  addRuleAction(ruleAction: RuleAction): void{
+    this.actionRuleSubject$.next(ruleAction);
   }
 
   getReassignEntities(): Observable<ReassignDestination> {

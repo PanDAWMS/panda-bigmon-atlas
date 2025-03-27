@@ -6,7 +6,7 @@ import {catchError, map, switchMap, take, takeUntil, tap} from 'rxjs/operators';
 import {BehaviorSubject, of, ReplaySubject, Subject} from 'rxjs';
 import {AgGridAngular} from 'ag-grid-angular';
 import {FilterChangedEvent, GridOptions, GridReadyEvent, RowNode, SelectionChangedEvent} from 'ag-grid-community';
-import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {FormControl, FormsModule, ReactiveFormsModule, UntypedFormControl} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
 import {FilterBase, SelectWithSearchComponent} from '../../common/select-with-search/select-with-search.component';
 import {convertBytes} from '../../derivation-exclusion/dataset-size.pipe';
@@ -17,6 +17,8 @@ import {TasksManagementService} from '../../tasks-management/tasks-management.se
 import {ProductionTask} from '../../production-request/production-request-models';
 import {ProductionTaskTableComponent} from '../../production-task-table/production-task-table.component';
 import {MatSlideToggle} from "@angular/material/slide-toggle";
+import {RuleActionComponent} from "../../rule-action/rule-action.component";
+import {TaskStatsComponent} from "../../production-request/task-stats/task-stats.component";
 
 @Component({
   selector: 'app-staging-management',
@@ -32,6 +34,8 @@ import {MatSlideToggle} from "@angular/material/slide-toggle";
     ProductionTaskTableComponent,
     MatSlideToggle,
     FormsModule,
+    RuleActionComponent,
+    TaskStatsComponent,
   ],
   templateUrl: './staging-management.component.html',
   styleUrl: './staging-management.component.css',
@@ -62,6 +66,16 @@ export class StagingManagementComponent implements OnInit {
           )
         )
       );
+      this.stuckErrors = {};
+      this.stuckErrorOrder = [];
+      for (const rule of rules) {
+        if (rule.stuck) {
+          this.stuckErrors[rule.stuck_error] = (this.stuckErrors[rule.stuck_error] || 0) + 1;
+        }
+      }
+      this.stuckErrorOrder = ['total'].concat(
+          Object.keys(this.stuckErrors).sort((a, b) => this.stuckErrors[b] - this.stuckErrors[a]));
+      this.stuckErrorsControl.setValue(this.stuckErrorOrder);
       this.filters.source.updateValues(Array.from(new Set(rules.map(rule => rule.source))));
       this.filters.username.updateValues(Array.from(new Set(rules.reduce((acc, rule) => acc.concat(rule.owners), []))));
       this.activatedRoute.queryParams.pipe(take(1)).subscribe(params => {
@@ -75,20 +89,35 @@ export class StagingManagementComponent implements OnInit {
         } else {
           this.generalFilter.setValue('');
         }
+        const taskIDSParam = params.taskids;
+        if (taskIDSParam) {
+          this.taskids.setValue(taskIDSParam);
+        } else {
+          this.taskids.setValue('');
+        }
         if (params.fullrses) {
           this.showOnlyFullRSEs.setValue(true);
+        }
+        if (params.stuck) {
+          this.showOnlyStuckRules.setValue(true);
         }
       });
     } ),
   );
   ruleLoading = this.dataCarouselService.datasetStagingRulesResource.isLoading;
   public generalFilter = new FormControl('');
+  public taskids = new FormControl('');
   public filterChanged$: Subject<number> = new Subject<number>();
   public selectedRules = [];
+  public selectedDatasets = [];
   public selectedRulesString = '';
   public tasksToShow: ProductionTask[] = [];
   public taskLoading = false;
+  public stuckErrors: {[status: string]: number} = {};
+  public stuckErrorOrder: string[] = [];
+  public stuckErrorsControl = new FormControl<string[]>([]);
   public showOnlyFullRSEs = new FormControl<boolean>(false);
+  public showOnlyStuckRules = new FormControl<boolean>(false);
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
@@ -124,6 +153,10 @@ export class StagingManagementComponent implements OnInit {
     cellRenderer: params => {
       const rse = params.value;
       if (rse.length > 9) {
+        if (params.data.stuck){
+          return `<span style="color: red">!</span><a href="https://rucio-ui.cern.ch/rule?rule_id=${rse}">
+                    ${rse.substring(0, 3)}...${rse.substring(rse.length - 3, rse.length)}</a>`;
+        }
         return `<a href="https://rucio-ui.cern.ch/rule?rule_id=${rse}">${rse.substring(0, 3)}...${rse.substring(rse.length - 3, rse.length)}</a>`;
       }
       return rse;
@@ -160,6 +193,14 @@ export class StagingManagementComponent implements OnInit {
       }
       this.filterChanged$.next(1);
     });
+    this.showOnlyStuckRules.valueChanges.subscribe(filter => {
+      if (filter) {
+        this.router.navigate([], {queryParams: {stuck: true}, queryParamsHandling: 'merge'});
+      } else {
+        this.router.navigate([], {queryParams: {stuck: null}, queryParamsHandling: 'merge'});
+      }
+      this.filterChanged$.next(1);
+    });
     this.generalFilter.valueChanges.subscribe( filter => {
       if (filter) {
         this.router.navigate([], {queryParams: {filter}, queryParamsHandling: 'merge'});
@@ -168,6 +209,15 @@ export class StagingManagementComponent implements OnInit {
       }
       this.filterChanged$.next(1);
     });
+    this.taskids.valueChanges.subscribe( filter => {
+      if (filter) {
+        this.router.navigate([], {queryParams: {taskids: filter}, queryParamsHandling: 'merge'});
+      } else {
+        this.router.navigate([], {queryParams: {taskids: null}, queryParamsHandling: 'merge'});
+      }
+      this.filterChanged$.next(1);
+    });
+    this.stuckErrorsControl.valueChanges.subscribe( _ => this.filterChanged$.next(1) );
 
   }
 
@@ -189,14 +239,25 @@ export class StagingManagementComponent implements OnInit {
     const selectedDestinations = this.filters.destination.selectedValues.value;
     const selectedSources = this.filters.source.selectedValues.value;
     const generalFilter = this.generalFilter.value;
+    const taskIDSFilter = this.taskids.value;
     const selectedStatus = this.filters.status.selectedValues.value;
     const selectedUsernames = this.filters.username.selectedValues.value;
     const fullRSEsFilter = ! this.showOnlyFullRSEs.value || this.fullRSEs().includes(node.data.destination);
+    const stuckErrorFilter = this.stuckErrorsControl.value.length === 0 || ! node.data.stuck
+      || this.stuckErrorsControl.value.includes(node.data.stuck_error);
+    const stuckFilter = ! this.showOnlyStuckRules.value || node.data.stuck;
     const destinationFilter = selectedDestinations.length === 0 || selectedDestinations.includes(node.data.destination);
     const sourceFilter = selectedSources.length === 0 || selectedSources.includes(node.data.source);
     const statusFilter = selectedStatus.length === 0 || selectedStatus.includes(node.data.status);
     // get intersection of owners and selectedUsernames
     const usernameFilter = selectedUsernames.length === 0 || node.data.owners.some(owner => selectedUsernames.includes(owner));
+    let taskIDS: string[] = [];
+    if (taskIDSFilter){
+    //   split string by all possible separators
+        taskIDS = taskIDSFilter.split(/[\s,;]+/);
+    }
+    const taskIDFilter = taskIDS.length === 0 || taskIDS.some(taskID => node.data.tasks_ids.includes(Number(taskID)));
+
     let generalFilterPass = true;
     if (generalFilter) {
         const generalFilterRegex = new RegExp(generalFilter, 'i');
@@ -206,7 +267,8 @@ export class StagingManagementComponent implements OnInit {
         );
     }
 
-    return fullRSEsFilter && destinationFilter && sourceFilter && generalFilterPass && statusFilter && usernameFilter;
+    return stuckErrorFilter && stuckFilter && fullRSEsFilter && destinationFilter
+      && sourceFilter && generalFilterPass && statusFilter && usernameFilter && taskIDFilter;
 
   }
   onSelectionChanged($event: SelectionChangedEvent<any>): void {
@@ -231,7 +293,7 @@ export class StagingManagementComponent implements OnInit {
     }
     const totalSize = convertBytes(bytes);
     this.selectedRulesString = `Selected ${this.selectedRules.length} rules with ${stagedFiles} staged files, ${totalFiles} total files, ${totalSize}, ${activeTasksNumber} active tasks and for ${userNameSting}`;
-
+    this.selectedDatasets = this.selectedRules.map(rule => rule.dataset);
   }
 
 

@@ -34,6 +34,9 @@ export interface StagingRule {
   number_active_tasks: number;
   dc_type: string;
   owners: string[];
+  stuck: boolean;
+  stuck_error: string;
+  tasks_ids: number[];
 }
 export interface StagingRuleResponse {
   rules: StagingRule[];

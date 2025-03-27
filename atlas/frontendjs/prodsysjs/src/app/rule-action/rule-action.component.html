@@ -1,0 +1,80 @@
+<div>
+  <button mat-raised-button  [matMenuTriggerFor]="SourceMenu"  class="action-button-menu" [disabled]="true" >Source▼</button>
+  <mat-menu #SourceMenu="matMenu" yPosition="below">
+    <div class="action-button-column">
+      <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',['drop', cancelFTS.checked])">Drop Source</button>
+      <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',['switch', cancelFTS.checked])">Switch source</button>
+      <mat-checkbox class="action-checkbox" #cancelFTS (click)="$event.stopPropagation()" [checked]="true">Cancel active FTSs</mat-checkbox>
+   </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+        <div class="task-action-input-form">
+          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+            <mat-label>Comment (optional)</mat-label>
+            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+          </mat-form-field>
+        </div>
+    </div>
+  </mat-menu>
+    <button mat-raised-button  [matMenuTriggerFor]="DestinationMenu"  class="action-button-menu" [disabled]="true" >Destination▼</button>
+  <mat-menu #DestinationMenu="matMenu" yPosition="below">
+    <div class="action-button-column">
+   </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+        <div class="task-action-input-form">
+          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+            <mat-label>Comment (optional)</mat-label>
+            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+          </mat-form-field>
+        </div>
+    </div>
+  </mat-menu>
+      <button mat-raised-button  [matMenuTriggerFor]="QueueMenu"  class="action-button-menu" [disabled]="true" >Queue▼</button>
+  <mat-menu #QueueMenu="matMenu" yPosition="below">
+    <div class="action-button-column">
+   </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+        <div class="task-action-input-form">
+          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+            <mat-label>Comment (optional)</mat-label>
+            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+          </mat-form-field>
+        </div>
+    </div>
+  </mat-menu>
+</div>
+
+<ng-container *ngIf="actionExecuting">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</ng-container>
+<ng-container *ngIf="actionExecution$ | async as actionResult;">
+  <ng-container *ngIf="actionResult.datasets_result.length===1; else multipleTasksResultBlock">
+      <mat-card appearance="outlined">
+        <mat-icon class="action-result-icon-{{actionResult.datasets_result[0].type}}">{{actionResult.datasets_result[0].type}}</mat-icon>
+        <span>{{actionResult.datasets_result[0].result}}</span>
+      </mat-card>
+    </ng-container>
+  <ng-template #multipleTasksResultBlock>
+    <mat-accordion>
+      <mat-expansion-panel >
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="action-result-icon-{{summaryDatasetsResult.status}}">{{summaryDatasetsResult.status}}</mat-icon>
+             <div>{{summaryDatasetsResult.result}}</div>
+            <ng-container *ngIf="reSendAction.datasets.length>0">
+              <button (click)="reSendRules()" style="margin-left: 7px" >Send command for {{reSendAction.datasets.length}} task(s)</button>
+            </ng-container>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-list >
+          <mat-list-item *ngFor="let taskResult of actionResult.datasets_result" >
+            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+            {{taskResult.dataset}} - {{taskResult.result}}
+          </mat-list-item>
+        </mat-list>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </ng-template>
+</ng-container>

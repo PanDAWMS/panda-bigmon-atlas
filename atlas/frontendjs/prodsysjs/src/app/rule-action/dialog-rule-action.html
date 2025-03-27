@@ -1,0 +1,24 @@
+<h1 mat-dialog-title>Rule action: {{data.action_name}}</h1>
+
+<div mat-dialog-content>
+  <ng-container *ngIf="data.datasets.length>1">
+    Execute action for {{data.datasets.length}} tasks <p></p>
+  </ng-container>
+  <ng-container *ngIf="data.datasets.length==1">
+    Execute action for task: <b>{{data.datasets[0]}}</b>  <p></p>
+
+  </ng-container>
+ <span *ngIf="parameters!==''">{{parameters}}</span>
+    <p></p>
+
+  <mat-form-field  appearance="fill" >
+    <mat-label>Comment(optional)</mat-label>
+    <input matInput [(ngModel)]="comment" >
+  </mat-form-field>
+  <p></p>
+
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="dialogRef.close()">Cancel</button>
+  <button mat-button (click)="submitAction()" >OK</button>
+</div>

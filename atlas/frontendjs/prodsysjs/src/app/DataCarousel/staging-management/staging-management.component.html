@@ -31,12 +31,23 @@
       (selectionChange)="filterChanged$.next(1)">
     </app-select-with-search>
     <mat-slide-toggle [formControl]="showOnlyFullRSEs" > Only Full RSEs</mat-slide-toggle>
+    <mat-slide-toggle [formControl]="showOnlyStuckRules" >Stuck</mat-slide-toggle>
+
 <div>
-<mat-form-field appearance="fill" style="width: 100%;">
+<mat-form-field appearance="fill" style="width: 79%;">
     <mat-label>Filter by dataset and rule id</mat-label>
       <input matInput [formControl]="generalFilter" (change)="filterChanged$.next(1)" >
     </mat-form-field>
+  <span>|</span>
+  <mat-form-field appearance="fill" style="width: 19%;">
+    <mat-label>Task id(s)</mat-label>
+      <input matInput [formControl]="taskids" (change)="filterChanged$.next(1)" >
+    </mat-form-field>
   </div>
+@if(showOnlyStuckRules.value){
+      <app-task-stats  [taskStatus]="stuckErrors"  [formControl]="stuckErrorsControl"
+                [statusOrder]="stuckErrorOrder" [orientation]="'vertical'"></app-task-stats>
+}
 <div class="task-table-wrapper">
 <div class="task-table-header">
 
@@ -63,12 +74,11 @@
                   ></ag-grid-angular>
 </div>
 <div><h5>{{selectedRulesString}}</h5></div>
-<div>
+<div class="action-row">
         <button  (click)="showTasks()" [disabled]="taskLoading" >Show tasks</button>
-      <span>|Action: </span>
-      <button  [disabled]="true">Change destination</button>
-      <button [disabled]="true">Change source</button>
-      <button  [disabled]="true">Release tasks</button>
+     <span>Actions: </span>
+  <app-rule-action [datasets]="selectedDatasets"></app-rule-action>
+
 
 </div>
 @if(taskLoading){
