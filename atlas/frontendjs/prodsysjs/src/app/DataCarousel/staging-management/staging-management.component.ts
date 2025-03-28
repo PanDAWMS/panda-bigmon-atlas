@@ -122,6 +122,7 @@ export class StagingManagementComponent implements OnInit {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
   };
+  OS_ERROR_DASHBOARD_URL = `https://monit-grafana.cern.ch/d/e77b84d4-d854-4a18-b2c6-5fb67f648832/ddm-transfers-errors?from={time}&orgId=17&to=now&var-bin=1h&var-dataset_name={dataset_name}&var-dst_cloud=All&var-dst_country=All&var-dst_federation=All&var-dst_site=All&var-dst_tier=All&var-error_filter=&var-src_cloud=All&var-src_country=All&var-src_federation=All&var-src_site=All&var-src_tier=All&var-activity=Analysis%20Input&var-activity=Production%20Input&var-activity=Staging`;
   columnDefs = [
     {field: 'dataset', headerName: 'Dataset',
     // split dataset name by '.' and display only first and second to last fields
@@ -163,6 +164,22 @@ export class StagingManagementComponent implements OnInit {
     },
       tooltipField: 'rse',
 
+    },
+    {
+      headerName: 'Err', field: 'dataset',
+      maxWidth: 60,
+      cellRenderer: params => {
+        if (params.data.status === 'queued') {
+          return '';
+        }
+        let dataset = params.value;
+        if (dataset.indexOf(':') !== -1) {
+          dataset = dataset.split(':')[1];
+        }
+        const starttime = convertToUnixTimestamp(params.data.start_time);
+        const dashboardURL = this.OS_ERROR_DASHBOARD_URL.replace('{time}', starttime.toString()).replace('{dataset_name}', dataset);
+        return `<a href="${dashboardURL}" target="_blank">(!)</a>`;
+      }
     },
     {field: 'staged_files', headerName: 'Staged'},
     {field: 'total_files', headerName: 'Total'},
@@ -337,4 +354,16 @@ export class StagingManagementComponent implements OnInit {
   clearSelection() {
     this.rulesGrid.api.deselectAll();
   }
+}
+
+function convertToUnixTimestamp(dateString: string): number {
+  // Parse the date string from DD-MM-YYYY HH:MM:SS format
+  const [datePart, timePart] = dateString.split(' ');
+  const [day, month, year] = datePart.split('-');
+
+  // Create a date object in YYYY-MM-DD format that JavaScript understands
+  const dateObj = new Date(`${year}-${month}-${day}T${timePart}`);
+
+  // Return the timestamp in milliseconds
+  return dateObj.getTime();
 }
