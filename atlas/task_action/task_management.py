@@ -362,21 +362,53 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def alter_source_replication_rule(self, dataset, mode, cancel=False):
         try:
             dataset_stage = None
-            rule_id = None
+            ddm = DDM()
+            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).exists():
+                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.QUEUED)
+                active_tasks = next(dataset_stage.active_tasks(), None)
+                if active_tasks:
+                    replica = None
+                    replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
+                    for new_replica in replicas['tape']:
+                        physical_replica = ddm.convert_input_to_physical_tape(new_replica['rse'])
+                        if physical_replica != dataset_stage.source:
+                            replica = new_replica['rse']
+                            break
+                    if replica:
+
+                        physical_tape = ddm.convert_input_to_physical_tape(replica)
+                        dataset_stage.source = physical_tape
+                        dataset_stage.save()
+                    return 'True', f'DC source changes, new source {replica}'
+                else:
+                    return 'True', f'Nothing found'
             if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
             elif PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).exists():
-                raise Exception('Only Production task for a time being')
-            if dataset_stage and dataset_stage.rse:
-                rule_id = dataset_stage.rse
-            #     ddm = DDM()
-            #     ddm.change_rule_source(rule_id, '')
-            if not rule_id:
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).last()
+                # raise Exception('Only Production task for a time being')
+            if not dataset_stage or not dataset_stage.rse:
                 raise Exception('Rule ID not found')
+            rule_id = dataset_stage.rse
+            ddm = DDM()
             if mode == 'drop':
-                return 'True', f'Source replication rule {rule_id} dropped with cancel: {cancel}'
+                result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
+                return 'True', f'Source replication rule {rule_id} dropped with cancel: {cancel}, ddm returns: {result}'
             else:
-                return 'True', f'Source replication rule {rule_id} changed with cancel: {cancel}'
+                result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
+                return 'True', f'Source replication rule {rule_id} changed with cancel: {cancel}, ddm returns: {result}'
+        except Exception as e:
+            return False, f'Command rejected: str(e)'
+
+    @_rule_action_logger
+    def bypass_queue(self, dataset):
+        try:
+            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).exists():
+                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.QUEUED)
+                # submit_queued_rule_by_dataset_stage(dataset_stage.id)
+                return 'True', f'Queue  bypassed'
+            else:
+                raise Exception('Dataset not found in queue')
         except Exception as e:
             return False, f'Command rejected: str(e)'
 
@@ -734,6 +766,7 @@ def rules_action(request: Request):
 def do_jedi_rule_action(action_executor, dataset, action, *args):
     action_translation = {
             'alter_source_replication_rule': action_executor.alter_source_replication_rule,
+            'bypass_queue': action_executor.bypass_queue,
         }
     if args == (None,):
          return action_translation[action](dataset)

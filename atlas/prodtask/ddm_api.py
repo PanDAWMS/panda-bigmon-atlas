@@ -8,7 +8,9 @@ import random
 import math
 from rucio.common.exception import DataIdentifierNotFound
 from django.utils import timezone
-from ..prodtask.models import ProductionDataset, ProductionTask
+
+from ..cric.client import CRICClient
+from ..prodtask.models import ProductionDataset, ProductionTask, ActionDefault
 from ..getdatasets.models import  TaskProdSys1
 from ..settings import dq2client as dq2_settings
 from rucio.client import Client
@@ -164,6 +166,7 @@ class DDM(object):
     @property
     def ddm_client(self):
         return self.__ddm
+
 
     def upload_file(self, local_file, rse, dataset, register_after_upload=True):
         from rucio.client.uploadclient import UploadClient
@@ -387,8 +390,11 @@ class DDM(object):
     def change_rule_lifetime(self, rule_id, lifetime):
         self.__ddm.update_replication_rule(rule_id,{'lifetime':lifetime})
 
-    def change_rule_source(self, rule_id, new_source):
-        self.__ddm.update_replication_rule(rule_id,{'source_replica_expression':new_source})
+    def change_rule_source(self, rule_id, new_source, cancel_requests=False):
+        if cancel_requests:
+            return self.__ddm.update_replication_rule(rule_id,{'source_replica_expression':new_source, 'cancel_requests':True,'state':'STUCK'})
+        else:
+            return self.__ddm.update_replication_rule(rule_id,{'source_replica_expression':new_source})
 
     def get_rule(self, rule_id):
         return self.__ddm.get_replication_rule(rule_id)
@@ -795,3 +801,15 @@ class DDM(object):
             else:
                 return_list.append(f'{lfn.split(".")[0]}:{lfn}')
         return return_list
+
+    def convert_input_to_physical_tape(self, input):
+        if ActionDefault.objects.filter(name=input[:30],type='Tape').exists():
+            ad = ActionDefault.objects.get(name=input[:30],type='Tape')
+        else:
+            cric_client = CRICClient()
+            ddm_endpoints = cric_client.get_ddmendpoint()
+            physical_tape = ddm_endpoints[input]['su']
+            ad,_ = ActionDefault.objects.get_or_create(name=input[:30], type='Tape')
+            ad.set_config({'su':physical_tape})
+            ad.save()
+        return ad.get_config('su')

@@ -588,6 +588,21 @@ def create_staging_action(input_dataset,task,ddm,rule,config,replicas=None,sourc
     action_dataset.step_action = action_step
     action_dataset.save()
 
+def submit_queued_rule_by_dataset_stage(dataset_stage_id):
+    dataset_stage = DatasetStaging.objects.get(id=dataset_stage_id)
+    ddm = DDM()
+    if dataset_stage.status == 'queued':
+        source_replica = fill_source_replica_template(ddm, dataset_stage.dataset,'rse_type=DISK|{source_tape}'
+                                                      , dataset_stage.source)
+        rule = '{destination_by_tape}'
+        rule = prepare_rule(rule, dataset_stage.source)
+        dataset_staging = ActionStaging.objects.filter(dataset_stage=dataset_stage).last()
+        lifetime = dataset_staging.step_action.get_config('lifetime')
+        perfom_dataset_stage(dataset_stage.dataset, ddm, rule, lifetime , source_replica)
+        dataset_stage.status = 'staging'
+        dataset_stage.start_time = timezone.now()
+        dataset_stage.save()
+
 
 def submit_queued_rule(action_step_id):
     action_step = StepAction.objects.get(id=action_step_id)
@@ -2544,8 +2559,8 @@ class DatasetStagingRule:
     destination: str
     total_files: int
     staged_files: int
-    start_time: str
-    update_time: str
+    start_time: int
+    update_time: int
     number_active_tasks: int
     dc_type: str
     stuck: bool
@@ -2601,8 +2616,8 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
                                rse=rule, source=dataset_staging.source,
                                destination=dataset_staging.destination_rse,
                                total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-                               start_time=dataset_staging.start_time.strftime('%d-%m-%Y %H:%M:%S'),
-                               update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               start_time=int(dataset_staging.start_time.timestamp()*1000),
+                               update_time=int(update_time.timestamp()*1000),
                                number_active_tasks=len(task_by_ds.get(dataset_staging.id,[])), dc_type = 'p',
                                owners=owners, tasks_ids=tasks_ids,
                                bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error),
@@ -2648,8 +2663,8 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
                                rse=rule, source=dataset_staging.source_tape,
                                destination=dataset_staging.destination_rse,
                                total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-                               start_time=start_time.strftime('%d-%m-%Y %H:%M:%S'),
-                               update_time=update_time.strftime('%d-%m-%Y %H:%M:%S'),
+                               start_time=int(start_time.timestamp()*1000),
+                               update_time=int(update_time.timestamp()*1000),
                                number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a', tasks_ids=tasks_ids,
                                bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error)
         )

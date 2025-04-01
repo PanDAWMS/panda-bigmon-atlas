@@ -133,6 +133,9 @@ export class StagingManagementComponent implements OnInit {
       }
       const parts = dataset.split('.');
       if (parts.length > 2) {
+        if (parts[0] === 'user' || parts[0] === 'group') {
+          return `<a href="https://rucio-ui.cern.ch/did?scope=${parts[0]}.${parts[1]}&name=${dataset}">${parts[0]}|${parts[1]}</a>`;
+        }
         return `<a href="https://rucio-ui.cern.ch/did?scope=${parts[0]}&name=${dataset}">${parts[0]}|${parts[parts.length - 2]}</a>`;
       }
       return dataset;
@@ -176,7 +179,7 @@ export class StagingManagementComponent implements OnInit {
         if (dataset.indexOf(':') !== -1) {
           dataset = dataset.split(':')[1];
         }
-        const starttime = convertToUnixTimestamp(params.data.start_time);
+        const starttime = params.data.start_time;
         const dashboardURL = this.OS_ERROR_DASHBOARD_URL.replace('{time}', starttime.toString()).replace('{dataset_name}', dataset);
         return `<a href="${dashboardURL}" target="_blank">(!)</a>`;
       }
@@ -187,8 +190,15 @@ export class StagingManagementComponent implements OnInit {
       cellRenderer: params => {
         return convertBytes(params.value);
       }},
-    {field: 'update_time', headerName: 'Updated'},
-    {field: 'start_time', headerName: 'Started'},
+    {field: 'update_time', headerName: 'Updated',
+    cellRenderer: params => {
+      return formatUnixTimestampUTC(params.value);
+    }},
+
+    {field: 'start_time', headerName: 'Started',
+      cellRenderer: params => {
+      return formatUnixTimestampUTC(params.value);
+    }},
 
 
   ];
@@ -366,4 +376,20 @@ function convertToUnixTimestamp(dateString: string): number {
 
   // Return the timestamp in milliseconds
   return dateObj.getTime();
+}
+function formatUnixTimestampUTC(timestamp: number): string {
+  const date = new Date(timestamp);
+
+  // Get date components in UTC
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+
+  // Get time components in UTC
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+
+  // Format as YYYY-MM-DD HH:MM:SS
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }

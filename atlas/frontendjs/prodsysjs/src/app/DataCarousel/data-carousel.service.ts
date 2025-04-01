@@ -29,8 +29,8 @@ export interface StagingRule {
   destination: string;
   total_files: number;
   staged_files: number;
-  start_time: string;
-  update_time: string;
+  start_time: number;
+  update_time: number;
   number_active_tasks: number;
   dc_type: string;
   owners: string[];
