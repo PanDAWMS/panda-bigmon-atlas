@@ -398,7 +398,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
                 return 'True', f'Source replication rule {rule_id} changed with cancel: {cancel}, ddm returns: {result}'
         except Exception as e:
-            return False, f'Command rejected: str(e)'
+            return False, f'Command rejected: {e}'
 
     @_rule_action_logger
     def bypass_queue(self, dataset):

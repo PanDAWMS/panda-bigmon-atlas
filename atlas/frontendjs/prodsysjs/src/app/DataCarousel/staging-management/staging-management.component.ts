@@ -136,7 +136,13 @@ export class StagingManagementComponent implements OnInit {
         if (parts[0] === 'user' || parts[0] === 'group') {
           return `<a href="https://rucio-ui.cern.ch/did?scope=${parts[0]}.${parts[1]}&name=${dataset}">${parts[0]}|${parts[1]}</a>`;
         }
-        return `<a href="https://rucio-ui.cern.ch/did?scope=${parts[0]}&name=${dataset}">${parts[0]}|${parts[parts.length - 2]}</a>`;
+        let datasetFormat = '';
+        if (parts[parts.length - 1] === 'RAW'){
+          datasetFormat = parts[parts.length - 1];
+        } else {
+          datasetFormat = parts[parts.length - 2];
+        }
+        return `<a href="https://rucio-ui.cern.ch/did?scope=${parts[0]}&name=${dataset}">${parts[0]}|${datasetFormat}</a>`;
       }
       return dataset;
     },
