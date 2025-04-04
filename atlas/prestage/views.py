@@ -2699,7 +2699,7 @@ def get_stuck_requests():
     for dataset_staging in DatasetStaging.objects.filter(status=DatasetStaging.STATUS.STAGING):
         if dataset_staging.rse:
             rule = ddm.get_rule(dataset_staging.rse)
-            if rule['state'] == 'STUCK':
+            if rule['state'] in ['STUCK' , 'SUSPENDED']:
                 stuck_requests[dataset_staging.rse] = rule['error']
     for dataset_staging in PandaDatasetStaging.objects.filter(status=PandaDatasetStaging.STATUS.STAGING):
         if dataset_staging.rse:
