@@ -4183,16 +4183,16 @@ ProjectModeForm.prototype.createForm = function(inputString){
                  <button id="submitImmedietly" class="btn_is_authenticated" title="Submit without delay" onclick="approveClick(event,true,'99',false,false,1);">Process immediately</button>
              </div>
                     <div class="row">
-                    <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,true);">Save Async</button>
+                    <button class="btn_is_authenticated" id="saveButton" title="Save selected slices without approval" onclick="approveClick(event,false,'-1',false,true,0);">Save Async</button>
                       </div>
                 </div>
     </div>
     <div class="row">
                 <div class="large-3 columns">
                     {% if trequest.request_type == "MC" %}
-                        <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Submit only steps before:</button>
+                        <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false,0);">Submit only steps before:</button>
                     {% else  %}
-                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false);">Approve only steps before:</button>
+                         <button href="#" class="button prefix btn_is_authenticated"  onclick="approveClick(event,true,$('#approveToInput').val(),false,false,0);">Approve only steps before:</button>
                     {% endif %}
                 </div>
 
