@@ -62,7 +62,8 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
-    def retryTask(self, jediTaskID, verbose, noChildRetry, discardEvents, disable_staging_mode):
+    def retryTask(self, jedi_task_id, new_parameters, no_child_retry, discard_events,
+                  disable_staging_mode, keep_gshare_priority, ignore_hard_exhausted):
         pass
 
     @abstractmethod
@@ -448,35 +449,26 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         return self._post_command('changeTaskAttributePanda',data)
 
 
-    def retryTask(self, jediTaskID, verbose=False, noChildRetry=False, discardEvents=False, disable_staging_mode=False):
+    def retryTask(self, jedi_task_id, new_parameters: str = None, no_child_retry=False, discard_events=False,
+                  disable_staging_mode=False, keep_gshare_priority=False, ignore_hard_exhausted=False):
         """Retry task
-           args:
-               jediTaskID: jediTaskID of the task to retry
-               noChildRetry: True not to retry child tasks
-               discardEvents: discard events
-               disable_staging_mode: disable staging mode
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
+        task_id(int): JEDI Task ID
+        new_parameters(Dict, optional): a json dictionary with the new parameters for rerunning the task. The new parameters are merged with the existing ones.
+                                        The parameters are the attributes in the JediTaskSpec object (https://github.com/PanDAWMS/panda-jedi/blob/master/pandajedi/jedicore/JediTaskSpec.py).
+        no_child_retry(bool, optional): if True, the child tasks are not retried
+        discard_events(bool, optional): if True, events will be discarded
+        disable_staging_mode(bool, optional): if True, the task skips staging state and directly goes to subsequent state
+        keep_gshare_priority(bool, optional): if True, the task keeps current gshare and priority
+        ignore_hard_exhausted(bool, optional): if True, the task ignores the limits for hard exhausted state and can be retried even if it is very faulty
+            Returns:
+        dict: The system response `{"success": success, "message": message, "data": data}`. True for success, False for failure, and an error message. Return code in the data field, 0 for success, others for failure.
         """
-        # instantiate curl
-        data = {'jediTaskID': jediTaskID, 'properErrorCode': True}
-        if noChildRetry:
-            data['noChildRetry'] = True
-        if discardEvents:
-            data['discardEvents'] = True
-        if disable_staging_mode:
-            data['disable_staging_mode'] = True
-        return self._post_command('retryTask',data)
+        if not new_parameters:
+            new_parameters = None
+        data = {'task_id': int(jedi_task_id), 'new_parameters': new_parameters, 'no_child_retry': no_child_retry,
+                'discard_events': discard_events, 'disable_staging_mode': disable_staging_mode,
+                'keep_gshare_priority': keep_gshare_priority, 'ignore_hard_exhausted': ignore_hard_exhausted}
+        return self._post_new_api_command('api/v1/task/retry', data)
 
     # reload input
     def reloadInput(self, jediTaskID, verbose=False):

@@ -19,7 +19,7 @@
 <button mat-raised-button  [matMenuTriggerFor]="retryMenu"  class="action-button-menu">Retry▼</button>
   <mat-menu #retryMenu="matMenu" yPosition="below">
       <div class="action-menu-vertical-fields">
-        <button mat-raised-button color="primary" (click)="executeAction('retry',[false, false, discardEvents.checked, discardStaging.checked])">Retry</button>
+        <button mat-raised-button color="primary" (click)="executeAction('retry',['', false, discardEvents.checked, discardStaging.checked, false, false])">Retry</button>
         <mat-checkbox class="action-checkbox" #discardEvents (click)="$event.stopPropagation()">Discard events</mat-checkbox>
         <mat-checkbox class="action-checkbox" #discardStaging (click)="$event.stopPropagation()">Discard staging mode</mat-checkbox>
       </div>

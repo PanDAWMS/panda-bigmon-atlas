@@ -264,17 +264,18 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def changeTaskAttribute(self, jediTaskID, attrName, attrValue):
         return self.jedi_client.changeTaskAttribute(jediTaskID, attrName, attrValue)
 
-    @_jedi_decorator
-    def retryTask(self, jediTaskID, verbose=False, noChildRetry=False, discardEvents=False, disable_staging_mode=False):
-        result = self.jedi_client.retryTask(jediTaskID, verbose, noChildRetry, discardEvents, disable_staging_mode)
-        if result[0] == 0:
-            try:
-                task = ProductionTask.objects.get(id=jediTaskID)
+    @_jedi_new_api_decorator
+    def retryTask(self, jedi_task_id, new_parameters: str = None, no_child_retry=False, discard_events=False,
+                  disable_staging_mode=False, keep_gshare_priority=False, ignore_hard_exhausted=False):
+        result = self.jedi_client.retryTask(jedi_task_id, new_parameters, no_child_retry, discard_events, disable_staging_mode)
+        try:
+            if 'data' in result and result['data'] == 0:
+                task = ProductionTask.objects.get(id=jedi_task_id)
                 if task.status in ProductionTask.NOT_RUNNING:
                     task.status = ProductionTask.STATUS.TORETRY
                     task.save()
-            except:
-                pass
+        except:
+            pass
         return result
 
     @_jedi_new_api_decorator
@@ -695,6 +696,19 @@ class TaskManagementAuthorisation():
     def __init__(self):
         self.define_allowed_task_actions()
 
+
+def permission_specific_params(username: str, action: str, params: list) -> (str, list):
+    if action == 'retry':
+        try:
+            user = User.objects.get(username=username)
+            if user.is_superuser and len(params) >= 6:
+                params[5] = True
+                return action, params
+        except:
+            pass
+    return action, params
+
+
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -708,6 +722,7 @@ def tasks_action(request: Request):
         if 'user_fullname' in request.data:
              user_fullname = request.data['user_fullname']
         authentification_management = TaskManagementAuthorisation()
+        action, params = permission_specific_params(username=username, action=action, params=params)
         tasks_allowed = authentification_management.tasks_action_authorisation(tasks_id, username, action, params, user_fullname)
         for task_verified in tasks_allowed:
             if not task_verified.user_allowed or not task_verified.action_allowed:

@@ -91,7 +91,7 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     reassign_to_cloud: {name: 'Reassign to cloud', params_name: ['cloud', 'mode']},
     reassign_to_nucleus: {name: 'Reassign to nucleus', params_name: ['nucleus', 'mode']},
     reassign_to_share: {name: 'Reassign to share', params_name: ['share', 'mode']},
-    retry: {name: 'Retry', params_name: ['', '', 'Discard events', 'Discard iDDS']},
+    retry: {name: 'Retry', params_name: ['', '', 'Discard events', 'Discard iDDS', 'Keep Params', '']},
     change_ram_count: {name: 'Change ram count', params_name: ['value']},
     change_wall_time: {name: 'Change wall time', params_name: ['value']},
     change_cpu_time: {name: 'Change cpu time', params_name: ['value']},
