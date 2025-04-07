@@ -137,7 +137,27 @@ class ProjectMode(object):
         cmt_config_from_cvmfs = [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
         return cmt_config_from_cvmfs
 
-    def _get_cmtconfig_for_container(self, cache: str, container_name: str, archs: [str], user_cmt_config: str):
+    @staticmethod
+    def _get_cmtconfig_for_container(cache: str, container_name: str):
+        release = cache.split('-')[-1]
+        project = cache.split('-')[0]
+        cmt_config_from_cvmfs = []
+        container_name_base = '/'.join(container_name.split('/')[:-1])
+        container_postfix = container_name.split('/')[-1]
+        base_path = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH.format(container_name_base=container_name_base)
+        archs_cvmfs = []
+
+        archs_cvmfs += [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
+        archs = [x.replace(f'{container_postfix}-', '') for x in archs_cvmfs if x.startswith(container_postfix)]
+        for arch in archs:
+            path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(release=release,project=project,container_name=container_name,arch=arch)
+            if not os.path.exists(path):
+                raise Exception(f'Path {path} does not exist, cahce {cache} is missing in CVMFS')
+            cmt_config_from_cvmfs += [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
+        return cmt_config_from_cvmfs
+
+
+    def _check_cmtconfig_for_container(self, cache: str, container_name: str, archs: [str], user_cmt_config: str):
         release = cache.split('-')[-1]
         project = cache.split('-')[0]
         cmt_config_from_cvmfs = []
@@ -149,6 +169,7 @@ class ProjectMode(object):
         for cmt_config in cmt_config_from_cvmfs:
             if not re.search(f'^{user_cmt_config}$', cmt_config):
                 raise Exception(f' {cmt_config} does not match {user_cmt_config}')
+
 
 
     def cmt_config_addon(self, cmt_config):
@@ -208,7 +229,7 @@ class ProjectMode(object):
             if not archs:
                 archs = architecture.split('-')[0].strip('()').split('|')
             if self.container_name:
-                self._get_cmtconfig_for_container(self.cache, self.container_name, archs, architecture)
+                self._check_cmtconfig_for_container(self.cache, self.container_name, archs, architecture)
             else:
                 if not self._is_cmtconfig_exist(self.cache, architecture):
                     available_cmtconfig_list = self._get_cmtconfig_list(self.cache)
@@ -252,7 +273,7 @@ class ProjectMode(object):
                     cache_exists = True
                     break
             if not cache_exists and not self.skipCMTConfigCheck:
-                self._get_cmtconfig_for_container(self.cache, self.container_name, [self.cmtconfig.split('-')[0]], self.cmtconfig)
+                self._check_cmtconfig_for_container(self.cache, self.container_name, [self.cmtconfig.split('-')[0]], self.cmtconfig)
                 # raise Exception(
                 #     'Cache \"{0}\" is not found in the container \"{1}\" '.format(
                 #         self.cache, self.container_name))
@@ -267,6 +288,16 @@ class ProjectMode(object):
                         if ami_client.ami_container_exists(self.container_name):
                             setattr(self, 'cmtconfig', ami_client.ami_cmtconfig_by_image_name(self.container_name))
                         else:
+                            cmtconfig_list = self._get_cmtconfig_for_container(self.cache, self.container_name)
+                            if len(cmtconfig_list) == 1:
+                                setattr(self, 'cmtconfig', cmtconfig_list[0])
+                            if (len(cmtconfig_list) == 2 and len(
+                                    set([cmtconfig.split('-')[0] for cmtconfig in cmtconfig_list])) == 2 and
+                                    len(set([cmtconfig.split('-', 1)[1] for cmtconfig in cmtconfig_list])) == 1):
+                                self._cmt_config_list = cmtconfig_list
+                                joined_cmtconfig = f'({cmtconfig_list[0].split("-")[0]}|{cmtconfig_list[1].split("-")[0]})-{cmtconfig_list[0].split("-", 1)[1]}'
+                                setattr(self, 'cmtconfig', joined_cmtconfig)
+                                return
                             raise Exception(
                                 'cmtconfig is required for containers which are not registered in AMI')
                 else:

@@ -525,7 +525,7 @@ class TaskDefConstants(object, metaclass=Constants):
     DEFAULT_GRL_XML_PATH = '/cvmfs/atlas.cern.ch/repo/sw/database/GroupData/GoodRunsLists/{project}/'
     DEAFULT_SW_RELEASE_PATH = '/cvmfs/atlas.cern.ch/repo/sw/software/{release_base}/{project}/{release}/InstallArea/'
     DEAFULT_CONTAINER_RELEASE_PATH = '/cvmfs/unpacked.cern.ch/registry.cern.ch/{container_name}-{arch}/usr/{project}/{release}/InstallArea/'
-
+    DEAFULT_CONTAINER_BASE_RELEASE_PATH = '/cvmfs/unpacked.cern.ch/registry.cern.ch/{container_name_base}'
     DEFAULT_TASK_ID_FORMAT_BASE = Constant('.08d')
     DEFAULT_TASK_ID_FORMAT = Constant('%%%s', ('DEFAULT_TASK_ID_FORMAT_BASE',))
     DEFAULT_TASK_NAME_TEMPLATE = Constant('{{project}}.{{number}}.{{brief}}.{{prod_step}}.{{version}}')
