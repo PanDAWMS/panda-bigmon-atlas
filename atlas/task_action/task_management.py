@@ -267,7 +267,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_new_api_decorator
     def retryTask(self, jedi_task_id, new_parameters: str = None, no_child_retry=False, discard_events=False,
                   disable_staging_mode=False, keep_gshare_priority=False, ignore_hard_exhausted=False):
-        result = self.jedi_client.retryTask(jedi_task_id, new_parameters, no_child_retry, discard_events, disable_staging_mode)
+        result = self.jedi_client.retryTask(jedi_task_id, new_parameters, no_child_retry, discard_events, disable_staging_mode, keep_gshare_priority, ignore_hard_exhausted)
         try:
             if 'data' in result and result['data'] == 0:
                 task = ProductionTask.objects.get(id=jedi_task_id)
