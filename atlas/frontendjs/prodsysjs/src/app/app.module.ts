@@ -275,7 +275,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         UnmergeCleaningComponent,
         UnmergeDatasetsComponent,
         ProductionTaskComponent,
-        DialogTaskSubmissionComponent,
         RequestsliceComponent,
         TaskStagingProgressComponent,
         TaskProgressComponent,

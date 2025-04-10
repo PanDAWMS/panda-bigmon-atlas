@@ -6,7 +6,14 @@ import {
   TaskActionResult,
   TaskService
 } from '../production-task/task-service.service';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogActions,
+  MatDialogContent,
+  MatDialogRef,
+  MatDialogTitle
+} from '@angular/material/dialog';
 import {Observable} from 'rxjs';
 import {filter, map, switchMap, tap} from 'rxjs/operators';
 import {MatFormField, MatOption, MatSelect, MatSelectChange} from "@angular/material/select";
@@ -92,6 +99,7 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     reassign_to_nucleus: {name: 'Reassign to nucleus', params_name: ['nucleus', 'mode']},
     reassign_to_share: {name: 'Reassign to share', params_name: ['share', 'mode']},
     retry: {name: 'Retry', params_name: ['', '', 'Discard events', 'Discard iDDS', 'Keep Params', '']},
+    force_retry: {name: 'Force Retry', params_name: ['', '', 'Discard events', 'Discard iDDS', 'Keep Params', '']},
     change_ram_count: {name: 'Change ram count', params_name: ['value']},
     change_wall_time: {name: 'Change wall time', params_name: ['value']},
     change_cpu_time: {name: 'Change cpu time', params_name: ['value']},
@@ -117,7 +125,7 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     enable_job_cloning: {name: 'Enable job cloning', params_name: ['mode']},
 
   };
-   SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete'];
+   SINGLE_TASK_CONFIRMATION_REQUIRED = [ 'abort', 'obsolete', 'force_retry'];
    comment = '';
   selectedSites: string[] = [];
   jobCloningMode = 'runonce';
@@ -260,31 +268,6 @@ export class TaskActionComponent implements OnInit, OnDestroy {
   }
 
 
-  summaryResult(actionResult: { action: string; actions_result: string; tasks_result: { task_id: number; type: string; result: string }[] }): string {
-
-    if (actionResult.actions_result === 'error'){
-      let returnString = `Error: commands were not sent to JEDI. ${actionResult.tasks_result.length - this.reSendAction.tasks.length} tasks has problems`;
-      if (this.reSendAction.tasks.length > 0){
-        returnString += `, for ${this.reSendAction.tasks.length} tasks command can be sent again.`;
-      }
-      return returnString;
-    }
-    if (actionResult.actions_result === 'sent'){
-      let goodTasks = 0;
-      let warningTasks = 0;
-      for (const taskResult of actionResult.tasks_result){
-        if (taskResult.type === 'task_alt'){
-          goodTasks++;
-        }
-        if (taskResult.type === 'warning'){
-          warningTasks++;
-        }
-      }
-      return `Commands sent to JEDI. ${goodTasks} tasks were affected, ${warningTasks} tasks were not affected.`;
-    }
-
-  }
-
   reSendTasks(): void{
     this.taskService.addAction(this.reSendAction);
   }
@@ -297,14 +280,29 @@ export class TaskActionComponent implements OnInit, OnDestroy {
 }
 
 @Component({
-    selector: 'app-dialog-task-action',
-    templateUrl: 'dialog-task-action.html',
-    standalone: false
+  selector: 'app-dialog-task-action',
+  templateUrl: 'dialog-task-action.html',
+  imports: [
+    MatFormField,
+    MatDialogActions,
+    MatButton,
+    MatInput,
+    FormsModule,
+    NgIf,
+    MatDialogContent,
+    MatDialogTitle,
+    MatSelect,
+    MatOption,
+    MatLabel
+  ],
+  standalone: true
 })
 export class DialogTaskSubmissionComponent implements OnInit{
 
   parameters = '';
   comment = '';
+  FORCE_RETRY_REASONS = ['Bad site', 'Unavailable replica', 'Small tail', 'Other(leave a comment)'];
+  forceRetryReason = '';
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: TaskAction, public dialogRef: MatDialogRef<DialogTaskSubmissionComponent>,
               private taskService: TaskService) {
@@ -321,6 +319,12 @@ export class DialogTaskSubmissionComponent implements OnInit{
   }
 
   submitAction(): void {
+    if (this.data.action === 'force_retry'){
+      if (this.forceRetryReason !== ''){
+        this.comment += ` Reason: ${this.forceRetryReason}`;
+      }
+    }
+    this.data.comment = this.comment;
     this.taskService.addAction(this.data);
     this.dialogRef.close();
   }

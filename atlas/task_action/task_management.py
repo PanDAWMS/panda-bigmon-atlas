@@ -265,7 +265,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         return self.jedi_client.changeTaskAttribute(jediTaskID, attrName, attrValue)
 
     @_jedi_new_api_decorator
-    def retryTask(self, jedi_task_id, new_parameters: str = None, no_child_retry=False, discard_events=False,
+    def retryTask(self, jedi_task_id, new_parameters: dict = None, no_child_retry=False, discard_events=False,
                   disable_staging_mode=False, keep_gshare_priority=False, ignore_hard_exhausted=False):
         result = self.jedi_client.retryTask(jedi_task_id, new_parameters, no_child_retry, discard_events, disable_staging_mode, keep_gshare_priority, ignore_hard_exhausted)
         try:
@@ -568,12 +568,12 @@ class TaskManagementAuthorisation():
                                                             'pause_task', 'resume_task', 'trigger_task',
                                                             'avalanche_task', 'reload_input', 'release_task',
                                                             'increase_attempt_number', 'abort_unfinished_jobs',
-                                                          'disable_idds', 'kill_job', 'retry', 'finish_plus_reload',
+                                                          'disable_idds', 'kill_job', 'retry', 'force_retry', 'finish_plus_reload',
                                                           'set_debug_jobs', 'kill_jobs_without_task', 'enable_job_cloning'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.FINISHED:
-                self.allowed_task_actions[status].extend(['retry', 'obsolete', 'obsolete_output', 'retry_new', 'finish', 'reload_input', 'disable_idds', 'finish_plus_reload'] +
+                self.allowed_task_actions[status].extend(['retry', 'force_retry', 'obsolete', 'obsolete_output', 'retry_new', 'finish', 'reload_input', 'disable_idds', 'finish_plus_reload'] +
                                                          self.CHANGE_PARAMETERS_ACTIONS +
                                                          self.REASSIGN_ACTIONS)
             if status == ProductionTask.STATUS.DONE:
@@ -655,7 +655,7 @@ class TaskManagementAuthorisation():
 
     def additional_permissions(self, task: __AuthorisationTask, action: str) -> bool:
         if task.is_analy:
-            if task.status in [ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN] and action in ['retry', 'reload_input']:
+            if task.status in [ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN] and action in ['retry', 'reload_input', 'force_retry']:
                 return True
         return False
 
@@ -797,6 +797,7 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'reassign_to_nucleus': action_executor.reassignTaskToNucleus,
             'reassign_to_share': action_executor.reassignShare,
             'retry': action_executor.retryTask,
+            'force_retry': action_executor.retryTask,
             'change_ram_count': action_executor.changeTaskRamCount,
             'change_wall_time': action_executor.changeTaskWalltime,
             'change_cpu_time': action_executor.changeTaskCputime,

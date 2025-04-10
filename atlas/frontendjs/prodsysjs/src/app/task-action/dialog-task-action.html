@@ -8,8 +8,26 @@
     Execute action for task: <b>{{data.tasks[0].id}}</b> with status: {{data.tasks[0].status}} <p></p>
 
   </ng-container>
- <span *ngIf="parameters!==''">{{parameters}}</span>
-    <p></p>
+  @if(data.action=='force_retry'){
+    <p>This will retry tasks at the 'exhausted' state. Before proceeding, please review the information on the task page
+      to understand the issue and confirm that retrying is appropriate and won't waste resources. A reason for the retry is required. </p>
+    <div>
+    <mat-form-field class="force_retry_reason" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Reason</mat-label>
+          <mat-select [(ngModel)]="forceRetryReason" [value]="''">
+                <mat-option [value]="''">Please select</mat-option>
+            @for (reason of FORCE_RETRY_REASONS; track $index){
+
+                <mat-option [value]="reason">{{reason}}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+    </div>
+  }@else{
+     <span *ngIf="parameters!==''">{{parameters}}</span>
+     <p></p>
+  }
+
 
   <mat-form-field  appearance="fill" >
     <mat-label>Comment(optional)</mat-label>
@@ -20,5 +38,5 @@
 </div>
 <div mat-dialog-actions>
   <button mat-button (click)="dialogRef.close()">Cancel</button>
-  <button mat-button (click)="submitAction()" >OK</button>
+  <button mat-button (click)="submitAction()" [disabled]="data.action=='force_retry'&&forceRetryReason==''" >OK</button>
 </div>
