@@ -1135,28 +1135,17 @@ def move_tasks_to_new_slice(source_request_id: int, destination_request_id: int,
     destination_slice = InputRequestList.objects.get(request=destination_request_id, slice=destination_slice_number)
     new_steps = StepExecution.objects.filter(slice=destination_slice, request=destination_request_id)
     new_steps_ordered, parent_step = form_existed_step_list(new_steps)
+
     new_step_index = 0
     for index, step in enumerate(step_as_in_page):
-        if step and step.step_parent != step and ((step.step_parent == parent_step) or (new_step_index > 0)):
-            tasks = list(ProductionTask.objects.filter(step=step, request=source_request_id))
-            for task in tasks:
-                task.step = new_steps_ordered[new_step_index]
-                task.save()
-            current_status = step.status
-            if current_status == StepExecution.STATUS.APPROVED:
-                step.status = StepExecution.STATUS.NOT_CHECKED
-            elif current_status == StepExecution.STATUS.SKIPPED:
-                step.status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
+        if step and ((parent_step is None) or (step.step_parent == parent_step) or (new_step_index > 0)):
+            step.slice = destination_slice
+            new_steps_ordered[new_step_index].slice = source_slice
             step.save()
-            if len(tasks) > 0:
-                new_steps_ordered[new_step_index].status = StepExecution.STATUS.APPROVED
-            else:
-                new_steps_ordered[new_step_index].status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
             new_steps_ordered[new_step_index].save()
             new_step_index += 1
     if not do_not_hide:
-        destination_slice.is_hide = True
-        destination_slice.save()
+        hide_slice(destination_slice)
     return destination_slice_number
 
 
@@ -1180,10 +1169,7 @@ def find_broken_tasks_subslice(request_id: int, slice_number: int) -> (int, int)
 def hide_partial_slice(request_id: int, slice_number: int) -> bool:
 
     good_step_index, last_broken_step = find_broken_tasks_subslice(request_id, slice_number)
-    if good_step_index == -1:
-        hide_slice(InputRequestList.objects.get(request=request_id, slice=slice_number))
-        return True
-    elif last_broken_step > good_step_index:
+    if last_broken_step > good_step_index:
         move_tasks_to_new_slice(request_id, request_id, slice_number, good_step_index + 1)
         return True
     return False
@@ -2444,11 +2430,11 @@ def fix_fahui_error(request_id, tasks):
     for task_id in tasks:
         task = ProductionTask.objects.get(request=request, id=task_id)
         slice = task.step.slice
-        # if slice.id in cloned_slices:
-        #     print('Aready cloned:',request.reqid)
-        #     continue
-        # if slice.id in fixed_slices:
-        #     continue
+        if slice.id in cloned_slices:
+            print('Aready cloned:',request.reqid)
+            continue
+        if slice.id in fixed_slices:
+            continue
         step_execs = StepExecution.objects.filter(request=request, slice=slice)
         ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
         if request.request_type == 'MC':
@@ -2469,6 +2455,32 @@ def fix_fahui_error(request_id, tasks):
         set_request_status('cron', request.reqid, 'approved', 'Automatic fix approve',
                            'Request was automatically approved')
 
+def check_fernando_error(request_id, tasks, min_tasks_id):
+    request = TRequest.objects.get(reqid=request_id)
+    cloned_slices = {x.cloned_from_id:x.id for x in InputRequestList.objects.filter(request=request) if not(x.is_hide) and x.cloned_from_id}
+    tasks.sort()
+    not_fixed_slices  = []
+    print('Request:',request_id)
+    for task_id in tasks:
+        task = ProductionTask.objects.get(request=request, id=task_id)
+        slice = task.step.slice
+        if not slice.is_hide:
+            if slice.id in cloned_slices:
+                step_execs = StepExecution.objects.filter(request=request, slice=cloned_slices[slice.id])
+                new_tasks = ProductionTask.objects.filter(request=request, step__in=step_execs).order_by('id').last()
+                if not new_tasks:
+                    continue
+                if new_tasks.id < min_tasks_id:
+                    print('Not yet cloned:',request.reqid,slice.slice)
+                    not_fixed_slices.append(slice.slice)
+                    continue
+                continue
+            print('Not yet cloned:', request.reqid, slice.slice)
+            not_fixed_slices.append(slice.slice)
+    return not_fixed_slices
+
+def fix_bulk_broken(request_id, tasks):
+    pass
 
 def fix_clone_for_step(request):
     for slice in InputRequestList.objects.filter(request=request):
