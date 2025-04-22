@@ -259,6 +259,12 @@ class TaskDefinition(object):
         self._verified_evgen_releases = set()
 
     @staticmethod
+    def convert_input_name(dataset: str) -> str:
+        if dataset.startswith('user') and dataset.split(':')[-1].split('.')[3].startswith('data'):
+            dataset = '.'.join(dataset.split(':')[-1].split('.')[3:])
+        return dataset
+
+    @staticmethod
     def _get_usergroup(step):
         return '{0}_{1}'.format(step.request.provenance, step.request.phys_group)
 
@@ -311,9 +317,10 @@ class TaskDefinition(object):
             data_name_dict.update({'name': name})
             return data_name_dict
         else:
+            name = TaskDefinition.convert_input_name(name)
             result = re.match(TaskDefConstants.DEFAULT_DATA_NAME_PATTERN, name)
             if not result:
-                raise Exception('Invalid data name')
+                raise Exception(f'Invalid data name {name}')
 
             data_name_dict = result.groupdict()
             data_name_dict.update({'name': name})
@@ -621,6 +628,7 @@ class TaskDefinition(object):
             is_new_format = False
             if self.is_new_jo_format(input_data_name):
                 is_new_format = True
+            input_data_name = TaskDefinition.convert_input_name(input_data_name)
             input_data_dict = self.parse_data_name(input_data_name)
 
             if input_data_dict['prod_step'].lower() == 'py'.lower():
@@ -1868,8 +1876,8 @@ class TaskDefinition(object):
         if (not project_mode.noprestage and not project_mode.patchRepro and not project_mode.repeatDoneTaskInput
                 and not project_mode.FLD and step.request.request_type in ['REPROCESSING', 'GROUP', 'MC','HLT']):
             primary_input = self._get_primary_input(task_proto_dict['job_params'])['dataset']
-            if '_sub' in primary_input:
-                return
+            # if '_sub' in primary_input:
+            #     return
             if self.rucio_client.dataset_exists(primary_input) and self.rucio_client.only_tape_replica(primary_input):
                 sa = StepAction()
                 task_config = ProjectMode.get_task_config(step)
@@ -2782,6 +2790,11 @@ class TaskDefinition(object):
 
             if use_container_name and container_name and (step == first_step):
                 input_data_name = container_name
+            selected_files_list_dataset = None
+            if input_data_name.startswith('user'):
+                if input_data_name.split(':')[-1].split('.')[3].startswith('data'):
+                    selected_files_list_dataset = input_data_name
+                    input_data_name = TaskDefinition.convert_input_name(input_data_name)
 
             input_data_dict = self.parse_data_name(input_data_name)
 
@@ -4646,7 +4659,7 @@ class TaskDefinition(object):
                 if mc_pileup_overlay['is_overlay'] and not self.template_type:
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
                     self._register_mc_overlay_dataset(mc_pileup_overlay, self._get_total_number_of_jobs(task, number_of_events), task_id, task, split_by_datasets)
-                if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput:
+                if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput or selected_files_list_dataset is not None:
                     primary_input = self._get_primary_input(task['jobParameters'])
                     primary_input_dataset = primary_input['dataset']
                     filtered_files = []
@@ -4656,8 +4669,10 @@ class TaskDefinition(object):
                         grl_range = self._get_GRL_from_xml(grl_file)
 
                         filtered_files, whole_dataset = self._filter_input_dataset_by_GRL(primary_input_dataset, grl_range)
-                    elif project_mode.FLD:
-                        filtered_files, whole_dataset = self._filter_input_dataset_by_FLD(primary_input_dataset, project_mode.FLD)
+                    elif project_mode.FLD or selected_files_list_dataset is not None:
+                        if selected_files_list_dataset is None:
+                            selected_files_list_dataset = project_mode.FLD
+                        filtered_files, whole_dataset = self._filter_input_dataset_by_FLD(primary_input_dataset, selected_files_list_dataset)
                     elif project_mode.repeatDoneTaskInput:
                         filtered_files, whole_dataset = self._filter_input_dataset_by_previous_task(primary_input_dataset, project_mode.repeatDoneTaskInput)
                     if not whole_dataset:
