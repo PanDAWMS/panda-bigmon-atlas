@@ -160,6 +160,19 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 return False, str(ex)
         return inner
 
+    def _jedi_rule_decorator(func):
+        def inner(self, dataset, *args, **kwargs):
+            try:
+                result = func(self, dataset, *args, **kwargs)
+                logger.info(f"JEDI rule action {dataset} {func.__name__} with parameters {args} from {self.username} result  {result}")
+                return_code = result['success']
+                return_message = f'{result["message"]}'
+                self._log_rule_action_message(dataset, func.__name__, bool(return_code), return_message, *args)
+                return bool(return_code), return_message
+            except Exception as ex:
+                self._log_rule_action_message(dataset, func.__name__, False, str(ex), *args)
+                return False, str(ex)
+        return inner
 
     def _jedi_decorator(func):
         def inner(self, task_id, *args, **kwargs):
@@ -201,6 +214,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     _jedi_decorator = staticmethod(_jedi_decorator)
     _action_logger = staticmethod(_action_logger)
     _jedi_new_api_decorator = staticmethod(_jedi_new_api_decorator)
+    _jedi_rule_decorator = staticmethod(_jedi_rule_decorator)
     _rule_action_logger = staticmethod(_rule_action_logger)
 
     def obsolete_or_abort_synced_task(self, task_id):
@@ -359,7 +373,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                     return False, 'Task has no finished jobs'
         return False, 'Command rejected: No staging rule is found'
 
-    @_rule_action_logger
+    @_jedi_rule_decorator
     def alter_source_replication_rule(self, dataset, mode, cancel=False):
         try:
             dataset_stage = None
@@ -376,42 +390,55 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                             replica = new_replica['rse']
                             break
                     if replica:
-
                         physical_tape = ddm.convert_input_to_physical_tape(replica)
                         dataset_stage.source = physical_tape
                         dataset_stage.save()
-                    return 'True', f'DC source changes, new source {replica}'
+                    return {'success': True, 'message': f'DC source changes, new source {replica}'}
                 else:
-                    return 'True', f'Nothing found'
+                    return  {'success': True, 'message': f'Nothing found'}
             if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
             elif PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).last()
-                # raise Exception('Only Production task for a time being')
+                return self.jedi_client.change_staging_source(dataset_stage.dataset, None)
             if not dataset_stage or not dataset_stage.rse:
                 raise Exception('Rule ID not found')
             rule_id = dataset_stage.rse
             ddm = DDM()
-            if mode == 'drop':
-                result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
-                return 'True', f'Source replication rule {rule_id} dropped with cancel: {cancel}, ddm returns: {result}'
-            else:
-                result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
-                return 'True', f'Source replication rule {rule_id} changed with cancel: {cancel}, ddm returns: {result}'
-        except Exception as e:
-            return False, f'Command rejected: {e}'
+            result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
+            return {'success': True, 'message':  f'Source replication rule {rule_id} dropped with cancel: {cancel}, ddm returns: {result}'}
 
-    @_rule_action_logger
+        except Exception as e:
+            return {'success': False, 'message': f'Command rejected: {e}'}
+
+    @_jedi_rule_decorator
     def bypass_queue(self, dataset):
         try:
-            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).exists():
-                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.QUEUED)
-                # submit_queued_rule_by_dataset_stage(dataset_stage.id)
-                return 'True', f'Queue  bypassed'
+            if PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).exists():
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).last()
+                return self.jedi_client.force_to_staging(dataset_stage.dataset, None)
             else:
                 raise Exception('Dataset not found in queue')
         except Exception as e:
-            return False, f'Command rejected: str(e)'
+            return {'success': False, 'message': f'Command rejected: {e}'}
+
+    @_jedi_rule_decorator
+    def change_destination(self, dataset):
+        try:
+            if PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).last()
+                return self.jedi_client.change_staging_destination(dataset_stage.dataset, None)
+            elif DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
+                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
+                if dataset_stage.staged_files == 0:
+                    ddm = DDM()
+                    ddm.delete_replication_rule(dataset_stage.rse)
+                    return {'success': True, 'message': f'For dataset {dataset} rule deleted'}
+                return {'success': False, 'message': f'For dataset {dataset} rule not deleted'}
+            else:
+                raise Exception('Dataset not found in DC')
+        except Exception as e:
+            return {'success': False, 'message': f'Command rejected: {e}'}
 
     @_action_logger
     def create_finish_reload_action(self, task_id):
@@ -782,6 +809,7 @@ def do_jedi_rule_action(action_executor, dataset, action, *args):
     action_translation = {
             'alter_source_replication_rule': action_executor.alter_source_replication_rule,
             'bypass_queue': action_executor.bypass_queue,
+            'change_destination': action_executor.change_destination,
         }
     if args == (None,):
          return action_translation[action](dataset)

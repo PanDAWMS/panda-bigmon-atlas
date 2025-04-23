@@ -3,7 +3,6 @@
   <mat-menu #SourceMenu="matMenu" yPosition="below">
     <div class="action-button-column">
       <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',['drop', cancelFTS.checked])">Drop Source</button>
-      <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',['switch', cancelFTS.checked])" [disabled]="true">Switch source</button>
       <mat-checkbox class="action-checkbox" #cancelFTS (click)="$event.stopPropagation()" [checked]="true">Cancel active FTSs</mat-checkbox>
    </div>
     <mat-divider></mat-divider>
@@ -16,9 +15,11 @@
         </div>
     </div>
   </mat-menu>
-    <button mat-raised-button  [matMenuTriggerFor]="DestinationMenu"  class="action-button-menu" [disabled]="true" >Destination▼</button>
+    <button mat-raised-button  [matMenuTriggerFor]="DestinationMenu"  class="action-button-menu"  >Destination▼</button>
   <mat-menu #DestinationMenu="matMenu" yPosition="below">
     <div class="action-button-column">
+            <button mat-raised-button color="primary" (click)="executeAction('change_destination',[])">Change Destination</button>
+
    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
@@ -30,9 +31,11 @@
         </div>
     </div>
   </mat-menu>
-      <button mat-raised-button  [matMenuTriggerFor]="QueueMenu"  class="action-button-menu" [disabled]="true" >Queue▼</button>
+      <button mat-raised-button  [matMenuTriggerFor]="QueueMenu"  class="action-button-menu"  >Queue▼</button>
   <mat-menu #QueueMenu="matMenu" yPosition="below">
     <div class="action-button-column">
+      <button mat-raised-button color="primary" (click)="executeAction('bypass_queue',[])">Skip the DC queue</button>
+
    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">

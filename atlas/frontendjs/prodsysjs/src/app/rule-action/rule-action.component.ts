@@ -82,6 +82,8 @@ export class RuleActionComponent implements OnInit, OnDestroy {
   actionExecuting = false;
   RULEACTIONS = {
     alter_source_replication_rule: {name: 'Alter source', params_name: ['mode', 'cancel']},
+    change_destination: {name: 'Change destination', params_name: []},
+    bypass_queue: {name: 'Bypass data carousel', params_name: []},
 
 
   };

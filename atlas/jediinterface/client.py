@@ -117,10 +117,25 @@ class JEDIJobsActionInterface(ABC):
     def reassignJobs(self, ids, forPending, firstSubmission):
         pass
 
+class JEDIRuleActionInterface(ABC):
+
+    @abstractmethod
+    def change_staging_destination(self, dataset: str, request_id: int|None,):
+        pass
+
+    @abstractmethod
+    def change_staging_source(self, dataset: str, request_id: int|None ):
+        pass
+
+    @abstractmethod
+    def force_to_staging(self, dataset: str, request_id: int|None):
+        pass
+
+
 
 EC_Failed = 255
 
-class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
+class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActionInterface):
     def __init__(self, base_url=jedi_settings.JEDI_BASE_URL, cert=jedi_settings.CERTIFICATE ):
         """Initializes new instance of JEDI class
 
@@ -160,6 +175,18 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
     def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
         data = {'jedi_task_id': int(jedi_task_id), 'mode': mode, 'multiplicity': multiplicity, 'num_sites': num_sites}
         return self._post_new_api_command('api/v1/task/enable_job_cloning', data)
+
+    def change_staging_destination(self, dataset: str, request_id: int|None):
+        data = {'request_id': request_id, 'dataset': dataset}
+        return self._post_new_api_command('api/v1/data_carousel/change_staging_destination', data)
+
+    def change_staging_source(self, dataset: str, request_id: int|None):
+        data = {'request_id': request_id, 'dataset': dataset}
+        return self._post_new_api_command('api/v1/data_carousel/change_staging_source', data)
+
+    def force_to_staging(self, dataset: str, request_id: int|None):
+        data = {'request_id': request_id, 'dataset': dataset}
+        return self._post_new_api_command('api/v1/data_carousel/force_to_staging', data)
 
     # change task priority
     def changeTaskPriority(self, jediTaskID, newPriority):
@@ -449,7 +476,7 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface):
         return self._post_command('changeTaskAttributePanda',data)
 
 
-    def retryTask(self, jedi_task_id, new_parameters: str = None, no_child_retry=False, discard_events=False,
+    def retryTask(self, jedi_task_id, new_parameters: dict = None, no_child_retry=False, discard_events=False,
                   disable_staging_mode=False, keep_gshare_priority=False, ignore_hard_exhausted=False):
         """Retry task
         task_id(int): JEDI Task ID
