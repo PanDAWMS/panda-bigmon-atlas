@@ -802,6 +802,7 @@ def rules_action(request: Request):
                 result.append({'dataset':dataset, 'return_code': return_code, 'return_info': return_info})
         return Response({'action_sent':True, 'result': result, 'action_verification':None})
     except Exception as ex:
+        logger.error(f"Task action execution problem: {ex}")
         return Response(data=f"Task action execution problem: {ex}", status=status.HTTP_400_BAD_REQUEST)
 
 
