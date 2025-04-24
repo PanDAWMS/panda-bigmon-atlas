@@ -3457,6 +3457,8 @@ class TaskDefinition(object):
                             postfix = f'_LOW{postfix_index}'
                         elif 'High'.lower() in name.lower():
                             postfix = f'_HIGH{postfix_index}'
+                        if 'Cavern'.lower() in name.lower():
+                            postfix = postfix_index
 
                         param_dict = {'name': param_name, 'dataset': param_value, 'postfix': postfix}
                         param_dict.update(trf_options)

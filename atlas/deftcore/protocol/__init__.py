@@ -289,7 +289,7 @@ class Protocol(object):
             "ratio": 0,
             "eventRatio": {{event_ratio|default:'"None"'}},
             "type": "template",
-            "value": "{{name}}=${IN_CAVERN/L}"
+            "value": "{{name}}=${IN_CAVERN{{postfix}}/L}"
         }""",
         TaskParamName.SECONDARY_INPUT_ZERO_BIAS_BS: """{
             "dataset": "{{dataset}}",
