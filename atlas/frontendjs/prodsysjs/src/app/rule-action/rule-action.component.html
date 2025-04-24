@@ -2,7 +2,7 @@
   <button mat-raised-button  [matMenuTriggerFor]="SourceMenu"  class="action-button-menu"  >Source▼</button>
   <mat-menu #SourceMenu="matMenu" yPosition="below">
     <div class="action-button-column">
-      <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',['drop', cancelFTS.checked])">Drop Source</button>
+      <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',[cancelFTS.checked])">Drop Source</button>
       <mat-checkbox class="action-checkbox" #cancelFTS (click)="$event.stopPropagation()" [checked]="true">Cancel active FTSs</mat-checkbox>
    </div>
     <mat-divider></mat-divider>

@@ -374,7 +374,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         return False, 'Command rejected: No staging rule is found'
 
     @_jedi_rule_decorator
-    def alter_source_replication_rule(self, dataset, mode, cancel=False):
+    def alter_source_replication_rule(self, dataset, cancel=False):
         try:
             dataset_stage = None
             ddm = DDM()
@@ -400,7 +400,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
             elif PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).last()
-                return self.jedi_client.change_staging_source(dataset_stage.dataset, None)
+                return self.jedi_client.change_staging_source(dataset_stage.dataset, None, cancel)
             if not dataset_stage or not dataset_stage.rse:
                 raise Exception('Rule ID not found')
             rule_id = dataset_stage.rse

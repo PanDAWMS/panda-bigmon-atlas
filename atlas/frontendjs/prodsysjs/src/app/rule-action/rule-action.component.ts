@@ -81,7 +81,7 @@ export class RuleActionComponent implements OnInit, OnDestroy {
     datasets_result: {dataset: string, type: string, result: string}[]}>;
   actionExecuting = false;
   RULEACTIONS = {
-    alter_source_replication_rule: {name: 'Alter source', params_name: ['mode', 'cancel']},
+    alter_source_replication_rule: {name: 'Alter source', params_name: ['cancel']},
     change_destination: {name: 'Change destination', params_name: []},
     bypass_queue: {name: 'Bypass data carousel', params_name: []},
 
