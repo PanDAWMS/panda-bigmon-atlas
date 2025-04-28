@@ -3962,8 +3962,12 @@ class TaskDefinition(object):
                     raise Exception('Core count is not defined for HION recon task. Please set coreCount in project mode')
             # https://twiki.cern.ch/twiki/bin/view/AtlasComputing/ProdSys#Default_cpuTime_cpu_TimeUnit_tab
             # https://twiki.cern.ch/twiki/bin/view/AtlasComputing/ProdSys#Default_base_RamCount_ramCount_r
+            max_core_count = None
+            if core_count > 1:
+                max_core_count = 16
             if step.request.request_type.lower() == 'MC'.lower():
                 if prod_step.lower() == 'simul'.lower():
+                    max_core_count = None
                     cpu_time = 3000
                     if core_count > 1:
                         if [x for x in job_parameters if 'multithreaded' in x.get('value','')]:
@@ -4001,12 +4005,16 @@ class TaskDefinition(object):
                 if core_count > 1:
                     memory = 1750
                     base_memory = 2000
+                    if [x for x in job_parameters if 'multithreaded' in x.get('value', '')]:
+                        if  LooseVersion(trf_release) >= LooseVersion('30.0'):
+                            max_core_count = 64
 
             if trf_name in ['AODMerge_tf.py', 'DAODMerge_tf.py', 'Archive_tf.py', 'ESDMerge_tf.py', 'RDOMerge_tf.py',
                             'ReSim_tf.py']:
                 task_proto_dict.update({'out_disk_count': 1000})
                 task_proto_dict.update({'out_disk_unit': 'kB'})
-
+            if max_core_count is not None:
+                task_proto_dict.update({'max_core_count':     max_core_count})
             task_proto_dict.update({'ram_count': int(memory)})
             task_proto_dict.update({'base_ram_count': int(base_memory)})
             task_proto_dict.update({'ram_unit': 'MBPerCore'})
