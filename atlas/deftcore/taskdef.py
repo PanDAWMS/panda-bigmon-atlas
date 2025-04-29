@@ -4076,7 +4076,7 @@ class TaskDefinition(object):
             if no_input and number_of_events > 0:
                 task_proto_dict.update({'number_of_events': number_of_events})
             elif not no_input and number_of_events > 0:
-                if prod_step.lower() != 'evgen'.lower() and 'nEventsPerInputFile' in list(task_config.keys()):
+                if (prod_step.lower() != 'evgen'.lower() or is_hepmc) and 'nEventsPerInputFile' in list(task_config.keys()):
                     number_input_files_requested = \
                         math.ceil(number_of_events / int(task_config['nEventsPerInputFile']))
                     if number_input_files_requested == 0:
@@ -4085,7 +4085,7 @@ class TaskDefinition(object):
                             (int(number_of_events), int(task_config['nEventsPerInputFile']))
                         )
                     task_proto_dict.update({'number_of_files': int(number_input_files_requested)})
-                elif prod_step.lower() != 'evgen'.lower() and 'nEventsPerInputFile' not in list(task_config.keys()):
+                elif(prod_step.lower() != 'evgen'.lower() or is_hepmc) and 'nEventsPerInputFile' not in list(task_config.keys()):
                     task_proto_dict.update({'number_of_events': number_of_events})
 
             if no_input:
