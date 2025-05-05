@@ -327,6 +327,7 @@ export class StagingManagementComponent implements OnInit {
     const totalSize = convertBytes(bytes);
     this.selectedRulesString = `Selected ${this.selectedRules.length} rules with ${stagedFiles} staged files, ${totalFiles} total files, ${totalSize}, ${activeTasksNumber} active tasks and for ${userNameSting}`;
     this.selectedDatasets = this.selectedRules.map(rule => rule.dataset);
+    this.tasksToShow = [];
   }
 
 
