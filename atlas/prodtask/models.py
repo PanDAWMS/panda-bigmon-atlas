@@ -1070,6 +1070,7 @@ class TemplateVariable:
         INCLUDE = 'include'
         TO_STAGING = 'toStaging'
         FRAMEWORK = 'framework'
+        DISABLE_AUTO_RETRY = 'disableAutoRetry'
 
 
     KEYS_SEPARATOR = ','

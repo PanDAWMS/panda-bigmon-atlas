@@ -487,6 +487,7 @@ def prepare_template_from_task(request):
         task_id = int(request.query_params.get('task_id'))
         task_template, _ = get_task_params(task_id, TTask.objects.get(id=task_id).jedi_task_parameters)
         task_template[TemplateVariable.KEY_NAMES.NO_EMAIL] = True
+        task_template.pop(TemplateVariable.KEY_NAMES.DISABLE_AUTO_RETRY, None)
         return Response(task_template)
     except TTask.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
