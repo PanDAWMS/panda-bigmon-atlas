@@ -121,5 +121,7 @@
   "maxCoreCount": "{{max_core_count}}",
   "nChunksToWait": "{{number_of_chunks_to_wait}}",
   "addNthFieldToLFN": "{{add_nth_field_to_lfn}}",
-  "useFileAsSourceLFN": "{{use_file_as_source_lfn}}"
+  "useFileAsSourceLFN": "{{use_file_as_source_lfn}}",
+  "panda_data_carousel": "{{panda_data_carousel}}",
+  "remove_rule_when_done": "{{remove_rule_when_done}}"
 }

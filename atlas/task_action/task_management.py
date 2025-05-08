@@ -398,8 +398,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                     return  {'success': True, 'message': f'Nothing found'}
             if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
-            elif PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).exists():
-                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=PandaDatasetStaging.STATUS.STAGING).last()
+            elif PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).last()
                 return self.jedi_client.change_staging_source(dataset_stage.dataset, None, cancel)
             if not dataset_stage or not dataset_stage.rse:
                 raise Exception('Rule ID not found')

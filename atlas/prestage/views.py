@@ -927,22 +927,25 @@ def check_tasks_for_prestage(action_step_id, ddm, rule, delay, max_waite_time, c
     finish_action = True
     fail_action = False
     for task in tasks:
-        if step.request.request_type in ['ANALYSIS'] and task.status == ProductionTask.STATUS.STAGING:
-            jedi_task = TTask.objects.get(id=task.id)
-            input_datasets = []
-            config = ActionDefault.objects.get(name='active_staging').get_config()
-            config['level'] = 99
-            # if not noidds:
-            #     config['level'] = 1
-            # if level:
-            #     config['level'] = level
-            if TemplateVariable.KEY_NAMES.INPUT_DS in jedi_task.jedi_task_parameters:
-                input_container = jedi_task.jedi_task_parameters[TemplateVariable.KEY_NAMES.INPUT_DS]
-                input_datasets = ddm.dataset_in_container(input_container)
-            for dataset in input_datasets:
-                create_prestage(task, ddm, rule, dataset, config, special, destination, is_analy=True)
+        # if step.request.request_type in ['ANALYSIS'] and task.status == ProductionTask.STATUS.STAGING:
+        #     jedi_task = TTask.objects.get(id=task.id)
+        #     input_datasets = []
+        #     config = ActionDefault.objects.get(name='active_staging').get_config()
+        #     config['level'] = 99
+        #     # if not noidds:
+        #     #     config['level'] = 1
+        #     # if level:
+        #     #     config['level'] = level
+        #     if TemplateVariable.KEY_NAMES.INPUT_DS in jedi_task.jedi_task_parameters:
+        #         input_container = jedi_task.jedi_task_parameters[TemplateVariable.KEY_NAMES.INPUT_DS]
+        #         input_datasets = ddm.dataset_in_container(input_container)
+        #     for dataset in input_datasets:
+        #         create_prestage(task, ddm, rule, dataset, config, special, destination, is_analy=True)
         if (task.status in ['staging','waiting']) and (not ActionStaging.objects.filter(task=task.id).exists()):
             try:
+                task_parameters = TTask.objects.get(id=task.id).jedi_task_parameters
+                if 'panda_data_carousel' in task_parameters:
+                    continue
                 if check_archive:
                     config = ActionDefault.objects.get(name='active_archive_staging').get_config()
                 else:

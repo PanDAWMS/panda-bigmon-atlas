@@ -618,5 +618,9 @@
   "superBoost": {
     "type": "bool",
     "description": ""
+  },
+  "DCTest": {
+    "type": "bool",
+    "description": ""
   }
 }

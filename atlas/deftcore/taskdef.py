@@ -1870,6 +1870,12 @@ class TaskDefinition(object):
             merging_tag_name = ProjectMode(step).merging
         return merging_tag_name
 
+    def _setup_panda_DC(self, step: StepExecution, tape_replicas: [str]) -> bool:
+        COMMISSIONING_SITES = ['IN2P3', 'FZK']
+        if (step.request.request_type in ['REPROCESSING', 'GROUP', 'MC'] and
+                any([rse in ''.join(tape_replicas) for rse in COMMISSIONING_SITES])):
+            return True
+        return False
 
     def  _set_pre_stage(self, step, task_proto_dict, project_mode):
         # set staging if input is only on Tape
@@ -1878,7 +1884,15 @@ class TaskDefinition(object):
             primary_input = self._get_primary_input(task_proto_dict['job_params'])['dataset']
             # if '_sub' in primary_input:
             #     return
-            if self.rucio_client.dataset_exists(primary_input) and self.rucio_client.only_tape_replica(primary_input):
+            tape_replicas = self.rucio_client.only_tape_replica(primary_input)
+            if self.rucio_client.dataset_exists(primary_input) and tape_replicas:
+                if self._setup_panda_DC(step, tape_replicas):
+                    task_proto_dict.update({'panda_data_carousel': True})
+                    if step.request.request_type in ['REPROCESSING']:
+                        task_proto_dict.update({'remove_rule_when_done': True})
+                    logger.info('Panda DC is set for dataset {0}'.format(
+                        primary_input))
+                    return True
                 sa = StepAction()
                 task_config = ProjectMode.get_task_config(step)
                 if task_config.get('PDA', '')  == 'preStageWithTaskArchive':
@@ -1907,6 +1921,8 @@ class TaskDefinition(object):
                     task_proto_dict.update({'input_pre_staging': True})
                 logger.info('Prestage is set for dataset {0}'.format(
                     primary_input))
+                return True
+        return False
 
 
 
@@ -4449,6 +4465,9 @@ class TaskDefinition(object):
             if project_mode.orderInputBy is not None:
                 task_proto_dict.update({'order_input_by': project_mode.orderInputBy or None})
 
+            if project_mode.DCTest is not None:
+                task_proto_dict.update({'panda_data_carousel': project_mode.DCTest or None})
+
             if project_mode.nocvmfs is not None:
                 task_proto_dict.update({'multi_step_exec': {'containerOptions': {'execArgs': '--nocvmfs'}}})
 
@@ -5844,7 +5863,7 @@ class TaskDefinition(object):
             last_access_timestamp = \
                 RequestStatus.objects.filter(request=request, status=request_status).order_by('-id')[0].timestamp
             now = timezone.now()
-            time_offset = (now - last_access_timestamp).seconds
+            time_offset = (now - last_access_timestamp).total_seconds()
             if (time_offset // 3600) < REQUEST_GRACE_PERIOD:
                 if (not no_wait) and (not is_fast):
                     logger.info("Request %d is skipped, approved at %s" % (request.reqid, last_access_timestamp))
