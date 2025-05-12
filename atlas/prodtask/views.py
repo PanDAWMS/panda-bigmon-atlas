@@ -2996,7 +2996,8 @@ def make_slices_from_dict(req, file_dict, async_update=None):
                 step['step_exec']['request'] = req
                 step['step_exec']['slice'] = irl
                 step['step_exec']['step_template'] = st
-                step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
+                if not 'priority' in step['step_exec']:
+                    step['step_exec']['priority'] = priority_obj.priority(st.step,st.ctag)
                 _logger.debug("Filling step execution data: %s" % step['step_exec'])
                 st_exec = StepExecution(**step['step_exec'])
                 if ('parent_step_id' in step):

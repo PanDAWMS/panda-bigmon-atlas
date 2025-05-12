@@ -7,7 +7,7 @@ import logging
 from django.utils import timezone
 import re
 
-from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions, StepTemplate
+from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions, StepTemplate, get_priority_object
 
 import atlas.gspread as gspread
 from datetime import datetime
@@ -348,6 +348,8 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                     task_config.update({'maxAttempt':30,'spreadsheet_original':1,'maxFailure':3,'nEventsPerJob':get_default_nEventsPerJob_dict(version),
                                                                          'project_mode':';'.join([get_default_project_mode_dict().get(st,'')]+project_mode_addition)})
                                 if is_hepmc:
+                                    priority = get_priority_object(int(priority)).priority('Evgen','')
+                                    sexec.update({'priority':priority})
                                     task_config.update({'maxFailure':3,'nFilesPerJob':1})
                                     task_config.pop('nEventsPerJob',None)
                                 if reduce_input_format:
