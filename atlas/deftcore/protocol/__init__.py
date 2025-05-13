@@ -446,7 +446,7 @@ class Protocol(object):
     @staticmethod
     def get_simulation_type(step):
         if step.request.request_type.lower() == 'MC'.lower():
-            if step.step_template.step.lower() == 'evgen'.lower():
+            if (step.step_template.step.lower() == 'evgen'.lower()) or ('HEPMC'.lower() in str(step.step_template.output_formats).lower()):
                 return 'notMC'
             if str(step.step_template.ctag).lower().startswith('a'):
                 return 'fast'
