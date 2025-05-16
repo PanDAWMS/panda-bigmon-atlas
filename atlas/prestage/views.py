@@ -2665,11 +2665,11 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
                                data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
                                rse=rule, source=dataset_staging.source_tape,
                                destination=dataset_staging.destination_rse,
-                               total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
+                               total_files=int(dataset_staging.total_files or 0), staged_files=int(dataset_staging.staged_files or 0),
                                start_time=int(start_time.timestamp()*1000),
                                update_time=int(update_time.timestamp()*1000),
                                number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a', tasks_ids=tasks_ids,
-                               bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error)
+                               bytes=int(dataset_staging.dataset_size or 0), stuck=stuck, stuck_error=stuck_error)
         )
     return rules
 
