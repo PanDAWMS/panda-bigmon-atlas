@@ -33,10 +33,20 @@ import {
 import {MatList, MatListItem} from '@angular/material/list';
 import {MatInput} from '@angular/material/input';
 import {MatLabel} from '@angular/material/form-field';
+import {AsyncTaskProgressComponent} from '../common/async-task-progress/async-task-progress.component';
+import {AsyncProdTaskSplitStatus, RulesResultInfo} from '../production-request/production-request.service';
 
 
 
-
+interface RuleResults {
+    action: string;
+    actions_result: string;
+    datasets_result: {
+      dataset: string;
+      type: string;
+      result: string;
+    }[];
+  }
 
 @Component({
   selector: 'app-rule-action',
@@ -63,7 +73,8 @@ import {MatLabel} from '@angular/material/form-field';
     MatListItem,
     MatInput,
     NgIf,
-    NgForOf
+    NgForOf,
+    AsyncTaskProgressComponent
   ],
   standalone: true
 })
@@ -75,6 +86,10 @@ export class RuleActionComponent implements OnInit, OnDestroy {
 
   reSendAction?: RuleAction = null;
   result?: RuleActionResult;
+  asyncID?: string;
+  asyncResult: RuleResults;
+  asyncAction = '';
+  asyncSummary: {status: string, result: string} = {status: '', result: ''};
 
   summaryDatasetsResult: {status: string, result: string} = {status: '', result: ''};
   actionExecution$: Observable<{action: string, actions_result: string,
@@ -103,6 +118,8 @@ export class RuleActionComponent implements OnInit, OnDestroy {
        tap(_ => {
                          this.actionExecuting = true;
                          this.summaryDatasetsResult = {status: '', result: ''};
+                         this.asyncSummary = {status: '', result: ''};
+                         this.asyncResult = {action: '', actions_result: '', datasets_result: []};
                        }),
        switchMap((ruleAction) => {
          this.reSendAction = {action: ruleAction.action, datasets: [], comment: ruleAction.comment, params: ruleAction.params,
@@ -112,12 +129,19 @@ export class RuleActionComponent implements OnInit, OnDestroy {
        }),
        tap(_ => this.actionExecuting = false),
        map(ruleActionResult => {
-
+         if (ruleActionResult?.async_id) {
+            this.asyncID = ruleActionResult.async_id;
+            this.asyncAction = ruleActionResult.action;
+          }
+         if (ruleActionResult.datasets.length === 0){
+            return {action: ruleActionResult.action, actions_result: 'async',
+              datasets_result: []};
+          }
 
          if (!ruleActionResult.action_sent && ruleActionResult.error && (ruleActionResult.error !== '')){
                return {action: ruleActionResult.action, actions_result: 'error',
                  datasets_result: [{datasets: ruleActionResult.datasets[0], type: 'error', result: ruleActionResult.error}]};
-         }
+          }
 
          if (this.datasets.length === 1){
            if (!ruleActionResult.action_sent){
@@ -180,36 +204,53 @@ export class RuleActionComponent implements OnInit, OnDestroy {
              this.summaryDatasetsResult = {status: 'error', result: returnString};
              return {action: ruleActionResult.action, actions_result: 'error', datasets_result: ruleResults};
            } else {
-              let goodTasks = 0;
-              let warningTasks = 0;
-              for (const ruleResult of ruleActionResult.result) {
-                if (ruleResult.return_info !== null && ruleResult.return_info.includes('Command rejected')){
-                  ruleResults.push({
-                     dataset: ruleResult.dataset,
-                     type: 'warning',
-                     result: `The command was sent to JEDI, return info: ${ruleResult.return_info}; return code: ${ruleResult.return_code};`
-                 });
-                  warningTasks++;
-                } else {
-                  ruleResults.push({
-                     dataset: ruleResult.dataset,
-                     type: 'task_alt',
-                     result: `The command was sent to JEDI, return info: ${ruleResult.return_info}; return code: ${ruleResult.return_code};`
-                 });
-                  goodTasks++;
-                }
-              }
-              if (warningTasks === 0){
-              this.summaryDatasetsResult = {status: 'task_alt', result: `The commands were sent to JEDI`};
-            } else {
-              this.summaryDatasetsResult = {status: 'warning', result: `The commands were sent to JEDI, ${warningTasks} datasets have problems`};
-              }
-              return {action: ruleActionResult.action, actions_result: 'sent', datasets_result: ruleResults};
+             const preparedResults =
+               this.prepareResults(ruleActionResult.result, ruleActionResult.action, ruleResults, this.asyncID !== undefined);
+             this.summaryDatasetsResult = preparedResults.summary;
+             delete preparedResults.summary;
+             return preparedResults;
            }
 
          }
        }
        ));
+  }
+
+  private prepareResults(actionResults: RulesResultInfo[], action: string,  ruleResults: any[], async = false):
+    RuleResults & {summary: {status: string, result: string}} {
+    let goodTasks = 0;
+    let warningTasks = 0;
+    let summary = {status: '', result: ''};
+    for (const ruleResult of actionResults) {
+      if (ruleResult.return_info !== null && (ruleResult.return_info.includes('Command rejected') || ruleResult.return_code.toString() === 'false')) {
+        ruleResults.push({
+          dataset: ruleResult.dataset,
+          type: 'warning',
+          result: `The command was sent to JEDI, return info: ${ruleResult.return_info}; return code: ${ruleResult.return_code};`
+        });
+        warningTasks++;
+      } else {
+        ruleResults.push({
+          dataset: ruleResult.dataset,
+          type: 'task_alt',
+          result: `The command was sent to JEDI, return info: ${ruleResult.return_info}; return code: ${ruleResult.return_code};`
+        });
+        goodTasks++;
+      }
+    }
+    if (warningTasks === 0) {
+      if (!async){
+        summary = {status: 'task_alt', result: `The commands were sent to JEDI`};
+      } else {
+        summary = {status: 'task_alt', result: `The commands are being submitted async`};
+      }
+    } else {
+      summary = {
+        status: 'warning',
+        result: `The commands were sent to JEDI, ${warningTasks} datasets have problems`
+      };
+    }
+    return {action, actions_result: 'sent', datasets_result: ruleResults, summary};
   }
 
   executeAction(action: string, params: ActionParams): void {
@@ -230,6 +271,17 @@ export class RuleActionComponent implements OnInit, OnDestroy {
   }
 
 
+  asyncTaskFinished(asyncResult: AsyncProdTaskSplitStatus): void {
+    this.asyncID = undefined;
+    if (asyncResult.status === 'SUCCESS') {
+      const asyncCurrentResult = this.prepareResults(asyncResult.result as RulesResultInfo[], this.asyncAction,  []);
+      this.asyncSummary = asyncCurrentResult.summary;
+      delete asyncCurrentResult.summary;
+      this.asyncResult = asyncCurrentResult;
+    } else {
+      this.asyncSummary =  {status: 'error', result: this.result.toString()};
+    }
+  }
 }
 
 @Component({

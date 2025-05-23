@@ -48,6 +48,32 @@
     </div>
   </mat-menu>
 </div>
+  @if(asyncID){
+    <mat-card>
+    <app-async-task-progress [asyncTaskId]="asyncID" (taskFinished)="asyncTaskFinished($event)" ></app-async-task-progress>
+      </mat-card>
+  }
+    @if(asyncSummary.result){
+      <mat-accordion>
+      <mat-expansion-panel >
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="action-result-icon-{{asyncSummary.status}}">{{asyncSummary.status}}</mat-icon>
+             <div>{{asyncSummary.result}}</div>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        @if(asyncResult?.datasets_result && asyncResult.datasets_result.length>0){
+          <mat-list >
+          <mat-list-item *ngFor="let taskResult of asyncResult.datasets_result" >
+            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+            {{taskResult.dataset}} - {{taskResult.result}}
+          </mat-list-item>
+        </mat-list>
+        }
+
+      </mat-expansion-panel>
+    </mat-accordion>
+    }
 
 <ng-container *ngIf="actionExecuting">
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>

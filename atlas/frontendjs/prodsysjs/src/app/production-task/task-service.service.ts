@@ -71,6 +71,7 @@ export interface RuleActionResult{
   action?: string;
   datasets?: string[];
   error?: string;
+  async_id?: string;
 }
 export interface ReassignDestination{
   sites: string[];
@@ -168,7 +169,8 @@ export class TaskService {
                      params: ActionParams): Observable<RuleActionResult>{
     return this.http.post<RuleActionResult>(this.prRuleActionUrl, {datasets, action, comment, params}).pipe(
       map( result => {
-        return {datasets, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification};
+        return {datasets, action, action_sent: result.action_sent, result: result.result, action_verification: result.action_verification,
+        async_id: result?.async_id};
       }),
       catchError( err => {
         const result: RuleActionResult = {datasets, action, action_sent: false, result: null, action_verification: null,

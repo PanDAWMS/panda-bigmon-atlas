@@ -42,7 +42,7 @@ export class RequestHorizontalSplitComponent {
     approveRequests = false;
     submitting = false;
     errorMessage: string | undefined;
-    createdRequests: number[] = [];
+    createdRequests: string[] = [];
     progressPercents = 0;
     asyncTask = '';
     asyncTaskStatus: AsyncProdTaskSplitStatus | undefined;
@@ -51,7 +51,7 @@ export class RequestHorizontalSplitComponent {
       switchMap(taskID => this.productionRequestService.getAsyncTaskStatus(this.asyncTask)),
       tap((status) => {
         if (status.status === 'SUCCESS'){
-          this.createdRequests = status.result as number[];
+          this.createdRequests = status.result as string[];
           this.submitting = false;
           this.asyncTask = '';
           this.stopAsyncTask$.next(false);
@@ -64,7 +64,7 @@ export class RequestHorizontalSplitComponent {
         } else {
           if (status.progress){
             this.progressPercents = Math.round(status.progress.processed * 100 / status.progress.total);
-            this.createdRequests = status.progress.reqids;
+            this.createdRequests = status.progress.currentResults;
           }
         }
       }), catchError(err => {

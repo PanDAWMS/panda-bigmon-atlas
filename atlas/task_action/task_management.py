@@ -1,12 +1,14 @@
 import json
 import re
+import time
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List, Dict
 
 from django.contrib.auth.models import User
 from rest_framework.request import Request
-
+from time import sleep
 from atlas.JIRA.client import JIRAClient
+from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.jediinterface.client import JEDIClient, JEDITaskActionInterface, JEDIClientTest
 import logging
 from django.utils import timezone
@@ -14,7 +16,7 @@ from django.utils import timezone
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag, \
-    DatasetStaging, PandaDatasetStaging
+    DatasetStaging, PandaDatasetStaging, DistributedLock
 from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -711,7 +713,7 @@ class TaskManagementAuthorisation():
         task = self.get_task_info(task_id)
         return self.__task_action_check(task, user, allowed_groups, action, params, user_fullname)
 
-    def tasks_action_authorisation(self, task_ids: [int], username: str, action: str, params=None, user_fullname: str=None) -> [TaskActionAllowed]:
+    def tasks_action_authorisation(self, task_ids: List[int], username: str, action: str, params=None, user_fullname: str=None) -> List[TaskActionAllowed]:
         user, allowed_groups = self.task_user_rights(username)
         result = []
         for task_id in task_ids:
@@ -770,6 +772,42 @@ def tasks_action(request: Request):
     except Exception as ex:
         return Response(data=f"Task action execution problem: {ex}", status=status.HTTP_400_BAD_REQUEST)
 
+ASYNC_ACTIONS = {'alter_source_replication_rule': 4, 'change_destination': 4}
+
+
+class ActionType:
+    RULE_ACTION = 'rule'
+    TASK_ACTION = 'task'
+
+def submit_all_action_types(action_function, executor, item, action, params):
+        if params:
+            return_code, return_info = action_function(executor, item, action, *params)
+        else:
+            return_code, return_info = action_function(executor, item, action, None)
+        lock_key = f'deft_action_{action}_{item}'
+        DistributedLock.release_lock(lock_key)
+        return return_code, return_info
+
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('async action')
+def async_action(self, action_type: ActionType, action: str, username: str, comment: str, items: List[str], params: Optional[list]) -> List[Dict]:
+    executor = TaskActionExecutor(username, comment)
+
+    if action_type == ActionType.RULE_ACTION:
+        action_function = do_jedi_rule_action
+        action_param_name =  'dataset'
+    elif action_type == ActionType.TASK_ACTION:
+        action_function = do_jedi_action
+        action_param_name = 'task_id'
+    else:
+        raise ValueError(f'Unknown action type: {action_type}')
+    result = []
+    for index, item in enumerate(items):
+        return_code, return_info = submit_all_action_types(action_function, executor, item, action, params)
+        result.append({action_param_name: item, 'return_code': return_code, 'return_info': return_info})
+        self.progress_message_update(index,len(items))
+    return result
+
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -792,14 +830,25 @@ def rules_action(request: Request):
         comment = request.data['comment']
         executor = TaskActionExecutor(username, comment)
         result = []
-        if params:
-            for dataset in datasets:
-                return_code, return_info = do_jedi_rule_action(executor, dataset, action, *params)
-                result.append({'dataset':dataset, 'return_code': return_code, 'return_info': return_info})
-        else:
-            for dataset in datasets:
-                return_code, return_info = do_jedi_rule_action(executor, dataset, action, None)
-                result.append({'dataset':dataset, 'return_code': return_code, 'return_info': return_info})
+        dataset_to_process = []
+        locked_datasets = []
+        for dataset in datasets:
+            lock_key = f'deft_action_{action}_{dataset}'
+            if DistributedLock.acquire_lock(lock_key, 10*60):
+                dataset_to_process.append(dataset)
+            else:
+                locked_datasets.append(dataset)
+        if len(locked_datasets) > 0:
+            for dataset in locked_datasets:
+                logger.error(f"dataset {dataset} is lokced")
+                result.append({'dataset': dataset, 'return_code': False, 'return_info': f"dataset {dataset} is locked for actions"})
+        if action in ASYNC_ACTIONS and len(dataset_to_process) > ASYNC_ACTIONS[action]:
+            async_id = async_action.delay(ActionType.RULE_ACTION, action, username, comment, dataset_to_process, params)
+            return Response({'action_sent':True, 'async_id': async_id.id, 'result': result, 'action_verification':None})
+        for dataset in dataset_to_process:
+            return_code, return_info = submit_all_action_types(do_jedi_rule_action, executor, dataset, action, params)
+            result.append({'dataset':dataset, 'return_code':return_code, 'return_info':return_info})
+
         return Response({'action_sent':True, 'result': result, 'action_verification':None})
     except Exception as ex:
         logger.error(f"Task action execution problem: {ex}")

@@ -15,14 +15,21 @@ import {ExtensionRequest} from "../derivation-exclusion/gp-deletion-container";
 
 export interface AsyncProdTaskSplitProgress {
   processed: number;
-  total: number;
+  total?: number;
+  progress?: number;
   name: string;
-  reqids: number[];
+  currentResults: string[];
+}
+
+export interface  RulesResultInfo {
+  dataset: string;
+  return_code: string;
+  return_info: string;
 }
 export interface AsyncProdTaskSplitStatus {
   status: string;
   progress: undefined| AsyncProdTaskSplitProgress;
-  result: undefined | number[]| string;
+  result: undefined | number[]| string[]|RulesResultInfo[]| string;
 }
 
 

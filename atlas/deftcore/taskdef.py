@@ -1871,7 +1871,7 @@ class TaskDefinition(object):
         return merging_tag_name
 
     def _setup_panda_DC(self, step: StepExecution, tape_replicas: [str]) -> bool:
-        if (step.request.request_type in ['REPROCESSING', 'GROUP', 'MC'] ):
+        if (step.request.request_type in ['REPROCESSING', 'GROUP', 'MC', 'HLT'] ):
             return True
         return False
 

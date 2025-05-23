@@ -1,0 +1,15 @@
+
+@if (active){
+  <div>
+    <mat-spinner [diameter]="20"></mat-spinner>
+    @if(total>0){
+      Done : {{current}} / {{total}}
+    } @else {
+      Sending ...
+    }
+  </div>
+  <mat-progress-bar mode="determinate" [value]="100*current/total"></mat-progress-bar>
+
+} @else {
+<span>Initialising async tasks...</span>
+}

@@ -8,7 +8,7 @@ from atlas.gpdeletion.views import collect_datasets, redo_all, do_gp_deletion_up
 from atlas.prestage.views import find_action_to_execute, submit_all_tapes_processed_with_shares, \
     delete_done_staging_rules, \
     sync_cric_deft, find_repeated_tasks_to_follow, find_stage_task_replica_to_delete, remove_stale_rules, \
-    clean_stale_actions, find_stale_stages, fill_staging_destination, check_stale_staging_tasks, cache_full_rses, \
+    clean_stale_actions, find_stale_stages, fill_staging_destination, check_stale_staging_tasks, cache_bad_rses, \
     get_stuck_requests
 from atlas.prodtask.dataset_recovery import check_running_recovery_requests, check_submitted_recovery_requests
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
@@ -40,7 +40,7 @@ def sync_tasks():
 
 @app.task(ignore_result=True)
 def cache_dc_stats():
-    cache_full_rses(True)
+    cache_bad_rses(True)
     get_stuck_requests()
     return None
 
