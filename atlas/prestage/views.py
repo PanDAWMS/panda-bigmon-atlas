@@ -2652,6 +2652,8 @@ def get_all_active_staging_rules() -> List[DatasetStagingRule]:
             owners += [task['username']]
             tasks_ids += [task['id']]
         if not start_time:
+            start_time = dataset_staging.creation_time
+        if not start_time:
             start_time = timezone.now()
         if not update_time:
             update_time = start_time

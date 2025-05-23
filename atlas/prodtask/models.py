@@ -2821,6 +2821,7 @@ class PandaDatasetStaging(models.Model):
     rse = models.CharField(max_length=100, db_column='ddm_rule_id', null=True)
     start_time = models.DateTimeField(db_column='START_TIME')
     end_time = models.DateTimeField(db_column='END_TIME')
+    creation_time = models.DateTimeField(db_column='creation_time')
     total_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='TOTAL_FILES')
     staged_files = models.DecimalField(decimal_places=0, max_digits=12, db_column='STAGED_FILES')
     update_time = models.DateTimeField(db_column='modification_time')
