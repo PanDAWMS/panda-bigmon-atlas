@@ -48,6 +48,7 @@ from rest_framework import serializers,generics
 from functools import reduce
 
 from ..settings import OIDC_LOGIN_URL
+from ..task_action.task_management import TaskManagementAuthorisation
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -1127,12 +1128,14 @@ def dpd_form_prefill(form_data, request):
     if 'owner' in output_dict:
         form_data['manager'] = output_dict['owner'][0].split("@")[0]
     else:
-        try:
-            form_data['manager'] = request.user.username
-            if request.user.is_superuser:
-                allow_priority = True
-        except:
-            pass
+        form_data['manager'] = request.user.username
+    try:
+        task_management = TaskManagementAuthorisation()
+        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        if request.user.is_superuser or 'DPD' in allowed_groups:
+            allow_priority = True
+    except:
+        pass
     if 'project' in output_dict:
         if not form_data['campaign']:
             form_data['campaign'] = output_dict['project'][0]
@@ -1140,6 +1143,8 @@ def dpd_form_prefill(form_data, request):
         form_data['project'] = output_dict['project'][0]
     if 'energy' in output_dict:
         form_data['energy_gev'] = output_dict['energy'][0]
+    if 'ref_link' in output_dict:
+        form_data['ref_link'] = output_dict['ref_link'][0]
     if not form_data.get('cstatus'):
         form_data['cstatus'] = 'waiting'
     if not form_data.get('energy_gev'):
