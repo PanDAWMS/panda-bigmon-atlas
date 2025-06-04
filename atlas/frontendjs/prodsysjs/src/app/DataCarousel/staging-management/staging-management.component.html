@@ -1,7 +1,12 @@
-<p>Active staging rules (both Production and Analysis)</p>
+@if(! chosenTask()){
+  <p>Active staging rules (both Production and Analysis)</p>
+} @else {
+  <p>Active staging rules for the task: </p>
+}
 @if(ruleLoading()){
   <mat-spinner></mat-spinner>
 }
+@if(! chosenTask()){
     <app-select-with-search
       [formControl]="filters.source.selectedValues"
       [filterBase]="filters.source"
@@ -44,9 +49,11 @@
       <input matInput [formControl]="taskids" (change)="filterChanged$.next(1)" >
     </mat-form-field>
   </div>
+
 @if(showOnlyStuckRules.value){
       <app-task-stats  [taskStatus]="stuckErrors"  [formControl]="stuckErrorsControl"
                 [statusOrder]="stuckErrorOrder" [orientation]="'vertical'"></app-task-stats>
+}
 }
 <div class="task-table-wrapper">
 <div class="task-table-header">
@@ -64,9 +71,11 @@
           [columnDefs]="columnDefs"
               [gridOptions]="gridOptions"
                  (selectionChanged)="onSelectionChanged($event)"
+
     [rowSelection]="'multiple'"
-            [pagination]="true"
+            [pagination]="!(chosenTask())"
           [paginationPageSize]="20"
+
      [domLayout]="'autoHeight'"
     [rowHeight]="22"
                  (gridReady)="onGridReady($event)"
@@ -75,7 +84,9 @@
 </div>
 <div><h5>{{selectedRulesString}}</h5></div>
 <div class="action-row">
-        <button  (click)="showTasks()" [disabled]="taskLoading" >Show tasks</button>
+  @if(! chosenTask()){
+            <button  (click)="showTasks()" [disabled]="taskLoading" >Show tasks</button>
+  }
      <span>Actions: </span>
   <app-rule-action [datasets]="selectedDatasets"></app-rule-action>
 
@@ -85,6 +96,6 @@
   <mat-spinner></mat-spinner>
 }
 @if(tasksToShow.length > 0){
-    <app-production-task-table [tasks]="tasksToShow"  [showOwner]="true" >
+    <app-production-task-table [showStaging]="false" [tasks]="tasksToShow"  [showOwner]="true" >
   </app-production-task-table>
 }

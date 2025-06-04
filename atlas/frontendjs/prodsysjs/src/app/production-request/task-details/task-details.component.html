@@ -85,12 +85,7 @@
     <ng-container *ngIf="inputSize">{{inputSize | datasetSize}}</ng-container></div>
 
     <!--    Row-->
-    <ng-container *ngIf="task.staging">
-      <div>Staging:</div>
-      <div style="grid-column: 2 / -1">
-        <app-task-staging-progress [stagingProgress]="task.staging"></app-task-staging-progress>
-      </div>
-    </ng-container>
+
     <!--    Row-->
     <div>Outputs:</div>
     <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
@@ -147,8 +142,11 @@
 </ng-container>
 </ng-container>
     <h5 *ngIf=" taskInfo.error">{{taskInfo.error}}</h5>
-
-
+  <div>
+    <ng-container *ngIf="showStaging && taskInfo.task.staging">
+      <app-staging-management [chosenTask]="taskInfo.task.id.toString()"></app-staging-management>
+    </ng-container>
+</div>
 <section class="logTable">
   <mat-table [dataSource]="actionLog$" [fixedLayout]="true">
   <ng-container matColumnDef="action">

@@ -156,34 +156,14 @@ def production_task(request):
             if production_task.request_id > 300:
                 task_data['projectMode'] = production_task.step.get_task_config('project_mode')
                 task_data['inputEvents'] = production_task.step.input_events
-                if DatasetStaging.objects.filter(dataset=production_task.input_dataset).exists():
-                    dataset_staging = DatasetStaging.objects.filter(dataset=production_task.input_dataset).last()
-                    if ((dataset_staging.status in DatasetStaging.ACTIVE_STATUS) or
-                            (dataset_staging.status==DatasetStaging.STATUS.DONE and dataset_staging.start_time>production_task.submit_time)):
-                        task_data['staging'] = [{'status':dataset_staging.status,
-                                    'staged_files':dataset_staging.staged_files,'total_files':dataset_staging.total_files,
-                                                'rule':dataset_staging.rse,'source':dataset_staging.source_expression, 'dataset':production_task.input_dataset}]
-                else:
-                    if production_task.status in ProductionTask.STATUS.STAGING:
-                        if ActionStaging.objects.filter(task=task_id).exists():
-                            staging = []
-                            for action_staging in ActionStaging.objects.filter(task=task_id):
-                                dataset_staging = action_staging.dataset_stage
-                                if ((dataset_staging.status in DatasetStaging.ACTIVE_STATUS) or
-                                        (
-                                                dataset_staging.status == DatasetStaging.STATUS.DONE and dataset_staging.start_time > production_task.submit_time)):
-                                    staging += [{'status': dataset_staging.status,
-                                                             'staged_files': dataset_staging.staged_files,
-                                                             'total_files': dataset_staging.total_files,
-                                                             'rule': dataset_staging.rse,
-                                                             'source': dataset_staging.source_expression,
-                                                             'dataset': production_task.input_dataset}]
-                            if staging:
-                                task_data['staging'] = staging
+
             task_data['hashtags'] = [x.hashtag for x in production_task.hashtags]
         else:
             task_data = {'id': task_id, 'username': jedi_parameters_task.username,
                          'name': jedi_parameters_task.name, 'status': jedi_parameters_task.status }
+        if PandaDatasetStaging.objects.filter(id__in=[x.request_id for x in PandaDatasetStagingRelationship.objects.filter(task_id=task_id)],
+                                              status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
+            task_data['staging'] = True
         return Response({'task':task_data, 'task_parameters': task_parameters, 'job_parameters': job_parameters,
                          'jedi_task': jedi_task, 'output_datasets':output_datasets})
     except ObjectDoesNotExist:

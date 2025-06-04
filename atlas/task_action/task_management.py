@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from rest_framework.request import Request
 from time import sleep
 from atlas.JIRA.client import JIRAClient
@@ -378,37 +379,19 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_rule_decorator
     def alter_source_replication_rule(self, dataset, cancel=False):
         try:
-            dataset_stage = None
-            ddm = DDM()
-            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.QUEUED).exists():
-                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.QUEUED)
-                active_tasks = next(dataset_stage.active_tasks(), None)
-                if active_tasks:
-                    replica = None
-                    replicas = ddm.full_replicas_per_type(dataset_stage.dataset)
-                    for new_replica in replicas['tape']:
-                        physical_replica = ddm.convert_input_to_physical_tape(new_replica['rse'])
-                        if physical_replica != dataset_stage.source:
-                            replica = new_replica['rse']
-                            break
-                    if replica:
-                        physical_tape = ddm.convert_input_to_physical_tape(replica)
-                        dataset_stage.source = physical_tape
-                        dataset_stage.save()
-                    return {'success': True, 'message': f'DC source changes, new source {replica}'}
-                else:
-                    return  {'success': True, 'message': f'Nothing found'}
-            if DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
-                dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
-            elif PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
+            if PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
                 dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).last()
-                return self.jedi_client.change_staging_source(dataset_stage.dataset, None, cancel)
-            if not dataset_stage or not dataset_stage.rse:
+                result = self.jedi_client.change_staging_source(dataset_stage.dataset, None, cancel)
+                if dataset_stage.status == PandaDatasetStaging.STATUS.STAGING:
+                    ddm = DDM()
+                    rule = ddm.get_rule(dataset_stage.rse)
+                    empty_source_rules = cache.get('EMPTY_SOURCE_RULES', [])
+                    if not rule.get('source_replica_expression', '') and dataset_stage.rse not in empty_source_rules:
+                        empty_source_rules.append(dataset_stage.rse)
+                        cache.set('EMPTY_SOURCE_RULES', empty_source_rules, 3600*60)
+                return result
+            else:
                 raise Exception('Rule ID not found')
-            rule_id = dataset_stage.rse
-            ddm = DDM()
-            result = ddm.change_rule_source(dataset_stage.rse, '', cancel)
-            return {'success': True, 'message':  f'Source replication rule {rule_id} dropped with cancel: {cancel}, ddm returns: {result}'}
 
         except Exception as e:
             return {'success': False, 'message': f'Command rejected: {e}'}

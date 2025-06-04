@@ -14,7 +14,7 @@ import {DEFAULTS} from "../../common/constants/tasks_constants";
 })
 export class TaskDetailsComponent implements OnInit, OnChanges {
   @Input() taskID: number;
-
+  @Input() showStaging = true;
   public SYNC_ACTIONS = ['sync_jedi'];
   public syncActions$ = this.taskService.getActionResults().pipe(
       filter(value => value !== null),

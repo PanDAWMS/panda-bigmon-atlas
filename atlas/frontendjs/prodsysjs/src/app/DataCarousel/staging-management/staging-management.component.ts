@@ -1,4 +1,4 @@
-import {Component, computed, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, computed, inject, input, OnInit, ViewChild} from '@angular/core';
 import {DataCarouselService, StagingRule} from '../data-carousel.service';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {toObservable} from '@angular/core/rxjs-interop';
@@ -52,6 +52,10 @@ export class StagingManagementComponent implements OnInit {
     status: new FilterBase('Status', ['staging', 'queued'], 'status'),
     username: new FilterBase('Username', [], 'username'),
   };
+
+  chosenTask = input<string>('');
+
+
   @ViewChild('agGrid') rulesGrid!: AgGridAngular;
   stagingRules = computed(() => this.dataCarouselService.datasetStagingRulesResource.value()?.rules ?? []);
   fullRSEs = computed(() => this.dataCarouselService.datasetStagingRulesResource.value()?.fullRSEs ?? []);
@@ -148,7 +152,14 @@ export class StagingManagementComponent implements OnInit {
     },
       tooltipField: 'dataset',
     },
-    {field: 'source', headerName: 'Source'},
+    {field: 'source', headerName: 'Source',
+      cellRenderer: params => {
+        if (params.data.empty_source){
+          return `<b>${params.value}</b>`;
+        }
+        return params.value;
+      }
+    },
     {field: 'destination', headerName: 'Destination',
       cellRenderer: params => {
         if (this.fullRSEs().includes(params.value)){
@@ -210,6 +221,7 @@ export class StagingManagementComponent implements OnInit {
   ];
 
   constructor() {
+
     this.filterParameters.subscribe();
         // Subscribe to selectedDestinations changes and update URL query parameter
 
@@ -255,6 +267,8 @@ export class StagingManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    console.log('task:', this.chosenTask());
+    this.dataCarouselService.selectedTask.set(this.chosenTask() ?? '');
     this.filterChanged$.subscribe(
       () => {
         if (this.rulesGrid?.api) {
@@ -305,7 +319,23 @@ export class StagingManagementComponent implements OnInit {
 
   }
   onSelectionChanged($event: SelectionChangedEvent<any>): void {
-    this.selectedRules = $event.api.getSelectedRows();
+    this.filterOrSlectionChanged($event);
+  }
+
+
+  private filterOrSlectionChanged(params: SelectionChangedEvent<any>|FilterChangedEvent): void {
+    this.selectedRules = [];
+    this.rulesGrid.api.forEachNodeAfterFilter((selectedRule) => {
+      if (selectedRule.isSelected()) {
+        this.selectedRules.push(selectedRule.data);
+      }
+    });
+    if (this.selectedRules.length === 0) {
+      this.selectedRulesString = '';
+      this.selectedDatasets = [];
+      this.tasksToShow = [];
+      return;
+    }
     let stagedFiles = 0;
     let totalFiles = 0;
     let bytes = 0;
@@ -319,7 +349,7 @@ export class StagingManagementComponent implements OnInit {
       rule.owners.forEach(owner => usernames.add(owner));
     }
     let userNameSting = '';
-    if (usernames.size < 5 ) {
+    if (usernames.size < 5) {
       userNameSting = Array.from(usernames).join(', ');
     } else {
       userNameSting = `${usernames.size} users`;
@@ -330,13 +360,13 @@ export class StagingManagementComponent implements OnInit {
     this.tasksToShow = [];
   }
 
-
   onGridReady(params: GridReadyEvent<any>) {
     params.api.autoSizeColumns(this.columnDefs.map( column => column.field), true);
   }
 
   adjustColumns(params: FilterChangedEvent<any>) {
         params.api.autoSizeColumns(this.columnDefs.map( column => column.field), true);
+        this.filterOrSlectionChanged(params);
   }
 
   showTasks() {

@@ -1,4 +1,4 @@
-import {computed, Injectable} from '@angular/core';
+import {computed, Injectable, signal} from '@angular/core';
 import {HttpClient, httpResource} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {SelectionChangedEvent} from "ag-grid-community";
@@ -36,6 +36,7 @@ export interface StagingRule {
   owners: string[];
   stuck: boolean;
   stuck_error: string;
+  empty_source: boolean;
   tasks_ids: number[];
 }
 export interface StagingRuleResponse {
@@ -50,7 +51,11 @@ export class DataCarouselService {
   constructor(private http: HttpClient) { }
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
-  datasetStagingRulesResource = httpResource<StagingRuleResponse>(this.prGetStagingRulesUrl);
+
+  selectedTask = signal<string>('');
+
+  datasetStagingRulesResource = httpResource<StagingRuleResponse>(() =>
+    `${this.prGetStagingRulesUrl}?task_id=${this.selectedTask()}`);
 
 
   getDataCarouselConfig(): Observable<CarouselConfig> {
