@@ -52,6 +52,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   @Output() taskChosen = new EventEmitter<number>();
   @Input() showOwner = false;
   @Input() showHashTags = false;
+  @Input() showStaging = true;
   public tasksStatus: {[status: string]: number} = {};
   public tasksSteps: {[status: string]: number} = {};
   public taskStatusControl = new UntypedFormControl([]);
@@ -325,7 +326,8 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       this.taskChosen.emit(taskID);
     }
     this.pageTasksActive = false;
-    this.dialogRef = this.dialog.open(DialogTaskDetailsComponent,  {data: {selectedTask: taskID, filteredTasks}, closeOnNavigation: true});
+    this.dialogRef = this.dialog.open(DialogTaskDetailsComponent,
+      {data: {selectedTask: taskID, filteredTasks, showStaging: this.showStaging}, closeOnNavigation: true});
     this.dialogRef.componentInstance.taskChosen.subscribe( newTask => {
       this.taskChosen.emit(newTask);
     });
@@ -361,13 +363,15 @@ export class DialogTaskDetailsComponent implements OnInit {
 
   @Output() taskChosen = new EventEmitter<number>();
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedTask: number, filteredTasks: number[]},
+  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedTask: number, filteredTasks: number[], showStaging: boolean},
               public dialogRef: MatDialogRef<DialogTaskDetailsComponent>) { }
   currentTask: number;
   currentIndex: number;
+  showStaging: boolean;
   ngOnInit(): void {
     this.currentTask = this.data.selectedTask;
     this.currentIndex = this.data.filteredTasks.indexOf(this.currentTask);
+    this.showStaging = this.data.showStaging;
   }
 
   nextTask(): void {
