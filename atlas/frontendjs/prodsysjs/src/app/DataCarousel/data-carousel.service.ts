@@ -2,6 +2,7 @@ import {computed, Injectable, signal} from '@angular/core';
 import {HttpClient, httpResource} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {SelectionChangedEvent} from "ag-grid-community";
+import {DatasetInfo, RucioReplica, RucioRule} from "../production-request/production-request-models";
 
 export interface CarouselTapeConfig {
   tapeName: string;
@@ -43,6 +44,20 @@ export interface StagingRuleResponse {
   rules: StagingRule[];
   fullRSEs: string[];
 }
+export interface DatasetInfoResponse {
+  dataset_exists: boolean;
+  dataset_knowledge: DatasetExistsResponse|DatasetDeletedResponse;
+}
+export interface DatasetExistsResponse {
+  dataset: DatasetInfo;
+  replicas: RucioReplica[];
+  rules: RucioRule[];
+  staging_dataset?: string;
+}
+export interface DatasetDeletedResponse {
+  dataset_name: string;
+  error: string;
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -51,11 +66,27 @@ export class DataCarouselService {
   constructor(private http: HttpClient) { }
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
+  private prGetDatasetInfoUrl = '/api/dataset_info/';
+
 
   selectedTask = signal<string>('');
+  datasetName = signal<string>('');
+  selectedDCDataset = signal<string>('');
+  getAllRules = signal<boolean>(false);
+  datasetStagingRulesResource = httpResource<StagingRuleResponse>(() => {
+        if (this.selectedDCDataset()) {
+          return `${this.prGetStagingRulesUrl}?dc=${this.selectedDCDataset()}`;
+        } else if (this.selectedTask()) {
+          return `${this.prGetStagingRulesUrl}?task_id=${this.selectedTask()}`;
+        } else if (this.getAllRules()) {
+          return `${this.prGetStagingRulesUrl}`;
+        }
+        return '';
+      }
+    );
 
-  datasetStagingRulesResource = httpResource<StagingRuleResponse>(() =>
-    `${this.prGetStagingRulesUrl}?task_id=${this.selectedTask()}`);
+  datasetInfoResource = httpResource<DatasetInfoResponse>(() => this.datasetName() ?
+    `${this.prGetDatasetInfoUrl}?dataset=${this.datasetName()}` : '');
 
 
   getDataCarouselConfig(): Observable<CarouselConfig> {

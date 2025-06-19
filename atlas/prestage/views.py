@@ -2574,66 +2574,20 @@ class DatasetStagingRule:
     bytes: int = 0
 
 
-def get_all_active_staging_rules(task: Optional[int]) -> List[DatasetStagingRule]:
+def get_all_active_staging_rules(task: Optional[int], dataset: Optional[str]) -> List[DatasetStagingRule]:
     """
     Get all active staging rules
     :return:
     """
-    # rules = []
-    # dataset_staging_rules = list(DatasetStaging.objects.filter(status__in=DatasetStaging.ACTIVE_STATUS))
-    # task_by_ds = {}
-    # ds_by_task = {}
-    # stuck_rules = cache.get('STUCK_DC_RULES', {})
-    # if not stuck_rules:
-    #     stuck_rules = get_stuck_requests()
-    # dataset_task_ids = [(y.dataset_stage_id, y.task) for y in list(ActionStaging.objects.filter(dataset_stage__in=dataset_staging_rules))]
-    # task_ids = [x[1] for x in dataset_task_ids]
-    # for dataset_task_id in dataset_task_ids:
-    #     ds_by_task[dataset_task_id[1]] = dataset_task_id[0]
-    # tasks = sum([list(ProductionTask.objects.filter(id__in=chunk).values('id','status','username')) for chunk in chunks(task_ids, 1000)], [])
-    # for task in tasks:
-    #     if task['status'] not in ProductionTask.NOT_RUNNING:
-    #         task_by_ds[ds_by_task[task['id']]] = task_by_ds.get(ds_by_task[task['id']],[]) + [task]
-    # for dataset_staging in dataset_staging_rules:
-    #     update_time = dataset_staging.update_time
-    #     owners = []
-    #     tasks_ids = []
-    #     number_active_tasks = 0
-    #     stuck = dataset_staging.rse in stuck_rules
-    #     stuck_error = stuck_rules.get(dataset_staging.rse, '')
-    #     for task in task_by_ds.get(dataset_staging.id, []):
-    #         number_active_tasks += 1
-    #         owners += [task['username']]
-    #         tasks_ids += [task['id']]
-    #     owners = list(set(owners))
-    #     if not update_time:
-    #         update_time = dataset_staging.start_time
-    #     rule = dataset_staging.rse
-    #     if dataset_staging.status == DatasetStaging.STATUS.QUEUED:
-    #         rule = 'queued'
-    #     if not rule:
-    #         rule = 'waiting'
-    #
-    #     rules.append(
-    #         DatasetStagingRule(id=int(dataset_staging.id), dataset=dataset_staging.dataset, scope=dataset_staging.dataset.split(':')[0].split('.')[0],
-    #                            data_type=dataset_staging.dataset.split('.')[-1], status=dataset_staging.status,
-    #                            rse=rule, source=dataset_staging.source,
-    #                            destination=dataset_staging.destination_rse,
-    #                            total_files=int(dataset_staging.total_files), staged_files=int(dataset_staging.staged_files),
-    #                            start_time=int(dataset_staging.start_time.timestamp()*1000),
-    #                            update_time=int(update_time.timestamp()*1000),
-    #                            number_active_tasks=len(task_by_ds.get(dataset_staging.id,[])), dc_type = 'p',
-    #                            owners=owners, tasks_ids=tasks_ids,
-    #                            bytes=int(dataset_staging.dataset_size), stuck=stuck, stuck_error=stuck_error),
-    #
-    #
-    #     )
-    if task is None:
+    if task is None and dataset is None:
         dataset_staging_rules = list(PandaDatasetStaging.objects.filter(status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]))
     else:
-        dataset_staging_rules = list(PandaDatasetStaging.objects.filter(
-            id__in=[x.request_id for x in PandaDatasetStagingRelationship.objects.filter(task_id=task)],
-            status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]))
+        if dataset is not None:
+            dataset_staging_rules = list(PandaDatasetStaging.objects.filter(dataset=dataset))
+        else:
+            dataset_staging_rules = list(PandaDatasetStaging.objects.filter(
+                id__in=[x.request_id for x in PandaDatasetStagingRelationship.objects.filter(task_id=task)],
+                status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]))
     return prepare_dc_requests(dataset_staging_rules)
 
 
@@ -2729,10 +2683,12 @@ def get_staging_rules(request):
     """
     try:
         # rules = cache.get_or_set("datacarousel_rules", get_all_active_staging_rules, 60*10)
-        if request.query_params.get('task_id'):
-            rules = get_all_active_staging_rules(int(request.query_params.get('task_id')))
+        if request.query_params.get('dc'):
+            rules = get_all_active_staging_rules(None, request.query_params.get('dc'))
+        elif request.query_params.get('task_id'):
+            rules = get_all_active_staging_rules(int(request.query_params.get('task_id')), None)
         else:
-            rules = get_all_active_staging_rules(None)
+            rules = get_all_active_staging_rules(None, None)
         bad_rse = cache_bad_rses()
         return Response({ 'rules': map(asdict, rules), 'fullRSEs': bad_rse}, status=status.HTTP_200_OK)
     except Exception as e:

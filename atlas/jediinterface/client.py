@@ -124,7 +124,7 @@ class JEDIRuleActionInterface(ABC):
         pass
 
     @abstractmethod
-    def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool):
+    def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
         pass
 
     @abstractmethod
@@ -180,8 +180,8 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         data = {'request_id': request_id, 'dataset': dataset}
         return self._post_new_api_command('api/v1/data_carousel/change_staging_destination', data)
 
-    def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False):
-        data = {'request_id': request_id, 'dataset': dataset, 'cancel_fts': cancel_fts}
+    def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
+        data = {'request_id': request_id, 'dataset': dataset, 'cancel_fts': cancel_fts, 'change_src_expr': change_src_expr, 'source_rse': source_rse}
         return self._post_new_api_command('api/v1/data_carousel/change_staging_source', data)
 
     def force_to_staging(self, dataset: str, request_id: int|None):

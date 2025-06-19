@@ -10,7 +10,8 @@ from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_
 from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
-    pattern_slices_derivation_request, mc_subcampaign_stats, production_request_outputs, pileup_task_provenance
+    pattern_slices_derivation_request, mc_subcampaign_stats, production_request_outputs, pileup_task_provenance, \
+    dataset_info
 from atlas.special_workflows.views import request_results, clone_active_learning_request
 from atlas.task_action.task_management import tasks_action, rules_action
 
@@ -90,6 +91,8 @@ urlpatterns = [
             name='config_parameter'),
     re_path(r'^set_config_parameter/(?P<name>\w+)/$', set_config_parameter,
             name='set_config_parameter'),
+    re_path(r'^dataset_info/$', dataset_info, name='dataset_info'),
+
 
 
 

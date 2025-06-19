@@ -137,6 +137,7 @@ import {JsonGDPConfigEditorComponent} from "./json-gdpconfig-editor/json-gdpconf
 import {ConfigEditorComponent} from "./config-editor/config-editor.component";
 import {MainRequestComponent} from "./production-request/main-request/main-request.component";
 import {StagingManagementComponent} from "./DataCarousel/staging-management/staging-management.component";
+import {DatatsetDetailsComponent} from "./datatset-details/datatset-details.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -240,6 +241,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'config-editor/:name', component: ConfigEditorComponent},
     {path: 'test-request', component: MainRequestComponent},
     {path: 'staging-rules', component: StagingManagementComponent},
+      {path: 'dataset', component: DatatsetDetailsComponent},
+
 
 
 
@@ -260,7 +263,6 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         DerivationExclusionComponent,
         ProductionRequestComponent,
         DataCarouselComponent,
-        DatasetSizePipe,
         GpStatsComponent,
         GpStatsMatrixComponent,
         GpContainerInfoComponent,
@@ -306,46 +308,47 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
         DerivationExtensionComponent,
         TaskManagementByUrlComponent
     ],
-  exports: [
+    exports: [
 
-  ],
+
+    ],
     bootstrap: [AppComponent], imports: [BrowserModule,
-        RouterModule.forRoot(routes, routerOptions),
-        BrowserAnimationsModule,
-        MatTableModule,
-        MatSortModule,
-        MatCheckboxModule,
-        MatGridListModule,
-        MatButtonModule,
-        MatSidenavModule,
-        MatFormFieldModule,
-        MatInputModule,
-        FormsModule,
-        MatListModule,
-        MatProgressSpinnerModule,
-        MatRadioModule,
-        MatCardModule,
-        NgxChartsModule,
-        MatTabsModule,
-        ScrollingModule,
-        MatDialogModule,
-        MatDatepickerModule,
-        ReactiveFormsModule,
-        MatNativeDateModule,
-        MatChipsModule,
-        MatIconModule,
-        MatToolbarModule,
-        MatSelectModule,
-        MatExpansionModule,
-        MatPaginatorModule,
-        MatMenuModule,
-        MatProgressBarModule,
-        MatTooltipModule,
-        ClipboardModule,
-        AgGridModule,
-        MatStepperModule,
-        MatSlideToggleModule,
-        NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent, ProductionTaskTableComponent, TaskActionComponent, StagingManagementComponent], providers: [
+    RouterModule.forRoot(routes, routerOptions),
+    BrowserAnimationsModule,
+    MatTableModule,
+    MatSortModule,
+    MatCheckboxModule,
+    MatGridListModule,
+    MatButtonModule,
+    MatSidenavModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatRadioModule,
+    MatCardModule,
+    NgxChartsModule,
+    MatTabsModule,
+    ScrollingModule,
+    MatDialogModule,
+    MatDatepickerModule,
+    ReactiveFormsModule,
+    MatNativeDateModule,
+    MatChipsModule,
+    MatIconModule,
+    MatToolbarModule,
+    MatSelectModule,
+    MatExpansionModule,
+    MatPaginatorModule,
+    MatMenuModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+    ClipboardModule,
+    AgGridModule,
+    MatStepperModule,
+    MatSlideToggleModule,
+    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent, ProductionTaskTableComponent, TaskActionComponent, StagingManagementComponent, DatasetSizePipe], providers: [
         {
             provide: APP_BASE_HREF, useValue: '/ng',
             useFactory: getBaseLocation

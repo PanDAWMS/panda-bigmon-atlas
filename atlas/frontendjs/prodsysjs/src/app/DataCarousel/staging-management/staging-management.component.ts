@@ -54,7 +54,7 @@ export class StagingManagementComponent implements OnInit {
   };
 
   chosenTask = input<string>('');
-
+  chosenDataset = input<string>('');
 
   @ViewChild('agGrid') rulesGrid!: AgGridAngular;
   stagingRules = computed(() => this.dataCarouselService.datasetStagingRulesResource.value()?.rules ?? []);
@@ -222,7 +222,6 @@ export class StagingManagementComponent implements OnInit {
 
   constructor() {
 
-    this.filterParameters.subscribe();
         // Subscribe to selectedDestinations changes and update URL query parameter
 
     for (const filter of Object.values(this.filters)) {
@@ -267,8 +266,14 @@ export class StagingManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('task:', this.chosenTask());
-    this.dataCarouselService.selectedTask.set(this.chosenTask() ?? '');
+    if (this.chosenDataset()){
+      this.dataCarouselService.selectedDCDataset.set(this.chosenDataset() ?? '');
+    } else if (this.chosenTask()){
+      this.dataCarouselService.selectedTask.set(this.chosenTask() ?? '');
+    } else {
+      this.dataCarouselService.getAllRules.set(true);
+    }
+    this.filterParameters.subscribe();
     this.filterChanged$.subscribe(
       () => {
         if (this.rulesGrid?.api) {

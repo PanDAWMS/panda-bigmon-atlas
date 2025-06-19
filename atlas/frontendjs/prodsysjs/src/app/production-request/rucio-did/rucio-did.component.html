@@ -1,0 +1,93 @@
+@if(isLoading()){
+  <mat-spinner></mat-spinner>
+}
+@if(errorMessage()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+  </div>
+}
+@if(datasetExists()){
+<div class="task-grid">
+      <!--    Row-->
+  <div>Name:</div><div style="grid-column: 2 / -1"><a href="{{datasetInfo()?.dataset.name | rucioURL}}">{{datasetInfo()?.dataset.name}}</a></div>
+      <!--    Row-->
+  <div>Length:</div><div>{{datasetInfo()?.dataset.length}}</div>
+  <div>Size:</div><div>{{datasetInfo()?.dataset.bytes|datasetSize}}</div>
+  <div>Events:</div><div>{{datasetInfo()?.dataset.events}}</div>
+         <!--    Row-->
+  <div>Scope:</div><div>{{datasetInfo()?.dataset.scope}}</div>
+  <div>Account:</div><div>{{datasetInfo()?.dataset.account}}</div>
+  <div>Campaign:</div><div>{{datasetInfo()?.dataset.campaign}}</div>
+        <!--    Row-->
+  <div>Created:</div><div>{{datasetInfo()?.dataset.created_at | date}}</div>
+  <div>Updated:</div><div>{{datasetInfo()?.dataset.updated_at | date}}</div>
+  <div>Expired:</div><div>{{datasetInfo()?.dataset.expired_at | date}}</div>
+
+
+          <!--    Row-->
+  <div>Last Accessed:</div><div>{{datasetInfo()?.dataset.accessed_at | date}}</div>
+  <div>Access number:</div><div>{{datasetInfo()?.dataset.access_cnt}}</div>
+  <div>TaskID:</div><div><a [routerLink]="['/task',datasetInfo()?.dataset.task_id]" >{{datasetInfo()?.dataset.task_id}}</a></div>
+
+</div>
+<div class="mat-elevation-z8">
+  <mat-table
+    [dataSource]="dataSource"
+    matSort
+    matSortActive="ruleAccount"
+    matSortDirection="asc"
+  >
+    <!-- RSE Expression Column -->
+    <ng-container matColumnDef="ruleRSEExpression">
+      <mat-header-cell *matHeaderCellDef>
+        Rule RSE Expression
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        {{ element.rule?.rse_expression || 'N/A' }}
+      </mat-cell>
+    </ng-container>
+
+<!-- Account Column -->
+    <ng-container matColumnDef="ruleAccount">
+      <mat-header-cell *matHeaderCellDef>
+        Rule Account
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        {{ element.rule?.account || 'N/A' }}
+      </mat-cell>
+    </ng-container>
+
+    <!-- Replica RSE Column -->
+    <ng-container matColumnDef="replicaRSE">
+      <mat-header-cell *matHeaderCellDef>
+        Replica RSE
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        {{ element.replica?.rse || 'N/A' }}
+      </mat-cell>
+    </ng-container>
+
+    <!-- Replica Available Length Column -->
+    <ng-container matColumnDef="replicaAvailableLength">
+      <mat-header-cell *matHeaderCellDef >
+        Replica Available Length
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        {{ element.replica?.available_length || 'N/A' }}
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+  </mat-table>
+
+
+
+</div>
+
+  @if(datasetInfo().staging_dataset){
+    <h5>Staging: </h5>
+    <app-staging-management [chosenDataset]="datasetInfo().staging_dataset"></app-staging-management>
+  }
+}

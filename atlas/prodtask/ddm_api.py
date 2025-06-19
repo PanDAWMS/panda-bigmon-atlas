@@ -4,6 +4,8 @@ import os
 import datetime
 import re
 import random
+from typing import Optional, Dict, Any, List
+from dataclasses import dataclass, fields
 
 import math
 from rucio.common.exception import DataIdentifierNotFound
@@ -16,6 +18,62 @@ from ..settings import dq2client as dq2_settings
 from rucio.client import Client
 
 _logger = logging.getLogger('prodtaskwebui')
+
+@dataclass
+class DatasetInfo:
+    access_cnt: int
+    accessed_at: datetime
+    account: str
+    availability: str
+    campaign: str
+    closed_at: datetime
+    created_at: datetime
+    datatype: str
+    did_type: str
+    bytes: int
+    hidden: bool
+    is_open: bool
+    length: int
+    monotonic: bool
+    name: str
+    obsolete: bool
+    prod_step: str
+    project: str
+    purge_replicas: bool
+    run_number: int
+    scope: str
+    stream_name: str
+    transient: bool
+    updated_at: datetime
+    events: Optional[int] = None
+    suppressed: Optional[bool] = None
+    task_id: Optional[int] = None
+    version: Optional[str] = None
+    deleted_at: Optional[datetime] = None
+    expired_at: Optional[datetime] = None
+    eol_at: Optional[datetime] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DatasetInfo":
+        # Get the field names defined in the dataclass
+        dataclass_field_names = {f.name for f in fields(cls)}
+
+        # Create a new dictionary containing only the keys that are dataclass fields
+        filtered_data = {
+            k: v
+            for k, v in data.items()
+            if k in dataclass_field_names
+        }
+
+        # Convert date strings to datetime objects
+        date_fields = [
+            "accessed_at", "closed_at", "created_at", "updated_at"
+        ]
+
+
+        # Instantiate the dataclass
+        return cls(**filtered_data)
+
 
 def number_of_files_in_dataset(dsn):
     ddm = DDM()
@@ -396,6 +454,10 @@ class DDM(object):
         else:
             return self.__ddm.update_replication_rule(rule_id,{'source_replica_expression':new_source})
 
+    def cancel_rule_requests(self, rule_id):
+            return self.__ddm.update_replication_rule(rule_id,{'cancel_requests':True,'state':'STUCK'})
+
+
     def get_rule(self, rule_id):
         return self.__ddm.get_replication_rule(rule_id)
 
@@ -643,6 +705,14 @@ class DDM(object):
         events = self.__ddm.get_metadata(scope=scope,name=name)
         return events
 
+    def dataset_info(self, dataset_name: str) -> DatasetInfo:
+        """
+        :param dataset_name: name of the dataset
+        :return: size of the dataset
+        """
+        scope, name = self.rucio_convention(dataset_name)
+        return DatasetInfo.from_dict(self.__ddm.get_metadata(scope=scope,name=name))
+
     def datasets_metadata(self, dataset_names: [str]):
         """
         :param dataset_names: list of dataset names
@@ -792,7 +862,7 @@ class DDM(object):
         return container_name
 
     @staticmethod
-    def with_and_without_scope(lfns: [str]) -> [str]:
+    def with_and_without_scope(lfns: List[str]) -> List[str]:
         return_list = []
         for lfn in lfns:
             return_list.append(lfn)

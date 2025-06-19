@@ -22,6 +22,8 @@ from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_
 from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jediinterface.client import JEDIClientTest
+from atlas.prestage.views import prepare_dc_requests
+from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
@@ -1454,3 +1456,31 @@ def recreate_in_recovery_scope(task_id: int, recovery_scope: str):
     task.recovery_scope = recovery_scope
     task.save()
     return task_id
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def dataset_info(request):
+    try:
+        ddm = DDM()
+        dataset_name = request.query_params.get('dataset')
+        if ddm.dataset_exists(dataset_name):
+            dataset = ddm.dataset_info(dataset_name)
+            dataset_replicas = ddm.dataset_replicas(dataset_name)
+            dataset_rules = ddm.list_dataset_rules(dataset_name)
+            dataset_staging = None
+            if PandaDatasetStaging.objects.filter(
+                    dataset__in=ddm.with_and_without_scope([dataset_name]),
+                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
+                dataset_staging = PandaDatasetStaging.objects.get( dataset__in=ddm.with_and_without_scope([dataset_name]),
+                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] ).dataset
+            return Response({'dataset_exists': True, 'dataset_knowledge':
+                                                         {'dataset': asdict(dataset), 'replicas': dataset_replicas,
+                                                          'rules': dataset_rules, 'staging_dataset': dataset_staging}})
+        else:
+            return Response({'dataset_exists': False,
+                             'dataset_knowledge': {'dataset_name':dataset_name,'error':'Dataset does not exist'}})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

@@ -246,3 +246,89 @@ export interface CampaignPattern{
   project: string;
   patterns: MCPattern[];
 }
+
+export interface DatasetInfo {
+  access_cnt: number;
+  accessed_at: string;
+  account: string;
+  availability: string;
+  campaign: string;
+  closed_at: string;
+  created_at: string;
+  datatype: string;
+  did_type: string;
+  bytes: number;
+  hidden: boolean;
+  is_open: boolean;
+  length: number;
+  monotonic: boolean;
+  name: string;
+  obsolete: boolean;
+  prod_step: string;
+  project: string;
+  purge_replicas: boolean;
+  run_number: number;
+  scope: string;
+  stream_name: string;
+  transient: boolean;
+  updated_at: string;
+
+  // Optional fields
+  events?: number;
+  suppressed?: boolean;
+  task_id?: number;
+  version?: string;
+  expired_at?: string;
+}
+
+
+export interface RucioReplica {
+  accessed_at: string;
+  available_bytes: number;
+  available_length: number;
+  bytes: number;
+  created_at: string;
+  length: number;
+  name: string;
+  rse: string;
+  rse_id: string;
+  scope: string;
+  state: string;
+  updated_at: string;
+}
+
+export interface RucioRule {
+  account: string;
+  activity: string;
+  bytes: number;
+  child_rule_id: string | null; // UUID string or null
+  comments: string | null;
+  copies: number;
+  created_at: string; // ISO 8601 string, e.g., "2024-04-27T22:23:41"
+  did_type: string;
+  eol_at: string; // ISO 8601 string
+  error: string | null;
+  expires_at: string | null; // ISO 8601 string or null
+  grouping: string;
+  id: string; // UUID string
+  ignore_account_limit: boolean;
+  ignore_availability: boolean;
+  locked: boolean;
+  locks_ok_cnt: number;
+  locks_replicating_cnt: number;
+  locks_stuck_cnt: number;
+  meta: any | null; // Type depends on the structure of 'meta' if not always null
+  name: string;
+  notification: string;
+  priority: number;
+  purge_replicas: boolean;
+  rse_expression: string;
+  scope: string;
+  source_replica_expression: string;
+  split_container: boolean;
+  state: string;
+  stuck_at: string | null; // ISO 8601 string or null
+  subscription_id: string | null; // UUID string or null
+  updated_at: string; // ISO 8601 string
+  weight: number | null;
+}

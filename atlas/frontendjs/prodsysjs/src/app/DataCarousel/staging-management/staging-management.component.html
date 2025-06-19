@@ -1,12 +1,14 @@
-@if(! chosenTask()){
+@if(! chosenTask() && ! chosenDataset()){
   <p>Active staging rules (both Production and Analysis)</p>
 } @else {
+  @if(!chosenDataset()){
   <p>Active staging rules for the task: </p>
+  }
 }
 @if(ruleLoading()){
   <mat-spinner></mat-spinner>
 }
-@if(! chosenTask()){
+@if(! chosenTask() && ! chosenDataset()){
     <app-select-with-search
       [formControl]="filters.source.selectedValues"
       [filterBase]="filters.source"
@@ -55,14 +57,16 @@
                 [statusOrder]="stuckErrorOrder" [orientation]="'vertical'"></app-task-stats>
 }
 }
-<div class="task-table-wrapper">
+<div class="task-table-wrapper" >
 <div class="task-table-header">
-
+@if(! chosenDataset()){
   <div>
   <button mat-raised-button color="primary" (click)="selectFiltered()">Select Filtered</button>
   <button mat-raised-button color="primary" (click)="clearSelection()">Clear selection</button>
   </div>
+  }
 </div>
+  <div >
                <ag-grid-angular
                  #agGrid
           style="width: 100%; "
@@ -71,9 +75,8 @@
           [columnDefs]="columnDefs"
               [gridOptions]="gridOptions"
                  (selectionChanged)="onSelectionChanged($event)"
-
     [rowSelection]="'multiple'"
-            [pagination]="!(chosenTask())"
+            [pagination]="!(chosenTask())&&!(chosenDataset())"
           [paginationPageSize]="20"
 
      [domLayout]="'autoHeight'"
@@ -81,6 +84,7 @@
                  (gridReady)="onGridReady($event)"
                  (filterChanged)="adjustColumns($event)"
                   ></ag-grid-angular>
+  </div>
 </div>
 <div><h5>{{selectedRulesString}}</h5></div>
 <div class="action-row">
