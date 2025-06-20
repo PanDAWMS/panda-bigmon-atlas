@@ -52,11 +52,13 @@
     </mat-form-field>
   </div>
 
+
+}
 @if(showOnlyStuckRules.value){
       <app-task-stats  [taskStatus]="stuckErrors"  [formControl]="stuckErrorsControl"
                 [statusOrder]="stuckErrorOrder" [orientation]="'vertical'"></app-task-stats>
 }
-}
+
 <div class="task-table-wrapper" >
 <div class="task-table-header">
 @if(! chosenDataset()){

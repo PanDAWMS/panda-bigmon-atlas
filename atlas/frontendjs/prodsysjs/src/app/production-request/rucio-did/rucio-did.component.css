@@ -56,3 +56,18 @@
   flex: none;
   width: 50px;
 }
+span.OK{
+  color: green;
+}
+span.STUCK{
+  color: red;
+}
+span.REPLICATING{
+  color: orange;
+}
+span.SUSPENDED{
+  color: red;
+}
+.header-row {
+  background-color: #E7E9EB;
+}

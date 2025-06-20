@@ -8,6 +8,7 @@ import {catchError, filter, map, shareReplay, switchMap, tap} from 'rxjs/operato
 const CACHE_SIZE = 1;
 export interface TaskActionLog {
   task_id: number;
+  dataset: string;
   action: string;
   return_message: string;
   return_code: string;
@@ -99,6 +100,7 @@ export class TaskService {
   constructor(private http: HttpClient) { }
   private prTaskUrl = '/production_request/task';
   private prTaskActionsUrl = '/production_request/task_action_logs';
+  private prRuleActionsUrl = '/production_request/rule_action_logs';
   private prTaskActionUrl = '/api/tasks_action/';
   private prTaskReassignEntitiesUrl = '/production_request/reassign_entities/';
   private prTaskStatsUrl = '/production_request/production_task_hs06/';
@@ -225,4 +227,7 @@ export class TaskService {
     console.log(`TaskService: ${message}`);
   }
 
+  getRuleActionLogs(dataset: string) {
+    return this.http.get<TaskActionLog[]>(this.prRuleActionsUrl, {params: {dataset}});
+  }
 }

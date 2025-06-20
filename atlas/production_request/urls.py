@@ -13,6 +13,8 @@ urlpatterns = [
     re_path(r'^info_by_jira/$', info_by_jira,name='info_by_jira'),
     re_path(r'^task/$', production_task,name='production_task'),
     re_path(r'^task_action_logs/$', production_task_action_logs, name='production_task_action_logs'),
+    re_path(r'^rule_action_logs/$', production_rule_action_logs, name='production_rule_action_logs'),
+
     re_path(r'^production_task_hs06/$', production_task_hs06, name='production_task_hs06'),
     re_path(r'^production_error_logs/$', production_error_logs, name='production_error_logs'),
     re_path(r'^production_task_extensions/$', production_task_extensions, name='production_task_extensions'),

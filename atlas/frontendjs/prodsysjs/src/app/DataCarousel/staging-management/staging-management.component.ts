@@ -1,4 +1,4 @@
-import {Component, computed, inject, input, OnInit, ViewChild} from '@angular/core';
+import {Component, computed, EventEmitter, Inject, inject, input, OnInit, Output, ViewChild} from '@angular/core';
 import {DataCarouselService, StagingRule} from '../data-carousel.service';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {toObservable} from '@angular/core/rxjs-interop';
@@ -15,10 +15,21 @@ import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {TasksManagementService} from '../../tasks-management/tasks-management.service';
 import {ProductionTask} from '../../production-request/production-request-models';
-import {ProductionTaskTableComponent} from '../../production-task-table/production-task-table.component';
+import {
+  BtnCellRenderer, DialogTaskDetailsComponent,
+  ProductionTaskTableComponent
+} from '../../production-task-table/production-task-table.component';
 import {MatSlideToggle} from "@angular/material/slide-toggle";
 import {RuleActionComponent} from "../../rule-action/rule-action.component";
 import {TaskStatsComponent} from "../../production-request/task-stats/task-stats.component";
+import {
+  MAT_DIALOG_DATA, MatDialog,
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogContent,
+  MatDialogRef
+} from "@angular/material/dialog";
+import {RucioDIDComponent} from "../../production-request/rucio-did/rucio-did.component";
 
 @Component({
   selector: 'app-staging-management',
@@ -122,12 +133,24 @@ export class StagingManagementComponent implements OnInit {
   public stuckErrorsControl = new FormControl<string[]>([]);
   public showOnlyFullRSEs = new FormControl<boolean>(false);
   public showOnlyStuckRules = new FormControl<boolean>(false);
+  public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
   };
   OS_ERROR_DASHBOARD_URL = `https://monit-grafana.cern.ch/d/e77b84d4-d854-4a18-b2c6-5fb67f648832/ddm-transfers-errors?from={time}&orgId=17&to=now&var-bin=1h&var-dataset_name={dataset_name}&var-dst_cloud=All&var-dst_country=All&var-dst_federation=All&var-dst_site=All&var-dst_tier=All&var-error_filter=&var-src_cloud=All&var-src_country=All&var-src_federation=All&var-src_site=All&var-src_tier=All&var-activity=Analysis%20Input&var-activity=Production%20Input&var-activity=Staging`;
-  columnDefs = [
+  columnDefs = [        {
+      field: 'dataset',
+        headerName: '',
+        cellRenderer: BtnCellRenderer,
+        cellRendererParams: {
+           clicked: (field: string) => {
+            this.showDataset(field);
+          }
+        },
+        maxWidth: 30,
+        sortable: false,
+      },
     {field: 'dataset', headerName: 'Dataset',
     // split dataset name by '.' and display only first and second to last fields
     cellRenderer: params => {
@@ -219,8 +242,9 @@ export class StagingManagementComponent implements OnInit {
 
 
   ];
+  showStuck: boolean= false;
 
-  constructor() {
+  constructor(public dialog: MatDialog) {
 
         // Subscribe to selectedDestinations changes and update URL query parameter
 
@@ -268,8 +292,10 @@ export class StagingManagementComponent implements OnInit {
   ngOnInit(): void {
     if (this.chosenDataset()){
       this.dataCarouselService.selectedDCDataset.set(this.chosenDataset() ?? '');
+      this.showStuck = true;
     } else if (this.chosenTask()){
       this.dataCarouselService.selectedTask.set(this.chosenTask() ?? '');
+      this.showStuck = true;
     } else {
       this.dataCarouselService.getAllRules.set(true);
     }
@@ -406,6 +432,18 @@ export class StagingManagementComponent implements OnInit {
   clearSelection() {
     this.rulesGrid.api.deselectAll();
   }
+
+  private showDataset(dataset: string) {
+    const filteredDatasets = [];
+    this.rulesGrid.api.forEachNodeAfterFilter((selectedRule) => {
+        filteredDatasets.push(selectedRule.data.dataset);
+    });
+
+    this.dialogRef = this.dialog.open(DialogDatasetDetailsComponent,
+      {data: {selectedDataset: dataset, filteredDatasets, showStaging: false}, closeOnNavigation: true});
+
+
+  }
 }
 
 function convertToUnixTimestamp(dateString: string): number {
@@ -434,4 +472,50 @@ function formatUnixTimestampUTC(timestamp: number): string {
 
   // Format as YYYY-MM-DD HH:MM:SS
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+@Component({
+  selector: 'app-dialog-dataset-details',
+  templateUrl: './dataset-details.component.html',
+  imports: [
+    MatButton,
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogContent,
+    RucioDIDComponent
+  ],
+  standalone: true
+})
+export class DialogDatasetDetailsComponent implements OnInit {
+
+  @Output() datasetChosen = new EventEmitter<string>();
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedDataset: string, filteredDatasets: string[], showStaging: boolean},
+              public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>) { }
+  currentDataset: string;
+  currentIndex: number;
+  showStaging: boolean;
+  ngOnInit(): void {
+    this.currentDataset = this.data.selectedDataset;
+    this.currentIndex = this.data.filteredDatasets.indexOf(this.currentDataset);
+    this.showStaging = this.data.showStaging;
+  }
+
+  nextTask(): void {
+    const index = this.data.filteredDatasets.indexOf(this.currentDataset);
+    if (index < this.data.filteredDatasets.length - 1) {
+      this.currentDataset = this.data.filteredDatasets[index + 1];
+      this.currentIndex = this.data.filteredDatasets.indexOf(this.currentDataset);
+      this.datasetChosen.emit(this.currentDataset);
+    }
+  }
+
+  previousTask(): void {
+    const index = this.data.filteredDatasets.indexOf(this.currentDataset);
+    if (index > 0) {
+      this.currentDataset = this.data.filteredDatasets[index - 1];
+      this.currentIndex = this.data.filteredDatasets.indexOf(this.currentDataset);
+      this.datasetChosen.emit(this.currentDataset);
+    }
+  }
 }

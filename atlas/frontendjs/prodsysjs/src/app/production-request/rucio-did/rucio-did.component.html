@@ -8,7 +8,7 @@
   </div>
 }
 @if(datasetExists()){
-<div class="task-grid">
+<div class="task-grid mat-elevation-z8">
       <!--    Row-->
   <div>Name:</div><div style="grid-column: 2 / -1"><a href="{{datasetInfo()?.dataset.name | rucioURL}}">{{datasetInfo()?.dataset.name}}</a></div>
       <!--    Row-->
@@ -41,14 +41,45 @@
     <!-- RSE Expression Column -->
     <ng-container matColumnDef="ruleRSEExpression">
       <mat-header-cell *matHeaderCellDef>
-        Rule RSE Expression
+        RSE (Rule or Replica)
       </mat-header-cell>
       <mat-cell *matCellDef="let element">
-        {{ element.rule?.rse_expression || 'N/A' }}
+        @if(element.rule?.rse_expression){
+          <a href="https://rucio-ui.cern.ch/rule?rule_id={{element.rule?.id}}" >{{element.rule?.rse_expression}}</a>
+        } @else {
+          {{ element.replica?.rse }}
+        }
       </mat-cell>
     </ng-container>
-
-<!-- Account Column -->
+    <ng-container matColumnDef="files">
+      <mat-header-cell *matHeaderCellDef>
+        Files: OK(repl/stuck)
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        @if(element.rule?.rse_expression){
+          <b>{{element.rule?.locks_ok_cnt}}</b>/<span [style]="  element.rule?.locks_replicating_cnt>0 ? 'color:darkgoldenrod;font-weight: bold' : ''" >{{element.rule?.locks_replicating_cnt}}</span>
+          /<span [style]="  element.rule?.locks_stuck_cnt>0 ? 'color:red;font-weight: bold' : ''" >{{element.rule?.locks_stuck_cnt}}</span>
+        } @else {
+          <b>{{ element.replica?.available_length }}</b>
+        }
+      </mat-cell>
+    </ng-container>
+    <ng-container matColumnDef="ruleStatus">
+      <mat-header-cell *matHeaderCellDef>
+        State
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        <span [class]="element.rule?.state">{{ element.rule?.state || 'N/A' }}</span>
+      </mat-cell>
+    </ng-container>
+    <ng-container matColumnDef="ruleActivity">
+      <mat-header-cell *matHeaderCellDef>
+        Activity
+      </mat-header-cell>
+      <mat-cell *matCellDef="let element">
+        {{ element.rule?.activity || 'N/A' }}
+      </mat-cell>
+    </ng-container>
     <ng-container matColumnDef="ruleAccount">
       <mat-header-cell *matHeaderCellDef>
         Rule Account
@@ -59,35 +90,80 @@
     </ng-container>
 
     <!-- Replica RSE Column -->
-    <ng-container matColumnDef="replicaRSE">
+    <ng-container matColumnDef="sourceRSE">
       <mat-header-cell *matHeaderCellDef>
-        Replica RSE
+        Source RSE
       </mat-header-cell>
       <mat-cell *matCellDef="let element">
-        {{ element.replica?.rse || 'N/A' }}
+        @if(element.rule?.activity.toLowerCase() === 'staging'){
+          {{ element.rule?.source_replica_expression || 'N/A' }}
+        }
       </mat-cell>
     </ng-container>
 
     <!-- Replica Available Length Column -->
-    <ng-container matColumnDef="replicaAvailableLength">
+    <ng-container matColumnDef="expiresAt">
       <mat-header-cell *matHeaderCellDef >
-        Replica Available Length
+        Expires
       </mat-header-cell>
       <mat-cell *matCellDef="let element">
-        {{ element.replica?.available_length || 'N/A' }}
+        {{ element.rule?.expires_at | date }}
       </mat-cell>
     </ng-container>
 
-    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></mat-header-row>
     <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
   </mat-table>
 
 
 
 </div>
-
-  @if(datasetInfo().staging_dataset){
+@if(stuckReasons().length > 0){
+  <h5 style="color: red">Stuck reasons:</h5>
+  @for(stuckReason of stuckReasons(); track stuckReason){
+    <div>{{stuckReason}}</div>
+  }
+}
+  @defer (when showStaging()){
+    @if(datasetInfo().staging_dataset){
     <h5>Staging: </h5>
     <app-staging-management [chosenDataset]="datasetInfo().staging_dataset"></app-staging-management>
   }
+  }
+
 }
+<section class="logTable" style="margin-top: 1em; margin-bottom: 1em">
+  <mat-table [dataSource]="actionLog$" [fixedLayout]="true" class="mat-elevation-z8">
+  <ng-container matColumnDef="action">
+    <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.action}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="timestamp">
+    <mat-header-cell *matHeaderCellDef> Time </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.timestamp|date}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="username">
+    <mat-header-cell *matHeaderCellDef>username </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.username}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="message">
+    <mat-header-cell *matHeaderCellDef>JEDI message </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.return_message}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="code">
+    <mat-header-cell *matHeaderCellDef>Return code </mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.return_code}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="params">
+    <mat-header-cell *matHeaderCellDef>Params</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.params}} </mat-cell>
+  </ng-container>
+  <ng-container matColumnDef="comment">
+    <mat-header-cell *matHeaderCellDef>Comment</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.comment}} </mat-cell>
+  </ng-container>
+    <mat-header-row *matHeaderRowDef="['action', 'timestamp', 'username','message','code','params','comment']" class="header-row"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: ['action', 'timestamp', 'username','message','code','params','comment']"></mat-row>
+  </mat-table>
+</section>

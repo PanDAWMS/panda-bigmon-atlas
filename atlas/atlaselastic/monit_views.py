@@ -32,7 +32,7 @@ class StagedTaskInfo:
 def prepare_staging_task_info(task_id: int, dataset: str| None = None, source: str | None = None):
     SPANS_LIMIT = 1400
 
-    task = ProductionTask.objects.get(id=task_id)
+    task = ProductionTask.objects.get(id=int(task_id))
     ddm = DDM()
     src_tape = None
 

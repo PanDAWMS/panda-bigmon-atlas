@@ -18,7 +18,8 @@ from django.http import HttpRequest
 from django.utils import timezone
 from rest_framework.request import Request
 
-from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag
+from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag, \
+    get_rule_action_logs
 from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jediinterface.client import JEDIClientTest
@@ -322,6 +323,17 @@ def production_task_action_logs(request):
     if request.query_params.get('task_id'):
         return Response(get_tasks_action_logs(int(request.query_params.get('task_id'))))
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def production_rule_action_logs(request):
+    if request.query_params.get('dataset'):
+        dataset = request.query_params.get('dataset')
+        if ':' not in dataset:
+            ddm = DDM()
+            scope, dataset_name = ddm.rucio_convention(dataset)
+            dataset = f'{scope}:{dataset_name}'
+        return Response(get_rule_action_logs(dataset))
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

@@ -1,11 +1,10 @@
 import {Component, computed, effect, inject, input, OnInit, Signal} from '@angular/core';
 import {DataCarouselService, DatasetExistsResponse} from "../../DataCarousel/data-carousel.service";
-import {DatePipe, JsonPipe} from "@angular/common";
+import {DatePipe} from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {HttpErrorResponse} from "@angular/common/http";
 import {setErrorMessage} from "../../dsid-info/dsid-info.service";
 import {RucioURLPipe} from "../../derivation-exclusion/rucio-url.pipe";
-import {AppModule} from "../../app.module";
 import {DatasetSizePipe} from "../../derivation-exclusion/dataset-size.pipe";
 import {RouterLink} from "@angular/router";
 import {RucioReplica, RucioRule} from "../production-request-models";
@@ -18,9 +17,11 @@ import {
   MatRow, MatRowDef,
   MatTable, MatTableDataSource
 } from "@angular/material/table";
-import {MatPaginator} from "@angular/material/paginator";
 import {MatSort} from "@angular/material/sort";
 import {StagingManagementComponent} from "../../DataCarousel/staging-management/staging-management.component";
+import {Observable} from "rxjs";
+import {TaskActionLog, TaskService} from "../../production-task/task-service.service";
+import {toObservable} from "@angular/core/rxjs-interop";
 
 
 interface ReplicaWithRule {
@@ -36,13 +37,11 @@ interface ReplicaWithRule {
     DatasetSizePipe,
     DatePipe,
     RouterLink,
-    JsonPipe,
     MatTable,
     MatHeaderCell,
     MatCell,
     MatHeaderRow,
     MatRow,
-    MatPaginator,
     MatSort,
     MatColumnDef,
     MatHeaderCellDef,
@@ -56,8 +55,11 @@ interface ReplicaWithRule {
 })
 export class RucioDIDComponent implements OnInit {
     private dataCarouselService = inject(DataCarouselService);
-
+    private taskService = inject(TaskService);
+    public actionLog$: Observable<TaskActionLog[]>;
+    showStaging = input<boolean>(true);
     datasetName = input<string>();
+    datasetName$ = toObservable(this.datasetName);
     datasetExists = computed(() => this.dataCarouselService.datasetInfoResource.value()?.dataset_exists );
     datasetInfo: Signal<DatasetExistsResponse|undefined> = computed(() => {
       if (this.datasetExists()){
@@ -66,11 +68,26 @@ export class RucioDIDComponent implements OnInit {
         return undefined;
       }
     });
+    stuckReasons = computed(() => {
+      if (this.datasetExists()){
+        const reasons = new Set<string>();
+        for (const rule of this.datasetInfo().rules){
+           if (rule.state === 'STUCK' || rule.state === 'SUSPENDED'){
+             reasons.add(rule.error);
+           }
+        }
+        return Array.from(reasons);
+      }
+      return [];
+    });
     displayedColumns: string[] = [
     'ruleRSEExpression',
+    'files',
+    'ruleStatus',
+    'ruleActivity',
     'ruleAccount',
-    'replicaRSE',
-    'replicaAvailableLength',
+    'sourceRSE',
+    'expiresAt'
   ];
     dataSource = new MatTableDataSource<ReplicaWithRule>();
     rulesWithReplicas = computed(() => {
@@ -113,13 +130,20 @@ export class RucioDIDComponent implements OnInit {
     });
     constructor() {
       effect(() => {
-      this.dataSource.data = this.rulesWithReplicas();
-
+        this.dataSource.data = this.rulesWithReplicas();
     });
     }
 
   ngOnInit(): void {
-        this.dataCarouselService.datasetName.set(this.datasetName());
+        // this.dataCarouselService.datasetName.set(this.datasetName());
+        this.datasetName$.subscribe(datasetName => {
+          if (datasetName){
+            this.dataCarouselService.datasetName.set(datasetName);
+            this.actionLog$ = this.taskService.getRuleActionLogs(this.datasetName());
+          }else {
+            this.dataCarouselService.datasetName.set('');
+          }
+        });
     }
 
 }

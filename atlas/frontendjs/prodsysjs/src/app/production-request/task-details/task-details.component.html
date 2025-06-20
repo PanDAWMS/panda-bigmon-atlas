@@ -77,7 +77,7 @@
     <div>basewalltime</div><div>{{taskInfo.jedi_task.basewalltime}} </div>
     <!--    Row-->
     <div>Input:</div><div style="grid-column: 2 / -1; overflow-wrap: anywhere">
-    <a href="{{task.inputdataset|rucioURL}}">{{task.inputdataset}}</a></div>
+   <a [routerLink]="['/dataset',task.inputdataset]">{{task.inputdataset}}</a></div>
     <!--    Row-->
     <div>Input events:</div><div *ngIf="task.inputEvents && task.inputEvents > -1; else statinputevents">{{task.inputEvents|number}}</div>
     <ng-template #statinputevents><div>{{inputEvents|number}}</div></ng-template>
@@ -90,7 +90,7 @@
     <div>Outputs:</div>
     <div style="grid-column: 2 / -1; overflow-wrap: anywhere">
       <div *ngFor="let dataset of taskInfo.output_datasets">
-        <a href="{{dataset|rucioURL}}">{{dataset}}</a>
+        <a [routerLink]="['/dataset',dataset]">{{dataset}}</a>
       </div>
     </div>
         <!--    Row-->

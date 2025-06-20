@@ -1,15 +1,8 @@
 import dataclasses
 import json
 from dataclasses import dataclass
-from elasticsearch7 import Elasticsearch
-# from elasticsearch7_dsl import Search, connections
-from atlas.settings.local import ATLAS_ES
 from atlas.settings.local import ATLAS_OS
 from opensearchpy import OpenSearch, connections, Search
-
-# connections.create_connection(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'],
-#                               ca_certs=ATLAS_ES['ca_cert'])
-#ATLAS_ES7 = Elasticsearch(hosts=ATLAS_ES['hosts'],http_auth=(ATLAS_ES['login'], ATLAS_ES['password']), verify_certs=ATLAS_ES['verify_certs'], ca_certs=ATLAS_ES['ca_cert'], timeout=5000)
 
 connections.create_connection(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'],
                                ca_certs=ATLAS_OS['ca_cert'])
@@ -30,6 +23,7 @@ class TaskActionLogMessage():
     params: str = ''
     timestamp: str = ''
     comment: str = ''
+    dataset: str = ''
 
 @dataclass
 class TaskDatasetStats():
@@ -47,6 +41,29 @@ def get_atlas_es_logs_base(logName: str) -> Search:
 
 def get_atlas_dataset_info_base() -> Search:
     return Search(index='atlas_datasets_info-*').extra(size=100)
+def get_rule_action_logs(dataset: str) -> any:
+    search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match_phrase",dataset=dataset)
+    response = search.execute()
+    result = []
+    for hit in response:
+        return_message = ''
+        try:
+            return_message = hit.return_message
+        except:
+            pass
+        result.append(dataclasses.asdict(TaskActionLogMessage(task_id=0,
+                                                              dataset=dataset,
+                                                                action=hit.action,
+                                                                return_message=return_message,
+                                                              username=hit.user,
+                                                              timestamp=hit['@timestamp'],
+                                                              params=str(hit.params),
+                                                              return_code=str(hit.return_code),
+                                                              comment=hit.comment
+                                                              )))
+        result.sort(key=lambda x: x['timestamp'])
+        result.reverse()
+    return result
 
 def get_tasks_action_logs(task_id: int) -> any:
     search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match",task=str(task_id))
@@ -71,7 +88,32 @@ def get_tasks_action_logs(task_id: int) -> any:
         result.reverse()
     return result
 
-
+def get_all_actions_logs(action: str, days: int) -> any:
+    search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match",action=action).query("range", **{
+                "@timestamp": {
+                    "gte": f"now-{days}d/d",
+                    "lte": "now/d"
+                }}).extra(size=2000)
+    response = search.execute()
+    result = []
+    for hit in response:
+        return_message = ''
+        try:
+            return_message = hit.return_message
+        except:
+            pass
+        result.append(dataclasses.asdict(TaskActionLogMessage(task_id=int(hit.task),
+                                                                action=hit.action,
+                                                                return_message=return_message,
+                                                              username=hit.user,
+                                                              timestamp=hit['@timestamp'],
+                                                              params=str(hit.params),
+                                                              return_code=str(hit.return_code),
+                                                              comment=hit.comment
+                                                              )))
+        result.sort(key=lambda x: x['timestamp'])
+        result.reverse()
+    return result
 
 def get_task_stats(task_id: int) -> [TaskDatasetStats]:
     search = get_atlas_dataset_info_base().query("match",jeditaskid=task_id).sort('-@timestamp')
@@ -101,6 +143,224 @@ def get_staged_number(dataset: str, days: int) -> int:
                 }})
 
     return search.count()
+
+def get_unique_runs() -> [str]:
+    query = {
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "datatype.keyword": "EVNT" } },
+        {
+          "range": {
+            "timestamp": {
+              "gte": "now-7d/d",
+              "lt": "now/d"
+            }
+          }
+        },
+        {
+          "terms": {
+            "project.keyword": [
+              "mc16_13TeV",
+              "mc15_13TeV",
+              "mc15_pPb8TeV",
+              "mc21_13p6TeV"
+            ]
+          }
+        }
+      ],
+      "must_not": [
+        { "term": { "stream_name.keyword": "NA" } }
+      ]
+    }
+  },
+  "aggs": {
+    "total_run_numbers": {
+      "cardinality": {
+        "field": "run_number.keyword"
+      }
+    }
+  }
+}
+    search = Search(index='atlas_ddm-global-accounting*').update_from_dict(query)
+    response = search.execute()
+    return response
+
+
+def get_paginated_run_numbers( page_size=10000):
+    """
+    Queries Elasticsearch to retrieve all unique run_number.keyword values in a paginated manner.
+    :param es_host: Elasticsearch host (e.g., "http://localhost:9200")
+    :param index_name: Index pattern to search (e.g., "atlas_ddm-global-accounting*")
+    :param page_size: Number of results per page
+    :return: List of all unique run_numbers that meet the criteria
+    """
+
+    all_run_numbers = []
+    after_key = None  # Used for pagination
+
+    while True:
+        query = {
+            "size": 0,
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {"datatype.keyword": "EVNT"}},
+                        {
+                            "range": {
+                                "timestamp": {
+                                    "gte": "now-7d/d",
+                                    "lt": "now/d"
+                                }
+                            }
+                        },
+
+                    ],
+                    "must_not": [
+                        {"term": {"stream_name.keyword": "NA"}}
+                    ]
+                }
+            },
+            "aggs": {
+                "run_numbers": {
+                    "composite": {
+                        "size": page_size,
+                        "sources": [
+                            {"run_number": {"terms": {"field": "run_number.keyword"}}}
+                        ]
+                    },
+                    "aggs": {
+                        "unique_stream_names": {
+                            "cardinality": {
+                                "field": "stream_name.keyword"
+                            }
+                        },
+                        "filtered_runs": {
+                            "bucket_selector": {
+                                "buckets_path": {
+                                    "streamCount": "unique_stream_names"
+                                },
+                                "script": "params.streamCount > 1"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # If this is not the first request, add pagination key
+        if after_key:
+            query["aggs"]["run_numbers"]["composite"]["after"] = after_key
+
+        response = Search(index='atlas_ddm-global-accounting*').update_from_dict(query).execute()
+
+        # Extract run_numbers
+        buckets = response["aggregations"]["run_numbers"]["buckets"]
+        for bucket in buckets:
+            all_run_numbers.append(bucket["key"]["run_number"])
+
+        # Check if there is more data to fetch
+        if "after_key" in response["aggregations"]["run_numbers"]:
+            after_key = response["aggregations"]["run_numbers"]["after_key"]
+        else:
+            break  # No more data to fetch
+
+    return all_run_numbers
+
+def get_different_streams() -> [str]:
+    query = {
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "datatype.keyword": "EVNT" } },
+        {
+          "range": {
+            "timestamp": {
+              "gte": "now-7d/d",
+              "lt": "now/d"
+            }
+          }
+        },
+        {
+          "terms": {
+            "project.keyword": [
+              "mc16_13TeV",
+              "mc15_13TeV",
+              "mc15_pPb8TeV",
+              "mc21_13p6TeV"
+            ]
+          }
+        }
+      ],
+      "must_not": [
+        { "term": { "stream_name.keyword": "NA" } }
+      ]
+    }
+  },
+  "aggs": {
+    "run_numbers": {
+      "terms": {
+        "field": "run_number.keyword",
+        "size": 62000
+      },
+      "aggs": {
+        "unique_stream_names": {
+          "cardinality": {
+            "field": "stream_name.keyword"
+          }
+        },
+        "filtered_runs": {
+          "bucket_selector": {
+            "buckets_path": {
+              "streamCount": "unique_stream_names"
+            },
+            "script": "params.streamCount > 1"
+          }
+        }
+      }
+    }
+  }
+}
+    search = Search(index='atlas_ddm-global-accounting*').update_from_dict(query)
+    response = search.execute()
+    return response
+def get_datasets_by_run(run_number: str) -> any:
+    query = {
+        "size": 0,  # We don't need document details, just aggregations
+        "query": {
+            "bool": {
+                "must": [
+                    {"term": {"run_number.keyword": run_number}},
+                    {"term": {"datatype.keyword": "EVNT"}},
+                    {
+                        "range": {
+                            "timestamp": {
+                                "gte": "now-7d/d",
+                                "lt": "now/d"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "aggs": {
+            "unique_names": {
+                "terms": {
+                    "field": "name.keyword",
+                    "size": 10000  # Adjust this if needed for larger datasets
+                }
+            }
+        }
+    }
+
+    response =  Search(index='atlas_ddm-global-accounting*').update_from_dict(query).execute()
+
+    # Extract unique names from the response
+    names = [bucket["key"] for bucket in response["aggregations"]["unique_names"]["buckets"]]
+    return names
+
 
 def get_datasets_without_campaign() -> [str]:
 
@@ -384,7 +644,22 @@ def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
         else:
             raise Exception(f"Error in query {ppl_query}, {str(result)}")
     return stats
+def get_campaign_nevents_per_dsid(dsid) -> any:
+    stats = {}
+    output = {'evgen': 'EVNT', 'simul': 'HITS', 'pile': 'AOD'}
+    for step in ['evgen','simul', 'pile']:
 
+
+        ppl_query = (f"source=atlas_datasets_info-* | where type='output' datasetname='%.{dsid}.%' task_processingtype='{step}' dataset_format='{output[step]}' | "
+                     "  stats sum(nevents) by scope, task_amitag, task_campaign ")
+        result = opendistro_ppl(ppl_query)
+        if result.get('schema'):
+            for row in result.get('datarows'):
+                if row[0] > 0 and 'val' not in row[1]:
+                    stats[step].append({'tag': row[2], 'scope': row[1], 'nevents': row[0]})
+        else:
+            raise Exception(f"Error in query {ppl_query}, {str(result)}")
+    return stats
 def get_tasks_ids(**kwargs) -> any:
     task_ids = []
      # Transform kwargs to pair list
@@ -425,4 +700,43 @@ def get_tasks_ids(**kwargs) -> any:
         result.extend([x['fields']['jeditaskid'][0] for x in resp['hits']['hits']])
         old_scroll_id = resp['_scroll_id']
 
+    return result
+
+def get_analysis_tasks_with_AOD_input() -> any:
+    query = {
+              "size": 0,
+              "query": {
+                "bool": {
+                  "must": [
+                    { "term": { "task_type": "anal" } },
+                    { "term": { "type": "input" } },
+                    { "term": { "dataset_format": "aod" } },
+                    {
+                      "range": {
+                        "@timestamp": {
+                          "gte": "now-90d/d",
+                          "lt": "now/d"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "aggs": {
+                "distinct_jeditaskid": {
+                  "terms": {
+                    "field": "jeditaskid",
+                    "size": 10000
+                  }
+                }
+              }
+            }
+
+    search = get_atlas_dataset_info_base().update_from_dict(query)
+    response = search.execute()
+    result = []
+    # for hit in response:
+    #     result.append(hit.jeditaskid)
+    for hit in response.aggregations.distinct_jeditaskid.buckets:
+        result.append(hit.key)
     return result

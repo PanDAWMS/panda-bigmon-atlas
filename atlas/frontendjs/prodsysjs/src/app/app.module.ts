@@ -241,7 +241,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'config-editor/:name', component: ConfigEditorComponent},
     {path: 'test-request', component: MainRequestComponent},
     {path: 'staging-rules', component: StagingManagementComponent},
-      {path: 'dataset', component: DatatsetDetailsComponent},
+      {path: 'dataset/:did', component: DatatsetDetailsComponent},
 
 
 
