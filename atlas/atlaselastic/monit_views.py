@@ -1,13 +1,14 @@
+import itertools
 from datetime import timedelta
 from random import sample
+from typing import List, Optional
 
 from atlas.settings.local import MONIT_ES
-from dataclasses import dataclass
-from opensearchpy import OpenSearch, connections, Search
+from dataclasses import dataclass, fields
+from opensearchpy import OpenSearch, connections, Search, AttrDict
 
-from atlas.prestage.views import convert_input_to_physical_tape
-from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import ProductionTask, ActionStaging, TTask, TemplateVariable
+from atlas.prodtask.ddm_api import DDM, convert_input_to_physical_tape
+from atlas.prodtask.models import ProductionTask, ActionStaging, TTask, TemplateVariable, PandaDatasetStaging
 
 MONIT_SEARCH = OpenSearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']), verify_certs=MONIT_ES['verify_certs'], ca_certs=MONIT_ES['ca_cert'], timeout=5000)
 
@@ -171,3 +172,118 @@ def get_staged_task_info(name_prefix: str, src_tape: str, date_since: str, date_
             total.append(hit)
 
     return total
+
+@dataclass
+class TransferData:
+    account: str
+    activity: str
+    bytes: int
+    checksum_adler: str
+    checksum_md5: str
+    childname: str
+    childscope: str
+    childtype: str
+    code: int
+    created_at: int
+    dataset: str
+    datasetScope: str
+    datatype: str
+    did_type: str
+    dst_cloud: str
+    dst_country: str
+    dst_endpoint: str
+    dst_experiment_site: str
+    dst_federation: str
+    dst_rse: str
+    dst_rse_id: str
+    dst_site: str
+    dst_tier: int
+    dst_token: str
+    dst_type: str
+    dst_url: str
+    duration: float
+    event_timestamp: int
+    event_type: str
+    expired_at: str
+    external_host: str
+    external_id: str
+    file_size: int
+    force_non_staging: bool
+    fts_host: str
+    guid: str
+    is_staging: bool
+    name: str
+    previous_request_id: str
+    protocol: str
+    purged_reason: str
+    queued_at: str
+    reason: str
+    reason_text: str
+    remote_access: bool
+    request_id: str
+    request_type: str
+    rse: str
+    rse_id: str
+    rule_id: str
+    scope: str
+    src_cloud: str
+    src_country: str
+    src_endpoint: str
+    src_experiment_site: str
+    src_federation: str
+    src_rse: str
+    src_rse_id: str
+    src_site: str
+    src_tier: int
+    src_token: str
+    src_type: str
+    src_url: str
+    state: str
+    submitted_at: int
+    throughput: float
+    tool_id: str
+    transfer_endpoint: str
+    transfer_id: str
+    transfer_link: str
+    transferred_at: int
+    url: str
+    vo: str
+    started_at: Optional[int] = None
+
+    @classmethod
+    def from_attr_dict(cls, data):  # 'data' can be AttrDict
+        """
+        Converts an AttrDict (or dictionary-like object) to a TransferData dataclass instance,
+        only using keys defined in the dataclass.
+        """
+        # Convert AttrDict to a regular dictionary using its to_dict() method
+        data_as_dict = data.to_dict()
+
+        # Get all field names defined in the dataclass
+        dataclass_field_names = {field.name for field in fields(cls)}
+
+        # Filter the dictionary to only include keys present in the dataclass
+        filtered_data = {
+            key: value
+            for key, value in data_as_dict.items()
+            if key in dataclass_field_names
+        }
+
+        # Now, unpack the filtered dictionary
+        return cls(**filtered_data)
+
+def get_stuck_file_info(stuck_files: List[str], start_time) -> List[TransferData]:
+
+    return_values = []
+
+    s = Search(using=MONIT_SEARCH, index=MONIT_DDM_INDEX).\
+        query("terms", data__name=stuck_files).\
+        query("range", **{
+                "metadata.timestamp": {
+                    "gte": start_time,
+
+                    "lt": "now/d"
+                }}).query("match", data__event_type='transfer-failed')
+    for x in s.scan():
+        return_values.append(TransferData.from_attr_dict(x.data) )
+    return return_values

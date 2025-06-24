@@ -1,10 +1,12 @@
+import itertools
 import json
 import random
 import time
+from collections import defaultdict
 from copy import deepcopy
 
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import requests
 from django.db.models import Q
@@ -19,7 +21,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     PandaDatasetStaging, PandaDatasetStagingRelationship
 from datetime import timedelta
 
-from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.ddm_api import DDM, convert_input_to_physical_tape
 from atlas.prodtask.models import  StepExecution, InputRequestList, ProductionTask, ProductionDataset
 
 from decimal import Decimal
@@ -41,6 +43,7 @@ from elasticsearch7_dsl import Search, connections, A
 from elasticsearch7 import Elasticsearch
 from atlas.settings.local import MONIT_ES
 
+from ..atlaselastic.monit_views import get_stuck_file_info, TransferData
 from ..prodjob.views import chunks
 from ..settings import cricclient as cric_settings
 
@@ -768,17 +771,7 @@ def test_tape_shares(tape_name, test):
                         tape.save()
 
 
-def convert_input_to_physical_tape(input):
-    if ActionDefault.objects.filter(name=input[:30],type='Tape').exists():
-        ad = ActionDefault.objects.get(name=input[:30],type='Tape')
-    else:
-        cric_client = CRICClient()
-        ddm_endpoints = cric_client.get_ddmendpoint()
-        physical_tape = ddm_endpoints[input]['su']
-        ad,_ = ActionDefault.objects.get_or_create(name=input[:30], type='Tape')
-        ad.set_config({'su':physical_tape})
-        ad.save()
-    return ad.get_config('su')
+
 
 
 
@@ -2668,9 +2661,24 @@ def get_stuck_requests():
                 stuck_requests[dataset_staging.rse] = rule['error']
             if not rule.get('source_replica_expression',''):
                 empty_source_rules.append(dataset_staging.rse)
+
+
+
     cache.set('STUCK_DC_RULES', stuck_requests, 60 * 60)
     cache.set('EMPTY_SOURCE_RULES', empty_source_rules, 3600 * 24)
     return stuck_requests
+
+# def form_stuck_files(dataset_staging: PandaDatasetStaging):
+#     stuck_files_errors = get_stuck_file_info(dataset_staging)
+#     stuck_file_info = {}
+#     for item in stuck_files_errors:
+#         if item.name not in stuck_file_info:
+#             stuck_file_info[item.name] = {}
+#         if item.src_endpoint not in stuck_file_info[item.name]:
+#             stuck_file_info[item.name][item.src_endpoint] = {}
+#             stuck_file_info[item.name][item.src_endpoint]['src_url'] = item.src_url
+#
+#     return stuck_files
 
 
 @api_view(['GET'])

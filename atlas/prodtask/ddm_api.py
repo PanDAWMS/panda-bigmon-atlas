@@ -74,6 +74,17 @@ class DatasetInfo:
         # Instantiate the dataclass
         return cls(**filtered_data)
 
+def convert_input_to_physical_tape(input):
+    if ActionDefault.objects.filter(name=input[:30],type='Tape').exists():
+        ad = ActionDefault.objects.get(name=input[:30],type='Tape')
+    else:
+        cric_client = CRICClient()
+        ddm_endpoints = cric_client.get_ddmendpoint()
+        physical_tape = ddm_endpoints[input]['su']
+        ad,_ = ActionDefault.objects.get_or_create(name=input[:30], type='Tape')
+        ad.set_config({'su':physical_tape})
+        ad.save()
+    return ad.get_config('su')
 
 def number_of_files_in_dataset(dsn):
     ddm = DDM()
@@ -686,6 +697,10 @@ class DDM(object):
 
     def list_locks(self,rule_id):
         return self.__ddm.list_replica_locks(rule_id)
+
+    def list_request_by_did(self, fle_scope, file_name, dest_rse):
+        result = self.__ddm.list_request_by_did(file_name, dest_rse, fle_scope)
+        return result
 
     def dataset_size(self, dataset_name):
         """

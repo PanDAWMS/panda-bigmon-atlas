@@ -31,6 +31,11 @@
   <div>TaskID:</div><div><a [routerLink]="['/task',datasetInfo()?.dataset.task_id]" >{{datasetInfo()?.dataset.task_id}}</a></div>
 
 </div>
+  <mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title> Rules and replicas</mat-card-title>
+  </mat-card-header>
+
 <div class="mat-elevation-z8">
   <mat-table
     [dataSource]="dataSource"
@@ -123,17 +128,46 @@
   @for(stuckReason of stuckReasons(); track stuckReason){
     <div>{{stuckReason}}</div>
   }
-}
-  @defer (when showStaging()){
-    @if(datasetInfo().staging_dataset){
-    <h5>Staging: </h5>
-    <app-staging-management [chosenDataset]="datasetInfo().staging_dataset"></app-staging-management>
-  }
+}</mat-card>
+  @if(datasetInfo().staging_dataset){
+    <mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title> Staging request</mat-card-title>
+  </mat-card-header>
+<div class="task-grid mat-elevation-z8">
+      <!--    Row-->
+    <div>Status:</div><div>{{datasetInfo()?.staging_dataset.status}}</div>
+
+  <div>Rule:</div><div style="grid-column: 4 / -1; overflow-wrap: anywhere">
+  <a href="https://rucio-ui.cern.ch/rule?rule_id={{datasetInfo().staging_dataset.rse}}" >{{datasetInfo().staging_dataset.rse}}</a>
+</div>
+      <!--    Row-->
+  <div>Source Tape:</div><div>{{datasetInfo()?.staging_dataset.source}}</div>
+  <div>Destination:</div><div>{{datasetInfo()?.staging_dataset.destination}}</div>
+  <div>Staged Files:</div><div>{{datasetInfo()?.staging_dataset.staged_files}}
+({{(datasetInfo()?.staging_dataset.staged_files * 100 / datasetInfo()?.staging_dataset.total_files )| number:'1.0-3'
+}}% )</div>
+         <!--    Row-->
+  <div>Started:</div><div>{{datasetInfo()?.staging_dataset.start_time | date}} </div>
+  <div>Since last file:</div><div>{{datasetInfo()?.staging_dataset.update_time | date}}</div>
+  <div>Updated:</div><div>{{datasetInfo()?.staging_dataset.update_time | date}}</div>
+
+</div>
+    <app-rule-action [datasets]="[datasetInfo()?.staging_dataset.dataset]" ></app-rule-action>
+       </mat-card>
   }
 
+
+
 }
+@if(actionLog$ | async; as actionLog){
+  @if(actionLog.length > 0){
+    <mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title> Action logs</mat-card-title>
+  </mat-card-header>
 <section class="logTable" style="margin-top: 1em; margin-bottom: 1em">
-  <mat-table [dataSource]="actionLog$" [fixedLayout]="true" class="mat-elevation-z8">
+  <mat-table [dataSource]="actionLog" [fixedLayout]="true" class="mat-elevation-z8">
   <ng-container matColumnDef="action">
     <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
     <mat-cell *matCellDef="let row"> {{row.action}} </mat-cell>
@@ -167,3 +201,91 @@
     <mat-row *matRowDef="let row; columns: ['action', 'timestamp', 'username','message','code','params','comment']"></mat-row>
   </mat-table>
 </section>
+    </mat-card>
+}
+}
+  @if (stuckStaging()  ) {
+    @if(stuckFilesMessage()){
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ stuckFilesMessage() }}</span>
+  </div>
+    }
+    @if(stuckFilesLoading()){
+      <mat-spinner></mat-spinner>
+    }
+    @if(stuckFiles()){
+<div class="p-4 bg-gray-50 min-h-screen">
+    <mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title> Stuck files(up to 3 files sample)</mat-card-title>
+  </mat-card-header>
+    <!-- Loop through each file name (top layer) -->
+    @for (fileName of Object.keys(stuckFiles()); track fileName) {
+      <div class="mb-8 p-6 bg-white rounded-lg shadow-md border border-gray-200">
+        <h2 class="text-2xl font-semibold text-indigo-700 mb-4">File: <a [href]="formDashboardURL(fileName)"> {{ fileName }}</a></h2>
+
+        <!-- Loop through each src_endpoint for the current file name -->
+        @for (srcEndpoint of Object.keys(stuckFiles()?.[fileName]); track srcEndpoint) {
+          <div class="ml-4 mb-6 p-5 bg-indigo-50 rounded-lg border border-indigo-200">
+            <h3 class="text-xl font-medium text-indigo-800 mb-3">
+              Source Endpoint: <span class="font-bold">{{ srcEndpoint }}</span>
+            </h3>
+            <p class="text-gray-700 mb-4">
+              <span class="font-semibold">Last FTS:</span>
+              <a [href]="stuckFiles()?.[fileName][srcEndpoint].fts_link" target="_blank" class="text-blue-600 hover:underline break-all">
+                Link to FTS job
+              </a>
+              <span class="font-semibold">State: </span>
+              {{ stuckFiles()?.[fileName][srcEndpoint].fts_state }}
+              <span class="font-semibold">Created at: </span>
+              {{ stuckFiles()?.[fileName][srcEndpoint].fts_submitted | date }}
+            </p>
+            <p class="text-gray-700 mb-4 flex items-center"> <!-- Added flex and items-center for vertical alignment -->
+              <span class="font-semibold flex-shrink-0 mr-2">Source:</span> <!-- flex-shrink-0 to keep label from shrinking -->
+              <span class="overflow-x-auto whitespace-nowrap text-blue-600 hover:underline"> <!-- Apply scroll and no-wrap here -->
+                {{ stuckFiles()?.[fileName][srcEndpoint].src_url }}
+              </span>
+            </p>
+                        <p class="text-gray-700 mb-4">
+              <span class="font-semibold">First time created at: </span>
+              {{ stuckFiles()?.[fileName][srcEndpoint].first_attempt_start_time | date }}
+              <span class="font-semibold">Last attemp failed at: </span>
+              {{ stuckFiles()?.[fileName][srcEndpoint].last_attempt_end_time | date }}
+            </p>
+            <!-- Loop through each dst_endpoint for the current src_endpoint -->
+            @for (dstEndpoint of Object.keys(stuckFiles()?.[fileName][srcEndpoint].dst_endpoints); track dstEndpoint) {
+              <div class="ml-4 mt-4 p-4 bg-white rounded-md shadow-sm border border-gray-200">
+                <h4 class="text-lg font-medium text-gray-800 mb-3">
+                  Destination Endpoint: <span class="font-bold">{{ dstEndpoint }}</span>
+                </h4>
+
+                <p class="text-sm font-semibold text-gray-600 mb-2">Reason Texts and Counts:</p>
+                <ul class="list-disc list-inside space-y-1">
+                  <!-- Loop through each reason_text and its count -->
+                  @for (reasonText of Object.keys(stuckFiles()?.[fileName][srcEndpoint].dst_endpoints[dstEndpoint]); track reasonText) {
+                    <li>
+                      <span class="font-medium text-gray-700">{{ reasonText }}</span>:
+                      <span class="text-red-600 font-bold">
+                        {{ stuckFiles()?.[fileName][srcEndpoint].dst_endpoints[dstEndpoint][reasonText] }}
+                      </span> occurrences
+                    </li>
+                  } @empty {
+                    <p class="text-gray-500 text-sm italic">No specific failure reasons recorded for this destination.</p>
+                  }
+                </ul>
+              </div>
+            } @empty {
+              <p class="text-gray-500 italic mt-3">No destination endpoints recorded for this source.</p>
+            }
+          </div>
+        } @empty {
+          <p class="text-gray-500 italic">No source endpoints recorded for this file.</p>
+        }
+      </div>
+    }
+    </mat-card>
+  </div>
+    }
+  }
+

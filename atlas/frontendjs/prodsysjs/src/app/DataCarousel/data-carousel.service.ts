@@ -52,12 +52,67 @@ export interface DatasetExistsResponse {
   dataset: DatasetInfo;
   replicas: RucioReplica[];
   rules: RucioRule[];
-  staging_dataset?: string;
+  staging_dataset?: StagingRule;
 }
 export interface DatasetDeletedResponse {
   dataset_name: string;
   error: string;
 }
+
+/**
+ * Interface for the counts of different reason texts for a specific destination endpoint.
+ * Example: { 'TRANSFER ERROR: Copy failed': 5, 'TRANSFER ERROR: No space left': 2 }
+ */
+export interface ReasonCounts {
+  [reasonText: string]: number;
+}
+
+/**
+ * Interface for the data associated with a specific destination endpoint.
+ * Currently, it primarily holds reason counts.
+ */
+export interface DstEndpointData {
+  reason_counts: ReasonCounts;
+}
+
+/**
+ * Interface for the collection of destination endpoints under a source endpoint.
+ * Example: { 'NET2_DATADISK': { reason_counts: {...} }, 'FZK_DATADISK': { reason_counts: {...} } }
+ */
+export interface DstEndpointsCollection {
+  [dstEndpointName: string]: DstEndpointData;
+}
+
+/**
+ * Interface for the data associated with a specific source endpoint.
+ */
+export interface SrcEndpointData {
+  src_url: string;
+  fts_link: string;
+  fts_state: string;
+  fts_submitted: string;
+  first_attempt_start_time: number;
+  last_attempt_end_time: number;
+  dst_endpoints: DstEndpointsCollection;
+}
+
+/**
+ * Interface for the collection of source endpoints under a file name.
+ * Example: { 'TRIUMF-LCG2_MCTAPE': {...}, 'IN2P3-CC_DATADISK': {...} }
+ */
+export interface SrcEndpointsCollection {
+  [srcEndpointName: string]: SrcEndpointData;
+}
+
+/**
+ * The top-level interface for the aggregated transfer data.
+ * Keys are file names.
+ * Example: { 'file1.root': {...}, 'file2.root': {...} }
+ */
+export interface AggregatedTransferData {
+  [fileName: string]: SrcEndpointsCollection;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -67,11 +122,13 @@ export class DataCarouselService {
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
   private prGetDatasetInfoUrl = '/api/dataset_info/';
+  private prGetStuckFilesUrl = '/api/get_stuck_files/';
 
 
   selectedTask = signal<string>('');
   datasetName = signal<string>('');
   selectedDCDataset = signal<string>('');
+  stagingDataset = signal<string>('');
   getAllRules = signal<boolean>(false);
   datasetStagingRulesResource = httpResource<StagingRuleResponse>(() => {
         if (this.selectedDCDataset()) {
@@ -88,6 +145,8 @@ export class DataCarouselService {
   datasetInfoResource = httpResource<DatasetInfoResponse>(() => this.datasetName() ?
     `${this.prGetDatasetInfoUrl}?dataset=${this.datasetName()}` : '');
 
+  stuckFilesResource = httpResource<AggregatedTransferData>(() => this.stagingDataset() ?
+    `${this.prGetStuckFilesUrl}?dataset=${this.stagingDataset()}` : '');
 
   getDataCarouselConfig(): Observable<CarouselConfig> {
     return this.http.get<CarouselConfig>(this.prDataCarouselConfigUrl);

@@ -1,13 +1,16 @@
+import itertools
 import json
 import logging
 
 import os
 import re
 import time
+from collections import defaultdict
 from dataclasses import asdict, dataclass, field
+from datetime import timedelta
 from functools import reduce
 from pprint import pprint
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import math
 import requests
@@ -18,6 +21,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 from rest_framework.request import Request
 
+from atlas.atlaselastic.monit_views import TransferData, get_stuck_file_info
 from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_campaign_nevents_per_amitag, \
     get_rule_action_logs
 from atlas.celerybackend.celery import ProdSysTask, app
@@ -1485,8 +1489,9 @@ def dataset_info(request):
             if PandaDatasetStaging.objects.filter(
                     dataset__in=ddm.with_and_without_scope([dataset_name]),
                     status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
-                dataset_staging = PandaDatasetStaging.objects.get( dataset__in=ddm.with_and_without_scope([dataset_name]),
-                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] ).dataset
+                dataset_staging = asdict(prepare_dc_requests(list(PandaDatasetStaging.objects.filter( dataset__in=ddm.with_and_without_scope([dataset_name]),
+                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] )))[0])
+
             return Response({'dataset_exists': True, 'dataset_knowledge':
                                                          {'dataset': asdict(dataset), 'replicas': dataset_replicas,
                                                           'rules': dataset_rules, 'staging_dataset': dataset_staging}})
@@ -1496,3 +1501,127 @@ def dataset_info(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_stuck_files(request):
+    try:
+        ddm = DDM()
+        dataset_name = request.query_params.get('dataset')
+        dataset_staging = PandaDatasetStaging.objects.get( dataset__in=ddm.with_and_without_scope([dataset_name]),
+        status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] )
+        stuck_files = list(itertools.islice((x for x in ddm.list_locks(dataset_staging.rse) if x['state'] != 'OK'), 3))
+        stuck_files_info = {}
+        if stuck_files:
+            current_fts_rules = { x['name'] : ddm.list_request_by_did(x['scope'],x['name'],x['rse']) for x in stuck_files }
+            stuck_files_info = aggregate_transfer_data(current_fts_rules, get_stuck_file_info([x['name'] for x in stuck_files], f"{dataset_staging.start_time.strftime('%Y-%m-%d')}"))
+        return Response(stuck_files_info)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def aggregate_transfer_data(stuck_files_fts: Dict,
+    transfers: List[TransferData],
+) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    """
+    Aggregates a list of TransferData objects into a nested dictionary structure.
+
+    The structure will be:
+    {
+        'name_A': {
+            'src_endpoint_X': {
+                'src_url': 'url_X',
+                'dst_endpoints': {
+                    'dst_endpoint_P': {
+                        'reason_counts': {
+                            'reason_text_1': count_1,
+                            'reason_text_2': count_2,
+                            ...
+                        }
+                    },
+                    'dst_endpoint_Q': {
+                        'reason_counts': {
+                            'reason_text_3': count_3,
+                            ...
+                        }
+                    },
+                    ...
+                }
+            },
+            'src_endpoint_Y': {
+                'src_url': 'url_Y',
+                'dst_endpoints': { ... },
+            },
+            ...
+        },
+        'name_B': { ... },
+        ...
+    }
+
+    Args:
+        transfers: A list of TransferData dataclass instances.
+
+    Returns:
+        A dictionary representing the aggregated data.
+    """
+    # Use defaultdict for easier nested dictionary creation
+    aggregated_data: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(
+        lambda: defaultdict(
+            lambda: {
+                "fts_link": "",
+                "fts_state": "",
+                "fts_submitted": "",
+                "src_url": "",
+                "first_attempt_start_time": None,
+                "last_attempt_end_time": None,
+                "dst_endpoints": defaultdict(
+                    lambda: {"reason_counts": defaultdict(int)}
+                ),
+            }
+        )
+    )
+    transfers.sort(key=lambda x: x.created_at, reverse=True)
+    for transfer in transfers:
+        name = transfer.name
+        src_endpoint = transfer.src_endpoint
+        dst_endpoint = transfer.dst_endpoint
+        reason_text = transfer.reason_text
+        src_url = transfer.src_url
+        if name in stuck_files_fts and dst_endpoint == stuck_files_fts[name]['dest_rse']:
+            external_host = stuck_files_fts[name]['external_host']
+            external_host = external_host.replace('8446','8449')
+            aggregated_data[name][src_endpoint]["fts_link"] = f"{external_host}/fts3/ftsmon/#/job/{stuck_files_fts[name]['external_id']}"
+            aggregated_data[name][src_endpoint]["fts_state"] = stuck_files_fts[name]['state']
+            aggregated_data[name][src_endpoint]["fts_submitted"] = stuck_files_fts[name]['submitted_at']
+
+        if not aggregated_data[name][src_endpoint]["first_attempt_start_time"] or aggregated_data[name][src_endpoint]["first_attempt_start_time"] > transfer.created_at:
+            aggregated_data[name][src_endpoint]["first_attempt_start_time"] = transfer.created_at
+        if not aggregated_data[name][src_endpoint]["last_attempt_end_time"] or aggregated_data[name][src_endpoint]["last_attempt_end_time"] < transfer.transferred_at:
+            aggregated_data[name][src_endpoint]["last_attempt_end_time"] = transfer.transferred_at
+        # Store src_url (it's the same for a given src_endpoint)
+        aggregated_data[name][src_endpoint]["src_url"] = src_url
+
+        # Increment the count for the specific reason_text under the dst_endpoint
+        aggregated_data[name][src_endpoint]["dst_endpoints"][dst_endpoint][
+            "reason_counts"
+        ][reason_text] += 1
+
+    # Convert defaultdicts back to regular dicts for a cleaner final output
+    # (Optional, but makes the output more standard for JSON serialization etc.)
+    final_output = {}
+    for name, name_data in aggregated_data.items():
+        final_output[name] = {}
+        for src_ep, src_ep_data in name_data.items():
+            final_output[name][src_ep] = {
+                "src_url": src_ep_data["src_url"],
+                "fts_link": src_ep_data["fts_link"],
+                "fts_state": src_ep_data["fts_state"],
+                "fts_submitted":  src_ep_data["fts_submitted"],
+                "first_attempt_start_time": src_ep_data["first_attempt_start_time"],
+                "last_attempt_end_time": src_ep_data["last_attempt_end_time"],
+                "dst_endpoints": {
+                    dst_ep: dict(dst_ep_data["reason_counts"])
+                    for dst_ep, dst_ep_data in src_ep_data["dst_endpoints"].items()
+                },
+            }
+    return final_output

@@ -1,6 +1,6 @@
 import {Component, computed, effect, inject, input, OnInit, Signal} from '@angular/core';
 import {DataCarouselService, DatasetExistsResponse} from "../../DataCarousel/data-carousel.service";
-import {DatePipe} from "@angular/common";
+import {AsyncPipe, DatePipe, DecimalPipe, JsonPipe} from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {HttpErrorResponse} from "@angular/common/http";
 import {setErrorMessage} from "../../dsid-info/dsid-info.service";
@@ -18,10 +18,11 @@ import {
   MatTable, MatTableDataSource
 } from "@angular/material/table";
 import {MatSort} from "@angular/material/sort";
-import {StagingManagementComponent} from "../../DataCarousel/staging-management/staging-management.component";
 import {Observable} from "rxjs";
 import {TaskActionLog, TaskService} from "../../production-task/task-service.service";
 import {toObservable} from "@angular/core/rxjs-interop";
+import {RuleActionComponent} from "../../rule-action/rule-action.component";
+import {MatCard, MatCardHeader, MatCardTitle} from "@angular/material/card";
 
 
 interface ReplicaWithRule {
@@ -48,7 +49,12 @@ interface ReplicaWithRule {
     MatCellDef,
     MatHeaderRowDef,
     MatRowDef,
-    StagingManagementComponent
+    RuleActionComponent,
+    DecimalPipe,
+    MatCard,
+    MatCardHeader,
+    MatCardTitle,
+    AsyncPipe
   ],
   templateUrl: './rucio-did.component.html',
   styleUrl: './rucio-did.component.css'
@@ -68,6 +74,31 @@ export class RucioDIDComponent implements OnInit {
         return undefined;
       }
     });
+    stuckStaging = computed(() => {
+      if (this.datasetExists()){
+        if (this.datasetInfo().staging_dataset){
+          const staging_dataset = this.datasetInfo().staging_dataset;
+          const eightDaysAgoInMs = Date.now() - (8 * 24 * 60 * 60 * 1000);
+
+          if (staging_dataset.status.toLowerCase() === 'staging' &&
+            staging_dataset.start_time && staging_dataset.start_time < eightDaysAgoInMs){
+            return staging_dataset.dataset;
+          }
+        }
+      }
+      return '';
+    });
+    stuckStaging$ = toObservable(this.stuckStaging);
+    stuckFiles = computed(() => this.dataCarouselService.stuckFilesResource.value());
+    stuckFilesError = computed(() => this.dataCarouselService.stuckFilesResource.error() as HttpErrorResponse | null);
+    stuckFilesMessage = computed(() => {
+      if (this.stuckFilesError()) {
+        return setErrorMessage(this.stuckFilesError());
+      }else {
+        return null;
+      }
+    });
+    stuckFilesLoading = this.dataCarouselService.stuckFilesResource.isLoading;
     stuckReasons = computed(() => {
       if (this.datasetExists()){
         const reasons = new Set<string>();
@@ -128,6 +159,7 @@ export class RucioDIDComponent implements OnInit {
         return null;
       }
     });
+  Object: any = Object;
     constructor() {
       effect(() => {
         this.dataSource.data = this.rulesWithReplicas();
@@ -144,6 +176,13 @@ export class RucioDIDComponent implements OnInit {
             this.dataCarouselService.datasetName.set('');
           }
         });
+        this.stuckStaging$.pipe(filter => filter).subscribe(dataset => {
+          this.dataCarouselService.stagingDataset.set(dataset);
+        });
+    }
+
+    formDashboardURL(filename: string): string{
+      return  `https://monit-grafana.cern.ch/d/FtSFfwdmk/ddm-transfers?from=now-30d&orgId=17&to=now&var-activity=All&var-binning=$__auto_interval_binning&var-columns=src_cloud&var-dst_cloud=All&var-dst_endpoint=All&var-enr_filters=data.name%7C%3D%7C${filename}&var-groupby=dst_cloud&var-measurement=ddm_transfer&var-retention_policy=raw&var-src_cloud=All&var-src_country=All&var-src_endpoint=All&var-src_site=All&var-activity_disabled=Analysis%20Input&var-activity_disabled=Data%20Consolidation&var-activity_disabled=Deletion&var-activity_disabled=Functional%20Test&var-activity_disabled=Production%20Input&var-activity_disabled=Production%20Output&var-activity_disabled=Staging&var-activity_disabled=User%20Subscriptions&var-protocol=All&var-src_tier=All&var-src_token=All&var-dst_tier=All&var-dst_country=All&var-dst_site=All&var-dst_token=All&var-remote_access=All&var-include=&var-exclude=none&var-exclude_es=All&var-include_es_dst=All&var-include_es_src=All&var-rows=dst_cloud&viewPanel=129`
     }
 
 }
