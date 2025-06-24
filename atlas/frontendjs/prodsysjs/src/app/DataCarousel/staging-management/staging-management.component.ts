@@ -243,6 +243,7 @@ export class StagingManagementComponent implements OnInit {
 
   ];
   showStuck: boolean= false;
+  pageTasksActive = true;
 
   constructor(public dialog: MatDialog) {
 
@@ -438,10 +439,12 @@ export class StagingManagementComponent implements OnInit {
     this.rulesGrid.api.forEachNodeAfterFilter((selectedRule) => {
         filteredDatasets.push(selectedRule.data.dataset);
     });
-
+    this.pageTasksActive = false;
     this.dialogRef = this.dialog.open(DialogDatasetDetailsComponent,
       {data: {selectedDataset: dataset, filteredDatasets, showStaging: false}, closeOnNavigation: true});
-
+    this.dialogRef.afterClosed().subscribe(result => {
+      this.pageTasksActive = true;
+    });
 
   }
 }

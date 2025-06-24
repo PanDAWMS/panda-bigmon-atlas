@@ -94,7 +94,7 @@
             <button  (click)="showTasks()" [disabled]="taskLoading" >Show tasks</button>
   }
      <span>Actions: </span>
-  <app-rule-action [datasets]="selectedDatasets"></app-rule-action>
+  <app-rule-action [datasets]="selectedDatasets"  [active]="pageTasksActive"> </app-rule-action>
 
 
 </div>

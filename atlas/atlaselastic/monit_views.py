@@ -285,5 +285,8 @@ def get_stuck_file_info(stuck_files: List[str], start_time) -> List[TransferData
                     "lt": "now/d"
                 }}).query("match", data__event_type='transfer-failed')
     for x in s.scan():
-        return_values.append(TransferData.from_attr_dict(x.data) )
+        try:
+            return_values.append(TransferData.from_attr_dict(x.data) )
+        except Exception as e:
+            pass
     return return_values
