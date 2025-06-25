@@ -2828,9 +2828,10 @@ class PandaDatasetStaging(models.Model):
     dataset_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='dataset_size', null=True)
     staged_size = models.DecimalField(decimal_places=0, max_digits=20, db_column='staged_size', null=True)
     source_tape =  models.CharField(max_length=200, db_column='SOURCE_TAPE', null=True)
+    last_staged_time = models.DateTimeField(db_column='last_staged_time', null=True)
 
-    def save(self, *args, **kwargs):
-        raise NotImplementedError('Read only')
+    # def save(self, *args, **kwargs):
+    #     raise NotImplementedError('Read only')
 
     def active_tasks(self):
         tasks_ids = PandaDatasetStagingRelationship.objects.filter(request_id=self.id).values_list('task_id', flat=True)

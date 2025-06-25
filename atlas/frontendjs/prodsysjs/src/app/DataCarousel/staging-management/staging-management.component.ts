@@ -136,7 +136,17 @@ export class StagingManagementComponent implements OnInit {
   public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
-    doesExternalFilterPass: this.doesExternalFilterPass.bind(this)
+    doesExternalFilterPass: this.doesExternalFilterPass.bind(this),
+    initialState: {
+      sort: {
+        sortModel: [
+          // The `colId` is the 'field' by default.
+          // `sort` can be 'asc' or 'desc'.
+          { colId: 'update_time', sort: 'asc' },
+        ],
+      },
+    },
+
   };
   OS_ERROR_DASHBOARD_URL = `https://monit-grafana.cern.ch/d/e77b84d4-d854-4a18-b2c6-5fb67f648832/ddm-transfers-errors?from={time}&orgId=17&to=now&var-bin=1h&var-dataset_name={dataset_name}&var-dst_cloud=All&var-dst_country=All&var-dst_federation=All&var-dst_site=All&var-dst_tier=All&var-error_filter=&var-src_cloud=All&var-src_country=All&var-src_federation=All&var-src_site=All&var-src_tier=All&var-activity=Analysis%20Input&var-activity=Production%20Input&var-activity=Staging`;
   columnDefs = [        {
@@ -436,7 +446,7 @@ export class StagingManagementComponent implements OnInit {
 
   private showDataset(dataset: string) {
     const filteredDatasets = [];
-    this.rulesGrid.api.forEachNodeAfterFilter((selectedRule) => {
+    this.rulesGrid.api.forEachNodeAfterFilterAndSort((selectedRule) => {
         filteredDatasets.push(selectedRule.data.dataset);
     });
     this.pageTasksActive = false;

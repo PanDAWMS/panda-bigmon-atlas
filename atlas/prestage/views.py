@@ -2602,7 +2602,7 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
     if not stuck_rules:
         stuck_rules = get_stuck_requests()
     for dataset_staging in dataset_staging_rules:
-        update_time = dataset_staging.update_time
+        update_time = dataset_staging.last_staged_time
         start_time = dataset_staging.start_time
         owners = []
         tasks_ids = []
@@ -2619,7 +2619,7 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
         if not start_time:
             start_time = timezone.now()
         if not update_time:
-            update_time = start_time
+            update_time = dataset_staging.start_time
         rule = dataset_staging.rse
         if dataset_staging.status == PandaDatasetStaging.STATUS.QUEUED:
             rule = 'queued'
