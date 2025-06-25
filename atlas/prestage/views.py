@@ -2557,6 +2557,7 @@ class DatasetStagingRule:
     staged_files: int
     start_time: int
     update_time: int
+    modification_time: int
     number_active_tasks: int
     dc_type: str
     stuck: bool
@@ -2604,6 +2605,7 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
     for dataset_staging in dataset_staging_rules:
         update_time = dataset_staging.last_staged_time
         start_time = dataset_staging.start_time
+        modification_time = dataset_staging.update_time
         owners = []
         tasks_ids = []
         number_active_tasks = 0
@@ -2620,6 +2622,8 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
             start_time = timezone.now()
         if not update_time:
             update_time = dataset_staging.start_time
+        if not modification_time:
+            modification_time = timezone.now()
         rule = dataset_staging.rse
         if dataset_staging.status == PandaDatasetStaging.STATUS.QUEUED:
             rule = 'queued'
@@ -2634,7 +2638,8 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
                                start_time=int(start_time.timestamp()*1000),
                                update_time=int(update_time.timestamp()*1000),
                                number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a', tasks_ids=tasks_ids,
-                               bytes=int(dataset_staging.dataset_size or 0), stuck=stuck, stuck_error=stuck_error, empty_source=empty_source),
+                               bytes=int(dataset_staging.dataset_size or 0), stuck=stuck, stuck_error=stuck_error, empty_source=empty_source,
+                               modification_time=modification_time),
         )
     return rules
 

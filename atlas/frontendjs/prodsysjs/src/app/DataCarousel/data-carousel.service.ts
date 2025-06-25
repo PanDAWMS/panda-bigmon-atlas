@@ -31,6 +31,7 @@ export interface StagingRule {
   total_files: number;
   staged_files: number;
   start_time: number;
+  modification_time: number;
   update_time: number;
   number_active_tasks: number;
   dc_type: string;

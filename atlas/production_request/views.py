@@ -1589,8 +1589,11 @@ def aggregate_transfer_data(stuck_files_fts: Dict,
         src_url = transfer.src_url
         if name in stuck_files_fts and dst_endpoint == stuck_files_fts[name]['dest_rse']:
             external_host = stuck_files_fts[name]['external_host']
-            external_host = external_host.replace('8446','8449')
-            aggregated_data[name][src_endpoint]["fts_link"] = f"{external_host}/fts3/ftsmon/#/job/{stuck_files_fts[name]['external_id']}"
+            if external_host:
+                external_host = external_host.replace('8446','8449')
+                aggregated_data[name][src_endpoint]["fts_link"] = f"{external_host}/fts3/ftsmon/#/job/{stuck_files_fts[name]['external_id']}"
+            else:
+                aggregated_data[name][src_endpoint]["fts_link"] = ''
             aggregated_data[name][src_endpoint]["fts_state"] = stuck_files_fts[name]['state']
             aggregated_data[name][src_endpoint]["fts_submitted"] = stuck_files_fts[name]['submitted_at']
 
