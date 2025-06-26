@@ -75,4 +75,14 @@
         </div>
         <div class="column large-8"></div>
     </div>
+        <div class="row">
+        <div class="column large-2 ">
+            <label>Dataset: <input type="text" id="dataset"  value=""  /> </label>
+        </div>
+        <div class="column large-6">
+            <a class="button" onclick="if(($('#dataset').val()||'')!=''){window.location.href = construct_django_url('/ng/dataset/',$('#dataset').val()||'');}">ProdSys</a>
+            <a class="button" onclick="if(($('#dataset').val()||'')!=''){window.location.href = 'https://rucio-ui.cern.ch/search?pattern='+($('#dataset').val()||'')}">Rucio</a>
+        </div>
+        <div class="column large-8"></div>
+    </div>
 {% endblock %}

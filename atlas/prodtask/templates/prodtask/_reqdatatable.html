@@ -2692,7 +2692,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                         var datasetList =  $.evalJSON(data).data;
                         for (i=0;i<datasetList.length;i++){
                             var datasetRow = $('<tr class=' +  datasetList[i].currentCampaign +' ></tr>');
-                            datasetRow.append('<td><a href="https://rucio-ui.cern.ch/did?name='+
+                            datasetRow.append('<td><a href="/ng/dataset/'+
                                     datasetList[i].dataset+'">'+datasetList[i].dataset+ '</a></td>');
                             datasetRow.append('<td>'+'<a href="{{ bigpanda_base }}'+datasetList[i].input_task+'">'+datasetList[i].events+'</a>'+'</td>');
                             datasetRow.append('<td>'+datasetList[i].SubCampaing+'</td>');
