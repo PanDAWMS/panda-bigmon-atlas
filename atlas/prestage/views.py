@@ -2621,7 +2621,7 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
         if not start_time:
             start_time = timezone.now()
         if not update_time:
-            update_time = dataset_staging.start_time
+            update_time = start_time
         if not modification_time:
             modification_time = timezone.now()
         rule = dataset_staging.rse
@@ -2639,7 +2639,7 @@ def prepare_dc_requests(dataset_staging_rules: List[PandaDatasetStaging]) -> Lis
                                update_time=int(update_time.timestamp()*1000),
                                number_active_tasks=number_active_tasks, owners=owners, dc_type = 'a', tasks_ids=tasks_ids,
                                bytes=int(dataset_staging.dataset_size or 0), stuck=stuck, stuck_error=stuck_error, empty_source=empty_source,
-                               modification_time=modification_time),
+                               modification_time=int(modification_time.timestamp()*1000)),
         )
     return rules
 
