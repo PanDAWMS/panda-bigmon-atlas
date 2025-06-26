@@ -1513,7 +1513,11 @@ def get_stuck_files(request):
         stuck_files = list(itertools.islice((x for x in ddm.list_locks(dataset_staging.rse) if x['state'] != 'OK'), 3))
         stuck_files_info = {}
         if stuck_files:
-            current_fts_rules = { x['name'] : ddm.list_request_by_did(x['scope'],x['name'],x['rse']) for x in stuck_files }
+            try:
+                current_fts_rules = { x['name'] : ddm.list_request_by_did(x['scope'],x['name'],x['rse']) for x in stuck_files }
+            except Exception as e:
+                current_fts_rules = {}
+                _logger.warning(f'Failed to get current FTS rules for {dataset_name} on {dataset_staging.rse}: {str(e)}')
             stuck_files_info = aggregate_transfer_data(current_fts_rules, get_stuck_file_info([x['name'] for x in stuck_files], f"{dataset_staging.start_time.strftime('%Y-%m-%d')}"))
         return Response(stuck_files_info)
     except Exception as e:
