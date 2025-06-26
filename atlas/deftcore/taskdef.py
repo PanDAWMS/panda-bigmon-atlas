@@ -1,5 +1,6 @@
 
 import glob
+import itertools
 import logging
 import os
 import re
@@ -1676,9 +1677,17 @@ class TaskDefinition(object):
             # Q(step__slice__input_data__endswith=input_data_name.split(':')[-1])
             Q(step__slice__input_data__contains=input_data_name.split('/')[0].split(':')[-1])
         )
+        sample_name = self.rucio_client.get_sample_container_name(input_data_name)
+        additional_task_check_datasets = self.rucio_client.with_and_without_scope([sample_name, input_data_name.split('_tid')[0]])
+        additional_task_list = ProductionTask.objects.filter(~Q(status__in=['failed', 'broken', 'aborted', 'obsolete', 'toabort']),
+                                              project=step.request.project,
+                                              ami_tag=step.step_template.ctag, inputdataset__in=additional_task_check_datasets)
 
-        for prod_task_existing in task_list:
-
+        checked_tasks = []
+        for prod_task_existing in itertools.chain(task_list, additional_task_list):
+            if prod_task_existing in checked_tasks:
+                continue
+            checked_tasks.append(prod_task_existing)
             # comparing output formats
             requested_output_types = step.step_template.output_formats.split('.')
             previous_output_types = prod_task_existing.step.step_template.output_formats.split('.')
@@ -3930,6 +3939,7 @@ class TaskDefinition(object):
             task_release = trf_release
             task_release_base = trf_release_base
             trans_uses_prefix = ''
+            trans_uses_postfix = ''
 
             if use_nightly_release:
                 task_trans_home_separator = '/'
@@ -3939,6 +3949,7 @@ class TaskDefinition(object):
             task_proto_dict = {
                 'trans_home_separator': task_trans_home_separator,
                 'trans_uses_prefix': trans_uses_prefix,
+                'trans_uses_postfix': trans_uses_postfix,
                 'job_params': job_parameters,
                 'log': log_param,
                 'architecture': project_mode.cmtconfig,
@@ -4385,6 +4396,9 @@ class TaskDefinition(object):
 
             if project_mode.transUsesPrefix:
                 task_proto_dict.update({'trans_uses_prefix': project_mode.transUsesPrefix})
+
+            if project_mode.transUsesPostfix:
+                task_proto_dict.update({'trans_uses_postfix': project_mode.transUsesPostfix})
 
             if step.request.request_type.lower() == 'MC'.lower() and use_real_nevents and 'nEventsPerJob' in list(task_config.keys()):
                 task_proto_dict.update({'no_wait_parent': False})

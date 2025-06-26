@@ -622,5 +622,9 @@
   "DCTest": {
     "type": "bool",
     "description": ""
+  },
+    "transUsesPostfix": {
+    "type": "str",
+    "description": ""
   }
 }

@@ -21,7 +21,7 @@
   "taskType": "'prod'",
   "transHome": "'{{cache}}{{trans_home_separator}}{{release}}'",
   "transPath": "'{{transform}}'",
-  "transUses": "'Atlas-{{trans_uses_prefix}}{{release_base}}'",
+  "transUses": "'Atlas-{{trans_uses_prefix}}{{release_base}}{{trans_uses_postfix}}'",
   "userName": "'{{username}}'",
   "workingGroup": "'{{usergroup}}'",
   "vo": "'atlas'",
