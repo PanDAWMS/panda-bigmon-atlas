@@ -2871,9 +2871,9 @@ class TaskDefinition(object):
                 if  LooseVersion(trf_release) >= LooseVersion('22.0'):
                     if not project_mode.skipHEPMCCheck and not self._check_evgen_hepmc(trf_cache, trf_release, step.request.campaign):
                         logger.warning(f"HEPMC check for {trf_cache} {trf_release} {step.request.campaign} failed")
-                # if  LooseVersion(trf_release) >= LooseVersion('22.0'):
-                #     if self.is_madgraph(input_data_name) and not project_mode.coreCount:
-                #         project_mode.coreCount  = 8
+                if  LooseVersion(trf_release) >= LooseVersion('23.6'):
+                    if self.is_madgraph(input_data_name) and not project_mode.coreCount:
+                        project_mode.coreCount  = 8
 
 
             skip_scout_jobs = None
