@@ -1368,7 +1368,7 @@ def assemble_super_container(containers_info: [ContainerInfo]):
         result_containers, missing_containers, not_full_containers = check_all_output_dataset_exists(input_container_info, ddm)
         super_tag = f'{input_container_info.period},grp{input_container_info.project_year}_{input_container_info.version}_{input_container_info.ami_tag}'
         comment = f'{input_container_info.output_format} {super_tag}'
-        result_dict.append(PreparedContainer(result_containers, comment, super_tag, missing_containers, not_full_containers))
+        result_dict.append(PreparedContainer(output_containers=result_containers, comment=comment, super_tag=super_tag, name=super_tag, missing_containers=missing_containers, not_full_containers=not_full_containers))
 
             # {'output_containers': result_containers,
             #                     'comment': comment,
