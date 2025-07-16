@@ -626,5 +626,13 @@
     "transUsesPostfix": {
     "type": "str",
     "description": ""
+  },
+  "skipSecondaryEvents": {
+    "type": "bool",
+    "description": ""
+  },
+  "filterBKGCut": {
+    "type": "int",
+    "description": ""
   }
 }

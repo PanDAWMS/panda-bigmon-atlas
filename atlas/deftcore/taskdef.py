@@ -3268,6 +3268,14 @@ class TaskDefinition(object):
                     job_parameters.append(
                         self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
                     )
+                elif re.match(r'^(--)?skipSecondaryEvents$', name, re.IGNORECASE):
+                    if project_mode.skipSecondaryEvents is not None:
+                        param_dict = {'name': name, 'value': 0}
+                        param_dict.update(trf_options)
+                        job_parameters.append(
+                            self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
+                        )
+                        continue
                 elif re.match(r'^(--)?skipEvents$', name, re.IGNORECASE):
                     if (skip_events_forced is not None) and (skip_events_forced >= 0):
                         param_dict = {'name': name, 'value': skip_events_forced}
@@ -4247,7 +4255,8 @@ class TaskDefinition(object):
                 follow_hashtags.append(TaskDefConstants.REPRO_PATCH_HASHTAG)
             if project_mode.noThrottle is not None:
                 task_proto_dict.update({'no_throttle': project_mode.noThrottle or None})
-
+            if project_mode.filterBKGCut is not None:
+                follow_hashtags.append(TaskDefConstants.FILTER_BKG_HASHTAG)
             if project_mode.ramUnit is not None:
                 task_proto_dict.update({'ram_unit': project_mode.ramUnit})
 

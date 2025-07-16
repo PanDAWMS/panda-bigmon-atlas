@@ -10,7 +10,7 @@ from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate
+from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate, HashTag
 import logging
 
 from ..cric.client import CRICClient
@@ -1334,3 +1334,41 @@ def retry_exhausted_user_tasks_after_downtime(rse):
                 tasks_to_retry.append(tt.id)
                 break
     return tasks_to_retry
+
+def create_filter_bkg_dataset(filter_dataset_name: str, input_dataset: str, cut_value: int):
+    ddm = DDM()
+    if not ddm.dataset_exists(filter_dataset_name):
+        ddm.register_dataset(filter_dataset_name)
+    files = ddm.list_file_long(input_dataset)
+    files_to_add = [f'{file["scope"]}:{file["name"]}' for file in files if file['events'] >= cut_value]
+    if files_to_add:
+        sliced_files_to_add = [files_to_add[i:i + 200] for i in range(0, len(files_to_add), 200)]
+        for files_slice in sliced_files_to_add:
+            ddm.register_files_in_dataset(filter_dataset_name, files_slice)
+            _logger.info(f"Adding {len(files_slice)} files to filter dataset {filter_dataset_name}")
+        return True
+    return False
+
+def find_filter_bkg_tasks(filter_bkg_ht = 'FilterBkg'):
+    tasks = HashTag.objects.get(hashtag=filter_bkg_ht).tasks
+    for task in tasks:
+        if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+            output_dataset = ''
+            for output in task.output_non_log_datasets():
+                if 'RDO' in output:
+                    output_dataset = output
+                    break
+            step = task.step
+            cut_value = int(step.get_project_mode('filterBKGCut'))
+            if output_dataset and cut_value:
+                filter_dataset_name = f"{output_dataset.split('_tid')[0]}_sub_filter"
+                if not create_filter_bkg_dataset(filter_dataset_name, output_dataset, cut_value):
+                    _logger.warning(f"Filter dataset {filter_dataset_name} for task {task.id} is empty or not created")
+                else:
+                    _logger.info(f"Filter dataset {filter_dataset_name} for task {task.id} created successfully")
+            else:
+                _logger.warning(f"Task {task.id} does not have output dataset or cut value for filter")
+            task.remove_hashtag(filter_bkg_ht)
+        if task.status in ProductionTask.BAD_STATUS:
+            _logger.warning(f"Task {task.id} is in bad status {task.status}, removing hashtag {filter_bkg_ht}")
+            task.remove_hashtag(filter_bkg_ht)
