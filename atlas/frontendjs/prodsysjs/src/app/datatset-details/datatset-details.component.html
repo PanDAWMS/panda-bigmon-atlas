@@ -1,1 +1,5 @@
-<app-rucio-did [datasetName]="did()" >  </app-rucio-did>
+@if (didType() === 'DATASET'){
+  <app-rucio-did [datasetName]="did()" >  </app-rucio-did>
+} @else if (didType() === 'CONTAINER'){
+  <app-rucio-container [containerName]="did()" >  </app-rucio-container>
+}

@@ -52,6 +52,7 @@ class DatasetInfo:
     deleted_at: Optional[datetime] = None
     expired_at: Optional[datetime] = None
     eol_at: Optional[datetime] = None
+    files: Optional[int] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DatasetInfo":

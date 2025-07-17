@@ -28,7 +28,7 @@ from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jediinterface.client import JEDIClientTest
 from atlas.prestage.views import prepare_dc_requests
-from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.ddm_api import DDM, DatasetInfo
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
@@ -1483,23 +1483,51 @@ def dataset_info(request):
         dataset_name = request.query_params.get('dataset')
         if ddm.dataset_exists(dataset_name):
             dataset = ddm.dataset_info(dataset_name)
-            dataset_replicas = ddm.dataset_replicas(dataset_name)
-            dataset_rules = ddm.list_dataset_rules(dataset_name)
-            dataset_staging = None
-            if PandaDatasetStaging.objects.filter(
-                    dataset__in=ddm.with_and_without_scope([dataset_name]),
-                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
-                dataset_staging = asdict(prepare_dc_requests(list(PandaDatasetStaging.objects.filter( dataset__in=ddm.with_and_without_scope([dataset_name]),
-                    status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] )))[0])
+            if dataset.did_type == 'DATASET':
+                dataset_replicas = ddm.dataset_replicas(dataset_name)
+                dataset_rules = ddm.list_dataset_rules(dataset_name)
+                dataset_staging = None
+                if PandaDatasetStaging.objects.filter(
+                        dataset__in=ddm.with_and_without_scope([dataset_name]),
+                        status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
+                    dataset_staging = asdict(prepare_dc_requests(list(PandaDatasetStaging.objects.filter( dataset__in=ddm.with_and_without_scope([dataset_name]),
+                        status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] )))[0])
 
-            return Response({'dataset_exists': True, 'dataset_knowledge':
-                                                         {'dataset': asdict(dataset), 'replicas': dataset_replicas,
+                return Response({'dataset_exists': True, 'dataset_knowledge': {'did_type': 'DATASET', 'dataset': asdict(dataset), 'replicas': dataset_replicas,
                                                           'rules': dataset_rules, 'staging_dataset': dataset_staging}})
+            elif dataset.did_type == 'CONTAINER':
+                dataset_rules = ddm.list_dataset_rules(dataset_name)
+                datasets_inside_container = ddm.list_datasets_in_container(dataset_name)
+                datasets_metadata: List[DatasetInfo] = [DatasetInfo.from_dict(x) for x in ddm.datasets_metadata(datasets_inside_container)]
+                dataset.length = len(datasets_metadata)
+                dataset.files = sum([x.length for x in datasets_metadata], 0)
+                dataset.events = sum([x.events for x in datasets_metadata], 0)
+                dataset.bytes = sum([x.bytes for x in datasets_metadata], 0)
+                return Response({'dataset_exists': True, 'dataset_knowledge':
+                                                         {'did_type': 'CONTAINER','dataset': asdict(dataset), 'replicas': [],
+                                                          'rules': dataset_rules,
+                                                          'datasets_inside_container': [asdict(x) for x in datasets_metadata]}})
         else:
             return Response({'dataset_exists': False,
                              'dataset_knowledge': {'dataset_name':dataset_name,'error':'Dataset does not exist'}})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def did_type(request):
+    try:
+        ddm = DDM()
+        dataset_name = request.query_params.get('did')
+        if ddm.dataset_exists(dataset_name):
+            dataset = ddm.dataset_info(dataset_name)
+            return Response(dataset.did_type)
+        else:
+            return Response('UNKNOWN')
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

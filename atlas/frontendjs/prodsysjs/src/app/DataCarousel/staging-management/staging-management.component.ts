@@ -133,7 +133,7 @@ export class StagingManagementComponent implements OnInit {
   public stuckErrorsControl = new FormControl<string[]>([]);
   public showOnlyFullRSEs = new FormControl<boolean>(false);
   public showOnlyStuckRules = new FormControl<boolean>(false);
-  public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>
+  public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>;
   public gridOptions: GridOptions = {
     isExternalFilterPresent: this.isExternalFilterPresent.bind(this),
     doesExternalFilterPass: this.doesExternalFilterPass.bind(this),

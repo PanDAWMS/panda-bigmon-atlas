@@ -54,6 +54,8 @@ export interface DatasetExistsResponse {
   replicas: RucioReplica[];
   rules: RucioRule[];
   staging_dataset?: StagingRule;
+  did_type: 'DATASET' | 'CONTAINER';
+  datasets_inside_container?: DatasetInfo[];
 }
 export interface DatasetDeletedResponse {
   dataset_name: string;
@@ -124,10 +126,14 @@ export class DataCarouselService {
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
   private prGetDatasetInfoUrl = '/api/dataset_info/';
   private prGetStuckFilesUrl = '/api/get_stuck_files/';
+  private prGetDIDTypeUrl = '/api/get_did_type/';
+
 
 
   selectedTask = signal<string>('');
   datasetName = signal<string>('');
+  containerName= signal<string>('');
+  containerOrDataset= signal<string>('');
   selectedDCDataset = signal<string>('');
   stagingDataset = signal<string>('');
   getAllRules = signal<boolean>(false);
@@ -146,8 +152,14 @@ export class DataCarouselService {
   datasetInfoResource = httpResource<DatasetInfoResponse>(() => this.datasetName() ?
     `${this.prGetDatasetInfoUrl}?dataset=${this.datasetName()}` : '');
 
+  containerInfoResource = httpResource<DatasetInfoResponse>(() => this.containerName() ?
+    `${this.prGetDatasetInfoUrl}?dataset=${this.containerName()}` : '');
+
   stuckFilesResource = httpResource<AggregatedTransferData>(() => this.stagingDataset() ?
     `${this.prGetStuckFilesUrl}?dataset=${this.stagingDataset()}` : '');
+
+  didTypeResource = httpResource<string>(() => this.containerOrDataset() ?
+    `${this.prGetDIDTypeUrl}?did=${this.containerOrDataset()}` : '');
 
   getDataCarouselConfig(): Observable<CarouselConfig> {
     return this.http.get<CarouselConfig>(this.prDataCarouselConfigUrl);

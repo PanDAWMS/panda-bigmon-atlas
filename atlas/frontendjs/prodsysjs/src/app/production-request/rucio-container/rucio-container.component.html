@@ -1,0 +1,47 @@
+@if(isLoading()){
+  <mat-spinner></mat-spinner>
+}
+@if(errorMessage()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+  </div>
+}
+@if(containerExists()){
+<div class="task-grid mat-elevation-z8">
+      <!--    Row-->
+  <div>Name:</div><div style="grid-column: 2 / -1"><a href="{{containerInfo()?.dataset.name | rucioURL}}">{{containerInfo()?.dataset.name}}</a></div>
+      <!--    Row-->
+  <div>Datasets:</div><div>{{containerInfo()?.dataset.length}}</div>
+  <div>Size:</div><div>{{containerInfo()?.dataset.bytes|datasetSize}}</div>
+  <div>Events:</div><div>{{containerInfo()?.dataset.events}}</div>
+         <!--    Row-->
+  <div>Scope:</div><div>{{containerInfo()?.dataset.scope}}</div>
+  <div>Account:</div><div>{{containerInfo()?.dataset.account}}</div>
+  <div>Files:</div><div>{{containerInfo()?.dataset.files}}</div>
+        <!--    Row-->
+  <div>Created:</div><div>{{containerInfo()?.dataset.created_at | date}}</div>
+  <div>Updated:</div><div>{{containerInfo()?.dataset.updated_at | date}}</div>
+  <div>Last Accessed:</div><div>{{containerInfo()?.dataset.accessed_at | date}}</div>
+  @for(rule of containerInfo()?.rules; track  rule){
+    <div>Rule:</div><div style="grid-column: 2 / -1"><a href="https://rucio-ui.cern.ch/rule?rule_id={{rule.id}}" >{{rule.rse_expression}}</a></div>
+  }
+</div>
+  @if(containerInfo()?.datasets_inside_container){
+               <ag-grid-angular
+                 #agGrid
+          style="width: 100%; "
+          class="ag-theme-alpine"
+          [rowData]="containerInfo().datasets_inside_container"
+          [columnDefs]="columnDefs"
+
+          [paginationPageSize]="20"
+
+            [domLayout]="'autoHeight'"
+            [rowHeight]="22"
+                 (gridReady)="onGridReady($event)"
+                  (filterChanged)="adjustColumns($event)"
+                 (gridSizeChanged)="adjustColumns($event)"
+               ></ag-grid-angular>
+  }
+}
