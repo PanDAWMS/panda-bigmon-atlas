@@ -527,7 +527,7 @@ class DDM(object):
         rules = list(self.list_dataset_rules(dataset_name))
         rules_expression = []
         for rule in rules:
-            if  not (rule['account'] == 'prodsys' and rule['activity'] == 'Staging'):
+            if  not (rule['account'] == 'prodsys' or rule['account'] == 'panda'):
                 rules_expression.append(rule['rse_expression'])
         for replica in replicas['data']:
             if replica['rse'] in rules_expression:
