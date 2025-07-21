@@ -7,7 +7,7 @@ import {setErrorMessage} from "../../dsid-info/dsid-info.service";
 import {RucioURLPipe} from "../../derivation-exclusion/rucio-url.pipe";
 import {DatasetSizePipe} from "../../derivation-exclusion/dataset-size.pipe";
 import {RouterLink} from "@angular/router";
-import {RucioReplica, RucioRule} from "../production-request-models";
+import {ProductionTask, RucioReplica, RucioRule} from "../production-request-models";
 import {
   MatCell, MatCellDef,
   MatColumnDef,
@@ -18,11 +18,14 @@ import {
   MatTable, MatTableDataSource
 } from "@angular/material/table";
 import {MatSort} from "@angular/material/sort";
-import {Observable} from "rxjs";
+import {Observable, of} from "rxjs";
 import {TaskActionLog, TaskService} from "../../production-task/task-service.service";
 import {toObservable} from "@angular/core/rxjs-interop";
 import {RuleActionComponent} from "../../rule-action/rule-action.component";
 import {MatCard, MatCardHeader, MatCardTitle} from "@angular/material/card";
+import {TasksManagementService} from "../../tasks-management/tasks-management.service";
+import {catchError} from "rxjs/operators";
+import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
 
 
 interface ReplicaWithRule {
@@ -54,7 +57,8 @@ interface ReplicaWithRule {
     MatCard,
     MatCardHeader,
     MatCardTitle,
-    AsyncPipe
+    AsyncPipe,
+    ProductionTaskTableComponent
   ],
   templateUrl: './rucio-did.component.html',
   styleUrl: './rucio-did.component.css'
@@ -62,6 +66,9 @@ interface ReplicaWithRule {
 export class RucioDIDComponent implements OnInit {
     private dataCarouselService = inject(DataCarouselService);
     private taskService = inject(TaskService);
+    private taskManagementService = inject(TasksManagementService);
+    public tasksToShow: ProductionTask[] = [];
+    public taskLoading = false;
     public actionLog$: Observable<TaskActionLog[]>;
     showStaging = input<boolean>(true);
     datasetName = input<string>();
@@ -172,6 +179,18 @@ export class RucioDIDComponent implements OnInit {
           if (datasetName){
             this.dataCarouselService.datasetName.set(datasetName);
             this.actionLog$ = this.taskService.getRuleActionLogs(this.datasetName());
+            this.taskLoading = true;
+            this.taskManagementService.getTasksByDatasetName(datasetName).pipe(
+              catchError( err => {
+                this.taskLoading = false;
+                return of([] as ProductionTask[]);
+              })
+            ).subscribe(
+              tasks => {
+                this.tasksToShow = tasks;
+                this.taskLoading = false;
+              }
+        );
           }else {
             this.dataCarouselService.datasetName.set('');
           }

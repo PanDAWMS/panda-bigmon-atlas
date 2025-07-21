@@ -290,4 +290,11 @@
   </div>
     }
   }
+@if(taskLoading){
+  <mat-spinner></mat-spinner>
+}
+@if(tasksToShow.length > 0){
+    <app-production-task-table [tasks]="tasksToShow"  [showOwner]="true" >
+  </app-production-task-table>
+}
 

@@ -37,6 +37,9 @@ export class TasksManagementService {
   getTasksByDCRules(DCRules: {id: number, dc_type: string}[]): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {rulesIDs: DCRules, source: 'DCRules', hashtagString: 'present'});
   }
+  getTasksByDatasetName(datasetName: string): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {datasetName, source: 'datasetName', hashtagString: 'present'});
+  }
   getTasksByBigpandaUrl(tasksURL: string): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksPrBigpandaUrl , {tasksURL});
   }

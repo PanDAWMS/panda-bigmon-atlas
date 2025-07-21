@@ -258,6 +258,10 @@ def production_task_for_request(request: Request) -> Response:
                     tasks = ProductionTask.objects.filter(status=task_staus, request__reqid__gte=1000)
                 else:
                     tasks = ProductionTask.objects.filter(status=task_staus, timestamp__gt=days_ago(days), request__reqid__gte=1000)
+            elif 'source' in request.data and request.data['source'] == 'datasetName':
+                tasks_id = get_tasks_by_dataset(request.data['datasetName'])
+                tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
+                hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
             elif 'source' in request.data and request.data['source'] == 'DCRules':
                 rules = request.data['rulesIDs']
                 prod_rules = [x['id'] for x in rules if x['dc_type'] == 'p']
@@ -1660,3 +1664,14 @@ def aggregate_transfer_data(stuck_files_fts: Dict,
                 },
             }
     return final_output
+
+
+def get_tasks_by_dataset(dataset_name: str) -> List[int]:
+    """
+    Get the list of task IDs that are associated with a given dataset.
+    """
+    ddm = DDM()
+    dataset_with_and_without_scope = ddm.with_and_without_scope([dataset_name])
+    panda_datasets = JediDatasets.objects.filter(datasetname__in=dataset_with_and_without_scope).values_list('id', flat=True)
+    prodsys_tasks = ProductionTask.objects.filter(inputdataset__in=dataset_with_and_without_scope, timestamp__gte=days_ago(30)).values_list('id', flat=True)
+    return list(set(panda_datasets) | set(prodsys_tasks))
