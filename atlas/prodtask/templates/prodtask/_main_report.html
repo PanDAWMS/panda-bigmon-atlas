@@ -130,7 +130,7 @@ $(document).ready(function(){
     {%  for task in error_list %}
         <tr>
             <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
-            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><a href="https://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
@@ -159,7 +159,7 @@ $(document).ready(function(){
     {%  for task in stale_list %}
         <tr>
             <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
-            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><a href="https://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>
@@ -188,7 +188,7 @@ $(document).ready(function(){
     {%  for task in warning_list %}
         <tr>
             <td><a href="{%  url 'prodtask:input_list_approve' task.request %}">{{ task.request }}</a></td>
-            <td><a href="http://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
+            <td><a href="https://bigpanda.cern.ch/task/{{ task.task_id }}">{{ task.task_id }}</a></td>
             <td><span class="tstat {{ task.status }}">{{ task.status }}</span></td>
             <td>{{ task.group }}</td>
             <td> {{ task.time|date:"DATETIME_FORMAT" }}</td>

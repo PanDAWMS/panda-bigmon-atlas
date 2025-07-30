@@ -1867,7 +1867,7 @@ def request_table_view(request, rid=None, show_hidden=False):
 
 
 
-    BIG_PANDA_TASK_BASE = 'http://bigpanda.cern.ch/task/'
+    BIG_PANDA_TASK_BASE = 'https://bigpanda.cern.ch/task/'
     FAKE_TASK_NUMBER = '123456'
     PRODTASK_TASK_BASE = ''
 

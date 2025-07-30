@@ -393,7 +393,7 @@
             var row = data['aaData'][i];
          
             row[0] = '<a class="breaked_word" href="'+construct_django_url('/prodtask/task/', row[4])+'">'+row[0]+'</a>';
-            row[4] = '<a href="http://bigpanda.cern.ch/task/'+row[4]+'/">'+row[4]+'</a>';
+            row[4] = '<a href="https://bigpanda.cern.ch/task/'+row[4]+'/">'+row[4]+'</a>';
             row[2] = '<a href="'+construct_django_url('/prodtask/stepex/', row[2])+'">'+row[23]+'</a>';
             row[1] = '<a href="'+construct_django_url('/prodtask/inputlist_with_request/', row[1])+'">'+row[1]+'</a>';
             row[18] = '<a href="'+jira_url_prefix+row[18]+'">'+'JIRA'+'</a>';

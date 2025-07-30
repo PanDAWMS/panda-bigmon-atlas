@@ -78,7 +78,7 @@
             <td>{{ tasks.name }}</td>
             <td>
                 {%  for task,downstream,type,total_events in tasks.ids %}
-                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ type }}:{{ task }}</a><s></s>
+                    <a href="https://bigpanda.cern.ch/task/{{ task}}">{{ type }}:{{ task }}</a><s></s>
                 {% endfor %}
             </td>
                 <td>
@@ -113,7 +113,7 @@
             <td>{{ tasks.name }}</td>
             <td>
                 {%  for task in tasks.ids %}
-                    <a href="http://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
+                    <a href="https://bigpanda.cern.ch/task/{{ task}}">{{ task }}</a><s></s>
                 {% endfor %}
             </td>
 
