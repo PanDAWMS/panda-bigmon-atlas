@@ -30,6 +30,10 @@ urlpatterns = [
             name='prepare_horizontal_transition'),
     re_path(r'^submit_horizontal_transition/$', submit_horizontal_transition_async,
             name='submit_horizontal_transition_async'),
+    re_path(r'^pmg_request_verification/$', pmg_request_verification,
+            name='pmg_request_verification'),
+    re_path(r'^pmg_approve/$', pmg_approve,
+            name='pmg_approve'),
 
 
 ]

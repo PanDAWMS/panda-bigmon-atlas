@@ -1,8 +1,9 @@
 import logging
+from collections import defaultdict
 from os import listdir
 
 from atlas.dkb.views import find_jo_by_dsid
-from atlas.prodtask.models import  MCJobOptions
+from atlas.prodtask.models import MCJobOptions, SystemParametersHandler
 from .models import InputRequestList
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -24,6 +25,32 @@ def parse_jo_file(file_path):
                     except:
                         pass
     return result
+
+def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
+    if len(dsid) <= 6:
+        base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:3]}xxx/{dsid}'
+    else:
+        base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:1]}/{dsid[-3:]}xxx/{dsid}'
+    dsid_update_values = {}
+    for dsid_file in listdir(base_dsid_path):
+        if dsid_file.startswith('mc') and dsid_file.endswith('py') and (len(dsid_file.split('.')) == 3):
+            dsid_jo_content = parse_jo_file(f'{base_dsid_path}/{dsid_file}')
+            dsid_update_values = {'physic_short': dsid_file,
+                                    'events_per_job': dsid_jo_content.get('events_per_job', 5000),
+                                    'files_per_job': dsid_jo_content.get('files_per_job', 1)}
+    if dsid_update_values:
+        if MCJobOptions.objects.filter(dsid=int(dsid)).exists():
+            new_dsid_jo = MCJobOptions.objects.get(dsid=int(dsid))
+        else:
+            new_dsid_jo = MCJobOptions()
+        new_dsid_jo.physic_short = dsid_update_values['physic_short']
+        new_dsid_jo.events_per_job = dsid_update_values['events_per_job']
+        new_dsid_jo.files_per_job = dsid_update_values['files_per_job']
+        new_dsid_jo.save()
+        return new_dsid_jo
+    else:
+        _logger.error(f'No JO files found for DSID {dsid} in {base_dsid_path}')
+        return None
 
 def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOptions/'):
     dsids_parent_dirs = []
@@ -75,3 +102,85 @@ def sync_request_jos(production_request):
                 slice.input_data =  find_jo_by_dsid(slice.input_data )
                 slice.save()
 
+GENERATORS_FIRST_DSIDS_NUMBER =generator_first_digit = [
+    ("AMPT", 9),
+    ("BCVEGPY", 9),
+    ("BeamHaloGenerator", 9),
+    ("BlackMax", 9),
+    ("CalcHep", 9),
+    ("Charybdis", 9),
+    ("Charybdis2", 9),
+    ("CompHep", 9),
+    ("CosmicGenerator", 9),
+    ("Dire4Pythia8", 9),
+    ("Epos", 9),
+    ("EvtGen", 9),
+    ("FPMC", 9),
+    ("Geneva", 9),
+    ("HepMCAscii", 9),
+    ("Herwig7", 8),
+    ("Hijing", 9),
+    ("HvyN", 9),
+    ("Hydjet", 9),
+    ("JHU", 9),
+    ("MCFM", 9),
+    ("MEtop", 9),
+    ("MadGraph", 5),
+    ("Matchig", 9),
+    ("McAtNlo", 9),
+    ("ParticleDecayer", 9),
+    ("ParticleGenerator", 9),
+    ("ParticleGun", 9),
+    ("Phantom", 9),
+    ("Photos", 9),
+    ("Photospp", 9),
+    ("PowHel", 9),
+    ("Powheg", 6),
+    ("ProtosLHEF", 9),
+    ("Pyquen", 9),
+    ("Pythia8B", 8),
+    ("Pythia8", 8),
+    ("ReadMcAscii", 9),
+    ("QBH", 9),
+    ("QGSJet", 9),
+    ("Reldis", 9),
+    ("STRINGS", 9),
+    ("Sherpa", 7),
+    ("Starlight", 9),
+    ("SuperChic", 9),
+    ("TauolaPP", 9),
+    ("Tauolapp", 9),
+    ("Tauola", 9),
+    ("VBFNLO", 9),
+    ("Whizard", 9),
+    ("aMcAtNlo", 5),
+    ("gg2vv", 9),
+    ("gg2ww", 9),
+    ("gg2zz", 9),
+]
+
+
+def sync_bad_sw_releases(base_file='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOptions/common/BlackList_caches.txt'):
+    """
+    Syncs the bad software releases from a file to the database.
+    The file should contain lines with the format: "bad_sw_release:reason"
+    """
+    # read the file with csv structure like AthGeneration,   21.6.16, MadGraph, lhapdf-config problem when multiple BOOST versions available
+    bad_releases = defaultdict(list)
+    with open(base_file, 'r') as file:
+        for line in file.readlines():
+            if line.startswith('#') or not line.strip():
+                continue
+            parts = line.split(',')
+            if len(parts) < 3:
+                _logger.error(f'Invalid line in BlackList_caches.txt: {line.strip()}')
+                continue
+            sw_release = parts[1].strip()
+            generator =  parts[2].strip()
+            skipped_dsids = set()
+            for gen, first_digit in GENERATORS_FIRST_DSIDS_NUMBER:
+                if gen.lower() in generator.lower():
+                    skipped_dsids.add(first_digit)
+            bad_releases[sw_release] = list(set(bad_releases[sw_release]) | skipped_dsids)
+    if bad_releases:
+        SystemParametersHandler.BadEvgenSoftwareReleases.set_bad_releases(bad_releases)

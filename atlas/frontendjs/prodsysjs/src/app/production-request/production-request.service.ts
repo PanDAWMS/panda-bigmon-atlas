@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import {Injectable, signal} from '@angular/core';
+import {HttpClient, httpResource} from "@angular/common/http";
 import {Observable, of, Subject} from "rxjs";
 import {
+  ProductionRequestBase,
   ProductionRequests,
   ProductionRequestsJiraInfo,
   RequestTransitions,
@@ -32,6 +33,39 @@ export interface AsyncProdTaskSplitStatus {
   result: undefined | number[]| string[]|RulesResultInfo[]| string;
 }
 
+export interface StepPosition {
+  request_id: number;
+  slice_number: number;
+  step_id: number;
+}
+export interface RequestCheckResult{
+  step_position: StepPosition[];
+  check_name: string;
+  status: string;
+  message?: string;
+  details?: {[key: string]: any};
+}
+
+
+interface  ProductionRequestStats{
+  [requestID: number]: {
+    slices: number;
+    input_events: number;
+    input_datasets: number;
+  };
+}
+
+
+
+export interface PMGRequestCheckResult {
+  production_requests: ProductionRequestBase[];
+  checks: RequestCheckResult[];
+}
+
+export interface PMGApproveResult {
+  requestIDs: number[];
+  status: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -49,11 +83,19 @@ export class ProductionRequestService {
   private prGetSplitRequestUrl = '/production_request/prepare_horizontal_transition/';
   private prDoHorizontalSplitUrl = '/production_request/submit_horizontal_transition/';
   private prAsyncTaskStatus = '/prodtask/celery_task_status_full/';
+  private prPMGCheckUpUrl = '/production_request/pmg_request_verification';
+  private prPMGApproveUrl = '/production_request/pmg_approve/';
+
+
 
   private sliceModificationSource = new Subject<Slice>();
   private sliceSavedSource = new Subject<Slice>();
+  jiraForPMGCheckUp = signal('');
   sliceChanged$ = this.sliceModificationSource.asObservable();
   sliceSaved$ = this.sliceSavedSource.asObservable();
+
+  getPMGCheckUPResource = httpResource<PMGRequestCheckResult>(() =>
+    this.jiraForPMGCheckUp ? `${this.prPMGCheckUpUrl}?jira=${this.jiraForPMGCheckUp()}` : '');
 
   private static countTasks(step: Step): {[status: string]: number} {
     const tasksByStatus = {};
@@ -83,6 +125,9 @@ export class ProductionRequestService {
   }
   getSplitByCampaign(requestID: string): Observable<RequestTransitions> {
     return this.http.post<RequestTransitions>(this.prGetSplitRequestUrl, {requestID});
+  }
+  setNewPMGStatus(jira: string, action: string): Observable<PMGApproveResult> {
+    return this.http.post<PMGApproveResult>(this.prPMGApproveUrl, {jira, action});
   }
 
   getAsyncTaskStatus(asyncTaskID: string): Observable<AsyncProdTaskSplitStatus> {

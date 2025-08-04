@@ -562,6 +562,11 @@ class TrainProduction(models.Model):
         db_table = '"T_GROUP_TRAIN"'
 
 
+@dataclass
+class StepPosition:
+    request_id: int
+    slice_number: int
+    step_id: int
 
 class MCJobOptions(models.Model):
 
@@ -1373,6 +1378,25 @@ class SystemParametersHandler:
         MCSubCampaignStats = 'MCSubCampaignStats'
         MCWorkflowRequest = 'MCWorkflowRequest'
         ANALYSIS_REQUEST_EMAIL = 'AnalysisRequestEmail'
+        BAD_EVGEN_SW_RELEASES = 'BadEvgenSoftwareReleases'
+
+
+    @dataclass
+    class BadEvgenSoftwareReleases:
+        releases: Dict[str, List[int]] = field(default_factory=dict)
+
+        @staticmethod
+        def bad_release_numbers(release: str) -> List[int]:
+            return SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()[release]
+
+        @staticmethod
+        def get_bad_releases() ->  Dict[str, List[int]]:
+            return SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES).get('releases', {})
+
+        @staticmethod
+        def set_bad_releases(releases: Dict[str, List[int]]):
+            SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES,
+                                           {'releases': releases})
 
 
 

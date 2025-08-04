@@ -138,6 +138,7 @@ import {ConfigEditorComponent} from "./config-editor/config-editor.component";
 import {MainRequestComponent} from "./production-request/main-request/main-request.component";
 import {StagingManagementComponent} from "./DataCarousel/staging-management/staging-management.component";
 import {DatatsetDetailsComponent} from "./datatset-details/datatset-details.component";
+import {PMGApprovalComponent} from "./production-request/pmgapproval/pmgapproval.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -242,6 +243,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'test-request', component: MainRequestComponent},
     {path: 'staging-rules', component: StagingManagementComponent},
       {path: 'dataset/:did', component: DatatsetDetailsComponent},
+        {path: 'pmg/:jira', component: PMGApprovalComponent},
+
 
 
 

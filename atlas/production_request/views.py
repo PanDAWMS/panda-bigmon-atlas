@@ -19,6 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest
 from django.utils import timezone
+from rest_framework.exceptions import bad_request
 from rest_framework.request import Request
 
 from atlas.atlaselastic.monit_views import TransferData, get_stuck_file_info
@@ -30,13 +31,14 @@ from atlas.jediinterface.client import JEDIClientTest
 from atlas.prestage.views import prepare_dc_requests
 from atlas.prodtask.ddm_api import DDM, DatasetInfo
 from atlas.prodtask.helper import form_json_request_dict
+from atlas.prodtask.mcevgen import sync_cvmfs_dsid
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
     MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer, \
     HashTag, HashTagToRequest, get_bulk_hashtags_by_task, MCWorkflowSubCampaign, ETAGRelease, MCPriority, \
-    PandaDatasetStaging, PandaDatasetStagingRelationship
+    PandaDatasetStaging, PandaDatasetStagingRelationship, MCJobOptions, StepPosition
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -1675,3 +1677,211 @@ def get_tasks_by_dataset(dataset_name: str) -> List[int]:
     panda_datasets = JediDatasets.objects.filter(datasetname__in=dataset_with_and_without_scope).values_list('id', flat=True)
     prodsys_tasks = ProductionTask.objects.filter(inputdataset__in=dataset_with_and_without_scope, timestamp__gte=days_ago(30)).values_list('id', flat=True)
     return list(set(panda_datasets) | set(prodsys_tasks))
+
+@dataclass()
+class RequestCheckResult:
+    step_position: List[StepPosition]
+    check_name: str
+    status: str
+    message: str = ''
+    details: Dict[str, Any] = None
+
+def check_request_energy(request: TRequest):
+    pass
+
+def check_request_campaign(request: TRequest):
+    pass
+
+def check_job_option_exist(job_option: str):
+    pass
+
+def get_dsid_from_job_option(job_option: str) -> str:
+    """
+    Extract the DSID from the job option string.
+    job option like 902061/mc.Epos_LHC_minbias_inelastic_bw.py
+    or 902061
+    or MC12.110401.PowhegPythia_P2012_ttbar_nonallhad.py
+    """
+    if '/' in job_option:
+        return job_option.split('/')[0]
+    elif '.' in job_option:
+        return job_option.split('.')[1]
+    else:
+        return job_option
+
+
+def check_job_options(production_requests: List[TRequest]):
+    distinct_job_options = defaultdict(list)
+    result_problems: List[RequestCheckResult] = []
+    for production_request in production_requests:
+        for slice in list(InputRequestList.objects.filter(request=production_request)):
+            if not slice.is_hide:
+                distinct_job_options[slice.input_data].append(slice)
+                if production_request.campaign > 'MC20' and 'AF2' in slice.comment:
+                    result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                              check_name='AF2 in Run3',
+                                                              status='ERROR',
+                                                              message=f'Slice {slice.slice} in request {slice.request_id} has AF2. Only AF3 allowed for Run3.'))
+
+    missing_job_options = []
+    not_dividable_job_options = []
+    input_not_10k_diviable_job_options = []
+    not_enough_input = []
+    tid_instead_of_container = []
+    bad_sw_releases = SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()
+    steps = list(StepExecution.objects.filter(request__in=production_requests).order_by('id'))
+    first_step_by_slice = {}
+    for step in steps:
+        if step.slice not in first_step_by_slice:
+            first_step_by_slice[step.slice_id] = step
+    for job_option, slices in distinct_job_options.items():
+        dsid = get_dsid_from_job_option(job_option)
+        if not MCJobOptions.objects.filter(dsid=dsid).exists():
+            job_option_obj = sync_cvmfs_dsid(dsid)
+        else:
+            job_option_obj = MCJobOptions.objects.get(dsid=dsid)
+        if not job_option_obj:
+            missing_job_options.append(job_option)
+        else:
+            job_option_check_enough_input = defaultdict(list)
+            for slice in slices:
+                if first_step_by_slice[slice.id]:
+                    step = first_step_by_slice[slice.id]
+                    ctag = step.step_template.ctag
+                    if ETAGRelease.objects.filter(ami_tag=ctag).exists():
+                        sw_release = ETAGRelease.objects.get(ami_tag=ctag).sw_release
+                        if sw_release in bad_sw_releases and ( bad_sw_releases[sw_release] == [] or int(dsid[0]) in bad_sw_releases[sw_release]):
+                            result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                                      check_name='Bad SW release',
+                                                                      status='ERROR',
+                                                                      message=f'Job option {job_option} with ctag {ctag} has bad SW release {sw_release}.'))
+                if slice.input_events and slice.input_events > 0:
+                    if slice.dataset:
+                        if 'tid' in slice.dataset:
+                            tid_instead_of_container.append((slice.request_id, slice.slice, slice.dataset))
+                        else:
+                            job_option_check_enough_input[job_option_obj.dsid].append(slice)
+                    if slice.input_events % job_option_obj.events_per_job != 0:
+                        not_dividable_job_options.append((job_option, slice, slice.input_events, job_option_obj.events_per_job))
+                    elif slice.input_events % 10000 != 0:
+                        input_not_10k_diviable_job_options.append((job_option, slice, slice.input_events))
+            if job_option_check_enough_input:
+                not_enough_input = check_enough_input(job_option_check_enough_input, first_step_by_slice)
+    for job_option in missing_job_options:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(x.request_id,x.slice,0) for x in distinct_job_options[job_option]],
+                                                  check_name='Missing Job Option', status='ERROR',
+                                                  message=f'Job option {job_option} is not found in the system'))
+    for job_option, slice, input_events, events_per_job in not_dividable_job_options:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                  check_name='Not dividable job option',
+                                                  status='ERROR',
+                                                  message=f'Job option {job_option} has input events {input_events} which is not dividable by {events_per_job}'))
+    for job_option, slice, input_events in input_not_10k_diviable_job_options:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                  check_name='Input events not dividable by 10k',
+                                                  status='ERROR',
+                                                  message=f'Job option {job_option} has input events {input_events} which is not dividable by 10000.'))
+    for request_id, slice, dataset in tid_instead_of_container:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(request_id, slice, 0)],
+                                                  check_name='TID instead of container',
+                                                  status='ERROR',
+                                                  message=f'Slice {slice} in request {request_id} has dataset {dataset} which is TID instead of container. Please use container name instead of TID.'))
+    for job_option, ctag, dataset, number_of_jobs, number_of_files, files_per_job in not_enough_input:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(x.request_id, x.slice, 0) for x in distinct_job_options[job_option]],
+                                                  check_name='Not enough input',
+                                                  status='ERROR',
+                                                  message=f'Job option {job_option} with ctag {ctag} and dataset {dataset} has {number_of_jobs} jobs but only {number_of_files} files available. Files per job is {files_per_job}.'))
+    return result_problems
+
+
+
+def check_enough_input(job_option_by_slice: Dict[str, List[InputRequestList]], first_step_by_slice: Dict[str, StepExecution]):
+    ddm = DDM()
+
+    job_option_by_tag_input = defaultdict(list)
+    for job_option, slices in job_option_by_slice.items():
+        for slice in slices:
+            step = first_step_by_slice.get(slice.id)
+            job_option_by_tag_input[(job_option, step.step_template.ctag, slice.dataset)].append(slice)
+    not_enough_input = []
+    for (job_option, ctag, dataset), slices in job_option_by_tag_input.items():
+        job_option_obj = MCJobOptions.objects.get(dsid=job_option)
+        total_input_events = sum([x.input_events for x in slices])
+        number_of_jobs = total_input_events // job_option_obj.events_per_job
+        number_of_files = ddm.get_number_files(dataset)
+        if number_of_jobs > number_of_files // job_option_obj.files_per_job:
+            not_enough_input.append((slices[0].input_data, ctag, dataset, number_of_jobs, number_of_files, job_option_obj.files_per_job))
+    return not_enough_input
+
+def get_request_stats(production_requests: List[TRequest]) -> Dict[str, Any]:
+    production_request_stats = defaultdict(lambda: {'total_slices': 0, 'total_input_events': 0,  'total_input_datasets': 0})
+    for production_request in production_requests:
+        for slice in list(InputRequestList.objects.filter(request=production_request)):
+            if not slice.is_hide:
+                production_request_stats[production_request.reqid]['total_slices'] += 1
+                if slice.input_events>0:
+                    production_request_stats[production_request.reqid]['total_input_events'] += slice.input_events
+                if slice.dataset:
+                    production_request_stats[production_request.reqid]['total_input_datasets'] += 1
+    return production_request_stats
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def pmg_request_verification(request):
+    try:
+        jira = request.query_params.get('jira')
+        production_requests = TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING)
+        if not production_requests:
+            raise Exception(f'No production requests found for JIRA {jira}')
+        result: List[RequestCheckResult] = []
+        result += check_job_options(list(production_requests))
+        production_request_stats = get_request_stats(list(production_requests))
+        production_requests_dict = []
+        for production_request in production_requests:
+            current_dict = ProductionRequestSerializer(production_request).data
+            current_dict.update(production_request_stats[production_request.reqid])
+            production_requests_dict.append(current_dict)
+            current_dict['long_description'] = production_request.long_description
+            current_dict['priority'] = production_request.priority
+        production_requests_dict.sort(key=lambda x: x['subcampaign'])
+        return Response({'production_requests': production_requests_dict,'checks':[asdict(x) for x in result],
+                        'stats': production_request_stats})
+    except Exception as e:
+        _logger.error(f'Problem with PMG request verification: {e}')
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def pmg_approve(request):
+    try:
+        jira = request.data.get('jira')
+        action = request.data.get('action', 'register')
+        new_status = None
+        message = ''
+        comment = ''
+        if action not in ['register', 'hold', 'cancel']:
+            raise Exception(f'Action {action} is not supported. Supported actions are register, approve, reject.')
+        if action == 'register':
+            message = 'Request was approved for processing by %s' %request.user.username
+            comment = 'Request is registered by WebUI'
+            new_status = TRequest.STATUS.REGISTERED
+        elif action == 'hold':
+            message = 'Request was put on hold by %s' %request.user.username
+            comment = 'Request is put on hold by WebUI'
+            new_status = TRequest.STATUS.HOLD
+        elif action == 'cancel':
+            message = 'Request was cancelled by %s' %request.user.username
+            comment = 'Request is cancelled by WebUI'
+            new_status = TRequest.STATUS.CANCELLED
+        production_requests_id = []
+        for production_request in  TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING):
+            set_request_status(request.user.username, production_request.reqid, new_status, message, comment)
+            production_requests_id.append(production_request.reqid)
+        return Response({'status':new_status, 'requestIDs': production_requests_id})
+    except Exception as e:
+        _logger.error(f'Problem with PMG approve: {e}')
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

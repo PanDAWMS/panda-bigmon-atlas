@@ -45,8 +45,12 @@ export interface ProductionRequestBase {
   info_fields: string;
   is_fast: boolean;
   project_id: string;
-
+  priority: string;
+  long_description?: string;
   project?: string;
+  total_input_events?: number;
+  total_input_datasets?: number;
+  total_slices?: number;
 
 }
 
@@ -279,6 +283,7 @@ export interface DatasetInfo {
   task_id?: number;
   version?: string;
   expired_at?: string;
+  files?: number;
 }
 
 
