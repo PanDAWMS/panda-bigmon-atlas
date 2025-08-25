@@ -992,7 +992,8 @@ class WorkflowActions:
             if not slice.is_hide:
                 parent_ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=parent_slices[index], request=request_id))
                 parent_step_as_in_page = form_step_in_page(parent_ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
-                parent_step = [x for index, x in enumerate(parent_step_as_in_page) if x and index < step_number][-1]
+                parent_steps = [x for index, x in enumerate(parent_step_as_in_page) if x and index < step_number]
+                parent_step = parent_steps[-1]
                 ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(slice=slice, request=new_request_id))
                 step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, existed_foreign_step)
                 step_to_delete = []
@@ -1006,6 +1007,11 @@ class WorkflowActions:
                         break
                 for step in step_to_delete:
                     step.delete()
+                for step in parent_step_as_in_page:
+                    if step and step not in parent_steps:
+                        step.status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
+                        step.save()
+
 
     def approve_request(self, request_id: int):
         slices = [x for x in InputRequestList.objects.filter(request=request_id).order_by("slice") if not x.is_hide]
