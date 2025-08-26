@@ -1568,12 +1568,12 @@ def step_validation(slice_steps):
         is_skipped = True
         is_not_skipped = False
         for steps in steps_status[:-1]:
-            if steps['value'] and (steps['value'] not in tags):
-                tags.append(steps['value'])
             if steps['value']:
-                if steps['is_skipped'] == True:
+                if steps['is_skipped']:
                     is_skipped = True
                 else:
+                    if (steps['value'] not in tags):
+                        tags.append(steps['value'])
                     if is_not_skipped and is_skipped:
                         wrong_skipping_slices.add(slice)
                     else:
