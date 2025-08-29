@@ -25,6 +25,12 @@ interface TaskPatchData {
     patchedTasks: number[];
     tasksToFix: TaskToFix[];
     request: ProductionRequestBase;
+    aodCheck: {
+      full: string[];
+      running: string[];
+      missing: string[];
+      too_much: string[];
+    };
 }
 
 
@@ -56,7 +62,7 @@ export class ReproPatchService {
     requestID: undefined,
     selectedTask: undefined,
     error: null,
-    patched: false
+    patched: false,
   };
   private error$ = new Subject<string>();
   private isLoading$ = new Subject<boolean>();
@@ -75,7 +81,7 @@ export class ReproPatchService {
     this.error$.pipe(map(error => ({error}))),
     this.isLoading$.pipe(map(isLoading => ({isLoading}))),
     this.requestID$.pipe(map(requestID => ({requestID}))),
-    this.patched$.pipe(map(patched => ({patched})))
+    this.patched$.pipe(map(patched => ({patched}))),
   );
   state = signalSlice({
     initialState: this.initialState,
@@ -88,6 +94,9 @@ export class ReproPatchService {
   });
   repoPatchLoad(requestID: string, selectedTask: string = ''): Observable<TaskPatchData> {
     return this.http.get<TaskPatchData>(`${this.prGetPatchInfoUrl}/${requestID}/`, {params: {selectedTask}}).pipe(
+      tap((data) => {
+        console.log(data);
+      }),
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
         this.isLoading$.next(false);

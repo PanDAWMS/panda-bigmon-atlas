@@ -1,4 +1,6 @@
+from collections import defaultdict
 from dataclasses import dataclass
+from typing import Dict
 
 from django.db.models import Q
 
@@ -213,3 +215,32 @@ def clone_fix_reprocessing_task(reprocessing_task: ReprocessingTaskFix, ami_tag:
     for task_to_abort in  reprocessing_task.tasks_to_abort:
             action_executor.obsolete_or_abort_synced_task(task_to_abort)
     return new_slices
+
+def check_merged_AOD(request_id: int):
+    tasks = list(ProductionTask.objects.filter(request_id=request_id).order_by('id'))
+    events_per_run: Dict[int, int] = {}
+    datasets_per_run: Dict[int, str] = {}
+    ddm = DDM()
+    runs_stats_aod = {'full':[],'running':[],'missing':[],'too_much':[]}
+
+    for task in tasks:
+        if task.status not in ProductionTask.BAD_STATUS:
+            if '.RAW' in task.inputdataset:
+                run_number = int(task.inputdataset.split('.')[1])
+                datasets_per_run[run_number] = task.inputdataset
+                if run_number not in events_per_run:
+                    events_per_run[run_number] = ddm.get_number_events(task.inputdataset)
+            elif '.AOD' in task.inputdataset and 'merge' in task.name:
+                run_number = int(task.inputdataset.split('.')[1])
+                if task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
+                    if run_number in events_per_run:
+                        aod_events = ddm.get_number_events(next(task.output_non_log_datasets()))
+                        if aod_events == events_per_run[run_number]:
+                            runs_stats_aod['full'].append(datasets_per_run[run_number])
+                        elif aod_events < events_per_run[run_number]:
+                            runs_stats_aod['missing'].append(datasets_per_run[run_number])
+                        else:
+                            runs_stats_aod['too_much'].append(datasets_per_run[run_number])
+                else:
+                    runs_stats_aod['running'].append(datasets_per_run[run_number])
+    return runs_stats_aod

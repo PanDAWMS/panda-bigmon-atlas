@@ -24,7 +24,7 @@ from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, Dat
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
     SystemParameters, SystemParametersHandler, MCWorkflowRequest
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
-    ReprocessingTaskFix, patched_containers
+    ReprocessingTaskFix, patched_containers, check_merged_AOD
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.views import form_existed_step_list, set_request_status
@@ -329,10 +329,12 @@ def reprocessing_request_patch_info(request, requestID):
         pathed_tasks = patched_containers(requestID)
         selected_task = request.query_params.get('selectedTask')
         tasks_to_fix = find_reprocessing_to_fix(requestID, pathed_tasks)
+        aod_check  = check_merged_AOD(int(requestID))
         if selected_task:
             tasks_to_fix = [x for x in tasks_to_fix if x.original_task_id == int(selected_task)]
         return Response( {'request': ProductionRequestSerializer(TRequest.objects.get(reqid=requestID)).data,
-                          'patchedTasks': pathed_tasks, "tasksToFix": [asdict(x) for x in tasks_to_fix]})
+                          'patchedTasks': pathed_tasks, "tasksToFix": [asdict(x) for x in tasks_to_fix],
+                          'aodCheck': aod_check} )
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
