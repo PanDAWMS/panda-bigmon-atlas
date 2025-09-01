@@ -39,6 +39,7 @@ export interface StepPosition {
   step_id: number;
 }
 export interface RequestCheckResult{
+  type: "REQUEST" | "SLICE";
   step_position: StepPosition[];
   check_name: string;
   status: string;

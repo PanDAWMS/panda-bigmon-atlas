@@ -18,6 +18,7 @@ import {MatButton} from "@angular/material/button";
 interface CheckError {
   name: string;
   message: string;
+  type: 'REQUEST' | 'SLICE';
   positions: {
       RequestIDs: number;
       sliceIDs: number;
@@ -44,6 +45,8 @@ interface CheckError {
 export class PMGApprovalComponent implements OnInit{
 
     ERROR_CHECKUP_LIST = [
+      'Energy check',
+      'Project check',
       'Missing Job Option',
       'Not dividable job option',
       'Input events not dividable by 10k',
@@ -69,6 +72,7 @@ export class PMGApprovalComponent implements OnInit{
                 currentErrors.push({
                         name: check.check_name,
                         message: check.message || '',
+                        type: check.type as 'REQUEST' | 'SLICE',
                         positions: check.step_position.map(pos => {
                             return {
                                 RequestIDs: pos.request_id ,

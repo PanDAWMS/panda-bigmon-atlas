@@ -31,6 +31,9 @@
         <strong>Project:</strong> {{ request.project || 'N/A' }}
       </p>
       <p>
+        <strong>Energy:</strong> {{ request.energy_gev  }} GeV
+      </p>
+      <p>
         <strong>Short Description:</strong>
         {{ request.description }}
       </p>
@@ -87,8 +90,14 @@
     </mat-expansion-panel-header>
     @for (error of check.errors ; track error) {
       @for(position of error.positions; track position) {
-        <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}/#{{position.sliceIDs}}">Request: {{position.RequestIDs}} slice: {{position.sliceIDs}}</a>
-        <span style="margin-left: 5px">{{error.message}}</span></div>
+        @if(error.type === 'SLICE'){
+          <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}/#{{position.sliceIDs}}">Request: {{position.RequestIDs}} slice: {{position.sliceIDs}}</a>
+          <span style="margin-left: 5px">{{error.message}}</span></div>
+        }
+        @if(error.type === 'REQUEST'){
+          <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}">Request: {{position.RequestIDs}}</a>
+          <span style="margin-left: 5px">{{error.message}}</span></div>
+        }
       }
     }
   </mat-expansion-panel>

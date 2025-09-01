@@ -1690,6 +1690,7 @@ class RequestCheckResult:
     check_name: str
     status: str
     message: str = ''
+    type: str = 'SLICE' # or REQUEST
     details: Dict[str, Any] = None
 
 def check_request_energy(request: TRequest):
@@ -1831,6 +1832,31 @@ def get_request_stats(production_requests: List[TRequest]) -> Dict[str, Any]:
                     production_request_stats[production_request.reqid]['total_input_datasets'] += 1
     return production_request_stats
 
+def check_requests_metadata(production_requests: List[TRequest]):
+    result_problems = []
+    for production_request in production_requests:
+        if production_request.campaign.lower() < 'mc23':
+            if not production_request.energy_gev or production_request.energy_gev > 13000:
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Energy check', status='ERROR', type='REQUEST',
+                                           message=f'Request {production_request.reqid} has campaign {production_request.campaign} but energy {production_request.energy_gev}.'))
+            if  production_request.project.project.startswith('mc23'):
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Project check', status='ERROR', type='REQUEST',
+                                           message=f'Request {production_request.reqid} has campaign {production_request.campaign} but project {production_request.project.project}.'))
+            if production_request.campaign.lower().startswith('mc20') and not production_request.project.project.startswith('mc20'):
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Project check', status='ERROR', type='REQUEST',
+                                           message=f'Request {production_request.reqid} has campaign {production_request.campaign} but project {production_request.project.project}.'))
+            if production_request.project.project.startswith('mc20') and not production_request.campaign.lower().startswith('mc20'):
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Project check', status='ERROR', type='REQUEST',
+                                           message=f'Request {production_request.reqid} has project {production_request.project.project} but campaign {production_request.campaign}.'))
+        else:
+            if  production_request.energy_gev == 13000:
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Energy check', status='ERROR',type='REQUEST',
+                                           message=f'Request {production_request.reqid} has campaign {production_request.campaign} but energy {production_request.energy_gev}.'))
+            if not production_request.project.project.startswith('mc23'):
+                result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)], check_name='Project check', status='ERROR', type='REQUEST',
+                                           message=f'Request {production_request.reqid} has campaign {production_request.campaign} but project {production_request.project.project}.'))
+    return result_problems
+
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -1843,6 +1869,7 @@ def pmg_request_verification(request):
             raise Exception(f'No production requests found for JIRA {jira}')
         result: List[RequestCheckResult] = []
         result += check_job_options(list(production_requests))
+        result += check_requests_metadata(list(production_requests))
         production_request_stats = get_request_stats(list(production_requests))
         production_requests_dict = []
         for production_request in production_requests:
