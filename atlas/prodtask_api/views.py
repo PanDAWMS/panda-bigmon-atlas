@@ -396,8 +396,8 @@ def unavailable_datasets_info(request):
                 tasks = JediTasks.objects.filter(id__gte=40700000, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING], prodsourcelabel='user')
                 tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
             else:
-                tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING])
-                tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
+                tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING, ProductionTask.STATUS.EXHAUSTED])
+                tasks_id = [x.id for x in tasks if 'incomplete at storages ' in x.errordialog]
             result = get_unavalaible_daod_input_datasets(tasks_id)
         sites = set()
         for dataset_info in result:
