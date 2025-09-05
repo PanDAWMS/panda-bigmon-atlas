@@ -2715,8 +2715,10 @@ class TaskDefinition(object):
                         except Exception as ex:
                             if 'TXT' in input_name and key!='inputGenConfFile':
                                 input_types.append('TXT')
+                            elif 'HEPMC' in input_name and key != 'inputGenConfFile':
+                                    input_types.append('HEPMC')
                             logger.error('parse_data_name failed: {0} (input_name={1})'.format(ex, input_name))
-                if len(input_types) == 1 and 'TXT' in input_types:
+                if len(input_types) == 1 and ('TXT' in input_types or 'HEPMC' in input_types):
                     if is_optimal_first_event(step):
                         task_config.update({'optimalFirstEvent': True})
                     min_events = int(input_params.get('nEventsPerJob', 0)) or int(task_config.get('nEventsPerJob', 0))
@@ -2918,6 +2920,8 @@ class TaskDefinition(object):
                             except Exception:
                                 if 'TXT' in input_name and key!='inputGenConfFile':
                                     evgen_input_formats.append('TXT')
+                                elif 'HEPMC' in input_name and key != 'inputGenConfFile':
+                                    evgen_input_formats.append('HEPMC')
                 if number_of_events > 0 and task_config.get('nEventsPerJob', None) and not evgen_params:
                     events_per_job = int(task_config['nEventsPerJob'])
                     if not (number_of_events % events_per_job == 0):
@@ -2935,7 +2939,7 @@ class TaskDefinition(object):
                         task_config['nEventsPerInputFile'] = number_of_events
                         skip_check_input_ne = True
                 elif evgen_number_input_files > 1:
-                    if len(evgen_input_formats) == 1 and 'TXT' in evgen_input_formats:
+                    if len(evgen_input_formats) == 1 and ('TXT' in evgen_input_formats or 'HEPMC' in evgen_input_formats):
                         if 'nEventsPerInputFile' in list(task_config.keys()) and 'nEventsPerJob' in list(
                                 task_config.keys()):
                             if not project_mode.nEventsPerInputFile:
@@ -3236,6 +3240,18 @@ class TaskDefinition(object):
                 elif re.match(r'^(--)?ignoreBlacklist', name, re.IGNORECASE):
                     if project_mode.ignoreBlacklist:
                         param_value = project_mode.ignoreBlacklist
+                    else:
+                        param_value = self._get_parameter_value(name, input_params)
+                    if not param_value or str(param_value).lower() == 'none':
+                        continue
+                    param_dict = {'name': name, 'value': param_value}
+                    param_dict.update(trf_options)
+                    job_parameters.append(
+                        self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
+                    )
+                elif re.match(r'^(--)?extension', name, re.IGNORECASE):
+                    if project_mode.hepmcfmt:
+                        param_value = project_mode.hepmcfmt
                     else:
                         param_value = self._get_parameter_value(name, input_params)
                     if not param_value or str(param_value).lower() == 'none':
@@ -5046,7 +5062,7 @@ class TaskDefinition(object):
             data_type = self.parse_data_name(input_name)['data_type']
         except Exception:
             pass
-        if data_type in ['TXT']:
+        if data_type in ['TXT','HEPMC']:
             return
 
         task_config = ProjectMode.get_task_config(step)

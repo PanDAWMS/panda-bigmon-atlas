@@ -634,5 +634,17 @@
   "filterBKGCut": {
     "type": "int",
     "description": ""
+  },
+  "jsonArch": {
+    "type": "bool",
+    "description": ""
+  },
+  "hepmcfmt": {
+    "type": "str",
+    "description": ""
+  },
+  "nvidia": {
+    "type": "str",
+    "description": ""
   }
 }
