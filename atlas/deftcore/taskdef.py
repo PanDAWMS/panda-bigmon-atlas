@@ -3976,7 +3976,7 @@ class TaskDefinition(object):
                 'trans_uses_postfix': trans_uses_postfix,
                 'job_params': job_parameters,
                 'log': log_param,
-                'architecture': project_mode.cmtconfig,
+                'architecture': json.dumps(project_mode.cmtconfig),
                 'type': task_type,
                 'taskname': taskname,
                 'priority': priority,

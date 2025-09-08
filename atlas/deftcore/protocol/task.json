@@ -4,7 +4,7 @@
   "cloud": "'{{cloud}}'",
   "site": "'{{site}}'",
   "excludedSite": "'{{excludedSites}}'",
-  "architecture": "'{{architecture}}'",
+  "architecture": "{{architecture|json_str}}",
   "coreCount": "{{number_of_cpu_cores}}",
   "skipScout": "{{skip_scout_jobs}}",
   "noInput": "{{no_primary_input}}",

@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Dict, List
 
 from atlas.ami.client import AMIClient
 
@@ -63,6 +64,11 @@ class ProjectMode(object):
             self._multiple_cmtconfig = True
         self.set_cmtconfig()
         self.set_cmtconfig_options()
+        self.is_json_form = False
+        if self.jsonArch:
+            self.get_json_cmtconfig()
+        if self.nvidia:
+            self.set_nvidia_options()
         self.project_mode_dict['cmtconfig'] = self.cmtconfig
 
     def __getattr__(self, item):
@@ -236,6 +242,36 @@ class ProjectMode(object):
                     raise Exception(
                         'cmtconfig \"{0}\" specified by user is not exist in cache \"{1}\" (available: \"{2}\")'.format(
                             self.cmtconfig, self.cache, str(', '.join(available_cmtconfig_list))))
+    def set_nvidia_options(self):
+        self.get_json_cmtconfig()
+        if self.nvidia in ['any', "*"]:
+            self.cmtconfig.update({'gpu_spec': {'vendor':'nvidia'}})
+        else:
+            self.cmtconfig.update({'gpu_spec': {'vendor': 'nvidia', 'version': f'>={self.nvidia}'}})
+
+    def get_json_cmtconfig(self):
+        #     split cmtconfig to tokens
+        if not self.cmtconfig or self.is_json_form:
+            return
+        json_cmtconfig: Dict[str, str|List[str]] = {'sw_platform':self.cmtconfig.split('#')[0]}
+        if '#' in self.cmtconfig:
+            addons = self.cmtconfig.split('#')[1].strip('()').split('|')
+            json_cmtconfig['cpu_specs'] = []
+            for addon in addons:
+                addon_dict = {}
+                tokens = addon.split('-')
+                addon_dict['arch'] = tokens[0]
+                if len(tokens) > 1 and tokens[1] != '*':
+                    addon_dict['vendor'] = tokens[1]
+                if len(tokens) > 2 and tokens[2] != '*':
+                    addon_dict['instr'] = tokens[2]
+                json_cmtconfig['cpu_specs'].append(addon_dict)
+        self.cmtconfig = json_cmtconfig
+        self.is_json_form = True
+
+
+
+
 
 
     def set_cmtconfig(self):
