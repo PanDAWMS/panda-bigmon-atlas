@@ -181,7 +181,7 @@ class TRequest(models.Model):
     is_error = models.BooleanField(db_column='EXCEPTION', null=True, blank=False)
     jira_reference = models.CharField(max_length=50, db_column='REFERENCE', null=True, blank=True)
     info_fields = models.TextField(db_column='INFO_FIELDS', null=True, blank=True)
-    is_fast = models.BooleanField(db_column='IS_FAST', null=True, blank=False)
+    is_fast = models.BooleanField(db_column='IS_FAST', null=True, blank=False, verbose_name='Proceed without delay')
     locked = models.DecimalField(decimal_places=0, max_digits=1, db_column='LOCKED', null=True)
 
     def get_next_slice(self):
