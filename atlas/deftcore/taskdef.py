@@ -1971,12 +1971,15 @@ class TaskDefinition(object):
                     ProductionTask.objects.get(id=previous_task_id).status not in ['failed', 'broken', 'aborted', 'obsolete', 'toabort']:
                 used_files.update(self.rucio_client.list_files_with_scope_in_dataset(dataset))
         events_per_pileup_file = self.rucio_client.get_number_events(mc_pileup_overlay['files'][0])
-        pileup_files_per_job = nevents_per_job // events_per_pileup_file
-        if pileup_files_per_job == 0:
-            if (mc_pileup_overlay.get('event_ratio',1) > 1)  or (task.get('nEventsPerInputFile', 0) == events_per_pileup_file):
-                pileup_files_per_job = 1
-            else:
-                raise Exception(f'Mismatch events in pileup and events per job: events per job {nevents_per_job} - pileup {events_per_pileup_file}')
+        if not mc_pileup_overlay.get('hits_minbias', False):
+            pileup_files_per_job = nevents_per_job // events_per_pileup_file
+            if pileup_files_per_job == 0:
+                if (mc_pileup_overlay.get('event_ratio',1) > 1)  or (task.get('nEventsPerInputFile', 0) == events_per_pileup_file):
+                    pileup_files_per_job = 1
+                else:
+                    raise Exception(f'Mismatch events in pileup and events per job: events per job {nevents_per_job} - pileup {events_per_pileup_file}')
+        else:
+            pileup_files_per_job = nevents_per_job * mc_pileup_overlay.get('event_ratio',1)// events_per_pileup_file
         files_required = math.ceil(number_of_jobs) * pileup_files_per_job
         if files_required > len(mc_pileup_overlay['files']):
             raise Exception(f'Not enough overlay files: requested {files_required} available {len(mc_pileup_overlay["files"])}')
@@ -1999,7 +2002,10 @@ class TaskDefinition(object):
             if (len(used_files) + files_required) > len(mc_pileup_overlay['files']):
                 files_to_store = self.rucio_client.choose_random_files(mc_pileup_overlay['files'],files_required,random_seed=None,previously_used=[])
             else:
-                files_to_store = self.rucio_client.choose_random_files(mc_pileup_overlay['files'],files_required,random_seed=None,previously_used=list(used_files))
+                if mc_pileup_overlay.get('random', True):
+                    files_to_store = self.rucio_client.choose_random_files(mc_pileup_overlay['files'],files_required,random_seed=None,previously_used=list(used_files))
+                else:
+                    files_to_store = list(set(mc_pileup_overlay['files']) - used_files)[:files_required]
         logger.info("MC overlay dataset %s with %d files is registered for a task %d" % (mc_pileup_overlay['input_dataset_name'], len(files_to_store),task_id))
         files_list = list(self.split_list(files_to_store,len(files_to_store)//100+1))
         self.rucio_client.register_dataset(mc_pileup_overlay['input_dataset_name'],files_list[0],meta={'task_id':task_id})
@@ -3082,7 +3088,7 @@ class TaskDefinition(object):
 
             output_trf_params = list()
 
-            mc_pileup_overlay = {'is_overlay':False,'datasets':[],'version':1,'input_dataset_name':None, 'files': []}
+            mc_pileup_overlay = {'is_overlay':False,'datasets':[]}
             for output_type in output_types:
                 if (trf_name.lower() == 'Trig_reco_tf.py'.lower() or trf_name.lower() == 'TrigMT_reco_tf.py'.lower()) \
                         and output_type == 'RAW':
@@ -3427,19 +3433,21 @@ class TaskDefinition(object):
                         continue
                     if project_mode.randomMCOverlay and project_mode.randomMCOverlay != 'no':
                         mc_pileup_overlay['is_overlay'] = True
+                        mc_pileup_overlay_datasets = mc_pileup_overlay.get('datasets', [])
                         if project_mode.randomMCOverlay == 'single':
-                            mc_pileup_overlay.update(
-                                self._find_overlay_input_dataset(param_value, input_data_dict['number'], True))
+                            mc_pileup_overlay_datasets += [self._find_overlay_input_dataset(param_value, input_data_dict['number'], True)]
                         else:
-                            mc_pileup_overlay.update(self._find_overlay_input_dataset(param_value,input_data_dict['number']))
-                        param_dict = {'name': name, 'dataset': mc_pileup_overlay['input_dataset_name']}
+                            mc_pileup_overlay_datasets += [self._find_overlay_input_dataset(param_value,input_data_dict['number'])]
+                        mc_pileup_overlay['datasets'][-1]['random'] = True
+                        mc_pileup_overlay['datasets'] = mc_pileup_overlay_datasets
+                        param_dict = {'name': name, 'dataset': mc_pileup_overlay['datasets'][-1]['input_dataset_name']}
                         param_dict.update(trf_options)
                         if project_mode.eventRatio:
                             event_ratio = project_mode.eventRatio \
                                 if '.' in str(project_mode.eventRatio) else int(project_mode.eventRatio)
                             param_dict.update({'event_ratio': event_ratio})
                             if type(event_ratio) is int and event_ratio > 1:
-                                mc_pileup_overlay['event_ratio'] = event_ratio
+                                mc_pileup_overlay['datasets'][-1]['event_ratio'] = event_ratio
                         second_input_param = \
                             self.protocol.render_param(TaskParamName.SECONDARY_INPUT_ZERO_BIAS_BS_RND, param_dict)
                         second_input_param['ratio'] = 1
@@ -3507,8 +3515,7 @@ class TaskDefinition(object):
                         if 'Cavern'.lower() in name.lower():
                             postfix = postfix_index
 
-                        param_dict = {'name': param_name, 'dataset': param_value, 'postfix': postfix}
-                        param_dict.update(trf_options)
+                        param_dict = {}
                         if project_mode.eventRatio:
                             current_event_ratio = project_mode.eventRatio
                             if ',' in project_mode.eventRatio:
@@ -3538,6 +3545,17 @@ class TaskDefinition(object):
                                 else:
                                     event_ratio = int(current_event_ratio)
                                 param_dict.update({'event_ratio': event_ratio})
+                        if project_mode.uniquePtMinbias:
+                            mc_pileup_overlay['is_overlay'] = True
+                            pileup_dataset_values = self._find_overlay_input_dataset(param_value, input_data_dict['number'])
+                            pileup_dataset_values['event_ratio'] = param_dict.get('event_ratio', 1)
+                            pileup_dataset_values['hits_minbias'] = True
+                            mc_pileup_overlay['datasets'].append(pileup_dataset_values)
+                            param_dict.update({'name': param_name, 'dataset': pileup_dataset_values['input_dataset_name'],
+                                          'postfix': postfix})
+                        else:
+                            param_dict = {'name': param_name, 'dataset': param_value, 'postfix': postfix}
+                        param_dict.update(trf_options)
                         if 'Cavern'.lower() in name.lower():
                             second_input_param = self.protocol.render_param(TaskParamName.SECONDARY_INPUT_CAVERN,
                                                                             param_dict)
@@ -4724,7 +4742,8 @@ class TaskDefinition(object):
                     set_mc_reprocessing_hashtag = self._check_task_recreated(task, step)
                 if mc_pileup_overlay['is_overlay'] and not self.template_type:
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
-                    self._register_mc_overlay_dataset(mc_pileup_overlay, self._get_total_number_of_jobs(task, number_of_events), task_id, task, split_by_datasets)
+                    for mc_pileup_overlay_dataset in mc_pileup_overlay['datasets']:
+                        self._register_mc_overlay_dataset(mc_pileup_overlay_dataset, self._get_total_number_of_jobs(task, number_of_events), task_id, task, split_by_datasets)
                 if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput or selected_files_list_dataset is not None:
                     primary_input = self._get_primary_input(task['jobParameters'])
                     primary_input_dataset = primary_input['dataset']

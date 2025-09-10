@@ -646,5 +646,9 @@
   "nvidia": {
     "type": "str",
     "description": ""
+  },
+  "uniquePtMinbias": {
+    "type": "bool",
+    "description": ""
   }
 }
