@@ -1,4 +1,4 @@
-@if (didType() === 'DATASET'){
+@if (didType() === 'DATASET' || didType() === 'UNKNOWN'){
   <app-rucio-did [datasetName]="did()" >  </app-rucio-did>
 } @else if (didType() === 'CONTAINER'){
   <app-rucio-container [containerName]="did()" >  </app-rucio-container>

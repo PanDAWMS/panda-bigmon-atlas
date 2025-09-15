@@ -1521,7 +1521,7 @@ def dataset_info(request):
                                                           'datasets_inside_container': [asdict(x) for x in datasets_metadata]}})
         else:
             return Response({'dataset_exists': False,
-                             'dataset_knowledge': {'dataset_name':dataset_name,'error':'Dataset does not exist'}})
+                             'dataset_knowledge': {'did_type': 'DATASET', 'dataset_name':dataset_name,'error':'Dataset does not exist'}})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

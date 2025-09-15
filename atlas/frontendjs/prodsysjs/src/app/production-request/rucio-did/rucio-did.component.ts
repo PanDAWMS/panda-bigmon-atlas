@@ -1,5 +1,9 @@
 import {Component, computed, effect, inject, input, OnInit, Signal} from '@angular/core';
-import {DataCarouselService, DatasetExistsResponse} from "../../DataCarousel/data-carousel.service";
+import {
+  DataCarouselService,
+  DatasetDeletedResponse,
+  DatasetExistsResponse
+} from "../../DataCarousel/data-carousel.service";
 import {AsyncPipe, DatePipe, DecimalPipe, JsonPipe} from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {HttpErrorResponse} from "@angular/common/http";
@@ -58,7 +62,8 @@ interface ReplicaWithRule {
     MatCardHeader,
     MatCardTitle,
     AsyncPipe,
-    ProductionTaskTableComponent
+    ProductionTaskTableComponent,
+    JsonPipe
   ],
   templateUrl: './rucio-did.component.html',
   styleUrl: './rucio-did.component.css'
@@ -77,6 +82,13 @@ export class RucioDIDComponent implements OnInit {
     datasetInfo: Signal<DatasetExistsResponse|undefined> = computed(() => {
       if (this.datasetExists()){
         return this.dataCarouselService.datasetInfoResource.value().dataset_knowledge as DatasetExistsResponse;
+      }else {
+        return undefined;
+      }
+    });
+    datasetDeletedInfo: Signal<DatasetDeletedResponse|undefined> = computed(() => {
+      if (!this.datasetExists()){
+        return this.dataCarouselService.datasetInfoResource.value().dataset_knowledge as DatasetDeletedResponse;
       }else {
         return undefined;
       }
