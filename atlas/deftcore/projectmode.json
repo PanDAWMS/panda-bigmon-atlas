@@ -643,6 +643,10 @@
     "type": "str",
     "description": ""
   },
+  "hepmcUnits": {
+    "type": "str",
+    "description": ""
+  },
   "nvidia": {
     "type": "str",
     "description": ""
