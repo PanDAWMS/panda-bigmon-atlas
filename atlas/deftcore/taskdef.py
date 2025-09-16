@@ -3545,14 +3545,20 @@ class TaskDefinition(object):
                                 else:
                                     event_ratio = int(current_event_ratio)
                                 param_dict.update({'event_ratio': event_ratio})
+                        final_files_ratio = 0
                         if project_mode.uniquePtMinbias:
                             mc_pileup_overlay['is_overlay'] = True
                             pileup_dataset_values = self._find_overlay_input_dataset(param_value, input_data_dict['number'])
-                            pileup_dataset_values['event_ratio'] = param_dict.get('event_ratio', 1)
+                            events_per_pileup_file = self.rucio_client.get_number_events(pileup_dataset_values['files'][0])
+                            events_per_reco_job = int(task_config['nEventsPerJob'])
+                            event_ratio = param_dict.get('event_ratio', 1)
+                            final_files_ratio = math.ceil(events_per_reco_job*event_ratio / events_per_pileup_file)
+                            final_events_ratio = math.ceil(final_files_ratio*events_per_pileup_file / events_per_reco_job)
+                            pileup_dataset_values['event_ratio'] = final_events_ratio
                             pileup_dataset_values['hits_minbias'] = True
                             mc_pileup_overlay['datasets'].append(pileup_dataset_values)
                             param_dict.update({'name': param_name, 'dataset': pileup_dataset_values['input_dataset_name'],
-                                          'postfix': postfix})
+                                          'postfix': postfix, 'event_ratio': final_events_ratio})
                         else:
                             param_dict = {'name': param_name, 'dataset': param_value, 'postfix': postfix}
                         param_dict.update(trf_options)
@@ -3562,21 +3568,24 @@ class TaskDefinition(object):
                         else:
                             second_input_param = self.protocol.render_param(TaskParamName.SECONDARY_INPUT_MINBIAS,
                                                                             param_dict)
-                        n_pileup = TaskDefConstants.DEFAULT_MINIBIAS_NPILEUP
-                        if project_mode.npileup:
-                            n_pileup = project_mode.npileup \
-                                if '.' in str(project_mode.npileup) else int(project_mode.npileup)
-                        if postfix == '_LOW':
-                            if project_mode.npileuplow:
-                                n_pileup = project_mode.npileuplow \
-                                    if '.' in str(project_mode.npileuplow) else int(project_mode.npileuplow)
-                        elif postfix == '_HIGH':
-                            if project_mode.npileuphigh:
-                                n_pileup = project_mode.npileuphigh \
-                                    if '.' in str(project_mode.npileuphigh) else int(project_mode.npileuphigh)
-                        second_input_param['ratio'] = n_pileup
-                        if secondary_input_offset:
-                            second_input_param['offset'] = secondary_input_offset
+                        if not project_mode.uniquePtMinbias:
+                            n_pileup = TaskDefConstants.DEFAULT_MINIBIAS_NPILEUP
+                            if project_mode.npileup:
+                                n_pileup = project_mode.npileup \
+                                    if '.' in str(project_mode.npileup) else int(project_mode.npileup)
+                            if postfix == '_LOW':
+                                if project_mode.npileuplow:
+                                    n_pileup = project_mode.npileuplow \
+                                        if '.' in str(project_mode.npileuplow) else int(project_mode.npileuplow)
+                            elif postfix == '_HIGH':
+                                if project_mode.npileuphigh:
+                                    n_pileup = project_mode.npileuphigh \
+                                        if '.' in str(project_mode.npileuphigh) else int(project_mode.npileuphigh)
+                            second_input_param['ratio'] = n_pileup
+                            if secondary_input_offset:
+                                second_input_param['offset'] = secondary_input_offset
+                        else:
+                            second_input_param['ratio'] = final_files_ratio
                         job_parameters.append(second_input_param)
 
                     is_pile_task = True
