@@ -375,14 +375,26 @@ def check_submitted_recovery_requests():
 def find_fixed_recovery(dataset_recovery_id):
     dataset_recovery = DatasetRecovery.objects.get(id=dataset_recovery_id)
     current_task = dataset_recovery.recovery_task
-    for task in ProductionTask.objects.filter(request=current_task.request):
-        if task.inputdataset == current_task.inputdataset and task.output_formats == current_task.output_formats:
-            dataset_recovery.recovery_task = task
-            dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
-            dataset_recovery.save()
-            if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
-                finish_dataset_recovery(dataset_recovery.id)
-            return
+    ddm = DDM()
+    for task in ProductionTask.objects.filter(request=current_task.request).order_by('id'):
+        if task.status not in ProductionTask.BAD_STATUS:
+            if ((task.inputdataset == current_task.inputdataset and task.output_formats == current_task.output_formats) or
+                    ((ddm.get_sample_container_name(task.inputdataset).split('.',1)[1] == ddm.get_sample_container_name(current_task.inputdataset).split('.',1)[1]
+                and task.output_formats == current_task.output_formats))):
+
+                dataset_recovery.recovery_task = task
+                dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
+                dataset_recovery.save()
+                recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+                info_obj = recovery_info.info_obj
+                info_obj.recovery_slice = task.step.slice.slice
+                recovery_info.info_obj = info_obj
+                recovery_info.save()
+                if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                    finish_dataset_recovery(dataset_recovery.id)
+                return
+
+
 
 def check_running_recovery_requests():
     for dataset_recovery in DatasetRecovery.objects.filter(status=DatasetRecovery.STATUS.RUNNING):
