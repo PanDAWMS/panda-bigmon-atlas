@@ -174,10 +174,10 @@ def recreate_stuck_replica_task(task_id: int):
 
     for output in outputs:
         if not ddm.dataset_exists(output):
-            output_formats_to_recreate.append(output.split('.')[-1])
+            output_formats_to_recreate.append(output.split('.')[-2])
             deleted_datasets.append(output)
         elif ddm.check_only_unavailable_rse(output):
-            output_formats_to_recreate.append(output.split('.')[-1])
+            output_formats_to_recreate.append(output.split('.')[-2])
             deleted_datasets.append(output)
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
