@@ -1383,18 +1383,18 @@ class SystemParametersHandler:
 
     @dataclass
     class BadEvgenSoftwareReleases:
-        releases: Dict[str, List[int]] = field(default_factory=dict)
+        releases: Dict[str, List[str]] = field(default_factory=dict)
 
         @staticmethod
-        def bad_release_numbers(release: str) -> List[int]:
+        def bad_release_generators(release: str) -> List[str]:
             return SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()[release]
 
         @staticmethod
-        def get_bad_releases() ->  Dict[str, List[int]]:
+        def get_bad_releases() ->  Dict[str, List[str]]:
             return SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES).get('releases', {})
 
         @staticmethod
-        def set_bad_releases(releases: Dict[str, List[int]]):
+        def set_bad_releases(releases: Dict[str, List[str]]):
             SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES,
                                            {'releases': releases})
 

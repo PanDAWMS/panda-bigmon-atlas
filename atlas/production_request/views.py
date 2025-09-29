@@ -31,7 +31,7 @@ from atlas.jediinterface.client import JEDIClientTest
 from atlas.prestage.views import prepare_dc_requests
 from atlas.prodtask.ddm_api import DDM, DatasetInfo
 from atlas.prodtask.helper import form_json_request_dict
-from atlas.prodtask.mcevgen import sync_cvmfs_dsid
+from atlas.prodtask.mcevgen import sync_cvmfs_dsid, ACRONYMS_GENERATORS
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, InputRequestList, StepExecution, StepTemplate, SliceError, \
@@ -1757,7 +1757,14 @@ def check_job_options(production_requests: List[TRequest]):
                     ctag = step.step_template.ctag
                     if ETAGRelease.objects.filter(ami_tag=ctag).exists():
                         sw_release = ETAGRelease.objects.get(ami_tag=ctag).sw_release
-                        if sw_release in bad_sw_releases and ( bad_sw_releases[sw_release] == [] or int(dsid[0]) in bad_sw_releases[sw_release]):
+                        generators_sting = job_option.split('/')[-1].split('.')[1].split('_')[0]
+                        generators = []
+                        for key in ACRONYMS_GENERATORS:
+                            if key in generators_sting:
+                                generators.append(key)
+
+
+                        if sw_release in bad_sw_releases and ( bad_sw_releases[sw_release] == [] or (set(generators) & set(bad_sw_releases[sw_release]))):
                             result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
                                                                       check_name='Bad SW release',
                                                                       status='ERROR',
@@ -1864,7 +1871,7 @@ def check_requests_metadata(production_requests: List[TRequest]):
 def pmg_request_verification(request):
     try:
         jira = request.query_params.get('jira')
-        production_requests = TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING)
+        production_requests = TRequest.objects.filter(ref_link__endswith=jira, cstatus__in=[TRequest.STATUS.WAITING, TRequest.STATUS.HOLD])
         if not production_requests:
             raise Exception(f'No production requests found for JIRA {jira}')
         result: List[RequestCheckResult] = []

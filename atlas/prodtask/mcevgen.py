@@ -159,6 +159,57 @@ GENERATORS_FIRST_DSIDS_NUMBER =generator_first_digit = [
     ("gg2zz", 9),
 ]
 
+ACRONYMS_GENERATORS = {
+    "AMPT": "AMPT",
+    "BCV": "BCVEGPY",
+    "BeamHaloGenerator": "BeamHaloGenerator",
+    "BlackMax": "BlackMax",
+    "CalcHep": "CalcHep",
+    "Charybdis": "Charybdis",
+    "Charybdis2": "Charybdis2",
+    "CompHep": "CompHep",
+    "CosmicGenerator": "CosmicGenerator",
+    "Dire4Pythia8": "Dire4Pythia8",
+    "Epos": "Epos",
+    "EG": "EvtGen",
+    "FPMC": "FPMC",
+    "Geneva": "Geneva",
+    "HepMC": "HepMCAscii",
+    "H7": "Herwig7",
+    "Hijing": "Hijing",
+    "HvyN": "HvyN",
+    "Hydjet": "Hydjet",
+    "JHU": "JHU",
+    "MCFM": "MCFM",
+    "MEtop": "MEtop",
+    "MG": "MadGraph",
+    "Matchig": "Matchig",
+    "McAtNlo": "McAtNlo",
+    "PD": "ParticleDecayer",
+    "ParticleGenerator": "ParticleGenerator",
+    "PG": "ParticleGun",
+    "Pm": "Phantom",
+    "PH": "PowHel",
+    "Ph": "Powheg",
+    "ProtosLHEF": "ProtosLHEF",
+    "Pyquen": "Pyquen",
+    "P8B": "Pythia8B",
+    "Py8": "Pythia8",
+    "ReadMcAscii": "ReadMcAscii",
+    "QBH": "QBH",
+    "QGSJet": "QGSJet",
+    "Reldis": "Reldis",
+    "STRINGS": "STRINGS",
+    "Sh": "Sherpa",
+    "Starlight": "Starlight",
+    "SuperChic": "SuperChic",
+    "VBFNLO": "VBFNLO",
+    "Whizard": "Whizard",
+    "aMC": "aMcAtNlo",
+    "gg2vv": "gg2vv",
+    "gg2ww": "gg2ww",
+    "gg2zz": "gg2zz",
+}
 
 def sync_bad_sw_releases(base_file='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOptions/common/BlackList_caches.txt'):
     """
@@ -178,9 +229,9 @@ def sync_bad_sw_releases(base_file='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJo
             sw_release = parts[1].strip()
             generator =  parts[2].strip()
             skipped_dsids = set()
-            for gen, first_digit in GENERATORS_FIRST_DSIDS_NUMBER:
-                if gen.lower() in generator.lower():
-                    skipped_dsids.add(first_digit)
+            for acronym, full_name in ACRONYMS_GENERATORS.items():
+                if full_name.lower() == generator.lower():
+                    skipped_dsids.add(acronym)
             bad_releases[sw_release] = list(set(bad_releases[sw_release]) | skipped_dsids)
     if bad_releases:
         SystemParametersHandler.BadEvgenSoftwareReleases.set_bad_releases(bad_releases)
