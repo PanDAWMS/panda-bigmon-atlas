@@ -1512,9 +1512,9 @@ def dataset_info(request):
                 datasets_inside_container = ddm.list_datasets_in_container(dataset_name)
                 datasets_metadata: List[DatasetInfo] = [DatasetInfo.from_dict(x) for x in ddm.datasets_metadata(datasets_inside_container)]
                 dataset.length = len(datasets_metadata)
-                dataset.files = sum([x.length for x in datasets_metadata], 0)
-                dataset.events = sum([x.events for x in datasets_metadata], 0)
-                dataset.bytes = sum([x.bytes for x in datasets_metadata], 0)
+                dataset.files = sum([x.length or 0 for x in datasets_metadata], 0)
+                dataset.events = sum([x.events or 0 for x in datasets_metadata], 0)
+                dataset.bytes = sum([x.bytes or 0 for x in datasets_metadata], 0)
                 return Response({'dataset_exists': True, 'dataset_knowledge':
                                                          {'did_type': 'CONTAINER','dataset': asdict(dataset), 'replicas': [],
                                                           'rules': dataset_rules,
