@@ -1351,6 +1351,7 @@ def create_filter_bkg_dataset(filter_dataset_name: str, input_dataset: str, cut_
 
 def find_filter_bkg_tasks(filter_bkg_ht = 'FilterBkg'):
     tasks = HashTag.objects.get(hashtag=filter_bkg_ht).tasks
+    ddm = DDM()
     for task in tasks:
         if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
             output_dataset = ''
@@ -1366,6 +1367,14 @@ def find_filter_bkg_tasks(filter_bkg_ht = 'FilterBkg'):
                     _logger.warning(f"Filter dataset {filter_dataset_name} for task {task.id} is empty or not created")
                 else:
                     _logger.info(f"Filter dataset {filter_dataset_name} for task {task.id} created successfully")
+                super_container_name_list = filter_dataset_name.split('.')
+                super_container_name_list[1]='allRuns'
+                super_container_name = '.'.join(super_container_name_list)
+                if not ddm.dataset_exists(super_container_name):
+                    ddm.register_container(super_container_name, [filter_dataset_name])
+                else:
+                    if not ddm.dataset_is_in_container(filter_dataset_name, super_container_name):
+                        ddm.register_datasets_in_container(super_container_name, [filter_dataset_name])
             else:
                 _logger.warning(f"Task {task.id} does not have output dataset or cut value for filter")
             task.remove_hashtag(filter_bkg_ht)
