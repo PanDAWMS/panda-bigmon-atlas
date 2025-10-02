@@ -573,6 +573,7 @@ class TaskDefConstants(object, metaclass=Constants):
     DATASET_DELETED_STATUS = Constant('Deleted')
     DATASET_TO_BE_DELETED_STATUS = Constant('toBeDeleted')
     MC_DELETED_REPROCESSING_REQUEST_HASHTAG = Constant('MCDeletedReprocessing')
+    MC_JOBPARAMETERS_CONFIG_FILE_NAME = Constant('production_parameters.yaml')
 
     DEFAULT_TASK_COMMON_OFFSET_HASHTAG_FORMAT = Constant('_tco_{0}')
 

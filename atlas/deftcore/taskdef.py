@@ -37,6 +37,8 @@ from atlas.JIRA.client import JIRAClient
 from .projectmode import ProjectMode
 import  xml.etree.ElementTree as ET
 
+from ..prodtask.mcevgen import resolve_job_parameters_from_yaml
+
 logger = logging.getLogger('deftcore')
 REQUEST_GRACE_PERIOD = 1
 
@@ -435,12 +437,6 @@ class TaskDefinition(object):
             path_template = Template("/{{number|slice:\"0:3\"}}xxx/{{number}}/{{file_name}}")
         else:
             path_template = Template("{{number|slice:\"0:1\"}}/{{number|slice:\"0:4\"}}xxx/{{number}}/{{file_name}}")
-        job_options_file_path = path_template.render(
-            Context({'number': str(input_data_dict['number']), 'file_name': input_data_dict['file_name']},
-                    autoescape=False))
-        path = TaskDefConstants.DEFAULT_NEW_EVGEN_JO_PATH + job_options_file_path
-        with open(path, 'r') as fp:
-            job_options_file_content = fp.read()
         params = dict()
         if evgen_input_container:
             result = self.rucio_client.get_datasets_and_containers(evgen_input_container,
@@ -453,17 +449,32 @@ class TaskDefinition(object):
 
             else:
                 params.update({'inputGeneratorFile': result['containers']})
-
-        events_per_job = self._read_events_per_job_from_jo(job_options_file_content)
-        if events_per_job is not None:
-            params.update({'nEventsPerJob': events_per_job})
-
-        files_per_job = self._read_files_per_job_from_jo(job_options_file_content)
-        if files_per_job is not None:
-            params.update({'nFilesPerJob': files_per_job})
-
         params.update({'ecmEnergy': energy})
-        return params
+
+        yaml_config_file = path_template.render(Context({'number': str(input_data_dict['number']), 'file_name': TaskDefConstants.MC_JOBPARAMETERS_CONFIG_FILE_NAME},
+                     autoescape=False))
+        try:
+            nEventsPerJob, nFilesPerJob = resolve_job_parameters_from_yaml(yaml_config_file,{'energy':energy})
+            params['nEventsPerJob'] = nEventsPerJob
+            params['nFilesPerJob'] = nFilesPerJob
+            return params
+        except FileNotFoundError:
+            job_options_file_path = path_template.render(
+                Context({'number': str(input_data_dict['number']), 'file_name': input_data_dict['file_name']},
+                        autoescape=False))
+            path = TaskDefConstants.DEFAULT_NEW_EVGEN_JO_PATH + job_options_file_path
+            with open(path, 'r') as fp:
+                job_options_file_content = fp.read()
+
+            events_per_job = self._read_events_per_job_from_jo(job_options_file_content)
+            if events_per_job is not None:
+                params.update({'nEventsPerJob': events_per_job})
+
+            files_per_job = self._read_files_per_job_from_jo(job_options_file_content)
+            if files_per_job is not None:
+                params.update({'nFilesPerJob': files_per_job})
+
+            return params
 
     def _get_evgen_input_files(self, input_data_dict, energy, svn=False, use_containers=True, use_evgen_otf=False):
         path_template = Template("share/DSID{{number|slice:\"0:3\"}}xxx/{{file_name}}")
