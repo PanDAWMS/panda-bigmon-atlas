@@ -26,7 +26,8 @@ from distutils.version import LooseVersion
 from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, StepExecution, ProductionDataset, HashTag,
                                    HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError,
                                    TaskTemplate,
-                                   TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock)
+                                   TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock,
+                                   DSIDHashtags)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
 from .taskreg import TaskRegistration
@@ -4587,7 +4588,11 @@ class TaskDefinition(object):
                 task_proto_dict.update({'fail_when_goal_unreached': project_mode.failWhenGoalUnreached or None})
 
             io_intensity = None
-
+            if (step.request.request_type.lower() == 'MC'.lower() and prod_step.lower() == 'merge'.lower()
+                    and trf_name.lower() == 'EVNTMerge_tf.py'.lower()):
+                evgen_original_tag = taskname.split('.')[-1].split('_')[0]
+                if DSIDHashtags.objects.filter(dsid=input_data_dict['number'],etag=evgen_original_tag).exists():
+                    follow_hashtags.append(TaskDefConstants.AMI_EVGEN_PMG_HASHTAGS)
             if prod_step.lower() == 'merge'.lower():
                 if trf_name.lower() == 'ESDMerge_tf.py'.lower():
                     io_intensity = 3000

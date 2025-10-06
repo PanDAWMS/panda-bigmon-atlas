@@ -630,3 +630,5 @@ class TaskDefConstants(object, metaclass=Constants):
     REPRO_PATCH_HASHTAG = 'ReproPatch'
 
     FILTER_BKG_HASHTAG = 'FilterBkg'
+
+    AMI_EVGEN_PMG_HASHTAGS = 'AMIEvgenPMGHTs'

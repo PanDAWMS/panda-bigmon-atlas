@@ -12,7 +12,7 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
     get_stuck_requests
 from atlas.prodtask.dataset_recovery import check_running_recovery_requests, check_submitted_recovery_requests
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
-from atlas.prodtask.mcevgen import sync_cvmfs_db
+from atlas.prodtask.mcevgen import sync_cvmfs_db, set_pmg_hashtags
 from atlas.prodtask.models import ProductionTask
 from atlas.prodtask.open_ended import check_open_ended
 from atlas.prodtask.patch_reprocessing import find_done_patched_tasks
@@ -212,4 +212,10 @@ def check_submitted_recovery_requests_task():
 @app.task(ignore_result=True)
 def check_running_recovery_requests_task():
     check_running_recovery_requests()
+    return None
+
+
+@app.task(ignore_result=True)
+def check_pmg_merge_evgen():
+    set_pmg_hashtags()
     return None

@@ -4,9 +4,11 @@ from os import listdir
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
+from atlas.ami.client import AMIClient
 
 from atlas.dkb.views import find_jo_by_dsid
-from atlas.prodtask.models import MCJobOptions, SystemParametersHandler
+from atlas.prodtask.models import MCJobOptions, SystemParametersHandler, HashTag, ProductionTask, DSIDHashtags
+from .ddm_api import DDM
 from .models import InputRequestList
 import yaml
 
@@ -393,4 +395,35 @@ def read_yaml_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
         except Exception as e:
             _logger.error(f'Error reading YAML for DSID {dsid}: {e}')
             return None
+    return None
+
+
+def set_pmg_hashtags(prodsys_hashtag='AMIEvgenPMGHTs'):
+    tasks = HashTag.objects.get(hashtag=prodsys_hashtag).tasks
+    ami_client = AMIClient()
+    ddm = DDM()
+    for task in tasks:
+        if task.status in ProductionTask.BAD_STATUS:
+            task.remove_hashtag(prodsys_hashtag)
+        elif task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
+            task_dsid = int(task.name.split('.')[1])
+            evgen_tag = task.name.split('.')[-1].split('_')[0]
+            output = next(task.output_non_log_datasets())
+            ami_dataset = ddm.get_sample_container_name(output)
+            if ami_dataset.startswith('mc16'):
+                ami_dataset = ami_dataset.replace('mc16', 'mc15')
+            ami_dataset_exists = None
+            try:
+                ami_dataset_exists = ami_client.ami_get_dataset_info(ami_dataset)
+            except Exception as e:
+                pass
+            if ami_dataset_exists is not None:
+                if DSIDHashtags.objects.filter(dsid=task_dsid, etag=evgen_tag).exists():
+                    for hashtag in DSIDHashtags.objects.get(dsid=task_dsid, etag=evgen_tag).hashtags:
+                        ami_scope, ami_ht  = hashtag.split(':')
+                        if ami_ht.startswith('Test'):
+                            ami_scope = 'testScope'
+                        ami_client.set_ami_hashtag(dataset=ami_dataset, hashtag=ami_ht, scope=ami_scope, pattern="PMG_GLOBAL_SCOPE")
+                        _logger.info(f'Set hashtag {hashtag} on DSID {task_dsid} for task {task.id}')
+                    task.remove_hashtag(prodsys_hashtag)
     return None
