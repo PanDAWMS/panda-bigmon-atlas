@@ -211,25 +211,8 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
 
     # kill task
     def killTask(self, jediTaskID):
-        """Kill a task
-           args:
-               jediTaskID: jediTaskID of the task to be killed
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
-        """
-
-        data = {'properErrorCode': True, 'jediTaskID': jediTaskID}
-        return self._post_command('killTask',data)
+        data = { 'task_id': jediTaskID}
+        return self._post_new_api_command('api/v1/task/kill', data)
 
 
 

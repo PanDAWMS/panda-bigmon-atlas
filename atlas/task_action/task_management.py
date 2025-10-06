@@ -232,10 +232,10 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def changeTaskPriority(self, jediTaskID, newPriority):
         return self.jedi_client.changeTaskPriority(jediTaskID, newPriority)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def killTask(self, jediTaskID):
         result = self.jedi_client.killTask(jediTaskID)
-        if result[0] == 0:
+        if 'success' in result and result['success']:
             try:
                 task = ProductionTask.objects.get(id=jediTaskID)
                 task.status = ProductionTask.STATUS.TOABORT
