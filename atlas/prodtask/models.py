@@ -1165,7 +1165,19 @@ class AnalysisTaskTemplate(models.Model):
         app_label = 'dev'
         db_table = '"T_AT_TEMPLATE"'
 
+class DSIDHashtags(models.Model):
+    id = models.AutoField(db_column='DSIDHT_ID', primary_key=True)
+    dsid = models.DecimalField(db_column='DSID', max_digits=12, decimal_places=0, null=False)
+    etag = models.CharField(db_column='ETAG', max_length=64, null=True, blank=True)
+    hashtags = models.JSONField(db_column='HASHTAGS')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP', auto_now=True)
 
+    def __str__(self):
+        return f"{self.dsid} ({self.etag})"
+
+    class Meta:
+        app_label = 'dev'
+        db_table = 'T_DSID_HASHTAGS'
 
 class AnalysisStepTemplate(models.Model):
 

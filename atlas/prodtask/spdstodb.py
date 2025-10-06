@@ -7,7 +7,8 @@ import logging
 from django.utils import timezone
 import re
 
-from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions, StepTemplate, get_priority_object
+from atlas.prodtask.models import get_default_project_mode_dict, MCJobOptions, StepTemplate, get_priority_object, \
+    DSIDHashtags
 
 import atlas.gspread as gspread
 from datetime import datetime
@@ -65,7 +66,7 @@ TRANSLATE_EXCEL_LIST = { '1.0': ["brief", "ds", "format", "joboptions", "evfs", 
                              'Rec Merge',
                              'Deriv',
                              'Deriv Merge',
-                                'rivet'
+                                'rivet', 'PMGL1', 'PMGL2', 'PMGL3', 'PMGL4'
                                 ]}
 
 STRIPPED_FIELDS  = [ "format", "joboptions",'Evgen',
@@ -335,6 +336,22 @@ def translate_excl_to_dict(excel_dict, version='2.0'):
                                         formats = STEP_FORMAT[currentstep]
                                     if translated_row.get('rivet',''):
                                         project_mode_addition.append('rivet='+translated_row.get('rivet',''))
+                                    ami_hashtags = []
+                                    for hashtag_row in ['PMGL1','PMGL2','PMGL3','PMGL4']:
+                                        if translated_row.get(hashtag_row,''):
+                                            ami_hashtags.append(f"{hashtag_row}:{translated_row[hashtag_row]}")
+                                    if ami_hashtags:
+                                        if DSIDHashtags.objects.filter(dsid=int(translated_row['ds']),etag=tag).exists():
+                                            dsid_hashtag = DSIDHashtags.objects.get(dsid=int(translated_row['ds']),etag=tag)
+                                            if dsid_hashtag.hashtags != ami_hashtags:
+                                                raise ValueError(f"DSID {translated_row['ds']} with etag {tag} already has hashtags {dsid_hashtag.hashtags}, new hashtags {ami_hashtags} are different")
+                                        else:
+                                            dsid_hashtag = DSIDHashtags()
+                                            dsid_hashtag.dsid = int(translated_row['ds'])
+                                            dsid_hashtag.etag = tag
+                                            dsid_hashtag.hashtags = ami_hashtags
+                                            dsid_hashtag.save()
+
 
                                 elif currentstep == 'Deriv' and is_hepmc:
                                     formats = 'HEPMC'
