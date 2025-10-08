@@ -1391,6 +1391,7 @@ class SystemParametersHandler:
         MCWorkflowRequest = 'MCWorkflowRequest'
         ANALYSIS_REQUEST_EMAIL = 'AnalysisRequestEmail'
         BAD_EVGEN_SW_RELEASES = 'BadEvgenSoftwareReleases'
+        AVAILABLE_PMG_HASHTAGS = 'AvailablePMGHashtags'
 
 
     @dataclass
@@ -1411,6 +1412,18 @@ class SystemParametersHandler:
                                            {'releases': releases})
 
 
+    @dataclass
+    class AvailablePMGHashtags:
+        levels: Dict[str, List[str]] = field(default_factory=dict)
+
+        @staticmethod
+        def get_available_hashtags() ->  Dict[str, List[str]]:
+            return SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS).get('levels', {})
+
+        @staticmethod
+        def set_available_hashtags(hashtags: Dict[str, List[str]]):
+            SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS,
+                                           {'levels': hashtags})
 
     @dataclass
     class DAOD_PHYS_Production:

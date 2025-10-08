@@ -259,6 +259,33 @@ class DDM(object):
         files = list(self.__ddm.list_files(scope, dataset, long=True))
         return files
 
+    def declare_bad_disk_replica(self, filename, execute=False):
+        scope, name = self.rucio_convention(filename)
+        replicas = list(self.__ddm.list_replicas([{'scope':scope,'name':name}], all_states=True))[0]
+        bad_datadisk_replica = None
+        good_tape_replica_exists = False
+        for rse in replicas['rses'].keys():
+            if 'DATADISK' in rse and replicas['states'][rse] == 'AVAILABLE':
+                if bad_datadisk_replica is not None:
+                    bad_datadisk_replica = None
+                    break
+                bad_datadisk_replica = replicas['rses'][rse]
+            if 'DATADISK' not in rse and replicas['states'][rse] == 'AVAILABLE':
+                good_tape_replica_exists = True
+        if bad_datadisk_replica is not None and good_tape_replica_exists:
+            print(bad_datadisk_replica)
+            if execute:
+                self.__ddm.declare_bad_file_replicas(bad_datadisk_replica, 'Automatically declared bad by ProdSys')
+            return True
+        return False
+
+    def list_file_replica(self, filename):
+        scope, name = self.rucio_convention(filename)
+        return list(self.__ddm.list_replicas([{'scope':scope,'name':name}], all_states=True))
+
+    def declare_file_replica_bad(self, file_url, reason):
+        return self.__ddm.declare_bad_file_replicas([file_url], reason)
+
     def list_files_name_in_dataset(self, dsn):
         filename_list = list()
         scope, dataset = self.rucio_convention(dsn)

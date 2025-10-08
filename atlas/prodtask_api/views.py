@@ -497,6 +497,13 @@ def set_config_parameter(request, name):
                 workflows = MCWorkflowRequest.model_validate(request.data)
                 SystemParametersHandler.set_mc_workflow_request(workflows)
                 return Response(request.data)
+            case SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS:
+                task_management = TaskManagementAuthorisation()
+                user, allowed_groups = task_management.task_user_rights(request.user.username)
+                if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
+                    return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
+                SystemParametersHandler.AvailablePMGHashtags.set_available_hashtags(request.data.get('levels',[]))
+                return Response(request.data)
             case _ :
                 return Response('Parameter name not found', status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
