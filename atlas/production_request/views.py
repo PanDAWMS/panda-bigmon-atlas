@@ -1871,7 +1871,7 @@ def check_requests_metadata(production_requests: List[TRequest]):
 def pmg_request_verification(request):
     try:
         jira = request.query_params.get('jira')
-        production_requests = TRequest.objects.filter(ref_link__endswith=jira, cstatus__in=[TRequest.STATUS.WAITING, TRequest.STATUS.HOLD])
+        production_requests = TRequest.objects.filter(ref_link__endswith=jira)
         if not production_requests:
             raise Exception(f'No production requests found for JIRA {jira}')
         result: List[RequestCheckResult] = []
