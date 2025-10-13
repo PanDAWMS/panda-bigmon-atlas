@@ -191,6 +191,13 @@ class AMIClient(object):
         row_id = int(result[0]['id'])
         return row_id != 0
 
+    def ami_get_dataset_info(self, dataset):
+        dataset = dataset.split(':')[-1].strip('/')
+        tid_pattern = r'(?P<tid>_tid\d+_\d{2})'
+        if re.match(r'^.*{0}$'.format(tid_pattern), dataset):
+            dataset = re.sub(tid_pattern, '', dataset)
+        return self._post_command('AMIGetDatasetInfo', logicalDatasetName=dataset)
+
     def _ami_get_tag(self, tag_name):
         return self._post_command('AMIGetAMITagInfo', 'amiTagInfo', newStructure=True, amiTag=tag_name)
 
@@ -417,6 +424,10 @@ class AMIClient(object):
 
     def set_ami_tag_invalid(self, tag_name):
         return self._post_command('SetAMITagStatus', None, amiTag=tag_name, status='invalid')
+
+    def set_ami_hashtag(self, dataset, hashtag, pattern, scope, comment=None):
+        return self._post_command('DatasetWBAddHashtag', None, ldn=dataset, name=hashtag, pattern=pattern,
+                                  scope=scope, comment=comment)
 
     def check_trf_params_in_ami_tag(self, tag_name, trf_params):
         ami_tag_params = []
