@@ -36,6 +36,7 @@ import {
 import {MatList, MatListItem} from "@angular/material/list";
 import {MatInput} from "@angular/material/input";
 import {MatLabel} from "@angular/material/form-field";
+import {MatTooltip} from "@angular/material/tooltip";
 
 
 
@@ -70,7 +71,8 @@ import {MatLabel} from "@angular/material/form-field";
     MatListItem,
     MatInput,
     NgIf,
-    NgForOf
+    NgForOf,
+    MatTooltip
   ],
   standalone: true
 })

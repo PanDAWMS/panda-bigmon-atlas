@@ -67,15 +67,15 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
-    def reloadInput(self, jediTaskID, verbose):
+    def reloadInput(self, jediTaskID, ignore_hard_exhausted):
         pass
 
     @abstractmethod
-    def pauseTask(self, jediTaskID, verbose):
+    def pauseTask(self, jediTaskID):
         pass
 
     @abstractmethod
-    def resumeTask(self, jediTaskID, verbose):
+    def resumeTask(self, jediTaskID):
         pass
 
     @abstractmethod
@@ -87,11 +87,11 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
-    def release_task(self, jediTaskID, verbose):
+    def release_task(self, jediTaskID):
         pass
 
     @abstractmethod
-    def avalancheTask(self, jediTaskID, verbose):
+    def avalancheTask(self, jediTaskID):
         pass
 
     @abstractmethod
@@ -99,7 +99,7 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
-    def killUnfinishedJobs(self, jediTaskID, code, verbose, srvID, useMailAsID):
+    def killUnfinishedJobs(self, jediTaskID, code, useMailAsID):
         pass
 
     @abstractmethod
@@ -110,7 +110,7 @@ class JEDITaskActionInterface(ABC):
 class JEDIJobsActionInterface(ABC):
 
     @abstractmethod
-    def killJobs(self, ids, code, verbose, srvID, useMailAsID, keepUnmerged, jobSubStatus):
+    def killJobs(self, ids, code, useMailAsID, keepUnmerged, jobSubStatus):
         pass
 
     @abstractmethod
@@ -191,158 +191,58 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
     # change task priority
     def changeTaskPriority(self, jediTaskID, newPriority):
         """Change task priority
-           args:
-               jediTaskID: jediTaskID of the task to change the priority
-               newPriority: new task priority
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return code
-                     0: unknown task
-                     1: succeeded
-                     None: database error
         """
-
-        data = {'jediTaskID': jediTaskID,
-                'newPriority': newPriority}
-        return self._post_command('changeTaskPriority', data)
-
+        data = {'task_id': int(jediTaskID),
+                'priority': int(newPriority)}
+        return self._post_new_api_command('api/v1/task/change_priority', data)
 
     # kill task
     def killTask(self, jediTaskID):
-        data = { 'task_id': jediTaskID}
+        data = { 'task_id': int(jediTaskID)}
         return self._post_new_api_command('api/v1/task/kill', data)
-
-
-
 
     # finish task
     def finishTask(self, jediTaskID, soft=False):
         """Finish a task
-           args:
-               jediTaskID: jediTaskID of the task to be finished
-               soft: If True, new jobs are not generated and the task is
-                     finihsed once all remaining jobs are done.
-                     If False, all remaining jobs are killed and then the
-                     task is finished
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
-
-        data = {'properErrorCode': True, 'jediTaskID': jediTaskID}
-        if soft:
-            data['soft'] = True
-        return self._post_command('finishTask',data)
+        data = { 'task_id': int(jediTaskID), 'soft': soft}
+        return self._post_new_api_command('api/v1/task/finish', data)
 
     def changeTaskRamCount(self, jediTaskID, ramCount):
         """Change task priority
-           args:
-               jediTaskID: jediTaskID of the task to change the priority
-               ramCount: new ramCount for the task
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return code
-                     0: unknown task
-                     1: succeeded
-                     None: database error
         """
-        data = {'jediTaskID': jediTaskID,
-                'attrName': 'ramCount',
-                'attrValue': ramCount}
-        return self._post_command('changeTaskAttributePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'attribute_name': 'ramCount',
+                'value': int(ramCount)}
+        return self._post_new_api_command('api/v1/task/change_attribute', data)
 
     # reassign task to a site
     def reassignTaskToSite(self, jediTaskID, site, mode=None):
         """Reassign a task to a site. Existing jobs are killed and new jobs are generated at the site
-           args:
-               jediTaskID: jediTaskID of the task to be reassigned
-               site: the site name where the task is reassigned
-               mode: If soft, only defined/waiting/assigned/activated jobs are killed. If nokill, no jobs are killed. All jobs are killed by default.
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
-        maxSite = 60
-        if site is not None and len(site) > maxSite:
-            return EC_Failed, f'site parameter is too long > {maxSite}chars'
-        data = {'jediTaskID': jediTaskID, 'site': site}
+        data = {'task_id': int(jediTaskID), 'site': site}
         if mode is not None:
             data['mode'] = mode
-        return self._post_command('reassignTask', data)
+        return self._post_new_api_command('api/v1/task/reassign', data)
 
     # reassign task to a cloud
     def reassignTaskToCloud(self, jediTaskID, cloud, mode=None):
         """Reassign a task to a cloud. Existing jobs are killed and new jobs are generated in the cloud
-           args:
-               jediTaskID: jediTaskID of the task to be reassigned
-               cloud: the cloud name where the task is reassigned
-               mode: If soft, only defined/waiting/assigned/activated jobs are killed. If nokill, no jobs are killed. All jobs are killed by default.
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
-        """
 
-        # execute
-        data = {'jediTaskID': jediTaskID, 'cloud': cloud}
+        """
+        data = {'task_id': int(jediTaskID), 'cloud': cloud}
         if mode is not None:
             data['mode'] = mode
-        return self._post_command('reassignTask',data)
+        return self._post_new_api_command('api/v1/task/reassign', data)
 
     # reassign task to a nucleus
     def reassignTaskToNucleus(self, jediTaskID, nucleus, mode=None):
         """Reassign a task to a nucleus. Existing jobs are killed and new jobs are generated in the cloud
-           args:
-               jediTaskID: jediTaskID of the task to be reassigned
-               nucleus: the nucleus name where the task is reassigned
-               mode: If soft, only defined/waiting/assigned/activated jobs are killed. If nokill, no jobs are killed. All jobs are killed by default.
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
-        data = {'jediTaskID': jediTaskID, 'nucleus': nucleus}
+        data = {'task_id': int(jediTaskID), 'nucleus': nucleus}
         if mode is not None:
             data['mode'] = mode
-        return self._post_command('reassignTask',data)
+        return self._post_new_api_command('api/v1/task/reassign', data)
 
     # reassign jobs
     def reassignJobs(self, ids, forPending=False, firstSubmission=None):
@@ -360,103 +260,47 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
                      False: not processed
         """
         # serialize
-        strIDs = pickle.dumps(ids, protocol=0).decode('utf-8')
-        data = {'ids': strIDs}
-        if forPending:
-            data['forPending'] = True
-        if firstSubmission is not None:
-            if firstSubmission:
-                data['firstSubmission'] = True
-            else:
-                data['firstSubmission'] = False
-        return self._post_command('reassignJobs',data)
+        data = {'job_ids': ids}
+        return self._post_new_api_command('api/v1/job/reassign', data)
 
     # change task walltime
     def changeTaskWalltime(self, jediTaskID, wallTime):
         """Change task priority
-           args:
-               jediTaskID: jediTaskID of the task to change the priority
-               wallTime: new walltime for the task
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return code
-                     0: unknown task
-                     1: succeeded
-                     None: database error
         """
-        # instantiate curl
-        data = {'jediTaskID': jediTaskID,
-                'attrName': 'wallTime',
-                'attrValue': wallTime}
-        return self._post_command('changeTaskAttributePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'attribute_name': 'wallTime',
+                'value': int(wallTime)}
+        return self._post_new_api_command('api/v1/task/change_attribute', data)
+
 
     # change task cputime
     def changeTaskCputime(self, jediTaskID, cpuTime):
         """Change task cpuTime
-           args:
-               jediTaskID: jediTaskID of the task to change the priority
-               cpuTime: new cputime for the task
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return code
-                     0: unknown task
-                     1: succeeded
-                     None: database error
         """
-        # instantiate curl
-        data = {'jediTaskID': jediTaskID,
-                'attrName': 'cpuTime',
-                'attrValue': cpuTime}
-        return self._post_command('changeTaskAttributePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'attribute_name': 'cpuTime',
+                'value': int(cpuTime)}
+        return self._post_new_api_command('api/v1/task/change_attribute', data)
+
 
     # change split rule for task
     def changeTaskSplitRule(self, jediTaskID, ruleName, ruleValue):
         """Change split rule fo task
-           args:
-               jediTaskID: jediTaskID of the task to change the rule
-               ruleName: rule name
-               ruleValue: new value for the rule
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return: a tupple of return code and message
-                     0: unknown task
-                     1: succeeded
-                     2: disallowed to update the attribute
-                     None: database error
         """
         # instantiate curl
-        data = {'jediTaskID': jediTaskID,
-                'attrName': ruleName,
-                'attrValue': ruleValue}
-        return self._post_command('changeTaskSplitRulePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'attribute_name': ruleName,
+                'value': ruleValue}
+        return self._post_new_api_command('api/v1/task/change_split_rule', data)
 
     # change task attribute
     def changeTaskAttribute(self, jediTaskID, attrName, attrValue):
         """Change task attribute
-           args:
-               jediTaskID: jediTaskID of the task to change the attribute
-               attrName: attribute name
-               attrValue: new value for the attribute
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return: a tupple of return code and message
-                     0: unknown task
-                     1: succeeded
-                     2: disallowed to update the attribute
-                     None: database error
         """
-        data = {'jediTaskID': jediTaskID,
-                'attrName': attrName,
-                'attrValue': attrValue}
-        return self._post_command('changeTaskAttributePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'attribute_name': attrName,
+                'value': int(attrValue)}
+        return self._post_new_api_command('api/v1/task/change_attribute', data)
 
 
     def retryTask(self, jedi_task_id, new_parameters: dict = None, no_child_retry=False, discard_events=False,
@@ -481,90 +325,30 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         return self._post_new_api_command('api/v1/task/retry', data)
 
     # reload input
-    def reloadInput(self, jediTaskID, verbose=False):
-        """Retry task
-           args:
-               jediTaskID: jediTaskID of the task to retry
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
-        """
-        data = {'jediTaskID': jediTaskID}
-        return self._post_command('reloadInput',data)
+    def reloadInput(self, jediTaskID, ignore_hard_exhausted=False):
+        data = {'task_id': int(jediTaskID), 'ignore_hard_exhausted': ignore_hard_exhausted}
+        return self._post_new_api_command('api/v1/task/reload_input', data)
 
     # pause task
-    def pauseTask(self, jediTaskID, verbose=False):
+    def pauseTask(self, jediTaskID):
         """Pause task
-           args:
-               jediTaskID: jediTaskID of the task to pause
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
-        data = {'jediTaskID': jediTaskID}
-        return self._post_command('pauseTask',data)
+        data = {'task_id': int(jediTaskID)}
+        return self._post_new_api_command('api/v1/task/pause', data)
 
 
-    def resumeTask(self, jediTaskID, verbose=False):
+    def resumeTask(self, jediTaskID):
         """Resume task
-           args:
-               jediTaskID: jediTaskID of the task to release
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
+        data = {'task_id': int(jediTaskID)}
+        return self._post_new_api_command('api/v1/task/resume', data)
 
-        data = {'jediTaskID': jediTaskID}
-        return self._post_command('resumeTask',data)
-
-    def release_task(self, jediTaskID, verbose=False):
+    def release_task(self, jediTaskID):
         """release task from staging
-
-        args:
-            jedi_task_id: jediTaskID of the task to avalanche
-        returns:
-            status code
-                  0: communication succeeded to the panda server
-                  255: communication failure
-            tuple of return code and diagnostic message
-                  0: request is registered
-                  1: server error
-                  2: task not found
-                  3: permission denied
-                  4: irrelevant task status
-                100: non SSL connection
-                101: irrelevant taskID
         """
+        data = {'task_id': int(jediTaskID)}
+        return self._post_new_api_command('api/v1/task/release', data)
 
-        data = {'jedi_task_id': jediTaskID}
-        return self._post_command('release_task',data)
 
     def reassignShare(self, jedi_task_ids, share, reassign_running=False):
         """
@@ -580,143 +364,76 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
                      0: success
                      None: database error
         """
-        jedi_task_ids_pickle = pickle.dumps(jedi_task_ids, protocol=0).decode('utf-8')
-        data = {'jedi_task_ids_pickle': jedi_task_ids_pickle,
+        data = {'task_id_list': list(map(int, jedi_task_ids)),
                 'share': share,
-                'reassign_running': reassign_running}
-        return self._post_command('reassignShare',data, False)
+                'reassign_running_jobs': reassign_running}
+        return self._post_new_api_command('api/v1/task/reassign_global_share', data)
 
     def triggerTaskBrokerage(self, jediTaskID):
         """Trigger task brokerge
-           args:
-               jediTaskID: jediTaskID of the task to change the attribute
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return: a tupple of return code and message
-                     0: unknown task
-                     1: succeeded
-                     None: database error
         """
-        data = {'jediTaskID': jediTaskID,
-                'diffValue': -12}
-        return self._post_command('changeTaskModTimePanda',data)
+        data = {'task_id': int(jediTaskID),
+                'hour_offset': -12}
+        return self._post_new_api_command('api/v1/task/change_modification_time', data)
 
 
-    def avalancheTask(self, jediTaskID, verbose=False):
+    def avalancheTask(self, jediTaskID):
         """force avalanche for task
-           args:
-               jediTaskID: jediTaskID of the task to avalanche
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               tuple of return code and diagnostic message
-                     0: request is registered
-                     1: server error
-                     2: task not found
-                     3: permission denied
-                     4: irrelevant task status
-                   100: non SSL connection
-                   101: irrelevant taskID
         """
-        data = {'jediTaskID': jediTaskID}
-        return self._post_command('avalancheTask',data)
+        data = {'task_id': int(jediTaskID)}
+        return self._post_new_api_command('api/v1/task/avalanche', data)
+
 
     def increaseAttemptNr(self, jediTaskID, increase):
-        """Change task priority
-           args:
-               jediTaskID: jediTaskID of the task to increase attempt numbers
-               increase: increase for attempt numbers
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               return code
-                     0: succeeded
-                     1: unknown task
-                     2: invalid task status
-                     3: permission denied
-                     4: wrong parameter
-                     None: database error
-        """
-        data = {'jediTaskID': jediTaskID,
-                'increasedNr': increase}
-        return self._post_command('increaseAttemptNrPanda',data)
+        data = {'task_id': int(jediTaskID),
+                'increase': int(increase)}
+        return self._post_new_api_command('api/v1/task/increase_attempts', data)
 
-    def killUnfinishedJobs(self, jediTaskID, code=None, verbose=False, srvID=None, useMailAsID=False):
-        """Kill unfinished jobs in a task. Normal users can kill only their own jobs.
-        People with production VOMS role can kill any jobs.
-        Running jobs are killed when next heartbeat comes from the pilot.
-        Set code=9 if running jobs need to be killed immediately.
-           args:
-               jediTaskID: the taskID of the task
-               code: specify why the jobs are killed
-                     2: expire
-                     3: aborted
-                     4: expire in waiting
-                     7: retry by server
-                     8: rebrokerage
-                     9: force kill
-                     50: kill by JEDI
-                     91: kill user jobs with prod role
-               verbose: set True to see what's going on
-               srvID: obsolete
-               useMailAsID: obsolete
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               the list of clouds (or Nones if tasks are not yet assigned)
+    def killUnfinishedJobs(self, jediTaskID, code=None, useMailAsID=False):
+        """Kill unfinished jobs in a task.
+            code
+                2: expire
+                3: aborted
+                4: expire in waiting
+                7: retry by server
+                8: rebrokerage
+                9: force kill
+                10: fast rebrokerage in overloaded PQ
+                50: kill by JEDI
+                51: reassigned by JEDI
+                52: force kill by JEDI
+                55: killed since task is (almost) done
+                60: workload was terminated by the pilot without actual work
+                91: kill user jobs with prod role
+                99: force kill user jobs with prod role
+
         """
 
-        data = {'jediTaskID': jediTaskID, 'code': str(code)}
-        return self._post_command('killUnfinishedJobs',data)
+        data = {'task_id': int(jediTaskID)}
+        if code is not None:
+            data['code'] = int(code)
+        return self._post_new_api_command('api/v1/task/kill_unfinished_jobs', data)
 
-    def killJobs(self, ids, code=None, verbose=False, srvID=None, useMailAsID=False, keepUnmerged=False, jobSubStatus=None):
+
+    def killJobs(self, ids, code=None, useMailAsID=False, keepUnmerged=False, jobSubStatus=None):
         """Kill jobs. Normal users can kill only their own jobs.
-        People with production VOMS role can kill any jobs.
-        Running jobs are killed when next heartbeat comes from the pilot.
-        Set code=9 if running jobs need to be killed immediately.
-           args:
-               ids: the list of PandaIDs
-               code: specify why the jobs are killed
-                     2: expire
-                     3: aborted
-                     4: expire in waiting
-                     7: retry by server
-                     8: rebrokerage
-                     9: force kill
-                     10: fast rebrokerage on overloaded PQs
-                     50: kill by JEDI
-                     91: kill user jobs with prod role
-               verbose: set True to see what's going on
-               srvID: obsolete
-               useMailAsID: obsolete
-               keepUnmerged: set True not to cancel unmerged jobs when pmerge is killed.
-               jobSubStatus: set job sub status if any
-           returns:
-               status code
-                     0: communication succeeded to the panda server
-                     255: communication failure
-               the list of clouds (or Nones if tasks are not yet assigned)
         """
-        # serialize
-        strIDs = pickle.dumps(ids, protocol=0).decode('utf-8')
 
-        data = {'ids': strIDs, 'code': str(code), 'useMailAsID': useMailAsID}
-        killOpts = ''
+        data = {'job_ids': [int(job_id) for job_id in ids.split(',')], 'use_email_as_id': useMailAsID}
+        if code is not None:
+            data['code'] = int(code)
+        kill_options = []
         if keepUnmerged:
-            killOpts += 'keepUnmerged,'
+            kill_options.append('keepUnmerged')
         if jobSubStatus is not None:
-            killOpts += 'jobSubStatus={0},'.format(jobSubStatus)
-        data['killOpts'] = killOpts[:-1]
-        return self._post_command('killJobs',data)
+            kill_options.append(f'jobSubStatus={jobSubStatus}')
+        if kill_options:
+            data['kill_options'] = kill_options
+        return self._post_new_api_command('api/v1/job/kill', data)
 
     def setDebugMode(self, job_id, debug_mode):
-        data = {"pandaID": job_id, "modeOn": debug_mode}
-        return self._post_command('setDebugMode', data)
+        data = {"job_id": int(job_id), "mode": debug_mode}
+        return self._post_new_api_command('api/v1/job/set_debug_mode', data)
 
     @staticmethod
     def _jedi_output_distillation(jedi_respond_raw):

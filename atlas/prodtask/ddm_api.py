@@ -896,10 +896,12 @@ class DDM(object):
         if dataset_name.startswith('data') or ('TRUTH' in dataset_name):
             return container_name
         postfix = container_name.split('.')[-1]
+        if postfix.split('_')[-1].startswith('p') and 'NTUP_PILEUP' in dataset_name:
+            return container_name.replace('merge', 'deriv')
         if postfix.split('_')[-1].startswith('r'):
             return container_name.replace('merge', 'recon')
         if postfix.split('_')[-1].startswith('e'):
-            return container_name.replace('merge', 'evgen')
+            return container_name.replace('mc16_13TeV', 'mc15_13TeV').replace('merge', 'evgen')
         if postfix.split('_')[-1].startswith('s') or postfix.split('_')[-1].startswith('a'):
             return container_name.replace('merge', 'simul')
         return container_name

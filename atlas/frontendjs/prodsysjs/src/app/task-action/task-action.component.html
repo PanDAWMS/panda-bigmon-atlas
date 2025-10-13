@@ -282,6 +282,8 @@
       <button mat-raised-button color="primary" (click)="executeAction('remove_hashtag',[hashtag.value])">Remove</button>
      </div>
   </mat-menu>
+  <mat-icon matTooltip="Docs" class="info-icon" style="margin-left: 4px;"><a href="https://atlas-computing.docs.cern.ch/production/prodsys-actions/prodsys-actions.html">info</a></mat-icon>
+
 </div>
 <ng-container *ngIf="actionExecuting">
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>

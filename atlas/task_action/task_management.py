@@ -228,7 +228,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         elif task.status not in ProductionTask.NOT_RUNNING:
             return self.killTask(int(task.id))
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskPriority(self, jediTaskID, newPriority):
         return self.jedi_client.changeTaskPriority(jediTaskID, newPriority)
 
@@ -244,40 +244,40 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 pass
         return result
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def finishTask(self, jediTaskID, soft=False):
         return self.jedi_client.finishTask(jediTaskID, soft)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskRamCount(self, jediTaskID, ramCount):
         return self.jedi_client.changeTaskRamCount(jediTaskID, ramCount)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def reassignTaskToSite(self, jediTaskID, site, mode=None):
         return self.jedi_client.reassignTaskToSite(jediTaskID, site, mode)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def reassignTaskToCloud(self, jediTaskID, cloud, mode=None):
         return  self.jedi_client.reassignTaskToCloud(jediTaskID, cloud, mode)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def reassignTaskToNucleus(self, jediTaskID, nucleus, mode=None):
         return self.jedi_client.reassignTaskToNucleus( jediTaskID, nucleus, mode)
 
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskWalltime(self, jediTaskID, wallTime):
         return  self.jedi_client.changeTaskWalltime(jediTaskID, wallTime)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskCputime(self, jediTaskID, cpuTime):
         return self.jedi_client.changeTaskCputime(jediTaskID, cpuTime)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskSplitRule(self, jediTaskID, ruleName, ruleValue):
         return self.jedi_client.changeTaskSplitRule(jediTaskID, ruleName, ruleValue)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def changeTaskAttribute(self, jediTaskID, attrName, attrValue):
         return self.jedi_client.changeTaskAttribute(jediTaskID, attrName, attrValue)
 
@@ -299,41 +299,41 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
         return self.jedi_client.enable_job_cloning(jedi_task_id, mode, multiplicity, num_sites)
 
-    @_jedi_decorator
-    def reloadInput(self, jediTaskID, verbose=False):
-        return self.jedi_client.reloadInput(jediTaskID, verbose)
+    @_jedi_new_api_decorator
+    def reloadInput(self, jediTaskID, ignore_hard_exhausted=False):
+        return self.jedi_client.reloadInput(jediTaskID, ignore_hard_exhausted)
 
-    @_jedi_decorator
-    def pauseTask(self, jediTaskID, verbose=False):
-        return self.jedi_client.pauseTask(jediTaskID, verbose)
+    @_jedi_new_api_decorator
+    def pauseTask(self, jediTaskID):
+        return self.jedi_client.pauseTask(jediTaskID)
 
-    @_jedi_decorator
-    def resumeTask(self, jediTaskID, verbose=False):
-        return self.jedi_client.resumeTask(jediTaskID, verbose)
+    @_jedi_new_api_decorator
+    def resumeTask(self, jediTaskID):
+        return self.jedi_client.resumeTask(jediTaskID)
 
-    @_jedi_decorator
-    def release_task(self, jediTaskID, verbose=False):
-        return self.jedi_client.release_task(jediTaskID, verbose)
+    @_jedi_new_api_decorator
+    def release_task(self, jediTaskID):
+        return self.jedi_client.release_task(jediTaskID)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def reassignShare(self, jediTaskID, share, reassign_running=False):
         return self.jedi_client.reassignShare([jediTaskID, ], share, reassign_running)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def triggerTaskBrokerage(self, jediTaskID):
         return self.jedi_client.triggerTaskBrokerage(jediTaskID)
 
-    @_jedi_decorator
-    def avalancheTask(self, jediTaskID, verbose=False):
-        return self.jedi_client.avalancheTask(jediTaskID, verbose)
+    @_jedi_new_api_decorator
+    def avalancheTask(self, jediTaskID):
+        return self.jedi_client.avalancheTask(jediTaskID)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def increaseAttemptNr(self, jediTaskID, increase):
         return self.jedi_client.increaseAttemptNr(jediTaskID, increase)
 
-    @_jedi_decorator
-    def killUnfinishedJobs(self, jediTaskID, code=None, verbose=False, srvID=None, useMailAsID=False):
-        return self.jedi_client.killUnfinishedJobs(jediTaskID, code, verbose, srvID, useMailAsID)
+    @_jedi_new_api_decorator
+    def killUnfinishedJobs(self, jediTaskID, code=None, useMailAsID=False):
+        return self.jedi_client.killUnfinishedJobs(jediTaskID, code, useMailAsID)
 
     @_action_logger
     def create_disable_idds_action(self, task_id):
@@ -523,14 +523,14 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def clean_task_carriages(self, task_id, output_formats):
         raise NotImplementedError("Not yet implemented")
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def kill_jobs_in_task(self, task_id, jobs_id, code=None, keepUnmerged=False):
         return self.jedi_client.killJobs(jobs_id, code=code, keepUnmerged=keepUnmerged)
 
     def kill_jobs_without_task(self, jobs_id, code=None, keepUnmerged=False):
         return self.jedi_client.killJobs(jobs_id, code=code, keepUnmerged=keepUnmerged)
 
-    @_jedi_decorator
+    @_jedi_new_api_decorator
     def set_jobs_debug(self, task_id, job_id, debug_mode=True):
         return self.jedi_client.setDebugMode(job_id, debug_mode)
 
