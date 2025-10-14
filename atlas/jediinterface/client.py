@@ -418,8 +418,7 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
     def killJobs(self, ids, code=None, useMailAsID=False, keepUnmerged=False, jobSubStatus=None):
         """Kill jobs. Normal users can kill only their own jobs.
         """
-
-        data = {'job_ids': ids, 'use_email_as_id': useMailAsID}
+        data = {'job_ids': list(map(int,ids.split(','))), 'use_email_as_id': useMailAsID}
         if code is not None:
             data['code'] = int(code)
         kill_options = []
