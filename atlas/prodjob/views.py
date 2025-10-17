@@ -99,7 +99,7 @@ def jobs_action(request,action):
                     fin_res.append(result)
                     tasks_done.add(task)
                 if without_taskid:
-                    do_jedi_action(executor, ','.join(str(without_taskid)), 'kill_jobs_without_task', *args)
+                    do_jedi_action(executor, ','.join([str(job) for job in without_taskid]), 'kill_jobs_without_task', *args)
                     fin_res.append(result)
                 if len(list(tasks_with_problems))>0:
                     result['exception'] = f"Action done for {len(list(tasks_done))} tasks, problem for {len(list(tasks_with_problems))} tasks"
