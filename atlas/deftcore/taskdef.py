@@ -2892,7 +2892,7 @@ class TaskDefinition(object):
                     if not project_mode.skipHEPMCCheck and not self._check_evgen_hepmc(trf_cache, trf_release, step.request.campaign):
                         logger.warning(f"HEPMC check for {trf_cache} {trf_release} {step.request.campaign} failed")
                 if  LooseVersion(trf_release) >= LooseVersion('23.6'):
-                    if self.is_madgraph(input_data_name) and not project_mode.coreCount:
+                    if self.is_madgraph(input_data_name) and not project_mode.coreCount and 'inputGeneratorFile' not in list(input_params.keys()):
                         project_mode.coreCount  = 8
 
 
@@ -6003,7 +6003,7 @@ class TaskDefinition(object):
         return True
 
     def is_madgraph(self, input_data_name: str) -> bool:
-        if 'amcpy' in input_data_name.lower() or 'mgpy' in input_data_name.lower():
+        if 'amcpy' in input_data_name.lower() or input_data_name.lower().startswith('mg'):
             return True
         return False
 
