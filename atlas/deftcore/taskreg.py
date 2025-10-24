@@ -232,7 +232,7 @@ class TaskRegistration(object):
         except ObjectDoesNotExist:
             logger.debug('get_task_parameter, task {0} is not found'.format(task_id))
             return None
-        return json.loads(task._jedi_task_parameters)[param_name]
+        return json.loads(task._jedi_task_parameters).get(param_name, None)
 
     def get_parent_task_id(self, step, task_id):
         if not step.step_parent_id or step.step_parent_id == step.id:

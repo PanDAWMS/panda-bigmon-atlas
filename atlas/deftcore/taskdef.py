@@ -2471,24 +2471,6 @@ class TaskDefinition(object):
                         except Exception as ex:
                             logger.warning("Checking the parent evgen step failed: %s" % str(ex))
 
-            if 'nEventsPerInputFile' in list(task_config.keys()):
-                n_events_input_file = int(task_config['nEventsPerInputFile'])
-                parent_step = StepExecution.objects.get(id=step.step_parent_id)
-                is_parent_merge = 'Merge'.lower() in parent_step.step_template.step.lower()
-                is_parent_approved = \
-                    parent_step.status.lower() == self.protocol.STEP_STATUS[StepStatus.APPROVED].lower()
-                if parent_step.id != step.id and not is_parent_merge and is_parent_approved:
-                    parent_task_config = ProjectMode.get_task_config(parent_step)
-                    if 'nEventsPerJob' in list(parent_task_config.keys()):
-                        n_events_job_parent = int(parent_task_config['nEventsPerJob'])
-                        if n_events_input_file != n_events_job_parent:
-                            if project_mode.nEventsPerInputFile:
-                                pass
-                            else:
-                                raise Exception(
-                                    'The task is rejected because of inconsistency. ' +
-                                    'nEventsPerInputFile={0} does not match to nEventsPerJob={1} of the parent'.format(
-                                        n_events_input_file, n_events_job_parent))
 
             overlay_production = False
             train_production = False
@@ -2607,6 +2589,37 @@ class TaskDefinition(object):
                 number_of_events = evgen_params['nevents']
                 task_config['nFiles'] = evgen_params['nfiles']
 
+            if (step.request.request_type.lower() == 'MC'.lower() and step.request.phys_group == 'VALI' and not use_real_nevents and
+                    prod_step.lower() != 'evgen'.lower() and 'nEventsPerInputFile' not in list(task_config.keys()) and not parent_task_id):
+                for key in list(input_params.keys()):
+                    if re.match(r'^(--)?input.*File$', key, re.IGNORECASE):
+                        for input_name in input_params[key]:
+                            result = re.match(r'^.+_tid(?P<tid>\d+)_00$', input_name)
+                            if result:
+                                number_of_events_per_input_file = self.task_reg.get_task_parameter(int(result.groupdict()['tid']),
+                                                                                                   'nEventsPerJob')
+                                if number_of_events_per_input_file:
+                                    task_config['nEventsPerInputFile'] = number_of_events_per_input_file
+                                    break
+                        break
+            if 'nEventsPerInputFile' in list(task_config.keys()):
+                n_events_input_file = int(task_config['nEventsPerInputFile'])
+                parent_step = StepExecution.objects.get(id=step.step_parent_id)
+                is_parent_merge = 'Merge'.lower() in parent_step.step_template.step.lower()
+                is_parent_approved = \
+                    parent_step.status.lower() == self.protocol.STEP_STATUS[StepStatus.APPROVED].lower()
+                if parent_step.id != step.id and not is_parent_merge and is_parent_approved:
+                    parent_task_config = ProjectMode.get_task_config(parent_step)
+                    if 'nEventsPerJob' in list(parent_task_config.keys()):
+                        n_events_job_parent = int(parent_task_config['nEventsPerJob'])
+                        if n_events_input_file != n_events_job_parent:
+                            if project_mode.nEventsPerInputFile:
+                                pass
+                            else:
+                                raise Exception(
+                                    'The task is rejected because of inconsistency. ' +
+                                    'nEventsPerInputFile={0} does not match to nEventsPerJob={1} of the parent'.format(
+                                        n_events_input_file, n_events_job_parent))
             try:
                 if step.request.request_type.lower() == 'MC'.lower() and 'nEventsPerInputFile' in list(
                         task_config.keys()):
@@ -3069,7 +3082,7 @@ class TaskDefinition(object):
             if parent_task_id > 0 and not use_real_nevents:
                 try:
                     number_of_events_per_input_file = self.task_reg.get_task_parameter(parent_task_id, 'nEventsPerJob')
-                    if 'nEventsPerInputFile' not in list(task_config.keys()):
+                    if number_of_events_per_input_file and 'nEventsPerInputFile' not in list(task_config.keys()):
                         task_config.update({'nEventsPerInputFile': number_of_events_per_input_file})
                 except Exception:
                     pass
