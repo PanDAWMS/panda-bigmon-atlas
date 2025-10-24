@@ -885,7 +885,7 @@ class TaskDefinition(object):
             if version_list[-1] not in new_version_list:
                 new_version_list.append(version_list[-1])
             return new_version_list
-        elif trf_name.lower() in ['NTUPMerge_tf.py'.lower(), 'POOLtoEI_tf.py'.lower()] and sum([len(x) for x in version_list]) >= 45:
+        elif trf_name.lower() in ['NTUPMerge_tf.py'.lower(), 'POOLtoEI_tf.py'.lower()] and sum([len(x) for x in version_list]) >= 40:
             folded_versions = self._fold_single_tag_style(version_list[:-1])
             return folded_versions + version_list[-1:]
         return version_list
