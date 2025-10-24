@@ -544,6 +544,7 @@ class TaskDefConstants(object, metaclass=Constants):
     INVALID_TASK_ID = Constant(4000000)
     DEFAULT_MAX_FILES_PER_JOB = Constant(20)
     DEFAULT_MAX_NUMBER_OF_JOBS_PER_TASK = Constant(50000)
+    DEFAULT_MAX_NUMBER_OF_INPUT_CHUNKS = Constant(200_000)
     DEFAULT_MEMORY = Constant(2000)
     DEFAULT_MAX_EVENTS_PER_GRANULE_JOB = Constant(10000)
     DEFAULT_MEMORY_BASE = Constant(0)

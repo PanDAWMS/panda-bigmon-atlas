@@ -2759,6 +2759,8 @@ class TaskDefinition(object):
 
                         number_files_per_job = int(task_config.get('nFilesPerJob', 1))
                         number_files = math.ceil(number_of_events * number_files_per_job / min_events)
+                        if number_files > TaskDefConstants.DEFAULT_MAX_NUMBER_OF_INPUT_CHUNKS:
+                            raise Exception(f'Number of input files {number_files} is too large, split the slice')
                         task_config['nFiles'] = number_files
                         if number_files_per_job > 1:
                             max_events_forced = min_events
