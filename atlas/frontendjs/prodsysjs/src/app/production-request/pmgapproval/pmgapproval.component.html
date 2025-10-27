@@ -62,12 +62,10 @@
     </div>
   </mat-tab>
 </mat-tab-group>
-}
-<!--Three buttons: approve, hold, cancel - green, yellow and red-->
-<div>
-  <button mat-raised-button style="background: greenyellow" (click)="approvePMGCheckUp('register')" [disabled]="approveOnGoing()">PMG approval</button>
-  <button mat-raised-button style="background: yellow" (click)="approvePMGCheckUp('hold')" [disabled]="approveOnGoing()">On Hold</button>
-  <button mat-raised-button style="background: red" (click)="approvePMGCheckUp('cancel')" [disabled]="approveOnGoing()">Cancel</button>
+  <div>
+  <button mat-raised-button style="background: greenyellow" (click)="approvePMGCheckUp('register')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">PMG approval</button>
+  <button mat-raised-button style="background: yellow" (click)="approvePMGCheckUp('hold')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">On Hold</button>
+  <button mat-raised-button style="background: red" (click)="approvePMGCheckUp('cancel')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">Cancel</button>
 </div>
 @if (approveError()){
   <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -75,6 +73,9 @@
     <span class="block sm:inline">{{ approveError() }}</span>
   </div>
 }
+}
+<!--Three buttons: approve, hold, cancel - green, yellow and red-->
+
 @for(check of pmgCheckUP(); track check.check_name) {
     @if(check.errors.length == 0) {
       <h5 ><span style="color: green"> {{check.check_name}}  - passed </span></h5>
@@ -83,7 +84,13 @@
 
   <mat-expansion-panel >
     <mat-expansion-panel-header>
-      <mat-panel-title > <h5 style="color: red">{{ check.check_name }}</h5> </mat-panel-title>
+      <mat-panel-title >
+        @if (check.status == 'ERROR') {
+          <h5 style="color: red">&#x26A0; {{ check.check_name }}</h5>
+        } @else {
+          <h5 style="color: orange">&#x26A0; {{ check.check_name }}</h5>
+        }
+      </mat-panel-title>
       <mat-panel-description>
        {{ check.errors.length }} Error(s)
       </mat-panel-description>
@@ -92,7 +99,7 @@
       @for(position of error.positions; track position) {
         @if(error.type === 'SLICE'){
           <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}/#{{position.sliceIDs}}">Request: {{position.RequestIDs}} slice: {{position.sliceIDs}}</a>
-          <span style="margin-left: 5px">{{error.message}}</span></div>
+            <span style="margin-left: 5px">{{error.message}}</span></div>
         }
         @if(error.type === 'REQUEST'){
           <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}">Request: {{position.RequestIDs}}</a>

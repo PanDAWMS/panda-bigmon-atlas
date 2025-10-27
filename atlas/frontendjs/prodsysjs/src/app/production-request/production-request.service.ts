@@ -42,7 +42,7 @@ export interface RequestCheckResult{
   type: "REQUEST" | "SLICE";
   step_position: StepPosition[];
   check_name: string;
-  status: string;
+  status: "ERROR" | "WARNING" | "PASSED";
   message?: string;
   details?: {[key: string]: any};
 }
@@ -61,6 +61,7 @@ interface  ProductionRequestStats{
 export interface PMGRequestCheckResult {
   production_requests: ProductionRequestBase[];
   checks: RequestCheckResult[];
+  approval_required: boolean;
 }
 
 export interface PMGApproveResult {

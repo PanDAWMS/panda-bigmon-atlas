@@ -1735,6 +1735,8 @@ def check_job_options(production_requests: List[TRequest]):
     input_not_10k_diviable_job_options = []
     not_enough_input = []
     tid_instead_of_container = []
+    too_many_jobs = []
+    too_many_input_files = []
     bad_sw_releases = SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()
     steps = list(StepExecution.objects.filter(request__in=production_requests).order_by('id'))
     first_step_by_slice = {}
@@ -1779,6 +1781,11 @@ def check_job_options(production_requests: List[TRequest]):
                         not_dividable_job_options.append((job_option, slice, slice.input_events, job_option_obj.events_per_job))
                     elif slice.input_events % 10000 != 0:
                         input_not_10k_diviable_job_options.append((job_option, slice, slice.input_events))
+                    elif slice.input_events // job_option_obj.events_per_job > 50_000:
+                        too_many_jobs.append((job_option, slice, slice.input_events, job_option_obj.events_per_job))
+                    elif job_option_obj.files_per_job * (slice.input_events // job_option_obj.events_per_job) > 200_000:
+                        too_many_input_files.append((job_option, slice, slice.input_events, job_option_obj.events_per_job, job_option_obj.files_per_job))
+
             if job_option_check_enough_input:
                 not_enough_input = check_enough_input(job_option_check_enough_input, first_step_by_slice)
     for job_option in missing_job_options:
@@ -1805,6 +1812,16 @@ def check_job_options(production_requests: List[TRequest]):
                                                   check_name='Not enough input',
                                                   status='ERROR',
                                                   message=f'Job option {job_option} with ctag {ctag} and dataset {dataset} has {number_of_jobs} jobs but only {number_of_files} files available. Files per job is {files_per_job}.'))
+    for job_option, slice, input_events, events_per_job in too_many_jobs:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                  check_name='Too many jobs',
+                                                  status='Warning',
+                                                  message=f'Job option {job_option} has input events {input_events} which gives more than 50000 jobs with {events_per_job} events per job.'))
+    for job_option, slice, input_events, events_per_job, files_per_job in too_many_input_files:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                  check_name='Too many input files',
+                                                  status='Warning',
+                                                  message=f'Job option {job_option} has input events {input_events} which gives more than 200000 input files with {events_per_job} events per job and files per job {files_per_job}.'))
     return result_problems
 
 
@@ -1838,6 +1855,41 @@ def get_request_stats(production_requests: List[TRequest]) -> Dict[str, Any]:
                 if slice.dataset:
                     production_request_stats[production_request.reqid]['total_input_datasets'] += 1
     return production_request_stats
+
+def check_request_total_events_ratio(production_requests: List[TRequest], production_request_stats: Dict[str, Any]):
+    result_problems = []
+    CAMPAIGN_RATIO = {
+        'mc16a': 1.0,
+        'mc16d': 1.2,
+        'mc16c': 1.2,
+        'mc16e': 1.6,
+        'mc20a': 1.0,
+        'mc20d': 1.2,
+        'mc20c': 1.2,
+        'mc20e': 1.6,
+        'mc23a': 1.0,
+        'mc23c': 1.0,
+        'mc23e': 3.9,
+    }
+    production_requests_per_campaign_type = defaultdict(list)
+    for production_request in production_requests:
+        campaign_type = production_request.subcampaign[:4].lower()
+        production_requests_per_campaign_type[campaign_type].append(production_request)
+    for request_type, production_requests_per_type in production_requests_per_campaign_type.items():
+        base_ratio = CAMPAIGN_RATIO.get(production_requests_per_type[0].subcampaign[:6].lower(), None)
+        base_total_events = production_request_stats[production_requests_per_type[0].reqid]['total_input_events']
+        if (len(production_requests_per_type) < 2) or (base_total_events == 0) or (base_ratio is None):
+            continue
+        for production_request in production_requests_per_type[1:]:
+            if production_request_stats[production_request.reqid]['total_input_events'] > 0:
+                ratio = production_request_stats[production_request.reqid]['total_input_events'] / base_total_events
+                expected_ratio = CAMPAIGN_RATIO.get(production_request.subcampaign[:6].lower(), 1.0) / base_ratio
+                if abs(ratio - expected_ratio) / expected_ratio > 0.1:
+                    result_problems.append(RequestCheckResult(step_position=[StepPosition(production_request.reqid,0,0)],
+                                                              check_name='Total input events ratio',
+                                                              status='WARNING',
+                                                              message=f'Request {production_request.reqid} has total input events {production_request_stats[production_request.reqid]["total_input_events"]} which gives ratio {ratio:.2f} compared to request {production_requests_per_type[0].reqid} with total input events {production_request_stats[production_requests_per_type[0].reqid]["total_input_events"]}. Expected ratio is {expected_ratio}.'))
+    return result_problems
 
 def check_requests_metadata(production_requests: List[TRequest]):
     result_problems = []
@@ -1878,6 +1930,7 @@ def pmg_request_verification(request):
         result += check_job_options(list(production_requests))
         result += check_requests_metadata(list(production_requests))
         production_request_stats = get_request_stats(list(production_requests))
+        result += check_request_total_events_ratio(list(production_requests), production_request_stats)
         production_requests_dict = []
         for production_request in production_requests:
             current_dict = ProductionRequestSerializer(production_request).data
@@ -1887,7 +1940,7 @@ def pmg_request_verification(request):
             current_dict['priority'] = production_request.priority
         production_requests_dict.sort(key=lambda x: x['subcampaign'])
         return Response({'production_requests': production_requests_dict,'checks':[asdict(x) for x in result],
-                        'stats': production_request_stats})
+                        'stats': production_request_stats, 'approval_required': any(x.cstatus in [TRequest.STATUS.WAITING, TRequest.STATUS.HOLD] for x in production_requests)})
     except Exception as e:
         _logger.error(f'Problem with PMG request verification: {e}')
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

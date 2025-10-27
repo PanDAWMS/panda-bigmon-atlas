@@ -24,7 +24,10 @@ interface CheckError {
       sliceIDs: number;
   }[];
 }
-
+interface CheckSummary {
+  errors: CheckError[];
+  status: 'ERROR' | 'WARNING' | 'PASSED';
+}
 @Component({
   selector: 'app-pmgapproval',
   imports: [
@@ -53,7 +56,10 @@ export class PMGApprovalComponent implements OnInit{
       'TID instead of container',
       'Not enough input',
       'Bad SW release',
-      'AF2 in Run3'
+      'AF2 in Run3',
+      'Too many input files',
+      'Too many jobs',
+      'Total input events ratio'
     ];
     jira = input<string>('');
     jiraTicket$ = toObservable(this.jira);
@@ -62,13 +68,14 @@ export class PMGApprovalComponent implements OnInit{
     productionRequestService = inject(ProductionRequestService);
     pmgApproval = this.productionRequestService.getPMGCheckUPResource.value;
     pmgCheckUP = computed(() => {
-        const pmgCheckSummary = new Map<string, CheckError[]>();
+        const pmgCheckSummary = new Map<string, CheckSummary>();
         for (const checkName of this.ERROR_CHECKUP_LIST) {
-            pmgCheckSummary.set(checkName, []);
+            pmgCheckSummary.set(checkName, {errors: [], status: 'PASSED'});
         }
         if (this.pmgApproval()) {
             for (const check of this.pmgApproval().checks){
-                const currentErrors = pmgCheckSummary.get(check.check_name) || [];
+                let status: "ERROR" | "WARNING" | "PASSED" = 'WARNING';
+                const currentErrors = pmgCheckSummary.get(check.check_name).errors || [];
                 currentErrors.push({
                         name: check.check_name,
                         message: check.message || '',
@@ -81,7 +88,10 @@ export class PMGApprovalComponent implements OnInit{
                         })
 
                     });
-                pmgCheckSummary.set(check.check_name, currentErrors);
+                if (check.status === 'ERROR') {
+                  status = 'ERROR';
+                }
+                pmgCheckSummary.set(check.check_name, {errors: currentErrors, status} );
             }
         } else {
             return undefined;
@@ -90,7 +100,8 @@ export class PMGApprovalComponent implements OnInit{
         return Array.from(pmgCheckSummary.entries()).map(([key, value]) => {
           return {
             check_name: key,
-            errors: value
+            errors: value.errors,
+            status: value.status
           };
         });
     });
