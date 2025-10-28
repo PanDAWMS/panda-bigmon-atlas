@@ -1406,7 +1406,7 @@ class TaskDefinition(object):
                 task_config['full_chain'] = 'capable'
 
 
-    def _check_task_unmerged_input(self, task, step, prod_step):
+    def _check_task_unmerged_input(self, task, step, prod_step, project_mode):
         # skip EI tasks
         if step.request.request_type.lower() == 'EVENTINDEX'.lower():
             return
@@ -1450,6 +1450,17 @@ class TaskDefinition(object):
                 processed_output_types = [e for e in requested_output_types if e in previous_output_types.split('.')]
                 if not processed_output_types:
                     continue
+                if project_mode.checkOutputDeleted:
+                    previous_output_status_dict = \
+                        self.task_reg.check_task_output(prod_task.id, requested_output_types)
+                    dataset_still_exists = False
+                    for requested_output_type in requested_output_types:
+                        if previous_output_status_dict[requested_output_type]:
+                            dataset_still_exists = True
+                    if not dataset_still_exists:
+                        logger.info('Output {0} of task {1} is deleted'.format(
+                            str(requested_output_types), prod_task.id))
+                        continue
 
                 raise UnmergedInputProcessedException(prod_task.id)
 
@@ -4776,7 +4787,7 @@ class TaskDefinition(object):
                     if prod_step.lower() == 'simul'.lower() and int(trf_release.split('.')[0]) >= 21 and not project_mode.onSiteMerging and not project_mode.noInputSimul:
                         self._check_task_number_of_jobs(task, number_of_events, step)
 
-                self._check_task_unmerged_input(task, step, prod_step)
+                self._check_task_unmerged_input(task, step, prod_step, project_mode)
                 self._check_task_merged_input(task, step, prod_step)
                 # self._check_task_cache_version_consistency(task, step, trf_release)
                 self._check_task_blacklisted_input(task, project_mode)
