@@ -2405,8 +2405,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 while (temp_step_list[j][0]['step_parent_id']!=slice_steps_list[-1][0]):
                                     j+=1
                                     if j >= len(temp_step_list):
-                                        raise ValueError('Not linked chain')
-                                        #break
+                                        # raise ValueError('Not linked chain')
+                                        _logger.error(f"Not linked chain for slice {slice.slice} in request {rid}")
+                                        j-=1
+                                        break
                                 slice_steps_list.append((temp_step_list[j][0]['id'],form_step_obj(temp_step_list[j][0],temp_step_list[j][1],temp_step_list[j][2],slice.slice)))
 
                             edit_mode = True
