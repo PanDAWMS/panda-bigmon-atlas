@@ -98,9 +98,10 @@ def get_task_params(task_id: int, task_params: dict = None) -> [dict, [TemplateV
     output_variable = TemplateVariable(TemplateVariable.KEY_NAMES.OUTPUT_BASE, output_base)
     task_params = replace_template_by_variable(task_params, output_variable, [])
     template_variables.append(output_variable)
-    input_variable = TemplateVariable(TemplateVariable.KEY_NAMES.INPUT_BASE, task_input)
-    task_params = replace_template_by_variable(task_params, input_variable, [])
-    template_variables.append(input_variable)
+    if task_input:
+        input_variable = TemplateVariable(TemplateVariable.KEY_NAMES.INPUT_BASE, task_input)
+        task_params = replace_template_by_variable(task_params, input_variable, [])
+        template_variables.append(input_variable)
     if ':' in output_base:
         output_scope = output_base.split(':')[0]
     else:
@@ -181,13 +182,14 @@ def send_new_request_mail(request_id: int, template: AnalysisTaskTemplate , user
 def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
     prod_step = step.step_production_parent
     if not prod_step.step_parent or (prod_step.step_parent == prod_step):
-        if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
-            raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
-        input_dataset = step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
-        if ddm.dataset_metadata(input_dataset)['did_type'] == 'CONTAINER':
-            datasets_in_container = ddm.dataset_in_container(input_dataset)
-            if len(datasets_in_container) == 0:
-                raise Exception(f'Container {input_dataset} is empty')
+        if step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE):
+            if not ddm.dataset_exists(step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)):
+                raise Exception(f'Input dataset {step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)} does not exist')
+            input_dataset = step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
+            if ddm.dataset_metadata(input_dataset)['did_type'] == 'CONTAINER':
+                datasets_in_container = ddm.dataset_in_container(input_dataset)
+                if len(datasets_in_container) == 0:
+                    raise Exception(f'Container {input_dataset} is empty')
     if step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('group'):
         check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username, step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP))
     else:

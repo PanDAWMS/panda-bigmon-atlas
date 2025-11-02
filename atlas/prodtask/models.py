@@ -1230,7 +1230,9 @@ class AnalysisStepTemplate(models.Model):
 
     @property
     def input_dataset(self):
-        return self.step_parameters['dsForIN']
+        if 'dsForIN' in self.step_parameters:
+            return self.step_parameters['dsForIN']
+        return ''
 
     @property
     def vo(self):
@@ -3085,3 +3087,35 @@ class DistributedLock(models.Model):
         db_table = 'T_DEFT_DISTR_LOCK'
 
 
+class PostProductionActions(models.Model):
+
+    class ACTIONS:
+        TEST_ACTION = 'TA'
+        SAMPLE_CONTAINER = 'SC'
+
+
+    id = models.ForeignKey(ProductionTask, db_column='TASK_ID', primary_key=True, on_delete=models.CASCADE)
+    actions = models.CharField(max_length=400, db_column='ACTIONS')
+
+    @property
+    def action_list(self):
+        if self.actions:
+            # split by 2 characters
+            return [self.actions[i:i+2] for i in range(0, len(self.actions), 2)]
+        return []
+
+    def add_action(self, action):
+        if action not in self.action_list:
+            self.actions = (self.actions or '') + action
+            self.save()
+
+    def remove_action(self, action):
+        if action in self.action_list:
+            actions = self.action_list
+            actions.remove(action)
+            self.actions = ''.join(actions)
+            self.save()
+
+    class Meta:
+        app_label = 'dev'
+        db_table = 'T_TASK_PP_ACTIONS'
