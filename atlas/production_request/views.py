@@ -1921,6 +1921,7 @@ def check_requests_metadata(production_requests: List[TRequest]):
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def pmg_request_verification(request):
+    jira = ''
     try:
         jira = request.query_params.get('jira')
         production_requests = TRequest.objects.filter(ref_link__endswith=jira)
@@ -1942,7 +1943,7 @@ def pmg_request_verification(request):
         return Response({'production_requests': production_requests_dict,'checks':[asdict(x) for x in result],
                         'stats': production_request_stats, 'approval_required': any(x.cstatus in [TRequest.STATUS.WAITING, TRequest.STATUS.HOLD] for x in production_requests)})
     except Exception as e:
-        _logger.error(f'Problem with PMG request verification: {e}')
+        _logger.error(f'Problem with PMG request verification for JIRA {jira}: {e}')
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
