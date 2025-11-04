@@ -16,6 +16,7 @@ from atlas.prodtask.mcevgen import sync_cvmfs_db, set_pmg_hashtags
 from atlas.prodtask.models import ProductionTask
 from atlas.prodtask.open_ended import check_open_ended
 from atlas.prodtask.patch_reprocessing import find_done_patched_tasks
+from atlas.prodtask.postproduction import check_all_tasks_post_production_actions
 from atlas.prodtask.task_actions import do_new_action
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container, find_filter_bkg_tasks
 from functools import wraps
@@ -214,6 +215,10 @@ def check_running_recovery_requests_task():
     check_running_recovery_requests()
     return None
 
+@app.task(ignore_result=True)
+def postproduction():
+    check_all_tasks_post_production_actions()
+    return None
 
 @app.task(ignore_result=True)
 def check_pmg_merge_evgen():

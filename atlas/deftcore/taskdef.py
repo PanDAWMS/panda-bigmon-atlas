@@ -27,7 +27,7 @@ from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, St
                                    HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError,
                                    TaskTemplate,
                                    TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock,
-                                   DSIDHashtags)
+                                   DSIDHashtags, PostProductionActions)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
 from .taskreg import TaskRegistration
@@ -2332,6 +2332,7 @@ class TaskDefinition(object):
             memory = TaskDefConstants.DEFAULT_MEMORY
             base_memory = TaskDefConstants.DEFAULT_MEMORY_BASE
             follow_hashtags = []
+            post_production_actions = []
             trf_name = ctag['transformation']
             if ctag.get('status', '') == 'invalid':
                 raise Exception("The tag {0} is invalid".format(ctag_name))
@@ -3192,12 +3193,13 @@ class TaskDefinition(object):
                                     'TRF parameter {0} is removed from the list. It is ignored'.format(trf_param)
                                 )
                                 trf_params.remove(trf_param)
-            full_chain_hashtag = None
             if project_mode.site is None:
 
                 task_full_chain = self._task_full_chain(step, parent_task_id, project_mode)
                 if task_full_chain:
                     full_chain_hashtag = self._set_task_full_chain(task_config, project_mode, task_full_chain)
+                    if full_chain_hashtag:
+                        follow_hashtags.append(full_chain_hashtag)
                 else:
                     self.set_jedi_full_chain(task_config, parent_task_id, project_mode)
             for name in trf_params:
@@ -4792,7 +4794,6 @@ class TaskDefinition(object):
                 # self._check_task_cache_version_consistency(task, step, trf_release)
                 self._check_task_blacklisted_input(task, project_mode)
                 self._check_campaign_subcampaign(step)
-                set_mc_reprocessing_hashtag = False
                 if not skip_check_input:
                     if is_hepmc:
                         prod_step = 'deriv'
@@ -4802,7 +4803,8 @@ class TaskDefinition(object):
                                            task_common_offset=task_common_offset)
                     if is_hepmc:
                         prod_step = hepmc_prodstep
-                    set_mc_reprocessing_hashtag = self._check_task_recreated(task, step)
+                    if self._check_task_recreated(task, step):
+                        follow_hashtags.append(TaskDefConstants.MC_DELETED_REPROCESSING_REQUEST_HASHTAG)
                 if mc_pileup_overlay['is_overlay'] and not self.template_type:
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
                     for mc_pileup_overlay_dataset in mc_pileup_overlay['datasets']:
@@ -4851,28 +4853,20 @@ class TaskDefinition(object):
                                                        parent_task_id,
                                                        usergroup,
                                                        step.request.subcampaign)
+                    post_production_actions.append(PostProductionActions.ACTIONS.SAMPLE_CONTAINER)
+                    pp_action, _ = PostProductionActions.objects.get_or_create(id=ProductionTask.objects.get(id=task_id))
+                    for action in post_production_actions:
+                        pp_action.add_action(action)
+                    for hashtag in follow_hashtags:
+                        try:
+                            created_task = ProductionTask.objects.get(id=task_id)
+                            created_task.set_hashtag(hashtag)
+                        except Exception as e:
+                            logger.error('Problem with hashtag registration {0}'.format(str(e)))
                 else:
                     task_template = self.task_reg.register_task_template(task, step, parent_task_id,
                                                                          template_type=self.template_type, template_build=self.template_build)
                     self.template_results[step.id] = task_template
-                if set_mc_reprocessing_hashtag:
-                    try:
-                        created_task = ProductionTask.objects.get(id=task_id)
-                        created_task.set_hashtag(TaskDefConstants.MC_DELETED_REPROCESSING_REQUEST_HASHTAG)
-                    except Exception as e:
-                        logger.warning('Problem with hashtag registration {0}'.format(str(e)))
-                if full_chain_hashtag:
-                    try:
-                        created_task = ProductionTask.objects.get(id=task_id)
-                        created_task.set_hashtag(full_chain_hashtag)
-                    except Exception as e:
-                        logger.error('Problem with hashtag registration {0}'.format(str(e)))
-                for hashtag in follow_hashtags:
-                    try:
-                        created_task = ProductionTask.objects.get(id=task_id)
-                        created_task.set_hashtag(hashtag)
-                    except Exception as e:
-                        logger.error('Problem with hashtag registration {0}'.format(str(e)))
                 parent_task_id = task_id
 
     def _get_number_events_processed(self, step, requested_datasets=None):
