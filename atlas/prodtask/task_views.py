@@ -1382,6 +1382,34 @@ def find_filter_bkg_tasks(filter_bkg_ht = 'FilterBkg'):
             _logger.warning(f"Task {task.id} is in bad status {task.status}, removing hashtag {filter_bkg_ht}")
             task.remove_hashtag(filter_bkg_ht)
 
+def set_task_sample_container(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    ddm = DDM()
+    if (task.phys_group not in ['SOFT', 'VALI']) and (('merge' in task.name) or ('deriv' in task.name)):
+        for dataset in task.output_non_log_datasets():
+            if 'tid' in dataset and ddm.dataset_exists(dataset) and not ('.deriv.NTUP_PILEUP.' in dataset):
+                container_name = ddm.get_sample_container_name(dataset)
+                if not ddm.dataset_exists(container_name):
+                    # ddm.register_container(container_name, [dataset])
+                    _logger.info(f"Container {container_name} created for {dataset}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
+                    return False
+                else:
+                    parent_dataset = task.primary_input
+                    if not ddm.dataset_is_in_container(dataset, container_name):
+                        if ddm.dataset_is_in_container(parent_dataset, container_name):
+                            # ddm.delete_datasets_from_container(container_name, [parent_dataset])
+                            _logger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
+                        # ddm.register_datasets_in_container(container_name, [dataset])
+                        _logger.info(f"Dataset {dataset} is add to container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
+                        return False
+                    else:
+                        if ddm.dataset_is_in_container(parent_dataset, container_name):
+                            # ddm.delete_datasets_from_container(container_name, [parent_dataset])
+                            _logger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
+                            return False
+                        else:
+                            return True
+
 def recover_sample_containers(days, days_till):
     time_since = timezone.now() - timedelta(days=days)
     time_till = timezone.now() - timedelta(days=days_till)
@@ -1392,28 +1420,9 @@ def recover_sample_containers(days, days_till):
     total_bad = 0
     for task in tasks:
         if (task.phys_group not in ['SOFT','VALI']) and (('merge' in task.name) or ('deriv' in task.name)):
-            for dataset in task.output_non_log_datasets():
-                if 'tid' in dataset and ddm.dataset_exists(dataset) and not ('.deriv.NTUP_PILEUP.' in dataset):
-                    container_name = ddm.get_sample_container_name(dataset)
-                    if not ddm.dataset_exists(container_name):
-                        # ddm.register_container(container_name, [dataset])
-                        print(f"Container {container_name} does not exist {dataset}")
-                        total_bad += 1
-                    else:
-                        parent_dataset = task.primary_input
-                        if not ddm.dataset_is_in_container(dataset, container_name):
-                            if ddm.dataset_is_in_container(parent_dataset, container_name):
-                                # ddm.delete_datasets_from_container(container_name, [parent_dataset])
-                                print(f"Dataset {parent_dataset} removed from container {container_name}")
-                            # ddm.register_datasets_in_container(container_name, [dataset])
-                            print(f"Dataset {dataset} is add to container {container_name}")
-                            total_bad += 1
-                        else:
-                            if ddm.dataset_is_in_container(parent_dataset, container_name):
-                                # ddm.delete_datasets_from_container(container_name, [parent_dataset])
-                                print(f"Dataset {parent_dataset} removed from container {container_name}")
-                                total_bad += 1
-                            else:
-                                total_good += 1
+            if set_task_sample_container(task.id):
+                total_good += 1
+            else:
+                total_bad += 1
 
     return total_bad, total_good
