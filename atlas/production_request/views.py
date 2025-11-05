@@ -1924,8 +1924,10 @@ def pmg_request_verification(request):
     jira = ''
     try:
         jira = request.query_params.get('jira')
+        if not jira:
+            raise Exception('JIRA parameter is missing')
         production_requests = TRequest.objects.filter(ref_link__endswith=jira)
-        if not production_requests:
+        if not production_requests or production_requests.count()>20:
             raise Exception(f'No production requests found for JIRA {jira}')
         result: List[RequestCheckResult] = []
         result += check_job_options(list(production_requests))
