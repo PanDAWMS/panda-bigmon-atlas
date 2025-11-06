@@ -1138,7 +1138,7 @@ def move_tasks_to_new_slice(source_request_id: int, destination_request_id: int,
 
     new_step_index = 0
     for index, step in enumerate(step_as_in_page):
-        if step and ((parent_step is None) or (step.step_parent == parent_step) or (new_step_index > 0)):
+        if step and ((parent_step is None) or ((step.step_parent == parent_step) and step.step_parent != step) or (new_step_index > 0)):
             step.slice = destination_slice
             new_steps_ordered[new_step_index].slice = source_slice
             step.save()
