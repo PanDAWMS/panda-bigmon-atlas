@@ -43,6 +43,7 @@ OUTPUTS_TYPES = ["AOD","EVNT","HITS"]
 
 
 _logger = logging.getLogger('prodtaskwebui')
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 
@@ -1391,21 +1392,21 @@ def set_task_sample_container(task_id):
                 container_name = ddm.get_sample_container_name(dataset)
                 if not ddm.dataset_exists(container_name):
                     # ddm.register_container(container_name, [dataset])
-                    _logger.info(f"Container {container_name} created for {dataset}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
+                    _jsonLogger.info(f"Container {container_name} created for {dataset}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
                     return False
                 else:
                     parent_dataset = task.primary_input
                     if not ddm.dataset_is_in_container(dataset, container_name):
                         if ddm.dataset_is_in_container(parent_dataset, container_name):
                             # ddm.delete_datasets_from_container(container_name, [parent_dataset])
-                            _logger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
+                            _jsonLogger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
                         # ddm.register_datasets_in_container(container_name, [dataset])
-                        _logger.info(f"Dataset {dataset} is add to container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
+                        _jsonLogger.info(f"Dataset {dataset} is add to container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
                         return False
                     else:
                         if ddm.dataset_is_in_container(parent_dataset, container_name):
                             # ddm.delete_datasets_from_container(container_name, [parent_dataset])
-                            _logger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
+                            _jsonLogger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
                             return False
                         else:
                             return True
