@@ -35,6 +35,15 @@ export class GpApiInstructionComponent implements OnInit {
             ami_tag: 'p6225'
         }
     ], };
+  htOutputExample = {
+    "hashtag": "testhashtag",
+    "tasks": [
+        10328174,
+        10329416,
+        10330568,
+        10332424,
+        10334020]
+  };
   ngOnInit(): void {
   }
 

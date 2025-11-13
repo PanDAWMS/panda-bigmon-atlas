@@ -143,7 +143,7 @@ For production activities following APIs are avalaible:
 
     <li>
     <h5> <a href="https://prodtask-dev.cern.ch/api/production_request_outputs/56281/">production_request_outputs</a></h5>
-    </li>
+
 Get the outputs of the request - last step of each slice which is not hidden.
 return: dictionary with keys as base slice and values as list of dictionaries with task, status, ami_tag and outputs<br/>
       <mat-card appearance="outlined">
@@ -167,6 +167,34 @@ return: dictionary with keys as base slice and values as list of dictionaries wi
         </code>
       </mat-card-content>
     </mat-card>
+      </li>
+      <li>
+    <h5> <a href="https://prodtask-dev.cern.ch/api/tasks_ids_by_hashstag/testhashtag/">tasks_ids_by_hashstag</a></h5>
+
+Get the tasks ids by hashstag - return list of task ids which have this hashtag assigned<br/>
+<br/>
+      <mat-card appearance="outlined">
+        <mat-card-title>
+          CURL example
+        </mat-card-title>
+        <mat-card-content>
+    <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/tasks_ids_by_hashstag/testhashtag/"</pre>
+    </code>
+        </mat-card-content>
+      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        Example of output
+      </mat-card-title>
+      <mat-card-content>
+        <code>
+          <pre>{{htOutputExample |json}}</pre>
+
+        </code>
+      </mat-card-content>
+    </mat-card>
+      </li>
 </ul>
 }
 

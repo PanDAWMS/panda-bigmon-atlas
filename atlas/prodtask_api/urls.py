@@ -13,6 +13,7 @@ from atlas.production_request.views import form_pattern_for_derivation_request_e
     pattern_slices_derivation_request, mc_subcampaign_stats, production_request_outputs, pileup_task_provenance, \
     dataset_info, get_stuck_files, did_type
 from atlas.special_workflows.views import request_results, clone_active_learning_request
+from atlas.task_action.files_recovery import dataset_lost_file_info
 from atlas.task_action.task_management import tasks_action, rules_action
 
 app_name='prodtask_api'
@@ -94,6 +95,7 @@ urlpatterns = [
     re_path(r'^dataset_info/$', dataset_info, name='dataset_info'),
     re_path(r'^get_stuck_files/$', get_stuck_files, name='get_stuck_files'),
     re_path(r'^get_did_type/$', did_type, name='get_did_type'),
-
+    re_path(r'^dataset_lost_file_info/$', dataset_lost_file_info, name='dataset_lost_file_info'),
+    re_path(r'^tasks_ids_by_hashstag/(?P<hashtag>\w+)/$', tasks_ids_by_hashstag, name='tasks_ids_by_hashstag'),
 
 ]

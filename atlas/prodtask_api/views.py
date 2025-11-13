@@ -22,7 +22,7 @@ from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets,
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
-    SystemParameters, SystemParametersHandler, MCWorkflowRequest
+    SystemParameters, SystemParametersHandler, MCWorkflowRequest, HashTag
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers, check_merged_AOD
 from atlas.prodtask.spdstodb import fill_template
@@ -506,5 +506,22 @@ def set_config_parameter(request, name):
                 return Response(request.data)
             case _ :
                 return Response('Parameter name not found', status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def tasks_ids_by_hashstag(request, hashtag):
+    """
+        Return list of task ids for a given hashtag\n
+         :param hashtag: hashtag name. Required\n
+    """
+    try:
+        tasks = HashTag.objects.get(hashtag=hashtag).tasks
+        tasks_id = [x.id for x in tasks]
+        return Response({'hashtag': hashtag, 'tasks': tasks_id})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

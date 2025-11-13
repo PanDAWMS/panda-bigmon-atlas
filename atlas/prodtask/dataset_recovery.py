@@ -13,6 +13,23 @@ from atlas.task_action.task_management import TaskActionExecutor
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
+
+def recovery_requests_cleanup(delete_requests: bool = False):
+    ddm = DDM()
+    action_executor = TaskActionExecutor('mborodin', 'console')
+    for dataset_recovery in DatasetRecovery.objects.filter(status__in=[DatasetRecovery.STATUS.RUNNING, DatasetRecovery.STATUS.PENDING, DatasetRecovery.STATUS.SUBMITTED]):
+        if not ddm.check_only_unavailable_rse(dataset_recovery.original_dataset):
+            print(f'Dataset {dataset_recovery.original_dataset} is available now. Cleaning up recovery request {dataset_recovery.id}')
+            if dataset_recovery.status == DatasetRecovery.STATUS.RUNNING:
+                print(f'Abort running recovery task {dataset_recovery.recovery_task}')
+                if delete_requests:
+                    action_executor.killTask(dataset_recovery.recovery_task.id)
+            if delete_requests:
+                dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
+                dataset_recovery_info.delete()
+                dataset_recovery.delete()
+
+
 def recreate_existing_outputs(task_id: int, outputs: [str], parent_task_id: Optional[int] = None):
     task = ProductionTask.objects.get(id=task_id)
     slice = task.step.slice
