@@ -29,6 +29,26 @@ from rest_framework import status
 logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 from dataclasses import dataclass, asdict
+import urllib3
+
+
+@dataclass
+class FileRecoveryParameters:
+    dry_run: bool
+    reproduce_parent: bool
+    no_child_retry: bool
+    log_file: str
+
+
+@dataclass
+class FileRecoveryCache:
+    async_task_id: str
+    dataset: str
+    parameters: FileRecoveryParameters
+
+    @property
+    def cache_key(self) -> str:
+        return f"FILE_RECOVERY_LOG_{self.dataset}"
 
 
 class DEFTAction(ABC):
@@ -334,6 +354,30 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_new_api_decorator
     def killUnfinishedJobs(self, jediTaskID, code=None, useMailAsID=False):
         return self.jedi_client.killUnfinishedJobs(jediTaskID, code, useMailAsID)
+
+    @_jedi_rule_decorator
+    def upload_file_recovery_request(self, dataset,  dry_run=True, reproduce_parent=False):
+        no_child_retry = True
+        result = self.jedi_client.upload_file_recovery_request(dataset=dataset, dry_run=dry_run,
+                                                               no_child_retry=no_child_retry, reproduce_parent=reproduce_parent)
+        print(result)
+        if 'data' in result and 'logFileURL' in result['data']:
+            try:
+                async_task = read_jedi_log.delay(result['data']['logFileURL'])
+                cache_data = FileRecoveryCache(
+                    async_task_id=async_task.id,
+                    dataset=dataset,
+                    parameters=FileRecoveryParameters(
+                        dry_run=dry_run,
+                        reproduce_parent=reproduce_parent,
+                        no_child_retry=no_child_retry,
+                        log_file=result['data']['logFileURL']
+                    )
+                )
+                cache.set(cache_data.cache_key, asdict(cache_data), 3600 * 48)
+            except Exception as e:
+                logger.error(f"File recovery log caching problem for dataset {dataset}: {e}")
+        return result
 
     @_action_logger
     def create_disable_idds_action(self, task_id):
@@ -766,6 +810,25 @@ def submit_all_action_types(action_function, executor, item, action, params):
         DistributedLock.release_lock(lock_key)
         return return_code, return_info
 
+@app.task(bind=True, base=ProdSysTask, time_limit=1200)
+@ProdSysTask.set_task_name('read jedi log')
+def read_jedi_log(self, log_url: str):
+    SLEEP_TIME = 10
+    http = urllib3.PoolManager()
+    log_content = ''
+    while True:
+        response = http.request('GET', log_url, preload_content=False, decode_content=False)
+        if response.status != 200:
+            time.sleep(SLEEP_TIME)
+            continue
+        if response.status == 200:
+            log_content = response.data.decode('utf-8')
+            self.progress_message_update(1, additional_info={'log':log_content})
+            if '\ndone\n' in log_content:
+                break
+        time.sleep(SLEEP_TIME)
+    return log_content
+
 @app.task(bind=True, base=ProdSysTask)
 @ProdSysTask.set_task_name('async action')
 def async_action(self, action_type: ActionType, action: str, username: str, comment: str, items: List[str], params: Optional[list]) -> List[Dict]:
@@ -880,6 +943,7 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'set_debug_jobs': action_executor.set_jobs_debug,
             'kill_jobs_without_task': action_executor.kill_jobs_without_task,
             'enable_job_cloning': action_executor.enable_job_cloning,
+            'recovery_lost_files': action_executor.upload_file_recovery_request
         }
     if args == (None,):
          return action_translation[action](task_id)
