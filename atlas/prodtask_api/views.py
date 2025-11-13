@@ -27,6 +27,7 @@ from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_
     ReprocessingTaskFix, patched_containers, check_merged_AOD
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
+from atlas.prodtask.task_views import set_task_sample_container
 from atlas.prodtask.views import form_existed_step_list, set_request_status
 from atlas.task_action.task_management import TaskManagementAuthorisation
 
@@ -523,5 +524,67 @@ def tasks_ids_by_hashstag(request, hashtag):
         tasks = HashTag.objects.get(hashtag=hashtag).tasks
         tasks_id = [x.id for x in tasks]
         return Response({'hashtag': hashtag, 'tasks': tasks_id})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def sample_output_containers_by_hashstag(request, hashtag):
+    """
+        Return list of sample output containers for a given hashtag\n
+            :param hashtag: hashtag name. Required\n
+        Returns two lists: 'ready' - containers for which all tasks are done or finished,
+        'upcoming' - containers for which some tasks are still running
+        It doesn't check that all datasets are actually in the containers, only task status is considered
+    """
+    try:
+        tasks = HashTag.objects.get(hashtag=hashtag).tasks
+        ready_containers = set()
+        upcoming_containers = set()
+        ddm = DDM()
+        for task in tasks:
+            if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                for output_dataset in task.output_non_log_datasets():
+                    container_name = ddm.get_sample_container_name(output_dataset)
+                    if container_name not in upcoming_containers:
+                        ready_containers.add(container_name)
+            elif task.status not in ProductionTask.BAD_STATUS:
+                for output_dataset in task.output_non_log_datasets():
+                    container_name = ddm.get_sample_container_name(output_dataset)
+                    if container_name in ready_containers:
+                        ready_containers.remove(container_name)
+                    upcoming_containers.add(container_name)
+        return Response({'hashtag': hashtag, 'containers':{'ready': list(ready_containers), 'upcoming': list(upcoming_containers)}})
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def update_deriv_sample_containers(request):
+    """
+        Update sample container for derivation tasks
+         :param tasks: list of task ids. Required\n
+
+    """
+    try:
+        tasks = request.data.get('tasks', [])
+        ddm = DDM()
+        created_containers = set()
+        for task_id in tasks:
+            task = ProductionTask.objects.get(id=task_id)
+            if '.deriv.' not in task.name:
+                continue
+            for output_dataset in task.output_non_log_datasets():
+                container_name = ddm.get_sample_container_name(output_dataset)
+                if not ddm.dataset_exists(container_name):
+                    set_task_sample_container(task.id, False)
+                    created_containers.add(container_name)
+                else:
+                    if ddm.dataset_is_in_container(output_dataset, container_name):
+                        set_task_sample_container(task.id, True)
+                        created_containers.add(container_name)
+        return Response({'updated_containers': list(created_containers)})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1383,7 +1383,7 @@ def find_filter_bkg_tasks(filter_bkg_ht = 'FilterBkg'):
             _logger.warning(f"Task {task.id} is in bad status {task.status}, removing hashtag {filter_bkg_ht}")
             task.remove_hashtag(filter_bkg_ht)
 
-def set_task_sample_container(task_id):
+def set_task_sample_container(task_id, execute=False):
     task = ProductionTask.objects.get(id=task_id)
     ddm = DDM()
     if (task.phys_group not in ['SOFT', 'VALI']) and (('merge' in task.name) or ('deriv' in task.name)):
@@ -1391,21 +1391,25 @@ def set_task_sample_container(task_id):
             if 'tid' in dataset and ddm.dataset_exists(dataset) and not ('.deriv.NTUP_PILEUP.' in dataset):
                 container_name = ddm.get_sample_container_name(dataset)
                 if not ddm.dataset_exists(container_name):
-                    # ddm.register_container(container_name, [dataset])
+                    if execute:
+                        ddm.register_container(container_name, [dataset])
                     _jsonLogger.info(f"Container {container_name} created for {dataset}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
                     return False
                 else:
                     parent_dataset = task.primary_input
                     if not ddm.dataset_is_in_container(dataset, container_name):
                         if ddm.dataset_is_in_container(parent_dataset, container_name):
-                            # ddm.delete_datasets_from_container(container_name, [parent_dataset])
+                            if execute:
+                                ddm.delete_datasets_from_container(container_name, [parent_dataset])
                             _jsonLogger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
-                        # ddm.register_datasets_in_container(container_name, [dataset])
+                        if execute:
+                            ddm.register_datasets_in_container(container_name, [dataset])
                         _jsonLogger.info(f"Dataset {dataset} is add to container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
                         return False
                     else:
                         if ddm.dataset_is_in_container(parent_dataset, container_name):
-                            # ddm.delete_datasets_from_container(container_name, [parent_dataset])
+                            if execute:
+                                ddm.delete_datasets_from_container(container_name, [parent_dataset])
                             _jsonLogger.info(f"Dataset {parent_dataset} removed from container {container_name}", extra={'dataset': parent_dataset, 'container': container_name, 'task': task.id})
                             return False
                         else:

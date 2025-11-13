@@ -97,5 +97,7 @@ urlpatterns = [
     re_path(r'^get_did_type/$', did_type, name='get_did_type'),
     re_path(r'^dataset_lost_file_info/$', dataset_lost_file_info, name='dataset_lost_file_info'),
     re_path(r'^tasks_ids_by_hashstag/(?P<hashtag>\w+)/$', tasks_ids_by_hashstag, name='tasks_ids_by_hashstag'),
-
+    re_path(r'^sample_output_containers_by_hashstag/(?P<hashtag>\w+)/$', sample_output_containers_by_hashstag, name='sample_output_containers_by_hashstag'),
+    re_path(r'^update_deriv_sample_containers/$', update_deriv_sample_containers,
+            name='update_deriv_sample_containers'),
 ]

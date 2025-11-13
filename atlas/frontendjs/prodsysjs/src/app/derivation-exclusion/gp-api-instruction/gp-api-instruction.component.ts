@@ -44,6 +44,22 @@ export class GpApiInstructionComponent implements OnInit {
         10332424,
         10334020]
   };
+  protected socOutputExample  =
+    {
+    "hashtag": "25p0p42_MC23_DAOD_Production",
+    "containers": {
+        "ready": [
+            "mc23_13p6TeV.700893.Sh_2214_Ztautau_mZ_105_ECMS_CFilterBVeto.deriv.DAOD_PHYSLITE.e8514_s4162_r15540_p7017",
+            "mc23_13p6TeV.525359.MGPy8EG_A14NNPDF30NLO_ttHH.deriv.DAOD_PHYS.e8532_s4162_r14622_p7017",
+            "mc23_13p6TeV.601707.PhPy8EG_dijet_JZ8incl.deriv.DAOD_PHYSLITE.e8514_s4162_r14622_p7017",
+            "mc23_13p6TeV.701041.Sh_llll_MUQ20.deriv.DAOD_PHYSLITE.e8582_a934_r16083_p7017",
+            "mc23_13p6TeV.701061.Sh_lvvv_MUQ20.deriv.DAOD_PHYSLITE.e8582_a911_r15530_p7017"],
+      "upcoming": [
+            "mc23_13p6TeV.700819.Sh_2214_jj_JZ4.deriv.DAOD_PHYSLITE.e8514_s4159_r15224_p7017",
+            "mc23_13p6TeV.701281.Sh_22_ttll_Qcut40_3LFilter.deriv.DAOD_PHYS.e8532_a934_r16083_p7017",
+            "mc23_13p6TeV.700994.Sh_2214_ttW_muQ025_2LFilter.deriv.DAOD_PHYS.e8532_a911_r15224_p7017",
+            "mc23_13p6TeV.700788.Sh_2214_Zee_maxHTpTV2_CVetoBVeto.deriv.DAOD_PHYS.e8514_s4162_r15540_p7017"]
+  }};
   ngOnInit(): void {
   }
 

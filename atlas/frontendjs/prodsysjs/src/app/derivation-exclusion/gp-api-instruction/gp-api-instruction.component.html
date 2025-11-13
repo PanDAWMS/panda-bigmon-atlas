@@ -195,6 +195,37 @@ Get the tasks ids by hashstag - return list of task ids which have this hashtag 
       </mat-card-content>
     </mat-card>
       </li>
+
+        <li>
+    <h5> <a href="https://prodtask-dev.cern.ch/api/sample_output_containers_by_hashstag/25p0p42_MC23_DAOD_Production/">sample_output_containers_by_hashstag</a></h5>
+
+ Return list of sample output containers for a given hashtag.<br/>
+        Returns two lists: 'ready' - containers for which all tasks are done or finished,
+        'upcoming' - containers for which some tasks are still running<br/>
+          It doesn't check that all datasets are actually in the containers, only task status is considered<br/>
+<br/>
+      <mat-card appearance="outlined">
+        <mat-card-title>
+          CURL example
+        </mat-card-title>
+        <mat-card-content>
+    <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/sample_output_containers_by_hashstag/25p0p42_MC23_DAOD_Production/"</pre>
+    </code>
+        </mat-card-content>
+      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        Example of output
+      </mat-card-title>
+      <mat-card-content>
+        <code>
+          <pre>{{socOutputExample |json}}</pre>
+
+        </code>
+      </mat-card-content>
+    </mat-card>
+      </li>
 </ul>
 }
 
