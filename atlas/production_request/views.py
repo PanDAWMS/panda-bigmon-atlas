@@ -162,6 +162,9 @@ def production_task(request):
             task_data['coreCount'] = jedi_parameters_task.jedi_task_parameters.get('coreCount',1)
             output_datasets = [x.name for x in ProductionDataset.objects.filter(task_id=task_id)]
             task_data['failureRate'] = production_task.failure_rate
+            task_data['result_priority'] = production_task.priority
+            if production_task.current_priority:
+                task_data['result_priority'] = production_task.current_priority
             if production_task.request_id > 300:
                 task_data['projectMode'] = production_task.step.get_task_config('project_mode')
                 task_data['inputEvents'] = production_task.step.input_events

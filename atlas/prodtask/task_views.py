@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict
+from typing import Dict, List
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
@@ -1277,7 +1277,7 @@ def get_global_shares(update_cache=False):
     return result
 
 
-def tasks_serialisation(tasks: [ProductionTask], hashtags: Dict[int, str] = None) -> [dict]:
+def tasks_serialisation(tasks: List[ProductionTask], hashtags: Dict[int, str] = None) -> [dict]:
     step_from_name = {
         '.evgen.': 'Evgen',
         '.simul.': 'Simul',
@@ -1305,6 +1305,7 @@ def tasks_serialisation(tasks: [ProductionTask], hashtags: Dict[int, str] = None
                 step_name = step_template_name[task.ami_tag]
         serial_task.update(dict(step_name=step_name))
         serial_task['failureRate'] = task.failure_rate or 0
+        serial_task['result_priority'] = task.current_priority or task.priority
         if hashtags and task.id in hashtags:
             serial_task['hashtags'] = hashtags[task.id]
         tasks_serial.append(serial_task)

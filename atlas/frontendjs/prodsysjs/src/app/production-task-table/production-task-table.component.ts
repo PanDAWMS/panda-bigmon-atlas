@@ -152,7 +152,7 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       minWidth: 50,
     },
     {
-      field: 'priority',
+      field: 'result_priority',
       headerName: 'Priority',
     },
     {

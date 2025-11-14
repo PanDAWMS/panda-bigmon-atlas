@@ -167,6 +167,7 @@ export interface ProductionTask{
   postproduction: string;
   priority: number;
   current_priority: number;
+  result_priority?: number;
   update_time: string;
   update_owner: string;
   comments: string;
