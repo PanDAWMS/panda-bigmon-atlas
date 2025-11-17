@@ -2040,6 +2040,8 @@ def request_table_view(request, rid=None, show_hidden=False):
                 is_open_ended = OpenEndedRequest.objects.filter(request=cur_request,status='open').exists()
             except:
                 pass
+            if cur_request.phys_group == 'VALI':
+                show_split = True
             if (cur_request.request_type in ['HLT','REPROCESSING', 'GROUP']) or (cur_request.phys_group == 'VALI'):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
