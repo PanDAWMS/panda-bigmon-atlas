@@ -455,7 +455,7 @@ class TaskDefinition(object):
         yaml_config_file = path_template.render(Context({'number': str(input_data_dict['number']), 'file_name': TaskDefConstants.MC_JOBPARAMETERS_CONFIG_FILE_NAME},
                      autoescape=False))
         try:
-            nEventsPerJob, nFilesPerJob = resolve_job_parameters_from_yaml(yaml_config_file,{'energy':energy})
+            nEventsPerJob, nFilesPerJob = resolve_job_parameters_from_yaml(TaskDefConstants.DEFAULT_NEW_EVGEN_JO_PATH+yaml_config_file,{'energy':energy})
             params['nEventsPerJob'] = nEventsPerJob
             params['nFilesPerJob'] = nFilesPerJob
             return params
