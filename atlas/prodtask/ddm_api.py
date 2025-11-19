@@ -311,7 +311,7 @@ class DDM(object):
         dataset_exists = self.dataset_exists(dataset)
         if not dataset_exists:
             return False
-        if not list(self.__ddm.list_dataset_replicas(scope, dataset)) and not(list(self.__ddm.list_did_rules(scope, dataset))):
+        if not list(self.__ddm.list_dataset_replicas(scope, dataset, False)) and not(list(self.__ddm.list_did_rules(scope, dataset))):
             return False
         if self.dataset_metadata(dataset).get('expired_at'):
             if ((self.dataset_metadata(dataset).get('expired_at') - timezone.now().replace(tzinfo=None)) <
@@ -594,16 +594,15 @@ class DDM(object):
             raise ValueError('Dataset {0} has no events or corresponding metadata (nEvents)'.format(dsn))
         return math.ceil(float(number_events) / float(number_files))
 
-    def dataset_replicas(self, dataset_name):
+    def dataset_replicas(self, dataset_name, deep=True):
         scope, name = self.rucio_convention(dataset_name)
-
-        return list(self.__ddm.list_dataset_replicas(scope=scope, name=name))
+        return list(self.__ddm.list_dataset_replicas(scope=scope, name=name, deep=deep))
 
     def get_dataset_rses(self, dsn):
         if not self.is_dsn_dataset(dsn):
             raise Exception('{0} is not dataset'.format(dsn))
         scope, dataset = self.rucio_convention(dsn)
-        return [replica['rse'] for replica in self.__ddm.list_dataset_replicas(scope, dataset)]
+        return [replica['rse'] for replica in self.dataset_replicas(scope, dataset)]
 
     def list_file_replicas(self, dataset_name):
         scope, name = self.rucio_convention(dataset_name)
