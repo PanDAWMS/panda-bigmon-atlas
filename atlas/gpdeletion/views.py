@@ -2,6 +2,8 @@ import glob
 import gzip
 from dataclasses import dataclass, field
 import xml.etree.ElementTree as ET
+from typing import Optional
+
 from django.contrib.auth.models import User
 from django.contrib.messages.context_processors import messages
 from django.http.response import HttpResponseBadRequest
@@ -1357,7 +1359,7 @@ def prepare_super_container_creation(production_request_id: int) -> ([ContainerI
                                                               ami_tag,
                                                               output_format, output_base, input_datasets)
                     else:
-                        all_year_containers[key].input_datasets += input_datasets
+                        all_year_containers[key].input_datasets = list(set(all_year_containers[key].input_datasets + input_datasets))
     return input_containers, all_year_containers
 
 
