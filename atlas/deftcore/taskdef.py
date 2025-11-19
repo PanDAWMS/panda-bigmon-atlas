@@ -1315,14 +1315,21 @@ class TaskDefinition(object):
                         if requested_output_type not in list(previous_output_status_dict.keys()):
                             continue
                         if previous_output_status_dict[requested_output_type]:
-                            logger.info('Duplication found during deep check')
+                            first_old_chain_task_id = min(list(similar_task_previous_task_set - all_previous_tasks_set))
+                            first_new_chain_task_id = min(list(all_previous_tasks_set - similar_task_previous_task_set))
+                            first_old_chain_task = TTask.objects.get(id=first_old_chain_task_id)
+                            first_new_chain_task = TTask.objects.get(id=first_new_chain_task_id)
+                            old_offset = first_old_chain_task.get_job_parameter('randomSeed','offset')
+                            new_offset = first_new_chain_task.get_job_parameter('randomSeed','offset')
+                            if old_offset == new_offset:
+                                logger.info('Duplication found during deep check')
 
-                            raise TaskDuplicateDetected(similar_task.id, 1,
-                                                        request=step.request.reqid,
-                                                        slice=step.slice.slice,
-                                                        processed_formats='.'.join(similar_task_output_formats),
-                                                        requested_formats='.'.join(output_formats),
-                                                        tag=step.step_template.ctag)
+                                raise TaskDuplicateDetected(similar_task.id, 1,
+                                                            request=step.request.reqid,
+                                                            slice=step.slice.slice,
+                                                            processed_formats='.'.join(similar_task_output_formats),
+                                                            requested_formats='.'.join(output_formats),
+                                                            tag=step.step_template.ctag)
         return True
 
 
