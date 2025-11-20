@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from os import listdir
@@ -7,7 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from atlas.ami.client import AMIClient
 
 from atlas.dkb.views import find_jo_by_dsid
-from atlas.prodtask.models import MCJobOptions, SystemParametersHandler, HashTag, ProductionTask, DSIDHashtags
+from atlas.prodtask.models import MCJobOptions, SystemParametersHandler, HashTag, ProductionTask, DSIDHashtags, \
+    match_job_parameters
 from .ddm_api import DDM
 from .models import InputRequestList
 import yaml
@@ -17,7 +19,7 @@ _logger = logging.getLogger('prodtaskwebui')
 
 CVMFS_BASEPATH = '/cvmfs/atlas.cern.ch/repo/sw/Generators/'
 JO_PARAMETERS = {'evgenConfig.minevents':'events_per_job','evgenConfig.inputFilesPerJob':'files_per_job','evgenConfig.nEventsPerJob':'events_per_job'}
-
+YAML_CONFIG_FILENAME = 'production_parameters.yaml'
 def parse_jo_file(file_path):
     result = {}
     with open(file_path,'r') as jo_file:
@@ -37,9 +39,25 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
     if len(dsid) <= 6:
         base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:3]}xxx/{dsid}'
     else:
-        base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:1]}/{dsid[-3:]}xxx/{dsid}'
+        base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:1]}/{dsid[:-3]}xxx/{dsid}'
     dsid_update_values = {}
+    content = None
     for dsid_file in listdir(base_dsid_path):
+        if dsid_file == YAML_CONFIG_FILENAME:
+            yaml_jo_content = load_job_parameters_from_yaml(f'{base_dsid_path}/{dsid_file}')
+            if yaml_jo_content and len(yaml_jo_content) > 0:
+                dsid_update_values = {'physic_short': dsid_file,
+                                      'events_per_job': yaml_jo_content[0].get('n_events_per_job', 5000),
+                                      'files_per_job': yaml_jo_content[0].get('input_files_per_job', 1)}
+                if len(yaml_jo_content) > 1:
+                    for entry in yaml_jo_content[1:]:
+                        if entry.get('n_events_per_job', 5000) != dsid_update_values['events_per_job']:
+                            dsid_update_values['events_per_job'] = -1
+                            content = yaml_jo_content
+                        if entry.get('input_files_per_job', 1) != dsid_update_values['files_per_job']:
+                            dsid_update_values['files_per_job'] = -1
+                            content = yaml_jo_content
+            break
         if dsid_file.startswith('mc') and dsid_file.endswith('py') and (len(dsid_file.split('.')) == 3):
             dsid_jo_content = parse_jo_file(f'{base_dsid_path}/{dsid_file}')
             dsid_update_values = {'physic_short': dsid_file,
@@ -48,12 +66,20 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
     if dsid_update_values:
         if MCJobOptions.objects.filter(dsid=int(dsid)).exists():
             new_dsid_jo = MCJobOptions.objects.get(dsid=int(dsid))
+            do_update = (new_dsid_jo.physic_short != dsid_update_values['physic_short']) or \
+                        (new_dsid_jo.events_per_job != dsid_update_values['events_per_job']) or \
+                        (new_dsid_jo.files_per_job != dsid_update_values['files_per_job']) or \
+                        ((content is not None) and (new_dsid_jo.content != json.dumps(content)))
         else:
-            new_dsid_jo = MCJobOptions()
-        new_dsid_jo.physic_short = dsid_update_values['physic_short']
-        new_dsid_jo.events_per_job = dsid_update_values['events_per_job']
-        new_dsid_jo.files_per_job = dsid_update_values['files_per_job']
-        new_dsid_jo.save()
+            new_dsid_jo = MCJobOptions(dsid=int(dsid))
+            do_update = True
+        if do_update:
+            new_dsid_jo.physic_short = dsid_update_values['physic_short']
+            new_dsid_jo.events_per_job = dsid_update_values['events_per_job']
+            new_dsid_jo.files_per_job = dsid_update_values['files_per_job']
+            if content is not None:
+                new_dsid_jo.content = json.dumps(content)
+            new_dsid_jo.save()
         return new_dsid_jo
     else:
         _logger.error(f'No JO files found for DSID {dsid} in {base_dsid_path}')
@@ -68,32 +94,11 @@ def sync_cvmfs_db(base_path='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJobOption
             for second_level_directory in listdir(base_path+'/'+directory):
                 if second_level_directory.endswith('xxx') and second_level_directory[:-3].isdigit():
                     dsids_parent_dirs.append(directory+'/'+second_level_directory)
-    dsid_to_update = {}
     for dsids_dir in dsids_parent_dirs:
         for dsid in listdir(base_path+'/'+dsids_dir):
             if dsid.isdigit():
-                for dsid_file in listdir(base_path+'/'+dsids_dir+'/'+dsid):
-                    if dsid_file.startswith('mc') and dsid_file.endswith('py') and (len(dsid_file.split('.'))==3):
-                        dsid_jo_content = parse_jo_file(base_path+'/'+dsids_dir+'/'+dsid+'/'+dsid_file)
-                        dsid_to_update[dsid] = {'physic_short':dsid_file,
-                                                'events_per_job':dsid_jo_content.get('events_per_job',5000),
-                                                'files_per_job':dsid_jo_content.get('files_per_job',1)}
-    for dsid in list(dsid_to_update.keys()):
-        do_update = False
-        if MCJobOptions.objects.filter(dsid=int(dsid)).exists():
-            new_dsid_jo = MCJobOptions.objects.get(dsid=int(dsid))
-            do_update = (new_dsid_jo.physic_short != dsid_to_update[dsid]['physic_short']) or \
-                        (new_dsid_jo.events_per_job != dsid_to_update[dsid]['events_per_job']) or \
-                        (new_dsid_jo.files_per_job != dsid_to_update[dsid]['files_per_job'])
-        else:
-            new_dsid_jo = MCJobOptions()
-            new_dsid_jo.dsid = int(dsid)
-            do_update = True
-        if do_update:
-            new_dsid_jo.physic_short = dsid_to_update[dsid]['physic_short']
-            new_dsid_jo.events_per_job = dsid_to_update[dsid]['events_per_job']
-            new_dsid_jo.files_per_job = dsid_to_update[dsid]['files_per_job']
-            new_dsid_jo.save()
+                sync_cvmfs_dsid(dsid)
+
 
 
 def sync_request_jos(production_request):
@@ -251,13 +256,7 @@ def sync_bad_sw_releases(base_file='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJo
 _JOB_PARAMS_CACHE: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
 
 _COND_PATTERN = re.compile(r'^\s*(<=|>=|=|<|>)?\s*(\d+)\s*$')
-_OP_MAP = {
-    '<':  lambda a, b: a < b,
-    '>':  lambda a, b: a > b,
-    '<=': lambda a, b: a <= b,
-    '>=': lambda a, b: a >= b,
-    '=':  lambda a, b: a == b,
-}
+
 
 
 def _parse_condition_expr(expr: str) -> Tuple[str, int]:
@@ -269,7 +268,6 @@ def _parse_condition_expr(expr: str) -> Tuple[str, int]:
     if not op:
         op = '='
     return op, value
-
 
 def load_job_parameters_from_yaml(path: str) -> List[Dict[str, Any]]:
     """Load job parameters YAML with generic condition variables.
@@ -333,33 +331,10 @@ def load_job_parameters_from_yaml(path: str) -> List[Dict[str, Any]]:
     return entries
 
 
-def _conditions_match(entry: Dict[str, Any], context: Dict[str, Any]) -> bool:
-    """Return True if all conditions in entry match provided context.
-    Missing variables -> mismatch."""
-    for cond in entry.get('conditions', []):
-        var = cond['variable']
-        if var not in context:
-            return False
-        try:
-            actual = int(context[var])
-        except Exception:
-            return False
-        op = cond['op']
-        value = cond['value']
-        cmp_fn = _OP_MAP.get(op)
-        if not cmp_fn:
-            return False
-        if not cmp_fn(actual, value):
-            return False
-    return True
 
 
-def match_job_parameters(entries: List[Dict[str, Any]], context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Return the first entry whose conditions all match the context (AND semantics)."""
-    for entry in entries:
-        if _conditions_match(entry, context):
-            return entry
-    return None
+
+
 
 
 def resolve_job_parameters_from_yaml(path: str,

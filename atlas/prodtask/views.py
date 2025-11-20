@@ -1214,6 +1214,7 @@ def remove_step_by_index(ordered_existed_steps: [StepExecution], index: int):
 
 def delete_small_merge(good_slices: [int], production_request: int):
     slices = InputRequestList.objects.filter(slice__in=good_slices,request=production_request)
+    energy = TRequest.objects.get(reqid=production_request).energy_gev
     for slice in slices:
         ordered_existed_steps, existed_foreign_step = form_existed_step_list(StepExecution.objects.filter(request=production_request, slice=slice))
         for index, step in enumerate(ordered_existed_steps):
@@ -1227,7 +1228,7 @@ def delete_small_merge(good_slices: [int], production_request: int):
                     else:
                         if '/' in slice.input_data and slice.input_data.split('/')[0].isnumeric():
                             if MCJobOptions.objects.filter(dsid=int(slice.input_data.split('/')[0])).exists():
-                                evnt_events_per_job = MCJobOptions.objects.get(dsid=int(slice.input_data.split('/')[0])).events_per_job
+                                evnt_events_per_job = MCJobOptions.objects.get(dsid=int(slice.input_data.split('/')[0])).conditional_events_per_job({'energy':energy})
                     if step.get_task_config('nEventsPerJob') and int(step.get_task_config('nEventsPerJob')) < evnt_events_per_job:
                         _logger.info(f'Merge step changed in slice {slice.slice} for request {production_request} ')
                         step.set_task_config({'nEventsPerJob': evnt_events_per_job})

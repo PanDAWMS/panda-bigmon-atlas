@@ -1,11 +1,12 @@
 import json
+import re
 import time
 from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import timedelta
 from enum import Enum, auto
 from pprint import pprint
-from typing import Dict, List, Literal, Any, Optional
+from typing import Dict, List, Literal, Any, Optional, Tuple
 from uuid import uuid1
 
 import math
@@ -568,6 +569,42 @@ class StepPosition:
     slice_number: int
     step_id: int
 
+_OP_MAP = {
+    '<':  lambda a, b: a < b,
+    '>':  lambda a, b: a > b,
+    '<=': lambda a, b: a <= b,
+    '>=': lambda a, b: a >= b,
+    '=':  lambda a, b: a == b,
+}
+
+def _conditions_match(entry: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    """Return True if all conditions in entry match provided context.
+    Missing variables -> mismatch."""
+    for cond in entry.get('conditions', []):
+        var = cond['variable']
+        if var not in context:
+            return False
+        try:
+            actual = int(context[var])
+        except Exception:
+            return False
+        op = cond['op']
+        value = cond['value']
+        cmp_fn = _OP_MAP.get(op)
+        if not cmp_fn:
+            return False
+        if not cmp_fn(actual, value):
+            return False
+    return True
+
+def match_job_parameters(entries: List[Dict[str, Any]], context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Return the first entry whose conditions all match the context (AND semantics)."""
+    for entry in entries:
+        if _conditions_match(entry, context):
+            return entry
+    return None
+
+
 class MCJobOptions(models.Model):
 
     dsid =  models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID', primary_key=True)
@@ -576,6 +613,28 @@ class MCJobOptions(models.Model):
     events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB')
     files_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='FILES_PER_JOB')
     content = models.CharField(max_length=2000, db_column='CONTENT')
+
+    def conditional_events_per_job(self, context: Dict[str, Any]):
+        if self.events_per_job and self.events_per_job > 0:
+            return self.events_per_job
+        else:
+            if self.content:
+                entries = json.loads(self.content)
+                matched_entry = match_job_parameters(entries, context)
+                if matched_entry:
+                    return matched_entry.get('n_events_per_job')
+            return None
+
+    def conditional_files_per_job(self, context: Dict[str, Any]):
+        if self.files_per_job and self.files_per_job > 0:
+            return self.files_per_job
+        else:
+            if self.content:
+                entries = json.loads(self.content)
+                matched_entry = match_job_parameters(entries, context)
+                if matched_entry:
+                    return matched_entry.get('input_files_per_job')
+            return None
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()

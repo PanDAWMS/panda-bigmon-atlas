@@ -1780,14 +1780,16 @@ def check_job_options(production_requests: List[TRequest]):
                             tid_instead_of_container.append((slice.request_id, slice.slice, slice.dataset))
                         else:
                             job_option_check_enough_input[job_option_obj.dsid].append(slice)
-                    if slice.input_events % job_option_obj.events_per_job != 0:
-                        not_dividable_job_options.append((job_option, slice, slice.input_events, job_option_obj.events_per_job))
+                    events_per_job = job_option_obj.conditional_events_per_job({'energy': slice.request.energy_gev})
+                    files_per_job = job_option_obj.conditional_files_per_job({'energy': slice.request.energy_gev})
+                    if slice.input_events % events_per_job != 0:
+                        not_dividable_job_options.append((job_option, slice, slice.input_events, events_per_job))
                     elif slice.input_events % 10000 != 0:
                         input_not_10k_diviable_job_options.append((job_option, slice, slice.input_events))
-                    elif slice.input_events // job_option_obj.events_per_job > 50_000:
-                        too_many_jobs.append((job_option, slice, slice.input_events, job_option_obj.events_per_job))
-                    elif job_option_obj.files_per_job * (slice.input_events // job_option_obj.events_per_job) > 200_000:
-                        too_many_input_files.append((job_option, slice, slice.input_events, job_option_obj.events_per_job, job_option_obj.files_per_job))
+                    elif slice.input_events // events_per_job > 50_000:
+                        too_many_jobs.append((job_option, slice, slice.input_events, events_per_job))
+                    elif files_per_job * (slice.input_events // events_per_job) > 200_000:
+                        too_many_input_files.append((job_option, slice, slice.input_events, events_per_job, files_per_job))
 
             if job_option_check_enough_input:
                 not_enough_input = check_enough_input(job_option_check_enough_input, first_step_by_slice)
@@ -1840,11 +1842,13 @@ def check_enough_input(job_option_by_slice: Dict[str, List[InputRequestList]], f
     not_enough_input = []
     for (job_option, ctag, dataset), slices in job_option_by_tag_input.items():
         job_option_obj = MCJobOptions.objects.get(dsid=job_option)
+        events_per_job = job_option_obj.conditional_events_per_job({'energy': slices[0].request.energy_gev})
+        files_per_job = job_option_obj.conditional_files_per_job({'energy': slices[0].request.energy_gev})
         total_input_events = sum([x.input_events for x in slices])
-        number_of_jobs = total_input_events // job_option_obj.events_per_job
+        number_of_jobs = total_input_events // events_per_job
         number_of_files = ddm.get_number_files(dataset)
-        if number_of_jobs > number_of_files // job_option_obj.files_per_job:
-            not_enough_input.append((slices[0].input_data, ctag, dataset, number_of_jobs, number_of_files, job_option_obj.files_per_job))
+        if number_of_jobs > number_of_files // files_per_job:
+            not_enough_input.append((slices[0].input_data, ctag, dataset, number_of_jobs, number_of_files, files_per_job))
     return not_enough_input
 
 def get_request_stats(production_requests: List[TRequest]) -> Dict[str, Any]:
