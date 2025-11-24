@@ -320,10 +320,15 @@ class ProjectMode(object):
             setattr(self, 'cmtconfig', TaskDefConstants.DEFAULT_PROJECT_MODE['cmtconfig'])
             if self.cache:
                 if self.container_name:
-                        ami_client = AMIClient()
-                        if ami_client.ami_container_exists(self.container_name):
-                            setattr(self, 'cmtconfig', ami_client.ami_cmtconfig_by_image_name(self.container_name))
-                        else:
+                        cmt_config_from_ami = False
+                        try:
+                            ami_client = AMIClient()
+                            if ami_client.ami_container_exists(self.container_name):
+                                setattr(self, 'cmtconfig', ami_client.ami_cmtconfig_by_image_name(self.container_name))
+                                cmt_config_from_ami = True
+                        except Exception as e:
+                            logger.error(f'Error getting cmtconfig from AMI for container {self.container_name}: {e}')
+                        if not cmt_config_from_ami:
                             cmtconfig_list = self._get_cmtconfig_for_container(self.cache, self.container_name)
                             if len(cmtconfig_list) == 1:
                                 setattr(self, 'cmtconfig', cmtconfig_list[0])
