@@ -14,7 +14,7 @@ from atlas.ami.client import AMIClient
 from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, StepAction, TTask, \
     GroupProductionAMITag, ProductionTask, GroupProductionDeletion, TDataFormat, GroupProductionStats, TRequest, \
     ProductionDataset, GroupProductionDeletionExtension, GroupProductionDeletionProcessing, \
-    GroupProductionDeletionRequest, InputRequestList, StepExecution, SystemParametersHandler
+    GroupProductionDeletionRequest, InputRequestList, StepExecution, SystemParametersHandler, OpenEndedRequest
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from datetime import datetime, timedelta
@@ -1333,33 +1333,63 @@ def prepare_super_container_creation(production_request_id: int) -> ([ContainerI
     input_containers = {}
     ddm = DDM()
     all_year_containers = {}
-    for slice in slices:
-        if not slice.is_hide:
-            step = StepExecution.objects.filter(slice=slice, request=production_request_id).last()
-            if ProductionTask.objects.filter(step=step).exists():
-                task = ProductionTask.objects.filter(step=step).last()
+    is_open_ended = OpenEndedRequest.objects.filter(request=production_request_id).exists()
+    if is_open_ended:
+        container = None
+        output_dataset = None
+        ami_tag = None
+        output_formats_set = set()
+        input_datasets_set = set()
+        for slice in slices:
+            if not slice.is_hide:
+                step = StepExecution.objects.filter(slice=slice, request=production_request_id).last()
+                if not container:
+                    container = slice.dataset.strip('/')
+                if ProductionTask.objects.filter(step=step).exists():
+                    task = ProductionTask.objects.filter(step=step).last()
+                    ami_tag = task.ami_tag
+                    output_dataset = task.output_non_log_datasets().__next__()
+                    output_formats_set.update(task.output_formats.split('.'))
+                    input_datasets_set.add(task.input_dataset)
+        period = 'OpenEnded'
+        version = container.split('.')[-1].split('_')[-1]
+        project_year = container.split('.')[0].split('_')[0][-2:]
+        output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
+        input_datasets = list(input_datasets_set)
+        output_formats = list(output_formats_set)
+        for output_format in output_formats:
+            key = '_'.join(['OpenEnded', ami_tag, output_format])
+            if key not in input_containers:
+                input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
+                                                      output_format, output_base, input_datasets)
+    else:
+        for slice in slices:
+            if not slice.is_hide:
+                step = StepExecution.objects.filter(slice=slice, request=production_request_id).last()
+                if ProductionTask.objects.filter(step=step).exists():
+                    task = ProductionTask.objects.filter(step=step).last()
 
-                container = slice.dataset.strip('/')
-                period = container.split('.')[1]
-                version = container.split('.')[-1].split('_')[-1]
-                project_year = container.split('.')[0].split('_')[0][-2:]
-                ami_tag = task.ami_tag
-                output_formats = task.output_formats.split('.')
-                output_dataset = task.output_non_log_datasets().__next__()
-                output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
-                input_datasets = ddm.dataset_in_container(container)
-                for output_format in output_formats:
-                    key = '_'.join([container, ami_tag, output_format])
-                    if key not in input_containers:
-                        input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
-                                                              output_format, output_base, input_datasets)
-                    key = '_'.join(['periodAllYear', ami_tag, output_format])
-                    if key not in all_year_containers:
-                        all_year_containers[key] = ContainerInfo(container, 'periodAllYear', version, project_year,
-                                                              ami_tag,
-                                                              output_format, output_base, input_datasets)
-                    else:
-                        all_year_containers[key].input_datasets = list(set(all_year_containers[key].input_datasets + input_datasets))
+                    container = slice.dataset.strip('/')
+                    period = container.split('.')[1]
+                    version = container.split('.')[-1].split('_')[-1]
+                    project_year = container.split('.')[0].split('_')[0][-2:]
+                    ami_tag = task.ami_tag
+                    output_formats = task.output_formats.split('.')
+                    output_dataset = task.output_non_log_datasets().__next__()
+                    output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
+                    input_datasets = ddm.dataset_in_container(container)
+                    for output_format in output_formats:
+                        key = '_'.join([container, ami_tag, output_format])
+                        if key not in input_containers:
+                            input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
+                                                                  output_format, output_base, input_datasets)
+                        key = '_'.join(['periodAllYear', ami_tag, output_format])
+                        if key not in all_year_containers:
+                            all_year_containers[key] = ContainerInfo(container, 'periodAllYear', version, project_year,
+                                                                  ami_tag,
+                                                                  output_format, output_base, input_datasets)
+                        else:
+                            all_year_containers[key].input_datasets = list(set(all_year_containers[key].input_datasets + input_datasets))
     return input_containers, all_year_containers
 
 
