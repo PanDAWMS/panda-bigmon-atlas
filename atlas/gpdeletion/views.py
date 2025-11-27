@@ -1351,14 +1351,14 @@ def prepare_super_container_creation(production_request_id: int) -> ([ContainerI
                     output_dataset = task.output_non_log_datasets().__next__()
                     output_formats_set.update(task.output_formats.split('.'))
                     input_datasets_set.add(task.input_dataset)
-        period = 'OpenEnded'
+        period = 'periodAllYear'
         version = container.split('.')[-1].split('_')[-1]
         project_year = container.split('.')[0].split('_')[0][-2:]
         output_base = "{base}."+output_dataset.split('.')[3]+".{output_format}.{input_tags}_"+ami_tag
         input_datasets = list(input_datasets_set)
         output_formats = list(output_formats_set)
         for output_format in output_formats:
-            key = '_'.join(['OpenEnded', ami_tag, output_format])
+            key = '_'.join(['periodAllYear', ami_tag, output_format])
             if key not in input_containers:
                 input_containers[key] = ContainerInfo(container, period, version, project_year, ami_tag,
                                                       output_format, output_base, input_datasets)
