@@ -2,7 +2,7 @@ import glob
 import gzip
 from dataclasses import dataclass, field
 import xml.etree.ElementTree as ET
-from typing import Optional
+from typing import Optional, List
 
 from django.contrib.auth.models import User
 from django.contrib.messages.context_processors import messages
@@ -1277,12 +1277,12 @@ class ContainerInfo:
 
 @dataclass
 class PreparedContainer:
-    output_containers: [str]
+    output_containers: List[str]
     comment: str
     super_tag: str
     name: str
-    missing_containers: [str] = field(default_factory=list)
-    not_full_containers: [str] = field(default_factory=list)
+    missing_containers: List[str] = field(default_factory=list)
+    not_full_containers: List[str] = field(default_factory=list)
 
 
     def get_name(self):
@@ -1484,12 +1484,13 @@ def create_physics_container_in_ami(request):
         ddm = DDM()
         existing_containers = []
         for container in containers:
-                if ddm.dataset_exists(container.get_name()) and len(ddm.dataset_in_container(container.get_name()))>0:
+                if (ddm.dataset_exists(container.get_name()) and
+                        len(ddm.dataset_in_container(container.get_name()))==len(container.output_containers)+len(container.not_full_containers)):
                     existing_containers.append(container.get_name())
         if existing_containers:
             raise Exception('Container(s) already exist(s): %s'%existing_containers)
         for container in containers:
-            result = ami.create_physics_container(container.super_tag, container.output_containers, container.comment)
+            result = ami.create_physics_container(container.super_tag, container.output_containers+container.not_full_containers, container.comment)
             _logger.info(f'Period container created: {container} {str(result)}')
             _jsonLogger.info('Period container created', extra={'user': request.user.username, 'container':container.get_name()})
         return Response([x.get_name() for x in containers])
