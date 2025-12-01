@@ -29,6 +29,7 @@ from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
 from atlas.jediinterface.client import JEDIClientTest
 from atlas.prestage.views import prepare_dc_requests
+from atlas.prodtask.check_duplicate import create_task_chain
 from atlas.prodtask.ddm_api import DDM, DatasetInfo
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.mcevgen import sync_cvmfs_dsid, ACRONYMS_GENERATORS
@@ -265,6 +266,10 @@ def production_task_for_request(request: Request) -> Response:
                     tasks = ProductionTask.objects.filter(status=task_staus, timestamp__gt=days_ago(days), request__reqid__gte=1000)
             elif 'source' in request.data and request.data['source'] == 'datasetName':
                 tasks_id = get_tasks_by_dataset(request.data['datasetName'])
+                tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
+                hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
+            elif 'source' in request.data and request.data['source'] == 'descendants':
+                tasks_id = [task_id for task_id in create_task_chain(request.data['hashtagString']).keys()]
                 tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
                 hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])
             elif 'source' in request.data and request.data['source'] == 'DCRules':

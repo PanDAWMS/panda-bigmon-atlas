@@ -6,7 +6,9 @@
     @case ('recent_derivation'){
       <h3>Derivation tasks for atlas-dpd-production for the last week </h3>
     }
-
+    @case ('descendants'){
+      <h3>All descendants(including) for {{parentTaskID}}</h3>
+    }
     @default{
       <h3>Tasks for {{hashtagString}}</h3>
     }

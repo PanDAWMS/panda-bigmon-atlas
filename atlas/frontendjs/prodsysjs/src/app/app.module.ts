@@ -139,6 +139,7 @@ import {MainRequestComponent} from "./production-request/main-request/main-reque
 import {StagingManagementComponent} from "./DataCarousel/staging-management/staging-management.component";
 import {DatatsetDetailsComponent} from "./datatset-details/datatset-details.component";
 import {PMGApprovalComponent} from "./production-request/pmgapproval/pmgapproval.component";
+import {LostFilesRecoveryComponent} from "./lost-files-recovery/lost-files-recovery.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -182,6 +183,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
   {path: 'tasks-by-hashtags/:hashtagString', component: TasksManagementComponent},
   {path: 'tasks-by-dkb/:dkbString', component: TasksManagementComponent},
     {path: 'tasks-by-jira/:jira', component: TasksManagementComponent},
+      {path: 'tasks-by-parent/:descendants', component: TasksManagementComponent},
+
       {path: 'tasks-by-status/:taskStatus', component: TasksManagementComponent},
 
   {path: 'tasks-by-url', component: TaskManagementByUrlComponent},
@@ -243,6 +246,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'test-request', component: MainRequestComponent},
     {path: 'staging-rules', component: StagingManagementComponent},
       {path: 'dataset/:did', component: DatatsetDetailsComponent},
+  {path: 'files-recovery/:dataset', component: LostFilesRecoveryComponent},
         {path: 'pmg/:jira', component: PMGApprovalComponent},
 
 

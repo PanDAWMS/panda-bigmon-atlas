@@ -19,6 +19,7 @@ export class TasksManagementComponent implements OnInit {
   public showHashtags = false;
   public slices: number[] = [];
   public hashtagString = '';
+  public parentTaskID: string|null = null;
   public loadError?: string;
   public displayedColumns = [ 'id', 'status', 'name', 'username', 'request_id', 'priority', 'total_events', 'failureRate', 'step_name', 'ami_tag'];
   public tasks$ =  this.route.paramMap.pipe(switchMap((params) => {
@@ -39,6 +40,12 @@ export class TasksManagementComponent implements OnInit {
       this.showOwner = true;
       this.showHashtags = true;
       return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'taskStatus');
+    } else if (params.get('descendants')){
+      this.parentTaskID = params.get('descendants').toString();
+      this.hashtagString = 'descendants';
+      this.showOwner = true;
+      this.showHashtags = true;
+      return this.taskManagementService.getTasksByHashtag(this.parentTaskID, 'descendants');
     }
 
     if (params.get('slices')){

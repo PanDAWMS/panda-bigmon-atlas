@@ -224,41 +224,7 @@
                  alert(data);
               });
         scope.obsolete_tasks = function(){
-            var taskToObsolete = [];
-            var obsoleteMessage = '';
-            //console.log("obsolete");
-            if (scope.showNonAP){
-                taskToObsolete = AP_tasks.concat(GP_tasks);
-                obsoleteMessage = AP_tasks.length.toString() + " AP tasks and " +
-                        GP_tasks.length.toString()+ " GP  tasks will be obsoleted";
-            } else {
-                taskToObsolete = AP_tasks;
-                obsoleteMessage = AP_tasks.length.toString() + " AP tasks will be obsoleted";
-            }
-
-            if(confirm(obsoleteMessage)){
-            var sendObj = {};
-            if(scope.forceObsolete){
-                sendObj = {tasks:taskToObsolete,parameters:true};
-            } else {
-                sendObj = {tasks:taskToObsolete};
-            }
-            http.post("/prodtask/task_chain_obsolete_action/",sendObj).
-              success(function(data, status, headers, config) {
-                //console.log(data);
-                var result = data.result;
-                if(result != "OK"){
-                    alert(data.exception);
-                } else {
-                    scope.alreadyObsoleted = true;
-                    alert('Tasks were obsoleted');
-                }
-              }).
-              error(function(data, status, headers, config) {
-                //console.log(status);
-                alert(data);
-              });
-            }
+                 window.location.href = '/ng/tasks-by-parent/'+task['id'];
 
         };
         scope.search = {'showAP':undefined};
