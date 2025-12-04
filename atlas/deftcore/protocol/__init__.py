@@ -229,7 +229,7 @@ class Protocol(object):
             "param_type": "output",
             "token": "ATLASDATADISK",
             "type": "template",
-            "value": "{{name}}={{data_type}}.{{task_id|stringformat:\".08d\"}}._${SN}.tar.gz"
+            "value": "{{name}}={{data_type}}.{{task_id|stringformat:\".08d\"}}._${SN}.gz"
         }""",
         # FIXME: OverlayTest
         TaskParamName.TXT_EVENTID_OUTPUT: """{
