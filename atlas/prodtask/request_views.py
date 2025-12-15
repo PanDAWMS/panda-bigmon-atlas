@@ -23,6 +23,7 @@ from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fi
     fill_request_events, clone_slices
 from atlas.prodtask.spdstodb import fill_template
 from .hashtag import _set_request_hashtag
+from .step_manage_views import hide_slice
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
 from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions, single_request_action_celery_task, make_slices_from_dict_celery
@@ -2321,8 +2322,19 @@ def extend_request(request, reqid):
             version = '2.0'
             if is_new:
                 version = '3.0'
+            hide_slices = []
+            if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
+                if production_request.cstatus == 'waiting':
+                    hide_slices = [slice for slice in InputRequestList.objects.filter(request=production_request) if not slice.is_hide]
             spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             if make_slices_from_dict(production_request, spreadsheet_dict):
+                for slice in hide_slices:
+                    hide_slice(slice)
+                request_status = RequestStatus(request=production_request, comment='Request re-initialised by WebUI', owner=request.user.username,
+                                               status=production_request.cstatus)
+                request_status.save_with_current_time()
+                production_request.set_info_field('data_source',excel_link)
+                production_request.save()
                 results = {'success':True, 'message': ''}
         except Exception as e:
             results = {'success':False, 'message': str(e)}

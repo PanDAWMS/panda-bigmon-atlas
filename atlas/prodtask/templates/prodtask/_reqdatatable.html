@@ -2973,7 +2973,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
         function checkExtendRequest(event, that){
             event.preventDefault();
             $('#loadExtend').spin('small');
-            var sendData = {'spreadsheet':$('#extendSpreadsheet').val(),'is_new':$('#new_extend_workflow').prop('checked')};
+            var sendData = {'spreadsheet':$('#extendSpreadsheet').val(),'is_new':true};
 
             if ($(that).html() == 'Check'){
                   $.ajax({
@@ -2988,7 +2988,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                             if(return_status){
                                 $('#sliceExtend').html('New slices: '+$.evalJSON(data).slices_number);
                                 $('#stepsExtend').html('New steps: '+$.evalJSON(data).steps_number);
-                                $('#checkExtend').html('Extend');
+                                $('#checkExtend').html('Upload');
                             } else {
                                 alert($.evalJSON(data).message);
                             }
@@ -3673,9 +3673,20 @@ ProjectModeForm.prototype.createForm = function(inputString){
                 </div>
             </div>
         {% endfor %}
-                <div class="row">
-                <a href="/ng/pmg/{{ ref_link_short}}">PMG check up page</a>
-                </div>
+        <div class="row">
+        <div class="large-3 column">
+            For submitter:
+        </div>
+                    <div class="large-3 column">
+
+            <a id='requestCancelButton' class=" button radius" onclick="extendRequest(event);">Re-Upload</a>
+                    </div>
+                            <div class="large-6 column">
+                                                <a href="/ng/pmg/{{ ref_link_short}}">PMG check up page</a>
+
+                                            </div>
+        </div>
+
     {% else %}
          <div class="row">
          <div class="large-12 column">
@@ -4934,16 +4945,20 @@ ProjectModeForm.prototype.createForm = function(inputString){
 </div>
 
 <div id="extendModalWindow" class="reveal-modal" data-reveal>
+    {% if needed_management_approve %}
+    <h3>Re-upload request using google spreadsheet</h3>
+    {% else %}
     <h3>Extend request using google spreadsheet</h3>
+    {% endif %}
     <div class="row">
 
             <div class="large-12 column">
-                <label> link to spreadsheet:
+                <label> link to the new spreadsheet:
                 <input  id="extendSpreadsheet" type="url" onchange="changeExtendtoCheck();" ></label>
             </div>
         </div>
         <div class="row">
-             <div class="large-2 column"><input type="checkbox" id="new_extend_workflow"/>New</div>
+             <div class="large-2 column"></div>
             <div class="large-1 column"><span id="sliceExtend"></span></div>
             <div class="large-1 column"><span id="stepsExtend"></span></div>
             <div class="large-2 column">
