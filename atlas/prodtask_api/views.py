@@ -22,7 +22,7 @@ from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets,
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
-    SystemParameters, SystemParametersHandler, MCWorkflowRequest, HashTag
+    SystemParameters, SystemParametersHandler, MCWorkflowRequest, HashTag, days_ago
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers, check_merged_AOD
 from atlas.prodtask.spdstodb import fill_template
@@ -393,12 +393,11 @@ def unavailable_datasets_info(request):
             result = get_unavalaible_daod_input_datasets([int(task_id)])
         elif username:
             if username == 'all':
-
-                tasks = JediTasks.objects.filter(id__gte=40700000, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING], prodsourcelabel='user')
-                tasks_id = [x.id for x in tasks if 'missing at online endpoints' in x.errordialog]
+                tasks = JediTasks.objects.filter(start_time__gte=days_ago(180), status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING, ProductionTask.STATUS.EXHAUSTED], prodsourcelabel='user')
+                tasks_id = [x.id for x in tasks if ('missing at online' in x.errordialog or "is only complete" in x.errordialog)]
             else:
                 tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING, ProductionTask.STATUS.EXHAUSTED])
-                tasks_id = [x.id for x in tasks if 'incomplete at storages ' in x.errordialog]
+                tasks_id = [x.id for x in tasks if ('missing at online' in x.errordialog or "is only complete" in x.errordialog)]
             result = get_unavalaible_daod_input_datasets(tasks_id)
         sites = set()
         for dataset_info in result:
