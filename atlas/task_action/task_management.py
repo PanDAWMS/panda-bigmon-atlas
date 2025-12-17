@@ -17,7 +17,7 @@ from django.utils import timezone
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag, \
-    DatasetStaging, PandaDatasetStaging, DistributedLock
+    DatasetStaging, PandaDatasetStaging, DistributedLock, TemplateVariable, DatasetRecovery
 from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -38,6 +38,7 @@ class FileRecoveryParameters:
     reproduce_parent: bool
     no_child_retry: bool
     log_file: str
+    submitted: str
 
 
 @dataclass
@@ -105,6 +106,24 @@ class DEFTAction(ABC):
     @abstractmethod
     def set_jobs_debug(self, task_id, job_id):
         pass
+
+
+def clear_input_container(jediTaskID):
+    task = JediTasks.objects.get(id=jediTaskID)
+    ddm = DDM()
+    if task.prodsourcelabel == 'user':
+        jedi_task = TTask.objects.get(id=jediTaskID)
+        try:
+            if TemplateVariable.KEY_NAMES.INPUT_DS in jedi_task.jedi_task_parameters:
+                input_container = jedi_task.jedi_task_parameters[TemplateVariable.KEY_NAMES.INPUT_DS]
+                if ddm.dataset_exists(input_container) and ddm.is_dsn_container(input_container):
+                    input_datasets = ddm.dataset_in_container(input_container)
+                    for dataset in input_datasets:
+                        if  DatasetRecovery.objects.filter(original_dataset=dataset,status=DatasetRecovery.STATUS.DONE).exists() or DatasetRecovery.objects.filter(original_dataset=dataset.split(':')[-1],status=DatasetRecovery.STATUS.DONE).exists():
+                            ddm.delete_datasets_from_container(input_container, [dataset])
+        except:
+            return None
+    return None
 
 
 @dataclass
@@ -191,10 +210,11 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 return_code = result['success']
                 return_message = f'{result["message"]}'
                 self._log_rule_action_message(dataset, func.__name__, bool(return_code), return_message, *args)
-                return bool(return_code), return_message
+                async_action_id = result.get('async_action_id', None)
+                return bool(return_code), return_message, async_action_id
             except Exception as ex:
                 self._log_rule_action_message(dataset, func.__name__, False, str(ex), *args)
-                return False, str(ex)
+                return False, str(ex), None
         return inner
 
     def _jedi_decorator(func):
@@ -321,6 +341,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
 
     @_jedi_new_api_decorator
     def reloadInput(self, jediTaskID, ignore_hard_exhausted=False):
+        clear_input_container(jediTaskID)
         return self.jedi_client.reloadInput(jediTaskID, ignore_hard_exhausted)
 
     @_jedi_new_api_decorator
@@ -358,9 +379,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_rule_decorator
     def upload_file_recovery_request(self, dataset,  dry_run=True, reproduce_parent=False):
         no_child_retry = True
-        result = self.jedi_client.upload_file_recovery_request(dataset=dataset, dry_run=dry_run,
+        result = self.jedi_client.upload_file_recovery_request(dataset=dataset, dry_run=True,
                                                                no_child_retry=no_child_retry, reproduce_parent=reproduce_parent)
-        print(result)
         if 'data' in result and 'logFileURL' in result['data']:
             try:
                 async_task = read_jedi_log.delay(result['data']['logFileURL'])
@@ -371,10 +391,12 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                         dry_run=dry_run,
                         reproduce_parent=reproduce_parent,
                         no_child_retry=no_child_retry,
-                        log_file=result['data']['logFileURL']
+                        log_file=result['data']['logFileURL'],
+                        submitted=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
                     )
                 )
                 cache.set(cache_data.cache_key, asdict(cache_data), 3600 * 48)
+                result['async_action_id'] = async_task.id
             except Exception as e:
                 logger.error(f"File recovery log caching problem for dataset {dataset}: {e}")
         return result
@@ -803,12 +825,12 @@ class ActionType:
 
 def submit_all_action_types(action_function, executor, item, action, params):
         if params:
-            return_code, return_info = action_function(executor, item, action, *params)
+            return_code, return_info, async_id = action_function(executor, item, action, *params)
         else:
-            return_code, return_info = action_function(executor, item, action, None)
+            return_code, return_info, async_id = action_function(executor, item, action, None)
         lock_key = f'deft_action_{action}_{item}'
         DistributedLock.release_lock(lock_key)
-        return return_code, return_info
+        return return_code, return_info, async_id
 
 @app.task(bind=True, base=ProdSysTask, time_limit=1200)
 @ProdSysTask.set_task_name('read jedi log')
@@ -883,14 +905,15 @@ def rules_action(request: Request):
             for dataset in locked_datasets:
                 logger.error(f"dataset {dataset} is lokced")
                 result.append({'dataset': dataset, 'return_code': False, 'return_info': f"dataset {dataset} is locked for actions"})
+        async_id = None
         if action in ASYNC_ACTIONS and len(dataset_to_process) > ASYNC_ACTIONS[action]:
-            async_id = async_action.delay(ActionType.RULE_ACTION, action, username, comment, dataset_to_process, params)
-            return Response({'action_sent':True, 'async_id': async_id.id, 'result': result, 'action_verification':None})
+            async_task = async_action.delay(ActionType.RULE_ACTION, action, username, comment, dataset_to_process, params)
+            async_id = async_task.id
+            return Response({'action_sent':True, 'async_id': async_id, 'result': result, 'action_verification':None})
         for dataset in dataset_to_process:
-            return_code, return_info = submit_all_action_types(do_jedi_rule_action, executor, dataset, action, params)
+            return_code, return_info, async_id = submit_all_action_types(do_jedi_rule_action, executor, dataset, action, params)
             result.append({'dataset':dataset, 'return_code':return_code, 'return_info':return_info})
-
-        return Response({'action_sent':True, 'result': result, 'action_verification':None})
+        return Response({'action_sent':True, 'result': result, 'action_verification':None, 'async_id': async_id})
     except Exception as ex:
         logger.error(f"Task action execution problem: {ex}")
         return Response(data=f"Task action execution problem: {ex}", status=status.HTTP_400_BAD_REQUEST)
@@ -901,6 +924,7 @@ def do_jedi_rule_action(action_executor, dataset, action, *args):
             'alter_source_replication_rule': action_executor.alter_source_replication_rule,
             'bypass_queue': action_executor.bypass_queue,
             'change_destination': action_executor.change_destination,
+            'recovery_lost_files': action_executor.upload_file_recovery_request
         }
     if args == (None,):
          return action_translation[action](dataset)
@@ -943,7 +967,6 @@ def do_jedi_action(action_executor, task_id, action, *args):
             'set_debug_jobs': action_executor.set_jobs_debug,
             'kill_jobs_without_task': action_executor.kill_jobs_without_task,
             'enable_job_cloning': action_executor.enable_job_cloning,
-            'recovery_lost_files': action_executor.upload_file_recovery_request
         }
     if args == (None,):
          return action_translation[action](task_id)

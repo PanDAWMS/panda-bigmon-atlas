@@ -545,7 +545,7 @@ class DDM(object):
         replicas = self.dataset_replicas(dataset_name)
         full_replicas = []
         for replica in replicas:
-            if replica['available_length'] == replica['length']:
+            if replica['length'] > 0 and replica['available_length'] == replica['length']:
                 full_replicas.append(replica)
         return full_replicas
 

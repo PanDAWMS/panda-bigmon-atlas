@@ -4,7 +4,7 @@ import gzip
 import pickle
 from copy import deepcopy
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List
 
 import requests
 from urllib.parse import urlencode
@@ -104,6 +104,18 @@ class JEDITaskActionInterface(ABC):
 
     @abstractmethod
     def enable_job_cloning(self, jedi_task_id: int, mode: Optional[str] = None, multiplicity: Optional[int] = None, num_sites: Optional[int] = None):
+        pass
+
+    @abstractmethod
+    def upload_file_recovery_request(self, task_id: int,
+                                                dry_run: bool,
+                                                dataset: str,
+                                                files: List[str],
+                                                no_child_retry: bool,
+                                                resurrect_datasets: bool,
+                                                force: bool,
+                                                reproduce_parent: bool,
+                                                reproduce_upto_nth_gen: int):
         pass
 
 
@@ -375,6 +387,29 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         data = {'task_id': int(jediTaskID),
                 'hour_offset': -12}
         return self._post_new_api_command('api/v1/task/change_modification_time', data)
+
+    def  upload_file_recovery_request(self,    task_id: int = None,
+                                                dry_run: bool = None,
+                                                dataset: str = None,
+                                                files: List[str] = None,
+                                                no_child_retry: bool = True,
+                                                resurrect_datasets: bool = False,
+                                                force: bool = False,
+                                                reproduce_parent: bool = False,
+                                                reproduce_upto_nth_gen: int = 0,
+                                            ):
+        data = {'dataset': dataset,
+                'dry_run': dry_run,
+                'files': files,
+                'no_child_retry': no_child_retry,
+                'resurrect_datasets': resurrect_datasets,
+                'force': force,
+                'reproduce_parent': reproduce_parent,
+                'reproduce_upto_nth_gen': reproduce_upto_nth_gen}
+        if task_id is not None:
+            data['task_id'] = task_id
+
+        return self._post_new_api_command('api/v1/file_server/upload_file_recovery_request', data)
 
 
     def avalancheTask(self, jediTaskID):

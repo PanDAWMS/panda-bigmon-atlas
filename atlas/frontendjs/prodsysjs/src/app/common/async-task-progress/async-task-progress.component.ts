@@ -6,6 +6,8 @@ import {AsyncProdTaskSplitStatus, ProductionRequestService} from "../../producti
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatProgressBar} from "@angular/material/progress-bar";
 
+export type AYNC_TASK_TYPE = 'percentage' | 'count' | 'single';
+
 @Component({
   selector: 'app-async-task-progress',
   imports: [
@@ -18,10 +20,12 @@ import {MatProgressBar} from "@angular/material/progress-bar";
 export class AsyncTaskProgressComponent {
   asyncTaskId = input('');
   interval = input(5); // Interval in seconds
+  asyncTaskType = input<AYNC_TASK_TYPE>('percentage');
   private productionRequestService = inject(ProductionRequestService);
   taskFinished = output<AsyncProdTaskSplitStatus>();
   taskStatus$: Observable<AsyncProdTaskSplitStatus>;
   active = false;
+  finished = false;
   total = 0;
   current = 0;
   constructor() {
@@ -37,9 +41,10 @@ export class AsyncTaskProgressComponent {
               switchMap(() => this.productionRequestService.getAsyncTaskStatus(taskId)),
               tap(status => {
                 this.active = true;
+                this.finished = false;
                 if (status.status === 'SUCCESS' || status.status === 'FAILURE') {
                   this.active = false;
-
+                  this.finished = true;
                   this.taskFinished.emit(status);
                 } else {
                   if (status.progress){
@@ -56,6 +61,7 @@ export class AsyncTaskProgressComponent {
               }), catchError(err => {
                     let errorMessage = '';
                     this.active = false;
+                    this.finished = true;
                     if (err.status === 500) {
                       errorMessage = ` Error creating requests: ${err.error}`;
                     } else {

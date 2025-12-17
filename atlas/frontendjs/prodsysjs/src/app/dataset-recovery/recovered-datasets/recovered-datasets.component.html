@@ -67,7 +67,7 @@
     <ul class="list-disc pl-5">
       @for (container of request.containers; track container){
         <li>
-         <a href="{{container| rucioURL}}"> {{ container }}</a>
+         <a [routerLink]="['/dataset', container ]"> {{ container }}</a>
         </li>
       }
     </ul>

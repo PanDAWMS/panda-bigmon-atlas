@@ -1,0 +1,59 @@
+<p>Lost file recovery procedure</p>
+@if(isLoading){
+  <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+}
+
+@if(fileRecoveryInfo()){
+  <div class="task-grid mat-elevation-z8">
+      <!--    Row-->
+  <div>Dataset to recover:</div><div style="grid-column: 2 / -1">{{fileRecoveryInfo().dataset}}</div>
+      <!--    Row-->
+  <div>Files lost:</div><div style="grid-column: 2 / -1">{{fileRecoveryInfo().lost_files}}</div>
+      <!--    Row-->
+<div>Options:</div><div style="grid-column: 2 / -1"><mat-slide-toggle [checked]="fileRecoveryInfo().recreateParent" [disabled]="true">Recreate parent</mat-slide-toggle></div>
+      <!--    Row-->
+<div>Actions:</div><div style="grid-column: 2 / -1"><button mat-raised-button color="primary" (click)="submitRecovery(true, fileRecoveryInfo().recreateParent)">Dry run</button>
+  <button mat-raised-button color="primary" (click)="submitRecovery(false,  fileRecoveryInfo().recreateParent)">Recovery files</button></div>
+
+</div>
+      @if(fileRecoveryInfo().recoveryInfo){
+      <div></div><div style="grid-column: 2 / -1">
+        <mat-card>
+          <mat-card-title>Last action:</mat-card-title>
+          <mat-card-content>
+            <div><strong>Log file:</strong> {{ fileRecoveryInfo().recoveryInfo.parameters.log_file }}</div>
+            <div class="mt-2"><strong>Parameters</strong></div>
+            <div>Dry run: {{ fileRecoveryInfo().recoveryInfo.parameters.dry_run }}</div>
+            <div>Reproduce parent: {{ fileRecoveryInfo().recoveryInfo.parameters.reproduce_parent }}</div>
+            <div>No child retry: {{ fileRecoveryInfo().recoveryInfo.parameters.no_child_retry }}</div>
+            <div>Submitted: {{ fileRecoveryInfo().recoveryInfo.parameters.submitted }}</div>
+          </mat-card-content>
+        </mat-card>
+        </div>
+      }
+    @if(asyncTaskID()){
+    <mat-card>
+    <app-async-task-progress [asyncTaskId]="asyncTaskID()" (taskFinished)="asyncTaskFinished($event)" [asyncTaskType]="'single'" ></app-async-task-progress>
+      </mat-card>
+      @if(asyncResult()){
+        <h5>Result:</h5>
+        <pre>{{asyncResult()}}</pre>
+      }
+  }
+
+  @if(actionError()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ actionError() }}</span>
+  </div>
+}
+
+
+  <app-rucio-did [datasetName]="fileRecoveryInfo().dataset" >  </app-rucio-did>
+}
+@if(errorMessage()){
+  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ errorMessage() }}</span>
+  </div>
+}
