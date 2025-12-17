@@ -239,10 +239,10 @@ def sync_bad_sw_releases(base_file='/cvmfs/atlas.cern.ch/repo/sw/Generators/MCJo
                 _logger.error(f'Invalid line in BlackList_caches.txt: {line.strip()}')
                 continue
             sw_release = parts[1].strip()
-            generator =  parts[2].strip()
+            generators =  [generator.lower() for generator in parts[2].strip().split('|')]
             skipped_dsids = set()
             for acronym, full_name in ACRONYMS_GENERATORS.items():
-                if full_name.lower() == generator.lower():
+                if full_name.lower() in generators:
                     skipped_dsids.add(acronym)
             bad_releases[sw_release] = list(set(bad_releases[sw_release]) | skipped_dsids)
     if bad_releases:
