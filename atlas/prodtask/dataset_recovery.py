@@ -9,6 +9,7 @@ from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestLis
     TTask, TemplateVariable, DatasetRecovery, DatasetRecoveryInfo
 from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.views import set_request_status, clone_slices, request_clone_slices, form_existed_step_list
+from atlas.production_request.views import get_tasks_by_dataset
 from atlas.task_action.task_management import TaskActionExecutor
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
@@ -86,6 +87,18 @@ class TaskDatasetRecover:
     status: str
     replicas: [str]
 
+ACTIVE_TASKS_TO_RECOVER_HASHTAG = 'DATASET_RECOVERY_ACTIVE'
+
+def set_active_tasks_hashtag(dataset_name: str, hashtag: str = ACTIVE_TASKS_TO_RECOVER_HASHTAG):
+    try:
+        tasks = get_tasks_by_dataset(dataset_name)
+        for task_id in tasks:
+            task = ProductionTask.objects.get(id=task_id)
+            if task.status not in ProductionTask.NOT_RUNNING:
+                task.set_hashtag(hashtag)
+    except Exception as e:
+        _jsonLogger.error('Error setting hashtag for active tasks',
+                          extra={'dataset': dataset_name, 'error': str(e)})
 
 
 def check_unavailable_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| None:
@@ -361,6 +374,7 @@ def finish_dataset_recovery(dataset_recovery_id: int):
         pass
 
     dataset_recovery.status = DatasetRecovery.STATUS.DONE
+    set_active_tasks_hashtag(dataset_recovery.original_dataset)
     dataset_recovery.save()
 
 
@@ -373,7 +387,15 @@ def check_submitted_recovery_requests():
                 step = StepExecution.objects.get(request=dataset_recovery_info.info_obj.recovery_request,
                                                  slice=InputRequestList.objects.get(request=dataset_recovery_info.info_obj.recovery_request, slice=dataset_recovery_info.info_obj.recovery_slice))
                 if ProductionTask.objects.filter(step=step, request=dataset_recovery_info.info_obj.recovery_request).exists():
-                    task = ProductionTask.objects.get(step=step, request=dataset_recovery_info.info_obj.recovery_request)
+                    tasks = ProductionTask.objects.filter(step=step, request=dataset_recovery_info.info_obj.recovery_request)
+                    task = None
+                    for t in tasks:
+                        if t.status in ProductionTask.BAD_STATUS:
+                            continue
+                        task = t
+                        break
+                    if not task:
+                        raise Exception('No valid recovery task found')
                     dataset_recovery.recovery_task = task
                     dataset_recovery.status = DatasetRecovery.STATUS.RUNNING
                     dataset_recovery.save()

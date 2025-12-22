@@ -2981,6 +2981,7 @@ class DatasetRecovery(models.Model):
         BACKUP = 'backup'
         RESTORE = 'restore'
 
+    RECOVERY_TASK_HASHTAG = 'DATASET_RECOVERY_TASK'
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DS_RECOVERY_ID', primary_key=True)
     original_dataset = models.CharField(max_length=200, db_column='ORIGINAL_DATASET')
@@ -2999,6 +3000,12 @@ class DatasetRecovery(models.Model):
         self.timestamp = timezone.now()
         if ':' in self.original_dataset:
             self.original_dataset = self.original_dataset.split(':')[1]
+        if self.recovery_task:
+            try:
+                recovery_task = ProductionTask.objects.get(id=self.recovery_task.id)
+                recovery_task.set_hashtag(self.RECOVERY_TASK_HASHTAG)
+            except:
+                pass
         super(DatasetRecovery, self).save(*args, **kwargs)
 
     class Meta:
