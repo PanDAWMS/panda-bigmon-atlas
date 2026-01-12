@@ -150,13 +150,23 @@ class ProjectMode(object):
         cmt_config_from_cvmfs = []
         container_name_base = '/'.join(container_name.split('/')[:-1])
         container_postfix = container_name.split('/')[-1]
-        base_path = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH.format(container_name_base=container_name_base)
-        archs_cvmfs = []
-
-        archs_cvmfs += [name for name in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, name))]
-        archs = [x.replace(f'{container_postfix}-', '') for x in archs_cvmfs if x.startswith(container_postfix)]
+        path_base = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH_BASE
+        container_base_path = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH.format(base=path_base, container_name_base=container_name_base)
+        if not os.path.exists(container_base_path):
+            path_base = TaskDefConstants.DEAFULT_OLD_CONTAINER_BASE_RELEASE_PATH_BASE
+            container_base_path = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH.format(
+                base=path_base, container_name_base=container_name_base)
+        archs_cvmfs = [name for name in os.listdir(container_base_path) if os.path.isdir(os.path.join(container_base_path, name))]
+        archs = [x.replace(f'{container_postfix}', '') for x in archs_cvmfs if x.startswith(container_postfix)]
+        if not archs:
+            path_base = TaskDefConstants.DEAFULT_OLD_CONTAINER_BASE_RELEASE_PATH_BASE
+            container_base_path = TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH.format(
+                base=path_base, container_name_base=container_name_base)
+            archs_cvmfs = [name for name in os.listdir(container_base_path) if
+                           os.path.isdir(os.path.join(container_base_path, name))]
+            archs = ['' for x in archs_cvmfs if x.startswith(container_postfix)]
         for arch in archs:
-            path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(release=release,project=project,container_name=container_name,arch=arch)
+            path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(base=path_base, release=release,project=project,container_name=container_name,arch=arch)
             if not os.path.exists(path):
                 raise Exception(f'Path {path} does not exist, cahce {cache} is missing in CVMFS')
             cmt_config_from_cvmfs += [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
@@ -168,7 +178,10 @@ class ProjectMode(object):
         project = cache.split('-')[0]
         cmt_config_from_cvmfs = []
         for arch in archs:
-            path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(release=release,project=project,container_name=container_name,arch=arch)
+            for base_path in [TaskDefConstants.DEAFULT_CONTAINER_BASE_RELEASE_PATH_BASE, TaskDefConstants.DEAFULT_OLD_CONTAINER_BASE_RELEASE_PATH_BASE]:
+                path = TaskDefConstants.DEAFULT_CONTAINER_RELEASE_PATH.format(base=base_path, release=release,project=project,container_name=container_name,arch='-'+arch)
+                if os.path.exists(path):
+                    break
             if not os.path.exists(path):
                 raise Exception(f'Path {path} does not exist, cahce {cache} is missing in CVMFS')
             cmt_config_from_cvmfs += [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
@@ -289,8 +302,11 @@ class ProjectMode(object):
             if self.container_name:
                 ami_client = AMIClient()
                 if ami_client.ami_container_exists(self.container_name):
-                    ami_cmtconfig = ami_client.ami_cmtconfig_by_image_name(self.container_name)
-                    if architecture != ami_cmtconfig:
+                    try:
+                        ami_cmtconfig = ami_client.ami_cmtconfig_by_image_name(self.container_name)
+                    except Exception as e:
+                        ami_cmtconfig = self._get_cmtconfig_for_container(self.cache, self.container_name)
+                    if architecture not in ami_cmtconfig:
                         raise Exception(
                             'cmtconfig \"{0}\" specified by the user does not correspond one in the container \"{1}\" '.format(
                                 self.cmtconfig, ami_cmtconfig))
