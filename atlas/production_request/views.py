@@ -39,7 +39,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
     JediTasks, JediDatasetContents, JediDatasets, SliceSerializer, ParentToChildRequest, SystemParametersHandler, \
     MCWorkflowTransition, MCWorkflowChanges, MCWorkflowRequest, days_ago, TProject, ProductionRequestSerializer, \
     HashTag, HashTagToRequest, get_bulk_hashtags_by_task, MCWorkflowSubCampaign, ETAGRelease, MCPriority, \
-    PandaDatasetStaging, PandaDatasetStagingRelationship, MCJobOptions, StepPosition
+    PandaDatasetStaging, PandaDatasetStagingRelationship, MCJobOptions, StepPosition, DatasetRecovery
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -1501,6 +1501,21 @@ def dataset_info(request):
     try:
         ddm = DDM()
         dataset_name = request.query_params.get('dataset')
+        recreated_dataset = None
+        if DatasetRecovery.objects.filter(original_dataset__in=ddm.with_and_without_scope([dataset_name])).exists():
+            last_recovery = DatasetRecovery.objects.filter(
+                original_dataset__in=ddm.with_and_without_scope([dataset_name])).order_by('-id').first()
+            recreated_dataset = {}
+            recreated_dataset['status'] = last_recovery.status
+            recreated_dataset['dataset'] = None
+            if last_recovery.recovery_task:
+                recreated_dataset['task_id'] = last_recovery.recovery_task.id
+                if last_recovery.status == DatasetRecovery.STATUS.DONE:
+                    for output in last_recovery.recovery_task.output_non_log_datasets():
+                        if '.' + dataset_name.split('.')[-2] + '.' in output:
+                            recreated_dataset['dataset'] = output
+            else:
+                recreated_dataset['task_id'] = None
         if ddm.dataset_exists(dataset_name):
             dataset = ddm.dataset_info(dataset_name)
             if dataset.did_type == 'DATASET':
@@ -1513,7 +1528,9 @@ def dataset_info(request):
                     dataset_staging = asdict(prepare_dc_requests(list(PandaDatasetStaging.objects.filter( dataset__in=ddm.with_and_without_scope([dataset_name]),
                         status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED] )))[0])
 
-                return Response({'dataset_exists': True, 'dataset_knowledge': {'did_type': 'DATASET', 'dataset': asdict(dataset), 'replicas': dataset_replicas,
+
+
+                return Response({'dataset_exists': True,  'recreated_dataset': recreated_dataset, 'dataset_knowledge': {'did_type': 'DATASET', 'dataset': asdict(dataset), 'replicas': dataset_replicas,
                                                           'rules': dataset_rules, 'staging_dataset': dataset_staging}})
             elif dataset.did_type == 'CONTAINER':
                 dataset_rules = ddm.list_dataset_rules(dataset_name)
@@ -1528,7 +1545,7 @@ def dataset_info(request):
                                                           'rules': dataset_rules,
                                                           'datasets_inside_container': [asdict(x) for x in datasets_metadata]}})
         else:
-            return Response({'dataset_exists': False,
+            return Response({'dataset_exists': False, 'recreated_dataset': recreated_dataset,
                              'dataset_knowledge': {'did_type': 'DATASET', 'dataset_name':dataset_name,'error':'Dataset does not exist'}})
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

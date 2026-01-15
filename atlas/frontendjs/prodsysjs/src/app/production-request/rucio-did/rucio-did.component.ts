@@ -78,6 +78,7 @@ export class RucioDIDComponent implements OnInit {
     showStaging = input<boolean>(true);
     datasetName = input<string>();
     datasetName$ = toObservable(this.datasetName);
+    datasetRecreated = computed(() => this.dataCarouselService.datasetInfoResource.value()?.recreated_dataset);
     datasetExists = computed(() => this.dataCarouselService.datasetInfoResource.value()?.dataset_exists );
     datasetInfo: Signal<DatasetExistsResponse|undefined> = computed(() => {
       if (this.datasetExists()){

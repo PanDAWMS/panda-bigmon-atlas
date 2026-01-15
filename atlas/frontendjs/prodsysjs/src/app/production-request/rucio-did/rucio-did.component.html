@@ -7,6 +7,23 @@
         <span class="block sm:inline">{{ errorMessage() }}</span>
   </div>
 }
+@if(datasetRecreated()){
+    <div class="bg-violet-100 border border-violet-400 text-violet-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Dataset has been requested for re-creation</strong>
+      <div>
+        <span class="block sm:inline" >Status: {{datasetRecreated().status}}</span
+        >
+        @if(datasetRecreated().task_id){
+            <a class='ml-5' [routerLink]="['/task',datasetRecreated().task_id]" >Recreation task: {{datasetRecreated().task_id}}</a>
+        }
+          </div>
+
+      @if (datasetRecreated().dataset) {
+        Recreated Dataset: <a href="{{datasetRecreated().dataset | rucioURL}}">{{datasetRecreated().dataset}}</a>
+      }
+  </div>
+
+}
 @if(datasetExists()){
 <div class="task-grid mat-elevation-z8">
       <!--    Row-->
