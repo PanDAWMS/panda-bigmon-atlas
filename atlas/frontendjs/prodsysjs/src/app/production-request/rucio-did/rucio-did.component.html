@@ -318,4 +318,7 @@
     <app-production-task-table [tasks]="tasksToShow"  [showOwner]="true" >
   </app-production-task-table>
 }
-
+@if(datasetExists()){
+<!--  recover lost files-->
+    <button [routerLink]="['/files-recovery',datasetInfo()?.dataset.name]">Check lost files</button>
+}

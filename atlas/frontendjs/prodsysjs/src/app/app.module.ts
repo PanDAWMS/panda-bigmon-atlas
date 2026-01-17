@@ -247,6 +247,8 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     {path: 'staging-rules', component: StagingManagementComponent},
       {path: 'dataset/:did', component: DatatsetDetailsComponent},
   {path: 'files-recovery/:dataset', component: LostFilesRecoveryComponent},
+    {path: 'files-recovery', component: LostFilesRecoveryComponent},
+
         {path: 'pmg/:jira', component: PMGApprovalComponent},
 
 

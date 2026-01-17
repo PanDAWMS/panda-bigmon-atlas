@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.models import ProductionTask, JediDatasets
+from atlas.prodtask.models import ProductionTask, JediDatasets, ProductionDataset
 from atlas.task_action.task_management import FileRecoveryCache, FileRecoveryParameters
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -44,6 +44,11 @@ def dataset_lost_file_info(request):
         recreate_parent = False
         if task.input_dataset and not ddm.dataset_exists(task.input_dataset):
             recreate_parent = True
+        resurrect_datasets = False
+        for dataset in ProductionDataset.objects.filter(task_id=task.id):
+            if not ddm.dataset_exists(dataset.name):
+                resurrect_datasets = True
+                break
         cache_key = f"FILE_RECOVERY_LOG_{dataset_name}"
         cached_data = cache.get(cache_key)
         recovery_info = None
@@ -51,12 +56,13 @@ def dataset_lost_file_info(request):
             recovery_info = FileRecoveryCache(
                 async_task_id=cached_data['async_task_id'],
                 dataset=cached_data['dataset'],
-                parameters=FileRecoveryParameters(**cached_data['parameters'])
+                parameters=FileRecoveryParameters(**cached_data['parameters']),
             )
             recovery_info = asdict(recovery_info)
 
 
         return Response({'dataset': dataset_name, 'recoveryInfo': recovery_info, 'recreateParent': recreate_parent,
+                            'resurrectDatasets': resurrect_datasets,
                          'lost_files': missing_files}, status=200)
     except Exception as e:
         _logger.error(f"Error retrieving lost file info for dataset {dataset_name}: {e}")

@@ -1,4 +1,13 @@
 <p>Lost file recovery procedure</p>
+  <div class="flex space-x-2">
+    <mat-form-field  class="flex-grow border border-gray-300 rounded py-2 px-4">
+   <mat-label>Dataset     </mat-label>
+     <input matInput type="text" placeholder="" [(ngModel)]="datasetValue"  >
+ </mat-form-field>
+    <button mat-raised-button color="primary" [routerLink]="['/files-recovery', datasetValue()]" >
+      Check
+    </button>
+  </div>
 @if(isLoading){
   <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
 }
@@ -10,10 +19,13 @@
       <!--    Row-->
   <div>Files lost:</div><div style="grid-column: 2 / -1">{{fileRecoveryInfo().lost_files}}</div>
       <!--    Row-->
-<div>Options:</div><div style="grid-column: 2 / -1"><mat-slide-toggle [checked]="fileRecoveryInfo().recreateParent" [disabled]="true">Recreate parent</mat-slide-toggle></div>
+<div>Options:</div><div style="grid-column: 2 / -1">
+    <mat-slide-toggle [checked]="fileRecoveryInfo().recreateParent" [disabled]="true">Recreate parent</mat-slide-toggle>
+        <mat-slide-toggle [checked]="fileRecoveryInfo().resurrectDatasets" [disabled]="true">Resurrect datasets</mat-slide-toggle></div>
+
       <!--    Row-->
-<div>Actions:</div><div style="grid-column: 2 / -1"><button mat-raised-button color="primary" (click)="submitRecovery(true, fileRecoveryInfo().recreateParent)">Dry run</button>
-  <button mat-raised-button color="primary" (click)="submitRecovery(false,  fileRecoveryInfo().recreateParent)">Recovery files</button></div>
+<div>Actions:</div><div style="grid-column: 2 / -1"><button mat-raised-button color="primary" (click)="submitRecovery(true, fileRecoveryInfo().recreateParent, fileRecoveryInfo().resurrectDatasets)" [disabled]="actionSubmitting()">Dry run</button>
+  <button mat-raised-button color="primary" (click)="submitRecovery(false,  fileRecoveryInfo().recreateParent, fileRecoveryInfo().resurrectDatasets)" [disabled]="actionSubmitting()">Recover files for real</button></div>
 
 </div>
       @if(fileRecoveryInfo().recoveryInfo){
@@ -52,8 +64,14 @@
   <app-rucio-did [datasetName]="fileRecoveryInfo().dataset" >  </app-rucio-did>
 }
 @if(errorMessage()){
-  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Error!</strong>
-        <span class="block sm:inline">{{ errorMessage() }}</span>
-  </div>
+  @if(errorMessage().includes("No lost files in dataset")){
+    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+          <strong class="font-bold">No lost files were found</strong>
+    </div>
+  }@else {
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline">{{ errorMessage() }}</span>
+      </div>
+      }
 }

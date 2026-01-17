@@ -1,6 +1,6 @@
 import {Component, inject, input, output} from '@angular/core';
 import {catchError, filter, switchMap, takeWhile, tap} from 'rxjs/operators';
-import {interval, Observable, throwError} from 'rxjs';
+import {interval, Observable, throwError, timer} from 'rxjs';
 import {toObservable} from '@angular/core/rxjs-interop';
 import {AsyncProdTaskSplitStatus, ProductionRequestService} from "../../production-request/production-request.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
@@ -36,8 +36,15 @@ export class AsyncTaskProgressComponent {
       switchMap(intervalSeconds =>
         asyncTaskId$.pipe(
           filter(taskId => taskId !== ''), // Only proceed if asyncTaskId is not empty
+          tap(() => {
+            // Re-initialise on asyncTaskId change
+            this.active = false;
+            this.finished = false;
+            this.total = 0;
+            this.current = 0;
+          }),
           switchMap(taskId =>
-            interval(intervalSeconds * 1000).pipe( // Convert seconds to milliseconds
+            timer(0, intervalSeconds * 1000).pipe( // Convert seconds to milliseconds
               switchMap(() => this.productionRequestService.getAsyncTaskStatus(taskId)),
               tap(status => {
                 this.active = true;

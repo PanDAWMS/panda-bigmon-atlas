@@ -5,6 +5,7 @@ interface FileRecoveryParameters {
   dry_run: boolean;
   reproduce_parent: boolean;
   no_child_retry: boolean;
+  resurrect_datasets: boolean;
   log_file: string;
   submitted: string;
 }
@@ -20,6 +21,7 @@ interface DatasetLostFileInfo {
   lost_files: number;
   recoveryInfo: FileRecoveryCache | null;
   recreateParent: boolean;
+  resurrectDatasets: boolean;
 }
 
 

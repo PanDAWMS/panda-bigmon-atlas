@@ -1,4 +1,4 @@
-import {Component, computed, inject, input, OnChanges, signal} from '@angular/core';
+import {Component, computed, effect, inject, input, OnChanges, signal} from '@angular/core';
 import {LostFileRecoveryService} from "./lost-file-recovery.service";
 import {DatePipe, JsonPipe} from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
@@ -14,6 +14,9 @@ import {AsyncTaskProgressComponent} from "../common/async-task-progress/async-ta
 import {MatCard, MatCardContent, MatCardTitle} from "@angular/material/card";
 import {AsyncProdTaskSplitStatus} from "../production-request/production-request.service";
 import {TaskService} from "../production-task/task-service.service";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
+import {FormsModule} from "@angular/forms";
+import {MatFormField, MatInput, MatLabel} from "@angular/material/input";
 
 @Component({
   selector: 'app-lost-files-recovery',
@@ -30,7 +33,12 @@ import {TaskService} from "../production-task/task-service.service";
     AsyncTaskProgressComponent,
     MatCard,
     MatCardTitle,
-    MatCardContent
+    MatCardContent,
+    FormsModule,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    RouterLink
   ],
   templateUrl: './lost-files-recovery.component.html',
   styleUrl: './lost-files-recovery.component.css'
@@ -38,8 +46,14 @@ import {TaskService} from "../production-task/task-service.service";
 export class LostFilesRecoveryComponent implements OnChanges {
     dataset = input<string>( );
     taskID = input<string|null>(null);
-    asyncResult = signal('');
 
+    // Writable value bound to the UI + URL, kept in sync with the dataset input.
+    datasetValue = signal('');
+
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
+    asyncResult = signal('');
+    actionSubmitting = signal(false);
     lostFileRecoveryService = inject(LostFileRecoveryService);
     taskService = inject(TaskService);
     fileRecoveryInfo = computed(() => this.lostFileRecoveryService.lostFileRecoveryInfoResource.value() );
@@ -67,14 +81,20 @@ export class LostFilesRecoveryComponent implements OnChanges {
 
     ngOnChanges(): void {
         this.lostFileRecoveryService.datasetName.set(this.dataset());
+        this.datasetValue.set(this.dataset());
         this.lostFileRecoveryService.selectedTask.set(this.taskID() ?? '');
     }
 
+    constructor() {
 
-  protected submitRecovery(dryRun: boolean, recreateParent: boolean): void {
-    this.taskService.submitRuleAction([this.dataset()], 'recovery_lost_files', `Lost file recovery${dryRun ? ' (dry run)' : ''}`,
-      [dryRun, recreateParent]).subscribe(
+    }
+
+  protected submitRecovery(dryRun: boolean, recreateParent: boolean, resurrectDatasets: boolean): void {
+      this.actionSubmitting.set(true);
+      this.taskService.submitRuleAction([this.dataset()], 'recovery_lost_files', `Lost file recovery${dryRun ? ' (dry run)' : ''}`,
+      [dryRun, recreateParent, resurrectDatasets]).subscribe(
       (actionResult) => {
+          this.actionSubmitting.set(false);
           if (actionResult.error) {
               this.actionError.set(`Error submitting lost file recovery: ${actionResult.error}`);
           } else{
@@ -95,4 +115,6 @@ export class LostFilesRecoveryComponent implements OnChanges {
             console.log(asyncResult.result);
         }
   }
+
+  protected readonly HTMLInputElement = HTMLInputElement;
 }

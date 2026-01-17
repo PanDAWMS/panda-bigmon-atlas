@@ -4,6 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict
 
+from celery.result import AsyncResult
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from rest_framework.request import Request
@@ -37,9 +38,13 @@ class FileRecoveryParameters:
     dry_run: bool
     reproduce_parent: bool
     no_child_retry: bool
+    resurrect_datasets: bool
     log_file: str
     submitted: str
 
+
+def file_recovery_async_task_key(dataset: str) -> str:
+    return f"FILE_RECOVERY_LOG_{dataset}"
 
 @dataclass
 class FileRecoveryCache:
@@ -49,7 +54,7 @@ class FileRecoveryCache:
 
     @property
     def cache_key(self) -> str:
-        return f"FILE_RECOVERY_LOG_{self.dataset}"
+        return file_recovery_async_task_key(self.dataset)
 
 
 class DEFTAction(ABC):
@@ -377,10 +382,22 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         return self.jedi_client.killUnfinishedJobs(jediTaskID, code, useMailAsID)
 
     @_jedi_rule_decorator
-    def upload_file_recovery_request(self, dataset,  dry_run=True, reproduce_parent=False):
+    def upload_file_recovery_request(self, dataset,  dry_run=True, reproduce_parent=False, resurrect_datasets=False ):
+        cache_key = file_recovery_async_task_key(dataset)
+        if cache.get(cache_key):
+            try:
+                current_result = cache.get(cache_key)
+                if current_result['async_task_id']:
+                    async_task = AsyncResult(current_result['async_task_id'])
+                    if async_task.state in ['PENDING', 'STARTED', 'PROGRESS']:
+                        return {'success': False, 'message': f'File recovery for dataset {dataset} is already in progress',
+                                'async_action_id': current_result['async_task_id']}
+            except:
+                pass
         no_child_retry = True
-        result = self.jedi_client.upload_file_recovery_request(dataset=dataset, dry_run=True,
-                                                               no_child_retry=no_child_retry, reproduce_parent=reproduce_parent)
+        result = self.jedi_client.upload_file_recovery_request(dataset=dataset, dry_run=dry_run,
+                                                               no_child_retry=no_child_retry, reproduce_parent=reproduce_parent,
+                                                               resurrect_datasets=resurrect_datasets)
         if 'data' in result and 'logFileURL' in result['data']:
             try:
                 async_task = read_jedi_log.delay(result['data']['logFileURL'])
@@ -391,6 +408,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                         dry_run=dry_run,
                         reproduce_parent=reproduce_parent,
                         no_child_retry=no_child_retry,
+                        resurrect_datasets=resurrect_datasets,
                         log_file=result['data']['logFileURL'],
                         submitted=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
                     )

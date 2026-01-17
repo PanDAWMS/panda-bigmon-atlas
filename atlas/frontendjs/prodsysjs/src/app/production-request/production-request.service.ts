@@ -97,7 +97,7 @@ export class ProductionRequestService {
   sliceSaved$ = this.sliceSavedSource.asObservable();
 
   getPMGCheckUPResource = httpResource<PMGRequestCheckResult>(() =>
-    this.jiraForPMGCheckUp ? `${this.prPMGCheckUpUrl}?jira=${this.jiraForPMGCheckUp()}` : '');
+    this.jiraForPMGCheckUp() ? `${this.prPMGCheckUpUrl}?jira=${this.jiraForPMGCheckUp()}` : '');
 
   private static countTasks(step: Step): {[status: string]: number} {
     const tasksByStatus = {};
