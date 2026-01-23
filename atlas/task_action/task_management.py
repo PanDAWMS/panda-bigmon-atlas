@@ -884,8 +884,10 @@ def async_action(self, action_type: ActionType, action: str, username: str, comm
         raise ValueError(f'Unknown action type: {action_type}')
     result = []
     for index, item in enumerate(items):
-        return_code, return_info = submit_all_action_types(action_function, executor, item, action, params)
+        return_code, return_info, async_id = submit_all_action_types(action_function, executor, item, action, params)
         result.append({action_param_name: item, 'return_code': return_code, 'return_info': return_info})
+        if async_id:
+            result[-1]['async_id'] = async_id
         self.progress_message_update(index,len(items))
     return result
 
