@@ -6,7 +6,7 @@ from copy import deepcopy
 import datetime
 from pprint import pprint
 from time import sleep
-from typing import Dict
+from typing import Dict, List
 
 import requests
 from attr import dataclass
@@ -243,8 +243,54 @@ def create_data_carousel(analysis_step: AnalysisStepTemplate):
     return analysis_step
 
 
-
-
+def split_big_ananly_input_container(step, ddm) -> List[str]:
+    input_dataset = step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
+    input_dataset_metadata = ddm.dataset_info(input_dataset)
+    if input_dataset_metadata.did_type == 'CONTAINER':
+        datasets = ddm.dataset_in_container(input_dataset)
+        dataset_size = {d: ddm.dataset_info(d).length for d in datasets}
+        total_files = sum(dataset_size.values())
+        if total_files < 200_000:
+            return []
+        split_container_pattern = f'{input_dataset}_part'
+        split_container_exists = True
+        some_container_exists = False
+        total_files_in_parts = 0
+        i = 0
+        while split_container_exists:
+            if ddm.dataset_exists(f'{split_container_pattern}{i}'):
+                some_container_exists = True
+                container_datasets = ddm.dataset_in_container(f'{split_container_pattern}{i}')
+                for dataset in container_datasets:
+                    if dataset not in dataset_size:
+                        raise Exception(f'Input container {input_dataset} split container {split_container_pattern}{i} contains dataset {dataset} which is not in the original container')
+                    total_files_in_parts += dataset_size[dataset]
+                i += 1
+            else:
+                split_container_exists = False
+        if some_container_exists:
+            if total_files == total_files_in_parts:
+                return [f'{split_container_pattern}{j}' for j in range(i)]
+            else:
+                raise Exception(f'Input container {input_dataset} is too big ({input_dataset_metadata.files} files), please split it into smaller containers named {split_container_pattern}0, {split_container_pattern}1, ...')
+        datasets_per_index = [[]]
+        current_total = 0
+        index = 0
+        for d in datasets:
+            files = ddm.dataset_info(d).length
+            if current_total + files > 150_000:
+                index += 1
+                datasets_per_index.append([])
+                current_total = 0
+            datasets_per_index[index].append(d)
+            current_total += files
+        created_containers = []
+        for i in range(len(datasets_per_index)):
+            container_name = f'{split_container_pattern}{i}'
+            ddm.register_container(container_name, datasets_per_index[i])
+            created_containers.append(container_name)
+        return created_containers
+    return []
 
 
 def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [int]:
@@ -254,13 +300,26 @@ def create_analy_task_for_slice(requestID: int, slice: int, username: str ) -> [
     for step in steps:
         if (step.status == AnalysisStepTemplate.STATUS.APPROVED) and (not ProductionTask.objects.filter(step=step.step_production_parent).exists()):
             verify_step(step, ddm, username)
-            task_id = TTask().get_id()
             prod_step = step.step_production_parent
             if not prod_step.step_parent or (prod_step.step_parent == prod_step):
-                t_task, prod_task = register_analysis_task(step, task_id, task_id)
-                t_task.save()
-                prod_task.save()
-                new_tasks.append(task_id)
+                split_container = split_big_ananly_input_container(step, ddm)
+                if split_container:
+                    for container in split_container:
+                        current_step = AnalysisStepTemplate.objects.get(id=step.id)
+                        # current_step.change_step_input(container)
+                        current_step.change_variable(TemplateVariable.KEY_NAMES.INPUT_BASE, container)
+                        task_id = TTask().get_id()
+                        t_task, prod_task = register_analysis_task(current_step, task_id, task_id)
+                        t_task.save()
+                        prod_task.save()
+                        new_tasks.append(task_id)
+                        current_step = None
+                else:
+                    task_id = TTask().get_id()
+                    t_task, prod_task = register_analysis_task(step, task_id, task_id)
+                    t_task.save()
+                    prod_task.save()
+                    new_tasks.append(task_id)
             else:
                 input_tasks = ProductionTask.objects.filter(step=prod_step.step_parent)
                 for input_task in input_tasks:
