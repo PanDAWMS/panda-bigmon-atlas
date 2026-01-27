@@ -2450,6 +2450,7 @@ class GroupProductionDeletionProcessing(models.Model):
     status = models.CharField(max_length=20, db_column='STATUS',null=False)
     deleted_datasets = models.DecimalField(decimal_places=0, max_digits=12, db_column='DELETED_DATASETS', null=True)
     command_timestamp = models.DateTimeField(db_column='COMMAND_TIMESTAMP',  null=True)
+    bytes = models.DecimalField(decimal_places=0, max_digits=20, db_column='BYTES', null=True)
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()

@@ -70,6 +70,10 @@
     <th mat-header-cell *matHeaderCellDef mat-sort-header > Container </th>
     <td mat-cell *matCellDef="let element"> {{element.container}} </td>
   </ng-container>
+    <ng-container matColumnDef="bytes">
+    <th mat-header-cell *matHeaderCellDef > Bytes </th>
+    <td mat-cell *matCellDef="let element"> {{element.bytes}} </td>
+  </ng-container>
   <ng-container matColumnDef="datasets">
     <th mat-header-cell *matHeaderCellDef > Datasets </th>
     <td mat-cell *matCellDef="let element"> {{element.deleted_datasets}} </td>
@@ -78,8 +82,8 @@
     <th mat-header-cell *matHeaderCellDef> Time </th>
     <td mat-cell *matCellDef="let element"> {{element.timestamp| date}} </td>
   </ng-container>
-  <tr mat-header-row *matHeaderRowDef="['container', 'datasets', 'time']"></tr>
-  <tr mat-row *matRowDef="let row; columns: ['container', 'datasets', 'time'];"></tr>
+  <tr mat-header-row *matHeaderRowDef="['container', 'datasets', 'bytes', 'time']"></tr>
+  <tr mat-row *matRowDef="let row; columns: ['container', 'datasets', 'bytes', 'time'];"></tr>
 </table>
       <mat-paginator [pageSizeOptions]="[20, 100, 200]"
                  showFirstLastButtons

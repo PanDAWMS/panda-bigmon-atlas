@@ -1178,6 +1178,7 @@ def runDeletion(lifetime=3600):
     for container_to_delete in containers_to_delete:
         datasets = ddm.dataset_in_container(container_to_delete.container)
         datasets = [x[x.find(':')+1:] for x in datasets]
+        bytes = 0
         all_marked = True
         deleted_datasets = 0
         for dataset in datasets:
@@ -1190,6 +1191,7 @@ def runDeletion(lifetime=3600):
                 try:
                         _logger.info('{dataset} is about being deleted'.format(dataset=dataset))
                         _jsonLogger.info('{dataset} is about being deleted'.format(dataset=dataset), extra={'dataset':dataset, 'container':container_to_delete.container})
+                        bytes += ddm.dataset_info(dataset).bytes
                         ddm.deleteDataset(dataset, lifetime)
                         deleted_datasets += 1
                 except Exception as e:
@@ -1198,6 +1200,7 @@ def runDeletion(lifetime=3600):
         if deleted_datasets > 0:
             container_to_delete.command_timestamp = timezone.now()
             container_to_delete.deleted_datasets = deleted_datasets
+            container_to_delete.bytes = bytes
         if len(datasets) == deleted_datasets:
             container_to_delete.status = 'Deleted'
             container_to_delete.save()
@@ -1210,7 +1213,7 @@ def runDeletion(lifetime=3600):
 @permission_classes((IsAuthenticated,))
 @parser_classes((JSONParser,))
 def gpdeletedcontainers(request):
-    all_containers = list(GroupProductionDeletionProcessing.objects.filter(status='Deleted').order_by("-timestamp").values('container','timestamp','deleted_datasets'))
+    all_containers = list(GroupProductionDeletionProcessing.objects.filter(status='Deleted').order_by("-timestamp").values('container','timestamp','deleted_datasets','bytes'))
     return Response(all_containers)
 
 

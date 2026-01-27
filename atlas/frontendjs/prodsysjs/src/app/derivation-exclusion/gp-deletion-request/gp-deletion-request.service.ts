@@ -8,6 +8,7 @@ export interface DeletedContainers {
   container: string;
   timestamp: string;
   deleted_datasets: number;
+  bytes: number;
 }
 
 
