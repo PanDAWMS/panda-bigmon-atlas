@@ -1,6 +1,9 @@
 import dataclasses
 import json
 from dataclasses import dataclass
+from re import search
+from typing import List
+
 from atlas.settings.local import ATLAS_OS
 from opensearchpy import OpenSearch, connections, Search
 
@@ -41,6 +44,20 @@ def get_atlas_es_logs_base(logName: str) -> Search:
 
 def get_atlas_dataset_info_base() -> Search:
     return Search(index='atlas_datasets_info-*').extra(size=100)
+
+def get_panda_logs_base(logName: str) -> Search:
+    return Search(index='atlas_pandalogs-*').extra(size=100)
+
+def get_lost_files_recovery_logs(task_id: int) -> List[str]:
+    search = get_panda_logs_base('panda.log.recover_lost_files').query("match",jediTaskID=task_id).sort('-@timestamp')
+    response = search.execute()
+    result = []
+    for hit in response:
+        result.append(f"{hit['@timestamp']} - {hit.message}")
+    return result
+
+
+
 def get_rule_action_logs(dataset: str) -> any:
     search = get_atlas_es_logs_base(LogsName.TASK_ACTIONS).query("match_phrase",dataset=dataset)
     response = search.execute()
@@ -602,7 +619,7 @@ def opendistro_sql(query: str, fetch_size = None) -> any:
 #    return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql?format=json', body={'query': query})
 
 def opendistro_ppl(query: str) -> any:
-    return ATLAS_ES7.transport.perform_request('POST', '/_opendistro/_ppl', body={'query': query})
+    return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_ppl', body={'query': query})
 def opendistro_sql_translate(query: str, fetch_size = None) -> any:
     return ATLAS_ES7.transport.perform_request('POST', '/_plugins/_sql/_explain', body={'query': query})
 
@@ -634,8 +651,16 @@ def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
         if suffix.get(step):
             step_campaign = f"{campaign}{suffix.get(step)}"
 
-        ppl_query = (f"source=atlas_datasets_info-* | where type='output' task_campaign='{step_campaign}' task_processingtype='{step}' dataset_format='{output[step]}' | "
-                     "  stats sum(nevents) by scope, task_amitag ")
+        # ppl_query = (f"source=atlas_datasets_info-* | where type='output' task_campaign='{step_campaign}' task_processingtype='{step}' dataset_format='{output[step]}' | "
+        #              "  stats sum(nevents) by scope, task_amitag ")
+        ppl_query = (
+            f"source=atlas_datasets_info-* "
+            f"| where type='output' "
+            f"and task_campaign='{step_campaign}' "
+            f"and task_processingtype='{step}' "
+            f"and dataset_format='{output[step]}' "
+            f"| stats sum(nevents) by scope, task_amitag"
+        )
         result = opendistro_ppl(ppl_query)
         if result.get('schema'):
             for row in result.get('datarows'):
@@ -644,14 +669,24 @@ def get_campaign_nevents_per_amitag(campaign: str, suffix) -> any:
         else:
             raise Exception(f"Error in query {ppl_query}, {str(result)}")
     return stats
+
 def get_campaign_nevents_per_dsid(dsid) -> any:
     stats = {}
     output = {'evgen': 'EVNT', 'simul': 'HITS', 'pile': 'AOD'}
     for step in ['evgen','simul', 'pile']:
 
 
-        ppl_query = (f"source=atlas_datasets_info-* | where type='output' datasetname='%.{dsid}.%' task_processingtype='{step}' dataset_format='{output[step]}' | "
-                     "  stats sum(nevents) by scope, task_amitag, task_campaign ")
+        # ppl_query = (f"source=atlas_datasets_info-* | where type='output' datasetname='%.{dsid}.%' task_processingtype='{step}' dataset_format='{output[step]}' | "
+        #              "  stats sum(nevents) by scope, task_amitag, task_campaign ")
+        ppl_query = (
+            f"source=atlas_datasets_info-* "
+            f"| where type='output' "
+            f"and task_processingtype='{step}' "
+            f"and dataset_format='{output[step]}' "
+            f"and datasetname like '%.{dsid}.%' "
+            f"| stats sum(nevents) by scope, task_amitag, task_campaign"
+        )
+
         result = opendistro_ppl(ppl_query)
         if result.get('schema'):
             for row in result.get('datarows'):
