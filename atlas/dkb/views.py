@@ -177,6 +177,26 @@ def simple_dkb_search(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def dkb_events_per_campaign(request):
+    """
+        DKB events per camapign stats. Input is a string with keywords separated by space.
+
+    """
+    try:
+        search_string = request.data
+        per_campaign_size = []
+        response = keyword_search_size_nested(key_string_from_input(search_string)['query_string'],
+                                              False).execute()
+        for bucket in response.aggregations.output_events_per_cmapaign.buckets:
+            per_campaign_size.append(
+                {'name': bucket.key, 'size': bucket.processed_events.value, 'tasks': bucket.doc_count})
+        return Response(per_campaign_size)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 def keyword_search_nested(keyword_string, is_analy=False, size=SIZE_TO_DISPLAY):
     query_string = keyword_string_to_query(keyword_string)
     if is_analy:

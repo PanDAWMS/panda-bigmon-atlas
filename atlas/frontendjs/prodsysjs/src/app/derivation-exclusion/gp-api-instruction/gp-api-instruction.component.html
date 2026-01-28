@@ -227,6 +227,47 @@ Get the tasks ids by hashstag - return list of task ids which have this hashtag 
     </mat-card>
       </li>
           <li>
+            <h5 id="dkb_events_per_campaign"> <a href="https://prodtask-dev.cern.ch/api/dkb_events_per_campaign/">dkb_events_per_campaign</a></h5>
+
+            <br/>
+            Returns number of events and tasks from DKB as they are shown on
+            <a href="https://prodtask-dev.cern.ch/dkb/#/">DKB</a> page.
+            Input for POST reqeust is a json with a single key "search_string" and value as a string to search for in DKB.
+            Return value is a list of dict as shown in example.
+ <br/>
+<br/>
+      <mat-card appearance="outlined">
+        <mat-card-title>
+          Python example
+        </mat-card-title>
+        <mat-card-content>
+<code>
+    <pre>
+import requests, json, pprint
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;
+data = &#123;"search_string":"(campaign:mc23,phys_group:EXOT)"&#125;
+post_data = json.dumps(data)
+response = requests.post('https://prodtask-dev.cern.ch/api/dkb_events_per_campaign/', headers=headers, data=post_data)
+result = json.loads(response.content)
+pprint(result)</pre>
+</code>
+        </mat-card-content>
+      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        Example of output
+      </mat-card-title>
+      <mat-card-content>
+<pre style="white-space: pre; overflow:auto; max-height: 70vh; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 13px; line-height: 1.35; margin: 0;">
+[{{ '{' }}'name': 'MC23a', 'size': 3319650425.0, 'tasks': 41562{{ '}' }},
+ {{ '{' }}'name': 'MC23e', 'size': 2784548025.0, 'tasks': 32901{{ '}' }},
+ {{ '{' }}'name': 'MC23c', 'size': 1374319050.0, 'tasks': 21230{{ '}' }},
+ {{ '{' }}'name': 'MC23d', 'size': 19519062500.0, 'tasks': 20435{{ '}' }}]
+</pre>
+      </mat-card-content>
+    </mat-card>
+      </li>
+   <li>
             <h5 id="simple_dkb_search"> <a href="https://prodtask-dev.cern.ch/api/simple_dkb_search/">simple_dkb_search</a></h5>
 <i>UNDER development</i>
             <br/>
