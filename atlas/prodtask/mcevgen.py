@@ -388,10 +388,11 @@ def set_pmg_hashtags(prodsys_hashtag='AMIEvgenPMGHTs'):
             if ami_dataset.startswith('mc16'):
                 ami_dataset = ami_dataset.replace('mc16', 'mc15')
             ami_dataset_exists = None
-            try:
-                ami_dataset_exists = ami_client.ami_get_dataset_info(ami_dataset)
-            except Exception as e:
-                pass
+            if ddm.dataset_exists(ami_dataset):
+                try:
+                    ami_dataset_exists = ami_client.ami_get_dataset_info(ami_dataset)
+                except Exception as e:
+                    pass
             if ami_dataset_exists is not None:
                 if DSIDHashtags.objects.filter(dsid=task_dsid, etag=evgen_tag).exists():
                     for hashtag in DSIDHashtags.objects.get(dsid=task_dsid, etag=evgen_tag).hashtags:

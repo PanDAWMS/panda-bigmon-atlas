@@ -5052,13 +5052,14 @@ class TaskDefinition(object):
 
     def get_events_per_file(self, input_name):
         nevents_per_file = 0
-        try:
+        if self.rucio_client.dataset_exists(input_name):
             try:
-                nevents_per_file = self.rucio_client.get_nevents_per_file(input_name)
+                try:
+                    nevents_per_file = self.rucio_client.get_nevents_per_file(input_name)
+                except Exception:
+                        nevents_per_file = self.ami_client.get_nevents_per_file(input_name)
             except Exception:
-                nevents_per_file = self.ami_client.get_nevents_per_file(input_name)
-        except Exception:
-            logger.info("get_nevents_per_file, exception occurred: %s" % get_exception_string())
+                logger.info("get_nevents_per_file, exception occurred: %s" % get_exception_string())
         return nevents_per_file
 
     def get_events_per_input_file(self, step, input_name, use_real_events=False):

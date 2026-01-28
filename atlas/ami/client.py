@@ -111,6 +111,7 @@ class AMIClient(object):
         response = None
         try:
             url = self._get_url(command)
+            logger.debug(f'AMI POST URL: {url} with data: {json.dumps(kwargs)}')
             response = requests.post(url, headers=self._headers, data=json.dumps(kwargs),
                                      verify=self._verify_server_cert)
         except Exception as ex:
@@ -370,24 +371,21 @@ class AMIClient(object):
         ami_tag = dict()
 
         try:
-            if tag_name[0] in ['y']:
-                result = self._ami_get_tag_new(tag_name)
+            if tag_name.startswith('z500'):
+                result = self._ami_get_tag_flat(tag_name)
             else:
-                result = self._ami_get_tag_old(tag_name)
+                result = self._ami_get_tag(tag_name)
             ami_tag = result[0]
+            if str(ami_tag['transformationName']).endswith('.py'):
+                ami_tag['transformation'] = '{0}'.format(ami_tag['transformationName'])
+            else:
+                ami_tag['transformation'] = '{0}.py'.format(ami_tag['transformationName'])
+            ami_tag['SWReleaseCache'] = '{0}_{1}'.format(ami_tag['groupName'], ami_tag['cacheName'])
         except AMIException as ex:
             if ex.has_error('Invalid amiTag found'):
                 try:
-                    if tag_name.startswith('z500'):
-                        result = self._ami_get_tag_flat(tag_name)
-                    else:
-                        result = self._ami_get_tag(tag_name)
+                    result = self._ami_get_tag_old(tag_name)
                     ami_tag = result[0]
-                    if str(ami_tag['transformationName']).endswith('.py'):
-                        ami_tag['transformation'] = '{0}'.format(ami_tag['transformationName'])
-                    else:
-                        ami_tag['transformation'] = '{0}.py'.format(ami_tag['transformationName'])
-                    ami_tag['SWReleaseCache'] = '{0}_{1}'.format(ami_tag['groupName'], ami_tag['cacheName'])
                 except Exception as ex:
                     logger.exception('[1] Exception: {0}'.format(str(ex)))
             elif ex.has_error('[Errno 111] Connection refused'):
