@@ -5,6 +5,7 @@ from atlas.analysis_tasks.views import prepare_template_from_task, create_templa
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
     get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, \
     add_delete_analysis_request_hashtag, get_analysis_scopes_by_user
+from atlas.dkb.views import simple_dkb_search
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
     extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
 from atlas.prestage.views import data_carousel_config
@@ -100,4 +101,7 @@ urlpatterns = [
     re_path(r'^sample_output_containers_by_hashstag/(?P<hashtag>\w+)/$', sample_output_containers_by_hashstag, name='sample_output_containers_by_hashstag'),
     re_path(r'^update_deriv_sample_containers/$', update_deriv_sample_containers,
             name='update_deriv_sample_containers'),
+    re_path(r'^simple_dkb_search/$', simple_dkb_search,
+            name='simple_dkb_search'),
+
 ]

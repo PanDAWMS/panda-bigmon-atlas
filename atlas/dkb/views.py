@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 import logging
 
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 from atlas.prodtask.ddm_api import DDM
@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.response import Response
 from django.shortcuts import render
 
-
+from rest_framework import status
 from atlas.settings import OIDC_LOGIN_URL
 
 
@@ -154,7 +154,30 @@ def keyword_string_to_query(keyword_string):
             }})
     return query_string
 
-def keyword_search_nested(keyword_string, is_analy=False):
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def simple_dkb_search(request):
+    """
+        DKB "google like" search. Input is a string with keywords separated by space.
+
+    """
+    try:
+        search_string = request.data
+        result = []
+        total = 0
+        response = keyword_search_nested(key_string_from_input(search_string)['query_string'], False, 10000).execute()
+        for hit in response:
+            total += 1
+            current_hit = hit.to_dict()
+            if 'output_dataset' not in current_hit:
+                current_hit['output_dataset'] = []
+            result.append(current_hit)
+        return Response(result)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def keyword_search_nested(keyword_string, is_analy=False, size=SIZE_TO_DISPLAY):
     query_string = keyword_string_to_query(keyword_string)
     if is_analy:
         es_search = DEFAULT_SEARCH['search'](**DEFAULT_SEARCH['analy'])
@@ -172,7 +195,7 @@ def keyword_search_nested(keyword_string, is_analy=False):
             }
         },
 
-    }, 'size':SIZE_TO_DISPLAY
+    }, 'size':size
     })
 
     return query
@@ -994,6 +1017,7 @@ def verify_dkb(days):
     from django.utils import timezone
 
     tasks = ProductionTask.objects.filter(timestamp__gt=timezone.now()-timedelta(days=days), timestamp__lt=timezone.now()-timedelta(days=days-1),provenance__in=['AP','GP'])
+    print('Total tasks to verify %s' % tasks.count())
     for order, task in enumerate(tasks):
         try:
             es_tasks = es_by_keys_nested({'taskid': task.id})
