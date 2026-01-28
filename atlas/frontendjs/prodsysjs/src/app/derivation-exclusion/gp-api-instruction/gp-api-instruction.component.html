@@ -226,6 +226,172 @@ Get the tasks ids by hashstag - return list of task ids which have this hashtag 
       </mat-card-content>
     </mat-card>
       </li>
+          <li>
+            <h5 id="simple_dkb_search"> <a href="https://prodtask-dev.cern.ch/api/simple_dkb_search/">simple_dkb_search</a></h5>
+<i>UNDER development</i>
+            <br/>
+            Right now it returns list of task with corresponding info from DKB as they are shown on
+            <a href="https://prodtask-dev.cern.ch/dkb/#/">DKB</a> page.
+            Input for POST reqeust is a json with a single key "search_string" and value as a string to search for in DKB.
+            Return value is a list of dict as shown in example. Number of tasks is limited to 10000. In the future more filters and pagination will be added.
+ <br/>
+<br/>
+      <mat-card appearance="outlined">
+        <mat-card-title>
+          Python example
+        </mat-card-title>
+        <mat-card-content>
+<code>
+    <pre>
+import requests, json, pprint
+headers = &#123;'Content-Type':'application/json', 'Accept': 'application/json', 'Authorization': 'Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b'&#125;
+data = &#123;"search_string":"47222397"&#125;
+post_data = json.dumps(data)
+response = requests.post('https://prodtask-dev.cern.ch/api/simple_dkb_search/', headers=headers, data=post_data)
+result = json.loads(response.content)
+pprint(result)</pre>
+</code>
+        </mat-card-content>
+      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>
+        Example of output
+      </mat-card-title>
+      <mat-card-content>
+<pre style="white-space: pre; overflow:auto; max-height: 70vh; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 13px; line-height: 1.35; margin: 0;">
+[{{ '{' }}'ami_tags': 'e8557',
+  'ami_tags_format_step': ['EVNT:e8557'],
+  'architecture': 'x86_64-centos7-gcc11-opt#x86_64-*-v2',
+  'campaign': 'MC23',
+  'chain_data': [47222397],
+  'chain_id': 47222397,
+  'cloud': 'WORL',
+  'conditions_tag': None,
+  'core_count': None,
+  'ctag': 'e8557',
+  'ctag_format_step': ['EVNT:e8557'],
+  'description': 'test pmg tags',
+  'end_time': None,
+  'energy_gev': 13600,
+  'evgen_job_opts': None,
+  'geometry_version': None,
+  'hashtag_list': None,
+  'input_events': 10000,
+  'input_events_v2': 10000,
+  'job_config': None,
+  'n_events_per_job': '10000',
+  'n_files_per_job': '1',
+  'n_files_to_be_used': 1,
+  'output_dataset': [{{ '{' }}'bytes': 373288099,
+                      'cross_section': '1.9560E-04',
+                      'data_format': 'EVNT',
+                      'deleted': False,
+                      'events': 10000,
+                      'gen_filt_eff': '1.000000E+00',
+                      'name': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.evgen.EVNT.e8557_tid47222397_00',
+                      'negFraction': '3.334161E-05',
+                      'negFractionNoFilter': '3.334161E-05',
+                      'sumOfWeights': '5.868120E+03',
+                      'sumOfWeightsNoFilter': '5.868120E+03'{{ '}' }}],
+  'output_formats': ['EVNT'],
+  'phys_category': ['Uncategorized'],
+  'phys_group': 'VALI',
+  'pr_id': 65795,
+  'primary_input': None,
+  'processed_events': 10000,
+  'processed_events_v2': 10000,
+  'project': 'mc23_valid',
+  'requested_events': None,
+  'run_number': '560037',
+  'site': None,
+  'start_time': '04-11-2025 10:42:35',
+  'status': 'done',
+  'step_id': 9675223,
+  'step_name': 'Evgen',
+  'subcampaign': 'MC23a',
+  'task_timestamp': '04-11-2025 17:14:29',
+  'taskid': 47222397,
+  'taskname': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.evgen.e8557',
+  'ticket_id': 'ATLPSTASKS-1647499',
+  'total_events': 10000,
+  'total_req_events': 10000,
+  'trans_home': 'AthGeneration-23.6.22',
+  'trans_path': 'Gen_tf.p',
+  'trans_uses': 'Atlas-23.6.2',
+  'trigger_config': None,
+  'user_name': 'mborodin',
+  'vo': 'atlas'{{ '}' }},
+ {{ '{' }}'ami_tags': 'e8557_e8586',
+  'ami_tags_format_step': ['EVNT:e8557_e8586'],
+  'architecture': 'x86_64-el9-gcc13-opt#x86_64-*-v2',
+  'campaign': 'MC23',
+  'chain_data': [47222397, 47222399],
+  'chain_id': 47222397,
+  'cloud': 'WORL',
+  'conditions_tag': None,
+  'core_count': None,
+  'ctag': 'e8586',
+  'ctag_format_step': ['EVNT:e8586'],
+  'description': 'test pmg tags',
+  'end_time': None,
+  'energy_gev': 13600,
+  'evgen_job_opts': None,
+  'geometry_version': None,
+  'hashtag_list': None,
+  'input_bytes': 373288099,
+  'input_events': 10000,
+  'input_events_v2': 10000,
+  'job_config': None,
+  'n_events_per_job': '10000',
+  'n_files_per_job': None,
+  'n_files_to_be_used': 1,
+  'output_dataset': [{{ '{' }}'bytes': 277774647,
+                      'cross_section': '1.9560E-04',
+                      'data_format': 'EVNT',
+                      'deleted': False,
+                      'events': 10000,
+                      'gen_filt_eff': '1.000000E+00',
+                      'name': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.merge.EVNT.e8557_e8586_tid47222399_00',
+                      'negFraction': '2.500674E-05',
+                      'negFractionNoFilter': '2.500674E-05',
+                      'sumOfWeights': '7.824123E+03',
+                      'sumOfWeightsNoFilter': '7.824123E+03'{{ '}' }}],
+  'output_formats': ['EVNT'],
+  'parent_taskname': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.evgen.e8557',
+  'parent_total_events': '10000',
+  'phys_category': ['Uncategorized'],
+  'phys_group': 'VALI',
+  'pr_id': 65795,
+  'primary_input': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.evgen.EVNT.e8557_tid47222397_00',
+  'primary_input_deleted': False,
+  'primary_input_events': 10000,
+  'processed_events': 10000,
+  'processed_events_v2': 10000,
+  'project': 'mc23_valid',
+  'requested_events': 10000,
+  'run_number': None,
+  'site': None,
+  'start_time': '04-11-2025 18:12:26',
+  'status': 'done',
+  'step_id': 9675224,
+  'step_name': 'Evgen Merge',
+  'subcampaign': 'MC23a',
+  'task_timestamp': '04-11-2025 19:56:35',
+  'taskid': 47222399,
+  'taskname': 'mc23_valid.560037.MGPy8EG_A14NNPDF23LO_2HNS_N20_DD70.merge.e8557_e8586',
+  'ticket_id': 'ATLPSTASKS-1647499',
+  'total_events': 10000,
+  'total_req_events': 0,
+  'trans_home': 'AthGeneration-23.6.37',
+  'trans_path': 'EVNTMerge_tf.p',
+  'trans_uses': 'Atlas-23.6.3',
+  'trigger_config': None,
+  'user_name': 'mborodin',
+  'vo': 'atlas'{{ '}' }}]
+</pre>
+      </mat-card-content>
+    </mat-card>
+      </li>
 </ul>
 }
 
