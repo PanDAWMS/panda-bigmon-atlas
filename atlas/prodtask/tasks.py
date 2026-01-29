@@ -19,7 +19,6 @@ from atlas.prodtask.patch_reprocessing import find_done_patched_tasks
 from atlas.prodtask.postproduction import check_all_tasks_post_production_actions
 from atlas.prodtask.task_actions import do_new_action
 from atlas.prodtask.task_views import sync_old_tasks, check_merge_container, find_filter_bkg_tasks
-from functools import wraps
 
 import logging
 

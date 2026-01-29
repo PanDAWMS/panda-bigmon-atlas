@@ -9,8 +9,7 @@ from django.urls import reverse, resolve
 from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
-from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate, HashTag
+from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate, HashTag, add_or_get_request_hashtag
 import logging
 
 from ..cric.client import CRICClient
@@ -1415,6 +1414,19 @@ def set_task_sample_container(task_id, execute=False):
                             return False
                         else:
                             return True
+def set_production_container(task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    ddm = DDM()
+    for dataset in task.output_non_log_datasets():
+        if 'tid' in dataset and ddm.dataset_exists(dataset):
+            container_name = ddm.get_production_container_name(dataset)
+            if not ddm.dataset_exists(container_name):
+                ddm.register_container(container_name, [dataset])
+                _jsonLogger.info(f"Production Container {container_name} created for {dataset}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
+            else:
+                if not ddm.dataset_is_in_container(dataset, container_name):
+                    ddm.register_datasets_in_container(container_name, [dataset])
+                    _jsonLogger.info(f"Dataset {dataset} is add to production container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
 
 def recover_sample_containers(days, days_till):
     time_since = timezone.now() - timedelta(days=days)

@@ -17,9 +17,9 @@ from rest_framework.permissions import IsAuthenticated
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError, StepTemplate
-from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, single_request_action_celery_task
+from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, \
+    single_request_action_celery_task, _set_request_hashtag
 from atlas.prodtask.spdstodb import fill_template
-from .hashtag import _set_request_hashtag
 from ..prodtask.helper import form_request_log, form_json_request_dict
 from .ddm_api import dataset_events
 from .views import form_existed_step_list, form_step_in_page, fill_dataset, make_child_update

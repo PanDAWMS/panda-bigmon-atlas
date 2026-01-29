@@ -20,9 +20,8 @@ from rucio.common.exception import DataIdentifierNotFound
 
 from atlas.prodtask.ddm_api import number_of_files_in_dataset, DDM
 from atlas.prodtask.views import make_slices_from_dict, request_clone_slices, fill_request_priority, \
-    fill_request_events, clone_slices
+    fill_request_events, clone_slices, _set_request_hashtag
 from atlas.prodtask.spdstodb import fill_template
-from .hashtag import _set_request_hashtag
 from .step_manage_views import hide_slice
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log

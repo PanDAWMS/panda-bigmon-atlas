@@ -18,11 +18,12 @@ import pickle
 from atlas.prodtask.check_duplicate import create_task_chain
 from atlas.prodtask.ddm_api import tid_from_container, DDM
 from atlas.prodtask.helper import form_request_log
-from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask
-from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks
+from atlas.prodtask.models import HashTag, HashTagToRequest, ProductionTask, add_or_get_request_hashtag, \
+    add_hashtag_to_task
+from atlas.prodtask.views import tasks_progress, prepare_step_statistic, form_hashtag_string, get_parent_tasks, \
+    _set_request_hashtag
 from atlas.dkb.views import tasks_from_string, tasks_by_hashtag
 from .models import StepExecution, InputRequestList, TRequest
-from django.utils import timezone
 
 from ..settings import OIDC_LOGIN_URL
 
@@ -97,7 +98,7 @@ def hashtag_request_to_tasks():
                             tasks_to_update.append(int(task.id))
                     if tasks_to_update:
                         _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
-                    list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update))
+                    list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag, x), tasks_to_update))
 
 
 
@@ -112,7 +113,7 @@ def hashtag_request_to_tasks_full():
                     tasks_to_update.append(task.id)
             if tasks_to_update:
                 _logger.debug("Hashtag %s was added for tasks %s "%(request_hashtag.hashtag,tasks_to_update))
-            list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag,x),tasks_to_update))
+            list(map(lambda x: add_hashtag_to_task(request_hashtag.hashtag.hashtag, x), tasks_to_update))
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -185,7 +186,7 @@ def propogate_hashtag_to_child(task_id, hashtag_type):
         hashtags = parent_task.hashtags
         for hashtag in hashtags:
             if hashtag.type == hashtag_type:
-                add_hashtag_to_task(hashtag,task.id)
+                add_hashtag_to_task(hashtag, task.id)
 
 
 @api_view(['POST'])
@@ -367,18 +368,6 @@ def request_hashtags_main_with_hashtag(request, hashtag_string):
     return HttpResponseRedirect(reverse('dkb:index', args=[])+'#/output_stat/?hashtag='+hashtag_string)
 
 
-def add_or_get_request_hashtag(hashtag, type='UD'):
-    existed_hashtags = list(HashTag.objects.filter(hashtag__iexact=hashtag))
-    if existed_hashtags:
-        existed_hashtag = existed_hashtags[0]
-    else:
-        existed_hashtag = HashTag()
-        existed_hashtag.hashtag = hashtag
-        existed_hashtag.type = type
-        existed_hashtag.save()
-    return existed_hashtag
-
-
 @csrf_protect
 def remove_hashtag_request(request, reqid):
     if request.method == 'POST':
@@ -415,16 +404,6 @@ def add_request_hashtag(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
-def _set_request_hashtag(reqid,hashtag):
-    existed_hashtag = add_or_get_request_hashtag(hashtag)
-    if not HashTagToRequest.objects.filter(hashtag=existed_hashtag,request=reqid).exists():
-        request_hashtag = HashTagToRequest()
-        request_hashtag.hashtag = existed_hashtag
-        request_hashtag.request = TRequest.objects.get(reqid=reqid)
-        request_hashtag.save()
-        for task in ProductionTask.objects.filter(request=reqid):
-            add_hashtag_to_task(existed_hashtag.hashtag,task.id)
-
 @csrf_protect
 def add_task_hashtag(request, taskid):
     if request.method == 'POST':
@@ -435,7 +414,7 @@ def add_task_hashtag(request, taskid):
             hashtag = input_dict['hashtag']
             hashtag = hashtag.replace('#','')
             existed_hashtag = add_or_get_request_hashtag(hashtag)
-            add_hashtag_to_task(existed_hashtag,taskid)
+            add_hashtag_to_task(existed_hashtag, taskid)
             results = {'success':True,'data':existed_hashtag.hashtag}
         except Exception as e:
             pass
@@ -470,7 +449,7 @@ def set_mc16_hashtags(hashtags):
     new_tasks = ProductionTask.objects.filter(request_id__gt=last_task.request_id,campaign='MC16',provenance='AP')
     unique_requests = set()
     for task in new_tasks:
-        add_hashtag_to_task(mc16_hashtag.hashtag,task.id)
+        add_hashtag_to_task(mc16_hashtag.hashtag, task.id)
         unique_requests.add(int(task.request_id))
     list(map(get_key_for_request,list(unique_requests)))
     #print unique_requests
@@ -487,15 +466,6 @@ def remove_hashtag_from_request(reqid, hashtag_name):
         hashtag_to_request.delete()
 
 
-def add_hashtag_to_task(hashtag_name, task_id):
-    task = ProductionTask.objects.get(id=task_id)
-    current_hashtags = task.hashtags
-    hashtag = HashTag.objects.get(hashtag=hashtag_name)
-    if hashtag not in current_hashtags:
-        task.set_hashtag(hashtag_name)
-        task.timestamp = timezone.now()
-        task.save()
-
 def get_key_for_request(reqid):
     request = TRequest.objects.get(reqid=reqid)
 
@@ -511,9 +481,9 @@ def get_key_for_request(reqid):
         category = get_category(keywords, slice.input_data)
         hashtags = []
         for keyword in keywords:
-            hashtags.append(add_or_get_request_hashtag(keyword,'KW'))
+            hashtags.append(add_or_get_request_hashtag(keyword, 'KW'))
         if category:
-            category_hashtag = add_or_get_request_hashtag(category,'KW')
+            category_hashtag = add_or_get_request_hashtag(category, 'KW')
             if category_hashtag not in hashtags:
                 hashtags.append(category_hashtag)
         for step in steps:

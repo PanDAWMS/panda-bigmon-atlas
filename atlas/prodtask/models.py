@@ -3186,3 +3186,25 @@ class PostProductionActions(models.Model):
     class Meta:
         app_label = 'dev'
         db_table = 'T_TASK_PP_ACTIONS'
+
+
+def add_or_get_request_hashtag(hashtag, type='UD'):
+    existed_hashtags = list(HashTag.objects.filter(hashtag__iexact=hashtag))
+    if existed_hashtags:
+        existed_hashtag = existed_hashtags[0]
+    else:
+        existed_hashtag = HashTag()
+        existed_hashtag.hashtag = hashtag
+        existed_hashtag.type = type
+        existed_hashtag.save()
+    return existed_hashtag
+
+
+def add_hashtag_to_task(hashtag_name, task_id):
+    task = ProductionTask.objects.get(id=task_id)
+    current_hashtags = task.hashtags
+    hashtag = HashTag.objects.get(hashtag=hashtag_name)
+    if hashtag not in current_hashtags:
+        task.set_hashtag(hashtag_name)
+        task.timestamp = timezone.now()
+        task.save()

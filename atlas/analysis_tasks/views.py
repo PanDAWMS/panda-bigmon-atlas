@@ -30,7 +30,7 @@ from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prestage.views import step_action
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.hashtag import _set_request_hashtag, remove_hashtag_from_request
+from atlas.prodtask.hashtag import remove_hashtag_from_request
 from atlas.prodtask.helper import form_json_request_dict
 from atlas.prodtask.models import AnalysisTaskTemplate, TTask, TemplateVariable, InputRequestList, AnalysisStepTemplate, \
     ProductionTask, StepExecution, TRequest, SliceSerializer, JediDatasetContents, JediDatasets, SliceError, \
@@ -41,7 +41,7 @@ from atlas.prodtask.step_manage_views import hide_slice
 from atlas.prodtask.task_views import tasks_serialisation
 from rest_framework import serializers
 from atlas.celerybackend.celery import app
-from atlas.prodtask.views import set_request_status
+from atlas.prodtask.views import set_request_status, _set_request_hashtag
 from atlas.production_request.derivation import get_container_name
 
 _jsonLogger = logging.getLogger('prodtask_ELK')

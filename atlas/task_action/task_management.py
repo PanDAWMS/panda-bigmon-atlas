@@ -16,9 +16,8 @@ import logging
 from django.utils import timezone
 
 from atlas.prodtask.ddm_api import DDM
-from atlas.prodtask.hashtag import add_or_get_request_hashtag
 from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag, \
-    DatasetStaging, PandaDatasetStaging, DistributedLock, TemplateVariable, DatasetRecovery
+    DatasetStaging, PandaDatasetStaging, DistributedLock, TemplateVariable, DatasetRecovery, add_or_get_request_hashtag
 from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response

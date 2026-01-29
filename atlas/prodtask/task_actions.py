@@ -5,8 +5,8 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
-from atlas.prodtask.hashtag import add_or_get_request_hashtag
-from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset, StepAction, ActionStaging
+from atlas.prodtask.models import ProductionTask, MCPriority, ProductionDataset, StepAction, ActionStaging, \
+    add_or_get_request_hashtag
 
 from atlas.prodtask.task_views import sync_deft_jedi_task
 

@@ -14,11 +14,12 @@ from django.forms.models import model_to_dict
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest, SystemParametersHandler
-from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices
+from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest, SystemParametersHandler, DistributedLock
+from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices, \
+    submit_child_derivation_request, _set_request_hashtag
 from atlas.prodtask.spdstodb import fill_template
-from .hashtag import _set_request_hashtag
 from .helper import form_json_request_dict
+from atlas.celerybackend.celery import app, ProdSysTask
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
@@ -507,79 +508,6 @@ def create_request_as_child(request):
 
 
 
-def find_pattern_derivation_request(campaign: str, subcampaign: str) -> (int, [str]):
-    all_patterns = SystemParametersHandler.get_daod_phys_production()
-    for pattern in all_patterns:
-        if pattern.campaign == campaign and ( pattern.subcampaign == SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS
-                                              or pattern.subcampaign == subcampaign) and pattern.status == SystemParametersHandler.DAOD_PHYS_Production.STATUS.ACTIVE:
-            return pattern.train_id, pattern.outputs, pattern.fullSimOnly
-    raise Exception('Pattern derivation request not found for campaign %s and subcampaign %s'%(campaign, subcampaign))
-
-def find_pattern_outputs(pattern_request_id: int, outputs: [str]):
-    pattern_train = TrainProduction.objects.get(id=pattern_request_id)
-    pattern_outputs = json.loads(pattern_train.outputs)
-    chosen_slices = []
-    for output_slice in pattern_outputs:
-        if [x for x in outputs if x in output_slice[1]]:
-            chosen_slices.append(output_slice)
-    return chosen_slices, pattern_train.pattern_request_id
-
-def find_steps_for_derivation(mc_request_id: int, full_sim_only = False) -> [StepExecution]:
-    parent_steps = []
-    ordered_slices = InputRequestList.objects.filter(request=mc_request_id).order_by('slice')
-    for slice in ordered_slices:
-        if not slice.is_hide:
-            if full_sim_only and 'fullsim' not in slice.comment.lower():
-                continue
-            existed_steps = StepExecution.objects.filter(request=mc_request_id, slice=slice)
-            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-            step_as_in_page = form_step_in_page(ordered_existed_steps, StepExecution.STEPS, None)
-            AOD_input = False
-            if existed_foreign_step:
-                AOD_input = 'AOD' in existed_foreign_step.step_template.output_formats
-            for step in step_as_in_page:
-                if step:
-                    if step.status == 'Approved' and ((step.get_task_config('input_format')=='AOD' or AOD_input) and
-                        step.step_template.output_formats == 'AOD'):
-                        parent_steps.append(step)
-                    AOD_input = 'AOD' in step.step_template.output_formats
-    return parent_steps
-
-
-def filter_steps_for_derivation(parent_steps: [StepExecution], new_request: TRequest, full_sim_only: bool = False)-> [StepExecution]:
-    new_request_slices = list(InputRequestList.objects.filter(request=new_request).order_by('slice'))
-    existed_parent_steps = []
-    for slice in new_request_slices:
-        if not slice.is_hide:
-            existed_steps = StepExecution.objects.filter(request=new_request, slice=slice)
-            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-            if full_sim_only and 'fullsim' not in slice.comment.lower():
-                    existed_foreign_step = None
-            if existed_foreign_step:
-                existed_parent_steps.append(existed_foreign_step)
-    return [x for x in parent_steps if x not in existed_parent_steps]
-
-
-
-def submit_derivation_steps(new_request: TRequest) -> bool:
-    new_request_slices = list(InputRequestList.objects.filter(request=new_request).order_by('slice'))
-    approve_request = False
-    for slice in new_request_slices:
-        if not slice.is_hide:
-            existed_steps = StepExecution.objects.filter(request=new_request, slice=slice)
-            ordered_existed_steps, existed_foreign_step = form_existed_step_list(existed_steps)
-            if existed_foreign_step and not existed_foreign_step.broken_step:
-                for step in ordered_existed_steps:
-                    if step.status == StepExecution.STATUS.NOT_CHECKED:
-                        step.status = StepExecution.STATUS.APPROVED
-                        step.save()
-                        approve_request = True
-    if approve_request:
-        set_request_status('cron', new_request.reqid, 'approved', 'Automatic child derivation approve',
-                           'Request was automatically approved')
-        return True
-    return False
-
 @csrf_protect
 def submit_child_derivation(request, reqid):
     if request.method == 'POST':
@@ -593,34 +521,6 @@ def submit_child_derivation(request, reqid):
             return HttpResponseBadRequest(e)
         return HttpResponse(json.dumps(results), content_type='application/json')
 
-def submit_child_derivation_request(original_request_id: int) -> int:
-    mc_request = TRequest.objects.get(reqid=original_request_id)
-    pattern_derivation_request, outputs, full_sim_only = find_pattern_derivation_request(mc_request.campaign, mc_request.subcampaign)
-    parent_steps = find_steps_for_derivation(mc_request.reqid, full_sim_only)
-    pattern_outputs, pattern_derivation_request = find_pattern_outputs(pattern_derivation_request, outputs)
-    if not ParentToChildRequest.objects.filter(parent_request=mc_request, relation_type='DP').exists():
-        new_description = 'PHYS Derivation of %s'%mc_request.description
-        new_request = create_request_for_pattern(mc_request.reqid, new_description, mc_request.manager)
-        new_request.project = mc_request.project
-        new_request.campaign = mc_request.campaign
-        new_request.subcampaign = mc_request.subcampaign
-        new_request.save()
-        new_parent_child = ParentToChildRequest()
-        new_parent_child.parent_request = TRequest.objects.get(reqid=original_request_id)
-        new_parent_child.child_request = new_request
-        new_parent_child.relation_type = 'DP'
-        new_parent_child.status = 'active'
-        new_parent_child.save()
-        _set_request_hashtag(new_request.reqid, 'PHYSAutoProduction')
-    else:
-        new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
-        parent_steps = filter_steps_for_derivation(parent_steps, new_request, full_sim_only)
-    if parent_steps:
-        create_steps_in_child_pattern(new_request, parent_steps,
-                                      pattern_derivation_request,
-                                      pattern_outputs)
-    submit_derivation_steps(new_request)
-    return new_request.reqid
 @login_required(login_url=OIDC_LOGIN_URL)
 def train_as_child(request, reqid):
     if 'train_extension' not in request.session:
