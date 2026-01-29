@@ -18,7 +18,8 @@ from atlas.cric.client import CRICClient
 from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets, TaskDatasetRecover, \
-    register_recreation_request, get_unavaliaible_dataset_info, submit_dataset_recovery_requests
+    register_recreation_request, get_unavaliaible_dataset_info, submit_dataset_recovery_requests, \
+    get_deleted_dataset_info
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
@@ -386,6 +387,9 @@ def unavailable_datasets_info(request):
         dataset = request.query_params.get('dataset')
         task_id = request.query_params.get('taskID')
         username = request.query_params.get('username')
+        deleted_datasets_raw = request.query_params.get('deleted_datasets')
+        # split deleted_datasets_raw by all commas, strip spaces, and filter out empty strings
+        deleted_datasets = [x for x in map(str.strip, deleted_datasets_raw.split(',').split(';')) if x] if deleted_datasets_raw else []
         result = []
         if dataset:
             result = get_unavaliaible_dataset_info(dataset)
@@ -399,6 +403,11 @@ def unavailable_datasets_info(request):
                 tasks = JediTasks.objects.filter(username=username, status__in=[ProductionTask.STATUS.PENDING, ProductionTask.STATUS.RUNNING, ProductionTask.STATUS.EXHAUSTED])
                 tasks_id = [x.id for x in tasks if ('missing at online' in x.errordialog or "is only complete" in x.errordialog)]
             result = get_unavalaible_daod_input_datasets(tasks_id)
+        elif deleted_datasets:
+            for dataset in deleted_datasets:
+                check_dataset = get_deleted_dataset_info(dataset)
+                if check_dataset:
+                    result.append(check_dataset)
         sites = set()
         for dataset_info in result:
             sites.update(dataset_info.replicas)
@@ -409,6 +418,24 @@ def unavailable_datasets_info(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def deleted_datasets_info(request):
+    try:
+
+        deleted_datasets_raw = request.data['deletedDatasetsRaw']
+        # split deleted_datasets_raw by all commas, strip spaces, and filter out empty strings
+        deleted_datasets = [x for x in map(str.strip, deleted_datasets_raw.replace(';',',').split(',')) if x] if deleted_datasets_raw else []
+        result = []
+        for dataset in deleted_datasets:
+            check_dataset = get_deleted_dataset_info(dataset)
+            if check_dataset:
+                result.append(check_dataset)
+
+        return Response({'datasets': [asdict(x) for x in result], 'downtimes':[]} )
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))

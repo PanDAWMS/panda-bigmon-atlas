@@ -60,6 +60,7 @@ export class DatasetRecoveryService {
   private prSubmitDatasetRecoveryRequestUrl = '/api/request_recreation/';
   private prAllRequestUrl = '/api/get_all_recovery_requests/';
   private prSubmitRecoveryUrl = '/api/submit_recreation/';
+  private prGetDatasetDeletedUrl = '/api/deleted_datasets_info/';
 
 
 
@@ -77,12 +78,13 @@ export class DatasetRecoveryService {
   private isLoading$ = new Subject<boolean>();
   private submitted$ = new BehaviorSubject<boolean>(false);
   private submitting$ = new Subject<boolean>();
-  private inputValues$ = new Subject<{username: string, dataset: string, taskID: string}>();
+  private inputValues$ = new Subject<{username: string, dataset: string, taskID: string, deletedDatasetsRaw: string}>();
   private datasetsInfo$ = this.inputValues$.pipe(
     combineLatestWith(this.submitted$),
     tap(() => this.isLoading$.next(true)),
     tap(() => this.error$.next(null)),
-    switchMap(([inputValues, _]) => this.getDatasetRecoveryInfo(inputValues.username, inputValues.dataset, inputValues.taskID)),
+    switchMap(([inputValues, _]) => this.getDatasetRecoveryInfo(inputValues.username,
+      inputValues.dataset, inputValues.taskID, inputValues.deletedDatasetsRaw)),
     tap(() => this.isLoading$.next(false)),
     takeUntilDestroyed()
   );
@@ -100,14 +102,22 @@ export class DatasetRecoveryService {
     sources: [this.sources$]
   });
 
-  getDatasetRecoveryInfo(username: string, dataset: string, taskID: string): Observable<TSData> {
-    return this.http.get<TSData>(this.prGetDatasetRecoveryUrl, {params: {username, dataset, taskID}}).pipe(
+  getDatasetRecoveryInfo(username: string, dataset: string, taskID: string, deletedDatasetsRaw: string): Observable<TSData> {
+    if ((deletedDatasetsRaw !== '') && (username === '') && (dataset === '') && (taskID === '')) {
+      return this.http.post<TSData>(this.prGetDatasetDeletedUrl, {deletedDatasetsRaw}).pipe(
       catchError((error: any) => {
         this.error$.next(setErrorMessage(error));
         this.isLoading$.next(false);
         return EMPTY;
-      })
-    );
+      }));
+    } else {
+      return this.http.get<TSData>(this.prGetDatasetRecoveryUrl, {params: {username, dataset, taskID}}).pipe(
+      catchError((error: any) => {
+        this.error$.next(setErrorMessage(error));
+        this.isLoading$.next(false);
+        return EMPTY;
+      }));
+    }
   }
 
   getAllRequests(): Observable<DatasetRequest[]> {
@@ -124,8 +134,8 @@ export class DatasetRecoveryService {
 
   constructor() { }
 
-  setInputValues(username: string, dataset: string, taskID: string): void {
-    this.inputValues$.next({username, dataset, taskID});
+  setInputValues(username: string, dataset: string, taskID: string, deletedDatasetsRaw: string): void {
+    this.inputValues$.next({username, dataset, taskID, deletedDatasetsRaw});
   }
 
   submit(datasets: Dataset[], comment: string): void {

@@ -12,23 +12,26 @@ import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {MatIcon} from "@angular/material/icon";
+import {MatTab, MatTabGroup} from "@angular/material/tabs";
 
 @Component({
     selector: 'app-dataset-recovery',
-    imports: [
-        MatProgressSpinner,
-        NgClass,
-        DatePipe,
-        AgGridAngular,
-        TaskStatsComponent,
-        ReactiveFormsModule,
-        MatButton,
-        MatFormField,
-        MatInput,
-        MatLabel,
-        FormsModule,
-        RouterLink,
-    ],
+  imports: [
+    MatProgressSpinner,
+    NgClass,
+    DatePipe,
+    AgGridAngular,
+    TaskStatsComponent,
+    ReactiveFormsModule,
+    MatButton,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    FormsModule,
+    RouterLink,
+    MatTab,
+    MatTabGroup,
+  ],
     templateUrl: './dataset-recovery.component.html',
     styleUrl: './dataset-recovery.component.css'
 })
@@ -113,6 +116,7 @@ export class DatasetRecoveryComponent {
   ];
   selectedDatasets: Dataset[] = [];
    message: string;
+  protected deletedDatasetsRaw: string;
 constructor(@Inject(APP_BASE_HREF) private baseHref: string) {
   effect(() => {
     if (this.tsData()?.datasets !== undefined) {
@@ -139,26 +143,32 @@ constructor(@Inject(APP_BASE_HREF) private baseHref: string) {
 
   this.route.queryParamMap.subscribe(queryParamMap => {
     if (queryParamMap.get('dataset')){
-      this.datasetRecoveryService.setInputValues('', queryParamMap.get('dataset') , '');
+      this.datasetRecoveryService.setInputValues('', queryParamMap.get('dataset') , '', '');
       this.message = `Dataset: ${queryParamMap.get('dataset')}`;
       this.dataset = queryParamMap.get('dataset');
       this.username = '';
       this.taskID = '';
+      this.deletedDatasetsRaw = '';
     } else if (queryParamMap.get('taskID')) {
-      this.datasetRecoveryService.setInputValues('', '',  queryParamMap.get('taskID'));
+      this.datasetRecoveryService.setInputValues('', '',  queryParamMap.get('taskID'), '');
       this.message = `Unavailable datasets for the task ${queryParamMap.get('taskID')}`;
       this.dataset = '';
       this.username = '';
+      this.deletedDatasetsRaw = '';
       this.taskID = queryParamMap.get('taskID');
     } else if (queryParamMap.get('username')) {
-      this.datasetRecoveryService.setInputValues(queryParamMap.get('username'), '' , '');
+      this.datasetRecoveryService.setInputValues(queryParamMap.get('username'), '' , '', '');
       this.message = `Unavailable datasets for the pending ${queryParamMap.get('username')} tasks`;
       this.dataset = '';
       this.username = queryParamMap.get('username');
       this.taskID = '';
+      this.deletedDatasetsRaw = '';
     }
   });
 }
+checkDeletedDatasets(): void {
+    this.datasetRecoveryService.setInputValues('', '', '', this.deletedDatasetsRaw);
+    }
   submitRequests(): void {
     this.datasetRecoveryService.submit(this.datasetsGrid.api.getSelectedRows(), this.comment);
   }

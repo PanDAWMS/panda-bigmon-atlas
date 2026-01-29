@@ -122,13 +122,24 @@ def check_empty_datasets(dataset: str, ddm: DDM) -> TaskDatasetRecover| None:
     if ':' in dataset:
         dataset = dataset.split(':')[-1]
     if not ddm.dataset_exists(dataset):
-        return TaskDatasetRecover(None, dataset, 0, 'unavailable', [])
+        status = 'unavailable'
+        if DatasetRecovery.objects.filter(original_dataset=dataset).exists():
+            dataset_recovery = DatasetRecovery.objects.get(original_dataset=dataset)
+            if dataset_recovery.status == DatasetRecovery.STATUS.PENDING:
+                status = 'pending'
+            else:
+                status = 'submitted'
+        return TaskDatasetRecover(None, dataset, 0, status, [])
     else:
         return None
 
 def get_unavaliaible_dataset_info(dataset: str):
     ddm = DDM()
     return [check_unavailable_datasets(dataset, ddm)]
+
+def get_deleted_dataset_info(dataset: str):
+    ddm = DDM()
+    return check_empty_datasets(dataset, ddm)
 
 def get_unavalaible_daod_input_datasets(task_ids: [int]) -> [TaskDatasetRecover]:
     ddm = DDM()

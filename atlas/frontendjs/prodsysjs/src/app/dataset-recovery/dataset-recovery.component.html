@@ -1,4 +1,6 @@
 
+<mat-tab-group  [color]="'primary'"  >
+  <mat-tab label="Recover Stuck">
 <div class="space-y-4">
   <!-- First Row: Two inputs separated by "OR" -->
   <div class="flex items-center space-x-2">
@@ -25,6 +27,20 @@
     </button>
   </div>
 </div>
+  </mat-tab>
+    <mat-tab label="Recover Deleted">
+      <mat-form-field style="width: 100% ">
+                  <mat-label>Enter a list of deleted datasets(with any separator)</mat-label>
+                  <textarea matInput #containerListInput placeholder="List" [(ngModel)]="deletedDatasetsRaw"  style="height: 300px"
+                  ></textarea>
+      </mat-form-field>
+      <div>
+        <button mat-raised-button color="primary" (click)="checkDeletedDatasets()">
+          Verify Deleted Datasets
+        </button>
+      </div>
+    </mat-tab>
+</mat-tab-group>
 <h5>{{message}}</h5>
 @if (isLoading()) {
       <div>Loading ...</div>
