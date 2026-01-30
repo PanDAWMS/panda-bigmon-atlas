@@ -30,15 +30,7 @@ def recovery_requests_cleanup(delete_requests: bool = False):
                 dataset_recovery_info.delete()
                 dataset_recovery.delete()
 
-
-def recreate_existing_outputs(task_id: int, outputs: [str], parent_task_id: Optional[int] = None):
-    task = ProductionTask.objects.get(id=task_id)
-    slice = task.step.slice
-    step_execs = StepExecution.objects.filter(slice=slice,request=task.request)
-    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
-    if len(ordered_existed_steps)>1:
-        raise Exception('More than one step for slice')
-    production_request = TRequest.objects.get(reqid=task.request_id)
+def add_or_get_recovery_request(production_request: TRequest) -> int:
     slices = []
     new_description = 'Recreate tasks for %s' % production_request.description
     new_request_id = None
@@ -47,17 +39,26 @@ def recreate_existing_outputs(task_id: int, outputs: [str], parent_task_id: Opti
             new_request_id = cloned_request.child_request.reqid
             break
     if not new_request_id:
-        new_request_id = request_clone_slices(production_request.reqid, production_request.manager, new_description,
+        new_request_id = request_clone_slices(production_request.reqid, 'mborodin', new_description,
                                               production_request.ref_link, slices,
                                               production_request.project.project)
+    return new_request_id
+
+def recreate_existing_outputs(task_id: int, outputs: [str], parent_step_id: Optional[int] = None):
+    task = ProductionTask.objects.get(id=task_id)
+    slice = task.step.slice
+    step_execs = StepExecution.objects.filter(slice=slice,request=task.request)
+    ordered_existed_steps, parent_step = form_existed_step_list(step_execs)
+    if len(ordered_existed_steps)>1:
+        raise Exception('More than one step for slice')
+    production_request = TRequest.objects.get(reqid=task.request_id)
+    new_request_id = add_or_get_recovery_request(production_request)
     new_slice_number = clone_slices(production_request.reqid, new_request_id, [slice.slice], -1, True, False)[0]
     new_slice = InputRequestList.objects.get(request=new_request_id, slice=new_slice_number)
     new_parent_step = None
-    if parent_task_id is not None:
-        parent_task = ProductionTask.objects.get(id=parent_task_id)
-        new_slice.dataset = next(parent_task.output_non_log_datasets())
-        if parent_task.status not in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
-            new_parent_step = parent_task.step
+    if parent_step_id is not None:
+        new_slice.dataset = ''
+        new_parent_step = parent_step_id
     else:
         new_slice.dataset = task.inputdataset
     new_slice.save()
@@ -201,18 +202,81 @@ def find_recreated_task(original_task_id: int, task_id_gt: int):
 
     return None
 
+
+def recreate_input_chain(input_dataset: str):
+    ddm = DDM()
+    dataset_exists = ddm.dataset_exists(input_dataset)
+    steps_to_recreate = []
+    while not dataset_exists:
+        if 'tid' not in input_dataset:
+            raise Exception('No task id found in dataset name')
+        task_id = int(input_dataset[input_dataset.rfind('tid')+3:input_dataset.rfind('_')])
+        task = ProductionTask.objects.get(id=task_id)
+        steps_to_recreate.append(task.step)
+        input_dataset = task.inputdataset
+        if not input_dataset:
+            raise Exception('No input dataset found in task')
+        dataset_exists = ddm.dataset_exists(input_dataset)
+    steps_to_recreate.reverse()
+    current_request = steps_to_recreate[0].request
+    n_events_per_input = None
+    if steps_to_recreate[0].step_parent_id != steps_to_recreate[0].id:
+        if steps_to_recreate[0].step_parent.get_task_config('nEventsPerJob'):
+            n_events_per_input = int(steps_to_recreate[0].step_parent.get_task_config('nEventsPerJob'))
+    new_request_id = add_or_get_recovery_request(current_request)
+    last_step = None
+    current_steps = []
+    for index, step in enumerate(steps_to_recreate):
+        current_steps.append(step)
+        if step.request != current_request or index == len(steps_to_recreate)-1:
+            new_slice_number = clone_slices(current_request.reqid, new_request_id, [current_steps[0].slice.slice], 99, True, False)[0]
+            new_slice = InputRequestList.objects.get(request=new_request_id, slice=new_slice_number)
+            _jsonLogger.info(f"Recreating step from request {current_request.reqid} slice {current_steps[0].slice.slice} to new request {new_request_id} slice {new_slice_number}")
+            for recreating_step in current_steps:
+                new_step = recreating_step
+                new_step.id = None
+                new_step.request = TRequest.objects.get(reqid=new_request_id)
+                new_step.slice = new_slice
+                new_step.update_project_mode('taskRecreation', 'yes')
+                new_step.status = 'Approved'
+                new_step.save()
+                if last_step is not None:
+                    new_step.step_parent = last_step
+                    new_step.save()
+                else:
+                    new_slice.dataset = input_dataset
+                    new_slice.save()
+                    if new_step.step_parent_id != new_step.id:
+                        new_step.step_parent = new_step
+                        if n_events_per_input is not None:
+                            new_step.set_task_config({'nEventsPerInputFile': n_events_per_input})
+                        new_step.save()
+                last_step = new_step
+            set_request_status('cron', new_request_id, 'approved', 'Task recreation',
+                               'Request was automatically approved')
+            if index != len(steps_to_recreate)-1:
+                current_steps = []
+                current_request = step.request
+                new_request_id = add_or_get_recovery_request(current_request)
+    return last_step
+
+
+
 def recreate_stuck_replica_task(task_id: int):
     task = ProductionTask.objects.get(id=task_id)
     outputs = list(task.output_non_log_datasets())
     ddm = DDM()
     output_formats_to_recreate = []
     deleted_datasets = []
-    recreated_task = None
+    recreated_step = None
     if not ddm.dataset_exists(task.inputdataset):
         recreated_task = find_deleted_input(task.inputdataset, task_id)
         if recreated_task is None:
-            raise Exception('Original task input dataset does not exist')
-
+            recreated_step = recreate_input_chain(task.inputdataset)
+            if not recreated_step:
+                raise Exception('Original task input dataset does not exist')
+        else:
+            recreated_step = ProductionTask.objects.get(id = recreated_task).step
     for output in outputs:
         if not ddm.dataset_exists(output):
             output_formats_to_recreate.append(output.split('.')[-2])
@@ -222,11 +286,11 @@ def recreate_stuck_replica_task(task_id: int):
             deleted_datasets.append(output)
     if len(output_formats_to_recreate) == len(outputs):
         #obsolete task
-        recovery_request, recovery_slice = recreate_existing_outputs(task_id, [], recreated_task)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, [], recreated_step)
         return recovery_request, recovery_slice, deleted_datasets
     elif len(output_formats_to_recreate) > 0:
         #recreate only missing outputs
-        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate, recreated_task)
+        recovery_request, recovery_slice = recreate_existing_outputs(task_id, output_formats_to_recreate, recreated_step)
         return recovery_request, recovery_slice, deleted_datasets
     return None
 
