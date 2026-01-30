@@ -27,7 +27,7 @@ from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, St
                                    HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError,
                                    TaskTemplate,
                                    TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock,
-                                   DSIDHashtags, PostProductionActions)
+                                   DSIDHashtags, PostProductionActions, DatasetRecovery)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
 from .taskreg import TaskRegistration
@@ -4349,6 +4349,7 @@ class TaskDefinition(object):
 
             if project_mode.taskRecreation:
                 skip_check_input = True
+                follow_hashtags.append(DatasetRecovery.RECOVERY_TASK_HASHTAG)
             if project_mode.patchRepro:
                 if project_mode.patchRepro == 'wait':
                     raise Exception('Task is waiting patch to be produced')
