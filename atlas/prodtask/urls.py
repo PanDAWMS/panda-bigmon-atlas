@@ -167,6 +167,8 @@ urlpatterns = [
     re_path(r'^retry_slices/(?P<reqid>\d+)/$', step_manage_views.retry_slices, name='retry_slices'),
     re_path(r'^split_slices_in_req/(?P<reqid>\d+)/$', step_manage_views.split_slices_in_req, name='split_slices_in_req'),
     re_path(r'^split_slices_by_tid/(?P<reqid>\d+)/$', step_manage_views.split_slices_by_tid, name='split_slices_by_tid'),
+    re_path(r'^replace_parent_with_container/(?P<reqid>\d+)/$', step_manage_views.replace_parent_with_container,
+            name='replace_parent_with_container'),
     re_path(r'^split_slices_by_output/(?P<reqid>\d+)/$', step_manage_views.split_slices_by_output, name='split_slices_by_output'),
 
     re_path(r'^add_request_comment/(?P<reqid>\d+)/$', step_manage_views.add_request_comment, name='add_request_comment'),

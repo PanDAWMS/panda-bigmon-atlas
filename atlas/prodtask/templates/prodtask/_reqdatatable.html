@@ -2534,7 +2534,28 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
                 );
               return false;
         }
-
+        function replaceParentByContainer(event){
+            event.preventDefault();
+            var sliceList = getCheckedSlices();
+            var i=0;
+            var sendData = {slices:sliceList};
+              $( "#reloadDialog" ).dialog();
+              $.ajax({
+                    url: construct_django_url('/prodtask/replace_parent_with_container/',"{{ pr_id }}"),
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: $.toJSON(sendData),
+                    dataType: 'text',
+                    success: function(data,status) {
+                        $( "#reloadDialog" ).dialog('close');
+                        if(status){
+                            location.reload();
+                        }
+                        }
+                    }
+                );
+              return false;
+        }
 
         function splitSlicesByOutputClick(event){
             event.preventDefault();
@@ -4307,6 +4328,10 @@ ProjectModeForm.prototype.createForm = function(inputString){
                      <div class="row">
                          <button id="changeParentAction" class="btn_is_authenticated" title="Change parent slice" onclick="changeParentClick(event,$('#parentSliceNumber').val());">Change</button>
                      </div>
+                    <div class="row">
+                         <button id="replaceParentByContainerAction" class="btn_is_authenticated" title="Replace parent by container" onclick="replaceParentByContainer(event);">Replace by Container</button>
+                     </div>
+
 
                 </div>
         </div>

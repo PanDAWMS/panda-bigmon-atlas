@@ -2748,6 +2748,73 @@ def fix_resim(request, slice):
         else:
             return False
 
+@csrf_protect
+def replace_parent_with_container(request, reqid):
+    if request.method == 'POST':
+        results = {'success':False}
+        try:
+            data = request.body
+            input_dict = json.loads(data)
+            slices = input_dict['slices']
+            if '-1' in slices:
+                del slices[slices.index('-1')]
+            _logger.debug(form_request_log(reqid,request,'replcae parent with container: %s' % str(slices)))
+            done_slices = []
+            skipped_slices = []
+            for slice_number in slices:
+                try:
+                    if change_parent_to_container(reqid,slice_number):
+                        done_slices.append(slice_number)
+                    else:
+                        skipped_slices.append(slice_number)
+                except  Exception as e:
+                    skipped_slices.append(slice_number)
+                    _logger.error("Problem with changing parent to container : %s"%( e))
+            if len(done_slices) > 0:
+                results = {'success':True,'badSlices':skipped_slices,'goodSlices':done_slices}
+            else:
+                results = {'success':False,'badSlices':skipped_slices,'goodSlices':done_slices}
+        except Exception as e:
+            pass
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+def change_parent_to_container(request_id, slice_number):
+    slice = InputRequestList.objects.get(request=request_id, slice=slice_number)
+    steps = StepExecution.objects.filter(request=request_id, slice=slice)
+    ordered_existed_steps, parent_step = form_existed_step_list(steps)
+    first_step = ordered_existed_steps[0]
+    input_format  = first_step.get_task_config('input_format')
+    if not input_format:
+        input_format = parent_step.step_template.output_formats
+        if '.' in input_format:
+            input_format = input_format.split('.')[0]
+    if first_step.step_parent_id != first_step.id:
+        tasks = ProductionTask.objects.filter(step=parent_step, request=parent_step.request_id)
+
+        if tasks.exists():
+            input_container = ''
+            ddm = DDM()
+            for task in tasks:
+                if task.status not in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                    return False
+                for dataset in task.output_non_log_datasets():
+                    if f'.{input_format}.' in dataset:
+                        input_container = ddm.get_sample_container_name(dataset)
+                        if not ddm.dataset_exists(input_container) or not ddm.dataset_is_in_container(dataset, input_container):
+                            return False
+            if input_container:
+                first_step.update_project_mode('mergeCont','yes')
+                first_step.step_parent = first_step
+                first_step.save()
+                slice.dataset = input_container
+                slice.cloned_from = None
+                slice.save()
+                return True
+    return False
+
+
+
+
 
 def recreate_output(task_id: int, output: str) -> (int, str):
     task = ProductionTask.objects.get(id=task_id)
