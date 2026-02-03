@@ -2804,6 +2804,9 @@ def change_parent_to_container(request_id, slice_number):
                             return False
             if input_container:
                 first_step.update_project_mode('mergeCont','yes')
+                if (parent_step.get_task_config('nEventsPerJob') and not first_step.get_task_config('nEventsPerInputFile')
+                    and not first_step.get_task_config('nGBPerJob') and first_step.get_task_config('nEventsPerJob')):
+                    first_step.set_task_config({'nEventsPerInputFile': parent_step.get_task_config('nEventsPerJob')})
                 first_step.step_parent = first_step
                 first_step.save()
                 slice.dataset = input_container
