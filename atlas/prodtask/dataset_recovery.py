@@ -56,11 +56,9 @@ def recreate_existing_outputs(task_id: int, outputs: [str], parent_step_id: Opti
     new_slice_number = clone_slices(production_request.reqid, new_request_id, [slice.slice], -1, True, False)[0]
     new_slice = InputRequestList.objects.get(request=new_request_id, slice=new_slice_number)
     new_parent_step = None
+    new_slice.dataset = task.inputdataset
     if parent_step_id is not None:
-        new_slice.dataset = ''
         new_parent_step = parent_step_id
-    else:
-        new_slice.dataset = task.inputdataset
     new_slice.save()
 
     new_step = StepExecution.objects.get(request=new_request_id, slice=InputRequestList.objects.get(request=new_request_id, slice=new_slice_number))
