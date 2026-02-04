@@ -59,6 +59,7 @@ export class PMGApprovalComponent implements OnInit{
       'AF2 in Run3',
       'Too many input files',
       'Too many jobs',
+      'Wrong grid pack',
       'Total input events ratio'
     ];
     jira = input<string>('');

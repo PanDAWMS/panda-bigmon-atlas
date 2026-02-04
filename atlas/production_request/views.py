@@ -1762,6 +1762,7 @@ def check_job_options(production_requests: List[TRequest]):
     tid_instead_of_container = []
     too_many_jobs = []
     too_many_input_files = []
+    wrong_grid_pack = []
     bad_sw_releases = SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()
     steps = list(StepExecution.objects.filter(request__in=production_requests).order_by('id'))
     first_step_by_slice = {}
@@ -1802,6 +1803,15 @@ def check_job_options(production_requests: List[TRequest]):
                             tid_instead_of_container.append((slice.request_id, slice.slice, slice.dataset))
                         else:
                             job_option_check_enough_input[job_option_obj.dsid].append(slice)
+                    grid_packs = job_option_obj.coniditional_gridpack({'energy': slice.request.energy_gev})
+                    if grid_packs:
+                        grid_pack_missing = True
+                        for grid_pack in grid_packs:
+                            if grid_pack.lower() in slice.request.project.project.lower():
+                                grid_pack_missing = False
+                                break
+                        if grid_pack_missing:
+                            wrong_grid_pack.append((job_option, slice, grid_packs))
                     events_per_job = job_option_obj.conditional_events_per_job({'energy': slice.request.energy_gev})
                     files_per_job = job_option_obj.conditional_files_per_job({'energy': slice.request.energy_gev})
                     if slice.input_events % events_per_job != 0:
@@ -1849,6 +1859,11 @@ def check_job_options(production_requests: List[TRequest]):
                                                   check_name='Too many input files',
                                                   status='Warning',
                                                   message=f'Job option {job_option} has input events {input_events} which gives more than 200000 input files with {events_per_job} events per job and files per job {files_per_job}.'))
+    for job_option, slice, expected_grid_packs in wrong_grid_pack:
+        result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                  check_name='Wrong grid pack',
+                                                  status='ERROR',
+                                                  message=f'Job option {job_option} does not contain any of the expected grid packs {expected_grid_packs}.'))
     return result_problems
 
 

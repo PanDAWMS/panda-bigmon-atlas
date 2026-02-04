@@ -636,6 +636,14 @@ class MCJobOptions(models.Model):
                     return matched_entry.get('input_files_per_job')
             return None
 
+    def coniditional_gridpack(self, context: Dict[str, Any]):
+        if self.content:
+            entries = json.loads(self.content)
+            matched_entry = match_job_parameters(entries, context)
+            if matched_entry:
+                return matched_entry.get('gp')
+        return None
+
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
         super(MCJobOptions, self).save(*args, **kwargs)
@@ -3013,6 +3021,40 @@ class DatasetRecovery(models.Model):
         app_label = 'dev'
         db_table = "T_DATASET_RECOVERY"
 
+class EventPickingUserRequest(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPU_ID', primary_key=True)
+    requestor = models.CharField(max_length=200, db_column='REQUESTOR')
+    input_file = models.TextField(db_column='INPUT_FILE')
+    data_format = models.CharField(max_length=100, db_column='DATA_FORMAT')
+    project_name = models.CharField(max_length=200, db_column='PROJECT_NAME')
+    stream = models.CharField(max_length=200, db_column='STREAM')
+    ami_tag = models.CharField(max_length=200, db_column='AMI_TAG', null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(EventPickingUserRequest, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_EVENT_PICKING_USER_REQUEST"
+
+class EventPickingContent(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPC_ID', primary_key=True)
+    event_picking_request = models.ForeignKey(EventPickingUserRequest, db_column='EPU_ID', on_delete=CASCADE)
+    files_events = models.JSONField(db_column='FILES_EVENTS')
+    dataset_name = models.CharField(max_length=500, db_column='DATASET_NAME')
+
+
+    def save(self, *args, **kwargs):
+        super(EventPickingContent, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_EVENT_PICKING_CONTENT"
 
 class DatasetRecoveryInfo(models.Model):
 

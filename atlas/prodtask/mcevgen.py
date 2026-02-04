@@ -35,6 +35,13 @@ def parse_jo_file(file_path):
                         pass
     return result
 
+
+def file_is_gridpack(dsid_file: str) -> bool:
+    if '.GRID.tar.gz' in dsid_file:
+        return True
+    return False
+
+
 def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
     if len(dsid) <= 6:
         base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:3]}xxx/{dsid}'
@@ -42,7 +49,11 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
         base_dsid_path = f'{base_path}/MCJobOptions/{dsid[:1]}/{dsid[:-3]}xxx/{dsid}'
     dsid_update_values = {}
     content = None
+    grid_packs = []
     for dsid_file in listdir(base_dsid_path):
+        if file_is_gridpack(dsid_file):
+            grid_packs.append(dsid_file.split('.')[0].split('_')[-1])
+            continue
         if dsid_file == YAML_CONFIG_FILENAME:
             yaml_jo_content = load_job_parameters_from_yaml(f'{base_dsid_path}/{dsid_file}')
             if yaml_jo_content and len(yaml_jo_content) > 0:
@@ -63,6 +74,11 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
             dsid_update_values = {'physic_short': dsid_file,
                                     'events_per_job': dsid_jo_content.get('events_per_job', 5000),
                                     'files_per_job': dsid_jo_content.get('files_per_job', 1)}
+    if grid_packs:
+        if not content:
+            content = [{}]
+        for entry in content:
+            entry['gp'] = grid_packs
     if dsid_update_values:
         if MCJobOptions.objects.filter(dsid=int(dsid)).exists():
             new_dsid_jo = MCJobOptions.objects.get(dsid=int(dsid))
