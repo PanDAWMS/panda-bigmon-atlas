@@ -1859,11 +1859,11 @@ def check_job_options(production_requests: List[TRequest]):
                                                   check_name='Too many input files',
                                                   status='Warning',
                                                   message=f'Job option {job_option} has input events {input_events} which gives more than 200000 input files with {events_per_job} events per job and files per job {files_per_job}.'))
-    for job_option, slice, expected_grid_packs in wrong_grid_pack:
+    for job_option, slice, existing_grid_packs in wrong_grid_pack:
         result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
                                                   check_name='Wrong grid pack',
                                                   status='ERROR',
-                                                  message=f'Job option {job_option} does not contain any of the expected grid packs {expected_grid_packs}.'))
+                                                  message=f'Job option {job_option} for energy {slice.request.energy_gev} has no grid packs, available {existing_grid_packs}.'))
     return result_problems
 
 
