@@ -1764,6 +1764,7 @@ def check_job_options(production_requests: List[TRequest]):
     too_many_input_files = []
     wrong_grid_pack = []
     bad_sw_releases = SystemParametersHandler.BadEvgenSoftwareReleases.get_bad_releases()
+    bad_sw_releases_per_campaign = SystemParametersHandler.BadEvgenSoftwareReleasesPerCampaign.get_bad_releases()
     steps = list(StepExecution.objects.filter(request__in=production_requests).order_by('id'))
     first_step_by_slice = {}
     for step in steps:
@@ -1797,6 +1798,11 @@ def check_job_options(production_requests: List[TRequest]):
                                                                       check_name='Bad SW release',
                                                                       status='ERROR',
                                                                       message=f'Job option {job_option} with ctag {ctag} has bad SW release {sw_release}.'))
+                        elif  slice.request.campaign.lower() in bad_sw_releases_per_campaign.get(sw_release, []):
+                            result_problems.append(RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                                                      check_name='Bad SW release',
+                                                                      status='ERROR',
+                                                                        message=f'Job option {job_option} with ctag {ctag} has campaign {slice.request.campaign} which has bad SW releases: {sw_release}.'))
                 if slice.input_events and slice.input_events > 0:
                     if slice.dataset:
                         if 'tid' in slice.dataset:

@@ -1461,6 +1461,7 @@ class SystemParametersHandler:
         ANALYSIS_REQUEST_EMAIL = 'AnalysisRequestEmail'
         BAD_EVGEN_SW_RELEASES = 'BadEvgenSoftwareReleases'
         AVAILABLE_PMG_HASHTAGS = 'AvailablePMGHashtags'
+        BAD_EVGEN_SW_RELEASES_PER_CAMPAIGN = 'BadEvgenSoftwareReleasesPerCampaign'
 
 
     @dataclass
@@ -1478,6 +1479,23 @@ class SystemParametersHandler:
         @staticmethod
         def set_bad_releases(releases: Dict[str, List[str]]):
             SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES,
+                                           {'releases': releases})
+
+    @dataclass
+    class BadEvgenSoftwareReleasesPerCampaign:
+        releases: Dict[str, List[str]] = field(default_factory=dict)
+
+        @staticmethod
+        def bad_release_generators(release: str) -> List[str]:
+            return SystemParametersHandler.BadEvgenSoftwareReleasesPerCampaign.get_bad_releases()[release]
+
+        @staticmethod
+        def get_bad_releases() ->  Dict[str, List[str]]:
+            return SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES_PER_CAMPAIGN).get('releases', {})
+
+        @staticmethod
+        def set_bad_releases(releases: Dict[str, List[str]]):
+            SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.BAD_EVGEN_SW_RELEASES_PER_CAMPAIGN,
                                            {'releases': releases})
 
 
