@@ -1361,6 +1361,15 @@ def check_child_derivation(reqid: int):
 @csrf_protect
 def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=99, do_split=False, render_immediately=False):
     results = {'success':False}
+    lock_key = f'steps_modificaiton_{reqid}'
+    acquire_lock = DistributedLock.acquire_lock(lock_key, 5*60)
+    if not acquire_lock:
+        _jsonLogger.debug('Failed to acquire lock for steps modification', extra=form_json_request_dict(reqid, request))
+
+        results = {'success': False,
+                   'error_approve_message': 'Request is locked by previous command, please try again in a moment'}
+        return HttpResponse(json.dumps(results), content_type='application/json')
+    _jsonLogger.debug('Lock acquire', extra=form_json_request_dict(reqid, request))
     try:
         data = request.body
         slice_steps = json.loads(data)
@@ -1391,7 +1400,7 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
 
         # Check input on missing tags, wrong skipping
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
-        error_approve_message = False
+        error_approve_message = ''
         owner = request.user.username
         no_action_slices = []
         if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
@@ -1502,6 +1511,9 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
     except Exception as e:
         _logger.error("Problem with step modifiaction: %s" % e)
         _jsonLogger.error('Problem with step modifiaction',extra=form_json_request_dict(reqid,request,{'error':str(e)}))
+    finally:
+        DistributedLock.release_lock(lock_key)
+        _jsonLogger.debug('Lock released', extra=form_json_request_dict(reqid, request))
 
     return HttpResponse(json.dumps(results), content_type='application/json')
 
@@ -1510,7 +1522,19 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
 @ProdSysTask.set_task_name('Save slices')
 def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser, reqid, approve_level, waiting_level=99, do_split=False):
     results = {'success':False, 'async_name':'save_slices'}
+    lock_key = f'steps_modificaiton_{reqid}'
+    acquire_lock = DistributedLock.acquire_lock(lock_key, 5*60)
+    if not acquire_lock:
+        DistributedLock.wait_lock(lock_key, 10 * 60)
+        if not DistributedLock.acquire_lock(lock_key):
 
+            results = {'success':False, 'missing_tags': [],
+                       'slices': [],
+                       'wrong_slices': [],
+                       'double_trf': [], 'error_slices': [],
+                       'no_action_slices': [],
+                        'fail_slice_save': 'Request is locked by previous command','error_approve_message': 'Request is locked by previous command', 'async_name':'save_slices'}
+            return json.dumps(results)
     try:
 
         start_time = time()
@@ -1646,6 +1670,8 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
         self.progress_message_update(len(slices)+2,len(slices)+2)
     except Exception as e:
         _jsonLogger.error('Problem with step modifiaction',extra=form_json_request_dict(reqid,None,{'user':user_name,'error':str(e)}))
+    finally:
+        DistributedLock.release_lock(lock_key)
     return json.dumps(results)
 
 def find_skipped_dataset(DSID,job_option,tags,data_type):

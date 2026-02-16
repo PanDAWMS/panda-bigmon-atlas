@@ -520,6 +520,7 @@ function saveChangesAsync(sendData){
                     success: function(data,status) {
                         $( "#waitingDialog" ).dialog('close');
                         if(status){
+                            $("#approveDialog").html('');
                             var missedList = $.evalJSON(data).missing_tags;
                             var errorSlices =  $.evalJSON(data).error_slices;
                             var notChangedSlices = $.evalJSON(data).no_action_slices;
@@ -529,6 +530,7 @@ function saveChangesAsync(sendData){
                             var newStatus = $.evalJSON(data).new_status;
                             var removeDataset =  $.evalJSON(data).removed_input;
                             var approveProblem = $.evalJSON(data).error_approve_message;
+                            var return_status = $.evalJSON(data).status;
                             if (missedList == undefined){
                                 missedList = [];
                             }
@@ -552,7 +554,10 @@ function saveChangesAsync(sendData){
                                 removeDataset = [];
                             }
                             var additionalComment = '';
-                            if (approveProblem){
+                            if(!return_status){
+                                additionalComment = approveProblem;
+                            }
+                            if (approveProblem && return_status){
                            {% if trequest.request_type == "MC" %}
                                 additionalComment = '\n You should be request manager to approve it.';
 
@@ -619,7 +624,7 @@ function saveChangesAsync(sendData){
 
 
                                     } else {
-                                        $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: " + slices.toString()));
+                                        $("#approveDialog").append($('<p/>').html("Sucessfully saved slices: " + slices.toString() + additionalComment));
                                         $("#approveDialog").attr("title", "Steps saved");
                                     }
 
