@@ -3857,6 +3857,16 @@ class TaskDefinition(object):
                     )
                 elif re.match('^(--)?filterFile$', name, re.IGNORECASE):
                     param_value = self._get_parameter_value(name, ctag)
+                    if project_mode.eventPicking:
+                        filter_filename = ''
+                        dataset_name = ''
+                        param_dict = {'name': name, 'dataset': dataset_name, 'ratio': 1,  'files': [{'lfn': filter_filename}]}
+
+                        param_dict.update(trf_options)
+                        job_parameters.append(
+                            self.protocol.render_param(TaskParamName.FILTER_FILE, param_dict)
+                        )
+                        continue
                     if not param_value or str(param_value).lower() == 'none':
                         continue
                     dataset = param_value
@@ -4458,7 +4468,8 @@ class TaskDefinition(object):
 
             if project_mode.intermediateTask is not None:
                 task_proto_dict.update({'intermediate_task': project_mode.intermediateTask})
-
+            if project_mode.eventPicking:
+                project_mode.FLD = ''
             if project_mode.esMerging is not None:
                 if project_mode.esMerging and not project_mode.onSiteMerging:
                     es_merging_tag_name = ctag_name
@@ -5544,6 +5555,8 @@ class TaskDefinition(object):
 
         nfiles_requested = math.ceil(int(step.input_events) * nfiles_per_job / nevents_per_job)
         nfiles = 0
+        if project_mode.commonOffset:
+             nfiles_used = int(project_mode.commonOffset)
         files_used_count = nfiles_used
         files_requested_count = nfiles_requested
 

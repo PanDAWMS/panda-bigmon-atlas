@@ -654,5 +654,9 @@
   "uniquePtMinbias": {
     "type": "bool",
     "description": ""
+  },
+  "eventPicking": {
+    "type": "bool",
+    "description": ""
   }
 }
