@@ -426,12 +426,12 @@ def finish_dataset_recovery(dataset_recovery_id: int):
         acc_original_format = acc_dataset_recovery.original_dataset.split('.')[-2]
         acc_recreated_dataset = [output for output in outputs if output.split('.')[-2] == acc_original_format][0]
         for container in acc_dataset_recovery_info.info_obj.containers:
+            containers_to_check.append(container.replace('/', ''))
+            containers_to_check.append(f"{container.replace('/', '')}/")
             try:
                 if acc_dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
                     ddm.delete_datasets_from_container(container, [acc_dataset_recovery.original_dataset])
                 ddm.register_datasets_in_container(container, [acc_recreated_dataset])
-                containers_to_check.append(container.replace('/',''))
-                containers_to_check.append(f"{container.replace('/','')}/")
             except Exception as e:
                 pass
             pass
