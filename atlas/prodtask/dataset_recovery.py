@@ -2,7 +2,7 @@ import gzip
 import logging
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from atlas.dkb.views import es_by_keys_nested
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, StepExecution, InputRequestList, ParentToChildRequest, TRequest, \
@@ -88,9 +88,11 @@ class TaskDatasetRecover:
 
 ACTIVE_TASKS_TO_RECOVER_HASHTAG = 'DATASET_RECOVERY_ACTIVE'
 
-def set_active_tasks_hashtag(dataset_name: str, hashtag: str = ACTIVE_TASKS_TO_RECOVER_HASHTAG):
+def set_active_tasks_hashtag(dataset_name: str, container_names: List[str], hashtag: str = ACTIVE_TASKS_TO_RECOVER_HASHTAG):
     try:
         tasks = get_tasks_by_dataset(dataset_name)
+        for container in container_names:
+            tasks += get_tasks_by_dataset(container)
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.status not in ProductionTask.NOT_RUNNING:
@@ -407,6 +409,7 @@ def finish_dataset_recovery(dataset_recovery_id: int):
     task = dataset_recovery.recovery_task
     outputs = list(task.output_non_log_datasets())
     outputs_to_delete = []
+    containers_to_check = []
     original_format = dataset_recovery.original_dataset.split('.')[-2]
     recreated_dataset = [output for output in outputs if output.split('.')[-2] == original_format][0]
     outputs_to_delete.append(dataset_recovery.original_dataset)
@@ -427,6 +430,8 @@ def finish_dataset_recovery(dataset_recovery_id: int):
                 if acc_dataset_recovery.original_dataset in ddm.with_and_without_scope(list(ddm.dataset_in_container(container))):
                     ddm.delete_datasets_from_container(container, [acc_dataset_recovery.original_dataset])
                 ddm.register_datasets_in_container(container, [acc_recreated_dataset])
+                containers_to_check.append(container.replace('/',''))
+                containers_to_check.append(f"{container.replace('/','')}/")
             except Exception as e:
                 pass
             pass
@@ -447,7 +452,7 @@ def finish_dataset_recovery(dataset_recovery_id: int):
         pass
 
     dataset_recovery.status = DatasetRecovery.STATUS.DONE
-    set_active_tasks_hashtag(dataset_recovery.original_dataset)
+    set_active_tasks_hashtag(dataset_recovery.original_dataset, containers_to_check)
     dataset_recovery.save()
 
 
