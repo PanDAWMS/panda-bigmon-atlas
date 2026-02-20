@@ -96,7 +96,8 @@ def set_active_tasks_hashtag(dataset_name: str, container_names: List[str], hash
         for task_id in tasks:
             task = ProductionTask.objects.get(id=task_id)
             if task.status not in ProductionTask.NOT_RUNNING:
-                task.set_hashtag(hashtag)
+                if hashtag not in [x.hashtag for x in task.hashtags]:
+                    task.set_hashtag(hashtag)
     except Exception as e:
         _jsonLogger.error('Error setting hashtag for active tasks',
                           extra={'dataset': dataset_name, 'error': str(e)})
@@ -407,6 +408,8 @@ def finish_dataset_recovery(dataset_recovery_id: int):
     dataset_recovery_info = DatasetRecoveryInfo.objects.get(dataset_recovery=dataset_recovery)
     ddm = DDM()
     task = dataset_recovery.recovery_task
+    if task.status not in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+        raise Exception(f'Recovery task {task.id} is not done')
     outputs = list(task.output_non_log_datasets())
     outputs_to_delete = []
     containers_to_check = []
