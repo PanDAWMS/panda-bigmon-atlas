@@ -1322,6 +1322,8 @@ def submit_child_derivation_request(original_request_id: int) -> int:
                 _set_request_hashtag(new_request.reqid, 'PHYSAutoProduction')
             else:
                 new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
+                new_request.project = mc_request.project
+                new_request.save()
                 parent_steps = filter_steps_for_derivation(parent_steps, new_request, full_sim_only)
             if parent_steps:
                 create_steps_in_child_pattern(new_request, parent_steps,
