@@ -1323,6 +1323,8 @@ def submit_child_derivation_request(original_request_id: int) -> int:
             else:
                 new_request = ParentToChildRequest.objects.get(parent_request=mc_request, relation_type='DP').child_request
                 new_request.project = mc_request.project
+                new_request.campaign = mc_request.campaign
+                new_request.subcampaign = mc_request.subcampaign
                 new_request.save()
                 parent_steps = filter_steps_for_derivation(parent_steps, new_request, full_sim_only)
             if parent_steps:
