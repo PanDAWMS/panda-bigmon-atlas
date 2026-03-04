@@ -255,7 +255,7 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
 
 
 
-@app.task(ignore_result=True, time_limit=3600*3, queue='test')
+@app.task(ignore_result=True, time_limit=3600*3)
 def process_ep_request(ep_request_id: int, submit: bool = False):
     ep_request = EventPickingUserRequest.objects.get(id=ep_request_id)
     events_by_run = defaultdict(list)
@@ -341,7 +341,7 @@ def process_ep_request(ep_request_id: int, submit: bool = False):
     if submit:
         map(create_ep_production_request, request_to_process)
 
-@app.task(ignore_result=True, queue='test')
+@app.task(ignore_result=True)
 def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_submit: bool = False):
     ep_processing = EventPickingProcessing.objects.get(id=ep_processing_id)
     ep_processing.status = EventPickingProcessing.STATUS.RUNNING
