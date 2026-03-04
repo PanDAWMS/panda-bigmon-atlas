@@ -193,6 +193,9 @@ def create_or_update_ep_request(request):
         rucio_file_name = f'group.proj-evind.{ep_request.id:08d}.{stream}.{version}.txt'
         ep_request.input_file = {'version': version, 'content': list(set(new_content)), 'rucio':rucio_file_name, 'merge':merge}
         ep_request.save()
+        for  ep_processing in EventPickingProcessing.objects.filter(ep_request=ep_request):
+            ep_processing.status = EventPickingProcessing.STATUS.GUID_SEARCH
+            ep_processing.save()
         upload_ep_file_to_rucio.delay(int(ep_request.id))
         process_ep_request.delay(int(ep_request.id), submit)
         return Response(f"{jira.split('/')[-1]}", status=status.HTTP_200_OK)
