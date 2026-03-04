@@ -362,6 +362,8 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
                                                   ep_request.jira, [], ep_processing.project, False)
         ep_processing.production_request = TRequest.objects.get(reqid=production_request)
         production_request = ep_processing.production_request
+        production_request.campaign = ep_processing.project
+        production_request.save()
         ep_processing.save()
     lock_key = f"ep_productionrequest_{ep_processing.production_request.reqid}"
     if not DistributedLock.wait_and_acquire_lock(lock_key, 600, 1000):
