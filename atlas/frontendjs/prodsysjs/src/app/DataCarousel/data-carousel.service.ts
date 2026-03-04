@@ -48,7 +48,15 @@ export interface StagingRuleResponse {
 export interface DatasetInfoResponse {
   dataset_exists: boolean;
   dataset_knowledge: DatasetExistsResponse|DatasetDeletedResponse;
+  recreated_dataset?: RecreatedDatasetInfo;
 }
+
+export interface RecreatedDatasetInfo {
+    dataset?: string;
+    status: string;
+    task_id?: number;
+}
+
 export interface DatasetExistsResponse {
   dataset: DatasetInfo;
   replicas: RucioReplica[];

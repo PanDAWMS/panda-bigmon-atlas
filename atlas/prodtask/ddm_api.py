@@ -412,7 +412,6 @@ class DDM(object):
         :return:
             list of datasets/containers names
         """
-        _logger.debug('Search dataset with pattern: %s' % pattern)
         scope, name = self.rucio_convention(pattern)
         output_datasets = list(self.__ddm.list_dids(scope=scope,filters={'name':name},long=long))
         return output_datasets
@@ -884,7 +883,7 @@ class DDM(object):
             first_letter = token[0]
         return '_'.join(new_postfix)
 
-    def get_did_by_guid(self, guid: str) -> [str]:
+    def get_did_by_guid(self, guid: str) -> list[dict]:
         return list(self.__ddm.get_dataset_by_guid(guid))
 
     def get_sample_container_name(self, dataset_name: str) -> str:

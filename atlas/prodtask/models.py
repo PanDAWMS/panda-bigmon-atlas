@@ -1462,7 +1462,22 @@ class SystemParametersHandler:
         BAD_EVGEN_SW_RELEASES = 'BadEvgenSoftwareReleases'
         AVAILABLE_PMG_HASHTAGS = 'AvailablePMGHashtags'
         BAD_EVGEN_SW_RELEASES_PER_CAMPAIGN = 'BadEvgenSoftwareReleasesPerCampaign'
+        EPCONFIG = 'EPConfiguration'
 
+    @dataclass
+    class EPConfig:
+        hbase_url: str
+        default_source_dataset: str
+        pattern_request: int
+
+    @staticmethod
+    def get_ep_config() -> EPConfig:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.EPCONFIG)
+        return SystemParametersHandler.EPConfig(**values)
+
+    @staticmethod
+    def set_ep_config(config: EPConfig) -> None:
+        return SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.EPCONFIG, asdict(config))
 
     @dataclass
     class BadEvgenSoftwareReleases:
@@ -3043,13 +3058,26 @@ class EventPickingUserRequest(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPU_ID', primary_key=True)
     requestor = models.CharField(max_length=200, db_column='REQUESTOR')
-    input_file = models.TextField(db_column='INPUT_FILE')
+    input_file = models.JSONField(db_column='INPUT_FILE')
     data_format = models.CharField(max_length=100, db_column='DATA_FORMAT')
-    project_name = models.CharField(max_length=200, db_column='PROJECT_NAME')
     stream = models.CharField(max_length=200, db_column='STREAM')
     ami_tag = models.CharField(max_length=200, db_column='AMI_TAG', null=True)
+    description = models.CharField(max_length=4000, db_column='DESCRIPTION', null=True)
+    jira = models.CharField(max_length=200, db_column='JIRA', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
 
+    @property
+    def run_events(self) -> list[tuple[int,int]]:
+        if 'content' in self.input_file:
+            result = []
+            for line in self.input_file['content']:
+                result.append((line[0],line[1]))
+            return result
+        return []
+
+    @property
+    def do_merge(self) -> bool:
+        return self.input_file.get('merge', False)
 
     def save(self, *args, **kwargs):
         self.timestamp = timezone.now()
@@ -3059,12 +3087,66 @@ class EventPickingUserRequest(models.Model):
         app_label = 'dev'
         db_table = "T_EVENT_PICKING_USER_REQUEST"
 
+
+
+class RunDefaultProject(models.Model):
+    run_number = models.DecimalField(primary_key=True, db_column='RUN_NUMBER')
+    project = models.CharField(max_length=200, db_column='PROJECT')
+
+
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_RUN_DEFAULT_PROJECT"
+
+
+class EventPickingProcessing(models.Model):
+
+    class STATUS:
+        GUID_SEARCH = 'guid_search'
+        ERROR = 'error'
+        RUNNING = 'running'
+        PICKED = 'picked'
+        PREPARING = 'preparing'
+        FINISHED = 'finished'
+        DONE = 'done'
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPP_ID', primary_key=True)
+    ep_request = models.ForeignKey(EventPickingUserRequest, db_column='EPU_ID', on_delete=CASCADE)
+    project = models.CharField(max_length=200, db_column='PROJECT')
+    production_request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE, null=True)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+    logs = models.TextField(db_column='LOGS')
+    status = models.CharField(max_length=12, db_column='STATUS')
+    stats = models.JSONField(db_column='STATS')
+
+    @property
+    def rucio_file(self) -> Optional[str]:
+        if self.ep_request.input_file is not None:
+            if 'rucio' in self.ep_request.input_file:
+                return self.ep_request.input_file['rucio']
+        return None
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(EventPickingProcessing, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_EVENT_PICKING_PROCESSING"
+
 class EventPickingContent(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPC_ID', primary_key=True)
-    event_picking_request = models.ForeignKey(EventPickingUserRequest, db_column='EPU_ID', on_delete=CASCADE)
+    ep_request = models.ForeignKey(EventPickingProcessing, db_column='EPU_ID', on_delete=CASCADE)
     files_events = models.JSONField(db_column='FILES_EVENTS')
-    dataset_name = models.CharField(max_length=500, db_column='DATASET_NAME')
+    dataset_base = models.CharField(max_length=500, db_column='DATASET_NAME')
+
+    @property
+    def file_list(self) -> list[str]:
+        if self.files_events is not None:
+            return list(self.files_events.keys())
+        return []
 
 
     def save(self, *args, **kwargs):

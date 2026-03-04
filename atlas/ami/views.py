@@ -11,6 +11,8 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 
+from atlas.prodtask.ddm_api import DDM
+from atlas.prodtask.models import RunDefaultProject, TProject
 from atlas.settings import OIDC_LOGIN_URL
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -42,6 +44,34 @@ def amitag(request, amitag):
 
     return render(request, 'ami/ami_tag.html', request_parameters)
 
+
+def get_project_by_run(run: int) -> str:
+    if RunDefaultProject.objects.filter(run_number=run).exists():
+        return RunDefaultProject.objects.get(run_number=run).project
+    if run > 400_000:
+        possible_projects = TProject.objects.filter(project__startswith='data2').order_by('-project').values_list('project', flat=True)
+    else:
+        possible_projects = TProject.objects.filter(project__startswith='data1').order_by('-project').values_list('project', flat=True)
+    ddm = DDM()
+    project = None
+    chosen_projects = []
+    for current_project in possible_projects:
+        if ddm.find_dataset(f"{current_project}.{run:08d}.%RAW"):
+            chosen_projects.append(current_project)
+    if not chosen_projects:
+        raise Exception(f"Project not found for run {run}")
+    if len(chosen_projects) == 1:
+        project = chosen_projects[0]
+    if len(chosen_projects) > 1:
+        for p in chosen_projects:
+            if 'calib' not in p and 'comm' not in p:
+                project = p
+                break
+    if not project:
+        raise Exception(f"Project not found for run {run}")
+    run_project = RunDefaultProject(run_number=run, project=project)
+    run_project.save()
+    return project
 
 
 def sw_by_amitag(ami, amitag):

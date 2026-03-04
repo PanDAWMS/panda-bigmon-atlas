@@ -10,6 +10,7 @@ from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_
     extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
 from atlas.prestage.views import data_carousel_config
 from atlas.prodtask_api.views import *
+from atlas.production_request.eventpicking import create_or_update_ep_request, ep_requests
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
     pattern_slices_derivation_request, mc_subcampaign_stats, production_request_outputs, pileup_task_provenance, \
     dataset_info, get_stuck_files, did_type
@@ -107,6 +108,9 @@ urlpatterns = [
             name='simple_dkb_search'),
     re_path(r'^dkb_events_per_campaign/$', dkb_events_per_campaign,
             name='dkb_events_per_campaign'),
-
+    re_path(r'^create_ep_request/$', create_or_update_ep_request,
+            name='create_or_update_ep_request'),
+    re_path(r'^ep_requests/$', ep_requests,
+            name='ep_requests'),
 
 ]

@@ -1,0 +1,206 @@
+@if(isLoading() && !epProgress()){
+    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+@if(errorMessage()){
+    <div class="alert alert-danger" role="alert">
+        {{errorMessage()}}
+    </div>
+}
+@if(epProgress()){
+  @if(epIsProgressing()){
+    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Processing...</span>
+
+        </div>
+      <mat-spinner></mat-spinner>
+    </div>
+  }
+    <div class="p-4">
+  <!-- Requests Section -->
+  @if (epProgress()?.requests && epProgress()!.requests.length > 0) {
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4">Event Picking request summary</h2>
+      <div class="overflow-x-auto border border-gray-300 rounded-lg">
+        <table class="w-full border-collapse">
+          <!-- JIRA Header Row -->
+          <thead>
+            <tr class="bg-blue-100">
+              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">JIRA</th>
+              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Description</th>
+              <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Stream</th>
+              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Unique Runs</th>
+              <th class="border border-gray-300 px-4 py-2 text-right font-semibold">Unique Events</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of epProgress()!.requests; track request.stream; let first = $first) {
+              <tr [class]="first ? 'bg-white' : 'bg-gray-50'">
+                @if (first) {
+                  <td class="border border-gray-300 px-4 py-2 rowspan-full">
+                    <a [href]="request.jira" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                      {{ request.jira.split('/').pop() }}
+                    </a>
+                  </td>
+                } @else {
+                  <td class="border border-gray-300 px-4 py-2"></td>
+                }
+                @if (first) {
+                  <td class="border border-gray-300 px-4 py-2 rowspan-full">
+                    {{ request.description }}
+                  </td>
+                } @else {
+                  <td class="border border-gray-300 px-4 py-2"></td>
+                }
+                <td class="border border-gray-300 px-4 py-2">{{ request.stream }}</td>
+                <td class="border border-gray-300 px-4 py-2 text-right">{{ request.unique_files }}</td>
+                <td class="border border-gray-300 px-4 py-2 text-right">{{ request.unique_events }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+            <!-- Request Action Buttons -->
+      <div class="mt-4 flex gap-3">
+        <button type="button"  [routerLink]="['/create-event-picking', {jira:jira()}]" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold" >
+          Update
+        </button>
+        <button type="button" [disabled]="!readyToSubmit()" (click)="submitEPRequests()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold">
+          Submit
+        </button>
+      </div>
+      @if(submitStatus()) {
+        <div class="mt-4 p-3 border border-green-300 rounded bg-green-50 text-green-700">
+          {{ submitStatus() }}
+        </div>
+      }
+      @if(tasks.length !== 0) {
+              <h2 class="text-2xl font-bold mb-4">Tasks</h2>
+
+          <app-production-task-table [tasks]="tasks"  [showOwner]="true" >
+        </app-production-task-table>
+      }
+    </div>
+  }
+
+  <!-- Productions Section -->
+  @if (epProgress()?.productions && epProgress()!.productions.length > 0) {
+    <div>
+      <h2 class="text-2xl font-bold mb-4">Productions:</h2>
+      <div class="grid gap-6">
+        @for (production of epProgress()!.productions; track production.stream + production.project) {
+          <div class="border border-gray-300 rounded-lg overflow-hidden">
+            <!-- Production Header -->
+            <div [class]="'px-4 py-3 font-semibold text-white ' + getStatusColor(production.status)">
+              <span class="text-lg">{{ production.stream }} - {{ production.project }}</span>
+              <span class="ml-4 text-sm">(Status: {{ production.status }})</span>
+            </div>
+
+            <!-- Production Content -->
+
+            <div class="p-4">
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-gray-50 p-3 rounded">
+                  <div class="text-sm text-gray-600">Stream</div>
+                  <div class="text-lg font-semibold">{{ production.stream }}</div>
+                </div>
+                <div class="bg-gray-50 p-3 rounded">
+                  <div class="text-sm text-gray-600">Project</div>
+                  <div class="text-lg font-semibold">{{ production.project }}</div>
+                </div>
+              </div>
+              @if (production.production_request_id) {
+                <div class="mb-4">
+                  <div class="bg-blue-50 p-3 rounded border border-blue-300">
+                    <div class="text-sm text-gray-600">Production Request ID</div>
+                    <div class="text-lg font-semibold text-blue-700"><a href="/prodtask/inputlist_with_request/{{production.production_request_id}}">{{ production.production_request_id }}</a></div>
+                  </div>
+                </div>
+              }
+              <!-- Stats Table -->
+              @if (production.stats?.picked) {
+                                  <h4 class="text-l font-bold mb-4">Input:</h4>
+                <div class="overflow-x-auto border border-gray-300 rounded">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Runs</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Files</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Events</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="bg-white hover:bg-gray-50">
+                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.runs }}</td>
+                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.files }}</td>
+                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.events }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              }
+                            @if (production.stats?.produced) {
+                                  <h4 class="text-l font-bold mb-4">Produced:</h4>
+                <div class="overflow-x-auto border border-gray-300 rounded">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Runs</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left font-semibold">Events</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="bg-white hover:bg-gray-50">
+                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.produced.runs }}</td>
+                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.produced.events }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              <!-- Logs Link -->
+              @if (production.logs) {
+                <div class="mb-4">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Logs</label>
+                  <textarea
+                    class="w-full h-48 p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 font-mono text-xs overflow-auto"
+                    readonly
+                    [value]="production.logs">
+                  </textarea>
+                </div>
+              }
+
+              <!-- Error Action Buttons -->
+              @if (production.status === 'error') {
+                <div class="mt-4 flex gap-3">
+                  <button type="button" (click)="deleteEPProgress(production.id)" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold">
+                    Delete
+                  </button>
+                  <button type="button" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 font-semibold">
+                    Retry
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- No Data Message -->
+  @if (!epProgress() || (!epProgress()!.requests && !epProgress()!.productions)) {
+    <div class="text-center py-8 text-gray-500">
+      No data available
+    </div>
+  }
+</div>
+}
+
+

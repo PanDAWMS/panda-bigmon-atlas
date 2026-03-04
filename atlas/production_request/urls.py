@@ -1,4 +1,7 @@
 from django.urls import re_path
+
+from atlas.production_request.eventpicking import ep_request_stats, submit_ep_request, delete_ep_progress, \
+    get_ep_request
 from atlas.production_request.views import *
 
 app_name='production_request'
@@ -34,6 +37,14 @@ urlpatterns = [
             name='pmg_request_verification'),
     re_path(r'^pmg_approve/$', pmg_approve,
             name='pmg_approve'),
+    re_path(r'^ep_request_stats/$', ep_request_stats,
+            name='ep_request_stats'),
+    re_path(r'^submit_ep_request/$', submit_ep_request,
+            name='submit_ep_request'),
+    re_path(r'^delete_ep_progress/$', delete_ep_progress,
+            name='delete_ep_progress'),
+    re_path(r'^get_ep_request/$', get_ep_request,
+            name='get_ep_request'),
 
 
 ]

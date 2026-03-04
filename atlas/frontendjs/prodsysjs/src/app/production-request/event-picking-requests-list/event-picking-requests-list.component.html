@@ -1,0 +1,24 @@
+<button class="btn btn-primary mb-3" [routerLink]="['/create-event-picking']">Create</button>
+<h5>Event picking request list</h5>
+@if(loading()){
+    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+@if(error()){
+    <div class="alert alert-danger" role="alert">
+        {{error()}}
+    </div>
+}
+<div  style="width: 100%; height: 400px;">
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      [rowData]="epRequests"
+      [columnDefs]="epRequestsColumns"
+            [rowHeight]="30"
+      [domLayout]="'autoHeight'"
+
+    ></ag-grid-angular>
+  </div>

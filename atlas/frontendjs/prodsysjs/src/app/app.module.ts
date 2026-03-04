@@ -140,6 +140,13 @@ import {StagingManagementComponent} from "./DataCarousel/staging-management/stag
 import {DatatsetDetailsComponent} from "./datatset-details/datatset-details.component";
 import {PMGApprovalComponent} from "./production-request/pmgapproval/pmgapproval.component";
 import {LostFilesRecoveryComponent} from "./lost-files-recovery/lost-files-recovery.component";
+import {
+  EventPickingRequestCreationComponent
+} from "./production-request/event-picking-request-creation/event-picking-request-creation.component";
+import {EventPickingRequestComponent} from "./production-request/event-picking-request/event-picking-request.component";
+import {
+  EventPickingRequestsListComponent
+} from "./production-request/event-picking-requests-list/event-picking-requests-list.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -248,8 +255,14 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
       {path: 'dataset/:did', component: DatatsetDetailsComponent},
   {path: 'files-recovery/:dataset', component: LostFilesRecoveryComponent},
     {path: 'files-recovery', component: LostFilesRecoveryComponent},
+      {path: 'create-event-picking', component: EventPickingRequestCreationComponent},
+
+
 
         {path: 'pmg/:jira', component: PMGApprovalComponent},
+        {path: 'event-picking-request/:jira', component: EventPickingRequestComponent},
+   {path: 'event-picking', component: EventPickingRequestsListComponent},
+
 
 
 

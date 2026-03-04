@@ -27,7 +27,8 @@ from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, St
                                    HashTagToRequest, OpenEndedRequest, StepAction, GlobalShare, SliceError,
                                    TaskTemplate,
                                    TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock,
-                                   DSIDHashtags, PostProductionActions, DatasetRecovery)
+                                   DSIDHashtags, PostProductionActions, DatasetRecovery, EventPickingUserRequest,
+                                   EventPickingProcessing, EventPickingContent, SystemParametersHandler)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
 from .taskreg import TaskRegistration
@@ -247,6 +248,8 @@ def is_optimal_first_event(step: StepExecution) -> bool:
                                                int(step.request.campaign.replace('MC', '')) >= 21):
         return True
     return False
+
+
 
 
 class TaskDefinition(object):
@@ -3040,6 +3043,12 @@ class TaskDefinition(object):
                     if re.match('^(--)?formats', key, re.IGNORECASE):
                         ctag[key] = ' '.join(reduction_conf)
                         break
+            #eventpicking
+            event_picking_params = {}
+            if trf_name.lower() == 'RAWSkim_tf.py'.lower():
+                event_picking_params = self.find_event_pciking_input(step, input_data_name)
+                change_output_type_dict['DRAW_EVTPICK'] = 'RAW'
+
 
             # proto_fix
             if trf_name.lower() == 'HLTHistMerge_tf.py'.lower():
@@ -3857,9 +3866,9 @@ class TaskDefinition(object):
                     )
                 elif re.match('^(--)?filterFile$', name, re.IGNORECASE):
                     param_value = self._get_parameter_value(name, ctag)
-                    if project_mode.eventPicking:
-                        filter_filename = ''
-                        dataset_name = ''
+                    if event_picking_params:
+                        filter_filename = event_picking_params['filter_file']
+                        dataset_name = SystemParametersHandler.get_ep_config().default_source_dataset
                         param_dict = {'name': name, 'dataset': dataset_name, 'ratio': 1,  'files': [{'lfn': filter_filename}]}
 
                         param_dict.update(trf_options)
@@ -4316,7 +4325,7 @@ class TaskDefinition(object):
             if step.request.request_type.lower() == 'EVENTINDEX'.lower():
                 task_proto_dict.update(({'ip_connectivity': "'full'"}))
 
-            if mc_pileup_overlay['is_overlay']:
+            if mc_pileup_overlay['is_overlay'] or event_picking_params:
                 task_proto_dict.update({'task_broker_on_master': True})
 
             if project_mode.ipConnectivity is not None:
@@ -4468,8 +4477,6 @@ class TaskDefinition(object):
 
             if project_mode.intermediateTask is not None:
                 task_proto_dict.update({'intermediate_task': project_mode.intermediateTask})
-            if project_mode.eventPicking:
-                project_mode.FLD = ''
             if project_mode.esMerging is not None:
                 if project_mode.esMerging and not project_mode.onSiteMerging:
                     es_merging_tag_name = ctag_name
@@ -4828,11 +4835,13 @@ class TaskDefinition(object):
                     split_by_datasets = project_mode.randomMCOverlay == 'single'
                     for mc_pileup_overlay_dataset in mc_pileup_overlay['datasets']:
                         self._register_mc_overlay_dataset(mc_pileup_overlay_dataset, self._get_total_number_of_jobs(task, number_of_events), task_id, task, split_by_datasets)
-                if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput or selected_files_list_dataset is not None:
+                if project_mode.GRL or project_mode.FLD or project_mode.repeatDoneTaskInput or selected_files_list_dataset is not None or event_picking_params:
                     primary_input = self._get_primary_input(task['jobParameters'])
                     primary_input_dataset = primary_input['dataset']
                     filtered_files = []
                     whole_dataset = False
+                    if event_picking_params:
+                        filtered_files, whole_dataset = event_picking_params['files'], len(event_picking_params['files']) == self.rucio_client.dataset_info(primary_input_dataset).length
                     if project_mode.GRL:
                         grl_file = self._find_grl_xml_file(input_data_name.split(':')[0].split('.')[0], project_mode.GRL)
                         grl_range = self._get_GRL_from_xml(grl_file)
@@ -6048,4 +6057,14 @@ class TaskDefinition(object):
         if 'amcpy' in input_data_name.lower() or input_data_name.lower().startswith('mg'):
             return True
         return False
+
+    def find_event_pciking_input(self, step: StepExecution, input_dataset):
+        input_dataset = input_dataset.split(':')[-1]
+        stream = input_dataset.split('.')[2]
+        run = int(input_dataset.split('.')[1])
+        project = input_dataset.split('.')[0]
+        dataset_base =  f'{project}.{int(run)}.{stream}'
+        event_picking_processing = EventPickingProcessing.objects.get(production_request=step.request)
+        event_picking_content = EventPickingContent.objects.get(ep_request=event_picking_processing, dataset_base=dataset_base)
+        return {'filter_file': event_picking_processing.rucio_file, 'files': [{'scope':project,'name':name} for name in event_picking_content.file_list]}
 

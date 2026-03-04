@@ -1,0 +1,80 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate >
+  <!-- Hint Section -->
+  <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <div class="flex items-start">
+      <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+      </svg>
+      <div class="text-sm text-blue-800">
+        <p class="font-semibold mb-1">How to use:</p>
+        <p>Upload a file or files with run numbers and event numbers separated by space one per line. The project (like data16_13TeV) will be automatically filled by the system based on the run number and stream.</p>
+      </div>
+    </div>
+  </div>
+  <div class="w-full flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+
+
+    <div class="md:basis-1/3 md:flex-1">
+       <label class="md:basis-1/3 md:shrink-0" for="input_file">{{inputFileText()}}</label>
+      <input
+        class="w-full"
+        id="input_file"
+        type="file"
+        (change)="onInputFileChange($event)"
+        required
+      />
+    </div>
+
+    <div class="text-sm text-gray-600 md:basis-1/3 md:flex-1">
+      Runs: {{runsAndEvents()?.runs}} Events: {{runsAndEvents()?.events}}
+    </div>
+        <div class="text-sm text-gray-600 md:basis-1/3 md:flex-1">
+        <button type="button" (click)="cleanFileContent()">Clear</button>
+    </div>
+  </div>
+
+
+
+
+
+  <mat-form-field style="width: 100%">
+    <mat-label >Stream</mat-label>
+    <mat-select formControlName="stream" required>
+                @for (stream of DATASETS_NOMENCLATURE.STREAMS; track stream){
+                                    <mat-option [value]="stream">{{stream}}</mat-option>
+                }
+              </mat-select>
+  </mat-form-field>
+    <mat-form-field style="width: 100%">
+    <mat-label >Data format</mat-label>
+    <input matInput id="stream" type="text" formControlName="data_format" [disabled]="true" />
+    </mat-form-field>
+    <mat-form-field style="width: 100%">
+    <mat-label >JIRA</mat-label>
+    <input matInput id="jira" type="text" formControlName="JIRA"  />
+    </mat-form-field>
+
+  <mat-form-field style="width: 100%">
+    <mat-label>Description</mat-label>
+    <textarea matInput id="description" rows="4" formControlName="description"></textarea>
+  </mat-form-field>
+<mat-form-field>
+   <mat-label>Merge</mat-label>
+    <mat-select formControlName="merge" required>
+      <mat-option [value]="true">Yes</mat-option>
+      <mat-option [value]="false">No</mat-option>
+    </mat-select>
+</mat-form-field>
+  <mat-form-field>
+   <mat-label>Submit</mat-label>
+    <mat-select formControlName="submit" required>
+      <mat-option [value]="true">Yes</mat-option>
+      <mat-option [value]="false">No</mat-option>
+    </mat-select>
+</mat-form-field>
+  <button type="submit" [disabled]="!canSubmit()" (click)="submit()">
+    @if (submitting()) { Submitting\.\.\. } @else { Submit }
+  </button>
+</form>
+
+{{errorMessage}}

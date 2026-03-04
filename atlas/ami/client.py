@@ -427,6 +427,10 @@ class AMIClient(object):
         return self._post_command('DatasetWBAddHashtag', None, ldn=dataset, name=hashtag, pattern=pattern,
                                   scope=scope, comment=comment)
 
+    def get_run_projects(self, run_number: str) -> str:
+        return self._post_command('GetDataPeriodsForRun', None, runNumber=run_number)[0]['project']
+
+
     def check_trf_params_in_ami_tag(self, tag_name, trf_params):
         ami_tag_params = []
         try:
