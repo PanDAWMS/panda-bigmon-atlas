@@ -49,16 +49,16 @@ export class EventPickingRequestCreationComponent implements OnInit {
   inputFileText = computed(() => this.fileContent() ?  'Upload another' : 'Upload file' );
   errorMessage: string | null = null;
   readonly form = this.fb.nonNullable.group({
-    JIRA: this.fb.control<string | null>('', [Validators.maxLength(200)]),
-    stream: this.fb.control<string | null>('physics_Main', [Validators.maxLength(64)]),
-    description: this.fb.control<string | null>(null, [Validators.maxLength(2000)]),
+    JIRA: this.fb.control<string | null>('', [Validators.required, Validators.maxLength(200)]),
+    stream: this.fb.control<string | null>(null, [ Validators.maxLength(64)]),
+    description: this.fb.control<string | null>(null, [ Validators.required, Validators.maxLength(2000)]),
     data_format: this.fb.control<string | null>('RAW', [Validators.maxLength(20)]),
     merge: this.fb.control<boolean>(false),
     submit: this.fb.control<boolean>(false)
 
   });
 
-  readonly canSubmit = computed(() => this.form.valid && this.fileContent() && !this.submitting());
+  readonly canSubmit = computed(() => this.fileContent() && !this.submitting());
 
 
   validateFileContent(content: string): boolean {

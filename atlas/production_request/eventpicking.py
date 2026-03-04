@@ -13,7 +13,7 @@ from atlas.analysis_tasks.source_handling import upload_to_rucio
 from atlas.celerybackend.celery import app
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import EventPickingUserRequest, EventPickingProcessing, EventPickingContent, TRequest, \
-    TProject, SystemParametersHandler, InputRequestList, StepExecution, ProductionTask
+    TProject, SystemParametersHandler, InputRequestList, StepExecution, ProductionTask, DistributedLock
 import phoenixdb
 
 from atlas.prodtask.views import clone_slices, request_clone_slices, set_request_status
@@ -270,85 +270,90 @@ def process_ep_request(ep_request_id: int, submit: bool = False):
     for run in events_by_run:
         runs_by_project[get_project_by_run(int(run))].append(run)
     for project in runs_by_project:
-        if EventPickingProcessing.objects.filter(ep_request=ep_request, project=project).exists():
+        lock_key = f'eventpickingprocessing_{project}_{ep_request_id}'
+        if not DistributedLock.wait_and_acquire_lock(lock_key, 3600*3, 3600*3 ):
+                _jsonLogger.error(f"Could not acquire lock for project {project} and request {ep_request_id}")
+                raise Exception(f"Could not acquire lock for project {project} and request {ep_request_id}")
+        try:
+            if EventPickingProcessing.objects.filter(ep_request=ep_request, project=project).exists():
+                ep_processing = EventPickingProcessing.objects.get(ep_request=ep_request, project=project)
+            else:
+                ep_processing = EventPickingProcessing(ep_request=ep_request, project=project)
+            ep_processing.status = EventPickingProcessing.STATUS.GUID_SEARCH
+            ep_processing.save()
             ep_processing = EventPickingProcessing.objects.get(ep_request=ep_request, project=project)
-        else:
-            ep_processing = EventPickingProcessing(ep_request=ep_request, project=project)
-        ep_processing.status = EventPickingProcessing.STATUS.GUID_SEARCH
-        ep_processing.save()
-        ep_processing = EventPickingProcessing.objects.get(ep_request=ep_request, project=project)
-        errors = ''
-        runs = 0
-        total_files = 0
-        total_events = 0
-        for run in runs_by_project[project]:
-            events = events_by_run[run]
-            dataset_base = f'{project}.{int(run)}.{ep_request.stream}'
-            ep_content = EventPickingContent(ep_request=ep_processing,
-                                             dataset_base=dataset_base, files_events={})
-            if EventPickingContent.objects.filter(ep_request=ep_processing, dataset_base=dataset_base).exists():
-                ep_content = EventPickingContent.objects.get(ep_request=ep_processing, dataset_base=dataset_base)
-            try:
-                existing_events = sum(ep_content.files_events.values(), [])
-                new_events = list(set(events) - set(existing_events))
-                if not new_events:
+            errors = ''
+            runs = 0
+            total_files = 0
+            total_events = 0
+            for run in runs_by_project[project]:
+                events = events_by_run[run]
+                dataset_base = f'{project}.{int(run)}.{ep_request.stream}'
+                ep_content = EventPickingContent(ep_request=ep_processing,
+                                                 dataset_base=dataset_base, files_events={})
+                if EventPickingContent.objects.filter(ep_request=ep_processing, dataset_base=dataset_base).exists():
+                    ep_content = EventPickingContent.objects.get(ep_request=ep_processing, dataset_base=dataset_base)
+                try:
+                    existing_events = sum(ep_content.files_events.values(), [])
+                    new_events = list(set(events) - set(existing_events))
+                    if not new_events:
+                        runs += 1
+                        total_events += len(existing_events)
+                        total_files += len(ep_content.files_events.keys())
+                        continue
+                    guids = get_raw_files_guids_by_run(int(run), project, ep_request.stream, list(map(int,new_events)))
+                    # Check that all events are present
+                    if len(guids) == 0:
+                        raise Exception(f"No events found for run {run}")
+                    if len(guids) < len(new_events):
+                        missing_events = set(new_events) - set([str(g[1]) for g in guids])
+                        raise Exception(f"Missing events for run {run}: {len(missing_events)}")
+                    # Check files:
+                    unique_guids = list(set([x[0] for x in guids]))
+                    number_of_events_per_guid = defaultdict(int)
+                    for guid, event in guids:
+                        number_of_events_per_guid[guid] += 1
+                    dataset = find_dataset_name(int(run), project, ep_request.stream, unique_guids[0])
+                    files = create_file_list(dataset, unique_guids)
+                    missing_files = sum([1 for x in files.values() if x is None])
+                    if missing_files > 0:
+                        raise Exception(f"{missing_files} files are missing in dataset {dataset}")
+                    # Store the guids in the database
+                    events_per_file = defaultdict(list)
+                    for guid, event in guids:
+                        events_per_file[files[guid]].append(event)
+                    for file, current_events in events_per_file.items():
+                        if file in ep_content.files_events:
+                            existing_events = set(ep_content.files_events[file])
+                            ep_content.files_events[file] = list(existing_events.union(current_events))
+                        else:
+                            ep_content.files_events[file] = current_events
+                    ep_content.save()
+                    total_events += len(sum(ep_content.files_events.values(), []))
                     runs += 1
-                    total_events += len(existing_events)
                     total_files += len(ep_content.files_events.keys())
-                    continue
-                guids = get_raw_files_guids_by_run(int(run), project, ep_request.stream, list(map(int,new_events)))
-                # Check that all events are present
-                if len(guids) == 0:
-                    raise Exception(f"No events found for run {run}")
-                if len(guids) < len(new_events):
-                    missing_events = set(new_events) - set([str(g[1]) for g in guids])
-                    raise Exception(f"Missing events for run {run}: {len(missing_events)}")
-                # Check files:
-                unique_guids = list(set([x[0] for x in guids]))
-                number_of_events_per_guid = defaultdict(int)
-                for guid, event in guids:
-                    number_of_events_per_guid[guid] += 1
-                dataset = find_dataset_name(int(run), project, ep_request.stream, unique_guids[0])
-                files = create_file_list(dataset, unique_guids)
-                missing_files = sum([1 for x in files.values() if x is None])
-                if missing_files > 0:
-                    raise Exception(f"{missing_files} files are missing in dataset {dataset}")
-                # Store the guids in the database
-                events_per_file = defaultdict(list)
-                for guid, event in guids:
-                    events_per_file[files[guid]].append(event)
-                for file, current_events in events_per_file.items():
-                    if file in ep_content.files_events:
-                        existing_events = set(ep_content.files_events[file])
-                        ep_content.files_events[file] = list(existing_events.union(current_events))
-                    else:
-                        ep_content.files_events[file] = current_events
-                ep_content.save()
-                total_events += len(sum(ep_content.files_events.values(), []))
-                runs += 1
-                total_files += len(ep_content.files_events.keys())
-            except Exception as e:
-                _jsonLogger.error(f'Error processing run {run} for project {project}: {str(e)}')
-                errors += f"Error processing run {run}: {str(e)}\n"
-        if errors:
-            ep_processing.status = EventPickingProcessing.STATUS.ERROR
-            ep_processing.logs = errors[:4000]
-            ep_processing.save()
-        else:
-            ep_processing.status = EventPickingProcessing.STATUS.PICKED
-            stats = ep_processing.stats or {}
-            stats.update({'picked':{'runs':runs,'files':total_files,'events':total_events}})
-            ep_processing.stats = stats
-            ep_processing.save()
-            request_to_process.append(ep_processing.id)
+                except Exception as e:
+                    _jsonLogger.error(f'Error processing run {run} for project {project}: {str(e)}')
+                    errors += f"Error processing run {run}: {str(e)}\n"
+            if errors:
+                ep_processing.status = EventPickingProcessing.STATUS.ERROR
+                ep_processing.logs = errors[:4000]
+                ep_processing.save()
+            else:
+                ep_processing.status = EventPickingProcessing.STATUS.PICKED
+                stats = ep_processing.stats or {}
+                stats.update({'picked':{'runs':runs,'files':total_files,'events':total_events}})
+                ep_processing.stats = stats
+                ep_processing.save()
+                request_to_process.append(ep_processing.id)
+        finally:
+            DistributedLock.release_lock(lock_key)
     if submit:
         map(create_ep_production_request, request_to_process)
 
 @app.task(ignore_result=True)
 def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_submit: bool = False):
     ep_processing = EventPickingProcessing.objects.get(id=ep_processing_id)
-    ep_processing.status = EventPickingProcessing.STATUS.RUNNING
-    ep_processing.save()
     ep_request = ep_processing.ep_request
     production_request = ep_processing.production_request
     pattern_request = SystemParametersHandler.get_ep_config().pattern_request
@@ -358,26 +363,35 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
         ep_processing.production_request = TRequest.objects.get(reqid=production_request)
         production_request = ep_processing.production_request
         ep_processing.save()
-    ep_contents = EventPickingContent.objects.filter(ep_request=ep_processing)
-    pattern_request = SystemParametersHandler.get_ep_config().pattern_request
-    pattern_slice = 0
-    slices_to_submit = []
-    if merge:
-        pattern_slice = 1
-    for ep_content in ep_contents:
-        new_slice_number = clone_slices(pattern_request, production_request.reqid, [pattern_slice], -99, True)[0]
-        new_slice = InputRequestList.objects.get(request=production_request, slice=new_slice_number)
-        slices_to_submit.append(new_slice)
-        project, run, stream = ep_content.dataset_base.split('.')
-        new_slice.dataset = find_dataset_name(int(run), project, stream, list(ep_content.files_events.keys())[0])
-        new_slice.save()
-    if to_submit:
-        steps = StepExecution.objects.filter(request=production_request, slice__in=slices_to_submit)
-        for step in steps:
-            step.status = StepExecution.STATUS.APPROVED
-            step.save()
-        set_request_status('cron', production_request.reqid, 'approved', 'Auto approval',
-                           'Request was automatically approved')
+    lock_key = f"ep_productionrequest_{ep_processing.production_request.reqid}"
+    if not DistributedLock.wait_and_acquire_lock(lock_key, 600, 1000):
+        _jsonLogger.error(f"Could not acquire lock for production request {production_request.reqid}")
+        return
+    try:
+        ep_processing.status = EventPickingProcessing.STATUS.RUNNING
+        ep_processing.save()
+        ep_contents = EventPickingContent.objects.filter(ep_request=ep_processing)
+        pattern_request = SystemParametersHandler.get_ep_config().pattern_request
+        pattern_slice = 0
+        slices_to_submit = []
+        if merge:
+            pattern_slice = 1
+        for ep_content in ep_contents:
+            new_slice_number = clone_slices(pattern_request, production_request.reqid, [pattern_slice], -99, True)[0]
+            new_slice = InputRequestList.objects.get(request=production_request, slice=new_slice_number)
+            slices_to_submit.append(new_slice)
+            project, run, stream = ep_content.dataset_base.split('.')
+            new_slice.dataset = find_dataset_name(int(run), project, stream, list(ep_content.files_events.keys())[0])
+            new_slice.save()
+        if to_submit:
+            steps = StepExecution.objects.filter(request=production_request, slice__in=slices_to_submit)
+            for step in steps:
+                step.status = StepExecution.STATUS.APPROVED
+                step.save()
+            set_request_status('cron', production_request.reqid, 'approved', 'Auto approval',
+                               'Request was automatically approved')
+    finally:
+        DistributedLock.release_lock(lock_key)
 
 
 @app.task(ignore_result=True)

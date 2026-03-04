@@ -3290,7 +3290,16 @@ class DistributedLock(models.Model):
                 timeout -= interval
                 if timeout <= 0:
                     return
-
+    @staticmethod
+    def wait_and_acquire_lock(lock_name: str, lock_timeout: int = 10, wait_timeout: Optional[float] = 600, interval: float = 60):
+        while True:
+            if DistributedLock.acquire_lock(lock_name, lock_timeout):
+                return True
+            time.sleep(interval)
+            if wait_timeout is not None:
+                wait_timeout -= interval
+                if wait_timeout <= 0:
+                    return False
     class Meta:
         app_label = 'dev'
         db_table = 'T_DEFT_DISTR_LOCK'

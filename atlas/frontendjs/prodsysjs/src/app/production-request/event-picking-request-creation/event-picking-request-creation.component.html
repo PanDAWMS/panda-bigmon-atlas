@@ -72,7 +72,7 @@
       <mat-option [value]="false">No</mat-option>
     </mat-select>
 </mat-form-field>
-  <button type="submit" [disabled]="!canSubmit()" (click)="submit()">
+  <button type="submit" [disabled]="!canSubmit()||!form.valid" (click)="submit()">
     @if (submitting()) { Submitting\.\.\. } @else { Submit }
   </button>
 </form>
