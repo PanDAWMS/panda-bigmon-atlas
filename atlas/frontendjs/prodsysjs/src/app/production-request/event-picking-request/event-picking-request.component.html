@@ -179,12 +179,10 @@
               <!-- Error Action Buttons -->
               @if (production.status === 'error') {
                 <div class="mt-4 flex gap-3">
-                  <button type="button" (click)="deleteEPProgress(production.id)" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold">
-                    Delete
-                  </button>
-                  <button type="button" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 font-semibold">
+                  <button type="button" (click)="retryEPProgress(production.id)" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-semibold">
                     Retry
                   </button>
+
                 </div>
               }
             </div>

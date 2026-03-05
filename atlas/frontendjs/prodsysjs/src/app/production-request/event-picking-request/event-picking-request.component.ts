@@ -149,8 +149,8 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
       });
   }
 
-  protected deleteEPProgress(id: number): void {
-      this.epService.deleteEPProces(id).subscribe({
+  protected retryEPProgress(id: number): void {
+      this.epService.retryEPProces(id).subscribe({
         next: (response) => {
           this.submitStatus.set(response);
           this.epService.EPProgressResource.reload();

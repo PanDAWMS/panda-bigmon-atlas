@@ -54,7 +54,7 @@ export class EventPickingService {
   private EPRequestsURL = '/api/ep_requests/';
   private EPProgressURL = '/production_request/ep_request_stats/';
   private SubmitEPrequestURL = '/production_request/submit_ep_request/';
-  private DeleteEPProcessURL = '/production_request/delete_ep_progress/';
+  private RetryEPProcessURL = '/production_request/retry_ep_progress/';
   private GetEPRequestForUpdate = '/production_request/get_ep_request/';
 
   http = inject(HttpClient);
@@ -72,8 +72,8 @@ export class EventPickingService {
   submitEPRequest(jira: string): Observable<string>{
     return this.http.post<string>(this.SubmitEPrequestURL, {jira});
   }
-  deleteEPProces(id: number): Observable<string>{
-    return this.http.post<string>(this.DeleteEPProcessURL, {id});
+  retryEPProces(id: number): Observable<string>{
+    return this.http.post<string>(this.RetryEPProcessURL, {id});
   }
   getEPRequestForUpdate(jira: string): Observable<{description: string, merge: boolean}|null>{
     return this.http.post<{description: string, merge: boolean}|null>(this.GetEPRequestForUpdate, {jira});

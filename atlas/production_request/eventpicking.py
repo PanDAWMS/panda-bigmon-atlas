@@ -106,11 +106,13 @@ def ep_request_stats(request):
 @api_view(['POST'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
-def delete_ep_progress(request):
+def retry_ep_progress(request):
     try:
         id = request.data.get('id')
         ep_progress = EventPickingProcessing.objects.get(id=id)
+        ep_request_id = ep_progress.ep_request_id
         ep_progress.delete()
+        process_ep_request.delay(ep_request_id, False)
         return Response(f"EP progress with id {id} deleted", status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
