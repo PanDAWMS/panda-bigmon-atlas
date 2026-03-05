@@ -1,4 +1,4 @@
-import {Component, computed, inject, input, OnDestroy, OnInit, signal} from '@angular/core';
+import {Component, computed, Inject, inject, input, OnDestroy, OnInit, signal} from '@angular/core';
 import {EventPickingService} from "../event-picking-request-creation/event-picking.service";
 import {toObservable} from "@angular/core/rxjs-interop";
 import {setErrorMessage} from "../../dsid-info/dsid-info.service";
@@ -10,6 +10,9 @@ import {ProductionTaskTableComponent} from "../../production-task-table/producti
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
 import {ProductionTask} from "../production-request-models";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {CommonModule} from "@angular/common";
+import {MAT_DIALOG_DATA, MatDialog, MatDialogModule} from "@angular/material/dialog";
+import {MatButton} from "@angular/material/button";
 
 @Component({
   selector: 'app-event-picking-request',
@@ -22,6 +25,9 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
   styleUrl: './event-picking-request.component.css'
 })
 export class EventPickingRequestComponent implements OnInit, OnDestroy{
+
+        constructor(private dialog: MatDialog) {}
+
         jira = input<string>('');
         jiraTicket$ = toObservable(this.jira);
         epService = inject(EventPickingService);
@@ -134,8 +140,7 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
               return 'bg-gray-600';
           }
         }
-        constructor() {
-        }
+
 
   protected submitEPRequests(): void {
       this.epService.submitEPRequest(this.jira()).subscribe({
@@ -159,5 +164,51 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
           this.submitStatus.set(setErrorMessage(err));
         }
       });
+  }
+
+  showContent(contentTyep: string, id: number): void{
+          this.epService.getEPEvents(contentTyep, id.toString()).subscribe({
+            next: (response) => {
+              this.dialog.open(JsonDialogComponent, {
+                    data: response,
+                    width: '600px',
+                    maxHeight: '80vh'
+                  });
+          },
+          error: (err) => {
+            this.submitStatus.set(setErrorMessage(err));
+          }
+      });
+  }
+}
+
+@Component({
+  selector: 'app-json-dialog',
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatButton],
+  template: `
+    <div mat-dialog-title class="font-bold text-lg mb-4">
+      Data Details
+    </div>
+    <div mat-dialog-content class="max-h-96 overflow-auto">
+      <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">{{ jsonData }}</pre>
+    </div>
+    <div mat-dialog-actions align="end" class="mt-4">
+      <button mat-button mat-dialog-close>Close</button>
+    </div>
+  `,
+  styles: [`
+    pre {
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  `]
+})
+export class JsonDialogComponent {
+  jsonData: string;
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {
+    this.jsonData = JSON.stringify(data, null, 2);
   }
 }

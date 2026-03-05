@@ -8,6 +8,7 @@ export interface EpRequestStats {
 }
 
 export interface EpRequestSummary {
+  id: number;
   jira: string;
   stream: string;
   description: string;
@@ -56,6 +57,7 @@ export class EventPickingService {
   private SubmitEPrequestURL = '/production_request/submit_ep_request/';
   private RetryEPProcessURL = '/production_request/retry_ep_progress/';
   private GetEPRequestForUpdate = '/production_request/get_ep_request/';
+  private GetEPEventsURL = '/production_request/get_ep_events/';
 
   http = inject(HttpClient);
   constructor() { }
@@ -67,6 +69,10 @@ export class EventPickingService {
 
   getEPRequestsList(): Observable<EPRequestShort[]>{
     return this.http.get<EPRequestShort[]>(this.EPRequestsURL);
+  }
+
+  getEPEvents(eventsType: string, id: string): Observable<any>{
+    return this.http.get<any>(this.GetEPEventsURL, {params: {type: eventsType, id}});
   }
 
   submitEPRequest(jira: string): Observable<string>{

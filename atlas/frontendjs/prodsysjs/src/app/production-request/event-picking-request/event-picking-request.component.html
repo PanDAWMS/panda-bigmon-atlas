@@ -58,7 +58,8 @@
                 }
                 <td class="border border-gray-300 px-4 py-2">{{ request.stream }}</td>
                 <td class="border border-gray-300 px-4 py-2 text-right">{{ request.unique_files }}</td>
-                <td class="border border-gray-300 px-4 py-2 text-right">{{ request.unique_events }}</td>
+                <td class="border border-gray-300 px-4 py-2 text-right" >
+                  <a target="_blank" class="text-blue-600 hover:text-blue-800 underline cursor-pointer" (click)="showContent('request', request.id)">{{ request.unique_events }}</a></td>
               </tr>
             }
           </tbody>
@@ -137,7 +138,8 @@
                     <tbody>
                       <tr class="bg-white hover:bg-gray-50">
                         <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.runs }}</td>
-                        <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.files }}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                          <a target="_blank" class="text-blue-600 hover:text-blue-800 underline cursor-pointer" (click)="showContent('processing', production.id)">{{ production.stats.picked.files }}</a></td>
                         <td class="border border-gray-300 px-4 py-2">{{ production.stats.picked.events }}</td>
                       </tr>
                     </tbody>

@@ -65,7 +65,23 @@ def ep_processing_serialisation(ep_processing: EventPickingProcessing) -> dict:
         })
     return result
 
-
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_ep_events(request):
+    try:
+        evvents_type = request.query_params.get('type')
+        id = int(request.query_params.get('id'))
+        if evvents_type == 'request':
+            content = [f'{x[0]} {x[1]}' for x in EventPickingUserRequest.objects.get(id=id).input_file['content']]
+            return Response(content, status=status.HTTP_200_OK)
+        if evvents_type == 'processing':
+            file_events = {}
+            for ep_content in EventPickingContent.objects.filter(ep_request=id):
+                file_events.update(ep_content.files_events)
+            return Response(file_events, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -88,6 +104,7 @@ def ep_request_stats(request):
             unique_files = len(set(unique_stats_by_stream[ep_request.stream]['runs']))
             unique_events = len(set(unique_stats_by_stream[ep_request.stream]['events']))
             ep_requests_serialised.append({
+                'id': ep_request.id,
                 'jira': ep_request.jira,
                 'description': ep_request.description,
                 'stream': ep_request.stream,
