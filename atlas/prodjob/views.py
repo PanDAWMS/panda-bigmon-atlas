@@ -9,7 +9,8 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.conf import settings
 
-from atlas.prodtask.models import ProductionTask
+from atlas.prodtask.models import ProductionTask, TTask
+from atlas.prodtask.task_views import create_user_task
 from atlas.settings import OIDC_LOGIN_URL
 from atlas.task_action.task_management import TaskManagementAuthorisation, TaskActionExecutor, do_jedi_action
 
@@ -92,6 +93,9 @@ def jobs_action(request,action):
                     if not user_allowed or not action_allowed:
                         tasks_with_problems.add(task)
                         continue
+                    if not ProductionTask.objects.filter(id=task).exists():
+                        if TTask.objects.filter(id=task).exists():
+                            create_user_task(task)
                     if ProductionTask.objects.get(id=task).name.startswith('user'):
                         if len(args)>0 and args[0] == 9:
                             args[0]=99
