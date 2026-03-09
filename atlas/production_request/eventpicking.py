@@ -376,6 +376,7 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
     ep_request = ep_processing.ep_request
     production_request = ep_processing.production_request
     pattern_request = SystemParametersHandler.get_ep_config().pattern_request
+    existing_datasets = []
     if not production_request:
         production_request = request_clone_slices(pattern_request, ep_request.requestor, ep_request.description,
                                                   ep_request.jira, [], ep_processing.project, False)
@@ -389,21 +390,29 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
         _jsonLogger.error(f"Could not acquire lock for production request {production_request.reqid}")
         return
     try:
+        slices_to_submit = []
+        for slice in InputRequestList.objects.filter(request=production_request):
+            if not slice.is_hide:
+                steps = StepExecution.objects.filter(request=production_request, slice=slice)
+                if not ProductionTask.objects.filter(request=production_request, step__in=steps).exists():
+                    existing_datasets.append(slice.dataset)
+                    slices_to_submit.append(slice)
         ep_processing.status = EventPickingProcessing.STATUS.RUNNING
         ep_processing.save()
         ep_contents = EventPickingContent.objects.filter(ep_request=ep_processing)
         pattern_request = SystemParametersHandler.get_ep_config().pattern_request
         pattern_slice = 0
-        slices_to_submit = []
         if merge:
             pattern_slice = 1
         for ep_content in ep_contents:
-            new_slice_number = clone_slices(pattern_request, production_request.reqid, [pattern_slice], -99, True)[0]
-            new_slice = InputRequestList.objects.get(request=production_request, slice=new_slice_number)
-            slices_to_submit.append(new_slice)
             project, run, stream = ep_content.dataset_base.split('.')
-            new_slice.dataset = find_dataset_name(int(run), project, stream, list(ep_content.files_events.keys())[0])
-            new_slice.save()
+            input_dataset = find_dataset_name(int(run), project, stream, list(ep_content.files_events.keys())[0])
+            if input_dataset not in existing_datasets:
+                new_slice_number = clone_slices(pattern_request, production_request.reqid, [pattern_slice], -99, True)[0]
+                new_slice = InputRequestList.objects.get(request=production_request, slice=new_slice_number)
+                slices_to_submit.append(new_slice)
+                new_slice.dataset = input_dataset
+                new_slice.save()
         if to_submit:
             steps = StepExecution.objects.filter(request=production_request, slice__in=slices_to_submit)
             for step in steps:
