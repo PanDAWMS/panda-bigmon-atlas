@@ -3628,7 +3628,7 @@ class TaskDefinition(object):
                             param_dict.update({'name': param_name, 'dataset': pileup_dataset_values['input_dataset_name'],
                                           'postfix': postfix, 'event_ratio': final_events_ratio})
                         else:
-                            param_dict = {'name': param_name, 'dataset': param_value, 'postfix': postfix}
+                            param_dict.update({'name': param_name, 'dataset': param_value, 'postfix': postfix})
                         param_dict.update(trf_options)
                         if 'Cavern'.lower() in name.lower():
                             second_input_param = self.protocol.render_param(TaskParamName.SECONDARY_INPUT_CAVERN,
