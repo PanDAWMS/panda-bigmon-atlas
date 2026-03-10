@@ -7,10 +7,10 @@ Type=simple
 User=apache
 Group=apache
 EnvironmentFile=/etc/conf.d/celery
-WorkingDirectory=
-ExecStart=/bin/sh -c '${CELERY_BIN} beat  \
-  -A ${CELERY_APP} --pidfile=${CELERYBEAT_PID_FILE} \
-  --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL}'
+WorkingDirectory=${WSGI_PATH}/deft//atlas/
+ExecStart=/bin/sh -c '${CELERY_BIN}   \
+  -A ${CELERY_APP} beat --pidfile=${CELERYBEAT_PID_FILE} \
+  --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL} --scheduler=django_celery_beat.schedulers:DatabaseScheduler'
 
 [Install]
 WantedBy=multi-user.target

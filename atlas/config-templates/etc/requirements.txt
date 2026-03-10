@@ -69,3 +69,4 @@ xlrd==2.0.1
 deepdiff==8.0.1
 opensearch-py==2.6.0
 pydantic==2.4.2
+phoenixdb==1.2.2
