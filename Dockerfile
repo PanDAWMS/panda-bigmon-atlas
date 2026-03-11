@@ -11,15 +11,6 @@ RUN yum install -y epel-release
 RUN yum install -y httpd httpd-devel gcc gridsite git psmisc less wget logrotate procps which \
     openssl-devel readline-devel bzip2-devel libffi-devel zlib-devel systemd-udev zlib postgresql postgresql-devel sqlite-devel krb5-devel
 
-RUN mkdir /tmp/python && cd /tmp/python && \
-    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
-    tar -xzf Python-*.tgz && rm -f Python-*.tgz && \
-    cd Python-* && \
-    ./configure --enable-shared --enable-optimizations --with-lto && \
-    make altinstall && \
-    echo /usr/local/lib > /etc/ld.so.conf.d/local.conf && ldconfig && \
-    cd / && rm -rf /tmp/pyton
-
 RUN echo -e '[epel]\n\
 name=Extra Packages for Enterprise Linux 9 [HEAD]\n\
 baseurl=http://linuxsoft.cern.ch/epel/9/Everything/x86_64\n\
@@ -43,6 +34,17 @@ RUN wget https://download.oracle.com/otn_software/linux/instantclient/oracle-ins
     yum install /tmp/oracle-instantclient-sqlplus-linuxx64.rpm -y
 
 RUN yum install -y  oracle-instantclient-tnsnames.ora
+
+RUN mkdir /tmp/python && cd /tmp/python && \
+    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+    tar -xzf Python-*.tgz && rm -f Python-*.tgz && \
+    cd Python-* && \
+    ./configure --enable-shared --enable-optimizations --with-lto && \
+    make altinstall && \
+    echo /usr/local/lib > /etc/ld.so.conf.d/local.conf && ldconfig && \
+    cd / && rm -rf /tmp/pyton
+
+
 
 RUN yum clean all && rm -rf /var/cache/yum
 
