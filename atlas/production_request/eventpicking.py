@@ -235,15 +235,16 @@ def upload_ep_file_to_rucio(ep_request_id: int):
     return upload_to_rucio(ANALYSIS_CONF.RUCIO_UPLOAD_SCRIPT, ANALYSIS_CONF.PROXY_PATH, ANALYSIS_CONF.RUCIO_ACCOUNT,
                            file_path, ANALYSIS_CONF.DEFAULT_RSE, SystemParametersHandler.get_ep_config().default_source_dataset, SystemParametersHandler.get_ep_config().default_source_dataset.split(':')[0] )
 
-def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list[int], batch_size=500) -> list[(str, int)]:
+def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list[int], batch_size=500) -> tuple[list[(str, int)], list[str]]:
     def chunks(lst, size):
         for i in range(0, len(lst), size):
             yield lst[i:i + size]
     _jsonLogger.info(f'Search in hbase phoenix for run {run}, project {project}, stream {stream} and total events {len(events)})')
     hbase_phoenix_database_url = SystemParametersHandler.get_ep_config().hbase_url
+    dataset_names = []
     with phoenixdb.connect(hbase_phoenix_database_url, autocommit=True, authentication='SPNEGO') as connection:
         with connection.cursor() as cursor:
-            dataset_query = (f"SELECT dspid,dstypeid,events FROM AEI.CANONICAL_0 WHERE runno = ? AND "
+            dataset_query = (f"SELECT dspid,dstypeid,events,name FROM AEI.CANONICAL_0 WHERE runno = ? AND "
                              f"project = ? AND streamName = ? AND has_raw = ? AND dataType = ?")
             cursor.execute(dataset_query, (run, project, stream, True, 'AOD'))
             results_dict = cursor.fetchall()
@@ -254,10 +255,11 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             dataset_to_use = []
             for dataset in results_dict:
                 if dataset[2] == biggest_events:
-                    dataset_to_use.append((dataset[0], dataset[1]))
+                    dataset_to_use.append((dataset[0], dataset[1], dataset[3]))
             dataset_to_use.sort(key=lambda x: x[0])
             for dataset in dataset_to_use:
-                dspid, dstypeid = dataset
+                dspid, dstypeid, dsname = dataset
+                dataset_names.append(dsname)
                 rows = []
                 for batch in chunks(events, batch_size):
                     placeholders = ",".join(["?"] * len(batch))
@@ -278,12 +280,14 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
                         if guid_string.startswith('0800'):
                             result.append((guid_string[4:36], row[1]))
                             break
-                _jsonLogger.info(
-                    f'Found {len(result)} events for run {run}, project {project}, stream {stream} and total events {len(events)} dspid {dspid}')
-                if len(result) >= len(events):
-                    break
-            return result
 
+                if len(result) >= len(events):
+                    _jsonLogger.info(
+                        f'Found {len(result)} events for run {run}, project {project}, stream {stream} and total events {len(events)} dspid {dspid}')
+                    return result, dataset_names
+                else:
+                    _jsonLogger.error(f'Not enough events found in dataset {dsname} for run {run}, project {project}, stream {stream} and total events {len(events)} dspid {dspid} with events {len(result)}')
+            return result, dataset_names
 
 
 @app.task(ignore_result=True, time_limit=3600*3)
@@ -329,13 +333,13 @@ def process_ep_request(ep_request_id: int, submit: bool = False):
                         total_events += len(existing_events)
                         total_files += len(ep_content.files_events.keys())
                         continue
-                    guids = get_raw_files_guids_by_run(int(run), project, ep_request.stream, list(map(int,new_events)))
+                    guids, dataset_names = get_raw_files_guids_by_run(int(run), project, ep_request.stream, list(map(int,new_events)))
                     # Check that all events are present
                     if len(guids) == 0:
                         raise Exception(f"No events found for run {run}")
                     if len(guids) < len(new_events):
                         missing_events = set(new_events) - set([str(g[1]) for g in guids])
-                        raise Exception(f"Missing events for run {run}: {len(missing_events)}")
+                        raise Exception(f"Missing events for run {run}: {len(missing_events)}, missing events sample : {', '.join(map(str, list(missing_events)[:3]))} from datasets {dataset_names}")
                     # Check files:
                     unique_guids = list(set([x[0] for x in guids]))
                     number_of_events_per_guid = defaultdict(int)
