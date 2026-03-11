@@ -250,29 +250,38 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             if len(results_dict) == 0:
                 return []
             results_dict.sort(key=lambda x: x[2], reverse=True)
-            dspid, dstypeid, _= results_dict[0]
-            rows = []
-            for batch in chunks(events, batch_size):
-                placeholders = ",".join(["?"] * len(batch))
-                q2 = f"""
-                SELECT pv, eventno
-                FROM AEI.EVENTS_0
-                WHERE dspid = ?
-                  AND dstypeid = ?
-                  AND eventno IN ({placeholders})
-                """
-                params = [dspid, dstypeid] + batch
-                cursor.execute(q2, params)
-                rows += cursor.fetchall()
-            result = []
-            for row in rows:
-                for guid in row[0]:
-                    guid_string = guid.hex()
-                    if guid_string.startswith('0800'):
-                        result.append((guid_string[4:36], row[1]))
-                        break
-            _jsonLogger.info(
-                f'Found {len(result)} events for run {run}, project {project}, stream {stream} and total events {len(events)})')
+            biggest_events = results_dict[0][2]
+            dataset_to_use = []
+            for dataset in results_dict:
+                if dataset[2] == biggest_events:
+                    dataset_to_use.append((dataset[0], dataset[1]))
+            dataset_to_use.sort(key=lambda x: x[0])
+            for dataset in dataset_to_use:
+                dspid, dstypeid = dataset
+                rows = []
+                for batch in chunks(events, batch_size):
+                    placeholders = ",".join(["?"] * len(batch))
+                    q2 = f"""
+                    SELECT pv, eventno
+                    FROM AEI.EVENTS_0
+                    WHERE dspid = ?
+                      AND dstypeid = ?
+                      AND eventno IN ({placeholders})
+                    """
+                    params = [dspid, dstypeid] + batch
+                    cursor.execute(q2, params)
+                    rows += cursor.fetchall()
+                result = []
+                for row in rows:
+                    for guid in row[0]:
+                        guid_string = guid.hex()
+                        if guid_string.startswith('0800'):
+                            result.append((guid_string[4:36], row[1]))
+                            break
+                _jsonLogger.info(
+                    f'Found {len(result)} events for run {run}, project {project}, stream {stream} and total events {len(events)} dspid {dspid}')
+                if len(result) >= len(events):
+                    break
             return result
 
 
