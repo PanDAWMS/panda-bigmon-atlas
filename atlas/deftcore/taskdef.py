@@ -2931,6 +2931,9 @@ class TaskDefinition(object):
                 if  LooseVersion(trf_release) >= LooseVersion('23.6'):
                     if self.is_madgraph(input_data_name) and not project_mode.coreCount and 'inputGeneratorFile' not in list(input_params.keys()):
                         project_mode.coreCount  = 8
+                if LooseVersion(trf_release) >= LooseVersion('23.6.59'):
+                    if self.is_sherpa(input_data_name) and not project_mode.coreCount and 'inputGeneratorFile' not in list(input_params.keys()):
+                        project_mode.coreCount  = 8
 
 
             skip_scout_jobs = None
@@ -6055,6 +6058,11 @@ class TaskDefinition(object):
 
     def is_madgraph(self, input_data_name: str) -> bool:
         if 'amcpy' in input_data_name.lower() or input_data_name.lower().startswith('mg'):
+            return True
+        return False
+
+    def is_sherpa(self, input_data_name: str) -> bool:
+        if input_data_name.lower().startswith('sh_') or input_data_name.lower().startswith('sherpa'):
             return True
         return False
 
