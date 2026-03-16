@@ -23,6 +23,8 @@ export class EventPickingRequestsListComponent implements OnInit{
     {
       field: 'jira',
       headerName: 'jira',
+      filter: 'agTextColumnFilter',
+      sort: 'desc',
       cellRenderer: params => {
         const jira = params.value.split('/').pop() ?? '';
         return `<a href="/ng/event-picking-request/${jira}">${jira}</a>`;
@@ -32,10 +34,12 @@ export class EventPickingRequestsListComponent implements OnInit{
       {
       field: 'description',
       headerName: 'description',
+        filter: 'agTextColumnFilter'
       },
     {
       field: 'requestor',
       headerName: 'requestor',
+      filter: 'agTextColumnFilter'
     }
   ];
 
