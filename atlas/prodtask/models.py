@@ -2276,25 +2276,25 @@ class GroupProductionDeletionRequest(models.Model):
         db_table = '"T_GP_DELETION_REQUEST"'
 
 
-class StorageResource(models.Model):
-
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='SRS_ID', primary_key=True)
-    name = models.CharField(max_length=30, db_column='DATASET', null=True)
-    timestamp = models.DateTimeField(db_column='LAST_UPDATE')
-    end_time = models.DateTimeField(db_column='END_TIME')
-    state = models.CharField(max_length=2000, db_column='STATE')
-
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = prefetch_id('dev_db','T_SRS_SEQ',"T_STORAGE_RESOURCE_STATE",'SRS_ID')
-        super(StorageResource, self).save(*args, **kwargs)
-
-
-
-    class Meta:
-        app_label = 'dev'
-        db_table = '"T_STORAGE_RESOURCE_STATE"'
+# class StorageResource(models.Model):
+#
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='SRS_ID', primary_key=True)
+#     name = models.CharField(max_length=30, db_column='DATASET', null=True)
+#     timestamp = models.DateTimeField(db_column='LAST_UPDATE')
+#     end_time = models.DateTimeField(db_column='END_TIME')
+#     state = models.CharField(max_length=2000, db_column='STATE')
+#
+#
+#     def save(self, *args, **kwargs):
+#         if not self.id:
+#             self.id = prefetch_id('dev_db','T_SRS_SEQ',"T_STORAGE_RESOURCE_STATE",'SRS_ID')
+#         super(StorageResource, self).save(*args, **kwargs)
+#
+#
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = '"T_STORAGE_RESOURCE_STATE"'
 
 class IAM_USER(models.Model):
     username = models.CharField(max_length=30, db_column='USERNAME', primary_key=True)
@@ -2304,39 +2304,39 @@ class IAM_USER(models.Model):
         app_label = 'dev'
         db_table = '"T_IAM_USERS"'
 
-class MultiCampaignRequestBase(models.Model):
-
-    class STATUS:
-        NOT_DEFINED = 'not_defined'
-        FILLED = 'filled'
-
-
-
-
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCRB_ID', primary_key=True)
-    value = models.JSONField(db_column='value')
-    production_request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
-    timestamp = models.DateTimeField(db_column='LAST_UPDATE')
-    username = models.CharField(max_length=30, db_column='USERNAME', primary_key=True)
-    status = models.CharField(max_length=20, db_column='STATUS',null=False)
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = prefetch_id('dev_db','T_MCRB_SEQ',"T_MULTI_CAMPAIGN_REQ",'MCRB_ID')
-        self.timestamp = timezone.now()
-        super(MultiCampaignRequestBase, self).save(*args, **kwargs)
-
-    @property
-    def campaigns_ratio(self):
-        return  self.value.get('campaigns_ratio',None)
-
-    @campaigns_ratio.setter
-    def campaigns_ratio(self, value: dict[str,float]):
-        self.value = {'campaigns_ratio':value}
-
-    class Meta:
-        app_label = 'dev'
-        db_table = '"T_MULTI_CAMPAIGN_REQ"'
+# class MultiCampaignRequestBase(models.Model):
+#
+#     class STATUS:
+#         NOT_DEFINED = 'not_defined'
+#         FILLED = 'filled'
+#
+#
+#
+#
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='MCRB_ID', primary_key=True)
+#     value = models.JSONField(db_column='value')
+#     production_request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
+#     timestamp = models.DateTimeField(db_column='LAST_UPDATE')
+#     username = models.CharField(max_length=30, db_column='USERNAME', primary_key=True)
+#     status = models.CharField(max_length=20, db_column='STATUS',null=False)
+#
+#     def save(self, *args, **kwargs):
+#         if not self.id:
+#             self.id = prefetch_id('dev_db','T_MCRB_SEQ',"T_MULTI_CAMPAIGN_REQ",'MCRB_ID')
+#         self.timestamp = timezone.now()
+#         super(MultiCampaignRequestBase, self).save(*args, **kwargs)
+#
+#     @property
+#     def campaigns_ratio(self):
+#         return  self.value.get('campaigns_ratio',None)
+#
+#     @campaigns_ratio.setter
+#     def campaigns_ratio(self, value: dict[str,float]):
+#         self.value = {'campaigns_ratio':value}
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = '"T_MULTI_CAMPAIGN_REQ"'
 
 class ETAGRelease(models.Model):
 
@@ -3245,6 +3245,10 @@ class DistributedLock(models.Model):
     lock_name = models.CharField(max_length=200,  db_column='LOCK_NAME',  primary_key=True)
     locked_until = models.DateTimeField( db_column='LOCKED_UNTIL')
     locked_type = models.CharField(max_length=20,  db_column='LOCK_TYPE', default='default')
+
+    @staticmethod
+    def clean_locks():
+        DistributedLock.objects.filter(locked_until__lt=timezone.now()).delete()
 
     @staticmethod
     def acquire_lock(lock_name: str, lock_timeout: int = 10):

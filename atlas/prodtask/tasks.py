@@ -13,7 +13,7 @@ from atlas.prestage.views import find_action_to_execute, submit_all_tapes_proces
 from atlas.prodtask.dataset_recovery import check_running_recovery_requests, check_submitted_recovery_requests
 from atlas.prodtask.hashtag import hashtag_request_to_tasks
 from atlas.prodtask.mcevgen import sync_cvmfs_db, set_pmg_hashtags
-from atlas.prodtask.models import ProductionTask
+from atlas.prodtask.models import ProductionTask, DistributedLock
 from atlas.prodtask.open_ended import check_open_ended
 from atlas.prodtask.patch_reprocessing import find_done_patched_tasks
 from atlas.prodtask.postproduction import check_all_tasks_post_production_actions
@@ -36,6 +36,11 @@ def test_celery():
 @app.task(ignore_result=True)
 def sync_tasks():
     sync_old_tasks(-1)
+    return None
+
+@app.task(ignore_result=True)
+def clean_expired_locks():
+    DistributedLock.clean_locks()
     return None
 
 @app.task(ignore_result=True)
