@@ -20,7 +20,7 @@ from django.db.models import CASCADE
 from django.utils import timezone
 from jinja2.nativetypes import NativeEnvironment
 from rest_framework import serializers
-
+from atlas.settings.config import PANDA_DB_SCHEMA
 from ..prodtask.helper import Singleton
 import logging
 from django.dispatch import receiver
@@ -463,7 +463,7 @@ class RetryAction(models.Model):
     class Meta:
         app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = '"ATLAS_PANDA"."RETRYACTIONS"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."RETRYACTIONS"'
 
 
 class JediWorkQueue(models.Model):
@@ -480,7 +480,7 @@ class JediWorkQueue(models.Model):
     class Meta:
         app_label = 'panda'
         #db_table = u'T_INPUT_DATASET'
-        db_table = '"ATLAS_PANDA"."JEDI_WORK_QUEUE"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."JEDI_WORK_QUEUE"'
 
 
 #   ID NUMBER(10, 0) NOT NULL
@@ -519,13 +519,13 @@ class RetryErrors(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('panda','ATLAS_PANDA.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
+            self.id = prefetch_id('panda',f'{PANDA_DB_SCHEMA}.RETRYERRORS_ID_SEQ','RETRYACTION','ID')
 
         super(RetryErrors, self).save(*args, **kwargs)
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."RETRYERRORS"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."RETRYERRORS"'
 
 
 class TrainProduction(models.Model):
@@ -2762,7 +2762,7 @@ class Site(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."SITE"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."SITE"'
 
 class GDPConfig(models.Model):
     app = models.CharField(max_length=64, db_column='APP')
@@ -2780,7 +2780,7 @@ class GDPConfig(models.Model):
     class Meta:
         unique_together = (('app', 'component' , 'key' , 'vo'),)
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."CONFIG"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."CONFIG"'
 
 
 class GlobalShare(models.Model):
@@ -2793,7 +2793,7 @@ class GlobalShare(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."GLOBAL_SHARES"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."GLOBAL_SHARES"'
 #        db_table = u"GLOBAL_SHARES"
 
 
@@ -2843,7 +2843,7 @@ class JediDatasets(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."JEDI_DATASETS"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."JEDI_DATASETS"'
 
 class JediDatasetContents(models.Model):
     jeditaskid = models.BigIntegerField(db_column='JEDITASKID', primary_key=True)
@@ -2881,7 +2881,7 @@ class JediDatasetContents(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."JEDI_DATASET_CONTENTS"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."JEDI_DATASET_CONTENTS"'
 
 
 class JediTasks(models.Model):
@@ -2954,7 +2954,7 @@ class JediTasks(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."JEDI_TASKS"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."JEDI_TASKS"'
 
 class PandaDatasetStaging(models.Model):
 
@@ -2993,7 +2993,7 @@ class PandaDatasetStaging(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."data_carousel_requests"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."data_carousel_requests"'
 
 class PandaDatasetStagingRelationship(models.Model):
 
@@ -3006,7 +3006,7 @@ class PandaDatasetStagingRelationship(models.Model):
 
     class Meta:
         app_label = 'panda'
-        db_table = '"ATLAS_PANDA"."data_carousel_relations"'
+        db_table = f'"{PANDA_DB_SCHEMA}"."data_carousel_relations"'
 
 class DatasetRecovery(models.Model):
 
