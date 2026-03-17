@@ -4,7 +4,7 @@ from atlas.auth.views import login,logout
 from atlas.prodtask.request_views import ProductionRequestAPI
 from ..prodtask.train_views import TrainLoad, TrainLoads, TrainLoadByTrain
 
-from atlas.prodtask import views,request_views,check_duplicate,open_ended,waiting_actions,task_views,task_manage_views,\
+from atlas.prodtask import views,request_views,check_duplicate,open_ended,task_views,task_manage_views,\
     retryerros,step_manage_views,train_views,report_view,hashtag,selection
 
 app_name='prodtask'
@@ -67,7 +67,6 @@ urlpatterns = [
     re_path(r'^close_open_ended/(?P<reqid>\d+)/$',open_ended.close_open_ended,  name='close_open_ended'),
 
     re_path(r'^push_check/(?P<reqid>\d+)/$',open_ended.push_check,  name='push_check'),
-    re_path(r'^tape_load_page/$',waiting_actions.tape_load_page,  name='tape_load_page'),
 
     re_path(r'^short_hlt_form/$',request_views.short_hlt_form,  name='short_hlt_form'),
     re_path(r'^hlt_form_prepare_request/$',request_views.hlt_form_prepare_request,  name='hlt_form_prepare_request'),
@@ -101,9 +100,6 @@ urlpatterns = [
     re_path(r'^task_stat_by_req/(?P<rid>\d+)/$', task_views.task_status_stat_by_request, name='task_status_stat_by_request'),
 
     re_path(r'^descent_tasks/(?P<task_id>\d+)/$', task_views.descent_tasks, name='descent_tasks'),
-    re_path(r'^predefinition_action/(?P<wstep_id>\d+)/$', waiting_actions.predefinition_action, name='predefinition_action'),
-    re_path(r'^finish_action/(?P<wstep_id>\d+)/$', waiting_actions.finish_action, name='finish_action'),
-    re_path(r'^cancel_action/(?P<wstep_id>\d+)/$', waiting_actions.cancel_action, name='cancel_action'),
     re_path(r'^task_chain_view/(?P<task_id>\d+)/$', task_views.task_chain_view, name='task_chain_view'),
     re_path(r'^form_task_chain/(?P<task_id>\d+)/$', task_views.form_task_chain, name='form_task_chain'),
     re_path(r'^sync_request_tasks/(?P<reqid>\d+)/$', task_views.sync_request_tasks, name='sync_request_tasks'),

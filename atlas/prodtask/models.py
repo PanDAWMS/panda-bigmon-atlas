@@ -1688,7 +1688,6 @@ class SystemParameters(models.Model):
 
 
     class Meta:
-        app_label = 'dev'
         db_table = '"T_DEFT_PARAMETERS"'
 
 class ProductionTask(models.Model):
@@ -2504,67 +2503,67 @@ class GroupProductionDeletionProcessing(models.Model):
         db_table = '"T_GP_DELETION_PROC"'
 
 
-class WaitingStep(models.Model):
-
-    ACTIONS = {
-        1 : {'name':'postpone', 'description': 'Postpone ', 'attempts': 3, 'delay':1},
-        2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 200, 'delay':1},
-        3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
-        4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
-        5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
-        8: {'name': 'preStageWithTaskArchive', 'description': 'Check that archive exists and pre-staged it',
-            'attempts': 900, 'delay': 1}
-    }
-
-
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
-    request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
-    step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')#models.ForeignKey(StepExecution, db_column='STEP_ID')
-    action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
-    create_time = models.DateTimeField(db_column='SUBMIT_TIME')
-    execution_time = models.DateTimeField(db_column='EXEC_TIME')
-    done_time = models.DateTimeField(db_column='DONE_TIME')
-    message = models.CharField(max_length=2000, db_column='MESSAGE')
-    attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
-    status = models.CharField(max_length=20, db_column='STATUS', null=True)
-    config = models.CharField(max_length=2000, db_column='CONFIG')
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = prefetch_id('deft','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
-        super(WaitingStep, self).save(*args, **kwargs)
-
-    def set_config(self, update_dict):
-        if not self.config:
-            self.config = ''
-            currrent_dict = {}
-        else:
-            currrent_dict = json.loads(self.config)
-        currrent_dict.update(update_dict)
-        self.config = json.dumps(currrent_dict)
-
-    def remove_config(self, key):
-        if self.config:
-            currrent_dict = json.loads(self.config)
-            if key in currrent_dict:
-                currrent_dict.pop(key)
-                self.config = json.dumps(currrent_dict)
-
-    def get_config(self, field = None):
-        return_dict = {}
-        try:
-            return_dict = json.loads(self.config)
-        except:
-            pass
-        if field:
-            return return_dict.get(field,None)
-        else:
-            return return_dict
-
-
-    class Meta:
-        app_label = 'dev'
-        db_table = '"T_WAITING_STEP"'
+# class WaitingStep(models.Model):
+#
+#     ACTIONS = {
+#         1 : {'name':'postpone', 'description': 'Postpone ', 'attempts': 3, 'delay':1},
+#         2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 200, 'delay':1},
+#         3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
+#         4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
+#         5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
+#         8: {'name': 'preStageWithTaskArchive', 'description': 'Check that archive exists and pre-staged it',
+#             'attempts': 900, 'delay': 1}
+#     }
+#
+#
+#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
+#     request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
+#     step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')#models.ForeignKey(StepExecution, db_column='STEP_ID')
+#     action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
+#     create_time = models.DateTimeField(db_column='SUBMIT_TIME')
+#     execution_time = models.DateTimeField(db_column='EXEC_TIME')
+#     done_time = models.DateTimeField(db_column='DONE_TIME')
+#     message = models.CharField(max_length=2000, db_column='MESSAGE')
+#     attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
+#     status = models.CharField(max_length=20, db_column='STATUS', null=True)
+#     config = models.CharField(max_length=2000, db_column='CONFIG')
+#
+#     def save(self, *args, **kwargs):
+#         if not self.id:
+#             self.id = prefetch_id('deft','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
+#         super(WaitingStep, self).save(*args, **kwargs)
+#
+#     def set_config(self, update_dict):
+#         if not self.config:
+#             self.config = ''
+#             currrent_dict = {}
+#         else:
+#             currrent_dict = json.loads(self.config)
+#         currrent_dict.update(update_dict)
+#         self.config = json.dumps(currrent_dict)
+#
+#     def remove_config(self, key):
+#         if self.config:
+#             currrent_dict = json.loads(self.config)
+#             if key in currrent_dict:
+#                 currrent_dict.pop(key)
+#                 self.config = json.dumps(currrent_dict)
+#
+#     def get_config(self, field = None):
+#         return_dict = {}
+#         try:
+#             return_dict = json.loads(self.config)
+#         except:
+#             pass
+#         if field:
+#             return return_dict.get(field,None)
+#         else:
+#             return return_dict
+#
+#
+#     class Meta:
+#         app_label = 'dev'
+#         db_table = '"T_WAITING_STEP"'
 
 class HashTagToRequest(models.Model):
 
@@ -3254,7 +3253,7 @@ class DistributedLock(models.Model):
     def acquire_lock(lock_name: str, lock_timeout: int = 10):
         expiration_time = timezone.now() + timedelta(seconds=lock_timeout)
         try:
-            with transaction.atomic(using="dev_db_wr"):
+            with transaction.atomic(using="deft"):
                 lock, created = DistributedLock.objects.select_for_update().get_or_create(
                     lock_name=lock_name,
                     defaults={'locked_until': expiration_time, 'locked_type': 'default'}
@@ -3305,7 +3304,6 @@ class DistributedLock(models.Model):
                 if wait_timeout <= 0:
                     return False
     class Meta:
-        app_label = 'dev'
         db_table = 'T_DEFT_DISTR_LOCK'
 
 

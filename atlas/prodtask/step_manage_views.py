@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
-from atlas.prodtask.models import RequestStatus, WaitingStep, TrainProduction, MCPattern, SliceError, StepTemplate
+from atlas.prodtask.models import RequestStatus, TrainProduction, MCPattern, SliceError, StepTemplate
 from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, \
     single_request_action_celery_task, _set_request_hashtag
 from atlas.prodtask.spdstodb import fill_template
@@ -196,13 +196,7 @@ def reject_steps_in_slice(current_slice):
             elif (step.status == 'Approved') or (step.status == 'Waiting'):
                 step.status = 'NotChecked'
             step.save()
-            try:
-                for pre_definition_action in WaitingStep.objects.filter(step=step.id, status__in=['active','executing','failed']):
-                    pre_definition_action.status = 'cancelled'
-                    pre_definition_action.done_time = timezone.now()
-                    pre_definition_action.save()
-            except Exception as e:
-                pass
+
 
 def get_steps_for_update(reqid, slices, step_to_check, ami_tag):
         if step_to_check:
