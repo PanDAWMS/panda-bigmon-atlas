@@ -32,8 +32,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.cache import cache
 
-from django.utils.timezone import utc
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 import locale
 import time
@@ -589,9 +588,16 @@ class Parameters(datatables.Parametrized):
     task_status = datatables.Parameter(label='Status', name='status', id='status', get_Q=_task_status_Q )
     task_type = datatables.Parameter(label='Task type', get_Q=lambda v: (Q(project='user').__invert__() if (v=='production') else (Q(project='user') if (v=='analysis') else Q()) ) )
 
-
-    time_from = datatables.Parameter(label='Last update time period from', get_Q=lambda v: Q(timestamp__gt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
-    time_to = datatables.Parameter(label='Last update time period to', get_Q=lambda v: Q(timestamp__lt=datetime.utcfromtimestamp(float(v)/1000.).replace(tzinfo=utc).strftime(defaultDatetimeFormat)))
+    time_from = datatables.Parameter(
+        label='Last update time period from',
+        get_Q=lambda v: Q(
+            timestamp__gt=datetime.fromtimestamp(float(v) / 1000., tz=timezone.utc)
+        )
+    )
+    time_to = datatables.Parameter(label='Last update time period to',
+                                   get_Q=lambda v: Q(
+                                       timestamp__lt=datetime.fromtimestamp(float(v) / 1000., tz=timezone.utc)
+                                   ))
 
 
 @login_required(login_url=OIDC_LOGIN_URL)
@@ -840,7 +846,6 @@ def sync_old_tasks(task_number, time_interval = 14400):
         jedi_tasks_by_id = {}
         for jedi_task in jedi_tasks:
             jedi_tasks_by_id[int(jedi_task['id'])] = jedi_task
-        print(datetime.utcnow().replace(tzinfo=pytz.utc))
         for task in task_chunk:
             jedi_task = jedi_tasks_by_id[int(task.id)]
             if (task.status != jedi_task['status']) or (jedi_task['timestamp'] > task.timestamp):
