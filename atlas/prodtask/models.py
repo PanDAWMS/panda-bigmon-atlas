@@ -4,26 +4,22 @@ import time
 from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import timedelta
-from enum import Enum, auto
+from enum import Enum
 from pprint import pprint
-from typing import Dict, List, Literal, Any, Optional, Tuple
-from uuid import uuid1
-
+from typing import Dict, List, Literal, Any, Optional
 import math
 from django.core.cache import cache
-from django.db.models.signals import post_save
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, DatabaseError
-from django.db import connection
 from django.db import connections
 from django.db.models import CASCADE
 from django.utils import timezone
 from jinja2.nativetypes import NativeEnvironment
 from rest_framework import serializers
-from atlas.settings.config import PANDA_DB_SCHEMA
+from atlas.settings.config import PANDA_DB_SCHEMA, DEFT_DB_SCHEMA
 from ..prodtask.helper import Singleton
 import logging
-from django.dispatch import receiver
+
 _logger = logging.getLogger('prodtaskwebui')
 
 
@@ -275,7 +271,7 @@ class TRequest(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.reqid:
-            self.reqid = prefetch_id('deft','ATLAS_DEFT.T_PRODMANAGER_REQUEST_ID_SEQ','T_PRODMANAGER_REQUEST','PR_ID')
+            self.reqid = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_PRODMANAGER_REQUEST_ID_SEQ','T_PRODMANAGER_REQUEST','PR_ID')
 
         super(TRequest, self).save(*args, **kwargs)
 
@@ -304,7 +300,7 @@ class RequestStatus(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODMANAGER_REQ_STAT_ID_SEQ','T_PRODMANAGER_REQUEST_STATUS','REQ_S_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_PRODMANAGER_REQ_STAT_ID_SEQ','T_PRODMANAGER_REQUEST_STATUS','REQ_S_ID')
         super(RequestStatus, self).save(*args, **kwargs)
 
     def save_with_current_time(self, *args, **kwargs):
@@ -332,46 +328,12 @@ class StepTemplate(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_STEP_TEMPLATE_ID_SEQ','T_STEP_TEMPLATE','STEP_T_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_STEP_TEMPLATE_ID_SEQ','T_STEP_TEMPLATE','STEP_T_ID')
         super(StepTemplate, self).save(*args, **kwargs)
 
     class Meta:
-        #db_table = u'T_STEP_TEMPLATE'
         db_table = 'T_STEP_TEMPLATE'
-#
-# class Ttrfconfig(models.Model):
-#     tag = models.CharField(max_length=1, db_column='TAG', default='-')
-#     cid = models.DecimalField(decimal_places=0, max_digits=5, db_column='CID', primary_key=True, default=0)
-#     trf = models.CharField(max_length=80, db_column='TRF', null=True, default='transformation')
-#     lparams = models.CharField(max_length=1024, db_column='LPARAMS', null=True, default='parameter list')
-#     vparams = models.CharField(max_length=4000, db_column='VPARAMS', null=True, default='')
-#     trfv = models.CharField(max_length=40, db_column='TRFV', null=True)
-#     status = models.CharField(max_length=12, db_column='STATUS', null=True)
-#     ami_flag = models.DecimalField(decimal_places=0, max_digits=10, db_column='AMI_FLAG', null=True)
-#     createdby = models.CharField(max_length=60, db_column='CREATEDBY', null=True)
-#     input = models.CharField(max_length=20, db_column='INPUT', null=True)
-#     step = models.CharField(max_length=12, db_column='STEP', null=True)
-#     formats = models.CharField(max_length=256, db_column='FORMATS', null=True)
-#     cache = models.CharField(max_length=32, db_column='CACHE', null=True)
-#     cpu_per_event = models.DecimalField(decimal_places=0, max_digits=5, db_column='CPU_PER_EVENT', null=True, default=1)
-#     memory = models.DecimalField(decimal_places=0, max_digits=5, db_column='MEMORY', default=1000)
-#     priority = models.DecimalField(decimal_places=0, max_digits=5, db_column='PRIORITY', default=100)
-#     events_per_job = models.DecimalField(decimal_places=0, max_digits=10, db_column='EVENTS_PER_JOB', default=1000)
-#
-#
-#     class Meta:
-#         app_label = 'grisli'
-#         db_table = 'T_TRF_CONFIG'
 
-# class TDataFormatAmi(models.Model):
-#     format = models.CharField(max_length=32, db_column='FORMAT', primary_key=True)
-#     description = models.CharField(max_length=256, db_column='DESCRIPTION')
-#     status = models.CharField(max_length=8, db_column='STATUS')
-#     last_modified = models.DateTimeField(db_column='LASTMODIFIED')
-#
-#     class Meta:
-#         app_label = 'grisli'
-#         db_table = 'T_DATA_FORMAT_AMI'
 
 class ProductionDataset(models.Model):
     name = models.CharField(max_length=160, db_column='NAME', primary_key=True)
@@ -393,7 +355,6 @@ class ProductionDataset(models.Model):
     ddm_status = models.CharField(max_length=32, db_column='DDM_STATUS', null=True)
 
     class Meta:
-        #db_table = u'T_PRODUCTION_DATASET'
         db_table = 'T_PRODUCTION_DATASET'
 
 class ProductionContainer(models.Model):
@@ -408,7 +369,6 @@ class ProductionContainer(models.Model):
     #     ddm_timestamp = models.DateTimeField(db_column='DDM_TIMESTAMP', null=True)
 
     class Meta:
-        #db_table = u'T_PRODUCTION_DATASET'
         db_table = 'T_PRODUCTION_CONTAINER'
 
 
@@ -431,14 +391,13 @@ class InputRequestList(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_INPUT_DATASET_ID_SEQ','T_INPUT_DATASET','IND_ID')
         super(InputRequestList, self).save(*args, **kwargs)
 
     def tasks_in_slice(self):
         return ProductionTask.objects.filter(request=self.request, step__in=StepExecution.objects.filter(slice=self, request=self.request))
 
     class Meta:
-        #db_table = u'T_INPUT_DATASET'
         db_table = 'T_INPUT_DATASET'
 
 class SliceSerializer(serializers.ModelSerializer):
@@ -462,7 +421,6 @@ class RetryAction(models.Model):
         return "%i - %s" % (int(self.id), self.action_name)
     class Meta:
         app_label = 'panda'
-        #db_table = u'T_INPUT_DATASET'
         db_table = f'"{PANDA_DB_SCHEMA}"."RETRYACTIONS"'
 
 
@@ -479,21 +437,8 @@ class JediWorkQueue(models.Model):
 
     class Meta:
         app_label = 'panda'
-        #db_table = u'T_INPUT_DATASET'
         db_table = f'"{PANDA_DB_SCHEMA}"."JEDI_WORK_QUEUE"'
 
-
-#   ID NUMBER(10, 0) NOT NULL
-# , ERRORSOURCE VARCHAR2(256 BYTE) NOT NULL
-# , ERRORCODE NUMBER(10, 0) NOT NULL
-# , RETRYACTION_FK NUMBER(10, 0) NOT NULL
-# , PARAMETERS VARCHAR2(256 BYTE)
-# , ARCHITECTURE VARCHAR2(256 BYTE)
-# , RELEASE VARCHAR2(64 BYTE)
-# , WORKQUEUE_ID NUMBER(5, 0)
-# , DESCRIPTION VARCHAR2(250 BYTE)
-# , EXPIRATION_DATE TIMESTAMP(6)
-# , ACTIVE CHAR(1 BYTE) DEFAULT 'Y' NOT NULL
 
 
 class RetryErrors(models.Model):
@@ -659,39 +604,6 @@ class TDataFormat(models.Model):
     class Meta:
         db_table = "T_DATA_FORMAT"
 
-# class MCPileupOverlayGroupDescription(models.Model):
-#
-#     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_GROUP_ID', primary_key=True)
-#     description = models.CharField(max_length=255, db_column='DESCRIPTION')
-#
-#     def save(self, *args, **kwargs):
-#         #self.timestamp = timezone.now()
-#         if not self.id:
-#             self.id = prefetch_id('dev_db',u'T_MC_PO_PHYS_GROUP_SEQ',"T_MC_PO_PHYS_GROUP",'POG_GROUP_ID')
-#         super(MCPileupOverlayGroupDescription, self).save(*args, **kwargs)
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table = u'"ATLAS_DEFT"."T_MC_PO_PHYS_GROUP"'
-#
-# class MCPileupOverlayGroups(models.Model):
-#
-#     id =  models.DecimalField(decimal_places=0, max_digits=12, db_column='POG_ID', primary_key=True)
-#     campaign = models.CharField(max_length=50, db_column='CAMPAIGN')
-#     dsid  = models.DecimalField(decimal_places=0, max_digits=12, db_column='DSID')
-#     group = models.ForeignKey(MCPileupOverlayGroupDescription, db_column='POG_GROUP_ID')
-#
-#     def save(self, *args, **kwargs):
-#         #self.timestamp = timezone.now()
-#         if not self.id:
-#             self.id = prefetch_id('dev_db',u'T_PILEUP_OVERLAY_GROUPS_SEQ',"T_PILEUP_OVERLAY_GROUPS",'POG_ID')
-#         super(MCPileupOverlayGroups, self).save(*args, **kwargs)
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table = u'"ATLAS_DEFT"."T_PILEUP_OVERLAY_GROUPS"'
-
-
 
 class ParentToChildRequest(models.Model):
     RELATION_TYPE = (
@@ -723,28 +635,6 @@ class ParentToChildRequest(models.Model):
 
 
 
-
-
-
-#
-# class HashTagToHashTag(models.Model):
-#
-#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='HTTT_ID', primary_key=True)
-#     hashtag_parent = models.ForeignKey(TRequest,  db_column='HT_ID_PARENT')
-#     hashtag_child = models.ForeignKey(HashTag, db_column='HT_ID_CHILD')
-#
-#     def save(self, *args, **kwargs):
-#         if not self.id:
-#             self.id = prefetch_id('dev_db',u'T_HT_TO_TASK',"T_HT_TO_TASK",'HTTT_ID')
-#         super(HashTagToHashTag, self).save(*args, **kwargs)
-#
-#     def save_last_update(self, *args, **kwargs):
-#         self.last_update = timezone.now()
-#         super(HashTagToHashTag, self).save(*args, **kwargs)
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table = u'"T_HT_TO_HT"'
 
 
 class StepExecution(models.Model):
@@ -851,7 +741,7 @@ class StepExecution(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_PRODUCTION_STEP_ID_SEQ','T_PRODUCTION_STEP','STEP_ID')
         if not self.step_parent_id:
             self.step_parent_id = self.id
         super(StepExecution, self).save(*args, **kwargs)
@@ -889,31 +779,9 @@ class StepExecution(models.Model):
         return False
 
     class Meta:
-        #db_table = u'T_PRODUCTION_STEP'
         db_table = 'T_PRODUCTION_STEP'
 
 
-
-# class TaskTemplate(models.Model):
-#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASK_TEMPLATE_ID', primary_key=True)
-#     step = models.ForeignKey(StepExecution, db_column='STEP_ID', on_delete=CASCADE)
-#     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
-#     parent_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='PARENT_TID')
-#     name = models.CharField(max_length=130, db_column='TASK_NAME')
-#     timestamp = models.DateTimeField(db_column='TIMESTAMP')
-#     template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
-#     task_template = models.JSONField(db_column='TEMPLATE')
-#     task_error = models.CharField(max_length=4000, db_column='TRASK_ERROR', null=True)
-#     build = models.CharField(max_length=200, db_column='TAG', null=True)
-#
-#
-#     def save(self, *args, **kwargs):
-#         self.timestamp = timezone.now()
-#         super(TaskTemplate, self).save(*args, **kwargs)
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table =  "T_TASK_TEMPLATE"
 class TaskTemplate(models.Model):
 
     class TEMPLATE_TYPE():
@@ -939,6 +807,7 @@ class TaskTemplate(models.Model):
     class Meta:
         app_label = 'dev'
         db_table =  "T_TASK_TEMPLATE"
+
 class TConfig(models.Model):
     app = models.CharField(max_length=64, db_column='APP', null=False)
     component = models.CharField(max_length=64, db_column='COMPONENT', null=False)
@@ -980,7 +849,7 @@ class TConfig(models.Model):
 
     class Meta:
         unique_together = (('app', 'component', 'key'),)
-        db_table = '"ATLAS_DEFT"."T_CONFIG"'
+        db_table = "T_CONFIG"
 
 class TTask(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='TASKID', primary_key=True)
@@ -1091,16 +960,13 @@ class TTask(models.Model):
         super(TTask, self).save(*args, **kwargs)
 
     def get_id(self):
-        return prefetch_id('deft', 'ATLAS_DEFT.PRODSYS2_TASK_ID_SEQ', 'T_TASK', 'TASKID')
+        return prefetch_id('deft', f'{DEFT_DB_SCHEMA}.PRODSYS2_TASK_ID_SEQ', 'T_TASK', 'TASKID')
 
     def delete(self, *args, **kwargs):
          return
 
     class Meta:
-#        managed = False
-#        db_table =  u'"ATLAS_DEFT"."T_TASK"'
         db_table =  "T_TASK"
-     #   app_label = 'taskmon'
 
 
 @dataclass
@@ -1901,7 +1767,7 @@ class HashTag(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_HASHTAG_ID_SEQ',"T_HASHTAG",'HT_ID')
         super(HashTag, self).save(*args, **kwargs)
 
     @property
@@ -1924,7 +1790,7 @@ class HashTag(models.Model):
         return self.hashtag
 
     class Meta:
-        db_table = '"ATLAS_DEFT"."T_HASHTAG"'
+        db_table = "T_HASHTAG"
 
 
 
@@ -1941,7 +1807,7 @@ class HashTagToTask(models.Model):
         print((self._meta.db_table))
 
     class Meta:
-        db_table = '"ATLAS_DEFT"."T_HT_TO_TASK"'
+        db_table = "T_HT_TO_TASK"
 
 
 
@@ -2213,7 +2079,7 @@ class ActionDefault(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ACTION_DEFAULT_CONFIG_SEQ','"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"','ACT_DEFAULT_ID')
+            self.id = prefetch_id('deft','ACTION_DEFAULT_CONFIG_SEQ',"T_ACTION_DEFAULT_CONFIG",'ACT_DEFAULT_ID')
         super(ActionDefault, self).save(*args, **kwargs)
 
     def set_config(self, update_dict):
@@ -2246,7 +2112,7 @@ class ActionDefault(models.Model):
 
 
     class Meta:
-        db_table = '"ATLAS_DEFT"."T_ACTION_DEFAULT_CONFIG"'
+        db_table = "T_ACTION_DEFAULT_CONFIG"
 
 
 
@@ -2503,67 +2369,6 @@ class GroupProductionDeletionProcessing(models.Model):
         db_table = '"T_GP_DELETION_PROC"'
 
 
-# class WaitingStep(models.Model):
-#
-#     ACTIONS = {
-#         1 : {'name':'postpone', 'description': 'Postpone ', 'attempts': 3, 'delay':1},
-#         2 : {'name': 'check2rep', 'description': 'Check that 2 replicas are done ', 'attempts': 200, 'delay':1},
-#         3: {'name': 'checkEvgen', 'description': 'Check that evgen is > 50% done ', 'attempts': 90, 'delay':1},
-#         4: {'name': 'preStage', 'description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
-#         5: {'name': 'preStageWithTask','description': 'Check that dataset is pre-staged and do if not', 'attempts': 900, 'delay':1},
-#         8: {'name': 'preStageWithTaskArchive', 'description': 'Check that archive exists and pre-staged it',
-#             'attempts': 900, 'delay': 1}
-#     }
-#
-#
-#     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='WSTEP_ID', primary_key=True)
-#     request = models.ForeignKey(TRequest,  db_column='PR_ID', on_delete=CASCADE)
-#     step = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_ID')#models.ForeignKey(StepExecution, db_column='STEP_ID')
-#     action = models.DecimalField(decimal_places=0, max_digits=12, db_column='TYPE')
-#     create_time = models.DateTimeField(db_column='SUBMIT_TIME')
-#     execution_time = models.DateTimeField(db_column='EXEC_TIME')
-#     done_time = models.DateTimeField(db_column='DONE_TIME')
-#     message = models.CharField(max_length=2000, db_column='MESSAGE')
-#     attempt = models.DecimalField(decimal_places=0, max_digits=12, db_column='ATTEMPT')
-#     status = models.CharField(max_length=20, db_column='STATUS', null=True)
-#     config = models.CharField(max_length=2000, db_column='CONFIG')
-#
-#     def save(self, *args, **kwargs):
-#         if not self.id:
-#             self.id = prefetch_id('deft','T_WAITING_STEP_SEQ',"T_WAITING_STEP",'HTTR_ID')
-#         super(WaitingStep, self).save(*args, **kwargs)
-#
-#     def set_config(self, update_dict):
-#         if not self.config:
-#             self.config = ''
-#             currrent_dict = {}
-#         else:
-#             currrent_dict = json.loads(self.config)
-#         currrent_dict.update(update_dict)
-#         self.config = json.dumps(currrent_dict)
-#
-#     def remove_config(self, key):
-#         if self.config:
-#             currrent_dict = json.loads(self.config)
-#             if key in currrent_dict:
-#                 currrent_dict.pop(key)
-#                 self.config = json.dumps(currrent_dict)
-#
-#     def get_config(self, field = None):
-#         return_dict = {}
-#         try:
-#             return_dict = json.loads(self.config)
-#         except:
-#             pass
-#         if field:
-#             return return_dict.get(field,None)
-#         else:
-#             return return_dict
-#
-#
-#     class Meta:
-#         app_label = 'dev'
-#         db_table = '"T_WAITING_STEP"'
 
 class HashTagToRequest(models.Model):
 
@@ -2635,7 +2440,7 @@ class MCPattern(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_MCP_ID_SEQ','T_PRODUCTION_MC_PATTERN','MCP_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_PRODUCTION_MCP_ID_SEQ','T_PRODUCTION_MC_PATTERN','MCP_ID')
         super(MCPattern, self).save(*args, **kwargs)
 
     class Meta:
@@ -2667,7 +2472,7 @@ class MCPriority(models.Model):
         if self.priority_key == -1:
             return
         if not self.id:
-            self.id = prefetch_id('deft','ATLAS_DEFT.T_PRODUCTION_MCPRIOR_ID_SEQ','T_PRODUCTION_MC_PRIORITY','MCPRIOR_ID')
+            self.id = prefetch_id('deft',f'{DEFT_DB_SCHEMA}.T_PRODUCTION_MCPRIOR_ID_SEQ','T_PRODUCTION_MC_PRIORITY','MCPRIOR_ID')
         super(MCPriority, self).save(*args, **kwargs)
 
     def priority(self, step, tag):
@@ -2774,9 +2579,6 @@ class GDPConfig(models.Model):
     type = models.CharField(max_length=64, db_column='TYPE')
     descr = models.CharField(max_length=256, db_column='DESCR')
 
-    #def save(self, *args, **kwargs):
-    #    raise NotImplementedError('Only manual creation')
-
     class Meta:
         unique_together = (('app', 'component' , 'key' , 'vo'),)
         app_label = 'panda'
@@ -2794,7 +2596,6 @@ class GlobalShare(models.Model):
     class Meta:
         app_label = 'panda'
         db_table = f'"{PANDA_DB_SCHEMA}"."GLOBAL_SHARES"'
-#        db_table = u"GLOBAL_SHARES"
 
 
 
@@ -2981,8 +2782,6 @@ class PandaDatasetStaging(models.Model):
     source_tape =  models.CharField(max_length=200, db_column='SOURCE_TAPE', null=True)
     last_staged_time = models.DateTimeField(db_column='last_staged_time', null=True)
 
-    # def save(self, *args, **kwargs):
-    #     raise NotImplementedError('Read only')
 
     def active_tasks(self):
         tasks_ids = PandaDatasetStagingRelationship.objects.filter(request_id=self.id).values_list('task_id', flat=True)
@@ -3199,7 +2998,7 @@ class ProductionTag(models.Model):
     step_template_id = models.DecimalField(decimal_places=0, max_digits=12, db_column='STEP_T_ID', null=False)
 
     class Meta:
-        db_table = '"ATLAS_DEFT"."T_PRODUCTION_TAG"'
+        db_table = "T_PRODUCTION_TAG"
 
 class PhysicsContainer(models.Model):
     name = models.CharField(max_length=150, db_column='NAME', primary_key=True)
@@ -3213,7 +3012,7 @@ class PhysicsContainer(models.Model):
     prod_step = models.CharField(max_length=15, db_column='PROD_STEP', null=True)
 
     class Meta:
-        db_table = '"ATLAS_DEFT"."T_PHYSICS_CONTAINER"'
+        db_table = "T_PHYSICS_CONTAINER"
 
 class TTrfConfig(models.Model):
     tag = models.CharField(max_length=1, db_column='TAG', null=False)

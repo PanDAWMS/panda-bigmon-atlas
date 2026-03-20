@@ -3,8 +3,11 @@ from os.path import dirname, join
 
 import atlas
 import atlas.common
-from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT, ADMIN_MAILS, PANDA_DB_SCHEMA
-
+from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT, ADMIN_MAILS, PANDA_DB_SCHEMA, DEFT_DB_SCHEMA, USE_ORACLEDB
+if USE_ORACLEDB:
+    import oracledb
+    oracledb.init_oracle_client()
+    
 ALLOWED_HOSTS = [
     ### cern.ch
     '.cern.ch',  # Allow domain and subdomains
@@ -24,7 +27,7 @@ admin_mails = ADMIN_MAILS
 defaultDatetimeFormat = "%Y-%m-%d %H:%M:%S"
 
 PANDA_DB_SCHEMA = PANDA_DB_SCHEMA
-
+DEFT_DB_SCHEMA = DEFT_DB_SCHEMA
 DATABASE_ROUTERS = ['atlas.dbrouter.ProdMonDBRouter']
 
 
