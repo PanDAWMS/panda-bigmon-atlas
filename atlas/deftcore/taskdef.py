@@ -38,6 +38,7 @@ from atlas.cric.client import CRICClient
 from atlas.JIRA.client import JIRAClient
 from .projectmode import ProjectMode
 import  xml.etree.ElementTree as ET
+from numbers import Number
 
 from ..prodtask.mcevgen import resolve_job_parameters_from_yaml
 
@@ -837,8 +838,10 @@ class TaskDefinition(object):
 
 
     def _find_tag_fold(self, version_list, folding_prod_step):
-        if ProductionTask.objects.filter(ami_tag=version_list[-1], status__in=['done','finished']).exists():
-            task = ProductionTask.objects.filter(ami_tag=version_list[-1], status__in=['done','finished']).latest('id')
+        if ProductionTask.objects.filter(ami_tag=version_list[-1],
+                                         status__in=[ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]+ProductionTask.SYNC_STATUS).exists():
+            task = ProductionTask.objects.filter(ami_tag=version_list[-1],
+                                                 status__in=[ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]+ProductionTask.SYNC_STATUS).latest('id')
             parent_dataset = task.inputdataset
             while folding_prod_step not in parent_dataset:
                 if 'tid' in parent_dataset:
@@ -1660,7 +1663,7 @@ class TaskDefinition(object):
         if number_of_jobs > TaskDefConstants.DEFAULT_MAX_NUMBER_OF_JOBS_PER_TASK:
             raise MaxJobsPerTaskLimitExceededException(number_of_jobs)
 
-        if task_common_offset:
+        if task_common_offset and not isinstance(task_common_offset, Number):
             task_common_offset_hashtag = TaskDefConstants.DEFAULT_TASK_COMMON_OFFSET_HASHTAG_FORMAT.format(
                 task_common_offset
             )
@@ -5567,7 +5570,7 @@ class TaskDefinition(object):
 
         nfiles_requested = math.ceil(int(step.input_events) * nfiles_per_job / nevents_per_job)
         nfiles = 0
-        if project_mode.commonOffset:
+        if project_mode.commonOffset and isinstance(project_mode.commonOffset, Number):
              nfiles_used = int(project_mode.commonOffset)
         files_used_count = nfiles_used
         files_requested_count = nfiles_requested
