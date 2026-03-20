@@ -32,7 +32,8 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.cache import cache
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
 import pytz
 import locale
 import time
