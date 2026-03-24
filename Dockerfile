@@ -54,6 +54,7 @@ ENV DJANGO_SETTINGS_MODULE atlas.settings
 
 RUN mkdir -p ${WSGI_PATH}/config
 RUN mkdir ${WSGI_PATH}/logs
+RUN mkdir ${WSGI_PATH}/logs/json
 COPY . ${WSGI_PATH}/deft/
 
 RUN python$(echo ${PYTHON_VERSION} | sed -E 's/\.[0-9]+$//') -m venv ${VIRTUALENV_PATH}
