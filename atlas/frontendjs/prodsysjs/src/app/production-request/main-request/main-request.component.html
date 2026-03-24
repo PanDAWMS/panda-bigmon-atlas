@@ -2,9 +2,7 @@
 <div style="height: 300px" >
   <app-pattern-selection [patterns]="mockPatterns" ></app-pattern-selection>
 
-    <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="reShuffle()">
-      shuffle
-    </button>
+
 <input [(ngModel)]="scrollIndex" type='number' placeholder="Index" class="border border-gray-300 p-1 rounded-lg" >
 <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="scrollTo(scrollIndex)">
   Scroll to index
@@ -18,9 +16,9 @@
   <cdk-virtual-scroll-viewport itemSize="50" #scrollViewport  scrollWindow>
     <div *cdkVirtualFor="let myRow of rowsDatasource; let rowIndex = index;" class="flex items-center h-16 border-b">
       <!-- Columns within a row -->
-      @if(myRow.checkbox !== undefined){
+      @if(myRow.checkbox){
       <div class="flex items-center justify-center" style="width: 50px">
-        <input type="checkbox" [checked]="myRow.checkbox" (change)="handleCheckboxChange(rowIndex)">
+        <input type="checkbox" [checked]="myRow.checkbox" (change)="handleCheckboxChange(myRow.sliceNumber)">
       </div>
       } @else {
         <div class="flex items-center justify-center" style="width: 50px">
@@ -30,7 +28,7 @@
       <div
         [class]="column.cssClasses"
         [style.flex]="column.span"
-        (click)="handleColumnClick(myRow.myIndex, $index)"
+        (click)="handleColumnClick(myRow.sliceNumber, myRow.indexInsideSlice, $index)"
         class="flex items-center justify-center">
         {{ column.text }}
       </div>

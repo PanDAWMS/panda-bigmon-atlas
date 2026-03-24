@@ -1,0 +1,28 @@
+    .grid-container {
+      width: 90%;
+      margin: 0 auto;
+    }
+
+    .grid-row {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .grid-item {
+      padding: 12px;
+      text-align: center;
+      border-radius: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .first-row {
+      /*background-color: #e0f2fe;*/
+      border: 1px solid #38bdf8;
+    }
+
+    .second-row {
+      background-color: #f0fdf4;
+      border: 1px solid #4ade80;
+    }

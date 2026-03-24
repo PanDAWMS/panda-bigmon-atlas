@@ -1,6 +1,7 @@
 import {Component, computed, input, OnInit, signal} from '@angular/core';
-import {CampaignPattern, MCPattern} from "../production-request-models";
+import {CampaignPattern, MCPattern, PatternSteps} from "../production-request-models";
 import {toObservable} from "@angular/core/rxjs-interop";
+import {NgClass} from "@angular/common";
 
 interface CampaignPatternWithStyles {
   style: string;
@@ -9,13 +10,15 @@ interface CampaignPatternWithStyles {
 
 @Component({
   selector: 'app-pattern-selection',
-  imports: [],
+  imports: [
+    NgClass
+  ],
   templateUrl: './pattern-selection.component.html',
   styleUrl: './pattern-selection.component.css'
 })
-export class PatternSelectionComponent implements OnInit {
+export class PatternSelectionComponent {
 
-  patterns = input(undefined, {transform: this.prepareStyles});
+  patterns = input<CampaignPattern[]>([]);
 
   campaignColors = [
     "bg-red-200",
@@ -23,35 +26,26 @@ export class PatternSelectionComponent implements OnInit {
     "bg-blue-200",
     "bg-yellow-200"
   ];
-
-  styleReady = signal(false);
-
-  campaignsWithStyles = computed(() => this.patterns().campaignPatterns.map((campaign, index) => {
-    return {
-      ...campaign,
-       style: `col-span-${stepsInPattern(campaign.patterns)} font-bold text-gray-700 border-4 border-indigo-600 ${this.campaignColors[index % this.campaignColors.length]}`
-
-    };
-  }
-  ));
-inputObs$ = toObservable(this.patterns);
-ngOnInit(): void {
-  this.inputObs$.subscribe((campaigns) => {
-    if (campaigns.campaignPatterns.length > 0) {
-      this.styleReady.set(true);
-    }
+  stepArray = computed<PatternSteps[]>( () => {
+    return this.patterns().reduce((acc, campaign) => {
+      return acc.concat(campaign.patterns.reduce((acc2, pattern) => {
+        return acc2.concat(pattern.steps);
+      }, []));
+    }, []);
   });
+  patternArray = computed<MCPattern[]>( () => {
+    return this.patterns().reduce((acc, campaign) => {
+      return acc.concat(campaign.patterns);
+    }, []);
+  });
+
+    getGridTemplate(): string {
+      const totalColumns = this.stepArray().length;
+      return `repeat(${totalColumns}, 1fr)`;
+  }
+
+    getColorClass(index: number): string {
+    return this.campaignColors[index % this.campaignColors.length];
+  }
 }
 
-  prepareStyles(patterns: CampaignPattern[]| undefined): CampaignPatternWithStyles {
-    const totalSteps = patterns.reduce((acc, campaign) => acc +
-      stepsInPattern(campaign.patterns), 0);
-    return {
-      campaignPatterns: patterns,
-       style: `border-solid grid grid-cols-${totalSteps} cursor-pointer`
-    };
-  }
-}
-function  stepsInPattern(patterns: MCPattern[]): number {
-    return patterns.reduce((acc2, pattern) => acc2 + pattern.steps.length, 0);
-  }

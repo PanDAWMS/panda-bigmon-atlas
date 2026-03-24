@@ -1,32 +1,50 @@
-@if(styleReady()){
-<div [class]="patterns().style">
-@for( campaign of campaignsWithStyles(); track campaign){
-  <div [class]="campaign.style">
-    {{campaign.project}} {{campaign.campaign}}:{{campaign.subcampaing}}
-  </div>
-  }
-@for( campaign of campaignsWithStyles(); track campaign){
-  @for( pattern of campaign.patterns; track pattern){
-    @for (step of pattern.steps; track step){
-      <div class="bg-yellow-400 hover:bg-yellow-200 text-center py-2 font-medium text-gray-800 border-t-4 border-r-4 border-l-4 border-indigo-600 border-solid">
-        {{step.step}}
-      </div>
-      }
-    }
-  }
-  @for( campaign of campaignsWithStyles(); track campaign){
-  @for( pattern of campaign.patterns; track pattern){
-    @for (step of pattern.steps; track step){
-      <div class="bg-white-400 hover:bg-gray-100 text-center py-2 font-medium text-gray-800 border-b-4 border-r-4 border-l-4 border-indigo-600 border-solid">
-        {{step.tag}}
-      </div>
-      }
-    }
-  }
-</div>
-}
+<!--@if(styleReady()){-->
+<!--<div [class]="patterns().style">-->
+<!--@for( campaign of campaignsWithStyles(); track campaign){-->
+<!--  <div [class]="campaign.style">-->
+<!--    {{campaign.project}} {{campaign.campaign}}:{{campaign.subcampaing}}-->
+<!--  </div>-->
+<!--  }-->
+<!--@for( campaign of campaignsWithStyles(); track campaign){-->
+<!--  @for( pattern of campaign.patterns; track pattern){-->
+<!--    @for (step of pattern.steps; track step){-->
+<!--      <div class="bg-yellow-400 hover:bg-yellow-200 text-center py-2 font-medium text-gray-800 border-t-4 border-r-4 border-l-4 border-indigo-600 border-solid">-->
+<!--        {{step.step}}-->
+<!--      </div>-->
+<!--      }-->
+<!--    }-->
+<!--  }-->
+<!--  @for( campaign of campaignsWithStyles(); track campaign){-->
+<!--  @for( pattern of campaign.patterns; track pattern){-->
+<!--    @for (step of pattern.steps; track step){-->
+<!--      <div class="bg-white-400 hover:bg-gray-100 text-center py-2 font-medium text-gray-800 border-b-4 border-r-4 border-l-4 border-indigo-600 border-solid">-->
+<!--        {{step.tag}}-->
+<!--      </div>-->
+<!--      }-->
+<!--    }-->
+<!--  }-->
+<!--</div>-->
+<!--}-->
 
+    <div class="grid-container">
+      <!-- First row with spans -->
+      <div class="grid-row" [style.grid-template-columns]="getGridTemplate()">
+        @for (item of patternArray(); track item) {
+          <div class="grid-item" [ngClass]="[getColorClass($index), 'first-row']" [style.grid-column]="'span ' + item.steps.length">
+            {{ item.pattern }}
+          </div>
+        }
+      </div>
 
+      <!-- Second row -->
+      <div class="grid-row" [style.grid-template-columns]="getGridTemplate()">
+        @for (item of stepArray(); track item) {
+          <div class="grid-item second-row">
+            {{ item.step }}
+          </div>
+        }
+      </div>
+    </div>
 
 
   <!-- Buttons -->
