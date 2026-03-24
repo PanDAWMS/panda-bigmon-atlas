@@ -19,9 +19,35 @@ from rest_framework import serializers
 from atlas.settings.config import PANDA_DB_SCHEMA, DEFT_DB_SCHEMA
 from ..prodtask.helper import Singleton
 import logging
+from django.db.models.fields.json import KeyTransform
 
 _logger = logging.getLogger('prodtaskwebui')
 
+
+
+class SafeJSONField(models.JSONField):
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+
+        # Oracle driver may already return native Python JSON values
+        if isinstance(value, (list, dict, int, float, bool)):
+            return value
+
+        if isinstance(value, (bytes, bytearray)):
+            value = value.decode()
+
+        # Keep Django's special handling
+        if isinstance(expression, KeyTransform) and not isinstance(value, str):
+            return value
+
+        if not isinstance(value, str):
+            return value
+
+        try:
+            return json.loads(value, cls=self.decoder)
+        except json.JSONDecodeError:
+            return value
 
 def days_ago(days: int): return timezone.now() - timedelta(days=days)
 
@@ -796,7 +822,7 @@ class TaskTemplate(models.Model):
     name = models.CharField(max_length=130, db_column='TASK_NAME')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     template_type = models.CharField(max_length=128, db_column='TEMPLATE_TYPE', null=True)
-    task_template = models.JSONField(db_column='TEMPLATE')
+    task_template = SafeJSONField(db_column='TEMPLATE')
     task_error = models.CharField(max_length=4000, db_column='TASK_ERROR', null=True)
     build = models.CharField(max_length=200, db_column='TAG', null=True)
 
@@ -1037,8 +1063,8 @@ class AnalysisTaskTemplate(models.Model):
 
     id = models.AutoField(db_column='AT_ID', primary_key=True)
     tag = models.CharField(max_length=50, db_column='TAG', null=True)
-    task_parameters = models.JSONField(db_column='TASK_PARAMETERS')
-    variables = models.JSONField(db_column='VARIABLES')
+    task_parameters = SafeJSONField(db_column='TASK_PARAMETERS')
+    variables = SafeJSONField(db_column='VARIABLES')
     build_task = models.DecimalField(decimal_places=0, max_digits=12, db_column='BUILD_TASKID', null=True)
     source_tar = models.CharField(max_length=300, db_column='SOURCE_TAR', null=True)
     source_action = models.CharField(max_length=50, db_column='SOURCE_ACTION', null=True)
@@ -1102,7 +1128,7 @@ class DSIDHashtags(models.Model):
     id = models.AutoField(db_column='DSIDHT_ID', primary_key=True)
     dsid = models.DecimalField(db_column='DSID', max_digits=12, decimal_places=0, null=False)
     etag = models.CharField(db_column='ETAG', max_length=64, null=True, blank=True)
-    hashtags = models.JSONField(db_column='HASHTAGS')
+    hashtags = SafeJSONField(db_column='HASHTAGS')
     timestamp = models.DateTimeField(db_column='TIMESTAMP', auto_now=True)
 
     def __str__(self):
@@ -1128,8 +1154,8 @@ class AnalysisStepTemplate(models.Model):
     id =  models.AutoField(db_column='AS_TEMPLATE_ID', primary_key=True)
     name = models.CharField(max_length=128, db_column='NAME', null=True)
     status = models.CharField(max_length=12, db_column='STATUS', null=True)
-    step_parameters = models.JSONField(db_column='STEP_PARAMETERS')
-    variables = models.JSONField(db_column='VARIABLES')
+    step_parameters = SafeJSONField(db_column='STEP_PARAMETERS')
+    variables = SafeJSONField(db_column='VARIABLES')
     timestamp = models.DateTimeField(db_column='TIMESTAMP', null=True)
     task_template = models.ForeignKey(AnalysisTaskTemplate, on_delete=models.CASCADE, db_column='AT_ID', null=True)
     request = models.ForeignKey(TRequest, db_column='PR_ID', on_delete=CASCADE)
@@ -1508,8 +1534,8 @@ class SystemParameters(models.Model):
 
 
     name = models.CharField(max_length=128, db_column='NAME', primary_key=True)
-    value = models.JSONField(db_column='value')
-    schema = models.JSONField(db_column='schema')
+    value = SafeJSONField(db_column='value')
+    schema = SafeJSONField(db_column='schema')
     typeName = models.CharField(max_length=128, db_column='TYPENAME')
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     cacheable = models.BooleanField(db_column='CACHEABLE')
@@ -2575,7 +2601,7 @@ class GDPConfig(models.Model):
     key = models.CharField(max_length=64, db_column='KEY', primary_key=True)
     vo = models.CharField(max_length=16, db_column='VO')
     value = models.CharField(max_length=256, db_column='VALUE')
-    value_json = models.JSONField(db_column='VALUE_JSON')
+    value_json = SafeJSONField(db_column='VALUE_JSON')
     type = models.CharField(max_length=64, db_column='TYPE')
     descr = models.CharField(max_length=256, db_column='DESCR')
 
@@ -2856,7 +2882,7 @@ class EventPickingUserRequest(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPU_ID', primary_key=True)
     requestor = models.CharField(max_length=200, db_column='REQUESTOR')
-    input_file = models.JSONField(db_column='INPUT_FILE')
+    input_file = SafeJSONField(db_column='INPUT_FILE')
     data_format = models.CharField(max_length=100, db_column='DATA_FORMAT')
     stream = models.CharField(max_length=200, db_column='STREAM')
     ami_tag = models.CharField(max_length=200, db_column='AMI_TAG', null=True)
@@ -2916,7 +2942,7 @@ class EventPickingProcessing(models.Model):
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
     logs = models.TextField(db_column='LOGS')
     status = models.CharField(max_length=12, db_column='STATUS')
-    stats = models.JSONField(db_column='STATS')
+    stats = SafeJSONField(db_column='STATS')
 
     @property
     def rucio_file(self) -> Optional[str]:
@@ -2937,7 +2963,7 @@ class EventPickingContent(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPC_ID', primary_key=True)
     ep_request = models.ForeignKey(EventPickingProcessing, db_column='EPU_ID', on_delete=CASCADE)
-    files_events = models.JSONField(db_column='FILES_EVENTS')
+    files_events = SafeJSONField(db_column='FILES_EVENTS')
     dataset_base = models.CharField(max_length=500, db_column='DATASET_NAME')
 
     @property
@@ -2968,7 +2994,7 @@ class DatasetRecoveryInfo(models.Model):
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='DS_RECOVERY_INFO_ID', primary_key=True)
     dataset_recovery = models.ForeignKey(DatasetRecovery, db_column='DS_RECOVERY_ID', on_delete=CASCADE)
     error = models.CharField(max_length=2000, db_column='ERROR', null=True)
-    info =  models.JSONField(db_column='INFO')
+    info =  SafeJSONField(db_column='INFO')
 
 
     def save(self, *args, **kwargs):
