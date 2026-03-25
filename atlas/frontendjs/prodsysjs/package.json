@@ -27,7 +27,7 @@
     "@typescript-eslint/parser": "^7.13.0",
     "ag-grid-angular": "^33.0.3",
     "ag-grid-community": "^33.0.3",
-    "jsondiffpatch": "^0.6.0",
+    "jsondiffpatch": "^0.7.3",
     "jsoneditor": "^10.1.1",
     "material-design-icons": "^3.0.1",
     "ngx-mat-select-search": "^8.0.4",
