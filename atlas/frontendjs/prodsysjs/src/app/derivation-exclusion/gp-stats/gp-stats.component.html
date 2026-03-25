@@ -10,64 +10,68 @@
 
 <div class="links">
   <ul>
-    <li *ngFor="let outputFormat of formatsOnPage">
-      <a [routerLink]='"."' [queryParamsHandling]="'merge'" [fragment]="outputFormat">{{outputFormat}}</a>
-    </li>
+    @for (outputFormat of formatsOnPage; track outputFormat) {
+      <li>
+        <a [routerLink]='"."' [queryParamsHandling]="'merge'" [fragment]="outputFormat">{{outputFormat}}</a>
+      </li>
+    }
   </ul>
 </div>
 <h3> <a href="https://os-atlas.cern.ch/dashboards/app/data-explorer/discover/#?_a=(discover:(columns:!(user,message,container,number_of_extension,_source),interval:auto,sort:!()),metadata:(indexPattern:bce7ecb0-7533-11eb-ba28-77fe4323ac05,view:discover))&_q=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bce7ecb0-7533-11eb-ba28-77fe4323ac05,key:funcName,negate:!f,params:(query:apply_extension),type:phrase,value:apply_extension),query:(match:(funcName:(query:apply_extension,type:phrase))))),query:(language:kuery,query:''))&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))">
-  Extension requests logs </a></h3>
+Extension requests logs </a></h3>
 
 <mat-divider></mat-divider>
-  <h3> <a [routerLink]="['/gp-api'] "> API description </a></h3>
+<h3> <a [routerLink]="['/gp-api'] "> API description </a></h3>
+<mat-divider></mat-divider>
+<h3> <a [routerLink]="['/gp-stats-matrix']" [queryParams]="{type: dataType}"> Full table of formats and ptags </a></h3>
+<mat-divider></mat-divider>
+<h3>Total containers: {{totalDatasets}} Total size: {{totalSize|datasetSize}}
+  Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3><br/> <h5>Last time updated: {{lastUpdateTime}}</h5>
   <mat-divider></mat-divider>
- <h3> <a [routerLink]="['/gp-stats-matrix']" [queryParams]="{type: dataType}"> Full table of formats and ptags </a></h3>
-  <mat-divider></mat-divider>
-  <h3>Total containers: {{totalDatasets}} Total size: {{totalSize|datasetSize}}
-    Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3><br/> <h5>Last time updated: {{lastUpdateTime}}</h5>
-  <mat-divider></mat-divider>
-<mat-card appearance="outlined" [style]="'height: 800px;'">
-  <ngx-charts-bar-vertical
-    [results]="sizeChart"
-    [gradient]="gradient"
-    [xAxis]="showXAxis"
-    [yAxis]="showYAxis"
-    [legend]="showLegend"
-    [showXAxisLabel]="showXAxisLabel"
-    [showYAxisLabel]="showYAxisLabel"
-    [xAxisLabel]="xAxisLabel"
-    [yAxisLabel]="yAxisLabel"
-    (select)="onChartSelect($event)"
-  >
-  </ngx-charts-bar-vertical>
-</mat-card>
+  <mat-card appearance="outlined" [style]="'height: 800px;'">
+    <ngx-charts-bar-vertical
+      [results]="sizeChart"
+      [gradient]="gradient"
+      [xAxis]="showXAxis"
+      [yAxis]="showYAxis"
+      [legend]="showLegend"
+      [showXAxisLabel]="showXAxisLabel"
+      [showYAxisLabel]="showYAxisLabel"
+      [xAxisLabel]="xAxisLabel"
+      [yAxisLabel]="yAxisLabel"
+      (select)="onChartSelect($event)"
+      >
+    </ngx-charts-bar-vertical>
+  </mat-card>
   <mat-divider></mat-divider>
 
-  <div class="section" *ngFor="let statsByOutput of statsByOutputBases" [attr.id]='statsByOutput.outputFormatBase' style="max-width: 800px" >
- <h5>{{statsByOutput.outputFormatBase}}</h5>
-<table mat-table [dataSource]="statsByOutput.dataSource"  multiTemplateDataRows  >
-    <ng-container matColumnDef="output">
-    <th mat-header-cell *matHeaderCellDef > Output </th>
-    <td mat-cell *matCellDef="let element"> <a [routerLink]="['/gp-deletion', dataType, element.outputFormat ]" >{{element.outputFormat}}</a> </td>
-  </ng-container>
-      <ng-container matColumnDef="containers">
-    <th mat-header-cell *matHeaderCellDef > Containers </th>
-    <td mat-cell *matCellDef="let element" > {{element.containers}} </td>
-  </ng-container>
-      <ng-container matColumnDef="size">
-    <th mat-header-cell *matHeaderCellDef > Size </th>
-    <td mat-cell *matCellDef="let element" > {{element.size  | datasetSize}} </td>
-  </ng-container>
-      <ng-container matColumnDef="containersToDelete">
-    <th mat-header-cell *matHeaderCellDef > Containers to delete </th>
-    <td mat-cell *matCellDef="let element" > {{element.containersToDelete}} </td>
-  </ng-container>
-      <ng-container matColumnDef="sizeToDelete">
-    <th mat-header-cell *matHeaderCellDef > Size </th>
-    <td mat-cell *matCellDef="let element" > {{element.sizeToDelete | datasetSize}} </td>
-  </ng-container>
-            <tr mat-header-row *matHeaderRowDef="['output', 'containers', 'size','containersToDelete','sizeToDelete']"></tr>
-          <tr mat-row *matRowDef="let row; columns: ['output', 'containers', 'size','containersToDelete','sizeToDelete'];"></tr>
-</table>
-</div>
+  @for (statsByOutput of statsByOutputBases; track statsByOutput) {
+    <div class="section" [attr.id]='statsByOutput.outputFormatBase' style="max-width: 800px" >
+      <h5>{{statsByOutput.outputFormatBase}}</h5>
+      <table mat-table [dataSource]="statsByOutput.dataSource"  multiTemplateDataRows  >
+        <ng-container matColumnDef="output">
+          <th mat-header-cell *matHeaderCellDef > Output </th>
+          <td mat-cell *matCellDef="let element"> <a [routerLink]="['/gp-deletion', dataType, element.outputFormat ]" >{{element.outputFormat}}</a> </td>
+        </ng-container>
+        <ng-container matColumnDef="containers">
+          <th mat-header-cell *matHeaderCellDef > Containers </th>
+          <td mat-cell *matCellDef="let element" > {{element.containers}} </td>
+        </ng-container>
+        <ng-container matColumnDef="size">
+          <th mat-header-cell *matHeaderCellDef > Size </th>
+          <td mat-cell *matCellDef="let element" > {{element.size  | datasetSize}} </td>
+        </ng-container>
+        <ng-container matColumnDef="containersToDelete">
+          <th mat-header-cell *matHeaderCellDef > Containers to delete </th>
+          <td mat-cell *matCellDef="let element" > {{element.containersToDelete}} </td>
+        </ng-container>
+        <ng-container matColumnDef="sizeToDelete">
+          <th mat-header-cell *matHeaderCellDef > Size </th>
+          <td mat-cell *matCellDef="let element" > {{element.sizeToDelete | datasetSize}} </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="['output', 'containers', 'size','containersToDelete','sizeToDelete']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['output', 'containers', 'size','containersToDelete','sizeToDelete'];"></tr>
+      </table>
+    </div>
+  }
 

@@ -1,40 +1,40 @@
 <div>
-<button mat-raised-button (click)="executeAction('abort', null)"  color="warn" class="action-button-menu" >Abort</button>
-<button mat-raised-button  [matMenuTriggerFor]="finishMenu"  class="action-button-menu" >Finish▼</button>
+  <button mat-raised-button (click)="executeAction('abort', null)"  color="warn" class="action-button-menu" >Abort</button>
+  <button mat-raised-button  [matMenuTriggerFor]="finishMenu"  class="action-button-menu" >Finish▼</button>
   <mat-menu #finishMenu="matMenu" yPosition="below">
     <div class="action-button-column">
       <button mat-raised-button color="primary" (click)="executeAction('finish',[true])">Soft finish</button>
       <button mat-raised-button color="primary" (click)="executeAction('finish',[false])">Hard finish</button>
-   </div>
+    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
-          </mat-form-field>
-        </div>
-    </div>
-  </mat-menu>
-<button mat-raised-button  [matMenuTriggerFor]="retryMenu"  class="action-button-menu">Retry▼</button>
-  <mat-menu #retryMenu="matMenu" yPosition="below">
-      <div class="action-button-column">
-        <button mat-raised-button color="primary" (click)="executeAction('force_retry',['', false, false, false, false, true])">Force Retry </button>
-        <button mat-raised-button color="primary" (click)="executeAction('retry',['', false, discardEvents.checked, discardStaging.checked, false, false])">Retry</button>
-        <mat-checkbox class="action-checkbox" #discardEvents (click)="$event.stopPropagation()">Discard events</mat-checkbox>
-        <mat-checkbox class="action-checkbox" #discardStaging (click)="$event.stopPropagation()">Discard staging mode</mat-checkbox>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+        </mat-form-field>
       </div>
-    <mat-divider></mat-divider>
-    <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
-          </mat-form-field>
-        </div>
     </div>
   </mat-menu>
-<button mat-raised-button  [matMenuTriggerFor]="reassignMenu"  class="action-button-menu">Reassign▼</button>
+  <button mat-raised-button  [matMenuTriggerFor]="retryMenu"  class="action-button-menu">Retry▼</button>
+  <mat-menu #retryMenu="matMenu" yPosition="below">
+    <div class="action-button-column">
+      <button mat-raised-button color="primary" (click)="executeAction('force_retry',['', false, false, false, false, true])">Force Retry </button>
+      <button mat-raised-button color="primary" (click)="executeAction('retry',['', false, discardEvents.checked, discardStaging.checked, false, false])">Retry</button>
+      <mat-checkbox class="action-checkbox" #discardEvents (click)="$event.stopPropagation()">Discard events</mat-checkbox>
+      <mat-checkbox class="action-checkbox" #discardStaging (click)="$event.stopPropagation()">Discard staging mode</mat-checkbox>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+        </mat-form-field>
+      </div>
+    </div>
+  </mat-menu>
+  <button mat-raised-button  [matMenuTriggerFor]="reassignMenu"  class="action-button-menu">Reassign▼</button>
   <mat-menu #reassignMenu="matMenu" yPosition="below">
     <div class="action-menu-row">
       <div class="task-action-input-form">
@@ -43,7 +43,7 @@
           <mat-select [panelWidth]="''" #sites multiple [(value)]="selectedSites" (selectionChange)="emptySelectedList($event)">
             <mat-option [value]="''" >Unselect Site</mat-option>
             @for(site of reassignEntities.sites; track site)
-            {
+              {
               <mat-option [value]="site">
                 {{site}}
               </mat-option>
@@ -51,43 +51,43 @@
           </mat-select>
         </mat-form-field>
         <mat-radio-group [(ngModel)]="siteOption"  (click)="$event.stopPropagation()" >
-            <mat-radio-button value="None">Kill </mat-radio-button>
-            <mat-radio-button value="nokill">No kill </mat-radio-button>
-            <mat-radio-button value="soft">Soft</mat-radio-button>
+          <mat-radio-button value="None">Kill </mat-radio-button>
+          <mat-radio-button value="nokill">No kill </mat-radio-button>
+          <mat-radio-button value="soft">Soft</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button [disabled]="selectedSites.length === 0" color="primary" (click)="executeAction('reassign_to_site',[sites.value.join(','), siteOption])">Go</button>
-      </div>
+      <button mat-raised-button [disabled]="selectedSites.length === 0" color="primary" (click)="executeAction('reassign_to_site',[sites.value.join(','), siteOption])">Go</button>
+    </div>
     <mat-divider></mat-divider>
-        @if(selectedSites.length>1){
-          <div  class="action-menu-row" style="overflow-wrap: anywhere">
-            Sites: {{sites.value.join(',')}}
-          </div>
-        }
+    @if(selectedSites.length>1){
+      <div  class="action-menu-row" style="overflow-wrap: anywhere">
+        Sites: {{sites.value.join(',')}}
+      </div>
+    }
 
     <mat-divider></mat-divider>
-        <div class="action-menu-row">
+    <div class="action-menu-row">
       <div class="task-action-input-form">
         <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
           <mat-label>Nucleus</mat-label>
           <mat-select #nucleus >
             <mat-option [value]="''">Unselect Nucleus</mat-option>
             @for(nucleu of reassignEntities.nucleus; track nucleu)
-            {
+              {
               <mat-option [value]="nucleu">
-                  {{nucleu}}
+                {{nucleu}}
               </mat-option>
             }
           </mat-select>
         </mat-form-field>
         <mat-radio-group [(ngModel)]="nucleuOption"  (click)="$event.stopPropagation()" >
-            <mat-radio-button value="None" >Kill </mat-radio-button>
-            <mat-radio-button value="nokill">No kill </mat-radio-button>
-            <mat-radio-button value="soft">Soft</mat-radio-button>
+          <mat-radio-button value="None" >Kill </mat-radio-button>
+          <mat-radio-button value="nokill">No kill </mat-radio-button>
+          <mat-radio-button value="soft">Soft</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button [disabled]="nucleus.value===undefined" color="primary" (click)="executeAction('reassign_to_nucleus',[nucleus.value, nucleuOption])">Go</button>
-      </div>
+      <button mat-raised-button [disabled]="nucleus.value===undefined" color="primary" (click)="executeAction('reassign_to_nucleus',[nucleus.value, nucleuOption])">Go</button>
+    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
       <div class="task-action-input-form">
@@ -95,7 +95,7 @@
           <mat-label>Shares</mat-label>
           <mat-select #shares >
             @for (share of reassignEntities.shares; track share)
-            {
+              {
               <mat-option [value]="share">
                 {{share}}
               </mat-option>
@@ -103,24 +103,24 @@
           </mat-select>
         </mat-form-field>
         <mat-radio-group [(ngModel)]="shareOption"  (click)="$event.stopPropagation()" >
-            <mat-radio-button [value]="false">Default </mat-radio-button>
-            <mat-radio-button [value]="true">Reassign running</mat-radio-button>
+          <mat-radio-button [value]="false">Default </mat-radio-button>
+          <mat-radio-button [value]="true">Reassign running</mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button [disabled]="shares.value===undefined" color="primary" (click)="executeAction('reassign_to_share',[shares.value, shareOption])">Go</button>
-      </div>
+      <button mat-raised-button [disabled]="shares.value===undefined" color="primary" (click)="executeAction('reassign_to_share',[shares.value, shareOption])">Go</button>
+    </div>
     <mat-divider></mat-divider>
-        <mat-divider></mat-divider>
+    <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
-<button mat-raised-button  [matMenuTriggerFor]="parametersMenu"  class="action-button-menu">Parameters▼</button>
+  <button mat-raised-button  [matMenuTriggerFor]="parametersMenu"  class="action-button-menu">Parameters▼</button>
   <mat-menu #parametersMenu="matMenu" yPosition="below">
     <div class="action-menu-row">
       <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
@@ -138,77 +138,77 @@
       <button mat-raised-button color="primary" (click)="executeAction('change_ram_count',[ramCountInput.value])">Set</button>
     </div>
     <mat-divider></mat-divider>
-      <div class="action-menu-row">
-        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-          <mat-label>Wall time</mat-label>
-          <input matInput type="number" #wallTimeInput >
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="executeAction('change_wall_time',[wallTimeInput.value])">Set</button>
-      </div>
-    <mat-divider></mat-divider>
-      <div class="action-menu-row">
-        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-          <mat-label>CPUtime</mat-label>
-          <input matInput type="number" #cpuTimeInput >
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="executeAction('change_cpu_time',[cpuTimeInput.value])">Set</button>
-      </div>
-    <mat-divider></mat-divider>
-      <div class="action-menu-row">
-        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-          <mat-label>Increase attempts by</mat-label>
-          <input matInput type="number" #increaseAttNumber >
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="executeAction('increase_attempt_number',[increaseAttNumber.value])">Set</button>
-      </div>
-    <mat-divider></mat-divider>
-      <div class="action-menu-row">
-        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-          <mat-label>Core count</mat-label>
-          <mat-select #coreCount [value]="0">
-            @for (cores of [0, 1, 2, 3, 4, 5, 6, 7, 8]; track cores){
-                <mat-option [value]="cores">
-                  {{cores}}
-                </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="executeAction('change_core_count',['coreCount', coreCount.value])">Set</button>
-      </div>
+    <div class="action-menu-row">
+      <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+        <mat-label>Wall time</mat-label>
+        <input matInput type="number" #wallTimeInput >
+      </mat-form-field>
+      <button mat-raised-button color="primary" (click)="executeAction('change_wall_time',[wallTimeInput.value])">Set</button>
+    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
-          </mat-form-field>
-        </div>
+      <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+        <mat-label>CPUtime</mat-label>
+        <input matInput type="number" #cpuTimeInput >
+      </mat-form-field>
+      <button mat-raised-button color="primary" (click)="executeAction('change_cpu_time',[cpuTimeInput.value])">Set</button>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+      <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+        <mat-label>Increase attempts by</mat-label>
+        <input matInput type="number" #increaseAttNumber >
+      </mat-form-field>
+      <button mat-raised-button color="primary" (click)="executeAction('increase_attempt_number',[increaseAttNumber.value])">Set</button>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+      <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+        <mat-label>Core count</mat-label>
+        <mat-select #coreCount [value]="0">
+          @for (cores of [0, 1, 2, 3, 4, 5, 6, 7, 8]; track cores){
+            <mat-option [value]="cores">
+              {{cores}}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-raised-button color="primary" (click)="executeAction('change_core_count',['coreCount', coreCount.value])">Set</button>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
   <button mat-raised-button  [matMenuTriggerFor]="splitRuleMenu"  class="action-button-menu">Split rule▼</button>
   <mat-menu #splitRuleMenu="matMenu" yPosition="below">
-          <h5 class="action-label">Split rule</h5>
-      <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Parameter</mat-label>
-            <input matInput  #splitRuleParameterInput >
-          </mat-form-field>
-          <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Value</mat-label>
-            <input matInput  #splitRuleValueInput >
-          </mat-form-field>
-        </div>
-        <button mat-raised-button color="primary" (click)="executeAction('change_split_rule',[splitRuleParameterInput.value,splitRuleValueInput.value])">Set</button>
-      </div>
-        <mat-divider></mat-divider>
+    <h5 class="action-label">Split rule</h5>
     <div class="action-menu-row">
-        <a href="https://panda-wms.readthedocs.io/en/latest/advanced/task_params.html">Help</a>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Parameter</mat-label>
+          <input matInput  #splitRuleParameterInput >
+        </mat-form-field>
+        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Value</mat-label>
+          <input matInput  #splitRuleValueInput >
+        </mat-form-field>
+      </div>
+      <button mat-raised-button color="primary" (click)="executeAction('change_split_rule',[splitRuleParameterInput.value,splitRuleValueInput.value])">Set</button>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="action-menu-row">
+      <a href="https://panda-wms.readthedocs.io/en/latest/advanced/task_params.html">Help</a>
     </div>
   </mat-menu>
 
-<button mat-raised-button (click)="executeAction('obsolete', null)"  color="accent" class="action-button-menu" >Obsolete</button>
-<button mat-raised-button  [matMenuTriggerFor]="klllJobsMenu"  class="action-button-menu">Kill jobs▼</button>
+  <button mat-raised-button (click)="executeAction('obsolete', null)"  color="accent" class="action-button-menu" >Obsolete</button>
+  <button mat-raised-button  [matMenuTriggerFor]="klllJobsMenu"  class="action-button-menu">Kill jobs▼</button>
   <mat-menu #klllJobsMenu="matMenu" yPosition="below">
     <div class="action-button-column">
       <button mat-raised-button color="primary" (click)="executeAction('abort_unfinished_jobs',[])">Soft kill all</button>
@@ -217,26 +217,26 @@
     <mat-divider></mat-divider>
     <p></p>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Jobs id</mat-label>
-            <textarea matInput type="textarea"  #jobsToKill ></textarea>
-          </mat-form-field>
-        </div>
-        <button mat-raised-button color="primary" (click)="executeAction('kill_job',[jobsToKill.value])">Kill</button>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Jobs id</mat-label>
+          <textarea matInput type="textarea"  #jobsToKill ></textarea>
+        </mat-form-field>
+      </div>
+      <button mat-raised-button color="primary" (click)="executeAction('kill_job',[jobsToKill.value])">Kill</button>
 
     </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
-<button mat-raised-button  [matMenuTriggerFor]="ctrlMenu"  class="action-button-menu">Ctrl▼</button>
+  <button mat-raised-button  [matMenuTriggerFor]="ctrlMenu"  class="action-button-menu">Ctrl▼</button>
   <mat-menu #ctrlMenu="matMenu" yPosition="below">
     <div class="action-button-column">
       <button mat-raised-button color="primary" (click)="executeAction('pause_task',[])">Pause</button>
@@ -248,28 +248,28 @@
       <button mat-raised-button color="primary" (click)="executeAction('release_task',[])">Release (skip iDDS)</button>
     </div>
     <mat-divider></mat-divider>
-        <div class="action-menu-row">
+    <div class="action-menu-row">
       <div class="task-action-input-form">
         <mat-radio-group [(ngModel)]="jobCloningMode"  (click)="$event.stopPropagation()" >
-            <mat-radio-button value="runonce">Run once </mat-radio-button>
-            <mat-radio-button value="storeonce">Store once </mat-radio-button>
+          <mat-radio-button value="runonce">Run once </mat-radio-button>
+          <mat-radio-button value="storeonce">Store once </mat-radio-button>
         </mat-radio-group>
       </div>
-        <button mat-raised-button style="height: auto" color="primary" (click)="executeAction('enable_job_cloning',[jobCloningMode])">Job Cloning</button>
-      </div>
-        <mat-divider></mat-divider>
+      <button mat-raised-button style="height: auto" color="primary" (click)="executeAction('enable_job_cloning',[jobCloningMode])">Job Cloning</button>
+    </div>
+    <mat-divider></mat-divider>
 
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  ></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
-<button mat-raised-button (click)="executeAction('sync_jedi', null)" class="action-button-menu" >Sync</button>
-<button mat-raised-button  [matMenuTriggerFor]="hashtagMenu"  class="action-button-menu"> # ▼</button>
+  <button mat-raised-button (click)="executeAction('sync_jedi', null)" class="action-button-menu" >Sync</button>
+  <button mat-raised-button  [matMenuTriggerFor]="hashtagMenu"  class="action-button-menu"> # ▼</button>
   <mat-menu #hashtagMenu="matMenu" yPosition="below">
     <div class="action-menu-row">
       <mat-form-field class="task-action-button-field" appearance="fill" (click)="$event.stopPropagation()">
@@ -277,44 +277,44 @@
         <input matInput  #hashtag >
       </mat-form-field>
     </div>
-     <div class="action-menu-row">
+    <div class="action-menu-row">
       <button mat-raised-button color="primary" (click)="executeAction('set_hashtag',[hashtag.value])">Set</button>
       <button mat-raised-button color="primary" (click)="executeAction('remove_hashtag',[hashtag.value])">Remove</button>
-     </div>
+    </div>
   </mat-menu>
   <mat-icon matTooltip="Docs" class="info-icon" style="margin-left: 4px;"><a href="https://atlas-computing.docs.cern.ch/production/prodsys-actions/prodsys-actions.html">info</a></mat-icon>
 
 </div>
-<ng-container *ngIf="actionExecuting">
+@if (actionExecuting) {
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-</ng-container>
-<ng-container *ngIf="actionExecution$ | async as actionResult;">
-  <ng-container *ngIf="actionResult.tasks_result.length===1; else multipleTasksResultBlock">
-      <mat-card appearance="outlined">
-        <mat-icon class="action-result-icon-{{actionResult.tasks_result[0].type}}">{{actionResult.tasks_result[0].type}}</mat-icon>
-        <span>{{actionResult.tasks_result[0].result}}</span>
-      </mat-card>
-    </ng-container>
-  <ng-template #multipleTasksResultBlock>
+}
+@if (actionExecution$ | async; as actionResult;) {
+  @if (actionResult.tasks_result.length===1) {
+    <mat-card appearance="outlined">
+      <mat-icon class="action-result-icon-{{actionResult.tasks_result[0].type}}">{{actionResult.tasks_result[0].type}}</mat-icon>
+      <span>{{actionResult.tasks_result[0].result}}</span>
+    </mat-card>
+  } @else {
     <mat-accordion>
       <mat-expansion-panel >
         <mat-expansion-panel-header>
           <mat-panel-title>
             <mat-icon class="action-result-icon-{{summaryTasksResult.status}}">{{summaryTasksResult.status}}</mat-icon>
-             <span>{{summaryTasksResult.result}}</span>
-            <ng-container *ngIf="reSendAction.tasks.length>0">
+            <span>{{summaryTasksResult.result}}</span>
+            @if (reSendAction.tasks.length>0) {
               <button (click)="reSendTasks()" style="margin-left: 7px" >Send command for {{reSendAction.tasks.length}} task(s)</button>
-            </ng-container>
+            }
           </mat-panel-title>
         </mat-expansion-panel-header>
         <mat-list>
-          <mat-list-item *ngFor="let taskResult of actionResult.tasks_result">
-            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
-            <span>{{taskResult.task_id}} - {{taskResult.result}}</span>
-
-          </mat-list-item>
+          @for (taskResult of actionResult.tasks_result; track taskResult) {
+            <mat-list-item>
+              <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+              <span>{{taskResult.task_id}} - {{taskResult.result}}</span>
+            </mat-list-item>
+          }
         </mat-list>
       </mat-expansion-panel>
     </mat-accordion>
-  </ng-template>
-</ng-container>
+  }
+}

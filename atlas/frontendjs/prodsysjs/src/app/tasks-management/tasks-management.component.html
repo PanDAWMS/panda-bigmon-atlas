@@ -1,50 +1,55 @@
-<div *ngIf="hashtagString !== ''; else requestTasks">
-  @switch (hashtagString) {
-    @case ('active+'){
-      <h3>All active tasks and tasks failed during the last 2 days</h3>
+@if (hashtagString !== '') {
+  <div>
+    @switch (hashtagString) {
+      @case ('active+'){
+        <h3>All active tasks and tasks failed during the last 2 days</h3>
+      }
+      @case ('recent_derivation'){
+        <h3>Derivation tasks for atlas-dpd-production for the last week </h3>
+      }
+      @case ('descendants'){
+        <h3>All descendants(including) for {{parentTaskID}}</h3>
+      }
+      @default{
+        <h3>Tasks for {{hashtagString}}</h3>
+      }
     }
-    @case ('recent_derivation'){
-      <h3>Derivation tasks for atlas-dpd-production for the last week </h3>
-    }
-    @case ('descendants'){
-      <h3>All descendants(including) for {{parentTaskID}}</h3>
-    }
-    @default{
-      <h3>Tasks for {{hashtagString}}</h3>
-    }
+  </div>
+} @else {
+  @if (requestInfo$ | async; as requestInfo) {
+    <table>
+      <tr>
+        <th>Request ID:</th>
+        <th>Description:</th>
+        <th>Reference:</th>
+        <th>Manager:</th>
+        <th>Physics group:</th>
+        <th>Campaign:</th>
+        <th>Project:</th>
+      </tr>
+      <tr>
+        <td><a href="/prodtask/inputlist_with_request/{{requestInfo.reqid}}">{{requestInfo.reqid}}</a> </td>
+        <td>{{requestInfo.description}} </td>
+        <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
+        <td>{{requestInfo.manager}} </td>
+        <td>{{requestInfo.phys_group}} </td>
+        <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>
+        <td>{{requestInfo.project}} </td>
+      </tr>
+    </table>
   }
-</div>
-<ng-template #requestTasks>
-<table *ngIf="requestInfo$ | async as requestInfo">
-  <tr>
-    <th>Request ID:</th>
-    <th>Description:</th>
-    <th>Reference:</th>
-    <th>Manager:</th>
-    <th>Physics group:</th>
-    <th>Campaign:</th>
-    <th>Project:</th>
-
-  </tr>
-  <tr>
-    <td><a href="/prodtask/inputlist_with_request/{{requestInfo.reqid}}">{{requestInfo.reqid}}</a> </td>
-    <td>{{requestInfo.description}} </td>
-    <td><a href="https://its.cern.ch/jira/browse/{{requestInfo.jira_reference}}"> {{requestInfo.jira_reference}}</a> </td>
-    <td>{{requestInfo.manager}} </td>
-    <td>{{requestInfo.phys_group}} </td>
-    <td>{{requestInfo.campaign}}:{{requestInfo.subcampaign}} </td>
-    <td>{{requestInfo.project}} </td>
-
-  </tr>
-</table>
-</ng-template>
-<p *ngIf="slices.length>0">Tasks for <b>{{slices.length}}</b> slices</p>
-<h1 *ngIf="loadError" style="color: red">Error loading tasks: {{loadError}}</h1>
-<div *ngIf="tasks$ | async as tasks; else loading">
-  <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="showOwner" [showHashTags]="showHashtags">
-
-  </app-production-task-table>
-</div>
-  <ng-template #loading>
-    <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
-  </ng-template>
+}
+@if (slices.length>0) {
+  <p>Tasks for <b>{{slices.length}}</b> slices</p>
+}
+@if (loadError) {
+  <h1 style="color: red">Error loading tasks: {{loadError}}</h1>
+}
+@if (tasks$ | async; as tasks) {
+  <div>
+    <app-production-task-table [tasks]="tasks" (taskChosen)="onTaskChosen($event)" [taskToShow]="taskID" [showOwner]="showOwner" [showHashTags]="showHashtags">
+    </app-production-task-table>
+  </div>
+} @else {
+  <mat-progress-bar  mode="indeterminate"></mat-progress-bar>
+}

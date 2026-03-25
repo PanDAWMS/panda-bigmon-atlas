@@ -1,35 +1,41 @@
 
-<div *ngIf="taskTemplate$ | async as taskTemplate">
-
-  <div class="templateBaseParams" [formGroup]="templateForm">
+@if (taskTemplate$ | async; as taskTemplate) {
+  <div>
+    <div class="templateBaseParams" [formGroup]="templateForm">
       <div><b>Tag: </b>{{taskTemplate.tag}} <button mat-raised-button color="primary" [routerLink]="['/create-analysis-request',taskTemplate.tag]" >Create request</button></div>
       <div><b>Status:</b>
-          <mat-select formControlName="status" >
-            <mat-option [value]="'ACTIVE'">Active</mat-option>
-            <mat-option [value]="'OBSOLETE'">Obsolete</mat-option>
-          </mat-select>
-      </div>
-      <div><b>Original task: </b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
-      <div><b>Description:</b> {{taskTemplate.description}}</div>
-      <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
-      <div><b>Created by:</b> {{taskTemplate.username}}</div>
-      <div><b>Software:</b> {{taskTemplate.software_release}}</div>
-    <div><b>Source Tar: </b> <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a></div>
-      <div><b>Source Action:</b> {{taskTemplate.source_action}}</div>
-
-      <button *ngIf="editMode!=='edit'" mat-raised-button color="primary" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
+      <mat-select formControlName="status" >
+        <mat-option [value]="'ACTIVE'">Active</mat-option>
+        <mat-option [value]="'OBSOLETE'">Obsolete</mat-option>
+      </mat-select>
     </div>
-    <mat-spinner *ngIf="loading" diameter="30"></mat-spinner>
-  <div *ngIf="errorMessage !== ''" class="error-message">Error: {{errorMessage}}</div>
+    <div><b>Original task: </b> <app-bptask [task]="taskTemplate.build_task"></app-bptask> </div>
+    <div><b>Description:</b> {{taskTemplate.description}}</div>
+    <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
+    <div><b>Created by:</b> {{taskTemplate.username}}</div>
+    <div><b>Software:</b> {{taskTemplate.software_release}}</div>
+    <div><b>Source Tar: </b> <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a></div>
+    <div><b>Source Action:</b> {{taskTemplate.source_action}}</div>
+    @if (editMode!=='edit') {
+      <button mat-raised-button color="primary" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
+    }
+  </div>
+  @if (loading) {
+    <mat-spinner diameter="30"></mat-spinner>
+  }
+  @if (errorMessage !== '') {
+    <div class="error-message">Error: {{errorMessage}}</div>
+  }
   <app-pattern-edit [pattern]="taskTemplate.task_parameters" (patternChange)="savePattern($event)" [submitButtonText]="'Save'"
-                     [(editMode)]="editMode"></app-pattern-edit>
+  [(editMode)]="editMode"></app-pattern-edit>
   <mat-expansion-panel (opened)="openExpertView()">
-  <mat-expansion-panel-header>
-    Expert View
-  </mat-expansion-panel-header>
-  <ng-template matExpansionPanelContent>
-    <pre>{{expertView}}</pre>
-  </ng-template>
-</mat-expansion-panel>
+    <mat-expansion-panel-header>
+      Expert View
+    </mat-expansion-panel-header>
+    <ng-template matExpansionPanelContent>
+      <pre>{{expertView}}</pre>
+    </ng-template>
+  </mat-expansion-panel>
 </div>
+}
 

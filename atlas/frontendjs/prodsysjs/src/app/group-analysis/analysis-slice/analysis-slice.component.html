@@ -1,28 +1,30 @@
-    <mat-grid-list [cols]='steps.length+1' rowHeight="2em">
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Input:
-      </mat-grid-tile>
-      <mat-grid-tile  (click)="openDialog();" [colspan]="steps.length"  [rowspan]="1" style="cursor: pointer" >
-        {{slice.slice.input_data}}
-      </mat-grid-tile>
+<mat-grid-list [cols]='steps.length+1' rowHeight="2em">
+  <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+    Input:
+  </mat-grid-tile>
+  <mat-grid-tile  (click)="openDialog();" [colspan]="steps.length"  [rowspan]="1" style="cursor: pointer" >
+    {{slice.slice.input_data}}
+  </mat-grid-tile>
 
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Steps:
-      </mat-grid-tile>
-      <div *ngFor="let step of steps">
+  <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+    Steps:
+  </mat-grid-tile>
+  @for (step of steps; track step) {
+    <div>
+      @if (step===undefined) {
         <mat-grid-tile
-
           [colspan]="1"
-          [rowspan]="1" *ngIf="step===undefined">
+          [rowspan]="1">
           <span ></span>
         </mat-grid-tile>
+      }
+      @if (step!==undefined) {
         <mat-grid-tile
-
           [colspan]="1"
-          [rowspan]="1" *ngIf="step!==undefined" [ngClass]="['stepStatus',step.analysis_step.status]" style="background-color: #FFB734">
-
-         <span >{{step.analysis_step.name}}</span>
-
+          [rowspan]="1" [ngClass]="['stepStatus',step.analysis_step.status]" style="background-color: #FFB734">
+          <span >{{step.analysis_step.name}}</span>
         </mat-grid-tile>
-      </div>
-      </mat-grid-list>
+      }
+    </div>
+  }
+</mat-grid-list>

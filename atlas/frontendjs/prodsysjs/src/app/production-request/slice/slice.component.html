@@ -1,64 +1,76 @@
 
 
-  <div  style="{  border:1px solid red; min-width:80%;} ">
-    <mat-grid-list [cols]='stepsInOrder.length+1' rowHeight="2em">
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Input:
-      </mat-grid-tile>
-      <mat-grid-tile  (click)="openDialog();" [colspan]="stepsInOrder.length-1"  [rowspan]="1" style="cursor: pointer" >
-        {{slice.input_data}}
-      </mat-grid-tile>
-      <mat-grid-tile  (click)="openDialog();" [colspan]="1"  [rowspan]="1" style="cursor: pointer" >
-        input events: {{slice.input_events}}
-      </mat-grid-tile>
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Steps:
-      </mat-grid-tile>
-      <div *ngFor="let step of stepsInOrder">
-        <mat-grid-tile
-
-          [colspan]="1"
-          [rowspan]="1" *ngIf="step===undefined">
-          <span ></span>
-        </mat-grid-tile>
-        <mat-grid-tile
-
-          [colspan]="1"
-          [rowspan]="1" *ngIf="step!==undefined" [ngClass]="['stepStatus',step.status]" style="background-color: #FFB734">
-
-         <span >{{step.ami_tag}}</span><div [ngClass]="['campaign',colorSchema[step.request_id]['campaign']]"></div>
+<div  style="{  border:1px solid red; min-width:80%;} ">
+  <mat-grid-list [cols]='stepsInOrder.length+1' rowHeight="2em">
+    <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+      Input:
+    </mat-grid-tile>
+    <mat-grid-tile  (click)="openDialog();" [colspan]="stepsInOrder.length-1"  [rowspan]="1" style="cursor: pointer" >
+      {{slice.input_data}}
+    </mat-grid-tile>
+    <mat-grid-tile  (click)="openDialog();" [colspan]="1"  [rowspan]="1" style="cursor: pointer" >
+      input events: {{slice.input_events}}
+    </mat-grid-tile>
+    <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+      Steps:
+    </mat-grid-tile>
+    @for (step of stepsInOrder; track step) {
+      <div>
+        @if (step===undefined) {
+          <mat-grid-tile
+            [colspan]="1"
+            [rowspan]="1">
+            <span ></span>
+          </mat-grid-tile>
+        }
+        @if (step!==undefined) {
+          <mat-grid-tile
+            [colspan]="1"
+            [rowspan]="1" [ngClass]="['stepStatus',step.status]" style="background-color: #FFB734">
+            <span >{{step.ami_tag}}</span><div [ngClass]="['campaign',colorSchema[step.request_id]['campaign']]"></div>
             <div [ngClass]="['project',colorSchema[step.request_id]['project']]"></div>
-        </mat-grid-tile>
+          </mat-grid-tile>
+        }
       </div>
+    }
 
 
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Tasks:
-      </mat-grid-tile>
+    <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+      Tasks:
+    </mat-grid-tile>
+    @for (step of stepsInOrder; track step) {
       <mat-grid-tile
-        *ngFor="let step of stepsInOrder"
         [colspan]="1"
         [rowspan]="1"
-      >
-        <span *ngIf="step===undefined"></span>
-        <div *ngIf="step!==undefined" >
-          <div (click)="selectTask(step)" style="cursor: pointer">
-          <ng-container *ngFor="let task of step.tasksWithColor" ><span [style]="{color: task.color}">&#x25B6;</span><span [style]="{color: task.color}"><b>{{task.tasks}}</b></span>
-          </ng-container></div></div>
-
-      </mat-grid-tile>
-      <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
-        Events:
-      </mat-grid-tile>
-      <mat-grid-tile
-        *ngFor="let step of stepsInOrder"
-        [colspan]="1"
-        [rowspan]="1"
-      >
-        <span *ngIf="step===undefined"></span>
-        <span *ngIf="step!==undefined" >{{step.tasksEvents}}</span>
-
-      </mat-grid-tile>
-    </mat-grid-list>
+        >
+        @if (step===undefined) {
+          <span></span>
+        }
+        @if (step!==undefined) {
+          <div >
+            <div (click)="selectTask(step)" style="cursor: pointer">
+              @for (task of step.tasksWithColor; track task) {
+                <span [style]="{color: task.color}">&#x25B6;</span><span [style]="{color: task.color}"><b>{{task.tasks}}</b></span>
+              }</div></div>
+            }
+          </mat-grid-tile>
+        }
+        <mat-grid-tile   [colspan]="1"  [rowspan]="1" >
+          Events:
+        </mat-grid-tile>
+        @for (step of stepsInOrder; track step) {
+          <mat-grid-tile
+            [colspan]="1"
+            [rowspan]="1"
+            >
+            @if (step===undefined) {
+              <span></span>
+            }
+            @if (step!==undefined) {
+              <span >{{step.tasksEvents}}</span>
+            }
+          </mat-grid-tile>
+        }
+      </mat-grid-list>
     </div>
 

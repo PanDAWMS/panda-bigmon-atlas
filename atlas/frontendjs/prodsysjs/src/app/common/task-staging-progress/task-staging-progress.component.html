@@ -1,10 +1,10 @@
 @for(progress of stagingProgress; track progress.dataset){
 
 
-<ng-container *ngIf="progress.status === 'queued'; else staging">
-<a href="https://bigpanda.cern.ch/dc/dash/">Queued</a> 0 / {{progress.total_files}}</ng-container>
-<ng-template #staging>
- <a href="https://rucio-ui.cern.ch/rule?rule_id={{progress.rule}}">{{progress.status | titlecase}}</a> {{progress.staged_files}} / {{progress.total_files}}
-</ng-template>
+  @if (progress.status === 'queued') {
+    <a href="https://bigpanda.cern.ch/dc/dash/">Queued</a> 0 / {{progress.total_files}}
+  } @else {
+    <a href="https://rucio-ui.cern.ch/rule?rule_id={{progress.rule}}">{{progress.status | titlecase}}</a> {{progress.staged_files}} / {{progress.total_files}}
+  }
   <br>
-}
+  }

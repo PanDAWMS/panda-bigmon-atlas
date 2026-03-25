@@ -1,4 +1,4 @@
-import { CommonModule, NgForOf, AsyncPipe } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import {Component, Input, OnDestroy, OnInit, forwardRef, EventEmitter, Output, inject} from '@angular/core';
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { MatOptionModule } from '@angular/material/core';
@@ -50,34 +50,34 @@ export class FilterBase {
     MatSelectModule,
     MatOptionModule,
     NgxMatSelectSearchModule,
-    NgForOf,
     AsyncPipe,
     MatFormField,
     MatLabel
-
-  ],
+],
   template: `
     <mat-form-field appearance="fill">
-  <mat-label>{{filterBase.label}}</mat-label>
-    <mat-select [panelWidth]="''" [formControl]="selectControl" [multiple]="multiple" (selectionChange)="onSelectionChange($event)">
-      <mat-option>
-        <ngx-mat-select-search
-          [showToggleAllCheckbox]="multiple"
-          (toggleAll)="toggleSelectAll($event)"
-          [placeholderLabel]="searchPlaceholder"
-          [formControl]="searchFilterControl"
-          [toggleAllCheckboxTooltipMessage]="'Select All / Unselect All'"
-          [toggleAllCheckboxChecked]="isAllSelected()"
-          [noEntriesFoundLabel]="'Nothing found'"
-          [toggleAllCheckboxTooltipPosition]="'above'">
-        </ngx-mat-select-search>
-      </mat-option>
-      <mat-option *ngFor="let option of filteredOptions$ | async" [value]="option">
-        {{displayOption(option)}}
-      </mat-option>
-    </mat-select>
+      <mat-label>{{filterBase.label}}</mat-label>
+      <mat-select [panelWidth]="''" [formControl]="selectControl" [multiple]="multiple" (selectionChange)="onSelectionChange($event)">
+        <mat-option>
+          <ngx-mat-select-search
+            [showToggleAllCheckbox]="multiple"
+            (toggleAll)="toggleSelectAll($event)"
+            [placeholderLabel]="searchPlaceholder"
+            [formControl]="searchFilterControl"
+            [toggleAllCheckboxTooltipMessage]="'Select All / Unselect All'"
+            [toggleAllCheckboxChecked]="isAllSelected()"
+            [noEntriesFoundLabel]="'Nothing found'"
+            [toggleAllCheckboxTooltipPosition]="'above'">
+          </ngx-mat-select-search>
+        </mat-option>
+        @for (option of filteredOptions$ | async; track option) {
+          <mat-option [value]="option">
+            {{displayOption(option)}}
+          </mat-option>
+        }
+      </mat-select>
     </mat-form-field>
-  `,
+    `,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

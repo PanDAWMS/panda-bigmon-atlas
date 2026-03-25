@@ -8,106 +8,107 @@
   </div>
 }
 @if(pmgApproval()){
-      <div class="tab-content">
-        <p><strong>JIRA: </strong> <a [href]="pmgApproval()?.production_requests[0].ref_link">{{pmgApproval()?.production_requests[0].ref_link}}</a></p>
-        <p><strong>Group: </strong> {{pmgApproval().production_requests[0].phys_group}} </p>
+  <div class="tab-content">
+    <p><strong>JIRA: </strong> <a [href]="pmgApproval()?.production_requests[0].ref_link">{{pmgApproval()?.production_requests[0].ref_link}}</a></p>
+    <p><strong>Group: </strong> {{pmgApproval().production_requests[0].phys_group}} </p>
 
-      </div>
+  </div>
   <mat-tab-group mat-align-tabs="start" dynamicHeight="true">
-  <!--
+    <!--
     We use *ngFor to loop through each 'request' in our 'productionRequests' array.
     This directive will create one <mat-tab> element for each request.
-  -->
-  <mat-tab
-    *ngFor="let request of pmgApproval().production_requests"
-    [label]="request.campaign + ':' + request.subcampaign"
-  >
-    <!-- The content for each tab goes inside the <mat-tab> tag -->
-    <div class="tab-content">
-      <p>
-        <strong>Request:</strong> <a style="margin-left: 5px" href="/prodtask/inputlist_with_request/{{request.reqid}}">{{request.reqid}}</a>
-      </p>
-      <p>
-        <strong>Project:</strong> {{ request.project || 'N/A' }}
-      </p>
-      <p>
-        <strong>Energy:</strong> {{ request.energy_gev  }} GeV
-      </p>
-      <p>
-        <strong>Short Description:</strong>
-        {{ request.description }}
-      </p>
-      <p>
-        <strong>Long Description:</strong>
-        {{ request.long_description || 'N/A' }}
-      </p>
-         <p>
-        <strong>Priorities:</strong>
-        {{ request.priority }}
-      </p>
-               <p>
-        <strong>Input Events:</strong>
-        {{ request.total_input_events || '-1' }}
-      </p>
-      <p>
-        <strong>Slices:</strong>
-        {{ request.total_slices }}
-      </p>
-      @if(request.total_input_datasets ) {
-      <p>
-        <strong>Slices with input dataset:</strong>
-        {{ request.total_input_datasets }}
-      </p>
-      }
-    </div>
-  </mat-tab>
-</mat-tab-group>
+    -->
+    @for (request of pmgApproval().production_requests; track request) {
+      <mat-tab
+        [label]="request.campaign + ':' + request.subcampaign"
+        >
+        <!-- The content for each tab goes inside the <mat-tab> tag -->
+        <div class="tab-content">
+          <p>
+            <strong>Request:</strong> <a style="margin-left: 5px" href="/prodtask/inputlist_with_request/{{request.reqid}}">{{request.reqid}}</a>
+          </p>
+          <p>
+            <strong>Project:</strong> {{ request.project || 'N/A' }}
+          </p>
+          <p>
+            <strong>Energy:</strong> {{ request.energy_gev  }} GeV
+          </p>
+          <p>
+            <strong>Short Description:</strong>
+            {{ request.description }}
+          </p>
+          <p>
+            <strong>Long Description:</strong>
+            {{ request.long_description || 'N/A' }}
+          </p>
+          <p>
+            <strong>Priorities:</strong>
+            {{ request.priority }}
+          </p>
+          <p>
+            <strong>Input Events:</strong>
+            {{ request.total_input_events || '-1' }}
+          </p>
+          <p>
+            <strong>Slices:</strong>
+            {{ request.total_slices }}
+          </p>
+          @if(request.total_input_datasets ) {
+            <p>
+              <strong>Slices with input dataset:</strong>
+              {{ request.total_input_datasets }}
+            </p>
+          }
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
   <div>
-  <button mat-raised-button style="background: greenyellow" (click)="approvePMGCheckUp('register')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">PMG approval</button>
-  <button mat-raised-button style="background: yellow" (click)="approvePMGCheckUp('hold')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">On Hold</button>
-  <button mat-raised-button style="background: red" (click)="approvePMGCheckUp('cancel')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">Cancel</button>
-</div>
-@if (approveError()){
-  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-    <strong class="font-bold">Error!</strong>
-    <span class="block sm:inline">{{ approveError() }}</span>
+    <button mat-raised-button style="background: greenyellow" (click)="approvePMGCheckUp('register')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">PMG approval</button>
+    <button mat-raised-button style="background: yellow" (click)="approvePMGCheckUp('hold')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">On Hold</button>
+    <button mat-raised-button style="background: red" (click)="approvePMGCheckUp('cancel')" [disabled]="approveOnGoing()||!pmgApproval().approval_required">Cancel</button>
   </div>
-}
+  @if (approveError()){
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline">{{ approveError() }}</span>
+    </div>
+  }
 }
 <!--Three buttons: approve, hold, cancel - green, yellow and red-->
 
 @for(check of pmgCheckUP(); track check.check_name) {
-    @if(check.errors.length == 0) {
-      <h5 ><span style="color: green"> {{check.check_name}}  - passed </span></h5>
-    } @else {
-      <mat-accordion>
+  @if(check.errors.length == 0) {
+    <h5 ><span style="color: green"> {{check.check_name}}  - passed </span></h5>
+  } @else {
+    <mat-accordion>
 
-  <mat-expansion-panel >
-    <mat-expansion-panel-header>
-      <mat-panel-title >
-        @if (check.status == 'ERROR') {
-          <h5 style="color: red">&#x26A0; {{ check.check_name }}</h5>
-        } @else {
-          <h5 style="color: orange">&#x26A0; {{ check.check_name }}</h5>
+      <mat-expansion-panel >
+        <mat-expansion-panel-header>
+          <mat-panel-title >
+            @if (check.status == 'ERROR') {
+              <h5 style="color: red">&#x26A0; {{ check.check_name }}</h5>
+            } @else {
+              <h5 style="color: orange">&#x26A0; {{ check.check_name }}</h5>
+            }
+          </mat-panel-title>
+          <mat-panel-description>
+            {{ check.errors.length }} Error(s)
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+        @for (error of check.errors ; track error) {
+          @for(position of error.positions; track position) {
+            @if(error.type === 'SLICE'){
+              <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}/#{{position.sliceIDs}}">Request: {{position.RequestIDs}} slice: {{position.sliceIDs}}</a>
+              <span style="margin-left: 5px">{{error.message}}</span></div>
+            }
+            @if(error.type === 'REQUEST'){
+              <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}">Request: {{position.RequestIDs}}</a>
+              <span style="margin-left: 5px">{{error.message}}</span></div>
+            }
+          }
         }
-      </mat-panel-title>
-      <mat-panel-description>
-       {{ check.errors.length }} Error(s)
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-    @for (error of check.errors ; track error) {
-      @for(position of error.positions; track position) {
-        @if(error.type === 'SLICE'){
-          <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}/#{{position.sliceIDs}}">Request: {{position.RequestIDs}} slice: {{position.sliceIDs}}</a>
-            <span style="margin-left: 5px">{{error.message}}</span></div>
-        }
-        @if(error.type === 'REQUEST'){
-          <div><a href="/prodtask/inputlist_with_request/{{position.RequestIDs}}">Request: {{position.RequestIDs}}</a>
-          <span style="margin-left: 5px">{{error.message}}</span></div>
-        }
-      }
-    }
-  </mat-expansion-panel>
-</mat-accordion>
-    }
+      </mat-expansion-panel>
+    </mat-accordion>
+  }
 }

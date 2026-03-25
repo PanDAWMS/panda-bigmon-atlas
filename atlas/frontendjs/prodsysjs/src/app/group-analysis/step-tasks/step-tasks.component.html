@@ -1,3 +1,5 @@
-<ng-container *ngIf="step.tasks">
-  <ng-container *ngFor="let task of step.tasks"><app-bptask [task]="task.id"></app-bptask> - <span [class]="'taskStatus '+task.status" style="margin-right: 3px">{{task.status}}</span></ng-container>
-  </ng-container>
+@if (step.tasks) {
+  @for (task of step.tasks; track task) {
+    <app-bptask [task]="task.id"></app-bptask> - <span [class]="'taskStatus '+task.status" style="margin-right: 3px">{{task.status}}</span>
+  }
+}

@@ -1,13 +1,13 @@
 <h1 mat-dialog-title>Slice details</h1>
 <div mat-dialog-content>
   <mat-expansion-panel (opened)="panelOpenState = true"
-                       (closed)="panelOpenState = false">
+    (closed)="panelOpenState = false">
     <mat-expansion-panel-header>
       <mat-panel-title>
         {{panelOpenState ? 'Close' : slice.input_data }}
       </mat-panel-title>
       <mat-panel-description>
-      {{panelOpenState ? '' : 'events: ' + slice.input_events}}
+        {{panelOpenState ? '' : 'events: ' + slice.input_events}}
       </mat-panel-description>
     </mat-expansion-panel-header>
     <form  [formGroup]="sliceForm" >
@@ -36,14 +36,16 @@
     </form>
   </mat-expansion-panel>
   <mat-tab-group    >
-    <mat-tab  *ngFor="let step of data.slice.steps" >
-      <ng-template mat-tab-label>
-        <span >{{step.ami_tag}}</span>
-        <div [ngClass]="['campaign',data.colorSchema[step.request_id]['campaign']]"></div>
-        <div [ngClass]="['project',data.colorSchema[step.request_id]['project']]"></div>
-      </ng-template>
-      <app-step  [step]="step" [colorSchema]="data.colorSchema"></app-step>
-    </mat-tab>
+    @for (step of data.slice.steps; track step) {
+      <mat-tab  >
+        <ng-template mat-tab-label>
+          <span >{{step.ami_tag}}</span>
+          <div [ngClass]="['campaign',data.colorSchema[step.request_id]['campaign']]"></div>
+          <div [ngClass]="['project',data.colorSchema[step.request_id]['project']]"></div>
+        </ng-template>
+        <app-step  [step]="step" [colorSchema]="data.colorSchema"></app-step>
+      </mat-tab>
+    }
 
   </mat-tab-group>
   <button (click)="saveSlice()" disabled>Save</button>
