@@ -3054,6 +3054,7 @@ class TaskDefinition(object):
             if trf_name.lower() == 'RAWSkim_tf.py'.lower():
                 event_picking_params = self.find_event_pciking_input(step, input_data_name)
                 change_output_type_dict['DRAW_EVTPICK'] = 'RAW'
+                skip_check_input = True
 
 
             # proto_fix
