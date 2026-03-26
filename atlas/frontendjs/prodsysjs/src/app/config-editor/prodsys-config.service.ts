@@ -1,5 +1,5 @@
 import {computed, inject, Injectable, Signal, signal} from '@angular/core';
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {HttpClient, HttpErrorResponse, httpResource} from "@angular/common/http";
 import {rxResource, toObservable, toSignal} from "@angular/core/rxjs-interop";
 import {setErrorMessage} from "../dsid-info/dsid-info.service";
 import {JSONEditorOptions} from "jsoneditor";
@@ -29,14 +29,12 @@ export class ProdsysConfigService {
 
   constructor() { }
 
-  private configParameterResource = rxResource({
-    request: () => (this.parameterName()),
-    loader: ({request: parameterName}) => this.http.get<ProdSysConfigParameter>(this.getConfigParamterUrl + parameterName)
-  });
+private configParameterResource = httpResource<ProdSysConfigParameter>(
+  () => this.parameterName() ? `${this.getConfigParamterUrl}${this.parameterName()}` : undefined
+);
 
-
-  configParameter = computed(() => this.configParameterResource.value() ?? undefined);
-  error = computed(() => this.configParameterResource.error() as HttpErrorResponse | null);
+configParameter = computed(() => this.configParameterResource.value() ?? undefined);
+error = computed(() => this.configParameterResource.error() as HttpErrorResponse | null);
   errorMessage = computed(() => {
     if (this.error()) {
       return setErrorMessage(this.error());

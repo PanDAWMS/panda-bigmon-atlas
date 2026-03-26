@@ -3,7 +3,7 @@ import {ProductionRequestService} from "../production-request.service";
 import {setErrorMessage} from "../../dsid-info/dsid-info.service";
 import {HttpErrorResponse} from "@angular/common/http";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {NgForOf} from "@angular/common";
+
 import {toObservable} from "@angular/core/rxjs-interop";
 import {MatTab, MatTabGroup} from "@angular/material/tabs";
 import {
@@ -34,14 +34,13 @@ interface CheckSummary {
     MatProgressSpinner,
     MatTabGroup,
     MatTab,
-    NgForOf,
     MatAccordion,
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
     MatExpansionPanelDescription,
     MatButton
-  ],
+],
   templateUrl: './pmgapproval.component.html',
   styleUrl: './pmgapproval.component.css'
 })

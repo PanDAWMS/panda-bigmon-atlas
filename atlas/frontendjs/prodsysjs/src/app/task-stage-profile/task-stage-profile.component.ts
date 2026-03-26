@@ -1,38 +1,38 @@
 import {Component, computed, effect, inject, Input, OnInit, signal, ViewChild} from '@angular/core';
-import {
-  ChartComponent, NgApexchartsModule,
-  ApexAxisChartSeries,
-  ApexChart,
-  ApexPlotOptions,
-  ApexXAxis, ApexYAxis, ApexTooltip, ApexLegend
-} from "ng-apexcharts";
+// import {
+//   ChartComponent, NgApexchartsModule,
+//   ApexAxisChartSeries,
+//   ApexChart,
+//   ApexPlotOptions,
+//   ApexXAxis, ApexYAxis, ApexTooltip, ApexLegend
+// } from "ng-apexcharts";
 import {StageProfileSpans, TaskStageProfile, TaskStageProfileService} from "./task-stage-profile.service";
 import {JsonPipe} from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {ActivatedRoute} from "@angular/router";
 
-export type ChartOptions = {
-  series: ApexAxisChartSeries;
-  chart: ApexChart;
-  xaxis: ApexXAxis;
-  yaxis: ApexYAxis;
-  plotOptions: ApexPlotOptions;
-  tooltip: ApexTooltip;
-  animations: any;
-  legend: ApexLegend;
-};
+// export type ChartOptions = {
+//   series: ApexAxisChartSeries;
+//   chart: ApexChart;
+//   xaxis: ApexXAxis;
+//   yaxis: ApexYAxis;
+//   plotOptions: ApexPlotOptions;
+//   tooltip: ApexTooltip;
+//   animations: any;
+//   legend: ApexLegend;
+// };
 
 @Component({
     selector: 'app-task-stage-profile',
     imports: [
-        NgApexchartsModule,
+        // NgApexchartsModule,
         MatProgressSpinner
     ],
     templateUrl: './task-stage-profile.component.html',
     styleUrl: './task-stage-profile.component.css'
 })
 export class TaskStageProfileComponent implements OnInit {
-  @ViewChild("chart") chart: ChartComponent;
+  // @ViewChild("chart") chart: ChartComponent;
 
   taskStageProfileService = inject( TaskStageProfileService);
   public stageProfile = signal< Omit<TaskStageProfile, 'spans'>>( {
@@ -55,7 +55,7 @@ export class TaskStageProfileComponent implements OnInit {
   }
   taskPageID = '';
   errorMessage = computed(() => this.taskStageProfileService.error$());
-  public chartOptions: Partial<ChartOptions>;
+  public chartOptions: any; // Partial<ChartOptions>;
 
     constructor(private route: ActivatedRoute) {
     this.chartOptions = {

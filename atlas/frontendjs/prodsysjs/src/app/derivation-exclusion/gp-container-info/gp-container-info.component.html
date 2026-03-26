@@ -6,18 +6,21 @@
 <app-datasets-table [datasetsDataSource]="containerFullInfo.main_container.datasets"></app-datasets-table>
 
 <p><b>Extensions:</b></p>
-  <mat-grid-list cols="7"  *ngFor="let element of containerFullInfo.extension" [rowHeight]="'2em'">
+@for (element of containerFullInfo.extension; track element) {
+  <mat-grid-list cols="7"  [rowHeight]="'2em'">
     <mat-grid-tile [colspan]="2" >Time: {{element.timestamp}}</mat-grid-tile>
     <mat-grid-tile >By: {{element.user}}</mat-grid-tile>
     <mat-grid-tile [colspan]="4" >Message: {{element.message}}</mat-grid-tile>
   </mat-grid-list>
+}
 
 <p><b>Same input containers:</b></p>
-<div *ngFor="let sameInputContainer of containerFullInfo.same_input">
-  <hr class="dashed">
-
-  {{sameInputContainer.container}} - version: {{sameInputContainer.details.version}}
-  - extensions {{sameInputContainer.details.extensions_number}} - {{sameInputContainer.details.status}}
-  <p>Datasets:</p>
-  <app-datasets-table [datasetsDataSource]="sameInputContainer.datasets"></app-datasets-table>
-</div>
+@for (sameInputContainer of containerFullInfo.same_input; track sameInputContainer) {
+  <div>
+    <hr class="dashed">
+    {{sameInputContainer.container}} - version: {{sameInputContainer.details.version}}
+    - extensions {{sameInputContainer.details.extensions_number}} - {{sameInputContainer.details.status}}
+    <p>Datasets:</p>
+    <app-datasets-table [datasetsDataSource]="sameInputContainer.datasets"></app-datasets-table>
+  </div>
+}

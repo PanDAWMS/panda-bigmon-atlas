@@ -3,82 +3,90 @@
   <mat-step [stepControl]="containersFormGroup">
 
     <h6>Choose input:</h6>
-          <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabInputContainers" >
-            <mat-tab label="Copy list">
-              <form [formGroup]="containersFormGroup">
-                <ng-template matStepLabel>Submit a list</ng-template>
-                <mat-form-field style="width: 100% ">
-                  <mat-label>Enter a list of input containers(with any separator)</mat-label>
-                  <textarea matInput #containerListInput placeholder="List" formControlName="containerList" (change)="containerListChanged$.next(containerListInput.value)" style="height: 300px"
-                  ></textarea>
-                </mat-form-field>
-                <div>
-                  <button>▼
-                  </button>
-                        </div>
-<!--      button to check containers-->
+    <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabInputContainers" >
+      <mat-tab label="Copy list">
+        <form [formGroup]="containersFormGroup">
+          <ng-template matStepLabel>Submit a list</ng-template>
+          <mat-form-field style="width: 100% ">
+            <mat-label>Enter a list of input containers(with any separator)</mat-label>
+            <textarea matInput #containerListInput placeholder="List" formControlName="containerList" (change)="containerListChanged$.next(containerListInput.value)" style="height: 300px"
+            ></textarea>
+          </mat-form-field>
+          <div>
+            <button>▼
+            </button>
+          </div>
+          <!--      button to check containers-->
 
-       </form>
-            </mat-tab>
-            <mat-tab label="By AMI tag">
-                  <app-derivation-from-tag [outputOnly]="true" (selectedContainers)="containersChanges($event)" ></app-derivation-from-tag>
-            </mat-tab>
-            <mat-tab label="Parent request">
-                  <app-parent-drivation-for-analysis (selectedSlices)="inputSlicesChanges($event)" ></app-parent-drivation-for-analysis>
-            </mat-tab>
+        </form>
+      </mat-tab>
+      <mat-tab label="By AMI tag">
+        <app-derivation-from-tag [outputOnly]="true" (selectedContainers)="containersChanges($event)" ></app-derivation-from-tag>
+      </mat-tab>
+      <mat-tab label="Parent request">
+        <app-parent-drivation-for-analysis (selectedSlices)="inputSlicesChanges($event)" ></app-parent-drivation-for-analysis>
+      </mat-tab>
 
-          </mat-tab-group>
-<h5>Selected containers:</h5>
-<!--        AG table with separateInputContainerList$ as input and pagination-->
-        <ag-grid-angular
-          style="width: 100%; height: 300px;"
-          class="ag-theme-balham"
-          [rowData]="separateInputContainerList$ | async"
-          [columnDefs]="columnDefs"
-          [pagination]="true"
-          [paginationPageSize]="10"
-          (gridReady)="onGridReady($event)"
-        >
-        </ag-grid-angular>
-      <button mat-button (click)="checkContainers()" [disabled]='true'>Check containers</button>
-      <div>
-        <button mat-button matStepperNext [disabled]="!containersCurrentList"   >Next</button>
-      </div>
+    </mat-tab-group>
+    <h5>Selected containers:</h5>
+    <!--        AG table with separateInputContainerList$ as input and pagination-->
+    <ag-grid-angular
+      style="width: 100%; height: 300px;"
+      class="ag-theme-balham"
+      [rowData]="separateInputContainerList$ | async"
+      [columnDefs]="columnDefs"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      (gridReady)="onGridReady($event)"
+      >
+    </ag-grid-angular>
+    <button mat-button (click)="checkContainers()" [disabled]='true'>Check containers</button>
+    <div>
+      <button mat-button matStepperNext [disabled]="!containersCurrentList"   >Next</button>
+    </div>
   </mat-step>
   <mat-step [stepControl]="templateChoiceFormGroup">
     <form [formGroup]="templateChoiceFormGroup">
       <ng-template matStepLabel>Check the list</ng-template>
-      <ng-container *ngIf="patterns$ | async as patterns">
-      <mat-form-field  style="width: 100ch">
-        <mat-label>Choose a pattern</mat-label>
-        <mat-select  formControlName="patternCntrl"  (selectionChange)="changeTaskTemplate($event)">
-          <mat-option *ngFor="let pattern of patterns" [value]="pattern" >
-            {{pattern.tag}} - {{pattern.description}}
-          </mat-option>
-        </mat-select>
-`      </mat-form-field>
-      <div *ngIf="chosenTemplate">
-        <app-pattern-edit [pattern]="chosenTemplate.task_parameters" [(editMode)]="editMode" (patternChange)="changeTemplate($event)"
+      @if (patterns$ | async; as patterns) {
+        <mat-form-field  style="width: 100ch">
+          <mat-label>Choose a pattern</mat-label>
+          <mat-select  formControlName="patternCntrl"  (selectionChange)="changeTaskTemplate($event)">
+            @for (pattern of patterns; track pattern) {
+              <mat-option [value]="pattern" >
+                {{pattern.tag}} - {{pattern.description}}
+              </mat-option>
+            }
+          </mat-select>
+        `      </mat-form-field>
+        @if (chosenTemplate) {
+          <div>
+            <app-pattern-edit [pattern]="chosenTemplate.task_parameters" [(editMode)]="editMode" (patternChange)="changeTemplate($event)"
             [submitButtonText]="'OK'"></app-pattern-edit>
-      </div>
-      </ng-container>
+          </div>
+        }
+      }
 
       <div>
         <button mat-button matStepperPrevious>Back</button>
         <button mat-button matStepperNext [disabled]="editMode==='edit' && chosenTemplate!==null">Next</button>
       </div>
     </form>
-      </mat-step>
-      <mat-step [stepControl]="requestDescriptionFormGroup">
+  </mat-step>
+  <mat-step [stepControl]="requestDescriptionFormGroup">
     <form [formGroup]="requestDescriptionFormGroup">
       <ng-template matStepLabel>Request description</ng-template>
-      <div *ngIf="chosenTemplate">Input Containers: {{containersCurrentList.length}}, template base: {{chosenTemplate.tag}}</div>
+      @if (chosenTemplate) {
+        <div>Input Containers: {{containersCurrentList.length}}, template base: {{chosenTemplate.tag}}</div>
+      }
       <mat-form-field>
-            <mat-label>Choose scope</mat-label>
+        <mat-label>Choose scope</mat-label>
         <mat-select  formControlName="requestScopeCtrl" [value]="scopeList[0]"  >
-          <mat-option *ngFor="let scope of scopeList" [value]="scope" >
-            {{scope}}
-          </mat-option>
+          @for (scope of scopeList; track scope) {
+            <mat-option [value]="scope" >
+              {{scope}}
+            </mat-option>
+          }
         </mat-select>
       </mat-form-field>
       <mat-tab-group  mat-stretch-tabs [selectedIndex]="selectedTabDescription" [color]="'primary'" >
@@ -87,7 +95,7 @@
             <mat-label>Enter a description</mat-label>
             <input matInput formControlName="requestDescriptionCtrl" placeholder="Description">
           </mat-form-field>
-      </mat-tab>
+        </mat-tab>
         <mat-tab label="Extend">
           <mat-form-field >
             <mat-label>Enter a request ID</mat-label>
@@ -95,7 +103,7 @@
           </mat-form-field>
         </mat-tab>
       </mat-tab-group>
-{{submissionError}}
+      {{submissionError}}
       <div>
         <button mat-button matStepperPrevious>Back</button>
         <button mat-button (click)="createRequest()" [disabled]="!requestDescriptionFormGroup.valid || creatingRequest  " >Submit</button>

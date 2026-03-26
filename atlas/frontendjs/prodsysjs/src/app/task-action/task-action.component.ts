@@ -24,7 +24,7 @@ import {MatCheckbox} from "@angular/material/checkbox";
 import {FormsModule} from "@angular/forms";
 import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
 import {MatProgressBar} from "@angular/material/progress-bar";
-import {AsyncPipe, NgForOf, NgIf} from "@angular/common";
+import { AsyncPipe } from "@angular/common";
 import {MatCard} from "@angular/material/card";
 import {MatIcon} from "@angular/material/icon";
 import {
@@ -70,10 +70,8 @@ import {MatTooltip} from "@angular/material/tooltip";
     MatList,
     MatListItem,
     MatInput,
-    NgIf,
-    NgForOf,
     MatTooltip
-  ],
+],
   standalone: true
 })
 
@@ -290,13 +288,12 @@ export class TaskActionComponent implements OnInit, OnDestroy {
     MatButton,
     MatInput,
     FormsModule,
-    NgIf,
     MatDialogContent,
     MatDialogTitle,
     MatSelect,
     MatOption,
     MatLabel
-  ],
+],
   standalone: true
 })
 export class DialogTaskSubmissionComponent implements OnInit{

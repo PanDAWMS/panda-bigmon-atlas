@@ -1,6 +1,6 @@
 import {Component, computed, inject, Input} from '@angular/core';
 import {ReproPatchService} from "./repro-patch.service";
-import {AsyncPipe, DecimalPipe, JsonPipe, NgIf} from "@angular/common";
+import { AsyncPipe, DecimalPipe, JsonPipe } from "@angular/common";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";

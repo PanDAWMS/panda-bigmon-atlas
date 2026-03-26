@@ -1,5 +1,7 @@
 
-<div *ngIf="route.paramMap | async as router">
-  <app-task-full-details [taskID]="parseID(router.get('id'))" ></app-task-full-details>
-  <a href="/prodtask/task_old/{{router.get('id')}}">Old task page</a>
-</div>
+@if (route.paramMap | async; as router) {
+  <div>
+    <app-task-full-details [taskID]="parseID(router.get('id'))" ></app-task-full-details>
+    <a href="/prodtask/task_old/{{router.get('id')}}">Old task page</a>
+  </div>
+}

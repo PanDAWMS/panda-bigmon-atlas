@@ -1,6 +1,10 @@
 <!--The content below is only a placeholder and can be replaced.-->
 
-<div id="loader" class="myloader" *ngIf="loading">
-   <mat-spinner></mat-spinner> Loading...
-</div>
-<router-outlet *ngIf="!loading"></router-outlet>
+@if (loading) {
+  <div id="loader" class="myloader">
+    <mat-spinner></mat-spinner> Loading...
+  </div>
+}
+@if (!loading) {
+  <router-outlet></router-outlet>
+}

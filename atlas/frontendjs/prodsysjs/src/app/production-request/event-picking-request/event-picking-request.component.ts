@@ -10,7 +10,7 @@ import {ProductionTaskTableComponent} from "../../production-task-table/producti
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
 import {ProductionTask} from "../production-request-models";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {CommonModule} from "@angular/common";
+
 import {MAT_DIALOG_DATA, MatDialog, MatDialogModule} from "@angular/material/dialog";
 import {MatButton} from "@angular/material/button";
 
@@ -185,7 +185,7 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
 @Component({
   selector: 'app-json-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButton],
+  imports: [MatDialogModule, MatButton],
   template: `
     <div mat-dialog-title class="font-bold text-lg mb-4">
       Data Details

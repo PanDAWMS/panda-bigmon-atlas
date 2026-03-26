@@ -21,7 +21,7 @@ import {MatDivider} from '@angular/material/divider';
 import {MatCheckbox} from '@angular/material/checkbox';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatProgressBar} from '@angular/material/progress-bar';
-import {AsyncPipe, NgForOf, NgIf} from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {MatCard} from '@angular/material/card';
 import {MatIcon} from '@angular/material/icon';
 import {
@@ -72,10 +72,8 @@ interface RuleResults {
     MatList,
     MatListItem,
     MatInput,
-    NgIf,
-    NgForOf,
     AsyncTaskProgressComponent
-  ],
+],
   standalone: true
 })
 
@@ -295,10 +293,9 @@ export class RuleActionComponent implements OnInit, OnDestroy {
     MatFormField,
     MatInput,
     MatLabel,
-    NgIf,
     ReactiveFormsModule,
     FormsModule
-  ],
+],
   standalone: true
 })
 export class DialogRuleSubmissionComponent implements OnInit{

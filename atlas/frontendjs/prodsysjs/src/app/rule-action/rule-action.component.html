@@ -5,106 +5,109 @@
       <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',[cancelFTS.checked, false, null])">Drop Source</button>
       <button mat-raised-button color="primary" (click)="executeAction('alter_source_replication_rule',[cancelFTS.checked, true, null])">Change Source</button>
       <mat-checkbox class="action-checkbox" #cancelFTS (click)="$event.stopPropagation()" [checked]="true">Cancel active FTSs</mat-checkbox>
-   </div>
+    </div>
 
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
-    <button mat-raised-button  [matMenuTriggerFor]="DestinationMenu"  class="action-button-menu"  >Destination▼</button>
+  <button mat-raised-button  [matMenuTriggerFor]="DestinationMenu"  class="action-button-menu"  >Destination▼</button>
   <mat-menu #DestinationMenu="matMenu" yPosition="below">
     <div class="action-button-column">
-            <button mat-raised-button color="primary" (click)="executeAction('change_destination',[])">Change Destination</button>
-   </div>
+      <button mat-raised-button color="primary" (click)="executeAction('change_destination',[])">Change Destination</button>
+    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
-      <button mat-raised-button  [matMenuTriggerFor]="QueueMenu"  class="action-button-menu"  >Queue▼</button>
+  <button mat-raised-button  [matMenuTriggerFor]="QueueMenu"  class="action-button-menu"  >Queue▼</button>
   <mat-menu #QueueMenu="matMenu" yPosition="below">
     <div class="action-button-column">
       <button mat-raised-button color="primary" (click)="executeAction('bypass_queue',[])">Skip the DC queue</button>
 
-   </div>
+    </div>
     <mat-divider></mat-divider>
     <div class="action-menu-row">
-        <div class="task-action-input-form">
-          <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
-            <mat-label>Comment (optional)</mat-label>
-            <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
-          </mat-form-field>
-        </div>
+      <div class="task-action-input-form">
+        <mat-form-field class="task-action-comment-field" appearance="fill" (click)="$event.stopPropagation()">
+          <mat-label>Comment (optional)</mat-label>
+          <textarea matInput type="textarea" [(ngModel)]="comment"  placeholder="Comment (optional)"></textarea>
+        </mat-form-field>
+      </div>
     </div>
   </mat-menu>
 </div>
-  @if(asyncID){
-    <mat-card>
+@if(asyncID){
+  <mat-card>
     <app-async-task-progress [asyncTaskId]="asyncID" (taskFinished)="asyncTaskFinished($event)" ></app-async-task-progress>
-      </mat-card>
-  }
-    @if(asyncSummary.result){
-      <mat-accordion>
-      <mat-expansion-panel >
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="action-result-icon-{{asyncSummary.status}}">{{asyncSummary.status}}</mat-icon>
-             <div>{{asyncSummary.result}}</div>
-          </mat-panel-title>
-        </mat-expansion-panel-header>
-        @if(asyncResult?.datasets_result && asyncResult.datasets_result.length>0){
-          <mat-list >
-          <mat-list-item *ngFor="let taskResult of asyncResult.datasets_result" >
-            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
-            {{taskResult.dataset}} - {{taskResult.result}}
-          </mat-list-item>
+  </mat-card>
+}
+@if(asyncSummary.result){
+  <mat-accordion>
+    <mat-expansion-panel >
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="action-result-icon-{{asyncSummary.status}}">{{asyncSummary.status}}</mat-icon>
+          <div>{{asyncSummary.result}}</div>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      @if(asyncResult?.datasets_result && asyncResult.datasets_result.length>0){
+        <mat-list >
+          @for (taskResult of asyncResult.datasets_result; track taskResult) {
+            <mat-list-item >
+              <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+              {{taskResult.dataset}} - {{taskResult.result}}
+            </mat-list-item>
+          }
         </mat-list>
-        }
+      }
 
-      </mat-expansion-panel>
-    </mat-accordion>
-    }
+    </mat-expansion-panel>
+  </mat-accordion>
+}
 
-<ng-container *ngIf="actionExecuting">
+@if (actionExecuting) {
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-</ng-container>
-<ng-container *ngIf="actionExecution$ | async as actionResult;">
-  <ng-container *ngIf="actionResult.datasets_result.length===1; else multipleTasksResultBlock">
-      <mat-card appearance="outlined">
-        <mat-icon class="action-result-icon-{{actionResult.datasets_result[0].type}}">{{actionResult.datasets_result[0].type}}</mat-icon>
-        <span>{{actionResult.datasets_result[0].result}}</span>
-      </mat-card>
-    </ng-container>
-  <ng-template #multipleTasksResultBlock>
+}
+@if (actionExecution$ | async; as actionResult;) {
+  @if (actionResult.datasets_result.length===1) {
+    <mat-card appearance="outlined">
+      <mat-icon class="action-result-icon-{{actionResult.datasets_result[0].type}}">{{actionResult.datasets_result[0].type}}</mat-icon>
+      <span>{{actionResult.datasets_result[0].result}}</span>
+    </mat-card>
+  } @else {
     <mat-accordion>
       <mat-expansion-panel >
         <mat-expansion-panel-header>
           <mat-panel-title>
             <mat-icon class="action-result-icon-{{summaryDatasetsResult.status}}">{{summaryDatasetsResult.status}}</mat-icon>
-             <div>{{summaryDatasetsResult.result}}</div>
-            <ng-container *ngIf="reSendAction.datasets.length>0">
+            <div>{{summaryDatasetsResult.result}}</div>
+            @if (reSendAction.datasets.length>0) {
               <button (click)="reSendRules()" style="margin-left: 7px" >Send command for {{reSendAction.datasets.length}} task(s)</button>
-            </ng-container>
+            }
           </mat-panel-title>
         </mat-expansion-panel-header>
         <mat-list >
-          <mat-list-item *ngFor="let taskResult of actionResult.datasets_result" >
-            <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
-            {{taskResult.dataset}} - {{taskResult.result}}
-          </mat-list-item>
+          @for (taskResult of actionResult.datasets_result; track taskResult) {
+            <mat-list-item >
+              <mat-icon class="action-result-icon-{{taskResult.type}}">{{taskResult.type}}</mat-icon>
+              {{taskResult.dataset}} - {{taskResult.result}}
+            </mat-list-item>
+          }
         </mat-list>
       </mat-expansion-panel>
     </mat-accordion>
-  </ng-template>
-</ng-container>
+  }
+}

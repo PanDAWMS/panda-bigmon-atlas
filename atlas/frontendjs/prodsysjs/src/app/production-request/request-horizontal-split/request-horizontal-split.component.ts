@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {AsyncProdTaskSplitStatus, ProductionRequestService} from "../production-request.service";
 import {catchError, delay, filter, repeat, switchMap, takeUntil, tap} from "rxjs/operators";
-import {AsyncPipe, JsonPipe, NgForOf} from "@angular/common";
+import { AsyncPipe, JsonPipe } from "@angular/common";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatOptionModule} from "@angular/material/core";
 import {MatSelectModule} from "@angular/material/select";
@@ -16,18 +16,17 @@ import {MatProgressBarModule} from "@angular/material/progress-bar";
 @Component({
     selector: 'app-request-horizontal-split',
     imports: [
-        AsyncPipe,
-        MatFormFieldModule,
-        MatOptionModule,
-        MatSelectModule,
-        NgForOf,
-        ReactiveFormsModule,
-        FormsModule,
-        MatCheckboxModule,
-        MatButtonModule,
-        MatProgressSpinnerModule,
-        MatProgressBarModule
-    ],
+    AsyncPipe,
+    MatFormFieldModule,
+    MatOptionModule,
+    MatSelectModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule
+],
     templateUrl: './request-horizontal-split.component.html',
     styleUrl: './request-horizontal-split.component.css'
 })

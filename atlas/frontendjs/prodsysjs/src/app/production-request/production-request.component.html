@@ -1,17 +1,19 @@
 <mat-drawer-container  autosize>
   <mat-drawer #tasksDrawer class="example-sidenav" [mode]="'over'">
-      <p>Slice: {{selectedTasksSlice.input_data}}</p>
-       <p>Step: {{selectedTasksStep.ami_tag}} - {{selectedTasksStep.step_name}}</p>
-      <div *ngFor="let task of selectedTasksStep.tasks" >
+    <p>Slice: {{selectedTasksSlice.input_data}}</p>
+    <p>Step: {{selectedTasksStep.ami_tag}} - {{selectedTasksStep.step_name}}</p>
+    @for (task of selectedTasksStep.tasks; track task) {
+      <div >
         <table>
           <tr><th>task ID</th><th>Status</th><th>Events</th></tr>
           <tr><td><a href="https://bigpanda.cern.ch/task/{{task.id}}">{{task.id}}</a></td>
-            <td><span [ngClass]="['taskStatus',task.status]">{{task.status}}</span></td>
-            <td>{{task.total_events}}</td>
-          </tr>
-        </table>
-      </div>
-  </mat-drawer>
+          <td><span [ngClass]="['taskStatus',task.status]">{{task.status}}</span></td>
+          <td>{{task.total_events}}</td>
+        </tr>
+      </table>
+    </div>
+  }
+</mat-drawer>
 <table>
   <tr>
     <th>Description:</th>
@@ -40,33 +42,35 @@
 <!--<button (click)="unFilterSlice()">Drop filter</button>-->
 <p>
 
-    <label>Filter</label>
-    <input id="mainFilter" type="text" [formControl]="mainFilter">
+  <label>Filter</label>
+  <input id="mainFilter" type="text" [formControl]="mainFilter">
   <table><tr>
-  <td>
-  <app-chips-multi-select [options]="campaigns" [optionStyle]="'campaign'" [formControl]="chipsCampaignsControl" >
-  </app-chips-multi-select></td>
-  <td><app-chips-multi-select [options]="projects" [optionStyle]="'project'" [formControl]="chipsProjectsControl" >
-  </app-chips-multi-select></td>
-</tr></table>
-<mat-checkbox [checked]="filteredSlices.length===filteredSelectedSlices.length"
-              [indeterminate]="(filteredSlices.length!==filteredSelectedSlices.length)&&(filteredSelectedSlices.length>0)"
-              (change)="$event ? masterCheckboxToggle() : null"
-                (click)=" masterCheckboxToggle()"></mat-checkbox>
-<div [style]="'display: flex;justify-content: center;'">
-<span  *ngFor="let step_name of stepsOrder" [style]="{'border-style': 'solid','border-width': '1px'}">{{step_name}}</span></div>
+    <td>
+      <app-chips-multi-select [options]="campaigns" [optionStyle]="'campaign'" [formControl]="chipsCampaignsControl" >
+      </app-chips-multi-select></td>
+      <td><app-chips-multi-select [options]="projects" [optionStyle]="'project'" [formControl]="chipsProjectsControl" >
+      </app-chips-multi-select></td>
+    </tr></table>
+    <mat-checkbox [checked]="filteredSlices.length===filteredSelectedSlices.length"
+      [indeterminate]="(filteredSlices.length!==filteredSelectedSlices.length)&&(filteredSelectedSlices.length>0)"
+      (change)="$event ? masterCheckboxToggle() : null"
+    (click)=" masterCheckboxToggle()"></mat-checkbox>
+    <div [style]="'display: flex;justify-content: center;'">
+      @for (step_name of stepsOrder; track step_name) {
+        <span  [style]="{'border-style': 'solid','border-width': '1px'}">{{step_name}}</span>
+      }</div>
 
 
-<cdk-virtual-scroll-viewport itemSize="50" class="example-viewport">
-<div  *cdkVirtualFor="let slice of filteredSlices;templateCacheSize: 0 " class="example-item">
+      <cdk-virtual-scroll-viewport itemSize="50" class="example-viewport">
+        <div  *cdkVirtualFor="let slice of filteredSlices;templateCacheSize: 0 " class="example-item">
 
-  <table>
-    <tr>
-      <td><input type="checkbox" [checked]="selectedSlices.isSelected(slice)" (click)= "toggleSliceChange($event, slice); $event.stopPropagation()"  /></td>
-      <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" (tasksSelected)="tasksDrawer.toggle();onTaskSelected($event, slice)" ></app-slice></td>
-    </tr>
-  </table>
-</div>
+          <table>
+            <tr>
+              <td><input type="checkbox" [checked]="selectedSlices.isSelected(slice)" (click)= "toggleSliceChange($event, slice); $event.stopPropagation()"  /></td>
+              <td [style]="{width: '100%'}"><app-slice [colorSchema]="colorSchema"  [slice]="slice" [stepsOrder]="stepsOrder" (tasksSelected)="tasksDrawer.toggle();onTaskSelected($event, slice)" ></app-slice></td>
+            </tr>
+          </table>
+        </div>
 
-</cdk-virtual-scroll-viewport>
-</mat-drawer-container>
+      </cdk-virtual-scroll-viewport>
+    </mat-drawer-container>

@@ -1,7 +1,11 @@
 <mat-chip-listbox selectable multiple [disabled]="disabled">
-  <mat-chip-option #c="matChip" *ngFor="let option of options" (click)="toggleSelection(c)" [value]="option"
-            [disabled]="disabled" [color]="'grey'" >
-    <mat-icon *ngIf="c.selected">check</mat-icon>
-    <span >{{option}}<div  [ngClass]="[optionStyle,option.replace(':','_')]"></div></span>
-  </mat-chip-option>
+  @for (option of options; track option) {
+    <mat-chip-option #c="matChip" (click)="toggleSelection(c)" [value]="option"
+      [disabled]="disabled" [color]="'grey'" >
+      @if (c.selected) {
+        <mat-icon>check</mat-icon>
+      }
+      <span >{{option}}<div  [ngClass]="[optionStyle,option.replace(':','_')]"></div></span>
+    </mat-chip-option>
+  }
 </mat-chip-listbox>

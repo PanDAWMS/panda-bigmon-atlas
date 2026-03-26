@@ -171,7 +171,14 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
       field: 'timestamp',
       headerName: 'Timestamp',
       cellRenderer: params => {
-        return formatDate(params.value, DEFAULTS.TIME_FORMAT, 'en-US', 'UTC');
+        if (!params.value) {
+          return '';
+        }
+        try {
+          return formatDate(params.value, DEFAULTS.TIME_FORMAT, 'en-US', 'UTC');
+        } catch (e) {
+          return params.value;
+        }
       },
       maxWidth: 145,
 

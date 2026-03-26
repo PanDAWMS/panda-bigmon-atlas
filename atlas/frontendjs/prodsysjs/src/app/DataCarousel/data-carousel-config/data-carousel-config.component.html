@@ -1,18 +1,21 @@
 <h3>Data Carousel config</h3>
-<ng-container *ngIf="dataCarouselConfig$ | async as dataCarouselConfig; else loading">
+@if (dataCarouselConfig$ | async; as dataCarouselConfig) {
   <div>Excluded sites: {{dataCarouselConfig.excludeSites.join(',')}}</div>
-<br>
-<div *ngFor="let tapeConfig of  dataCarouselConfig.carouselTapes" class="grid grid-cols-5
+  <br>
+    @for (tapeConfig of  dataCarouselConfig.carouselTapes; track tapeConfig) {
+<div class="grid grid-cols-5
 gap-1 border-solid rounded-md border-slate-400 mb-5 ">
-    <div class="row-span-2"> Name: <b>{{tapeConfig.tapeName}}</b></div>
-  <div> Active: <mat-icon *ngIf="tapeConfig.active" class="done" style="color: green">done</mat-icon><mat-icon *ngIf="!tapeConfig.active" class="close" style="color: red">close</mat-icon></div>
-      <div> batchdelay: {{tapeConfig.batchdelay}}</div>
-      <div> min_bulksize: {{tapeConfig.min_bulksize}}</div>
-      <div> max_bulksize: {{tapeConfig.max_bulksize}}</div>
-      <div class="col-span-4"> Base rule: {{tapeConfig.baseRule}}</div>
-    </div>
-
-</ng-container>
-<ng-template #loading>
-
-</ng-template>
+        <div class="row-span-2"> Name: <b>{{tapeConfig.tapeName}}</b></div>
+        <div> Active: @if (tapeConfig.active) {
+          <mat-icon class="done" style="color: green">done</mat-icon>
+          }@if (!tapeConfig.active) {
+          <mat-icon class="close" style="color: red">close</mat-icon>
+        }</div>
+        <div> batchdelay: {{tapeConfig.batchdelay}}</div>
+        <div> min_bulksize: {{tapeConfig.min_bulksize}}</div>
+        <div> max_bulksize: {{tapeConfig.max_bulksize}}</div>
+        <div class="col-span-4"> Base rule: {{tapeConfig.baseRule}}</div>
+      </div>
+    }
+  } @else {
+  }
