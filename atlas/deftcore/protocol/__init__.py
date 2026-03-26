@@ -586,6 +586,7 @@ class TaskDefConstants(object, metaclass=Constants):
         'MC16c': ['MC16:MC16c'],
         'MC16d': ['MC16:MC16d'],
         'MC16e': ['MC16:MC16e'],
+        'MC20e': ['MC20:MC20e'],
         'MC23a': ['MC23:MC23a'],
         'MC23b': ['MC23:MC23b'],
         'MC23c': ['MC23:MC23c'],
