@@ -59,7 +59,7 @@ export class DATASETS_NOMENCLATURE {
 
 
 export class DEFAULTS {
-  public static readonly TIME_FORMAT = 'YYYY-MM-dd HH:mm';
+  public static readonly TIME_FORMAT = 'yyyy-MM-dd HH:mm';
 }
 
 export class PRODSYS_CONSTANTS {
