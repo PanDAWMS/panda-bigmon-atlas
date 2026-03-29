@@ -1570,6 +1570,7 @@ def did_type(request):
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
 def get_stuck_files(request):
+    dataset_name = ''
     try:
         ddm = DDM()
         dataset_name = request.query_params.get('dataset')
@@ -1586,6 +1587,7 @@ def get_stuck_files(request):
             stuck_files_info = aggregate_transfer_data(current_fts_rules, get_stuck_file_info([x['name'] for x in stuck_files], f"{dataset_staging.start_time.strftime('%Y-%m-%d')}"))
         return Response(stuck_files_info)
     except Exception as e:
+        _logger.error(f'Error while getting stuck files for {dataset_name}: {str(e)}')
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
