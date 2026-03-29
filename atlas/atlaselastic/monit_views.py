@@ -1,4 +1,5 @@
 import itertools
+import logging
 from datetime import timedelta
 from random import sample
 from typing import List, Optional
@@ -13,6 +14,7 @@ from atlas.prodtask.models import ProductionTask, ActionStaging, TTask, Template
 MONIT_SEARCH = OpenSearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']), verify_certs=MONIT_ES['verify_certs'], ca_certs=MONIT_ES['ca_cert'], timeout=5000)
 
 MONIT_DDM_INDEX = 'monit_prod_ddm_enr_*'
+_logger = logging.getLogger('prodtaskwebui')
 
 
 @dataclass
@@ -275,7 +277,7 @@ class TransferData:
 def get_stuck_file_info(stuck_files: List[str], start_time) -> List[TransferData]:
 
     return_values = []
-
+    _logger.info(f"get_stuck_file_info: {MONIT_SEARCH} indes {MONIT_DDM_INDEX}")
     s = Search(using=MONIT_SEARCH, index=MONIT_DDM_INDEX).\
         query("terms", data__name=stuck_files).\
         query("range", **{
@@ -289,4 +291,6 @@ def get_stuck_file_info(stuck_files: List[str], start_time) -> List[TransferData
             return_values.append(TransferData.from_attr_dict(x.data) )
         except Exception as e:
             pass
+    _logger.info(f"get_stuck_file_info: {len(return_values)} indes ")
+
     return return_values
