@@ -1,4 +1,4 @@
-from .local import CERTIFICATE_PATH
+from .local import CERTIFICATE_PATH, JEDI_BASE_URL
 
-JEDI_BASE_URL = 'https://pandaserver.cern.ch:25443/server/panda'
+JEDI_BASE_URL = JEDI_BASE_URL
 CERTIFICATE = CERTIFICATE_PATH
