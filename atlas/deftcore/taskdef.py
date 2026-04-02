@@ -1933,6 +1933,8 @@ class TaskDefinition(object):
                     task_proto_dict.update({'panda_data_carousel': True})
                     if step.request.request_type in ['REPROCESSING']:
                         task_proto_dict.update({'remove_rule_when_done': True})
+                    if step.request.request_type in ['GROUP'] and step.request.project.project.startswith('mc') and 'DAOD_PHYS' in step.step_template.output_formats:
+                        task_proto_dict.update({'remove_rule_when_done': True})
                     logger.info('Panda DC is set for dataset {0}'.format(
                         primary_input))
                     return True
