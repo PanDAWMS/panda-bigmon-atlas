@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import { AfterViewInit, Component, OnInit, inject } from '@angular/core';
 import {MatTableDataSource} from '@angular/material/table';
 import {GroupProductionStats} from '../gp-stats/gp-stats';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
@@ -24,6 +24,10 @@ export interface StatsByOutput{
     standalone: false
 })
 export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private viewportScroller = inject(ViewportScroller);
+
   gpStats: GroupProductionStats[];
   availableAMITags: string[] = [];
   statsByOutput: Map<string, Map<string, [number, number]>>;
@@ -37,7 +41,6 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
   chosenFormat: string | null = '';
   showNumbers = 0;
   hoverTable = false;
-  constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller, ) { }
 
   ngOnInit(): void {
     this.gpStats = this.route.snapshot.data.gpStats;

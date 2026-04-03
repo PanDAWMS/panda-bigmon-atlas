@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable, of} from "rxjs";
 import {DeletionSubmission} from "../gp-deletion-container";
@@ -16,11 +16,11 @@ export interface DeletedContainers {
   providedIn: 'root'
 })
 export class GpDeletionRequestService {
+  private http = inject(HttpClient);
+
   private gpDeletionRequestUrl = '/gpdeletion/gpdeletionrequests';
   private gpDeletionRequestSubmissionUrl = '/gpdeletion/gpdeletionrequestsask/';
   private gpAllDeletedContainersUrl = '/gpdeletion/gpdeletedcontainers/';
-
-  constructor(private http: HttpClient) { }
 
   getExistingDeletionRequests(): Observable<DeletionSubmission[]> {
     return this.http.get<DeletionSubmission[]>(this.gpDeletionRequestUrl).pipe(

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import { Observable, of } from 'rxjs';
@@ -11,11 +11,11 @@ const CACHE_SIZE = 1;
   providedIn: 'root'
 })
 export class GPStatsService {
+    private http = inject(HttpClient);
+
     private gpStatsUrl = '/gpdeletion/gpstats';
     private gpLastUpdateTimeUrl = '/gpdeletion/last_update_time_group_production';
     private cache$: Observable<GroupProductionStats[]>;
-  constructor(
-    private http: HttpClient){}
 
 
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable, of, throwError} from "rxjs";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "./analysis-task-model";
@@ -32,6 +32,8 @@ export interface ParentDerivationRequest {
   providedIn: 'root'
 })
 export class AnalysisTasksService {
+  private http = inject(HttpClient);
+
 
   private prTaskTemplateUrl = '/api/prepare_template_from_task';
   private prCreateTaskTemplateUrl = '/api/create_template/';
@@ -49,11 +51,6 @@ export class AnalysisTasksService {
   private prGetAnalysisRequestHashtagsUrl = '/api/get_analysis_request_hashtags/';
   private prAddAnalysisRequestHashtagUrl = '/api/add_delete_analysis_request_hashtag/';
   private prGetAnalysisScopesUrl = '/api/get_analysis_scopes_by_user/';
-
-
-
-
-  constructor(private http: HttpClient) { }
 
    getAnalysisTaskPreview(requestID: string, sliceNumber: string): Observable<string> {
     return this.http.get<string>(this.prGetTaskPreviewUrl, {params: {requestID, sliceNumber}}).pipe(

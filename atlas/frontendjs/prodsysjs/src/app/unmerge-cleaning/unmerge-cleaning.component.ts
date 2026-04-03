@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {UnmergedDatasetsCombined} from "./unmerge-cleaning.service";
 import {ActivatedRoute} from "@angular/router";
 import {UnmergeCleaningResolver} from "./unmerge-cleaning.resolver";
@@ -21,8 +21,8 @@ export interface DatasetToDelete {
     standalone: false
 })
 export class UnmergeCleaningComponent implements OnInit {
+  private route = inject(ActivatedRoute);
 
-  constructor(private route: ActivatedRoute) { }
   unmergedDatasets: UnmergedDatasetsCombined;
   unmergedDatasetsByFormat: {format: string, size: number, datasets: number}[] = [];
   prefix: string;

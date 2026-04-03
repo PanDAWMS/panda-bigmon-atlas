@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable} from "rxjs";
 import {DatasetToDelete} from "./unmerge-cleaning.component";
@@ -14,6 +14,8 @@ export interface UnmergedDatasetsCombined {
   providedIn: 'root'
 })
 export class UnmergeCleaningService {
+  private http = inject(HttpClient);
+
 
   private unmergeDatasetURL = '/prodtask/unmerged_datasets_to_delete';
   private specialDatasetURL = '/prodtask/special_datasets_to_delete';
@@ -22,7 +24,6 @@ export class UnmergeCleaningService {
   private cache2$: Map<string, Observable<UnmergedDatasetsCombined>> = new Map<string, Observable<UnmergedDatasetsCombined>>();
 
   private cacheSpecial$: Observable<UnmergedDatasetsCombined>;
-  constructor(private http: HttpClient) { }
 
   getUnmergeDatasets(prefix: string): Observable<UnmergedDatasetsCombined>{
     if (!this.cache$.has(prefix)) {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {AsyncProdTaskSplitStatus, ProductionRequestService} from "../production-request.service";
 import {catchError, delay, filter, repeat, switchMap, takeUntil, tap} from "rxjs/operators";
@@ -31,8 +31,10 @@ import {MatProgressBarModule} from "@angular/material/progress-bar";
     styleUrl: './request-horizontal-split.component.css'
 })
 export class RequestHorizontalSplitComponent {
+   private productionRequestService = inject(ProductionRequestService);
+   private route = inject(ActivatedRoute);
+   private fb = inject(FormBuilder);
 
-   constructor(private productionRequestService: ProductionRequestService , private route: ActivatedRoute,  private fb: FormBuilder) { }
 
     error: string | undefined;
     requestID: number| undefined;

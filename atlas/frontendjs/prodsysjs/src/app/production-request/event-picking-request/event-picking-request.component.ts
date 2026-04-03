@@ -1,10 +1,14 @@
-import {Component, computed, Inject, inject, input, OnDestroy, OnInit, signal} from '@angular/core';
-import {EventPickingService} from "../event-picking-request-creation/event-picking.service";
+import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import {
+  EventPickingService,
+  ProducedDataset,
+  ProducedDatasetsResponse
+} from "../event-picking-request-creation/event-picking.service";
 import {toObservable} from "@angular/core/rxjs-interop";
 import {setErrorMessage} from "../../dsid-info/dsid-info.service";
 import {HttpErrorResponse} from "@angular/common/http";
 import {switchMap, takeUntil} from "rxjs/operators";
-import {interval, Subject} from "rxjs";
+import {interval, of, Subject} from "rxjs";
 import {Router, RouterLink} from "@angular/router";
 import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
@@ -13,25 +17,38 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
 
 import {MAT_DIALOG_DATA, MatDialog, MatDialogModule} from "@angular/material/dialog";
 import {MatButton} from "@angular/material/button";
+import {AgGridAngular} from "ag-grid-angular";
+import {ColDef, SelectionChangedEvent} from "ag-grid-community";
+import {
+  MatAccordion,
+  MatExpansionPanel, MatExpansionPanelDescription,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
 
 @Component({
   selector: 'app-event-picking-request',
   imports: [
     RouterLink,
     ProductionTaskTableComponent,
-    MatProgressSpinner
+    MatProgressSpinner,
+    AgGridAngular,
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelTitle,
+    MatExpansionPanelHeader,
+    MatExpansionPanelDescription
   ],
   templateUrl: './event-picking-request.component.html',
   styleUrl: './event-picking-request.component.css'
 })
 export class EventPickingRequestComponent implements OnInit, OnDestroy{
+        private dialog = inject(MatDialog);
 
-        constructor(private dialog: MatDialog) {}
 
         jira = input<string>('');
         jiraTicket$ = toObservable(this.jira);
         epService = inject(EventPickingService);
-
         epProgress = this.epService.EPProgressResource.value;
 
         isLoading = this.epService.EPProgressResource.isLoading;
@@ -64,6 +81,24 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
           }
           return false;
         });
+        epSomethingIsFinished = computed(() => {
+          if (!this.epProgress()?.productions){
+            return false;
+          }
+          for (const processing of this.epProgress()?.productions || []) {
+            if (processing.status === 'done' || processing.status === 'finished') {
+              return true;
+            }
+          }
+          return false;
+        });
+        producedDatasets: ProducedDataset[] = [];
+        existingContainers: string[] = [];
+        finishedJira$ = toObservable(
+          computed(() => this.epSomethingIsFinished() ? this.jira() : null)
+        );
+
+
         epIsProgressingObservable$ = toObservable(this.epIsProgressing);
         taskManagementService = inject(TasksManagementService);
         readyToSubmit = computed(() => {
@@ -90,8 +125,134 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
         });
         tasks: ProductionTask[] = [];
         private destroy$ = new Subject<void>();
+        selectedProducedDatasets: ProducedDataset[] = [];
 
+        producedDatasetDefaultColDef: ColDef = {
+          sortable: true,
+          filter: true,
+          resizable: true,
+        };
 
+        producedDatasetColumnDefs: ColDef[] = [
+          {
+            headerName: '',
+            checkboxSelection: true,
+            headerCheckboxSelection: true,
+            width: 50,
+            pinned: 'left',
+            sortable: false,
+            filter: false,
+            resizable: false,
+          },
+          {
+            field: 'name',
+            headerName: 'Dataset',
+            flex: 1,
+            minWidth: 350,
+          },
+          {
+            field: 'project',
+            headerName: 'Project',
+            width: 140,
+          },
+          {
+            field: 'events',
+            headerName: 'Events',
+            width: 120,
+          },
+          {
+            field: 'status',
+            headerName: 'Status',
+            width: 120,
+          },
+          {
+            field: 'version',
+            headerName: 'Version',
+            width: 100,
+          }
+        ];
+
+        containerPostfix = signal('');
+
+        // Use full jira from backend when available (matches backend storage), fallback to route jira.
+        jiraForContainer = computed(() => this.epProgress()?.requests?.[0]?.jira ?? this.jira());
+
+        // Prefix uses jira key only, e.g. ATLPHYSVAL-1234
+        jiraKey = computed(() => {
+          const raw = this.jiraForContainer();
+          return raw.includes('/') ? (raw.split('/').pop() ?? raw) : raw;
+        });
+
+        containerPrefix = computed(() => `group.proj-evind.results.${this.jiraKey()}.`);
+
+        containerName = computed(() => `${this.containerPrefix()}${this.containerPostfix().trim()}`);
+        protected async copyDatasetNamesToClipboard(): Promise<void> {
+          const text = this.producedDatasets.map(d => d.name).join('\n');
+          if (!text) {
+            this.submitStatus.set('No datasets to copy');
+            return;
+          }
+
+          // Preferred path (secure context + permissions)
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(text);
+              this.submitStatus.set(`Copied ${this.producedDatasets.length} dataset names to clipboard`);
+              return;
+            }
+          } catch {
+            // Fall through to legacy fallback
+          }
+
+          // Fallback for non-secure contexts (http) and restricted browsers
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, textarea.value.length);
+
+          try {
+            const ok = document.execCommand('copy');
+            this.submitStatus.set(
+              ok
+                ? `Copied ${this.producedDatasets.length} dataset names to clipboard`
+                : 'Copy failed. Please copy manually.'
+            );
+          } catch {
+            this.submitStatus.set('Copy failed. Please copy manually.');
+          } finally {
+            document.body.removeChild(textarea);
+          }
+        }
+        protected createContainerForSelected(): void {
+          const postfix = this.containerPostfix().trim();
+          if (!postfix) {
+            this.submitStatus.set('Container postfix is required');
+            return;
+          }
+
+          const selectedNames = this.selectedProducedDatasets.map(d => d.name);
+          if (selectedNames.length === 0) {
+            this.submitStatus.set('Select at least one dataset');
+            return;
+          }
+
+          this.epService.registerEPContainer(this.jiraForContainer(), this.containerName(), selectedNames).subscribe({
+            next: (response) => {
+              this.submitStatus.set(response);
+              if (this.existingContainers.indexOf(this.containerName()) === -1) {
+                this.existingContainers = [...this.existingContainers, this.containerName()];
+              }
+            },
+            error: (err) => this.submitStatus.set(setErrorMessage(err))
+          });
+        }
+        onProducedDatasetSelectionChanged(event: SelectionChangedEvent): void {
+          this.selectedProducedDatasets = event.api.getSelectedRows() as ProducedDataset[];
+        }
         ngOnInit(): void {
           this.jiraTicket$.subscribe(jira => {
             this.epService.jira.set(jira);
@@ -114,6 +275,25 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
           ).subscribe(() => {
             // Reload the resource
             this.epService.EPProgressResource.reload();
+          });
+          this.finishedJira$.pipe(
+            switchMap(jira => {
+              if (!jira) {
+                return of<ProducedDatasetsResponse>({datasets: [], containers: []});
+              }
+              return this.epService.getProducedDatasets(jira);
+            }),
+            takeUntil(this.destroy$)
+          ).subscribe({
+            next: (response) => {
+              this.producedDatasets = response.datasets || [];
+              this.existingContainers = response.containers || [];
+            },
+            error: (err) => {
+              this.submitStatus.set(setErrorMessage(err));
+              this.producedDatasets = [];
+              this.existingContainers = [];
+            }
           });
         }
 
@@ -206,9 +386,13 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
   `]
 })
 export class JsonDialogComponent {
+  data = inject(MAT_DIALOG_DATA);
+
   jsonData: string;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {
+  constructor() {
+    const data = this.data;
+
     this.jsonData = JSON.stringify(data, null, 2);
   }
 }

@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import {UntypedFormControl} from "@angular/forms";
 import {MatTableDataSource} from "@angular/material/table";
 import {DeletionSubmission} from "../gp-deletion-container";
@@ -17,6 +17,8 @@ import {MatSort} from "@angular/material/sort";
     standalone: false
 })
 export class GpDeletionRequestComponent implements OnInit {
+  private gpDeletionRequestService = inject(GpDeletionRequestService);
+
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
@@ -29,8 +31,6 @@ export class GpDeletionRequestComponent implements OnInit {
   currentRequest: DeletionSubmission|undefined = undefined;
   minDate: Date = new Date();
   tomorrow: Date = new Date();
-
-  constructor(private gpDeletionRequestService: GpDeletionRequestService) { }
 
   ngOnInit(): void {
     this.tomorrow.setDate(this.tomorrow.getDate() + 1);

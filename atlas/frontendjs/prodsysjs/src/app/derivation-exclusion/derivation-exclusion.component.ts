@@ -1,12 +1,4 @@
-import {
-  AfterContentChecked,
-  AfterContentInit,
-  AfterViewChecked,
-  AfterViewInit,
-  Component,
-  OnInit,
-  ViewChild
-} from '@angular/core';
+import { AfterContentChecked, AfterContentInit, AfterViewChecked, AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 
@@ -43,6 +35,13 @@ export interface ContainerByTag{
 
 
 export class DerivationExclusionComponent implements OnInit, AfterViewInit{
+  private route = inject(ActivatedRoute);
+  private gpDeletionContainerService = inject(GPDeletionContainerService);
+  private router = inject(Router);
+  private viewportScroller = inject(ViewportScroller);
+  private gpContainerDetailsService = inject(GpContainerDetailsService);
+  private amiTagService = inject(AmiTagService);
+
   gpList: GroupProductionDeletionContainer[];
   outputType: string;
   currentFragment: string;
@@ -67,10 +66,6 @@ export class DerivationExclusionComponent implements OnInit, AfterViewInit{
   mainFilter = '';
   expiredFilter = '';
   sendClicked = false;
-
-  constructor(private route: ActivatedRoute, private gpDeletionContainerService: GPDeletionContainerService, private router: Router,
-              private viewportScroller: ViewportScroller, private gpContainerDetailsService: GpContainerDetailsService,
-              private amiTagService: AmiTagService) { }
 
   ngOnInit(): void {
     this.outputType = this.route.snapshot.paramMap.get('output');

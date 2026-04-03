@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "../analysis-task-model";
@@ -13,13 +13,14 @@ import {ProductionTask} from "../../production-request/production-request-models
     standalone: false
 })
 export class AnalyRequestActionsComponent implements OnInit {
+  private analysisTaskService = inject(AnalysisTasksService);
+  dialog = inject(MatDialog);
+
   @Input() selectedSlices: number[] = [];
   @Input() productionRequestID: string;
   @Output() updateRequest = new EventEmitter<boolean>();
   public sendMessage = '';
   submitting = false;
-
-  constructor(private analysisTaskService: AnalysisTasksService, public dialog: MatDialog) { }
 
   ngOnInit(): void {
   }
@@ -90,7 +91,12 @@ export class AnalyRequestActionsComponent implements OnInit {
     standalone: false
 })
 export class DialogSliceModificationComponent implements OnInit {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {slices: number, template: Partial<TaskTemplate>}, public dialogRef: MatDialogRef<DialogSliceModificationComponent>) { }
+  data = inject<{
+    slices: number;
+    template: Partial<TaskTemplate>;
+}>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogSliceModificationComponent>>(MatDialogRef);
+
   currentTaskTemplate: Partial<TaskTemplate>;
   ngOnInit(): void {
     this.currentTaskTemplate = this.data.template;

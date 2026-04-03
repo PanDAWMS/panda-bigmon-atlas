@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable} from "rxjs";
 
@@ -22,8 +22,8 @@ export interface PhysicsContainerIndex {
   providedIn: 'root'
 })
 export class DerivationPhysicContainerService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
   private prPhysicsContainersURL  = '/api/physics_container_index/';
   private prCreatePhysicsContainersURL = '/api/create_physic_containers/';
 

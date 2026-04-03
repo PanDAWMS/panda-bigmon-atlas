@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {Observable, of} from 'rxjs';
 import {catchError, tap} from 'rxjs/operators';
@@ -14,10 +14,10 @@ export interface GPContainerDetails {
   providedIn: 'root'
 })
 export class GpContainerDetailsService {
+    private http = inject(HttpClient);
+
 
     private gpDetailsUrl = '/gpdeletion/gpdetails';
-  constructor(
-    private http: HttpClient){}
 
   getGPContainerDetails(id: string): Observable<GPContainerDetails> {
      return this.http.get<GPContainerDetails>(this.gpDetailsUrl, {params: {gp_id: id }});

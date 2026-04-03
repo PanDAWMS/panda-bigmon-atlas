@@ -1,15 +1,4 @@
-import {
-  Component,
-  computed, effect,
-  EventEmitter,
-  Inject,
-  inject,
-  input,
-  OnInit,
-  Output,
-  Signal,
-  ViewChild
-} from '@angular/core';
+import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output, Signal, ViewChild } from '@angular/core';
 import {DataCarouselService, DatasetExistsResponse} from '../../DataCarousel/data-carousel.service';
 import {TaskActionLog, TaskService} from '../../production-task/task-service.service';
 import {Observable} from 'rxjs';
@@ -50,6 +39,8 @@ import {RucioDIDComponent} from '../rucio-did/rucio-did.component';
   styleUrl: './rucio-container.component.css'
 })
 export class RucioContainerComponent implements OnInit {
+    dialog = inject(MatDialog);
+
     private dataCarouselService = inject(DataCarouselService);
     containerName = input<string>();
     containerName$ = toObservable(this.containerName);
@@ -111,9 +102,6 @@ export class RucioContainerComponent implements OnInit {
         return convertBytes(params.value);
       }
     }];
-    constructor(public dialog: MatDialog) {
-
-    }
       adjustColumns(params: FilterChangedEvent<any>) {
             params.api.sizeColumnsToFit();
       }
@@ -156,11 +144,14 @@ export class RucioContainerComponent implements OnInit {
   standalone: true
 })
 export class DialogDatasetInsideContainerDetailsComponent implements OnInit {
+  data = inject<{
+    selectedDataset: string;
+    filteredDatasets: string[];
+}>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogDatasetInsideContainerDetailsComponent>>(MatDialogRef);
+
 
   @Output() datasetChosen = new EventEmitter<string>();
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedDataset: string, filteredDatasets: string[]},
-              public dialogRef: MatDialogRef<DialogDatasetInsideContainerDetailsComponent>) { }
   currentDataset: string;
   currentIndex: number;
   ngOnInit(): void {

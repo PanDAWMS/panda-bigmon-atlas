@@ -1,4 +1,4 @@
-import {Component, computed, EventEmitter, Inject, inject, input, OnInit, Output, ViewChild} from '@angular/core';
+import { Component, computed, EventEmitter, inject, input, OnInit, Output, ViewChild } from '@angular/core';
 import {DataCarouselService, StagingRule} from '../data-carousel.service';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {toObservable} from '@angular/core/rxjs-interop';
@@ -53,6 +53,8 @@ import {RucioDIDComponent} from "../../production-request/rucio-did/rucio-did.co
   standalone: true,
 })
 export class StagingManagementComponent implements OnInit {
+  dialog = inject(MatDialog);
+
   private dataCarouselService = inject(DataCarouselService);
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
@@ -255,7 +257,7 @@ export class StagingManagementComponent implements OnInit {
   showStuck: boolean= false;
   pageTasksActive = true;
 
-  constructor(public dialog: MatDialog) {
+  constructor() {
 
         // Subscribe to selectedDestinations changes and update URL query parameter
 
@@ -500,11 +502,15 @@ function formatUnixTimestampUTC(timestamp: number): string {
   standalone: true
 })
 export class DialogDatasetDetailsComponent implements OnInit {
+  data = inject<{
+    selectedDataset: string;
+    filteredDatasets: string[];
+    showStaging: boolean;
+}>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogDatasetDetailsComponent>>(MatDialogRef);
+
 
   @Output() datasetChosen = new EventEmitter<string>();
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedDataset: string, filteredDatasets: string[], showStaging: boolean},
-              public dialogRef: MatDialogRef<DialogDatasetDetailsComponent>) { }
   currentDataset: string;
   currentIndex: number;
   showStaging: boolean;

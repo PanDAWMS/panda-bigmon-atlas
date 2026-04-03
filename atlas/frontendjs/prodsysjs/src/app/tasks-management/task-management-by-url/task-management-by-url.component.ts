@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute, DefaultUrlSerializer, Router} from "@angular/router";
 import {TasksManagementService} from "../tasks-management.service";
 import { HttpParams } from "@angular/common/http";
@@ -13,6 +13,10 @@ import {ProductionTask} from "../../production-request/production-request-models
     standalone: false
 })
 export class TaskManagementByUrlComponent implements OnInit{
+  route = inject(ActivatedRoute);
+  router = inject(Router);
+  taskManagementService = inject(TasksManagementService);
+
   bigpandaURL$ = this.route.queryParams.pipe(switchMap((params) => {
     this.httpParams = new HttpParams({fromObject: params});
     if (this.httpParams.toString() === ''){
@@ -27,8 +31,6 @@ export class TaskManagementByUrlComponent implements OnInit{
   bigpandaURL: string;
   httpParams = new HttpParams();
    public urlSerializer = new DefaultUrlSerializer();
-
-  constructor(public route: ActivatedRoute, public router: Router, public taskManagementService: TasksManagementService) { }
 
  ngOnInit(): void {
     this.bigpandaURL$.subscribe((url) => {

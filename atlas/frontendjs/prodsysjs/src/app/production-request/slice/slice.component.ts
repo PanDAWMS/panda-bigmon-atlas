@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import {ProductionTask, Slice, SliceBase, Step} from "../production-request-models";
 import {MAT_DIALOG_DATA, MatDialog} from "@angular/material/dialog";
 import {UntypedFormBuilder} from "@angular/forms";
@@ -30,6 +30,8 @@ const COLOR_ORDER = [
 })
 
 export class SliceComponent implements OnInit {
+  dialog = inject(MatDialog);
+
   @Input() slice: Slice;
   @Input() stepsOrder: string[];
   @Input() colorSchema: {[index: number]: any};
@@ -39,7 +41,6 @@ export class SliceComponent implements OnInit {
   showFull = false;
   stepsInOrder: (PreparedStep|undefined)[] = [];
   checked = true;
-  constructor(public dialog: MatDialog) { }
     ngOnInit(): void {
 
       this.steps = [...this.slice.steps];
@@ -139,6 +140,13 @@ export class SliceComponent implements OnInit {
     standalone: false
 })
 export class SliceDetailsDialogComponent implements OnInit{
+  data = inject<{
+    slice: Slice;
+    colorSchema: any;
+}>(MAT_DIALOG_DATA);
+  private fb = inject(UntypedFormBuilder);
+  private productionRequestService = inject(ProductionRequestService);
+
   panelOpenState: boolean;
   sliceForm = this.fb.group({
     input_data: [''],
@@ -149,10 +157,6 @@ export class SliceDetailsDialogComponent implements OnInit{
   originalSlice: Slice;
   slice: Slice;
   modifiedFields: Set<string> = new Set<string>();
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { slice: Slice,  colorSchema: any}, private fb: UntypedFormBuilder,
-              private productionRequestService: ProductionRequestService) {
-
-  }
 
   ngOnInit(): void {
     this.slice = {...this.data.slice};

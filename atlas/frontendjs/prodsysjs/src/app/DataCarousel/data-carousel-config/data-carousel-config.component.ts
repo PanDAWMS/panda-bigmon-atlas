@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {DataCarouselService} from "../data-carousel.service";
 
 
@@ -11,8 +11,9 @@ import {DataCarouselService} from "../data-carousel.service";
     standalone: false
 })
 export class DataCarouselConfigComponent implements OnInit {
+  private dataCarouselService = inject(DataCarouselService);
+
   public dataCarouselConfig$ = this.dataCarouselService.getDataCarouselConfig();
-  constructor(private  dataCarouselService: DataCarouselService) { }
 
   ngOnInit(): void {
   }

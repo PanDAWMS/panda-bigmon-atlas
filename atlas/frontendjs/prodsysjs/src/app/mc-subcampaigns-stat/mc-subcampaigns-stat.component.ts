@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {MCSubCampaignStats, TaskService} from "../production-task/task-service.service";
 import {AsyncPipe, NgTemplateOutlet} from "@angular/common";
 import {catchError, map} from "rxjs/operators";
@@ -52,6 +52,8 @@ interface MCSubCampaignStatsInterface {
     styleUrl: './mc-subcampaigns-stat.component.css'
 })
 export class McSubcampaignsStatComponent {
+  private taskService = inject(TaskService);
+
 
   MCSubCampaignStats$: Observable<MCSubCampaignStatsInterface[]> = this.taskService.getMCSubCampaignStats().pipe(map((stats: MCSubCampaignStats[]) => {
     return stats.map((stat: MCSubCampaignStats) => {
@@ -98,7 +100,6 @@ export class McSubcampaignsStatComponent {
       return [];
       }
   ));
-  constructor(private taskService: TaskService) { }
 }
 
 

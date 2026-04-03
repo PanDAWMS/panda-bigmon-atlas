@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import {FormBuilder, Validators} from "@angular/forms";
 import {MatStepper} from "@angular/material/stepper";
 import {Observable, throwError} from "rxjs";
@@ -15,6 +15,11 @@ import {editState, PatternChanges} from "../pattern-edit/pattern-edit.component"
     standalone: false
 })
 export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
+   private formBuilder = inject(FormBuilder);
+   private analysisTaskService = inject(AnalysisTasksService);
+   private router = inject(Router);
+   private route = inject(ActivatedRoute);
+
    @ViewChild('taskTemplateStepper') stepper: MatStepper;
 
   taskIDFormGroup = this.formBuilder.group({
@@ -28,8 +33,6 @@ export class TaskTemplateSubmissionComponent implements OnInit, AfterViewInit {
   public currentTaskTemplate: TaskTemplate;
   public submissionError: string;
   public editMode: editState = 'view';
-  constructor(private formBuilder: FormBuilder, private analysisTaskService: AnalysisTasksService, private router: Router,
-              private route: ActivatedRoute) { }
 
   ngOnInit(): void {
      this.route.queryParamMap.subscribe((queryParams) => {

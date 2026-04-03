@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnInit, ViewChild} from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import {MatTableDataSource} from "@angular/material/table";
 import {DatasetToDelete} from "../unmerge-cleaning.component";
 import {UnmergedDatasetsCombined} from "../unmerge-cleaning.service";
@@ -14,6 +14,8 @@ import {MatSort} from "@angular/material/sort";
     standalone: false
 })
 export class UnmergeDatasetsComponent implements OnInit, AfterViewInit {
+  private route = inject(ActivatedRoute);
+
 
   datasetToDelete: MatTableDataSource<DatasetToDelete>;
   numberOfDatasets: number;
@@ -27,8 +29,6 @@ export class UnmergeDatasetsComponent implements OnInit, AfterViewInit {
   unmergedDatasets: UnmergedDatasetsCombined;
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
-
-  constructor(private route: ActivatedRoute, ) { }
   ngOnInit(): void {
 
     this.prefix = this.route.snapshot.paramMap.get('prefix');

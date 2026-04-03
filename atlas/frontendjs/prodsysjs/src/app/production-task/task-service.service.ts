@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {BehaviorSubject, Observable, of, Subject} from 'rxjs';
 import {JEDITask, ProductionTask, Slice} from '../production-request/production-request-models';
@@ -93,11 +93,11 @@ export interface TaskInfo {
   providedIn: 'root'
 })
 export class TaskService {
+  private http = inject(HttpClient);
+
   private actionRuleResults$: BehaviorSubject<RuleActionResult|null> = new BehaviorSubject(null);
 
   private actionRuleSubject$: Subject<RuleAction|null> = new Subject();
-
-  constructor(private http: HttpClient) { }
   private prTaskUrl = '/production_request/task';
   private prTaskActionsUrl = '/production_request/task_action_logs';
   private prRuleActionsUrl = '/production_request/rule_action_logs';

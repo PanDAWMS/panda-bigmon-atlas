@@ -1,4 +1,4 @@
-import {Component, OnInit, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import {ProductionRequestService} from './production-request.service';
 import {
   ProductionRequestBase,
@@ -29,8 +29,11 @@ import {debounceTime, distinctUntilChanged} from "rxjs/operators";
     standalone: false
 })
 export class ProductionRequestComponent implements OnInit, AfterViewInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private productionRequestService = inject(ProductionRequestService);
+  private cdr = inject(ChangeDetectorRef);
 
-  constructor(private route: ActivatedRoute, private router: Router, private productionRequestService: ProductionRequestService, private cdr: ChangeDetectorRef) { }
   slices: Slice[];
   filteredSlices: Slice[] = undefined;
   requestByCampaign: Map<string, number[]> = new Map<string, number[]>();

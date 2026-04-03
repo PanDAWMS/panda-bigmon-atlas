@@ -1,4 +1,4 @@
-import {Component, Inject, Input, OnDestroy, OnInit} from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import {ProductionTask} from '../production-request/production-request-models';
 import {
   ActionParams,
@@ -76,6 +76,9 @@ import {MatTooltip} from "@angular/material/tooltip";
 })
 
 export class TaskActionComponent implements OnInit, OnDestroy {
+  private taskService = inject(TaskService);
+  dialog = inject(MatDialog);
+
   // @Input() task?: ProductionTask;
   @Input() tasks: ProductionTask[];
   @Input() active = true;
@@ -129,8 +132,6 @@ export class TaskActionComponent implements OnInit, OnDestroy {
    comment = '';
   selectedSites: string[] = [];
   jobCloningMode = 'runonce';
-
-  constructor(private taskService: TaskService, public dialog: MatDialog) { }
 
   ngOnDestroy(): void {
     this.active = false;
@@ -297,15 +298,15 @@ export class TaskActionComponent implements OnInit, OnDestroy {
   standalone: true
 })
 export class DialogTaskSubmissionComponent implements OnInit{
+  data = inject<TaskAction>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogTaskSubmissionComponent>>(MatDialogRef);
+  private taskService = inject(TaskService);
+
 
   parameters = '';
   comment = '';
   FORCE_RETRY_REASONS = ['Bad site', 'Unavailable replica', 'Small tail', 'Other(leave a comment)'];
   forceRetryReason = '';
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: TaskAction, public dialogRef: MatDialogRef<DialogTaskSubmissionComponent>,
-              private taskService: TaskService) {
-  }
 
   ngOnInit(): void {
     this.comment = this.data.comment;

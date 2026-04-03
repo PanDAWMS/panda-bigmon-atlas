@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import { AfterViewInit, Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {GroupProductionStats} from './gp-stats';
 import {MatTableDataSource} from '@angular/material/table';
@@ -33,6 +33,11 @@ export interface StatsByOutputBase{
     standalone: false
 })
 export class GpStatsComponent implements OnInit, AfterViewInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private viewportScroller = inject(ViewportScroller);
+  private gpStateService = inject(GPStatsService);
+
   gpStats: GroupProductionStats[];
   statsByOutput: Map<string, Map<string, StatsByOutput>>;
   statsByOutputBases: StatsByOutputBase[] = [];
@@ -54,9 +59,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   totalDatasetsToDelete = 0;
   totalSizeToDelete = 0;
   lastUpdateTime = '';
-
-  constructor(private route: ActivatedRoute, private router: Router, private viewportScroller: ViewportScroller,
-              private gpStateService: GPStatsService ) { }
 
   ngOnInit(): void {
     this.gpStateService.GPLastUpdateTime().subscribe(lastUpdateTime => this.lastUpdateTime = lastUpdateTime);

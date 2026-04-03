@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   DerivationPhysicContainerService,
   PhysicsContainer,
@@ -24,8 +24,9 @@ import {MatSlideToggleModule} from "@angular/material/slide-toggle";
     styleUrl: './derivation-physic-container.component.css'
 })
 export class DerivationPhysicContainerComponent {
+  private derivationPhysicContainerService = inject(DerivationPhysicContainerService);
+  private route = inject(ActivatedRoute);
 
-  constructor(private derivationPhysicContainerService: DerivationPhysicContainerService, private route: ActivatedRoute) { }
   error: string | undefined;
   grlPath = '';
   notFullExists = false;

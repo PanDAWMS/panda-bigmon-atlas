@@ -1,4 +1,4 @@
-import {Component, Inject, Input, OnInit} from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import {ICellRendererAngularComp} from "ag-grid-angular";
 import {AnalysisSlice, TaskTemplate, TemplateBase} from "../analysis-task-model";
 import {ICellRendererParams} from "ag-grid-community";
@@ -14,6 +14,8 @@ import {BehaviorSubject} from "rxjs";
     standalone: false
 })
 export class AgCellSliceComponent implements ICellRendererAngularComp {
+  dialog = inject(MatDialog);
+
   public analysisSlice: AnalysisSlice;
   currentStatus = '';
   public parentStep: {request: number, slice: number}|null = null;
@@ -31,9 +33,6 @@ export class AgCellSliceComponent implements ICellRendererAngularComp {
       }
     }
    }
-
-    constructor(public dialog: MatDialog) {
-    }
 
    refresh(params: ICellRendererParams): boolean {
        return true;
@@ -53,14 +52,15 @@ export class AgCellSliceComponent implements ICellRendererAngularComp {
     standalone: false
 })
 export class DialogSliceDetailsComponent implements OnInit {
+  data = inject<AnalysisSlice>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogSliceDetailsComponent>>(MatDialogRef);
+  private analysisTaskService = inject(AnalysisTasksService);
+
   dataset: string;
   template: Partial<TaskTemplate>;
   sendMessage = '';
   previewTask = 'Loading...';
   public parentStep: {request: number, slice: number}|null = null;
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: AnalysisSlice, public dialogRef: MatDialogRef<DialogSliceDetailsComponent>,
-              private  analysisTaskService: AnalysisTasksService) { }
   ngOnInit(): void {
     this.dataset = this.data.slice.dataset;
     this.template = this.data.steps[0].analysis_step.step_parameters;

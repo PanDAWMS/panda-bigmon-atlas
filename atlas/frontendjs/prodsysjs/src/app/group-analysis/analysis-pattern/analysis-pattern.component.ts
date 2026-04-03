@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {catchError, switchMap, tap} from "rxjs/operators";
@@ -13,6 +13,10 @@ import {FormBuilder} from "@angular/forms";
     standalone: false
 })
 export class AnalysisPatternComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private analysisTaskService = inject(AnalysisTasksService);
+  private fb = inject(FormBuilder);
+
 
   public templateID: string;
   public errorMessage = '';
@@ -24,7 +28,6 @@ export class AnalysisPatternComponent implements OnInit {
   public editMode: editState = 'view';
   public loading = false;
   public expertView = 'Loading...';
-  constructor(private route: ActivatedRoute, private analysisTaskService: AnalysisTasksService, private fb: FormBuilder) { }
 
   ngOnInit(): void {
      this.expertView = 'Loading...';

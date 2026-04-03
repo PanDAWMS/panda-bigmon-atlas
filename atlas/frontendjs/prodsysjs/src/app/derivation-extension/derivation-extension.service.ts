@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable} from "rxjs";
 
@@ -12,8 +12,8 @@ export interface PatternStep {
   providedIn: 'root'
 })
 export class DerivationExtensionService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
   private prDerivationPatternForExtUrl = '/api/form_pattern_for_derivation_request_extension/';
   private prDerivationExtRequestUrl = '/api/extend_derivation_request/';
 

@@ -1,7 +1,7 @@
 from django.urls import re_path
 
 from atlas.production_request.eventpicking import ep_request_stats, submit_ep_request, \
-    get_ep_request, retry_ep_progress, get_ep_events
+    get_ep_request, retry_ep_progress, get_ep_events, produced_datasets_list, register_ep_container
 from atlas.production_request.views import *
 
 app_name='production_request'
@@ -47,6 +47,9 @@ urlpatterns = [
             name='get_ep_request'),
     re_path(r'^get_ep_events/$', get_ep_events,
             name='get_ep_events'),
+    re_path(r'^get_ep_result_datasets/$', produced_datasets_list,
+            name='get_ep_result_datasets'),
+    re_path(r'^register_ep_container/$', register_ep_container, name='register_ep_container'),
 
 ]
 

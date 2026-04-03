@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {AnalysisTasksService} from '../analysis-tasks.service';
 import {BehaviorSubject} from 'rxjs';
 import {map, switchMap, tap} from 'rxjs/operators';
@@ -13,6 +13,11 @@ import {APP_BASE_HREF} from "@angular/common";
     standalone: false
 })
 export class AnalysisTemplatesTableComponent implements OnInit {
+  private analysisTaskService = inject(AnalysisTasksService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private baseHref = inject(APP_BASE_HREF);
+
   public statusFilter = 'ACTIVE';
   public currentTemplates: TemplateBase[] = [];
   public filterChanged$  = new BehaviorSubject<boolean>(false);
@@ -53,10 +58,6 @@ export class AnalysisTemplatesTableComponent implements OnInit {
       },
       maxWidth: 140,
     }];
-
-
-
-  constructor(private analysisTaskService: AnalysisTasksService, private router: Router, private route: ActivatedRoute,  @Inject(APP_BASE_HREF) private baseHref: string) { }
 
   ngOnInit(): void {
   }

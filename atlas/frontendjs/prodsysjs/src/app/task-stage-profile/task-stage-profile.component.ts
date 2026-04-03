@@ -32,6 +32,8 @@ import {ActivatedRoute} from "@angular/router";
     styleUrl: './task-stage-profile.component.css'
 })
 export class TaskStageProfileComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+
   // @ViewChild("chart") chart: ChartComponent;
 
   taskStageProfileService = inject( TaskStageProfileService);
@@ -57,7 +59,7 @@ export class TaskStageProfileComponent implements OnInit {
   errorMessage = computed(() => this.taskStageProfileService.error$());
   public chartOptions: any; // Partial<ChartOptions>;
 
-    constructor(private route: ActivatedRoute) {
+    constructor() {
     this.chartOptions = {
       series: [
         {

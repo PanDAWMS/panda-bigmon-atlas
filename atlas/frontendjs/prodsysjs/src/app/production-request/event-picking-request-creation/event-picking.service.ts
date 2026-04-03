@@ -26,7 +26,18 @@ export interface EpProcessingSummary {
   stats: EpProcessingStats;
   production_request_id: number | null;
 }
+export interface ProducedDataset {
+  name: string;
+  events: number | null;
+  status: string | null;
+  version: string;
+  project: string;
+}
 
+export interface ProducedDatasetsResponse {
+  datasets: ProducedDataset[];
+  containers: string[];
+}
 export interface EpProcessingStats {
   running_tasks?: number;
   finished_tasks?: number;
@@ -58,6 +69,8 @@ export class EventPickingService {
   private RetryEPProcessURL = '/production_request/retry_ep_progress/';
   private GetEPRequestForUpdate = '/production_request/get_ep_request/';
   private GetEPEventsURL = '/production_request/get_ep_events/';
+  private GetResultEPURL = '/production_request/get_ep_result_datasets/';
+  private RegisterEPContainerURL = '/production_request/register_ep_container/';
 
   http = inject(HttpClient);
   constructor() { }
@@ -67,12 +80,24 @@ export class EventPickingService {
 
   jira = signal('');
 
+  registerEPContainer(jira: string, container: string, datasets: string[]): Observable<string> {
+    return this.http.post<string>(this.RegisterEPContainerURL, {
+      jira,
+      container,
+      datasets
+    });
+  }
+
   getEPRequestsList(): Observable<EPRequestShort[]>{
     return this.http.get<EPRequestShort[]>(this.EPRequestsURL);
   }
 
   getEPEvents(eventsType: string, id: string): Observable<any>{
     return this.http.get<any>(this.GetEPEventsURL, {params: {type: eventsType, id}});
+  }
+
+  getProducedDatasets(jira: string): Observable<ProducedDatasetsResponse> {
+    return this.http.post<ProducedDatasetsResponse>(this.GetResultEPURL, { jira });
   }
 
   submitEPRequest(jira: string): Observable<string>{

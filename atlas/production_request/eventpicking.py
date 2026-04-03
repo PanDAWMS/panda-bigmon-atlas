@@ -1,6 +1,7 @@
 import logging
 import os
 from collections import defaultdict
+from typing import Any
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -13,7 +14,8 @@ from atlas.analysis_tasks.source_handling import upload_to_rucio
 from atlas.celerybackend.celery import app
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import EventPickingUserRequest, EventPickingProcessing, EventPickingContent, TRequest, \
-    TProject, SystemParametersHandler, InputRequestList, StepExecution, ProductionTask, DistributedLock
+    TProject, SystemParametersHandler, InputRequestList, StepExecution, ProductionTask, DistributedLock, \
+    EventPickingResults
 import phoenixdb
 
 from atlas.prodtask.views import clone_slices, request_clone_slices, set_request_status
@@ -148,9 +150,70 @@ def submit_ep_request(request):
             if ep_processing.status == EventPickingProcessing.STATUS.PICKED:
                 ep_processing.status = EventPickingProcessing.STATUS.PREPARING
                 ep_processing.save()
-                create_ep_production_request.delay(int(ep_processing.id), merge=ep_processing.ep_request.do_merge)
+                create_ep_production_request.delay(int(ep_processing.id), merge=ep_processing.ep_request.do_merge, to_submit=True)
                 number_of_submitted_ep_requests += 1
         return Response(f"{number_of_submitted_ep_requests} EP requests submitted for processing", status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def produced_datasets_list(request):
+    try:
+        jira = request.data.get('jira')
+        if not jira:
+            return Response("Missing 'jira' field in request data", status=status.HTTP_400_BAD_REQUEST)
+        ep_requests = list(EventPickingUserRequest.objects.filter(jira__endswith=jira))
+        produced_datasets = []
+        for ep_processing in EventPickingProcessing.objects.filter(ep_request__in=ep_requests):
+            if ep_processing.status in [EventPickingProcessing.STATUS.FINISHED, EventPickingProcessing.STATUS.DONE]:
+                tasks = list(ProductionTask.objects.filter(request=ep_processing.production_request, status__in=[ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]))
+                datasets = []
+                for task in tasks:
+                    dataset = next(task.output_non_log_datasets())
+                    if 'DRAW_EVTPICK' in dataset:
+                        datasets.append({'name':dataset, 'events':task.total_events, 'status':task.status,
+                                         'version': '1', 'project': dataset.split(':')[-1].split('.')[0]})
+                produced_datasets = [d for d in datasets if 'merge.DRAW_EVTPICK' in d['name']]
+                if not produced_datasets:
+                    produced_datasets = datasets
+        containers = []
+        ep_results = EventPickingResults.objects.filter(jira__endswith=jira).order_by('-timestamp').first()
+        if ep_results and ep_results.results:
+            containers = ep_results.results.get('containers', [])
+        return Response({'datasets': produced_datasets, 'containers': containers}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def register_ep_container(request):
+    try:
+        jira = request.data.get('jira')
+        container_name = request.data.get('container')
+        datasets = request.data.get('datasets')
+        if not jira:
+            return Response("Missing 'jira' field in request data", status=status.HTTP_400_BAD_REQUEST)
+        if not(EventPickingResults.objects.filter(jira=jira).exists()):
+            ep_results = EventPickingResults(jira=jira)
+        else:
+            ep_results = EventPickingResults.objects.get(jira=jira)
+        ddm = DDM()
+        if not(ddm.dataset_exists(container_name)):
+            ddm.register_container(container_name, datasets)
+        else:
+            ddm.register_datasets_in_container(container_name, datasets)
+        if not ep_results.results:
+            ep_results.results = {'containers': [container_name]}
+            current_containers = container_name
+        else:
+            current_containers = ep_results.results.get('containers', [])
+            current_containers.append(container_name)
+        ep_results.results['containers'] = list(set(current_containers))
+        ep_results.save()
+        return Response(f"Container {container_name} registered with datasets {len(datasets)}", status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -235,7 +298,7 @@ def upload_ep_file_to_rucio(ep_request_id: int):
     return upload_to_rucio(ANALYSIS_CONF.RUCIO_UPLOAD_SCRIPT, ANALYSIS_CONF.PROXY_PATH, ANALYSIS_CONF.RUCIO_ACCOUNT,
                            file_path, ANALYSIS_CONF.DEFAULT_RSE, SystemParametersHandler.get_ep_config().default_source_dataset, SystemParametersHandler.get_ep_config().default_source_dataset.split(':')[0] )
 
-def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list[int], batch_size=500) -> tuple[list[(str, int)], list[str]]:
+def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list[int], batch_size=500) -> tuple[list[Any], list[str]]:
     def chunks(lst, size):
         for i in range(0, len(lst), size):
             yield lst[i:i + size]
@@ -249,7 +312,7 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             cursor.execute(dataset_query, (run, project, stream, True, 'AOD'))
             results_dict = cursor.fetchall()
             if len(results_dict) == 0:
-                return []
+                return [], []
             results_dict.sort(key=lambda x: x[2], reverse=True)
             biggest_events = results_dict[0][2]
             dataset_to_use = []
@@ -381,7 +444,9 @@ def process_ep_request(ep_request_id: int, submit: bool = False):
         finally:
             DistributedLock.release_lock(lock_key)
     if submit:
-        map(create_ep_production_request, request_to_process)
+        merge = ep_request.do_merge
+        for ep_request_to_submit in request_to_process:
+            create_ep_production_request(ep_request_to_submit, merge=merge, to_submit=True)
 
 @app.task(ignore_result=True)
 def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_submit: bool = False):
@@ -455,7 +520,7 @@ def check_running_ep_requests():
                     checked_runs.add(task.name.split('.')[1])
                     output_dataset = next(task.output_non_log_datasets())
                     events += ddm.dataset_info(output_dataset).events
-        if not running_task:
+        if not running_task and len(tasks) > 0:
             current_stats = ep_request.stats or {}
             if 'picked' in current_stats and current_stats['picked']['runs'] == len(checked_runs) and current_stats['picked']['events'] == events:
                 ep_request.status = EventPickingProcessing.STATUS.DONE

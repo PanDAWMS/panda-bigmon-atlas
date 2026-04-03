@@ -1,4 +1,4 @@
-import {Component, Inject, Input, OnDestroy, OnInit} from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   ActionParams,
   RuleAction, RuleActionResult,
@@ -78,6 +78,9 @@ interface RuleResults {
 })
 
 export class RuleActionComponent implements OnInit, OnDestroy {
+  private taskService = inject(TaskService);
+  dialog = inject(MatDialog);
+
 
   @Input() datasets: string[];
   @Input() active = true;
@@ -102,9 +105,6 @@ export class RuleActionComponent implements OnInit, OnDestroy {
   };
    SINGLE_RULE_CONFIRMATION_REQUIRED = [ ];
    comment = '';
-
-
-  constructor(private taskService: TaskService, public dialog: MatDialog) { }
 
   ngOnDestroy(): void {
     this.active = false;
@@ -299,13 +299,13 @@ export class RuleActionComponent implements OnInit, OnDestroy {
   standalone: true
 })
 export class DialogRuleSubmissionComponent implements OnInit{
+  data = inject<RuleAction>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogRuleSubmissionComponent>>(MatDialogRef);
+  private taskService = inject(TaskService);
+
 
   parameters = '';
   comment = '';
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: RuleAction, public dialogRef: MatDialogRef<DialogRuleSubmissionComponent>,
-              private taskService: TaskService) {
-  }
 
   ngOnInit(): void {
     this.comment = this.data.comment;

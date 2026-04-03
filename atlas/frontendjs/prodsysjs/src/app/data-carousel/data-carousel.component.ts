@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 
 import {RequestPerDay} from './request-per-day';
 
@@ -17,15 +17,14 @@ import {MatTableDataSource} from '@angular/material/table';
 
 
 export class DataCarouselComponent implements OnInit {
+  private dataCarouselService = inject(DataCarouselService);
+
   stagingRequests: RequestPerDay[];
   columnsToDisplay = [ 'Files', 'Tape'];
   dataSource: MatTableDataSource<RequestPerDay>;
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
-
-
-  constructor(private dataCarouselService: DataCarouselService) { }
 
   ngOnInit(): void {
     this.dataSource = new MatTableDataSource();

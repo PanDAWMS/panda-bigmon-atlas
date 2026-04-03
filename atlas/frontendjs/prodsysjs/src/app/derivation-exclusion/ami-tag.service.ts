@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {Observable, of} from 'rxjs';
 
@@ -13,10 +13,10 @@ export interface AMITag {
   providedIn: 'root'
 })
 export class AmiTagService {
+  private http = inject(HttpClient);
+
 
   private amiTagsDetailsUrl = '/gpdeletion/ami_tags_details';
-  constructor(
-    private http: HttpClient){}
 
   getAMITagDetails(amiTags: string): Observable<Map<string, AMITag>> {
     return this.http.get<Map<string, AMITag>>(this.amiTagsDetailsUrl, {params: {ami_tags: amiTags }});

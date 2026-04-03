@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {ProductionRequestBase} from "../production-request/production-request-models";
 import {TasksManagementService} from "../tasks-management/tasks-management.service";
 import {ActivatedRoute, Router} from "@angular/router";
@@ -16,6 +16,12 @@ import {uniqByForEach} from "../common/tools";
     standalone: false
 })
 export class DerivationExtensionComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private tasksManagementService = inject(TasksManagementService);
+  private derivationExtensionService = inject(DerivationExtensionService);
+  private router = inject(Router);
+
   containersFormGroup = this.formBuilder.group({
     containerList: [''],
   });
@@ -63,10 +69,6 @@ export class DerivationExtensionComponent implements OnInit {
         return params.value;
       } },
   ];
-
-  constructor(private formBuilder: FormBuilder, private route: ActivatedRoute, private tasksManagementService: TasksManagementService,
-              private derivationExtensionService: DerivationExtensionService, private router: Router) {
-  }
 
   ngOnInit() {
   }

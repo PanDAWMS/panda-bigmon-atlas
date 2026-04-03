@@ -1,4 +1,4 @@
-import {computed, Injectable, signal} from '@angular/core';
+import { computed, Injectable, signal, inject } from '@angular/core';
 import {HttpClient, httpResource} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {SelectionChangedEvent} from "ag-grid-community";
@@ -128,8 +128,8 @@ export interface AggregatedTransferData {
   providedIn: 'root'
 })
 export class DataCarouselService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
   private prDataCarouselConfigUrl = '/api/data_carousel_config/';
   private prGetStagingRulesUrl = '/prestage/get_staging_rules/';
   private prGetDatasetInfoUrl = '/api/dataset_info/';

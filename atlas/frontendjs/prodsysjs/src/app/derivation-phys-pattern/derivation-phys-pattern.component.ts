@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {DerivationDAODDerivation, DerivationPhysPatternService, PatternStep} from "./derivation-phys-pattern.service";
 import {BehaviorSubject} from "rxjs";
 import {switchMap, tap} from "rxjs/operators";
@@ -11,6 +11,9 @@ import {FormArray, FormBuilder, FormControl} from "@angular/forms";
     standalone: false
 })
 export class DerivationPhysPatternComponent implements OnInit {
+  private derivationPhysPatternService = inject(DerivationPhysPatternService);
+  private fb = inject(FormBuilder);
+
 
   private updatePattern$ = new BehaviorSubject<boolean>(true);
   public currentPatterns: DerivationDAODDerivation[] = [];
@@ -39,7 +42,6 @@ export class DerivationPhysPatternComponent implements OnInit {
     }
     }));
   public mcPatternsForm =  this.fb.group({mainArray: this.fb.array([])});
-  constructor(private derivationPhysPatternService: DerivationPhysPatternService,  private fb: FormBuilder) { }
 
   ngOnInit(): void {
   }

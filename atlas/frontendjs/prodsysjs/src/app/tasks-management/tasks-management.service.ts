@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable, of, throwError} from "rxjs";
 import {TaskInfo} from "../production-task/task-service.service";
@@ -9,8 +9,8 @@ import {catchError} from "rxjs/operators";
   providedIn: 'root'
 })
 export class TasksManagementService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
   private prTasksByRequestUrl = '/production_request/production_task_for_request/';
   private prTasksPrRequestUrl = '/production_request/production_request_info';
   private prTasksPrBigpandaUrl = '/production_request/production_tasks_by_bigpanda_url/';

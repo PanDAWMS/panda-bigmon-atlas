@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import {ContainerAllInfo, GpContainerInfoService} from "../gp-container-info.service";
@@ -6,7 +6,8 @@ import {ContainerAllInfo, GpContainerInfoService} from "../gp-container-info.ser
 
 @Injectable({ providedIn: 'root' })
 export class GpContainerInfoResolver  {
-  constructor(private service: GpContainerInfoService) {}
+  private service = inject(GpContainerInfoService);
+
 
   resolve(
     route: ActivatedRouteSnapshot,

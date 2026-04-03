@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import { Observable, of } from 'rxjs';
@@ -10,11 +10,11 @@ import {ExtensionRequest, GroupProductionDeletionContainer} from './gp-deletion-
   providedIn: 'root'
 })
 export class GPDeletionContainerService {
+    private http = inject(HttpClient);
+
     private gpDeletionUrl = '/gpdeletion/gpdeletions';
     private extensionUrl  = '/gpdeletion/extension/';
     private EXPIED_DAYS = 60;
-  constructor(
-    private http: HttpClient){}
 
   getGPDeletionPerOutput(outputType: string, dataType: string): Observable<GroupProductionDeletionContainer[]> {
     return this.http.get<GroupProductionDeletionContainer[]>(this.gpDeletionUrl, {params: {data_type: dataType,

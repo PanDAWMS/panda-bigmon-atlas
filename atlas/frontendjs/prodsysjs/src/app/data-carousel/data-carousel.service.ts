@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import { Observable, of } from 'rxjs';
@@ -10,9 +10,9 @@ import {RequestPerDay} from './request-per-day';
   providedIn: 'root'
 })
 export class DataCarouselService {
+    private http = inject(HttpClient);
+
     private requestPerDayUrl = '/prestage/derivation_requests';
-  constructor(
-    private http: HttpClient){}
 
   getRequestsPerDay(): Observable<RequestPerDay[]> {
     return this.http.get<RequestPerDay[]>(this.requestPerDayUrl)

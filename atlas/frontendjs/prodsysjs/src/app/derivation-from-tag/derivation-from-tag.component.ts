@@ -1,14 +1,4 @@
-import {
-  AfterViewInit,
-  Component,
-  EventEmitter,
-  Inject,
-  Input,
-  OnInit,
-  Output,
-  ViewChild,
-  ViewEncapsulation
-} from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import {
   catchError, concatAll,
   debounceTime,
@@ -47,6 +37,10 @@ function get_output(output: string): string {
     standalone: false
 })
 export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
+  route = inject(ActivatedRoute);
+  dialog = inject(MatDialog);
+  private derivationFromTagService = inject(DerivationFromTagService);
+
   @ViewChild('paginator') paginator: MatPaginator;
   @ViewChild('paginator2') paginator2: MatPaginator;
     @ViewChild('agGridOutputContainers') agGridOutputContainers!: AgGridAngular;
@@ -54,8 +48,6 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
   @Input() outputOnly = false;
   @Output() selectedContainers: EventEmitter<string[]|[]> = new EventEmitter<string[]|[]>();
   private _onDestroy = new Subject<void>();
-
-  constructor(public route: ActivatedRoute, public dialog: MatDialog, private derivationFromTagService: DerivationFromTagService) { }
 
   public currentAMITag = '';
   public loadingError?;
@@ -266,10 +258,8 @@ export class DerivationFromTagComponent implements OnInit, AfterViewInit  {
     standalone: false
 })
 export class DialogContainerDetails {
-  constructor(
-    public dialogRef: MatDialogRef<DialogContainerDetails>,
-    @Inject(MAT_DIALOG_DATA) public container: DerivationContainersInput,
-  ) {}
+  dialogRef = inject<MatDialogRef<DialogContainerDetails>>(MatDialogRef);
+  container = inject<DerivationContainersInput>(MAT_DIALOG_DATA);
 }
 
 @Component({
@@ -279,10 +269,8 @@ export class DialogContainerDetails {
     standalone: false
 })
 export class DialogSelectedContainers {
-  constructor(
-    public dialogRef: MatDialogRef<DialogSelectedContainers>,
-    @Inject(MAT_DIALOG_DATA) public containers: string[],
-  ) {}
+  dialogRef = inject<MatDialogRef<DialogSelectedContainers>>(MatDialogRef);
+  containers = inject(MAT_DIALOG_DATA);
 
 
 }

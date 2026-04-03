@@ -45,6 +45,8 @@ interface CheckSummary {
   styleUrl: './pmgapproval.component.css'
 })
 export class PMGApprovalComponent implements OnInit{
+    private router = inject(Router);
+
 
     ERROR_CHECKUP_LIST = [
       'Energy check',
@@ -130,8 +132,6 @@ export class PMGApprovalComponent implements OnInit{
         } else {
             console.error('JIRA ticket is required to approve PMG Check Up');
         }
-    }
-    constructor(private router: Router) {
     }
     ngOnInit(): void {
         this.jiraTicket$.subscribe( jiraTicket => {

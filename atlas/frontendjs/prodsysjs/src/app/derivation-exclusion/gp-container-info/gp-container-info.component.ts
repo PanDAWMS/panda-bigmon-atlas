@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {ContainerAllInfo, Dataset, Extension, GpContainerInfoService} from "./gp-container-info.service";
 import {MatTableDataSource} from "@angular/material/table";
@@ -10,6 +10,9 @@ import {MatTableDataSource} from "@angular/material/table";
     standalone: false
 })
 export class GpContainerInfoComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private gpContainerInfoService = inject(GpContainerInfoService);
+
   container: string;
   containerFullInfo: ContainerAllInfo |undefined;
   mainContainerDetailsDataSource: MatTableDataSource<Dataset>;
@@ -17,9 +20,6 @@ export class GpContainerInfoComponent implements OnInit {
   dataType: string;
   outputFormat: string;
   amiTag: string;
-
-
-  constructor(private route: ActivatedRoute, private gpContainerInfoService: GpContainerInfoService) { }
 
   ngOnInit(): void {
     this.mainContainerDetailsDataSource = new  MatTableDataSource<Dataset>();

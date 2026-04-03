@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {BehaviorSubject, combineLatest, merge, Subject} from "rxjs";
 import {catchError, debounceTime, filter, map, tap} from "rxjs/operators";
 import {FormBuilder, Validators} from "@angular/forms";
@@ -20,6 +20,11 @@ export interface InputContainerItem {
     standalone: false
 })
 export class CreateAnalysisRequestComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  private analysisTasksService = inject(AnalysisTasksService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
   // Map of container names to dataset numbers
   containerChekedList: Map<string, number> = new Map<string, number>();
   containersFormGroup = this.formBuilder.group({
@@ -104,8 +109,6 @@ export class CreateAnalysisRequestComponent implements OnInit {
     this.containersChecked$.next(true);
     this.containersChecked = true;
   }
-  constructor(private formBuilder: FormBuilder, private analysisTasksService: AnalysisTasksService,
-              private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit(): void {
      this.route.queryParamMap.subscribe((queryParams) => {

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Output, ViewChild} from '@angular/core';
+import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
 import {catchError, debounceTime, distinctUntilChanged, filter, map, switchMap, tap} from "rxjs/operators";
 import {DerivationFromTagService} from "../../derivation-from-tag/derivation-from-tag.service";
 import {ActivatedRoute} from "@angular/router";
@@ -15,6 +15,9 @@ import {AgGridAngular} from "ag-grid-angular";
     standalone: false
 })
 export class ParentDrivationForAnalysisComponent {
+  private route = inject(ActivatedRoute);
+  private analysisTasksService = inject(AnalysisTasksService);
+
 
   @ViewChild('agGridInputSlices') agGridInputSlices!: AgGridAngular;
   @Output() selectedSlices: EventEmitter<{slice: number, outputFormat: string, requestID: string, container: string}[]|[]>
@@ -68,9 +71,6 @@ export class ParentDrivationForAnalysisComponent {
     {field: 'container', headerName: 'Container', flex: 1},
   ];
   outputFormatsForm = new FormControl('');
-
-  constructor(private route: ActivatedRoute, private analysisTasksService: AnalysisTasksService) {
-  }
 
 
    onSelectionInputSlicesChanged($event: SelectionChangedEvent<any>): void {

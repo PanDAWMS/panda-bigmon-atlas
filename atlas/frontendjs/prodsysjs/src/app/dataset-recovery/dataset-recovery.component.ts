@@ -1,4 +1,4 @@
-import {Component, computed, effect, Inject, inject, Input, Signal, ViewChild} from '@angular/core';
+import { Component, computed, effect, inject, Input, Signal, ViewChild } from '@angular/core';
 import {Dataset, DatasetRecoveryService, TSData} from "./dataset-recovery.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {APP_BASE_HREF, AsyncPipe, DatePipe, JsonPipe, NgClass} from "@angular/common";
@@ -36,6 +36,8 @@ import {MatTab, MatTabGroup} from "@angular/material/tabs";
     styleUrl: './dataset-recovery.component.css'
 })
 export class DatasetRecoveryComponent {
+  private baseHref = inject(APP_BASE_HREF);
+
 
   // @Input() set username(value: string) {
   //   this.datasetRecoveryService.setUsername(value);
@@ -117,7 +119,7 @@ export class DatasetRecoveryComponent {
   selectedDatasets: Dataset[] = [];
    message: string;
   protected deletedDatasetsRaw: string;
-constructor(@Inject(APP_BASE_HREF) private baseHref: string) {
+constructor() {
   effect(() => {
     if (this.tsData()?.datasets !== undefined) {
       this.sites = {};

@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {ActivatedRoute, Router} from "@angular/router";
 import {catchError, map, mergeAll, switchMap, tap} from "rxjs/operators";
@@ -26,6 +26,12 @@ import {ProductionTaskTableComponent} from "../../production-task-table/producti
     standalone: false
 })
 export class AnalysisRequestComponent implements OnInit {
+    private route = inject(ActivatedRoute);
+    private analysisTaskService = inject(AnalysisTasksService);
+    private router = inject(Router);
+    private taskManagementService = inject(TasksManagementService);
+    dialog = inject(MatDialog);
+
     readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
   public PRODUCTION_REQUEST_STATUS = ['waiting', 'working', 'monitoring', 'finished', 'cancelled'];
@@ -158,10 +164,6 @@ export class AnalysisRequestComponent implements OnInit {
       return this.sliceTypeControl.value.find((val2) => val1 === val2);}).length > 0;
     return filterPassed && sliceTypePassed;
     }
-
-
-  constructor(private route: ActivatedRoute, private analysisTaskService: AnalysisTasksService, private router: Router,
-              private taskManagementService: TasksManagementService, public dialog: MatDialog) { }
 
   ngOnInit(): void {
     // this.selectSlicesOrTasks$.subscribe(([slices, tasks]) => {
@@ -310,8 +312,10 @@ export class AnalysisRequestComponent implements OnInit {
     standalone: false
 })
 export class DialogRequestOutputsComponent implements OnInit {
+  data = inject(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogRequestOutputsComponent>>(MatDialogRef);
+
   outputs: string[] = [];
-  constructor(@Inject(MAT_DIALOG_DATA) public data: string[], public dialogRef: MatDialogRef<DialogRequestOutputsComponent>) { }
   ngOnInit(): void {
     this.outputs = this.data;
   }

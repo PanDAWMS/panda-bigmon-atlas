@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute, Router} from "@angular/router";
 import {TasksManagementService} from "./tasks-management.service";
 import {catchError, switchMap} from "rxjs/operators";
@@ -11,8 +11,10 @@ import {of} from "rxjs";
     standalone: false
 })
 export class TasksManagementComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private taskManagementService = inject(TasksManagementService);
 
-  constructor(private route: ActivatedRoute, private router: Router, private taskManagementService: TasksManagementService) { }
   public requestID = '';
   public taskID: string|null = null;
   public showOwner = false;

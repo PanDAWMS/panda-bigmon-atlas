@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import {GroupProductionDeletionContainer} from './gp-deletion-container';
@@ -7,7 +7,8 @@ import {GPDeletionContainerService} from './gp-deleation.service';
 
 @Injectable({ providedIn: 'root' })
 export class GPDeletionContainerResolver  {
-  constructor(private service: GPDeletionContainerService) {}
+  private service = inject(GPDeletionContainerService);
+
 
   resolve(
     route: ActivatedRouteSnapshot,

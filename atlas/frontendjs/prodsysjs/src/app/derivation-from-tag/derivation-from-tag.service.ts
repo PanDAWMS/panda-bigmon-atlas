@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {DerivationContainersCollection} from './derivation-request-models';
@@ -7,8 +7,8 @@ import {DerivationContainersCollection} from './derivation-request-models';
   providedIn: 'root'
 })
 export class DerivationFromTagService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
   private prDerivationByTagUrl = '/production_request/derivation_input';
 
 

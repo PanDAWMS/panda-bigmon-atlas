@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 
 import {ActivatedRoute} from '@angular/router';
 
@@ -10,12 +10,8 @@ import {ActivatedRoute} from '@angular/router';
     standalone: false
 })
 export class ProductionTaskComponent implements OnInit{
+  route = inject(ActivatedRoute);
 
-
-
-
-  constructor(public route: ActivatedRoute) {
-  }
 
   ngOnInit(): void  {
 

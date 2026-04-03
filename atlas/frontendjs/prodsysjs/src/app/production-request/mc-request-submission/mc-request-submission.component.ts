@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatStepperModule} from "@angular/material/stepper";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -21,11 +21,11 @@ import {PRODSYS_CONSTANTS} from "../../common/constants/tasks_constants";
     styleUrl: './mc-request-submission.component.css'
 })
 export class McRequestSubmissionComponent implements OnInit {
+  private _form_builder = inject(FormBuilder);
+
   isLinear = false;
   firstStepFormGroup: FormGroup;
   secondFormGroup: FormGroup;
-
-  constructor(private _form_builder: FormBuilder) {}
 
   ngOnInit() {
     this.firstStepFormGroup = this._form_builder.group({

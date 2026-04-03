@@ -22,6 +22,9 @@ import {Router} from "@angular/router";
   styleUrl: './event-picking-request-creation.component.css'
 })
 export class EventPickingRequestCreationComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private router = inject(Router);
+
   protected readonly DATASETS_NOMENCLATURE = DATASETS_NOMENCLATURE;
   readonly submitting = signal(false);
   inputFileElement: null|HTMLInputElement = null;
@@ -117,7 +120,6 @@ export class EventPickingRequestCreationComponent implements OnInit {
       error => this.errorMessage = `Failed to read file: ${error}`
     );
   }
-  constructor(private readonly fb: FormBuilder, private router: Router) {}
 
     submit(): void {
       this.submitting.set(true);

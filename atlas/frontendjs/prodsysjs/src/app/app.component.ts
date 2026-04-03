@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterEvent} from '@angular/router';
 import {AllCommunityModule, ModuleRegistry, provideGlobalGridOptions} from "ag-grid-community";
 
@@ -10,11 +10,15 @@ import {AllCommunityModule, ModuleRegistry, provideGlobalGridOptions} from "ag-g
 })
 
 export class AppComponent {
+  private router = inject(Router);
+
   title = 'ngProdSys';
 
   loading = true;
 
-  constructor(private router: Router) {
+  constructor() {
+    const router = this.router;
+
     ModuleRegistry.registerModules([AllCommunityModule]);
     provideGlobalGridOptions({ theme: "legacy"});
     router.events.subscribe((routerEvent) => {

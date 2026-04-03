@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable} from "rxjs";
 
@@ -26,9 +26,8 @@ export interface PatternStep {
   providedIn: 'root'
 })
 export class DerivationPhysPatternService {
+  private http = inject(HttpClient);
 
-
-  constructor(private http: HttpClient) { }
 
   getPatternWithCampaigns(): Observable<{current_patterns: DerivationDAODDerivation[], mc_campaigns: MCCampaign[], steps: PatternStep[][] }> {
     return this.http.get<{current_patterns: DerivationDAODDerivation[], mc_campaigns: MCCampaign[], steps: PatternStep[][] }>('/prodtask/get_derivation_phys_pattern');

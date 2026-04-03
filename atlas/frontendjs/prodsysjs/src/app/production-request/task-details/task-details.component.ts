@@ -1,4 +1,4 @@
-import {Component, Input, OnInit, OnChanges} from '@angular/core';
+import { Component, Input, OnInit, OnChanges, inject } from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {TaskActionLog, TaskHS06, TaskInfo, TaskService} from '../../production-task/task-service.service';
 import {ProductionTask} from '../production-request-models';
@@ -13,6 +13,9 @@ import {DEFAULTS} from "../../common/constants/tasks_constants";
     standalone: false
 })
 export class TaskDetailsComponent implements OnInit, OnChanges {
+  route = inject(ActivatedRoute);
+  private taskService = inject(TaskService);
+
   @Input() taskID: number;
   @Input() showStaging = true;
   public SYNC_ACTIONS = ['sync_jedi'];
@@ -35,7 +38,6 @@ export class TaskDetailsComponent implements OnInit, OnChanges {
   public JEDIErrorLog$: Observable<{log: string}>;
 
   public taskExtensions$: Observable<{id: number, status: string}[] | []>;
-  constructor(public route: ActivatedRoute, private taskService: TaskService) { }
 
   ngOnChanges(): void {
     this.pageUpdate$.next(0);

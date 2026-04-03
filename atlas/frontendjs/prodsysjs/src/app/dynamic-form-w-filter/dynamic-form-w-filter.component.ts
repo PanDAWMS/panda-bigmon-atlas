@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Input,
-  OnChanges,
-  OnInit,
-  Output,
-  Renderer2,
-  SimpleChanges
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, Output, Renderer2, SimpleChanges, inject } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {BehaviorSubject, Subject} from "rxjs";
 import {debounceTime, distinctUntilChanged, map, switchMap, tap} from "rxjs/operators";
@@ -52,6 +43,9 @@ export interface JsonFormData {
     standalone: false
 })
 export class DynamicFormWFilterComponent implements OnChanges {
+  private fb = inject(FormBuilder);
+  private renderer = inject(Renderer2);
+
 
   @Input() jsonFormData: JsonFormData;
   @Input() submitButtonText = 'Submit';
@@ -85,8 +79,6 @@ export class DynamicFormWFilterComponent implements OnChanges {
        return controls;
       }));
   numberHiddenParams: number;
-
-  constructor(private fb: FormBuilder, private renderer: Renderer2) { }
 
   ngOnChanges(changes: SimpleChanges): void {
     this.unchangedJsonFormData = {controls: []};

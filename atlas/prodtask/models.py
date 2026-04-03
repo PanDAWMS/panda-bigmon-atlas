@@ -2878,6 +2878,22 @@ class DatasetRecovery(models.Model):
         app_label = 'dev'
         db_table = "T_DATASET_RECOVERY"
 
+class EventPickingResults(models.Model):
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPR_ID', primary_key=True)
+    jira = models.CharField(max_length=200, db_column='JIRA', null=True)
+    results = SafeJSONField(db_column='RESULTS')
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+
+    def save(self, *args, **kwargs):
+        self.timestamp = timezone.now()
+        super(EventPickingResults, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = "T_EVENT_PICKING_RESULTS"
+
+
 class EventPickingUserRequest(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='EPU_ID', primary_key=True)

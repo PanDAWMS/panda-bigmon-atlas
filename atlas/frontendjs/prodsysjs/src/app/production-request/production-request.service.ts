@@ -1,4 +1,4 @@
-import {Injectable, signal} from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import {HttpClient, httpResource} from "@angular/common/http";
 import {Observable, of, Subject} from "rxjs";
 import {
@@ -73,9 +73,8 @@ export interface PMGApproveResult {
   providedIn: 'root'
 })
 export class ProductionRequestService {
+  private http = inject(HttpClient);
 
-  constructor(
-    private http: HttpClient){}
 
   private prSliceUrl = '/production_request/prepare_slice';
   private prStepsUrl = '/production_request/steps_for_requests';

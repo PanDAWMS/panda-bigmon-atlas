@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, ViewChild, inject } from '@angular/core';
 import {ProductionTask} from "../production-request/production-request-models";
 import {SelectionModel} from "@angular/cdk/collections";
 import {AgGridAngular, ICellRendererAngularComp} from "ag-grid-angular";
@@ -46,6 +46,11 @@ import {TaskStatsComponent} from "../production-request/task-stats/task-stats.co
   standalone: true
 })
 export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestroy {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private baseHref = inject(APP_BASE_HREF);
+  dialog = inject(MatDialog);
+
 
   @Input() tasks: ProductionTask[];
   @Input() taskToShow?: string;
@@ -193,10 +198,6 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
   public pageSize = 20;
   public dialogRef: MatDialogRef<DialogTaskDetailsComponent, any>;
   rowSelection = "multiple";
-
-  constructor(private router: Router, private route: ActivatedRoute,  @Inject(APP_BASE_HREF) private baseHref: string,
-              public dialog: MatDialog) {
-  }
 
 
 
@@ -367,11 +368,15 @@ export class ProductionTaskTableComponent implements OnInit, OnChanges, OnDestro
     standalone: false
 })
 export class DialogTaskDetailsComponent implements OnInit {
+  data = inject<{
+    selectedTask: number;
+    filteredTasks: number[];
+    showStaging: boolean;
+}>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<DialogTaskDetailsComponent>>(MatDialogRef);
+
 
   @Output() taskChosen = new EventEmitter<number>();
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: {selectedTask: number, filteredTasks: number[], showStaging: boolean},
-              public dialogRef: MatDialogRef<DialogTaskDetailsComponent>) { }
   currentTask: number;
   currentIndex: number;
   showStaging: boolean;

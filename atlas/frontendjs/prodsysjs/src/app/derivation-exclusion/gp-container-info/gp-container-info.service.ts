@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import {Observable, of} from "rxjs";
 import {GroupProductionDeletionContainer} from "../gp-deletion-container";
@@ -39,10 +39,10 @@ export interface ContainerAllInfo {
   providedIn: 'root'
 })
 export class GpContainerInfoService {
+  private http = inject(HttpClient);
+
 
   private amiTagsDetailsUrl = '/gpdeletion/gp_container_details';
-  constructor(
-    private http: HttpClient){}
 
   getContainerFullDetails(containerName: string): Observable<ContainerAllInfo|undefined> {
     return this.http.get<ContainerAllInfo|undefined>(this.amiTagsDetailsUrl, {params: {container: containerName }});
