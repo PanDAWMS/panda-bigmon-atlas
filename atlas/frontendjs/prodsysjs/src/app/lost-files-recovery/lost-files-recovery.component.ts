@@ -21,13 +21,8 @@ import {MatFormField, MatInput, MatLabel} from "@angular/material/input";
 @Component({
   selector: 'app-lost-files-recovery',
   imports: [
-    JsonPipe,
     MatProgressSpinner,
     RucioDIDComponent,
-    DatasetSizePipe,
-    DatePipe,
-    RucioURLPipe,
-    MatButtonToggle,
     MatSlideToggle,
     MatButton,
     AsyncTaskProgressComponent,

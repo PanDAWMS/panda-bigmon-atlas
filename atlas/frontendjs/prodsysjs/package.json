@@ -4,14 +4,16 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node ./tools/generate-django-index-template.mjs",
+    "build:prod": "ng build --configuration production && node ./tools/generate-django-index-template.mjs",
+    "build:dev:init": "ng build --configuration dev-upload && node ./tools/generate-django-index-template.mjs",
+    "build:dev:watch": "ng build --configuration dev-upload --watch",
+    "build:dev": "npm run build:dev:init && npm run build:dev:watch",
     "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e"
+    "lint": "ng lint"
   },
   "private": true,
   "dependencies": {
-    "@angular-builders/custom-webpack": "^21.0.3",
     "@angular-devkit/schematics": "^21.2.3",
     "@angular/animations": "^21.2.5",
     "@angular/cdk": "^21.2.3",
@@ -49,7 +51,6 @@
     "@angular/compiler": "^21.2.5",
     "@angular/compiler-cli": "^21.2.5",
     "@types/jasmine": "~3.6.0",
-    "@types/jasminewd2": "~2.0.3",
     "@types/node": "^12.11.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^10.1.0",
@@ -61,7 +62,6 @@
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "^1.5.0",
     "postcss": "^8.4.31",
-    "protractor": "~7.0.0",
     "tailwindcss": "^3.3.3",
     "ts-node": "~8.3.0",
     "typescript": "~5.9.3"

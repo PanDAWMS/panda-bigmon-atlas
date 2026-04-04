@@ -62,8 +62,7 @@ interface ReplicaWithRule {
     MatCardHeader,
     MatCardTitle,
     AsyncPipe,
-    ProductionTaskTableComponent,
-    JsonPipe
+    ProductionTaskTableComponent
   ],
   templateUrl: './rucio-did.component.html',
   styleUrl: './rucio-did.component.css'

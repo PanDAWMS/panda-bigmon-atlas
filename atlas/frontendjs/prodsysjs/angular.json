@@ -17,20 +17,21 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-builders/custom-webpack:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "../static/js",
-            "indexTransform": "src/index-html-transform.ts",
-            "index": {
-              "input": "src/index.html",
-              "output": "../../templates/frontendjs/_ng_template.html"
-            },
+          "outputPath": {
+              "base": "../static/js",
+              "browser": ""
+            } ,
+            "index": "src/index.html",
             "allowedCommonJsDependencies": [
               "jsoneditor",
               "rfdc"
             ],
-            "main": "src/main.ts",
-            "polyfills": "src/polyfills.ts",
+            "browser": "src/main.ts",
+            "polyfills": [
+              "src/polyfills.ts"
+            ],
             "tsConfig": "tsconfig.app.json",
             "aot": true,
             "optimization": false,
@@ -45,6 +46,14 @@
 
           },
           "configurations": {
+            "dev-upload": {
+              "optimization": false,
+              "sourceMap": {
+                "scripts": true,
+                "styles": false,
+                "vendor": false
+              }
+            },
             "production": {
               "fileReplacements": [
                 {
@@ -63,8 +72,6 @@
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -113,18 +120,6 @@
               "src/styles.css"
             ],
             "scripts": []
-          }
-        },
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "prodsysjs:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "prodsysjs:serve:production"
-            }
           }
         },
         "lint": {

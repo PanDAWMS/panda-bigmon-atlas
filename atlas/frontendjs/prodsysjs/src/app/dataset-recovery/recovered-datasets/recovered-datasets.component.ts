@@ -16,7 +16,6 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
   imports: [
     BPTaskComponent,
     NgClass,
-    RucioURLPipe,
     FormsModule,
     MatFormField,
     MatInput,

@@ -25,8 +25,8 @@ import {ActivatedRoute} from "@angular/router";
 @Component({
     selector: 'app-task-stage-profile',
     imports: [
-        // NgApexchartsModule,
-        MatProgressSpinner
+        // // NgApexchartsModule,
+        // MatProgressSpinner
     ],
     templateUrl: './task-stage-profile.component.html',
     styleUrl: './task-stage-profile.component.css'
