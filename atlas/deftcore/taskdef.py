@@ -4334,8 +4334,15 @@ class TaskDefinition(object):
             if step.request.request_type.lower() == 'EVENTINDEX'.lower():
                 task_proto_dict.update(({'ip_connectivity': "'full'"}))
 
-            if mc_pileup_overlay['is_overlay'] or event_picking_params:
+            if mc_pileup_overlay['is_overlay']:
                 task_proto_dict.update({'task_broker_on_master': True})
+
+            if event_picking_params:
+                task_proto_dict.update({'task_broker_on_master': True})
+                task_proto_dict.update({'use_exhausted': True})
+                task_proto_dict.update({'goal': str(100.0)})
+                task_proto_dict.update({'fail_when_goal_unreached': False})
+                task_proto_dict.update({'disable_auto_finish': True})
 
             if project_mode.ipConnectivity is not None:
                 task_proto_dict.update({'ip_connectivity': "'%s'" % project_mode.ipConnectivity})
