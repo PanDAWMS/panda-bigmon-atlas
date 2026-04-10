@@ -80,7 +80,8 @@ export class RecoveryRequestsApproveComponent {
       },
     {headerName: 'Size', field: 'size', sortable: true, filter: false, resizable: false,
           cellRenderer: params => {
-        return convertBytes(params.value);
+            const value = params.value ?? 0;
+            return convertBytes(value);
       },
       maxWidth: 90},
     {headerName: 'Replicas', field: 'sites', sortable: true, filter: false, resizable: false,
