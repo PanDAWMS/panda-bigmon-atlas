@@ -571,18 +571,22 @@ class DatasetRecoveryProcedure():
     pass
 
 
-def find_deleted_datasets(container: str) -> [int]:
+def find_deleted_datasets(container: str):
     container = container.split('_tid')[0].split(':')[-1]
+    dataset_format = container.split('.')[-2]
     ami_tags = container.split('.')[-1].split('_')
-    possible_tasks = ProductionTask.objects.filter(name__startswith='.'.join(container.split('.')[:3]), ami_tag=ami_tags[0]).order_by('-id')
-    tasks_to_check = []
+    ddm = DDM()
+    possible_tasks = ProductionTask.objects.filter(name__startswith='.'.join(container.split('.')[:3]), ami_tag=ami_tags[-1]).order_by('-id')
+    empty_datasets = []
     for task in possible_tasks:
         if task.status in ProductionTask.BAD_STATUS and task.status != ProductionTask.STATUS.OBSOLETE:
             continue
         if all([ami_tag in task.name for ami_tag in ami_tags]):
-            tasks_to_check.append(task.id)
+            for dataset in task.output_non_log_datasets():
+                if f'.{dataset_format}.' in dataset:
+                    empty_datasets += [check_empty_datasets(dataset, ddm)]
 
-    return tasks_to_check
+    return empty_datasets
 
 def find_steps_to_recover(dataset: str) -> DatasetRecoveryProcedure:
     pass

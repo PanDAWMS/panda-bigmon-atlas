@@ -19,7 +19,7 @@ from atlas.dkb.views import datasets_by_campaign
 from atlas.prestage.views import staging_rule_verification
 from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets, TaskDatasetRecover, \
     register_recreation_request, get_unavaliaible_dataset_info, submit_dataset_recovery_requests, \
-    get_deleted_dataset_info
+    get_deleted_dataset_info, find_deleted_datasets
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
@@ -426,12 +426,17 @@ def deleted_datasets_info(request):
 
         deleted_datasets_raw = request.data['deletedDatasetsRaw']
         # split deleted_datasets_raw by all commas, strip spaces, and filter out empty strings
-        deleted_datasets = [x for x in map(str.strip, deleted_datasets_raw.replace(';',',').split(',')) if x] if deleted_datasets_raw else []
+        deleted_datasets = [x for x in map(str.strip, deleted_datasets_raw.replace(';',',').replace('\n',',').split(',')) if x] if deleted_datasets_raw else []
         result = []
         for dataset in deleted_datasets:
-            check_dataset = get_deleted_dataset_info(dataset)
-            if check_dataset:
-                result.append(check_dataset)
+            if 'tid' in dataset:
+                check_dataset = get_deleted_dataset_info(dataset)
+                if check_dataset:
+                    result.append(check_dataset)
+            else:
+                result += find_deleted_datasets(dataset)
+
+
 
         return Response({'datasets': [asdict(x) for x in result], 'downtimes':[]} )
     except Exception as e:
