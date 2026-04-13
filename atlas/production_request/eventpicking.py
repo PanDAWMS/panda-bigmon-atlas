@@ -313,13 +313,12 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             results_dict = cursor.fetchall()
             if len(results_dict) == 0:
                 return [], []
-            results_dict.sort(key=lambda x: x[2], reverse=True)
-            biggest_events = results_dict[0][2]
+            results_dict.sort(key=lambda x: x[2] or 0, reverse=True)
             dataset_to_use = []
             for dataset in results_dict:
-                if dataset[2] == biggest_events:
                     dataset_to_use.append((dataset[0], dataset[1], dataset[3]))
             dataset_to_use.sort(key=lambda x: x[0])
+            result = []
             for dataset in dataset_to_use:
                 dspid, dstypeid, dsname = dataset
                 dataset_names.append(dsname)
@@ -472,9 +471,8 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
         for slice in InputRequestList.objects.filter(request=production_request):
             if not slice.is_hide:
                 steps = StepExecution.objects.filter(request=production_request, slice=slice)
-                if not ProductionTask.objects.filter(request=production_request, step__in=steps).exists():
+                if ProductionTask.objects.filter(request=production_request, step__in=steps).exists():
                     existing_datasets.append(slice.dataset)
-                    slices_to_submit.append(slice)
         ep_processing.status = EventPickingProcessing.STATUS.RUNNING
         ep_processing.save()
         ep_contents = EventPickingContent.objects.filter(ep_request=ep_processing)
