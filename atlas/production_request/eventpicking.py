@@ -150,7 +150,7 @@ def submit_ep_request(request):
             if ep_processing.status == EventPickingProcessing.STATUS.PICKED:
                 ep_processing.status = EventPickingProcessing.STATUS.PREPARING
                 ep_processing.save()
-                create_ep_production_request.delay(int(ep_processing.id), merge=ep_processing.ep_request.do_merge, to_submit=True)
+                create_ep_production_request.delay(int(ep_processing.id), ep_processing.ep_request.do_merge, True)
                 number_of_submitted_ep_requests += 1
         return Response(f"{number_of_submitted_ep_requests} EP requests submitted for processing", status=status.HTTP_200_OK)
     except Exception as e:
