@@ -433,6 +433,46 @@ pprint(result)</pre>
       </mat-card-content>
     </mat-card>
       </li>
+      <li>
+        <h5 id="stuck_staging_files_by_tape"> <a href="https://prodtask-dev.cern.ch/api/stuck_staging_files_by_tape/?tape=BNL-ATLAS_TAPE">stuck_staging_files_by_tape</a></h5>
+
+        Returns datasets that are still in <code>STAGING</code> state for a given tape and look stuck.
+        Required parameter: <code>tape</code>. Optional parameter: <code>days</code> — the number of days without updates after which a staging request is considered stuck.
+        The minimum allowed value is <code>7</code>; the default is <code>10</code>.<br/>
+        Each result item contains the dataset name and a list of stuck files with <code>name</code>, <code>scope</code> and <code>pfn</code>.<br/>
+        <br/>
+        <mat-card appearance="outlined">
+          <mat-card-title>
+            CURL example
+          </mat-card-title>
+          <mat-card-content>
+            <code><pre>
+      curl  -X GET -H "authorization: Token 88571a8e7f8aae6f2f0b71fa9426475a28da144b" -H "accept: application/json"  -H  "content-type: application/json"  "https://prodtask-dev.cern.ch/api/stuck_staging_files_by_tape/?tape=BNL-ATLAS_TAPE"</pre>
+    </code>
+          </mat-card-content>
+        </mat-card>
+        <mat-card appearance="outlined">
+          <mat-card-title>
+            Example of output
+          </mat-card-title>
+          <mat-card-content>
+<pre style="white-space: pre; overflow:auto; max-height: 70vh; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 13px; line-height: 1.35; margin: 0;">
+[
+  {{ '{' }}
+    'dataset': 'mc23_13p6TeV:mc23_13p6TeV.521382.MGPy8EG_EW_eegammajj.merge.AOD.e8589_e8586_s4159_s4114_r15530_r15514_tid43317537_00',
+    'stuck_files': [
+      {{ '{' }}
+        'name': 'AOD.43317537._000001.pool.root.1',
+        'scope': 'mc23_13p6TeV',
+        'pfn': 'davs://dcdoor-tape.usatlas.bnl.gov:443/pnfs/usatlas.bnl.gov/MCTAPE/mc23_13p6TeV/AOD/e8589_e8586_s4159_s4114_r15530_r15514/mc23_13p6TeV.521382.MGPy8EG_EW_eegammajj.merge.AOD.e8589_e8586_s4159_s4114_r15530_r15514_tid43317537_00/AOD.43317537._000001.pool.root.1'
+      {{ '}' }}
+    ]
+  {{ '}' }}
+]
+</pre>
+          </mat-card-content>
+        </mat-card>
+      </li>
 </ul>
 }
 

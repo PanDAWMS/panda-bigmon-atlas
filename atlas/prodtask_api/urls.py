@@ -112,5 +112,8 @@ urlpatterns = [
             name='create_or_update_ep_request'),
     re_path(r'^ep_requests/$', ep_requests,
             name='ep_requests'),
+    re_path(r'^stuck_staging_files_by_tape/$', stuck_staging_files_by_tape,
+            name='stuck_staging_files_by_tape'),
+
 
 ]

@@ -254,6 +254,11 @@ class DDM(object):
         output_list = list(self.__ddm.list_files(scope, name))
         return output_list
 
+    def list_files_with_pfns_by_rse(self, dsn, rse):
+        scope, name = self.rucio_convention(dsn)
+        files = self.__ddm.list_replicas([{'scope':scope,'name':name}], rse_expression=rse)
+        return [{'name':x['name'],'scope':x['scope'],'pfn':list(x['pfns'].keys())[0]} for x in files]
+
     def list_file_long(self, dsn):
         scope, dataset = self.rucio_convention(dsn)
         files = list(self.__ddm.list_files(scope, dataset, long=True))

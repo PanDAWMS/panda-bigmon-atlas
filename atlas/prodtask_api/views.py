@@ -23,7 +23,7 @@ from atlas.prodtask.dataset_recovery import get_unavalaible_daod_input_datasets,
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import TRequest, InputRequestList, StepExecution, DatasetStaging, \
     ProductionRequestSerializer, RequestStatus, TTask, ProductionTask, JediTasks, DatasetRecovery, DatasetRecoveryInfo, \
-    SystemParameters, SystemParametersHandler, MCWorkflowRequest, HashTag, days_ago
+    SystemParameters, SystemParametersHandler, MCWorkflowRequest, HashTag, days_ago, PandaDatasetStaging
 from atlas.prodtask.patch_reprocessing import clone_fix_reprocessing_task, find_reprocessing_to_fix, \
     ReprocessingTaskFix, patched_containers, check_merged_AOD
 from atlas.prodtask.spdstodb import fill_template
@@ -210,6 +210,38 @@ def is_stage_rule_stuck_because_of_tape(request):
     except Exception as e:
         _jsonLogger.error(f"Check staging rule to be stuck failed {e}")
         return HttpResponseBadRequest(f"Check staging rule to be stuck failed {e}")
+
+def stuck_files_by_staging_request(dataset_staging: PandaDatasetStaging) -> list:
+    ddm = DDM()
+    stuck_files = [file_lock['name'] for file_lock in ddm.list_locks(dataset_staging.rse) if file_lock['state'] != 'OK']
+    all_files = ddm.list_files_with_pfns_by_rse(dataset_staging.dataset, dataset_staging.source)
+    return [file for file in all_files if file['name'] in stuck_files]
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def stuck_staging_files_by_tape(request):
+    """
+        List of datasets and files which are stuck on a tape
+       * tape: dataset name. Required\n
+       * days: Days request should not being updated to be stuck, 7 is minimum, 10 is default. optional
+
+    """
+    try:
+        tape = request.query_params.get('tape')
+        days = int(request.query_params.get('days', 10))
+        if days < 7:
+            raise ValueError('7 days is a minimum')
+        datasets  = PandaDatasetStaging.objects.filter(source_tape=tape, status=PandaDatasetStaging.STATUS.STAGING)
+        result = []
+        for dataset in datasets:
+            if ((dataset.last_staged_time and dataset.last_staged_time < days_ago(days)) or
+                    (dataset.staged_files ==0 and  dataset.creation_time and dataset.creation_time < days_ago(days) )):
+                result.append({'dataset': dataset.dataset, 'stuck_files': stuck_files_by_staging_request(dataset)})
+        return Response(result, status=status.HTTP_200_OK)
+    except Exception as e:
+        _jsonLogger.error(f"Get stuck files failed {e}")
+        return HttpResponseBadRequest(f"Check stuck files failed {e}")
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
