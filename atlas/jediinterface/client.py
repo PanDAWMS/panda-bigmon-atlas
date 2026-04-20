@@ -173,7 +173,15 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
         return self._jedi_output_distillation(response.content)
-
+    def  _get_new_api_command(self, command):
+        url = self._form_url(command).replace('server/panda/', '')
+        headers = self._headers.copy()
+        headers['Accept'] = 'application/json'
+        response = requests.get(url, cert=self.cert,
+                                headers=headers, verify='/etc/ssl/certs/CERN-bundle.pem')
+        if response.status_code != requests.codes.ok:
+            response.raise_for_status()
+        return response.json()
     def  _post_new_api_command(self, command, data):
         url = self._form_url(command).replace('server/panda/', '')
         headers = self._headers.copy()
@@ -418,6 +426,11 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         data = {'task_id': int(jediTaskID)}
         return self._post_new_api_command('api/v1/task/avalanche', data)
 
+    def getVomsAttr(self):
+        return self._get_new_api_command('api/v1/system/get_voms_attributes')
+
+    def getUserAttr(self):
+        return self._get_new_api_command('api/v1/system/get_attributes')
 
     def increaseAttemptNr(self, jediTaskID, increase):
         data = {'task_id': int(jediTaskID),

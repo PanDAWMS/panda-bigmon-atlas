@@ -580,6 +580,9 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         sync_deft_jedi_task(task_id)
         return True, ''
 
+    def debugAttr(self):
+        return True, self.jedi_client.getUserAttr().get('data',{}).get('environment',{})
+
     @_action_logger
     def set_hashtag(self, task_id, hashtag_name):
         task = ProductionTask.objects.get(id=task_id)
