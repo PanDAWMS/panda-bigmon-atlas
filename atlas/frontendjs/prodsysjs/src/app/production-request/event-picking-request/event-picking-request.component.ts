@@ -173,6 +173,8 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
         ];
 
         containerPostfix = signal('');
+        userScopes: string[] = [];
+        selectedScope = signal('group.proj-evind.results');
 
         // Use full jira from backend when available (matches backend storage), fallback to route jira.
         jiraForContainer = computed(() => this.epProgress()?.requests?.[0]?.jira ?? this.jira());
@@ -183,7 +185,7 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
           return raw.includes('/') ? (raw.split('/').pop() ?? raw) : raw;
         });
 
-        containerPrefix = computed(() => `group.proj-evind.results.${this.jiraKey()}.`);
+        containerPrefix = computed(() => `${this.selectedScope()}.evntpick.`);
 
         containerName = computed(() => `${this.containerPrefix()}${this.containerPostfix().trim()}`);
         protected async copyDatasetNamesToClipboard(): Promise<void> {
@@ -279,7 +281,7 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
           this.finishedJira$.pipe(
             switchMap(jira => {
               if (!jira) {
-                return of<ProducedDatasetsResponse>({datasets: [], containers: []});
+                return of<ProducedDatasetsResponse>({datasets: [], containers: [], userScopes: []});
               }
               return this.epService.getProducedDatasets(jira);
             }),
@@ -288,6 +290,10 @@ export class EventPickingRequestComponent implements OnInit, OnDestroy{
             next: (response) => {
               this.producedDatasets = response.datasets || [];
               this.existingContainers = response.containers || [];
+              this.userScopes = response.userScopes || ['group.proj-evind.results'];
+              if (this.userScopes.length > 0) {
+                this.selectedScope.set(this.userScopes[0]);
+              }
             },
             error: (err) => {
               this.submitStatus.set(setErrorMessage(err));

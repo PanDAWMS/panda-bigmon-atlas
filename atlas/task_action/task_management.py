@@ -508,6 +508,17 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         except Exception as e:
             return {'success': False, 'message': f'Command rejected: {e}'}
 
+    @_jedi_rule_decorator
+    def retire_unused_dc(self, dataset):
+        try:
+            if PandaDatasetStaging.objects.filter(dataset=dataset).exists():
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset).last()
+                return self.jedi_client.retire_unused(dataset_stage.dataset, None)
+            else:
+                raise Exception('Dataset not found in DC')
+        except Exception as e:
+            return {'success': False, 'message': f'Command rejected: {e}'}
+
     @_action_logger
     def create_finish_reload_action(self, task_id):
         if not ProductionTask.objects.filter(id=task_id).exists():
@@ -946,7 +957,8 @@ def do_jedi_rule_action(action_executor, dataset, action, *args):
             'alter_source_replication_rule': action_executor.alter_source_replication_rule,
             'bypass_queue': action_executor.bypass_queue,
             'change_destination': action_executor.change_destination,
-            'recovery_lost_files': action_executor.upload_file_recovery_request
+            'recovery_lost_files': action_executor.upload_file_recovery_request,
+            'retire_unused_dc': action_executor.retire_unused_dc
         }
     if args == (None,):
          return action_translation[action](dataset)

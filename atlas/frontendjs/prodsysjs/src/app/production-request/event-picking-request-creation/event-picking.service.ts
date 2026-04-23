@@ -37,6 +37,7 @@ export interface ProducedDataset {
 export interface ProducedDatasetsResponse {
   datasets: ProducedDataset[];
   containers: string[];
+  userScopes: string[];
 }
 export interface EpProcessingStats {
   running_tasks?: number;

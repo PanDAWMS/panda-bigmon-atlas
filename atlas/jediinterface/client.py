@@ -136,6 +136,10 @@ class JEDIRuleActionInterface(ABC):
         pass
 
     @abstractmethod
+    def retire_unused(self, dataset: str, request_id: int|None,):
+        pass
+
+    @abstractmethod
     def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
         pass
 
@@ -199,6 +203,10 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
     def change_staging_destination(self, dataset: str, request_id: int|None):
         data = {'request_id': request_id, 'dataset': dataset}
         return self._post_new_api_command('api/v1/data_carousel/change_staging_destination', data)
+
+    def retire_unused(self, dataset: str, request_id: int|None):
+        data = {'request_id': request_id, 'dataset': dataset}
+        return self._post_new_api_command('api/v1/data_carousel/retire_unused', data)
 
     def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
         data = {'request_id': request_id, 'dataset': dataset, 'cancel_fts': cancel_fts, 'change_src_expr': change_src_expr, 'source_rse': source_rse}

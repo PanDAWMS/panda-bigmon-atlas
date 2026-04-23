@@ -1,8 +1,9 @@
 import logging
-import os
+import re
 from collections import defaultdict
 from typing import Any
 
+from django.contrib.auth.models import User
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -182,7 +183,14 @@ def produced_datasets_list(request):
         ep_results = EventPickingResults.objects.filter(jira__endswith=jira).order_by('-timestamp').first()
         if ep_results and ep_results.results:
             containers = ep_results.results.get('containers', [])
-        return Response({'datasets': produced_datasets, 'containers': containers}, status=status.HTTP_200_OK)
+        user_scopes = [f'user.{request.user.username}']
+        user = User.objects.get(username=request.user.username)
+        user_groups = [group.name for group in user.groups.all()]
+        for group in user_groups:
+            match = re.match(r'^IAM:atlas/(.+)/production$', group)
+            if match:
+                user_scopes.append(f'group.{match.group(1)}')
+        return Response({'datasets': produced_datasets, 'containers': containers, 'userScopes': user_scopes}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
