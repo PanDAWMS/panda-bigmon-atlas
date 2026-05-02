@@ -325,7 +325,6 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             dataset_to_use = []
             for dataset in results_dict:
                     dataset_to_use.append((dataset[0], dataset[1], dataset[3]))
-            dataset_to_use.sort(key=lambda x: x[0])
             result = []
             for dataset in dataset_to_use:
                 dspid, dstypeid, dsname = dataset
