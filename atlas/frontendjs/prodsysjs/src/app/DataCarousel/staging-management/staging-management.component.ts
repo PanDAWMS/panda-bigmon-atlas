@@ -164,12 +164,12 @@ export class StagingManagementComponent implements OnInit {
         sortable: false,
       },
     {field: 'dataset', headerName: 'Dataset',
+    comparator: (valueA, valueB) => {
+      return this.normalizeDatasetName(valueA).localeCompare(this.normalizeDatasetName(valueB));
+    },
     // split dataset name by '.' and display only first and second to last fields
     cellRenderer: params => {
-      let dataset = params.value;
-      if (dataset.indexOf(':') !== -1) {
-        dataset = dataset.split(':')[1];
-      }
+      let dataset = this.normalizeDatasetName(params.value);
       const parts = dataset.split('.');
       if (parts.length > 2) {
         if (parts[0] === 'user' || parts[0] === 'group') {
@@ -458,6 +458,13 @@ export class StagingManagementComponent implements OnInit {
       this.pageTasksActive = true;
     });
 
+  }
+  private normalizeDatasetName(datasetValue: unknown): string {
+    const raw = String(datasetValue ?? '');
+    if (raw.indexOf(':') !== -1) {
+      return raw.split(':', 2)[1] ?? raw;
+    }
+    return raw;
   }
 }
 
