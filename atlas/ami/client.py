@@ -405,12 +405,10 @@ class AMIClient(object):
 
             ami_tag['productionStep'] = prodsys_tag.prod_step
             ami_tag['notAKTR'] = False
-        except ObjectDoesNotExist:
+        except Exception as ex:
             logger.info('The tag {0} is not found in AKTR'.format(tag_name))
             if ami_tag:
                 ami_tag['notAKTR'] = True
-        except Exception as ex:
-            logger.exception('Exception: {0}'.format(str(ex)))
 
         if not ami_tag:
             raise Exception('The configuration tag \"{0}\" is not registered'.format(tag_name))
