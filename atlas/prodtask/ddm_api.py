@@ -805,7 +805,11 @@ class DDM(object):
     def list_files_with_scope_in_dataset(self, dsn, skip_short=False):
         filename_list = []
         scope, dataset = self.rucio_convention(dsn)
+        if not self.dataset_exists(dsn):
+            raise Exception('Dataset {0} does not exist'.format(dsn))
         files = list(self.__ddm.list_files(scope, dataset, long=False))
+        if len(files) == 0:
+            raise Exception('Dataset {0} is empty'.format(dsn))
         if skip_short:
             sizes = [x['events'] for x in  files]
             sizes.sort()
