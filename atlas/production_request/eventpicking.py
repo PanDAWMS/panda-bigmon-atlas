@@ -176,9 +176,11 @@ def produced_datasets_list(request):
                     if 'DRAW_EVTPICK' in dataset:
                         datasets.append({'name':dataset, 'events':task.total_events, 'status':task.status,
                                          'version': '1', 'project': dataset.split(':')[-1].split('.')[0]})
-                produced_datasets = [d for d in datasets if 'merge.DRAW_EVTPICK' in d['name']]
-                if not produced_datasets:
-                    produced_datasets = datasets
+                filtered_datasets = [d for d in datasets if 'merge.DRAW_EVTPICK' in d['name']]
+                if not filtered_datasets:
+                    produced_datasets += datasets
+                else:
+                    produced_datasets += filtered_datasets
         containers = []
         ep_results = EventPickingResults.objects.filter(jira__endswith=jira).order_by('-timestamp').first()
         if ep_results and ep_results.results:
