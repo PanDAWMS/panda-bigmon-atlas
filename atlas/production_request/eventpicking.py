@@ -519,7 +519,7 @@ def check_running_ep_requests():
         events = 0
         running_task = False
         for task in tasks:
-            if 'evtpick' in task.name:
+            if 'DRAW' in task.output_formats:
                 if task.status not in ProductionTask.NOT_RUNNING:
                     running_task = True
                     break
