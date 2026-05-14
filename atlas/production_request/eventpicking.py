@@ -523,7 +523,7 @@ def check_running_ep_requests():
                 if task.status not in ProductionTask.NOT_RUNNING:
                     running_task = True
                     break
-                if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED]:
+                if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED] and 'evtpick' in task.name:
                     checked_runs.add(task.name.split('.')[1])
                     output_dataset = next(task.output_non_log_datasets())
                     events += ddm.dataset_info(output_dataset).events
