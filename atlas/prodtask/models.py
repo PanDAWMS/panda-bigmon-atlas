@@ -1339,6 +1339,7 @@ class MCWorkflowSubCampaign(BaseModel):
     subcampaign: str
     project_base: str
     transitions: List[MCWorkflowTransition] = field(default_factory=list)
+
 class MCWorkflowRequest(BaseModel):
     workflows: Dict[str, MCWorkflowSubCampaign] = field(default_factory=dict)
 
@@ -1355,6 +1356,7 @@ class SystemParametersHandler:
         AVAILABLE_PMG_HASHTAGS = 'AvailablePMGHashtags'
         BAD_EVGEN_SW_RELEASES_PER_CAMPAIGN = 'BadEvgenSoftwareReleasesPerCampaign'
         EPCONFIG = 'EPConfiguration'
+        MC_CAMPAIGNS_BASES = 'MC_CAMPAIGNS_BASES'
 
     @dataclass
     class EPConfig:
@@ -1440,6 +1442,15 @@ class SystemParametersHandler:
         subcampaigns: List[str]
 
     @dataclass
+    class MCCampaignBases:
+        campaign: str
+        subcampaign: str
+        step: str
+        project_base: str
+        energies: list[str]
+        parent_steps: list[tuple[str, str, str]]
+
+    @dataclass
     class MCSubCampaignStats:
         campaign: str
         pile_suffix: str
@@ -1486,7 +1497,7 @@ class SystemParametersHandler:
         return [SystemParametersHandler.DAOD_PHYS_Production(**x) for x in values]
 
     @staticmethod
-    def set_daod_phys_production(values: [DAOD_PHYS_Production]):
+    def set_daod_phys_production(values: list[DAOD_PHYS_Production]):
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.DAOD_PHYS_Production,
                                        [asdict(x) for x in values])
 
@@ -1497,7 +1508,7 @@ class SystemParametersHandler:
         return [SystemParametersHandler.MCSubCampaignStats(**x) for x in values]
 
     @staticmethod
-    def set_mc_sub_campaigns_stats(values: [MCSubCampaignStats]):
+    def set_mc_sub_campaigns_stats(values: list[MCSubCampaignStats]):
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MCSubCampaignStats,
                                        [asdict(x) for x in values])
     @staticmethod
@@ -1506,7 +1517,7 @@ class SystemParametersHandler:
         return [SystemParametersHandler.MC_Campaign(**x) for x in values]
 
     @staticmethod
-    def set_mc_campaigns(values: [MC_Campaign]):
+    def set_mc_campaigns(values: list[MC_Campaign]):
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAGINS,
                                        [asdict(x) for x in values])
     @staticmethod
@@ -1528,6 +1539,15 @@ class SystemParametersHandler:
     def set_analysis_request_email(values: AnalysisRequestEmail):
         SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.ANALYSIS_REQUEST_EMAIL,
                                        asdict(values))
+
+    @staticmethod
+    def set_mc_campaigns_bases(values: list[MCCampaignBases]):
+        SystemParameters.set_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAIGNS_BASES,
+                                       [asdict(x) for x in values])
+    @staticmethod
+    def get_mc_campaigns_bases() -> List[MCCampaignBases]:
+        values = SystemParameters.get_parameter(SystemParametersHandler.PARAMETERS_NAMES.MC_CAMPAIGNS_BASES)
+        return [SystemParametersHandler.MCCampaignBases(**x) for x in values]
 
 class SystemParameters(models.Model):
 
