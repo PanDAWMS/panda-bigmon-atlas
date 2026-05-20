@@ -1194,6 +1194,8 @@ class TaskDefinition(object):
                 return parent_task.number_of_files * parent_task.events_per_file
             if '_tid' in parent_task.primary_input:
                 return  self._extract_chain_input_from_datasets(parent_task.primary_input)
+            if self.rucio_client.is_dsn_container(parent_task.primary_input):
+                return sum([self.rucio_client.dataset_info(dataset).events or 0 for dataset in self.rucio_client.list_datasets_in_container(parent_task.primary_input)])
         return -1
 
 
@@ -3836,6 +3838,8 @@ class TaskDefinition(object):
                     elif re.match(r'^(--)?outputYODAFile$', name, re.IGNORECASE):
                         proto_key = TaskParamName.YODA_OUTPUT
                     elif re.match(r'^(--)?outputDRAW.*File$', name, re.IGNORECASE):
+                        proto_key = TaskParamName.RAW_OUTPUT
+                    elif re.match(r'^(--)?outputBS.*File$', name, re.IGNORECASE):
                         proto_key = TaskParamName.RAW_OUTPUT
                     output_param = self.protocol.render_param(proto_key, param_dict)
                     if project_mode.spacetoken is not None:
