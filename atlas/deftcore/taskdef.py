@@ -1722,6 +1722,7 @@ class TaskDefinition(object):
                                               ami_tag=step.step_template.ctag, inputdataset__in=additional_task_check_datasets)
 
         checked_tasks = []
+        max_by_offset = 0
         for prod_task_existing in itertools.chain(task_list, additional_task_list):
             if prod_task_existing in checked_tasks:
                 continue
@@ -1748,7 +1749,11 @@ class TaskDefinition(object):
             if check_optimal_events_violation:
                 if 'SEQNUMBER' in self._get_job_parameter('firstEvent', task_existing['jobParameters'])['value']:
                     raise Exception(f'None optimal first event extensions are not allowed, previous task: {task_id}')
-            previous_dsn = self._get_primary_input(task_existing['jobParameters'])['dataset']
+            input_dataset_jobparam = self._get_primary_input(task_existing['jobParameters'])
+            previous_dsn = input_dataset_jobparam['dataset']
+            previous_offset = 0
+            if 'offset' in input_dataset_jobparam:
+                previous_offset = int(input_dataset_jobparam['offset'])
             previous_dsn_no_scope = previous_dsn.split(':')[-1]
             if '_sub' in previous_dsn_no_scope:
                 previous_dsn_no_scope = self.translate_sub_dataset(previous_dsn_no_scope)
@@ -1778,10 +1783,13 @@ class TaskDefinition(object):
                     logger.info('Output {0} of task {1} is deleted'.format(
                         str(requested_output_types), task_id))
                     continue
-            if prod_task_existing.status == 'done':
-                if 'nFiles' in task_existing:
-                    number_of_input_files_used += int(task_existing['nFiles'])
-                else:
+            if 'nFiles' in task_existing:
+                number_of_input_files_used += int(task_existing['nFiles'])
+                if previous_offset + int(task_existing['nFiles']) > max_by_offset:
+                    max_by_offset = previous_offset + int(task_existing['nFiles'])
+
+            else:
+                if prod_task_existing.status == 'done':
                     if 'nEventsPerJob' in task_existing and 'nEventsPerInputFile' in task_existing:
                         try:
                             jedi_dataset_info = JediDatasets.objects.get(id=jedi_task_existing.id,
@@ -1804,10 +1812,7 @@ class TaskDefinition(object):
                                                     processed_formats='.'.join(processed_output_types),
                                                     requested_formats='.'.join(requested_output_types),
                                                     tag=step.step_template.ctag)
-            elif prod_task_existing.status == 'finished':
-                if 'nFiles' in task_existing:
-                    number_of_input_files_used += int(task_existing['nFiles'])
-                else:
+                elif prod_task_existing.status == 'finished':
                     if 'nEventsPerJob' in task_existing and 'nEventsPerInputFile' in task_existing:
                         try:
                             jedi_dataset_info = JediDatasets.objects.get(id=jedi_task_existing.id,
@@ -1830,9 +1835,6 @@ class TaskDefinition(object):
                                                     processed_formats='.'.join(processed_output_types),
                                                     requested_formats='.'.join(requested_output_types),
                                                     tag=step.step_template.ctag)
-            else:
-                if 'nFiles' in task_existing:
-                    number_of_input_files_used += int(task_existing['nFiles'])
                 else:
                     raise TaskDuplicateDetected(task_id, 2,
                                                 request=step.request.reqid,
@@ -1845,7 +1847,8 @@ class TaskDefinition(object):
             log_msg += ' previous_task={0} ({1}), n_files_used={2}'.format(
                 task_id, prod_task_existing.status, number_of_input_files_used)
             logger.debug(log_msg)
-
+        logger.info(f"files used: {number_of_input_files_used} by offset: {max_by_offset}")
+        number_of_input_files_used = max(number_of_input_files_used, max_by_offset)
         if number_of_events > 0:
             number_input_files_requested = math.ceil(number_of_events / int(task_config['nEventsPerInputFile']))
             if 'nFiles' in task and task['nFiles'] > 0 and task['nFiles'] > number_input_files_requested:
