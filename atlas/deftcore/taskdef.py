@@ -1566,6 +1566,16 @@ class TaskDefinition(object):
         check_optimal_events_violation = False
         if prod_step.lower() == 'evgen'.lower():
             check_optimal_events_violation = 'SEQNUMBER' not in self._get_job_parameter('firstEvent', task['jobParameters'])['value']
+            if '.EVNT.' in   primary_input['dataset']:
+                input_dsid =  primary_input['dataset'].split('.')[1]
+                cleaned_name =  primary_input['dataset'].split(':')[-1].replace('/','')
+                previous_tasks = ProductionTask.objects.filter(~Q(status__in=['failed', 'broken', 'aborted', 'obsolete', 'toabort']),
+                                              project=step.request.project,
+                                              ami_tag=step.step_template.ctag, name=task['taskName'])
+                for t in previous_tasks:
+                    previous_dsid = t.input_dataset.split('.')[1]
+                    if previous_dsid == input_dsid and  t.input_dataset.split(':')[-1].replace('/','') != cleaned_name:
+                        raise Exception(f"Mixed input: previous task {t.id} has {t.input_dataset} as an input")
         if prod_step.lower() == 'merge'.lower():
             dsn = primary_input['dataset']
             tag_name = step.step_template.ctag
