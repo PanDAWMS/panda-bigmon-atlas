@@ -1131,15 +1131,22 @@ def move_tasks_to_new_slice(source_request_id: int, destination_request_id: int,
     new_steps_ordered, parent_step = form_existed_step_list(new_steps)
 
     new_step_index = 0
+    swapped_steps_ids = {}
     for index, step in enumerate(step_as_in_page):
         if step and ((parent_step is None) or ((step.step_parent == parent_step) and step.step_parent != step) or (new_step_index > 0)):
             step.slice = destination_slice
             new_steps_ordered[new_step_index].slice = source_slice
+            swapped_steps_ids[step.id] = new_steps_ordered[new_step_index].id
             step.save()
             new_steps_ordered[new_step_index].save()
             new_step_index += 1
     if not do_not_hide:
         hide_slice(destination_slice)
+    for step_to_check in StepExecution.objects.filter(step_parent_id__in=list(swapped_steps_ids.keys()), request=source_request_id):
+        if not step_to_check.slice.is_hide and step_to_check.slice!=destination_slice:
+            if step_to_check.step_parent_id in swapped_steps_ids:
+                step_to_check.step_parent = StepExecution.objects.get(id=swapped_steps_ids[step_to_check.step_parent_id])
+                step_to_check.save()
     return destination_slice_number
 
 
