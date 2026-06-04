@@ -40,10 +40,10 @@ _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
 
 
-FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'LLJ', 'MUON', 'NCB', 'PHYS',
+FORMAT_BASES = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'LLP', 'LLJ', 'MUON', 'NCB',
                 'STDM', 'SUSY', 'TAUP', 'TCAL', 'TLA',  'TOPQ', 'TRIG', 'TRUTH']
 
-CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL"]
+CP_FORMATS = ["FTAG", "EGAM", "MUON", "JETM", "TAUP", "IDTR", "TCAL", 'PHYS']
 
 
 def get_all_formats(format_base):
@@ -1228,9 +1228,11 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
     dataset_size = {}
     with  gzip.open(daod_lifetime_filepath, 'rt') as f:
         for line in f:
-            all_daod_datasets_to_delete.append(line.strip().split(' ')[0])
-            if  line.strip().split(' ')[2] != 'None':
-                dataset_size[line.strip().split(' ')[0]] = int(line.strip().split(' ')[2])
+            dataset_name = line.strip().split(' ')[0]
+            if '.DAOD' in dataset_name:
+                all_daod_datasets_to_delete.append(line.strip().split(' ')[0])
+                if  line.strip().split(' ')[2] != 'None':
+                    dataset_size[line.strip().split(' ')[0]] = int(line.strip().split(' ')[2])
     all_containers = GroupProductionDeletion.objects.filter(extensions_number__gte=1).values('container',
                                                                                         'extensions_number',
                                                                                         'last_extension_time',
@@ -1241,8 +1243,13 @@ def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, outpu
     extensions = GroupProductionDeletionExtension.objects.all().order_by('id').values('container_id', 'user',
                                                                                            'message', 'id')
     extensions_dict = {}
+    bad_extensions = 0
     for extension in extensions:
-        extensions_dict[containers_by_id[extension['container_id']]['container']] = extension
+        try:
+            extensions_dict[containers_by_id[extension['container_id']]['container']] = extension
+        except Exception as e:
+            bad_extensions +=1
+    print(bad_extensions)
     result = []
     size = 0
     for dataset in all_daod_datasets_to_delete:
