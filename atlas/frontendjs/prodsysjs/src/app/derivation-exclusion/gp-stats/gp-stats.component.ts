@@ -126,7 +126,7 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
         this.totalSizeToDelete  += statsForFormat.sizeToDelete;
         if (statsForFormat.sizeToDelete > 0) {
           currentStat = {name: statsForFormat.outputFormat,
-            series: [{ name: 'Total', value: Number(statsForFormat.sizeToDelete) / 1e12 },
+            series: [{ name: 'For deletion', value: Number(statsForFormat.sizeToDelete) / 1e12 },
               {name: 'Superseded', value: Number(statsForFormat.size) / 1e12 }]};
           this.sizeChartData[0].push(currentStat);
         }
