@@ -147,6 +147,7 @@ import {EventPickingRequestComponent} from "./production-request/event-picking-r
 import {
   EventPickingRequestsListComponent
 } from "./production-request/event-picking-requests-list/event-picking-requests-list.component";
+import {GpExclusionFastComponent} from "./derivation-exclusion/gp-exclusion-fast/gp-exclusion-fast.component";
 // import { BPTaskComponent } from './common/bptask/bptask.component';
 
 
@@ -370,7 +371,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
     AgGridModule,
     MatStepperModule,
     MatSlideToggleModule,
-    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent, ProductionTaskTableComponent, TaskActionComponent, StagingManagementComponent, DatasetSizePipe], providers: [
+    NgxMatSelectSearchModule, RucioURLPipe, BPTaskComponent, TaskStatsComponent, ProductionTaskTableComponent, TaskActionComponent, StagingManagementComponent, DatasetSizePipe, GpExclusionFastComponent], providers: [
         {
             provide: APP_BASE_HREF, useValue: '/ng',
             useFactory: getBaseLocation

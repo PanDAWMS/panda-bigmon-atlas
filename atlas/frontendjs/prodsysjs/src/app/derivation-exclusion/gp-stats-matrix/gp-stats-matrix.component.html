@@ -17,11 +17,11 @@
     <a  [routerLink]='"."' [queryParamsHandling]="'merge'" [queryParams]="{base: null}" >  Show all</a></div>
   }
 </mat-radio-group>
-<table class="gp-matrix" mat-table [dataSource]="statMatrix"  multiTemplateDataRows  (mouseleave)="hoverTable=false" >
+<table class="gp-matrix" mat-table [dataSource]="statMatrix" multiTemplateDataRows="true" (mouseleave)="hoverTable=false" >
   <ng-container matColumnDef="firstColumn" [sticky]="true">
     <th mat-header-cell *matHeaderCellDef > Format </th>
     <td class="gp-matrix-element"  mat-cell *matCellDef="let element" [ngClass] = "{'highlight' : hoverTable && (element['firstColumn'] == hoveredFormat)}">
-      <a [routerLink]='"."' [queryParamsHandling]="'merge'" [queryParams]="{base: getBaseFormat(element['firstColumn'])}" >{{element['firstColumn']}}</a> </td>
+      <a [routerLink]='"."' [queryParamsHandling]="'merge'" [queryParams]="{base: baseFormatFromOutput(element['firstColumn'])}" >{{element['firstColumn']}}</a> </td>
     </ng-container>
 
     @for (amiTag of availableAMITags; track amiTag) {
@@ -30,8 +30,8 @@
         <td class="gp-matrix-element" mat-cell *matCellDef="let element" (mouseover)="highlightRowAndColumn(amiTag, element['firstColumn'])"
           [ngClass] = "{'highlight' :hoverTable && ((amiTag == hoveredAMITag) || (element['firstColumn'] == hoveredFormat)) }">
           @if (element[amiTag][showNumbers]>0) {
-            <a [routerLink]="['/gp-deletion', dataType, 'DAOD_' + element['firstColumn'] ]"
-              [fragment]="amiTag"  style="color: red">
+            <a (click)="showTable(dataType,'DAOD_' + element['firstColumn'],amiTag)"
+              [fragment]="amiTag"  style="color: red; cursor:pointer;">
               @if (showNumbers==0) {
                 <div >{{element[amiTag][showNumbers]}}</div>
                 }@if (showNumbers==1) {
@@ -45,5 +45,13 @@
         }
 
         <tr mat-header-row *matHeaderRowDef="displayColumns;  sticky: true"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayColumns;"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayColumns"></tr>
       </table>
+@if(selectedTag()) {
+<div id="gp-exclusion-fast">
+  <app-gp-exclusion-fast  [amiTag]="selectedTag().amiTag"
+                          [dataType]="dataType"
+                          [outputType]="selectedTag().outputType" >
+  </app-gp-exclusion-fast>
+</div>
+}

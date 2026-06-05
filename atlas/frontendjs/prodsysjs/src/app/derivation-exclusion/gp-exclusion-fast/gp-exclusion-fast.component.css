@@ -1,0 +1,23 @@
+span.expired {
+  background-color: red;
+}
+
+span.not_expired {
+  background-color: orange;
+}
+
+span.extension {
+  background-color: green;
+}
+
+span.expired,
+span.not_expired,
+span.extension {
+  display: inline-block;
+  min-width: 2rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  color: white;
+}
+

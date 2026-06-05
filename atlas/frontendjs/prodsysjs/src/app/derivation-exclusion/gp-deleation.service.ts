@@ -25,6 +25,15 @@ export class GPDeletionContainerService {
         catchError(this.handleError<GroupProductionDeletionContainer[]>('getGPDeletionPerOutput', []))
       );
   }
+  getGPDeletionPerOutputTag(outputType: string, dataType: string, tag: string): Observable<GroupProductionDeletionContainer[]> {
+    return this.http.get<GroupProductionDeletionContainer[]>(this.gpDeletionUrl, {params: {data_type: dataType,
+         output_format: outputType, ami_tag: tag}})
+      .pipe(
+        map(gpList => this.calculateDatasetAge(gpList)),
+        tap(_ => this.log(`fetched containers for group ${outputType} ${dataType}`)),
+        catchError(this.handleError<GroupProductionDeletionContainer[]>('getGPDeletionPerOutput', []))
+      );
+  }
   askExtension(extensionRequest: ExtensionRequest): Observable<ExtensionRequest> {
     return this.http.post<ExtensionRequest>(this.extensionUrl, extensionRequest)
       .pipe(

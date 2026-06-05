@@ -1,5 +1,4 @@
-import { AfterViewInit, Component, OnInit, inject } from '@angular/core';
-import {MatTableDataSource} from '@angular/material/table';
+import {AfterViewInit, Component, OnInit, inject, signal} from '@angular/core';
 import {GroupProductionStats} from '../gp-stats/gp-stats';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {ViewportScroller} from '@angular/common';
@@ -7,15 +6,11 @@ import {StatsByOutputBase} from '../gp-stats/gp-stats.component';
 
 
 
-export interface StatsByOutput{
-      outputFormat: string;
-      containers: number;
-      size: number;
-      containersToDelete: number;
-      sizeToDelete: number;
+export interface SelectedFormatByTag {
+  dataType: string;
+  outputType: string;
+  amiTag: string;
 }
-
-
 
 @Component({
     selector: 'app-gp-stats-matrix',
@@ -41,7 +36,14 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
   chosenFormat: string | null = '';
   showNumbers = 0;
   hoverTable = false;
-
+  selectedTag = signal<SelectedFormatByTag|undefined>(undefined);
+  baseFormatFromOutput = (outputFormat: string): string => {
+    if (outputFormat.indexOf('_') > -1){
+      return outputFormat.split('_')[1].replace(/\d/, '#').split('#')[0];
+    } else {
+      return outputFormat.replace(/\d/, '#').split('#')[0];
+    }
+  };
   ngOnInit(): void {
     this.gpStats = this.route.snapshot.data.gpStats;
     this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
@@ -71,12 +73,8 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private getBaseFormat(outputFormat: string): string{
-    if (outputFormat.indexOf('_') > -1){
-      return outputFormat.split('_')[1].replace(/\d/, '#').split('#')[0];
-    } else {
-      return outputFormat.replace(/\d/, '#').split('#')[0];
-    }
+  getBaseFormat(outputFormat: string): string{
+    return this.baseFormatFromOutput(outputFormat);
   }
 
   private fetchData(isReal: boolean): void {
@@ -152,4 +150,8 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
   }
 
 
+  protected showTable(dataType: string, outputType: string, amiTag: string) {
+    this.selectedTag.set({dataType, outputType, amiTag});
+    setTimeout(() => this.viewportScroller.scrollToAnchor('gp-exclusion-fast'));
+  }
 }
