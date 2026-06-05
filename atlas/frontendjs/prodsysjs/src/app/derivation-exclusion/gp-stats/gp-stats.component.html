@@ -29,8 +29,8 @@ Extension requests logs </a></h3>
   Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3><br/> <h5>Last time updated: {{lastUpdateTime}}</h5>
   <mat-divider></mat-divider>
   <mat-card appearance="outlined" [style]="'height: 800px;'">
-    <ngx-charts-bar-vertical
-      [results]="sizeChart"
+    <ngx-charts-bar-vertical-2d
+      [results]="sizeChart[0]"
       [gradient]="gradient"
       [xAxis]="showXAxis"
       [yAxis]="showYAxis"
@@ -41,10 +41,25 @@ Extension requests logs </a></h3>
       [yAxisLabel]="yAxisLabel"
       (select)="onChartSelect($event)"
       >
-    </ngx-charts-bar-vertical>
+    </ngx-charts-bar-vertical-2d>
   </mat-card>
   <mat-divider></mat-divider>
-
+  <mat-card appearance="outlined" [style]="'height: 800px;'">
+    <ngx-charts-bar-vertical-2d
+      [results]="sizeChart[1]"
+      [gradient]="gradient"
+      [xAxis]="showXAxis"
+      [yAxis]="showYAxis"
+      [legend]="showLegend"
+      [showXAxisLabel]="showXAxisLabel"
+      [showYAxisLabel]="showYAxisLabel"
+      [xAxisLabel]="xAxisLabel"
+      [yAxisLabel]="yAxisLabel"
+      (select)="onChartSelect($event)"
+      >
+    </ngx-charts-bar-vertical-2d>
+  </mat-card>
+  <mat-divider></mat-divider>
   @for (statsByOutput of statsByOutputBases; track statsByOutput) {
     <div class="section" [attr.id]='statsByOutput.outputFormatBase' style="max-width: 800px" >
       <h5>{{statsByOutput.outputFormatBase}}</h5>

@@ -46,7 +46,7 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   showXAxis = true;
   showYAxis = true;
   gradient = false;
-  showLegend = false;
+  showLegend = true;
   showXAxisLabel = true;
   xAxisLabel = 'Format';
   showYAxisLabel = true;
@@ -54,6 +54,7 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   view: any[] = [1800, 1000];
   sizeChart: any[] = [];
   sizeChartData: any[] = [];
+
   totalDatasets = 0;
   totalSize = 0;
   totalDatasetsToDelete = 0;
@@ -85,7 +86,7 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
     if (this.statsByOutputBases !== undefined){
       this.statsByOutputBases = [];
     }
-    this.sizeChartData = [];
+    this.sizeChartData = [[],[]];
     this.totalDatasets = 0;
     this.totalSize = 0;
     this.totalDatasetsToDelete = 0;
@@ -111,26 +112,32 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
 
     }
     this.formatsOnPage.sort();
+    const totalFormats = this.formatsOnPage.length;
+    console.log(`Total formats on page: ${totalFormats}`);
     for (const formatBase of this.formatsOnPage){
       const currentDataSource = new MatTableDataSource<StatsByOutput>();
       const statsForBase: StatsByOutput[] = [];
-
       for (const statsForFormat of this.statsByOutput[formatBase].values()){
+        let currentStat = {};
         statsForBase.push(statsForFormat);
         this.totalDatasets += statsForFormat.containers;
         this.totalSize += statsForFormat.size ;
         this.totalDatasetsToDelete += statsForFormat.containersToDelete;
         this.totalSizeToDelete  += statsForFormat.sizeToDelete;
         if (statsForFormat.sizeToDelete > 0) {
-          this.sizeChartData.push({name: statsForFormat.outputFormat, value: Number(statsForFormat.sizeToDelete) / 1e12});
+          currentStat = {name: statsForFormat.outputFormat,
+            series: [{ name: 'Total', value: Number(statsForFormat.sizeToDelete) / 1e12 },
+              {name: 'Superseded', value: Number(statsForFormat.size) / 1e12 }]};
+          this.sizeChartData[0].push(currentStat);
         }
       }
-      this.sizeChartData.push({name: 'total', value: Number(this.totalSizeToDelete) / 1e12});
       statsForBase.sort((a, b) => a.outputFormat.localeCompare(b.outputFormat));
       currentDataSource.data = statsForBase;
       this.statsByOutputBases.push({outputFormatBase: formatBase, dataSource: currentDataSource});
     }
-    this.sizeChartData.sort((a, b) => (a.value > b.value) ? -1 : ((b.value > a.value) ? 1 : 0));
+    this.sizeChartData[0].sort((a, b) => (a.series[0].value > b.series[0].value) ? -1 : ((b.series[0].value > a.series[0].value) ? 1 : 0));
+    this.sizeChartData[1] = this.sizeChartData[0].slice(6);
+    this.sizeChartData[0] = this.sizeChartData[0].slice(0, 6);
     this.sizeChart = this.sizeChartData;
   }
 
@@ -140,6 +147,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   }
 
   onChartSelect(event): void{
-    this.router.navigate(['/gp-deletion', this.dataType,  event.name]);
+    this.router.navigate(['/gp-deletion', this.dataType,  event.series]);
   }
 }
