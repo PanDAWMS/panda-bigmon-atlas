@@ -48,6 +48,8 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     this.gpStats = this.route.snapshot.data.gpStats;
     this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
     const URLdataType = paramMap.get('type');
+    const amiTagFromUrl = paramMap.get('amiTag');
+    const outputTypeFromUrl = paramMap.get('outputType');
     this.chosenFormat = paramMap.get('base');
     if (paramMap.get('show') === '1' ){
       this.showNumbers = 1;
@@ -62,6 +64,18 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     } else {
       this.fetchData(false);
       this.dataType = 'mc';
+    }
+
+    if (amiTagFromUrl && outputTypeFromUrl) {
+      this.selectedTag.set({
+        dataType: this.dataType,
+        amiTag: amiTagFromUrl,
+        outputType: outputTypeFromUrl,
+      });
+      setTimeout(() => this.viewportScroller.scrollToAnchor('gp-exclusion-fast'));
+
+    } else {
+      this.selectedTag.set(undefined);
     }
 
   });
@@ -152,6 +166,11 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
 
   protected showTable(dataType: string, outputType: string, amiTag: string) {
     this.selectedTag.set({dataType, outputType, amiTag});
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {amiTag, outputType},
+      queryParamsHandling: 'merge',
+    });
     setTimeout(() => this.viewportScroller.scrollToAnchor('gp-exclusion-fast'));
   }
 }

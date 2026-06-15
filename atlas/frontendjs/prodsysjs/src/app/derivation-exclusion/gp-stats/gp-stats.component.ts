@@ -2,17 +2,8 @@ import { AfterViewInit, Component, OnInit, inject } from '@angular/core';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {GroupProductionStats} from './gp-stats';
 import {MatTableDataSource} from '@angular/material/table';
-import {GroupProductionDeletionContainer} from '../gp-deletion-container';
-import {SelectionModel} from '@angular/cdk/collections';
 import {ViewportScroller} from '@angular/common';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
 import {GPStatsService} from "./gp-stats.service";
-
-
-
-const ALL_FORMATS = ['BPHY', 'EGAM', 'EXOT', 'FTAG', 'HDBS', 'HIGG', 'HION', 'JETM', 'LCALO', 'MUON', 'PHYS',
-                'STDM', 'SUSY', 'TAUP', 'TCAL', 'TOPQ', 'TRIG', 'TRUTH'];
-
 export interface StatsByOutput{
       outputFormat: string;
       containers: number;
@@ -20,12 +11,10 @@ export interface StatsByOutput{
       containersToDelete: number;
       sizeToDelete: number;
 }
-
 export interface StatsByOutputBase{
       outputFormatBase: string;
       dataSource: MatTableDataSource<StatsByOutput>;
 }
-
 @Component({
     selector: 'app-gp-stats',
     templateUrl: './gp-stats.component.html',
@@ -37,7 +26,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   private router = inject(Router);
   private viewportScroller = inject(ViewportScroller);
   private gpStateService = inject(GPStatsService);
-
   gpStats: GroupProductionStats[];
   statsByOutput: Map<string, Map<string, StatsByOutput>>;
   statsByOutputBases: StatsByOutputBase[] = [];
@@ -54,39 +42,37 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
   view: any[] = [1800, 1000];
   sizeChart: any[] = [];
   sizeChartData: any[] = [];
-
+  sortBySizeToDelete = true;
+  selectedFormats: Record<string, boolean> = {};
   totalDatasets = 0;
   totalSize = 0;
   totalDatasetsToDelete = 0;
   totalSizeToDelete = 0;
   lastUpdateTime = '';
-
   ngOnInit(): void {
     this.gpStateService.GPLastUpdateTime().subscribe(lastUpdateTime => this.lastUpdateTime = lastUpdateTime);
     this.gpStats = this.route.snapshot.data.gpStats;
     this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
-    const URLdataType = paramMap.get('type');
-    if (URLdataType === 'data'){
-      this.fetchData(true);
-      this.dataType = 'data';
-    } else {
-      this.fetchData(false);
-      this.dataType = 'mc';
-    }
-  });
-
+      const URLdataType = paramMap.get('type');
+      if (URLdataType === 'data'){
+        this.fetchData(true);
+        this.dataType = 'data';
+      } else {
+        this.fetchData(false);
+        this.dataType = 'mc';
+      }
+    });
   }
   ngAfterViewInit(): void {
     this.route.fragment.subscribe(f => {
       this.viewportScroller.scrollToAnchor(f);
     });
   }
-
   private fetchData(isReal: boolean): void {
     if (this.statsByOutputBases !== undefined){
       this.statsByOutputBases = [];
     }
-    this.sizeChartData = [[],[]];
+    this.sizeChartData = [];
     this.totalDatasets = 0;
     this.totalSize = 0;
     this.totalDatasetsToDelete = 0;
@@ -103,13 +89,12 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
         if ( this.statsByOutput[base].get(currentStat.output_format) === undefined){
           this.statsByOutput[base].set(currentStat.output_format, {outputFormat: currentStat.output_format, containers: 0, size: 0,
           containersToDelete:  0, sizeToDelete:  0} );
-      }
+        }
         this.statsByOutput[base].get(currentStat.output_format).containers += Number(currentStat.containers);
         this.statsByOutput[base].get(currentStat.output_format).size += Number(currentStat.size);
         this.statsByOutput[base].get(currentStat.output_format).containersToDelete += Number(currentStat.to_delete_containers);
         this.statsByOutput[base].get(currentStat.output_format).sizeToDelete += Number(currentStat.to_delete_size);
       }
-
     }
     this.formatsOnPage.sort();
     const totalFormats = this.formatsOnPage.length;
@@ -128,24 +113,36 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
           currentStat = {name: statsForFormat.outputFormat,
             series: [{ name: 'For deletion', value: Number(statsForFormat.sizeToDelete) / 1e12 },
               {name: 'Superseded', value: Number(statsForFormat.size) / 1e12 }]};
-          this.sizeChartData[0].push(currentStat);
+          this.sizeChartData.push(currentStat);
         }
       }
       statsForBase.sort((a, b) => a.outputFormat.localeCompare(b.outputFormat));
       currentDataSource.data = statsForBase;
       this.statsByOutputBases.push({outputFormatBase: formatBase, dataSource: currentDataSource});
     }
-    this.sizeChartData[0].sort((a, b) => (a.series[0].value > b.series[0].value) ? -1 : ((b.series[0].value > a.series[0].value) ? 1 : 0));
-    this.sizeChartData[1] = this.sizeChartData[0].slice(6);
-    this.sizeChartData[0] = this.sizeChartData[0].slice(0, 6);
-    this.sizeChart = this.sizeChartData;
+    // Initialise format checkboxes — preserve user selection if format set unchanged
+    const existingKeys = Object.keys(this.selectedFormats);
+    const newKeys = this.formatsOnPage;
+    if (existingKeys.length === 0 || existingKeys.some(k => !newKeys.includes(k))) {
+      this.selectedFormats = {};
+      for (const f of this.formatsOnPage) { this.selectedFormats[f] = true; }
+    }
+    this.updateChart();
   }
-
+  updateChart(): void {
+    const filtered = this.sizeChartData.filter(item => {
+      const base = (item.name as string).split('_')[1]?.replace(/\d/, '#').split('#')[0] ?? item.name;
+      return this.selectedFormats[base] ?? true;
+    });
+    filtered.sort((a, b) => {
+      const idx = this.sortBySizeToDelete ? 0 : 1;
+      return b.series[idx].value - a.series[idx].value;
+    });
+    this.sizeChart = [...filtered];
+  }
   changeType(): void {
-    // console.log(this.dataType);
     this.router.navigate(['/gp-stats'], { queryParams: {type: this.dataType} });
   }
-
   onChartSelect(event): void{
     this.router.navigate(['/gp-deletion', this.dataType,  event.series]);
   }

@@ -28,9 +28,22 @@ Extension requests logs </a></h3>
 <h3>Total containers: {{totalDatasets}} Total size: {{totalSize|datasetSize}}
   Total containers to delete: {{totalDatasetsToDelete}} Total size to delete : {{totalSizeToDelete|datasetSize}}</h3><br/> <h5>Last time updated: {{lastUpdateTime}}</h5>
   <mat-divider></mat-divider>
+  <div style="margin: 8px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
+    <mat-radio-group [(ngModel)]="sortBySizeToDelete" (ngModelChange)="updateChart()" aria-label="Sort by">
+      <span style="margin-right: 8px; font-weight: 500;">Sort by:</span>
+      <mat-radio-button [value]="true">Size to delete</mat-radio-button>
+      <mat-radio-button [value]="false" style="margin-left: 10px;">Total size</mat-radio-button>
+    </mat-radio-group>
+  </div>
+  <div style="margin: 8px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+    <span style="font-weight: 500; margin-right: 4px;">Formats:</span>
+    @for (formatBase of formatsOnPage; track formatBase) {
+      <mat-checkbox [(ngModel)]="selectedFormats[formatBase]" (ngModelChange)="updateChart()">{{ formatBase }}</mat-checkbox>
+    }
+  </div>
   <mat-card appearance="outlined" [style]="'height: 800px;'">
     <ngx-charts-bar-vertical-2d
-      [results]="sizeChart[0]"
+      [results]="sizeChart"
       [animations]="false"
       [gradient]="gradient"
       [xAxis]="showXAxis"
@@ -44,28 +57,12 @@ Extension requests logs </a></h3>
       >
     </ngx-charts-bar-vertical-2d>
   </mat-card>
-  <mat-divider></mat-divider>
-  <mat-card appearance="outlined" [style]="'height: 800px;'">
-    <ngx-charts-bar-vertical-2d
-      [results]="sizeChart[1]"
-      [animations]="false"
-      [gradient]="gradient"
-      [xAxis]="showXAxis"
-      [yAxis]="showYAxis"
-      [legend]="showLegend"
-      [showXAxisLabel]="showXAxisLabel"
-      [showYAxisLabel]="showYAxisLabel"
-      [xAxisLabel]="xAxisLabel"
-      [yAxisLabel]="yAxisLabel"
-      (select)="onChartSelect($event)"
-      >
-    </ngx-charts-bar-vertical-2d>
-  </mat-card>
+
   <mat-divider></mat-divider>
   @for (statsByOutput of statsByOutputBases; track statsByOutput) {
     <div class="section" [attr.id]='statsByOutput.outputFormatBase' style="max-width: 800px" >
       <h5>{{statsByOutput.outputFormatBase}}</h5>
-      <table mat-table [dataSource]="statsByOutput.dataSource"  multiTemplateDataRows  >
+      <table mat-table [dataSource]="statsByOutput.dataSource"  >
         <ng-container matColumnDef="output">
           <th mat-header-cell *matHeaderCellDef > Output </th>
           <td mat-cell *matCellDef="let element"> <a [routerLink]="['/gp-deletion', dataType, element.outputFormat ]" >{{element.outputFormat}}</a> </td>
