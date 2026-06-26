@@ -360,6 +360,21 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
                     _jsonLogger.error(f'Not enough events found in dataset {dsname} for run {run}, project {project}, stream {stream} and total events {len(events)} dspid {dspid} with events {len(result)}')
             return result, dataset_names
 
+def recount_stats(ep_processing_id: int):
+    total_files = 0
+    total_events = 0
+    runs = 0
+    for ep_content in EventPickingContent.objects.filter(ep_request=ep_processing_id):
+        runs+=1
+        file_events = ep_content.files_events
+        total_files += len(list(file_events.keys()))
+        for events in file_events.values():
+            total_events += len(set(events))
+    ep_processing = EventPickingProcessing.objects.get(id=ep_processing_id)
+    stats = ep_processing.stats or {}
+    stats.update({'picked': {'runs': runs, 'files': total_files, 'events': total_events}})
+    ep_processing.stats = stats
+    ep_processing.save()
 
 @app.task(ignore_result=True, time_limit=3600*3)
 def process_ep_request(ep_request_id: int, submit: bool = False):
@@ -430,7 +445,7 @@ def process_ep_request(ep_request_id: int, submit: bool = False):
                             existing_events = set(ep_content.files_events[file])
                             ep_content.files_events[file] = list(existing_events.union(current_events))
                         else:
-                            ep_content.files_events[file] = current_events
+                            ep_content.files_events[file] = list(set(current_events))
                     ep_content.save()
                     total_events += len(sum(ep_content.files_events.values(), []))
                     runs += 1
