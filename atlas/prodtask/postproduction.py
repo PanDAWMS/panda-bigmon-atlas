@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pprint import pprint
 import logging
 
-from atlas.prodtask.task_views import set_task_sample_container
+from atlas.prodtask.task_views import set_task_sample_container, set_production_container
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -78,7 +78,8 @@ class SampleContainerAction(BaseAction):
             True when action is complete.
         """
         _logger.info(f"Executing SampleContainerAction for task {task_id}")
-        set_task_sample_container(task_id)
+        set_production_container(task_id)
+        set_task_sample_container(task_id, True)
         return True
 
 
