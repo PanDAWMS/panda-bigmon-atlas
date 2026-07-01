@@ -77,6 +77,10 @@ class SampleContainerAction(BaseAction):
         Returns:
             True when action is complete.
         """
+        production_task = ProductionTask.objects.get(id=task_id)
+        if production_task.status not in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
+            _logger.info(f"Task {task_id} is not finished or done. Current status: {production_task.status}")
+            return True
         _logger.info(f"Executing SampleContainerAction for task {task_id}")
         set_production_container(task_id)
         set_task_sample_container(task_id, True)
