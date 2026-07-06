@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pprint import pprint
 import logging
 
-from atlas.prodtask.task_views import set_task_sample_container, set_production_container
+from atlas.prodtask.task_views import set_task_sample_container, set_production_container, post_bad_state_action
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -78,8 +78,8 @@ class SampleContainerAction(BaseAction):
             True when action is complete.
         """
         production_task = ProductionTask.objects.get(id=task_id)
-        if production_task.status not in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
-            _logger.info(f"Task {task_id} is not finished or done. Current status: {production_task.status}")
+        if production_task.status in ProductionTask.RED_STATUS+[ProductionTask.STATUS.OBSOLETE]:
+            post_bad_state_action(task_id)
             return True
         _logger.info(f"Executing SampleContainerAction for task {task_id}")
         set_production_container(task_id)

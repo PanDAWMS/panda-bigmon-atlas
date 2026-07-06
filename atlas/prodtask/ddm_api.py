@@ -166,7 +166,7 @@ def tid_from_container(container):
     if container[-1]!='/':
         container = container + '/'
     datasets = ddm.dataset_in_container(container)
-    return [int(x[x.rfind('tid')+3:x.rfind('_')]) for x in datasets]
+    return [int(x[x.rfind('tid')+3:x.rfind('_')]) for x in datasets if '_tid' in x]
 
 
 def dataset_events(container):

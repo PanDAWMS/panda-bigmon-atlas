@@ -1434,6 +1434,21 @@ def set_production_container(task_id):
                     ddm.register_datasets_in_container(container_name, [dataset])
                     _jsonLogger.info(f"Dataset {dataset} is add to production container {container_name}", extra={'dataset': dataset, 'container': container_name, 'task': task.id})
 
+def post_bad_state_action(task_id: int):
+    GRACE_PERIOD = 3*24*3600
+    task = ProductionTask.objects.get(id=task_id)
+    if task.status not in ProductionTask.RED_STATUS+[ProductionTask.STATUS.OBSOLETE]:
+        return False
+    ddm = DDM()
+    for dataset in task.output_non_log_datasets():
+        if ddm.dataset_exists(dataset):
+            parent_containers = ddm.list_parent_containers(dataset)
+            for container in parent_containers:
+                ddm.delete_datasets_from_container(container, [dataset])
+            ddm.deleteDataset(dataset, GRACE_PERIOD)
+            _jsonLogger.info(f"Dataset {dataset} is deleted from parent containers and marked for deletion", extra={'dataset': dataset, 'task': task.id})
+    return True
+
 def recover_sample_containers(days, days_till):
     time_since = timezone.now() - timedelta(days=days)
     time_till = timezone.now() - timedelta(days=days_till)

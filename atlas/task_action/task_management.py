@@ -17,7 +17,8 @@ from django.utils import timezone
 
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import ProductionTask, TRequest, ActionStaging, StepAction, JediTasks, TTask, HashTag, \
-    DatasetStaging, PandaDatasetStaging, DistributedLock, TemplateVariable, DatasetRecovery, add_or_get_request_hashtag
+    DatasetStaging, PandaDatasetStaging, DistributedLock, TemplateVariable, DatasetRecovery, add_or_get_request_hashtag, \
+    PostProductionActions
 from atlas.prodtask.task_views import sync_deft_jedi_task, create_user_task
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -334,6 +335,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
                 task = ProductionTask.objects.get(id=jedi_task_id)
                 if task.status in ProductionTask.NOT_RUNNING:
                     task.status = ProductionTask.STATUS.TORETRY
+                    pp_action, _ = PostProductionActions.objects.get_or_create(id=ProductionTask.objects.get(id=task.id))
+                    pp_action.add_action(PostProductionActions.ACTIONS.SAMPLE_CONTAINER)
                     task.save()
         except:
             pass
@@ -575,15 +578,13 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
             task.timestamp = timezone.now()
             task.save()
             output_datasets = list(task.output_non_log_datasets())
-            if task.request.request_type in ['REPROCESSING'] or filter(lambda x: 'EVNT' in x, output_datasets):
-                # remove dataset from containers
-                ddm = DDM()
-                for dataset in output_datasets:
-                    for container in ddm.list_parent_containers(dataset):
-                        try:
-                            ddm.delete_datasets_from_container(container, [dataset])
-                        except Exception as e:
-                            pass
+            ddm = DDM()
+            for dataset in output_datasets:
+                for container in ddm.list_parent_containers(dataset):
+                    try:
+                        ddm.delete_datasets_from_container(container, [dataset])
+                    except Exception as e:
+                        pass
         return True, ''
 
 
