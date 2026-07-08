@@ -9,7 +9,8 @@ from django.urls import reverse, resolve
 from atlas.celerybackend.celery import app
 from atlas.prodtask.check_duplicate import find_downstreams_by_task, create_task_chain
 from atlas.prodtask.ddm_api import DDM, name_without_scope
-from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate, HashTag, add_or_get_request_hashtag
+from atlas.prodtask.models import StepExecution, GlobalShare, StepTemplate, HashTag, add_or_get_request_hashtag, \
+    PostProductionActions
 import logging
 
 from ..cric.client import CRICClient
@@ -861,6 +862,7 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
     sync_keys = ['status', 'total_done_jobs', 'start_time', 'total_req_jobs','total_events','current_priority']
     for item in sync_keys:
         jedi_values.update({item:t_task[item]})
+    old_status = deft_task.status
     #post production status
     if deft_task.status in ['obsolete']:
         jedi_values['status'] = deft_task.status
@@ -897,6 +899,9 @@ def sync_deft_jedi_task_from_db(deft_task,t_task):
     if do_update:
         deft_task.timestamp=timezone.now()
         deft_task.save()
+        if old_status in ProductionTask.NOT_RUNNING and deft_task.status not in ProductionTask.NOT_RUNNING:
+            pp_action, _ = PostProductionActions.objects.get_or_create(id=ProductionTask.objects.get(id=deft_task.id))
+            pp_action.add_action(PostProductionActions.ACTIONS.SAMPLE_CONTAINER)
 
 def create_user_task(task_id: int) -> int:
     if not TTask.objects.filter(id=task_id).exists():
