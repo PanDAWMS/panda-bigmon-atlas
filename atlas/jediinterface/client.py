@@ -4,10 +4,12 @@ import gzip
 import pickle
 from copy import deepcopy
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 
 import requests
 from urllib.parse import urlencode
+
+from . import jedi_async_task
 from ..settings import jediclient as jedi_settings
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -116,6 +118,17 @@ class JEDITaskActionInterface(ABC):
                                                 force: bool,
                                                 reproduce_parent: bool,
                                                 reproduce_upto_nth_gen: int):
+        pass
+
+    @abstractmethod
+    def get_result(self, request_id: str) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def submit_sleep_echo_request(self, service_name: str,
+                                        message: str,
+                                        seconds: int,
+                                    ) -> Dict[str, Any]:
         pass
 
 
@@ -489,6 +502,32 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
     def setDebugMode(self, job_id, debug_mode):
         data = {"job_id": int(job_id), "mode": debug_mode}
         return self._post_new_api_command('api/v1/job/set_debug_mode', data)
+
+    def get_result(self, request_id: str) -> Dict[str, Any]:
+        """Poll for the results of an async request from JEDI.
+        
+        Args:
+            request_id: UUID returned by an async submit_* endpoint
+            
+        Returns:
+            dict with status and results
+        """
+        return self._get_new_api_command(f'api/v1/async_process/get_result?request_id={request_id}')
+
+    @jedi_async_task(poll_interval=5,action_type='TASK', max_polls=120)
+    def submit_sleep_echo_request(self, service_name: str, message: str, seconds: int) -> Dict[str, Any]:
+        """Submit a sleep+echo request to be processed asynchronously on the target service.
+        
+        Args:
+            service_name: target service (e.g. "jedi")
+            message: text echoed back as the result
+            seconds: seconds to sleep before echoing
+            
+        Returns:
+            dict with request_id if successful
+        """
+        data = {'service_name': "jedi", 'message': message, 'seconds': seconds}
+        return self._post_new_api_command('api/v1/async_process/submit_sleep_echo_request', data)
 
     @staticmethod
     def _jedi_output_distillation(jedi_respond_raw):

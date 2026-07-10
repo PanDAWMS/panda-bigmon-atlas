@@ -2,7 +2,8 @@ import json
 import re
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict
+from enum import Enum
+from typing import Optional, List, Dict, Any
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
@@ -133,6 +134,10 @@ def clear_input_container(jediTaskID):
 
 @dataclass
 class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
+    class ActionType(str, Enum):
+        TASK = 'TASK'
+        DATASET = 'DATASET'
+        GENERAL = 'GENERAL'
 
     username: str
     comment: str
@@ -166,6 +171,12 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def _log_rule_action_message(self, dataset, action, return_code, return_message, *args):
         _jsonLogger.info("Rule action",
                          extra={'dataset': str(dataset), 'user': self.username, 'comment': self.comment,
+                                'action': action, 'params': json.dumps(args),
+                                'return_code': str(return_code), 'return_message': return_message})
+
+    def _log_general_action_message(self, action, return_code, return_message, *args):
+        _jsonLogger.info("General action",
+                         extra={'user': self.username, 'comment': self.comment,
                                 'action': action, 'params': json.dumps(args),
                                 'return_code': str(return_code), 'return_message': return_message})
 
@@ -276,6 +287,13 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_new_api_decorator
     def changeTaskPriority(self, jediTaskID, newPriority):
         return self.jedi_client.changeTaskPriority(jediTaskID, newPriority)
+
+    @_jedi_new_api_decorator
+    def submit_sleep_echo_request(self, jediTaskID, seconds=20):
+        return self.jedi_client.submit_sleep_echo_request(str(jediTaskID), "prodsys test", seconds)
+
+    def get_result(self, request_id: str) -> Dict[str, Any]:
+        return self.jedi_client.get_result(request_id)
 
     @_jedi_new_api_decorator
     def killTask(self, jediTaskID):
