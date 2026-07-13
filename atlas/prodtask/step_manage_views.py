@@ -1537,12 +1537,14 @@ def split_slice(reqid, slice_number, divider):
             new_input_data.save()
             parent = None
             first_step = True
+            new_steps_ids = []
             for step_dict in ordered_existed_steps:
                 current_step = deepcopy(step_dict)
                 current_step.slice = new_input_data
                 if parent:
                     current_step.step_parent = parent
                 current_step.save()
+                new_steps_ids.append(current_step)
                 if first_step:
                     if current_step.status not in ['NotCheckedSkipped','Skipped']:
                         first_step = False
@@ -1555,6 +1557,7 @@ def split_slice(reqid, slice_number, divider):
                     current_step.step_parent = current_step
                     current_step.save()
                 parent = current_step
+            return new_steps_ids
 
     production_request = TRequest.objects.get(reqid=reqid)
     slice_to_split = InputRequestList.objects.filter(request = production_request, slice = slice_number)
@@ -1570,9 +1573,12 @@ def split_slice(reqid, slice_number, divider):
             raise ValueError("Can't split slice - parent task should be finished" )
         output_dataset = task.output_dataset
         nEventsPerInputFile = existed_foreign_step.get_task_config('nEventsPerJob')
+    old_steps_ids = []
+    all_new_steps_ids = []
     for step in ordered_existed_steps:
-            step.id = None
-            step.step_parent = step
+        old_steps_ids.append(step.id)
+        step.id = None
+        step.step_parent = step
     if (slice_to_split[0].input_events != -1) and (slice_to_split[0].input_events > divider) and \
             ((int(slice_to_split[0].input_events) // divider) < 200):
         for step_dict in ordered_existed_steps:
@@ -1581,15 +1587,52 @@ def split_slice(reqid, slice_number, divider):
             if step_dict.status in StepExecution.STEPS_APPROVED_STATUS:
                 raise ValueError("Can't split slice step %s is approved" % str(step_dict.status))
         for i in range(int(slice_to_split[0].input_events) // int(divider)):
-            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset, nEventsPerInputFile)
+            new_steps_ids = prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps, i, divider, output_dataset, nEventsPerInputFile)
+            all_new_steps_ids.append(new_steps_ids)
             new_slice_number += 1
         if (slice_to_split[0].input_events % divider) != 0:
-            prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
+            new_steps_ids = prepare_splitted_slice(slice_to_split,new_slice_number,ordered_existed_steps,
                                    int(slice_to_split[0].input_events) // int(divider), slice_to_split[0].input_events % divider, output_dataset, nEventsPerInputFile)
+            all_new_steps_ids.append(new_steps_ids)
             new_slice_number += 1
+        old_to_new_steps_dict = {}
+        for index, step_id in enumerate(old_steps_ids):
+            old_to_new_steps_dict[step_id] = []
+            for new_steps in all_new_steps_ids:
+                old_to_new_steps_dict[step_id].append(new_steps[index])
+        return old_to_new_steps_dict
     else:
         raise ValueError("Can't split slice total events: %s on %s" % (str(slice_to_split[0].input_events),str(divider)))
 
+def update_child_requests(request_id: int, steps_relation: Dict[int, list[int]]):
+    updated_child_requests = {}
+    for child_request in ParentToChildRequest.objects.filter(parent_request = request_id):
+        steps = list(StepExecution.objects.filter(request=child_request.child_request).order_by('slice_id'))
+        for step in steps:
+            if step.step_parent_id in steps_relation and not step.slice.is_hide:
+                updated_child_requests[child_request.child_request.reqid] = {}
+                step_execs = StepExecution.objects.filter(slice=step.slice, request=child_request.child_request)
+                ordered_existed_steps, existed_foreign_step = form_existed_step_list(step_execs)
+                old_step_id_order = []
+                for old_step in ordered_existed_steps:
+                    old_step_id_order.append(old_step.id)
+                    updated_child_requests[child_request.child_request.reqid][old_step.id] = []
+                for new_step_id in steps_relation[step.step_parent_id]:
+                    predefined_step = {step.step_parent_id: new_step_id}
+                    new_slice_number = clone_slices(child_request.child_request.reqid, child_request.child_request.reqid, [step.slice.slice], -1, True, predefined_parrent=predefined_step)[0]
+                    new_slice = InputRequestList.objects.get(request=child_request.child_request, slice=new_slice_number)
+                    new_steps = StepExecution.objects.filter(slice=new_slice, request=child_request.child_request)
+                    ordered_new_steps, existed_foreign_step = form_existed_step_list(new_steps)
+                    if existed_foreign_step:
+                        old_slice = existed_foreign_step.slice
+                        new_slice.comment = old_slice.comment
+                        new_slice.input_events = old_slice.input_events
+                        new_slice.save()
+                    for index, old_step_id in enumerate(old_step_id_order):
+                        updated_child_requests[child_request.child_request.reqid][old_step_id].append(ordered_new_steps[index])
+                hide_slice(step.slice)
+    for request_to_update, new_steps_rel in updated_child_requests.items():
+        update_child_requests(request_to_update, new_steps_rel)
 
 
 @csrf_protect
@@ -1606,9 +1649,10 @@ def split_slices_in_req(request, reqid):
             _logger.debug(form_request_log(reqid,request,'Split slices: %s' % str(slices)))
             good_slices = []
             bad_slices = []
+            steps_relations = {}
             for slice_number in slices:
                 try:
-                    split_slice(reqid,slice_number,divider)
+                    steps_relations.update(split_slice(reqid,slice_number,divider))
                     good_slices.append(slice_number)
                     splitted_slice = InputRequestList.objects.get(request = reqid, slice = slice_number)
                     splitted_slice.is_hide = True
@@ -1617,6 +1661,11 @@ def split_slices_in_req(request, reqid):
                 except  Exception as e:
                     bad_slices.append(slice_number)
                     _logger.error("Problem with slice splitting : %s"%( e))
+            if len(good_slices) > 0:
+                try:
+                    update_child_requests(reqid, steps_relations)
+                except Exception as e:
+                    _logger.error("Problem with updating child requests : %s"%( e))
             if len(bad_slices) > 0:
                 results = {'success':False,'badSlices':bad_slices,'goodSlices':good_slices}
             else:
