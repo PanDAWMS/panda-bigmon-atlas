@@ -2025,7 +2025,10 @@ class TaskDefinition(object):
             previous_task_id = self.rucio_client.dataset_metadata(dataset).get('task_id')
             if ProductionTask.objects.filter(id=previous_task_id).exists() and \
                     ProductionTask.objects.get(id=previous_task_id).status not in ['failed', 'broken', 'aborted', 'obsolete', 'toabort']:
-                used_files.update(self.rucio_client.list_files_with_scope_in_dataset(dataset))
+                try:
+                    used_files.update(self.rucio_client.list_files_with_scope_in_dataset(dataset))
+                except Exception as e:
+                    logger.error(f"Error while listing files for dataset {dataset}: {e}")
         events_per_pileup_file = self.rucio_client.get_number_events(mc_pileup_overlay['files'][0])
         if not mc_pileup_overlay.get('hits_minbias', False):
             pileup_files_per_job = nevents_per_job // events_per_pileup_file
