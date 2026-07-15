@@ -217,7 +217,7 @@ def register_ep_container(request):
             ddm.register_datasets_in_container(container_name, datasets)
         if not ep_results.results:
             ep_results.results = {'containers': [container_name]}
-            current_containers = container_name
+            current_containers = [container_name]
         else:
             current_containers = ep_results.results.get('containers', [])
             current_containers.append(container_name)
