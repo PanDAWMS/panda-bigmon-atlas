@@ -3550,7 +3550,8 @@ def clone_slices(reqid_source,  reqid_destination, slices, step_from, make_link,
                         first_changed = True
                         step.save()
                         old_new_step[old_step_id] = step
-        clone_child_slices(reqid_source,old_new_step)
+        if 'stop' not in list(predefined_parrent.keys()):
+            clone_child_slices(reqid_source,old_new_step)
         return new_slice_numbers
 
 

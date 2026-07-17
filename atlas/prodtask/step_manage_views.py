@@ -709,6 +709,36 @@ def hide_slice(slice):
     else:
         slice.is_hide = False
     slice.save()
+
+
+def hide_child_request_slices(production_request_id, hidden_slices):
+    requests_relations = ParentToChildRequest.objects.filter(status='active', parent_request=production_request_id)
+    child_requests = [item.child_request for item in requests_relations if item.child_request]
+    if child_requests:
+        # find all parent steps
+        parent_steps = []
+        for slice_number in hidden_slices:
+            current_slice = InputRequestList.objects.get(request=production_request_id, slice=int(slice_number))
+            parent_steps += StepExecution.objects.filter(slice=current_slice,
+                                                         request=production_request_id).values_list('id', flat=True)
+        # for each child request find linked slices
+        for child_request in child_requests:
+            current_child_slice_set = set()
+            child_steps = list(
+                StepExecution.objects.filter(request=child_request).values('id', 'slice_id', 'step_parent_id'))
+            for child_step in child_steps:
+                if child_step['step_parent_id'] in parent_steps:
+                    current_child_slice_set.add(child_step['slice_id'])
+            child_hidden_slices = []
+            for slice_id in current_child_slice_set:
+                slice = InputRequestList.objects.get(id=slice_id, request=child_request)
+                if not slice.is_hide:
+                    hide_slice(slice)
+                    child_hidden_slices.append(slice.slice)
+            if child_hidden_slices:
+                hide_child_request_slices(child_request.reqid, child_hidden_slices)
+
+
 @csrf_protect
 def hide_slices_in_req(request, reqid):
 
@@ -723,13 +753,16 @@ def hide_slices_in_req(request, reqid):
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Hide slices: %s' % str(slices)))
             slices_numbers = list(map(int, slices))
+            hidden_slices = []
             for slice_number in slices_numbers:
                 current_slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
                 hide_slice(current_slice)
+                current_slice = InputRequestList.objects.get(request=reqid,slice=slice_number)
+                if current_slice.is_hide:
+                    hidden_slices.append(slice_number)
             #reject child slices
-            for slice_id in find_child_request_slices(reqid, slices_numbers):
-                current_slice = InputRequestList.objects.get(id=slice_id)
-                hide_slice(current_slice)
+            hide_child_request_slices(reqid, hidden_slices)
+
             results = {'success':True}
         except Exception as e:
             pass
@@ -1618,7 +1651,7 @@ def update_child_requests(request_id: int, steps_relation: Dict[int, list[int]])
                     old_step_id_order.append(old_step.id)
                     updated_child_requests[child_request.child_request.reqid][old_step.id] = []
                 for new_step_id in steps_relation[step.step_parent_id]:
-                    predefined_step = {step.step_parent_id: new_step_id}
+                    predefined_step = {step.step_parent_id: new_step_id, 'stop': 'stop'}
                     new_slice_number = clone_slices(child_request.child_request.reqid, child_request.child_request.reqid, [step.slice.slice], -1, True, predefined_parrent=predefined_step)[0]
                     new_slice = InputRequestList.objects.get(request=child_request.child_request, slice=new_slice_number)
                     new_steps = StepExecution.objects.filter(slice=new_slice, request=child_request.child_request)
