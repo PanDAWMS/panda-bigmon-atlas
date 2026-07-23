@@ -2292,11 +2292,8 @@ def check_extend_request(request, reqid):
         try:
             data = json.loads(request.body)
             excel_link = data['spreadsheet']
-            is_new = data['is_new']
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            version = '2.0'
-            if is_new:
-                version = '3.0'
+            version = '3.0'
             spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             slices_number = len(spreadsheet_dict)
             steps_number = 0
@@ -2308,6 +2305,49 @@ def check_extend_request(request, reqid):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
+def propagate_extension(sample_slice: InputRequestList, parent_slices: list[InputRequestList], production_request: TRequest):
+    sample_steps_ids = list(StepExecution.objects.filter(request=production_request, slice=sample_slice).values_list('id', flat=True))
+    updated_request = {}
+    for child_parent_request in ParentToChildRequest.objects.filter(parent_request = production_request):
+        child_request = child_parent_request.child_request
+        if child_request.cstatus == TRequest.STATUS.CANCELLED:
+            continue
+        child_steps = StepExecution.objects.filter(request=child_request, step_parent_id__in=sample_steps_ids)
+        selected_child_step = None
+        for child_step in child_steps:
+            if not child_step.slice.is_hide:
+                selected_child_step = child_step
+                break
+        if selected_child_step:
+            parent_steps, _ = form_existed_step_list( StepExecution.objects.filter(request=production_request, slice=sample_slice) )
+            copy_index = None
+            for index, parent_step in enumerate(parent_steps):
+                if selected_child_step.step_parent_id == parent_step.id:
+                    copy_index = index
+                    break
+            request_sample_slice = selected_child_step.slice
+            new_slices = []
+            for parent_slice in parent_slices:
+                new_slice_number = clone_slices(child_request.reqid, child_request.reqid, [request_sample_slice.slice], -1, True, False)[0]
+                new_slice = InputRequestList.objects.get(request=child_request, slice=new_slice_number)
+                new_slice.comment = parent_slice.comment
+                new_slice.input_events = parent_slice.input_events
+                new_slice.input_data = parent_slice.input_data
+                new_slice.dataset = parent_slice.dataset
+                new_slice.save()
+                new_slices.append(new_slice)
+                current_parent_steps, _ = form_existed_step_list(StepExecution.objects.filter(request=production_request, slice=parent_slice))
+                new_parent = current_parent_steps[copy_index]
+                new_steps, _ = form_existed_step_list(StepExecution.objects.filter(request=child_request, slice=new_slice))
+                new_steps[0].step_parent = new_parent
+                new_steps[0].input_events = -1
+                new_steps[0].save()
+            updated_request[child_request.reqid] = (new_slices, request_sample_slice)
+    for request_id, (slices, sample_slice) in updated_request.items():
+        propagate_extension(sample_slice, slices, TRequest.objects.get(reqid=request_id))
+
+
+
 @csrf_protect
 def extend_request(request, reqid):
     if request.method == 'POST':
@@ -2315,25 +2355,26 @@ def extend_request(request, reqid):
         try:
             data = json.loads(request.body)
             excel_link = data['spreadsheet']
-            is_new = data['is_new']
+            to_propagate = data['propagate']
             production_request = TRequest.objects.get(reqid=reqid)
             _logger.debug(form_request_log(reqid,request,'Extend request with: %s' % str(excel_link)))
-            version = '2.0'
-            if is_new:
-                version = '3.0'
-            hide_slices = []
-            if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
-                if production_request.cstatus == 'waiting':
-                    hide_slices = [slice for slice in InputRequestList.objects.filter(request=production_request) if not slice.is_hide]
+            version = '3.0'
+            old_slices = [slice for slice in InputRequestList.objects.filter(request=production_request) if not slice.is_hide]
             spreadsheet_dict = fill_steptemplate_from_gsprd(excel_link,version)
             if make_slices_from_dict(production_request, spreadsheet_dict):
-                for slice in hide_slices:
-                    hide_slice(slice)
+                if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
+                    if production_request.cstatus == 'waiting':
+                        for slice in old_slices:
+                            hide_slice(slice)
                 request_status = RequestStatus(request=production_request, comment='Request re-initialised by WebUI', owner=request.user.username,
                                                status=production_request.cstatus)
                 request_status.save_with_current_time()
                 production_request.set_info_field('data_source',excel_link)
                 production_request.save()
+                if to_propagate:
+                    new_slices = [slice for slice in InputRequestList.objects.filter(request=production_request) if not slice.is_hide and slice not in old_slices]
+                    sample_slice = old_slices[0]
+                    propagate_extension(sample_slice, new_slices, production_request)
                 results = {'success':True, 'message': ''}
         except Exception as e:
             results = {'success':False, 'message': str(e)}

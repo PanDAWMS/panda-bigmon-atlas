@@ -2999,7 +2999,7 @@ function saveChangesWithInput(isApprove, doSplit, sendData, doReload, startFindi
         function checkExtendRequest(event, that){
             event.preventDefault();
             $('#loadExtend').spin('small');
-            var sendData = {'spreadsheet':$('#extendSpreadsheet').val(),'is_new':true};
+            var sendData = {'spreadsheet':$('#extendSpreadsheet').val(),'propagate':$('#propagateExtend').is(':checked')};
 
             if ($(that).html() == 'Check'){
                   $.ajax({
@@ -4992,6 +4992,9 @@ ProjectModeForm.prototype.createForm = function(inputString){
             <div class="large-1 column"><span id="sliceExtend"></span></div>
             <div class="large-1 column"><span id="stepsExtend"></span></div>
             <div class="large-2 column">
+                <label>Propagate to child requests
+                                    <input type="checkbox" id="propagateExtend"  />
+                </label>
                 <a href='#' id="checkExtend" class="button btn_is_authorized postfix" onclick="checkExtendRequest(event,this);">Check</a>
             </div>
             <div class="large-1 column"><span id="loadExtend"></span></div>
