@@ -50,6 +50,11 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
     dsid_update_values = {}
     content = None
     grid_packs = []
+    physic_short = None
+    for dsid_file in listdir(base_dsid_path):
+        if dsid_file.startswith('mc') and dsid_file.endswith('py') and (len(dsid_file.split('.')) == 3):
+            physic_short = dsid_file
+            break
     for dsid_file in listdir(base_dsid_path):
         if file_is_gridpack(dsid_file):
             grid_packs.append(dsid_file.split('.')[0].split('_')[-1])
@@ -57,7 +62,7 @@ def sync_cvmfs_dsid(dsid: str, base_path=CVMFS_BASEPATH):
         if dsid_file == YAML_CONFIG_FILENAME:
             yaml_jo_content = load_job_parameters_from_yaml(f'{base_dsid_path}/{dsid_file}')
             if yaml_jo_content and len(yaml_jo_content) > 0:
-                dsid_update_values = {'physic_short': dsid_file,
+                dsid_update_values = {'physic_short': physic_short,
                                       'events_per_job': yaml_jo_content[0].get('n_events_per_job', 5000),
                                       'files_per_job': yaml_jo_content[0].get('input_files_per_job', 1)}
                 if len(yaml_jo_content) > 1:
