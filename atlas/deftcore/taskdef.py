@@ -6093,12 +6093,12 @@ class TaskDefinition(object):
         return True
 
     def is_madgraph(self, input_data_name: str) -> bool:
-        if 'amcpy' in input_data_name.lower() or input_data_name.lower().startswith('mg'):
+        if 'amcpy' in input_data_name.lower() or 'mc.mg' in input_data_name.lower():
             return True
         return False
 
     def is_sherpa(self, input_data_name: str) -> bool:
-        if input_data_name.lower().startswith('sh_') or input_data_name.lower().startswith('sherpa'):
+        if 'mc.sh_' in input_data_name.lower() or 'mc.sherpa' in input_data_name.lower():
             return True
         return False
 
