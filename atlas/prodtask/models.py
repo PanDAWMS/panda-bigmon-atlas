@@ -2792,6 +2792,7 @@ class JediTasks(models.Model):
     gshare = models.CharField(max_length=72, db_column='GSHARE', blank=True)
     diskio = models.IntegerField(null=True, db_column='diskio', blank=True)
     diskiounit = models.CharField(max_length=96, db_column='diskiounit', blank=True)
+    amiflag = models.IntegerField(null=True, db_column='AMIFLAG', blank=True)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError('Read only')

@@ -316,23 +316,28 @@ def poll_jedi_async_result(self, request_id: str, poll_interval: int = 5, max_po
 
                 # Check if complete
                 if isinstance(result, dict):
-                    data = result.get('data', {})
-                    overall_status = data.get('overall_status')
-                    results = data.get('results', [])
-                    message = data.get('message', '')
+                    if 'async_meta' in result:
+                        message = result.get('message', '')
+                        results = result.get('data', [])
+                        overall_status = result['async_meta']['status']
+                    else:
+                        data = result.get('data', {})
+                        overall_status = data.get('overall_status')
+                        results = data.get('results', [])
+                        message = data.get('message', '')
 
-                    if overall_status == 'complete':
+                    if overall_status in ['complete', 'done']:
                         return_code = 0
                         return_message = f'JEDI async request completed successfully: {message}'
                         _log_by_action_type(return_code, return_message)
                         return {
                             'request_id': request_id,
-                            'overall_status': overall_status,
+                            'overall_status': 'done',
                             'results': results,
                             'message': message,
                             'poll_count': poll_count
                         }
-                    elif overall_status == 'pending':
+                    elif overall_status in ['pending','running']:
                         # Not done yet, check if we've exceeded max polls
                         if max_polls and poll_count >= max_polls:
                             error_msg = f"Max polls ({max_polls}) exceeded for request_id={request_id}"
@@ -340,12 +345,23 @@ def poll_jedi_async_result(self, request_id: str, poll_interval: int = 5, max_po
                             raise TimeoutError(error_msg)
 
                         # Sleep and retry
-                        _logger.debug(f"Request {request_id} still pending, retrying in {poll_interval}s...")
+                        _logger.debug(f"Request {request_id} still {overall_status}, retrying in {poll_interval}s...")
                         self.progress_message_update(
                             min(poll_count * 10, 90),
                             additional_info={'request_id': request_id, 'status': 'pending'}
                         )
                         time.sleep(poll_interval)
+                    elif overall_status == 'failed':
+                        return_code = 1
+                        return_message = f'JEDI async failed: {message}'
+                        _log_by_action_type(return_code, return_message)
+                        return {
+                            'request_id': request_id,
+                            'overall_status': 'failed',
+                            'results': results,
+                            'message': message,
+                            'poll_count': poll_count
+                        }
                     else:
                         error_msg = f"Unknown overall_status '{overall_status}' for request_id={request_id}"
                         _logger.error(error_msg)

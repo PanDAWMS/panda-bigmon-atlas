@@ -25,8 +25,8 @@ def jedi_async_task(poll_interval: int = 5, action_type: str = 'GENERAL', max_po
                      Locking is enabled automatically for TASK and DATASET, and disabled for GENERAL.
 
     Returns:
-        The decorated function which returns the Celery task ID on success,
-        or raises an exception on failure.
+        The decorated function which returns a JEDI-style result payload with
+        the Celery poller task id attached as ``async_action_id``.
         
     Example:
         @jedi_async_task(poll_interval=10, action_type='TASK')
@@ -56,7 +56,7 @@ def jedi_async_task(poll_interval: int = 5, action_type: str = 'GENERAL', max_po
                 if not DistributedLock.acquire_lock(lock_name, lock_timeout=86400):
                     raise RuntimeError(f"A single async action for {lockkey} is allowed at a time")
 
-            result = {'success':False, 'message':''}
+            result = {'success': False, 'message': ''}
             try:
                 # Call the original function to get the request_id
                 result = func(self, *args, **kwargs)
@@ -69,26 +69,47 @@ def jedi_async_task(poll_interval: int = 5, action_type: str = 'GENERAL', max_po
 
             # Extract request_id from result
             if isinstance(result, dict):
-                request_id = result.get('data', {}).get('request_id')
+                request_id = result.get('data', {}).get('async_id')
             else:
                 request_id = None
-                
+
             if not request_id:
                 if lock_name:
                     from atlas.prodtask.models import DistributedLock
                     DistributedLock.release_lock(lock_name)
-                raise ValueError(f"Expected dict with data.request_id from {func.__name__}, got {result}")
+                raise ValueError(f"Expected dict with data.async_id from {func.__name__}, got {result}")
             
             # Submit async polling task to Celery
             # Note: We don't pass the jedi_client instance directly since Celery needs to serialize args
-            task = poll_jedi_async_result.apply_async(
-                args=(request_id, poll_interval, max_polls, func.__name__, resolved_action_type) + args,
-            )
-            
-            _logger.info(f"Submitted async JEDI task {func.__name__} with request_id={request_id}, "
-                        f"celery_task_id={task.id}, lock_name={lock_name}, action_type={resolved_action_type}")
+            celery_task = poll_jedi_async_result.delay(
+                request_id, poll_interval, max_polls, func.__name__, resolved_action_type, *args)
 
-            return result
-        
+            _logger.info(f"Submitted async JEDI task {func.__name__} with request_id={request_id}, "
+                        f"celery_task_id={celery_task.id}, lock_name={lock_name}, action_type={resolved_action_type}")
+
+            response = dict(result)
+            response['success'] = bool(result.get('success', True))
+            response['message'] = result.get(
+                'message',
+                f'Async JEDI task {func.__name__} submitted successfully'
+            )
+            response['async_action_id'] = celery_task.id
+            return response
+
         return wrapper
     return decorator
+
+def get_jedi_celery_task_result(celery_task_id: str) -> Any:
+    """
+    Helper function to retrieve the result of a Celery task by its ID.
+
+    Args:
+        celery_task_id: The ID of the Celery task to retrieve the result for.
+    Returns:
+        Current status and result of the Celery task. If the task is still pending, it returns None.
+    """
+    from celery.result import AsyncResult
+    async_result = AsyncResult(celery_task_id)
+    if async_result.ready():
+        return async_result.result
+    return None

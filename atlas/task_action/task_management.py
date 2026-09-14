@@ -288,9 +288,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     def changeTaskPriority(self, jediTaskID, newPriority):
         return self.jedi_client.changeTaskPriority(jediTaskID, newPriority)
 
-    @_jedi_new_api_decorator
-    def submit_sleep_echo_request(self, jediTaskID, seconds=20):
-        return self.jedi_client.submit_sleep_echo_request(str(jediTaskID), "prodsys test", seconds)
+    def submit_sleep_echo_request(self, jediTaskID, service_name, message: str="prodsys test", seconds=20):
+        return self.jedi_client.submit_sleep_echo_request(str(jediTaskID), service_name, message, seconds)
 
     def get_result(self, request_id: str) -> Dict[str, Any]:
         return self.jedi_client.get_result(request_id)
@@ -485,7 +484,13 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         try:
             if PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).exists():
                 dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status__in=[PandaDatasetStaging.STATUS.STAGING, PandaDatasetStaging.STATUS.QUEUED]).last()
-                result = self.jedi_client.change_staging_source(dataset_stage.dataset, None, cancel, change_src_expr, source_rse)
+                result = self.jedi_client.submit_change_staging_source(
+                    dataset_stage.dataset,
+                    None,
+                    cancel,
+                    change_src_expr,
+                    source_rse
+                )
                 if dataset_stage.status == PandaDatasetStaging.STATUS.STAGING:
                     ddm = DDM()
                     rule = ddm.get_rule(dataset_stage.rse)
@@ -516,7 +521,7 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
         try:
             if PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).last()
-                return self.jedi_client.change_staging_destination(dataset_stage.dataset, None)
+                return self.jedi_client.submit_change_staging_destination(dataset_stage.dataset, None)
             elif DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)
                 if dataset_stage.staged_files == 0:
@@ -904,6 +909,7 @@ def read_jedi_log(self, log_url: str):
 @app.task(bind=True, base=ProdSysTask)
 @ProdSysTask.set_task_name('async action')
 def async_action(self, action_type: ActionType, action: str, username: str, comment: str, items: List[str], params: Optional[list]) -> List[Dict]:
+    poll_interval_seconds = 5
     executor = TaskActionExecutor(username, comment)
 
     if action_type == ActionType.RULE_ACTION:
@@ -915,12 +921,41 @@ def async_action(self, action_type: ActionType, action: str, username: str, comm
     else:
         raise ValueError(f'Unknown action type: {action_type}')
     result = []
+    async_tasks = []
+    done_tasks = 0
     for index, item in enumerate(items):
         return_code, return_info, async_id = submit_all_action_types(action_function, executor, item, action, params)
-        result.append({action_param_name: item, 'return_code': return_code, 'return_info': return_info})
         if async_id:
-            result[-1]['async_id'] = async_id
-        self.progress_message_update(index,len(items))
+            async_tasks.append({'async_id': async_id, action_param_name: item})
+        else:
+            result.append({action_param_name: item, 'return_code': return_code, 'return_info': return_info})
+            done_tasks += 1
+            self.progress_message_update(done_tasks,len(items))
+    while len(async_tasks) > 0:
+        pending_async_tasks = []
+        for async_task_data in async_tasks:
+            celery_task = AsyncResult(async_task_data['async_id'])
+            if celery_task.status == 'SUCCESS':
+                celery_result = celery_task.result or {}
+                result.append({
+                    action_param_name: async_task_data[action_param_name],
+                    'return_code': celery_result.get('overall_status') == 'done',
+                    'return_info': celery_result.get('message', '')
+                })
+                done_tasks += 1
+            elif celery_task.status == 'FAILURE':
+                result.append({
+                    action_param_name: async_task_data[action_param_name],
+                    'return_code': False,
+                    'return_info': str(celery_task.result)
+                })
+                done_tasks += 1
+            else:
+                pending_async_tasks.append(async_task_data)
+        async_tasks = pending_async_tasks
+        self.progress_message_update(done_tasks, len(items))
+        if async_tasks:
+            time.sleep(poll_interval_seconds)
     return result
 
 
@@ -958,7 +993,7 @@ def rules_action(request: Request):
                 logger.error(f"dataset {dataset} is lokced")
                 result.append({'dataset': dataset, 'return_code': False, 'return_info': f"dataset {dataset} is locked for actions"})
         async_id = None
-        if action in ASYNC_ACTIONS and len(dataset_to_process) > ASYNC_ACTIONS[action]:
+        if action in ASYNC_ACTIONS:
             async_task = async_action.delay(ActionType.RULE_ACTION, action, username, comment, dataset_to_process, params)
             async_id = async_task.id
             return Response({'action_sent':True, 'async_id': async_id, 'result': result, 'action_verification':None})

@@ -125,7 +125,7 @@ class JEDITaskActionInterface(ABC):
         pass
 
     @abstractmethod
-    def submit_sleep_echo_request(self, service_name: str,
+    def submit_sleep_echo_request(self, jediTaskID, service_name: str,
                                         message: str,
                                         seconds: int,
                                     ) -> Dict[str, Any]:
@@ -159,6 +159,16 @@ class JEDIRuleActionInterface(ABC):
     @abstractmethod
     def force_to_staging(self, dataset: str, request_id: int|None):
         pass
+
+    @abstractmethod
+    def submit_change_staging_destination(self, dataset: str, request_id: int|None,):
+        pass
+
+
+    @abstractmethod
+    def submit_change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
+        pass
+
 
 
 
@@ -224,6 +234,16 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
     def change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
         data = {'request_id': request_id, 'dataset': dataset, 'cancel_fts': cancel_fts, 'change_src_expr': change_src_expr, 'source_rse': source_rse}
         return self._post_new_api_command('api/v1/data_carousel/change_staging_source', data)
+
+    @jedi_async_task(poll_interval=5, action_type='DATASET', max_polls=120)
+    def submit_change_staging_destination(self, dataset: str, request_id: int|None):
+        data = {'request_id': request_id, 'dataset': dataset}
+        return self._post_new_api_command('api/v1/data_carousel/submit_change_staging_destination', data)
+
+    @jedi_async_task(poll_interval=5, action_type='DATASET', max_polls=120)
+    def submit_change_staging_source(self, dataset: str, request_id: int|None, cancel_fts: bool = False,  change_src_expr: bool = False, source_rse: Optional[str] = None):
+        data = {'request_id': request_id, 'dataset': dataset, 'cancel_fts': cancel_fts, 'change_src_expr': change_src_expr, 'source_rse': source_rse}
+        return self._post_new_api_command('api/v1/data_carousel/submit_change_staging_source', data)
 
     def force_to_staging(self, dataset: str, request_id: int|None):
         data = {'request_id': request_id, 'dataset': dataset}
@@ -515,7 +535,7 @@ class JEDIClient(JEDITaskActionInterface, JEDIJobsActionInterface, JEDIRuleActio
         return self._get_new_api_command(f'api/v1/async_process/get_result?request_id={request_id}')
 
     @jedi_async_task(poll_interval=5,action_type='TASK', max_polls=120)
-    def submit_sleep_echo_request(self, service_name: str, message: str, seconds: int) -> Dict[str, Any]:
+    def submit_sleep_echo_request(self, jediTaskID, service_name: str, message: str, seconds: int) -> Dict[str, Any]:
         """Submit a sleep+echo request to be processed asynchronously on the target service.
         
         Args:
