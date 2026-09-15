@@ -12,6 +12,7 @@ from django.conf import settings
 from atlas.prodtask.models import ProductionTask, TTask
 from atlas.prodtask.task_views import create_user_task
 from atlas.settings import OIDC_LOGIN_URL
+from atlas.settings.local import BIGPANDA_TOKEN
 from atlas.task_action.task_management import TaskManagementAuthorisation, TaskActionExecutor, do_jedi_action
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -139,7 +140,6 @@ def get_jobs(request):
         url = json.loads(request.body)[0]
         _logger.info("Get jobs from bigpanda for: %s" % url)
         url=re.sub('&display_limit.*(\d+)','',url)
-        url = url.replace('https','http')
         url = url.replace('jobsss', 'jobs')
         url = url.strip()
         if 'json' not in url:
@@ -148,7 +148,11 @@ def get_jobs(request):
             else:
                 url += '&json'
 
-        headers = {'content-type': 'application/json', 'accept': 'application/json'}
+        headers = {
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'Authorization': f'Token {BIGPANDA_TOKEN}',
+        }
         resp = requests.get(url, headers=headers)
         data = resp.json()['jobs']
         result = json.dumps(data)
@@ -160,28 +164,34 @@ def get_jobs(request):
 
 def get_jobs_from_url(url):
     url=re.sub('&display_limit.*(\d+)','',url)
-    url = url.replace('https','http')
     if 'json' not in url:
         if url[-1]=='&':
             url += '&'
         else:
             url += '&json'
 
-    headers = {'content-type': 'application/json', 'accept': 'application/json'};
+    headers = {
+        'content-type': 'application/json',
+        'accept': 'application/json',
+        'Authorization': f'Token {BIGPANDA_TOKEN}',
+    }
     resp = requests.get(url, headers=headers)
     data = resp.json()['jobs']
     return data
 
 def get_job_from_id(id):
     url = "https://bigpanda.cern.ch/job?pandaid=%s"%(str(id))
-    url = url.replace('https','http')
     if 'json' not in url:
         if url[-1]=='&':
             url += '&'
         else:
             url += '&json'
 
-    headers = {'content-type': 'application/json', 'accept': 'application/json'}
+    headers = {
+        'content-type': 'application/json',
+        'accept': 'application/json',
+        'Authorization': f'Token {BIGPANDA_TOKEN}',
+    }
     resp = requests.get(url, headers=headers)
     data = resp.json()
     return data

@@ -10,7 +10,7 @@ from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, I
 # import logging
 # import os
 from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, get_global_shares
-
+from atlas.settings.local import BIGPANDA_TOKEN
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -194,13 +194,16 @@ def get_task_array(request):
 
 def  get_tasks_by_url(url):
     url=re.sub('&display_limit=(\d+)','',url)
-    url = url.replace('https','http')
     if 'json' not in url:
         if url[-1]=='&':
             url=url+'&'
         else:
             url=url+'&json'
-    headers = {'content-type': 'application/json', 'accept': 'application/json'};
+    headers = {
+        'content-type': 'application/json',
+        'accept': 'application/json',
+        'Authorization': f'Token {BIGPANDA_TOKEN}',
+    }
     resp = requests.get(url, headers=headers)
     data = resp.json()
     return [x['jeditaskid'] for x in data]

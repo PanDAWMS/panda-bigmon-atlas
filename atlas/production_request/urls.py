@@ -37,6 +37,11 @@ urlpatterns = [
             name='pmg_request_verification'),
     re_path(r'^pmg_approve/$', pmg_approve,
             name='pmg_approve'),
+    re_path(r'^mc_campaign_submission_structure/$', mc_campaign_submission_structure,
+            name='mc_campaign_submission_structure'),
+    re_path(r'^mc_campaigns_submission_processing/$', mc_campaigns_submission_processing,
+            name='mc_campaigns_submission_processing'),
+
     re_path(r'^ep_request_stats/$', ep_request_stats,
             name='ep_request_stats'),
     re_path(r'^submit_ep_request/$', submit_ep_request,

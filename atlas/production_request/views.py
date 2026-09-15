@@ -10,7 +10,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import timedelta
 from functools import reduce
 from pprint import pprint
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+from atlas.settings.local import BIGPANDA_TOKEN
 
 import math
 import requests
@@ -43,6 +44,7 @@ from atlas.prodtask.models import ActionStaging, ActionDefault, DatasetStaging, 
 
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -317,13 +319,16 @@ def production_tasks_by_bigpanda_url(request: Request) -> Response:
         if not bigpanda_url_parameters.startswith('http'):
             bigpanda_url = f'https://bigpanda.cern.ch/tasks/?{bigpanda_url_parameters}'
         url = re.sub('&display_limit=(\d+)', '', bigpanda_url)
-        url = url.replace('https', 'http')
         if 'json' not in url:
             if url[-1] == '&':
                 url = url + '&'
             else:
                 url = url + '&json'
-        resp = requests.get(url, headers= {'content-type': 'application/json', 'accept': 'application/json'})
+        resp = requests.get(url,     headers = {
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'Authorization': f'Token {BIGPANDA_TOKEN}',
+        })
         data = resp.json()
         task_ids =  [x['jeditaskid'] for x in data]
         for task_id in task_ids:
@@ -449,6 +454,8 @@ def production_task_extensions(request):
                 dataset_pat = output_datasets[0].name.split("tid")[0]
                 datasets_extension = ProductionDataset.objects.filter(name__icontains=dataset_pat)
                 same_tasks = [int(x.name.split("tid")[1].split("_")[0]) for x in datasets_extension]
+                same_tasks.sort()
+
                 for same_task in same_tasks:
                     same_tasks_with_status.append(
                         {'id': same_task, 'status': ProductionTask.objects.get(id=same_task).status})
@@ -1968,6 +1975,106 @@ def check_requests_metadata(production_requests: List[TRequest]):
                                            message=f'Request {production_request.reqid} has campaign {production_request.campaign} but project {production_request.project.project}.'))
     return result_problems
 
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def mc_campaign_submission_structure(request):
+    try:
+        mc_campaigns = SystemParametersHandler.get_mc_campaigns_bases()
+        campaign_provenance = {}
+        campaign_params = {}
+        for campaign in mc_campaigns:
+            campaign_params[f"{campaign.campaign} {campaign.subcampaign} {campaign.step}"] = campaign
+            if campaign.step == 'recon':
+                if not campaign.parent_steps:
+                    campaign.parent_steps = [(campaign.campaign, campaign.subcampaign, 'evgen'),(campaign.campaign, campaign.subcampaign, 'simul')]
+                campaign_provenance[f"{campaign.campaign} {campaign.subcampaign}"] = {'evgen':' '.join(campaign.parent_steps[0]), 'simul':' '.join(campaign.parent_steps[1])}
+        print(campaign_provenance)
+        return Response({'campaign_provenance': campaign_provenance, 'campaign_params': {k: asdict(v) for k,v in campaign_params.items()}})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@dataclass()
+class MCCampaignSubmissionSpreadsheetConfig:
+    campaign: str
+    sub_campaigns: List[str] = field(default_factory=list)
+    sub_campaign_event_ratios: List[float] = field(default_factory=list)
+    starting_step: str = ''
+    last_step: str = ''
+    energy: str = ''
+    simulation_type: str = ''
+    spreadsheet_url: str = ''
+    spreadsheet_file_name: str = ''
+    use_first_spreadsheet: bool = False
+    ratio: Optional[float] = None
+
+
+@dataclass()
+class MCCampaignsSubmissionRequest:
+    description: str = ''
+    ref_link: str = ''
+    phys_group: str = ''
+    long_description: str = ''
+    cc: str = ''
+    spreadsheet_configs: List[MCCampaignSubmissionSpreadsheetConfig] = field(default_factory=list)
+
+
+def _as_list(value: Any) -> List[Any]:
+    if isinstance(value, list):
+        return value
+    if value in [None, '']:
+        return []
+    return [value]
+
+
+def _build_mc_campaigns_submission_request(submission_payload: Dict[str, Any]) -> MCCampaignsSubmissionRequest:
+    spreadsheet_configs = [
+        MCCampaignSubmissionSpreadsheetConfig(
+            campaign=str(config.get('campaign', '')),
+            sub_campaigns=[str(item) for item in _as_list(config.get('sub_campaigns', []))],
+            sub_campaign_event_ratios=[float(item) for item in _as_list(config.get('sub_campaign_event_ratios', []))],
+            starting_step=str(config.get('starting_step', '')),
+            last_step=str(config.get('last_step', '')),
+            energy=str(config.get('energy', '')),
+            simulation_type=str(config.get('simulation_type', '')),
+            spreadsheet_url=str(config.get('spreadsheet_url', '')),
+            spreadsheet_file_name=str(config.get('spreadsheet_file_name', '')),
+            use_first_spreadsheet=bool(config.get('use_first_spreadsheet', False)),
+            ratio=float(config['ratio']) if config.get('ratio') not in [None, ''] else None,
+        )
+        for config in submission_payload.get('spreadsheet_configs', [])
+    ]
+    return MCCampaignsSubmissionRequest(
+        description=str(submission_payload.get('description', '')),
+        ref_link=str(submission_payload.get('ref_link', '')),
+        phys_group=str(submission_payload.get('phys_group', '')),
+        long_description=str(submission_payload.get('long_description', '')),
+        cc=str(submission_payload.get('cc', '')),
+        spreadsheet_configs=spreadsheet_configs,
+    )
+
+
+def parse_spreadsheet(spreadsheet_url, spreadsheet_file_name):
+    pass
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+@parser_classes((MultiPartParser, FormParser, JSONParser))
+def mc_campaigns_submission_processing(request):
+    try:
+        submission_payload = request.data
+        raw_request_payload = request.data.get('request')
+        if raw_request_payload:
+            submission_payload = json.loads(raw_request_payload)
+        submission_request = _build_mc_campaigns_submission_request(submission_payload)
+        for campaign in submission_request.spreadsheet_configs:
+            parsed_spreadsheet = parse_spreadsheet(campaign.spreadsheet_url, campaign.spreadsheet_file_name)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
