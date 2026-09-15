@@ -563,7 +563,7 @@ def fix_update_time(container):
     gp_container.update_time = ddm.dataset_metadata(container)['updated_at']
     gp_container.save()
 
-def clean_superceeded(do_es_check=True, full=False, format_base = None):
+def clean_superceeded(do_es_check=True, full=True, format_base = None):
     # for base_format in FORMAT_BASES:
     ddm = DDM()
     if not format_base:
@@ -1127,7 +1127,7 @@ def run_deletion():
             deletion_request.save()
             return
         else:
-            runDeletion.apply_async(countdown=3600)
+            runDeletion.delay()
 
 class GroupProductionDeletionRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -1215,7 +1215,38 @@ def runDeletion(lifetime=3600):
 def gpdeletedcontainers(request):
     all_containers = list(GroupProductionDeletionProcessing.objects.filter(status='Deleted').order_by("-timestamp").values('container','timestamp','deleted_datasets','bytes'))
     return Response(all_containers)
+def find_secondDAODPHYS_to_save(daod_lifetime_filepath: str, output_daods_file: str):
+    """
+    Find all DAODs which are not in the list of DAODs to save
+    :param daod_lifetime_filepath: path to file with DAODs to save
+    :param output_daods_file: path to file with all DAODs
+    :return: list of DAODs to delete
+    """
+    all_daod_datasets_to_delete = []
+    dataset_size = {}
+    with  gzip.open(daod_lifetime_filepath, 'rt') as f:
+        for line in f:
+            dataset_name = line.strip().split(' ')[0]
+            if '.DAOD_PHYS' in dataset_name:
+                all_daod_datasets_to_delete.append(line.strip().split(' ')[0])
+                if  line.strip().split(' ')[2] != 'None':
+                    dataset_size[line.strip().split(' ')[0]] = int(line.strip().split(' ')[2])
+    all_containers = GroupProductionDeletion.objects.filter(version=1,output_format__in=["DAOD_PHYS","DAOD_PHYSLITE"]).values('container',
+                                                                                        'id')
+    all_containers_dict = {x['container']: x for x in all_containers}
+    containers_by_id = {x['id']: x for x in all_containers}
+    result = []
+    size = 0
+    for dataset in all_daod_datasets_to_delete:
+        container_name = get_container_name(dataset)
+        if container_name in all_containers_dict:
+            if dataset in dataset_size:
+                result.append(dataset)
 
+    with open(output_daods_file, 'w') as f:
+        for dataset in result:
+            f.write('%s\n'%(dataset))
+    return size
 
 def find_daod_to_save(daod_lifetime_filepath: str, output_daods_file: str, output_daods_file_ext: str):
     """
