@@ -29,16 +29,15 @@
         <th class="gp-matrix-element" mat-header-cell *matHeaderCellDef [ngClass] = "{'highlight' :hoverTable &&  (amiTag == hoveredAMITag)}" > {{amiTag}} </th>
         <td class="gp-matrix-element" mat-cell *matCellDef="let element" (mouseover)="highlightRowAndColumn(amiTag, element['firstColumn'])"
           [ngClass] = "{'highlight' :hoverTable && ((amiTag == hoveredAMITag) || (element['firstColumn'] == hoveredFormat)) }">
-          @if (element[amiTag][showNumbers]>0) {
+          @if (element[amiTag][2] > 0) {
             <a (click)="showTable(dataType,'DAOD_' + element['firstColumn'],amiTag)"
               [fragment]="amiTag"  style="color: red; cursor:pointer;">
               @if (showNumbers==0) {
-                <div >{{element[amiTag][showNumbers]}}</div>
+                <div>{{element[amiTag][showNumbers]}} ({{element[amiTag][showNumbers + 2]}})</div>
                 }@if (showNumbers==1) {
-                <div >{{element[amiTag][showNumbers]|datasetSize}}</div>
+                <div>{{element[amiTag][showNumbers]|datasetSize}} ({{element[amiTag][showNumbers + 2]|datasetSize}})</div>
               }</a>
-            }
-            @if (element[amiTag][showNumbers]==0) {
+            } @else {
               <span>0</span>
             }</td>
           </ng-container>

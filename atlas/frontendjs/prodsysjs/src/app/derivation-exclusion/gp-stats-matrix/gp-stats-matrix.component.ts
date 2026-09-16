@@ -25,7 +25,8 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
 
   gpStats: GroupProductionStats[];
   availableAMITags: string[] = [];
-  statsByOutput: Map<string, Map<string, [number, number]>>;
+  // [containers to delete, size to delete, total containers, total size]
+  statsByOutput: Map<string, Map<string, [number, number, number, number]>>;
   statsByOutputBases: StatsByOutputBase[] = [];
   formatsOnPage: string[] = [];
   dataType: string;
@@ -34,6 +35,7 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
   hoveredAMITag = '';
   hoveredFormat = '';
   chosenFormat: string | null = '';
+  outputTypeFromUrl: string | null = null;
   showNumbers = 0;
   hoverTable = false;
   selectedTag = signal<SelectedFormatByTag|undefined>(undefined);
@@ -49,14 +51,13 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     this.route.queryParamMap.subscribe((paramMap: ParamMap) => {
     const URLdataType = paramMap.get('type');
     const amiTagFromUrl = paramMap.get('amiTag');
-    const outputTypeFromUrl = paramMap.get('outputType');
+    this.outputTypeFromUrl = paramMap.get('outputType');
     this.chosenFormat = paramMap.get('base');
     if (paramMap.get('show') === '1' ){
       this.showNumbers = 1;
     } else {
       this.showNumbers = 0;
     }
-    console.log(this.chosenFormat);
     if (URLdataType === 'data'){
       this.fetchData(true);
 
@@ -66,11 +67,11 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
       this.dataType = 'mc';
     }
 
-    if (amiTagFromUrl && outputTypeFromUrl) {
+    if (amiTagFromUrl && this.outputTypeFromUrl) {
       this.selectedTag.set({
         dataType: this.dataType,
         amiTag: amiTagFromUrl,
-        outputType: outputTypeFromUrl,
+        outputType: this.outputTypeFromUrl,
       });
       setTimeout(() => this.viewportScroller.scrollToAnchor('gp-exclusion-fast'));
 
@@ -98,8 +99,12 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     this.statMatrix = [];
     for (const currentStat of this.gpStats){
       const baseFormat = this.getBaseFormat(currentStat.output_format);
-      if ((currentStat.real_data === isReal) && ((this.chosenFormat === null) || (this.chosenFormat === baseFormat))){
-        if ((currentStat.to_delete_containers > 0) && (this.availableAMITags.indexOf(currentStat.ami_tag) === -1)) {
+      if ((currentStat.real_data === isReal)
+        && (this.outputTypeFromUrl !== null
+          ? this.outputTypeFromUrl === currentStat.output_format
+          : this.chosenFormat === null || this.chosenFormat === baseFormat)) {
+        if ((currentStat.containers > 0 || currentStat.to_delete_containers > 0)
+          && (allAvalaibleAMITags.indexOf(currentStat.ami_tag) === -1)) {
           allAvalaibleAMITags.push(currentStat.ami_tag);
         }
       }
@@ -107,19 +112,22 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
     if (this.statsByOutputBases !== undefined){
       this.statsByOutputBases = [];
     }
-    this.statsByOutput = new Map<string, Map<string, [number, number]>>();
+    this.statsByOutput = new Map<string, Map<string, [number, number, number, number]>>();
     this.formatsOnPage = [];
     for (const currentStat of this.gpStats) {
       const baseFormat =  this.getBaseFormat(currentStat.output_format);
-      if ((currentStat.real_data === isReal) && ((this.chosenFormat === null) || (this.chosenFormat === baseFormat))) {
+      if ((currentStat.real_data === isReal)
+        && (this.outputTypeFromUrl !== null
+          ? this.outputTypeFromUrl === currentStat.output_format
+          : this.chosenFormat === null || this.chosenFormat === baseFormat)) {
         const base = currentStat.output_format.split('_')[1];
         if (this.statsByOutput.get(base) === undefined) {
-          this.statsByOutput.set(base, new Map<string, [number, number]>());
+          this.statsByOutput.set(base, new Map<string, [number, number, number, number]>());
           for (const amiTag of allAvalaibleAMITags){
-            this.statsByOutput.get(base).set(amiTag, [0, 0]);
+            this.statsByOutput.get(base).set(amiTag, [0, 0, 0, 0]);
           }
         }
-        if (currentStat.to_delete_containers > 0) {
+        if (currentStat.containers > 0 || currentStat.to_delete_containers > 0) {
           if (this.formatsOnPage.indexOf(base) === -1){
             this.formatsOnPage.push(base);
           }
@@ -128,8 +136,14 @@ export class GpStatsMatrixComponent implements OnInit, AfterViewInit {
           }
           const currentValueDatasets = this.statsByOutput.get(base).get(currentStat.ami_tag)[0];
           const currentValueSizes = this.statsByOutput.get(base).get(currentStat.ami_tag)[1];
-          this.statsByOutput.get(base).set(currentStat.ami_tag, [ currentValueDatasets + Number(currentStat.to_delete_containers),
-          currentValueSizes + Number(currentStat.to_delete_size)]);
+          const currentTotalDatasets = this.statsByOutput.get(base).get(currentStat.ami_tag)[2];
+          const currentTotalSizes = this.statsByOutput.get(base).get(currentStat.ami_tag)[3];
+          this.statsByOutput.get(base).set(currentStat.ami_tag, [
+            currentValueDatasets + Number(currentStat.to_delete_containers),
+            currentValueSizes + Number(currentStat.to_delete_size),
+            currentTotalDatasets + Number(currentStat.containers),
+            currentTotalSizes + Number(currentStat.size),
+          ]);
         }
 
       }

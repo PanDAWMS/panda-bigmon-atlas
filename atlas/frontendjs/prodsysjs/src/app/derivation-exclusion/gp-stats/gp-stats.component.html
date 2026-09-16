@@ -65,7 +65,7 @@ Extension requests logs </a></h3>
       <table mat-table [dataSource]="statsByOutput.dataSource"  >
         <ng-container matColumnDef="output">
           <th mat-header-cell *matHeaderCellDef > Output </th>
-          <td mat-cell *matCellDef="let element"> <a [routerLink]="['/gp-deletion', dataType, element.outputFormat ]" >{{element.outputFormat}}</a> </td>
+          <td mat-cell *matCellDef="let element"> <a [routerLink]="['/gp-stats-matrix']" [queryParams]="{type: dataType, outputType: element.outputFormat}" >{{element.outputFormat}}</a> </td>
         </ng-container>
         <ng-container matColumnDef="containers">
           <th mat-header-cell *matHeaderCellDef > Containers </th>
@@ -88,4 +88,3 @@ Extension requests logs </a></h3>
       </table>
     </div>
   }
-

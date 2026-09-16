@@ -144,6 +144,6 @@ export class GpStatsComponent implements OnInit, AfterViewInit {
     this.router.navigate(['/gp-stats'], { queryParams: {type: this.dataType} });
   }
   onChartSelect(event): void{
-    this.router.navigate(['/gp-deletion', this.dataType,  event.series]);
+    this.router.navigate(['/gp-stats-matrix'],{queryParams: {type: this.dataType, outputType: event.series }});
   }
 }
