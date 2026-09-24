@@ -3252,7 +3252,10 @@ class TaskDefinition(object):
                 if re.match(r'^(--)?runNumber$', name, re.IGNORECASE):
                     run_number = input_data_dict['number']
                     try:
-                        param_dict = {'name': name, 'value': int(run_number)}
+                        if run_number and int(run_number) !=0:
+                            param_dict = {'name': name, 'value': int(run_number)}
+                        else:
+                            continue
                     except Exception as ex:
                         logger.exception("Exception occurred during obtaining runNumber: %s" % str(ex))
                         continue
@@ -5691,6 +5694,10 @@ class TaskDefinition(object):
             result_list.append(temporary_list[j])
         return result_list, another_chain_step
 
+    def check_scouts_needed(self, step: StepExecution, input_data: str, outputs: str ) -> tuple[bool, bool]:
+
+        return False, False
+
     @staticmethod
     def _get_request_status(request, summary_log, locked_time, current_status, keep_approved = False):
         if current_status in ['test']:
@@ -5904,6 +5911,7 @@ class TaskDefinition(object):
                                     if parent_step.request.cstatus.lower() == \
                                             self.protocol.REQUEST_STATUS[RequestStatusEnum.APPROVED].lower()\
                                             and parent_step.request != step.request:
+                                        # add scout skipped steps
                                         keep_approved = True
                                 elif parent_step.status.lower() == \
                                         self.protocol.STEP_STATUS[StepStatus.NOTCHECKED].lower():
