@@ -4686,6 +4686,8 @@ class TaskDefinition(object):
             io_intensity = None
             if (step.request.request_type.lower() == 'MC'.lower() and prod_step.lower() == 'merge'.lower()
                     and trf_name.lower() == 'EVNTMerge_tf.py'.lower()):
+                if not task_proto_dict.get('number_of_events_per_job'):
+                    raise TaskConfigurationException("Number of events per job is required for EVNT Merge")
                 evgen_original_tag = taskname.split('.')[-1].split('_')[0]
                 if DSIDHashtags.objects.filter(dsid=input_data_dict['number'],etag=evgen_original_tag).exists():
                     follow_hashtags.append(TaskDefConstants.AMI_EVGEN_PMG_HASHTAGS)
