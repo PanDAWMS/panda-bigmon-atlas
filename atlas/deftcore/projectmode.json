@@ -658,5 +658,10 @@
   "eventPicking": {
     "type": "bool",
     "description": ""
+  },
+  "respectBoundaries": {
+    "type": "bool",
+    "description": ""
   }
+
 }

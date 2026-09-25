@@ -3756,6 +3756,8 @@ class TaskDefinition(object):
                         input_param = self.protocol.render_param(TaskParamName.INPUT_DIRECT_IO, param_dict)
                     elif use_input_with_dataset:
                         input_param = self.protocol.render_param(TaskParamName.INPUT_WITH_DATASET, param_dict)
+                    elif project_mode.respectBoundaries:
+                        input_param = self.protocol.render_param(TaskParamName.INPUT_EXPAND, param_dict)
                     else:
                         input_param = self.protocol.render_param(TaskParamName.INPUT, param_dict)
                     job_parameters.append(input_param)

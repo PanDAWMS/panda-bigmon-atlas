@@ -68,6 +68,7 @@ class TaskParamName(Enum):
     SPECIAL_FIRST_EVENT = auto()
     DB_RELEASE = auto()
     INPUT = auto()
+    INPUT_EXPAND = auto()
     INPUT_DIRECT_IO = auto()
     INPUT_WITH_DATASET = auto()
     OUTPUT = auto()
@@ -176,6 +177,14 @@ class Protocol(object):
             "param_type": "input",
             "type": "template",
             "value": "{{name}}=${IN{{postfix}}/L}"
+        }""",
+        TaskParamName.INPUT_EXPAND: """{
+        "dataset": "{{dataset}}",
+        "offset": 0,
+        "param_type": "input",
+        "expand": "True",
+        "type": "template",
+        "value": "{{name}}=${IN{{postfix}}/L}"
         }""",
         TaskParamName.INPUT_WITH_DATASET: """{
         "dataset": "{{dataset}}",
