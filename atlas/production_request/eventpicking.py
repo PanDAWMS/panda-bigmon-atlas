@@ -479,7 +479,7 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
     pattern_request = SystemParametersHandler.get_ep_config().pattern_request
     existing_datasets = []
     if not production_request:
-        production_request = request_clone_slices(pattern_request, ep_request.requestor, ep_request.description,
+        production_request = request_clone_slices(pattern_request, ep_request.requestor, ep_request.description[:255],
                                                   ep_request.jira, [], ep_processing.project, False)
         ep_processing.production_request = TRequest.objects.get(reqid=production_request)
         production_request = ep_processing.production_request
