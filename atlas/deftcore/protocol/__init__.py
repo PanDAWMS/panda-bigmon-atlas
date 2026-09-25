@@ -182,7 +182,7 @@ class Protocol(object):
         "dataset": "{{dataset}}",
         "offset": 0,
         "param_type": "input",
-        "expand": "True",
+        "expand": true,
         "type": "template",
         "value": "{{name}}=${IN{{postfix}}/L}"
         }""",
