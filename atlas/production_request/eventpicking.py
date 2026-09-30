@@ -116,6 +116,7 @@ def ep_request_stats(request):
         return Response({'requests': ep_requests_serialised, 'productions': ep_productions_serialised}, status=status.HTTP_200_OK)
 
     except Exception as e:
+        _jsonLogger.error(f"Problem with getting EP requests {str(e)}")
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
