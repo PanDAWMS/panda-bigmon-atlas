@@ -47,17 +47,18 @@ def create_file_list(dataset: str, guids: list[str]) -> dict:
     return result
 
 def ep_processing_serialisation(ep_processing: EventPickingProcessing) -> dict:
+    stream = EventPickingUserRequest.objects.filter(id=ep_processing.ep_request_id).only('stream')[0].stream
     result = {
         'id': ep_processing.id,
         'status': ep_processing.status,
-        'stream': ep_processing.ep_request.stream,
+        'stream': stream,
         'project': ep_processing.project,
         'logs': ep_processing.logs,
         'stats': ep_processing.stats,
         'production_request_id': ep_processing.production_request.reqid if ep_processing.production_request else None,
     }
-    if ep_processing.stats == ep_processing.STATUS.RUNNING:
-        running_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid, status__in=ProductionTask.SYNC_STATUSES).count()
+    if ep_processing.status == ep_processing.STATUS.RUNNING:
+        running_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid, status__in=ProductionTask.SYNC_STATUS).count()
         finished_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid, status=ProductionTask.STATUS.FINISHED).count()
         done_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid,
                                                        status=ProductionTask.STATUS.DONE).count()
@@ -94,18 +95,11 @@ def ep_request_stats(request):
         jira = request.query_params.get('jira')
         if not jira:
             return Response("Missing 'jira' field in request data", status=status.HTTP_400_BAD_REQUEST)
-        ep_requests = list(EventPickingUserRequest.objects.filter(jira__endswith=jira))
-        unique_stats_by_stream = {}
-        for ep_request in ep_requests:
-            if ep_request.stream not in unique_stats_by_stream:
-                unique_stats_by_stream[ep_request.stream] = {'runs':set(), 'events':set()}
-            for run, event in ep_request.run_events:
-                unique_stats_by_stream[ep_request.stream]['runs'].add(run)
-                unique_stats_by_stream[ep_request.stream]['events'].add(f'{run}-{event}')
+        ep_requests = EventPickingUserRequest.objects.filter(jira__endswith=jira).iterator(1)
         ep_requests_serialised = []
+        ep_requests_ids = []
         for ep_request in ep_requests:
-            unique_files = len(set(unique_stats_by_stream[ep_request.stream]['runs']))
-            unique_events = len(set(unique_stats_by_stream[ep_request.stream]['events']))
+            unique_files, unique_events = ep_request.run_events_stats
             ep_requests_serialised.append({
                 'id': ep_request.id,
                 'jira': ep_request.jira,
@@ -114,10 +108,11 @@ def ep_request_stats(request):
                 'unique_files': unique_files,
                 'unique_events': unique_events
             })
+            ep_requests_ids.append(ep_request.id)
 
 
-        ep_productions = EventPickingProcessing.objects.filter(ep_request__in=ep_requests)
-        ep_productions_serialised = list(map(ep_processing_serialisation, ep_productions))
+        ep_productions = list(EventPickingProcessing.objects.filter(ep_request__in=ep_requests_ids))
+        ep_productions_serialised = [ep_processing_serialisation(x) for x in ep_productions]
         return Response({'requests': ep_requests_serialised, 'productions': ep_productions_serialised}, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -285,6 +280,7 @@ def create_or_update_ep_request(request):
         rucio_file_name = f'group.proj-evind.{ep_request.id:08d}.{stream}.{version}.txt'
         ep_request.input_file = {'version': version, 'content': list(set(new_content)), 'rucio':rucio_file_name, 'merge':merge}
         ep_request.save()
+        ep_request.set_run_events_stats()
         for  ep_processing in EventPickingProcessing.objects.filter(ep_request=ep_request):
             ep_processing.status = EventPickingProcessing.STATUS.GUID_SEARCH
             ep_processing.save()
