@@ -12,7 +12,7 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, DatabaseError
 from django.db import connections
-from django.db.models import CASCADE
+from django.db.models import CASCADE, QuerySet
 from django.utils import timezone
 from jinja2.nativetypes import NativeEnvironment
 from rest_framework import serializers
@@ -2288,6 +2288,76 @@ class GroupProductionAMITag(models.Model):
         db_table = '"T_GP_AMI_TAG"'
 
 
+
+class VerifiedTaskConfig(models.Model):
+
+    class Status(models.TextChoices):
+        VERIFIED = 'VERIFIED'
+        FAILED = 'FAILED'
+        ON_GOING = 'ON_GOING'
+
+    @staticmethod
+    def convert_scope_to_input_types(scope: str) -> str:
+        if scope.lower().startswith(('mc15','mc16','mc20')):
+            return 'mcRun2'
+        if scope.lower().startswith('mc23'):
+            return 'mcRun3'
+        if scope.lower().startswith('mc'):
+            return 'mcSpecial'
+        if scope.lower().startswith('data') and '_hi' in scope:
+            return 'dataHi'
+        if scope.lower().startswith('data'):
+            return 'data'
+        return 'special'
+
+    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='VERIFIED_TASK_CONFIG_ID', primary_key=True)
+    ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
+    output_formats = models.CharField(max_length=400, db_column='OUTPUT_FORMATS')
+    input_types = models.CharField(max_length=400, db_column='INPUT_TYPES')
+    status = models.CharField(max_length=10, db_column='STATUS', choices=Status.choices)
+    timestamp = models.DateTimeField(db_column='TIMESTAMP')
+
+    @property
+    def scout_tasks(self) -> QuerySet[ProductionTask]:
+        task_ids = list(
+            self.scout_links.values_list("task_id", flat=True)
+        )
+        return ProductionTask.objects.filter(id__in=task_ids)
+
+    def add_scout_task(self, task_id) -> bool:
+        scout_link, created = VerifiedTaskConfigScout.objects.get_or_create(
+            config=self,
+            task_id=task_id,
+        )
+        return created
+
+    def save(self, *args, **kwargs):
+        if not self.timestamp:
+            self.timestamp = timezone.now()
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'dev'
+        db_table = 'VERIFIED_TASK_CONFIG'
+
+class VerifiedTaskConfigScout(models.Model):
+    config = models.ForeignKey(
+        VerifiedTaskConfig,
+        on_delete=models.CASCADE,
+        related_name="scout_links",
+        db_column="VERIFIED_TASK_CONFIG_ID",
+    )
+    task_id = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        primary_key=True,
+        db_column="TASK_ID",
+    )
+
+    class Meta:
+        app_label = "dev"
+        db_table = "VERIFIED_TASK_CONFIG_SCOUT"
+
 class GroupProductionStats(models.Model):
 
     id = models.DecimalField(decimal_places=0, max_digits=12, db_column='GP_STATS_ID', primary_key=True)
@@ -2926,6 +2996,17 @@ class EventPickingUserRequest(models.Model):
     description = models.CharField(max_length=4000, db_column='DESCRIPTION', null=True)
     jira = models.CharField(max_length=200, db_column='JIRA', null=True)
     timestamp = models.DateTimeField(db_column='TIMESTAMP')
+
+    @property
+    def run_events_stats(self) -> tuple[int,int]:
+        if 'content_stats' in self.input_file:
+            return self.input_file['content_stats']
+        return 0,0
+
+    def set_run_events_stats(self):
+        if 'content' in self.input_file:
+            self.input_file['content_stats'] = (len(set([f'{line[0]}-{line[1]}' for line in self.input_file['content']])), len(self.input_file['content']))
+            self.save()
 
     @property
     def run_events(self) -> list[tuple[int,int]]:
