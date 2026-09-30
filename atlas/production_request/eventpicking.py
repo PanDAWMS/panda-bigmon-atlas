@@ -319,6 +319,11 @@ def get_raw_files_guids_by_run(run: int, project: str, stream: str, events: list
             cursor.execute(dataset_query, (run, project, stream, True, 'AOD'))
             results_dict = cursor.fetchall()
             if len(results_dict) == 0:
+                dataset_query = (f"SELECT dspid,dstypeid,events,name FROM AEI.CANONICAL_0 WHERE runno = ? AND "
+                                 f"project = ? AND streamName = ? AND has_raw = ? ")
+                cursor.execute(dataset_query, (run, project, stream, True))
+                results_dict = cursor.fetchall()
+            if len(results_dict) == 0:
                 return [], []
             results_dict.sort(key=lambda x: x[2] or 0, reverse=True)
             dataset_to_use = []
