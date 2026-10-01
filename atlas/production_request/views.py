@@ -1541,7 +1541,7 @@ def dataset_info(request):
                                                           'rules': dataset_rules, 'staging_dataset': dataset_staging}})
             elif dataset.did_type == 'CONTAINER':
                 dataset_rules = ddm.list_dataset_rules(dataset_name)
-                datasets_inside_container = ddm.list_datasets_in_container(dataset_name)
+                datasets_inside_container, inside_containers = ddm.list_datasets_and_containers_in_container(dataset_name)
                 datasets_metadata: List[DatasetInfo] = [DatasetInfo.from_dict(x) for x in ddm.datasets_metadata(datasets_inside_container)]
                 dataset.length = len(datasets_metadata)
                 dataset.files = sum([x.length or 0 for x in datasets_metadata], 0)
@@ -1549,7 +1549,7 @@ def dataset_info(request):
                 dataset.bytes = sum([x.bytes or 0 for x in datasets_metadata], 0)
                 return Response({'dataset_exists': True, 'dataset_knowledge':
                                                          {'did_type': 'CONTAINER','dataset': asdict(dataset), 'replicas': [],
-                                                          'rules': dataset_rules,
+                                                          'rules': dataset_rules, 'internal_containers': inside_containers,
                                                           'datasets_inside_container': [asdict(x) for x in datasets_metadata]}})
         else:
             return Response({'dataset_exists': False, 'recreated_dataset': recreated_dataset,

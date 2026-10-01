@@ -11,6 +11,7 @@
 <div class="task-grid mat-elevation-z8">
       <!--    Row-->
   <div>Name:</div><div style="grid-column: 2 / -1"><a href="{{containerInfo()?.dataset.name | rucioURL}}">{{containerInfo()?.dataset.name}}</a></div>
+  <div>Internal containers:</div><div style="grid-column: 2 / -1">{{internalContainers().length}}</div>
       <!--    Row-->
   <div>Datasets:</div><div>{{containerInfo()?.dataset.length}}</div>
   <div>Size:</div><div>{{containerInfo()?.dataset.bytes|datasetSize}}</div>
@@ -27,6 +28,18 @@
     <div>Rule:</div><div style="grid-column: 2 / -1"><a href="https://rucio-ui.cern.ch/rule?rule_id={{rule.id}}" >{{rule.rse_expression}}</a></div>
   }
 </div>
+  @if(internalContainers().length){
+    <table class="internal-containers-table mat-elevation-z8">
+      <thead>
+        <tr><th scope="col">Container name</th></tr>
+      </thead>
+      <tbody>
+        @for(container of internalContainers(); track $index){
+          <tr><td><a [routerLink]="['/dataset', container]">{{container}}</a></td></tr>
+        }
+      </tbody>
+    </table>
+  }
   @if(containerInfo()?.datasets_inside_container){
                <ag-grid-angular
                  #agGrid

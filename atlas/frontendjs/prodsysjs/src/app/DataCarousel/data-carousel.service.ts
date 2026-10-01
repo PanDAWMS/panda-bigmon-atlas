@@ -64,6 +64,7 @@ export interface DatasetExistsResponse {
   staging_dataset?: StagingRule;
   did_type: 'DATASET' | 'CONTAINER';
   datasets_inside_container?: DatasetInfo[];
+  internal_containers?: string[];
 }
 export interface DatasetDeletedResponse {
   dataset_name: string;

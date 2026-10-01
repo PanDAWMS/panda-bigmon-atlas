@@ -58,9 +58,9 @@ def ep_processing_serialisation(ep_processing: EventPickingProcessing) -> dict:
         'production_request_id': ep_processing.production_request.reqid if ep_processing.production_request else None,
     }
     if ep_processing.status == ep_processing.STATUS.RUNNING:
-        running_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid, status__in=ProductionTask.SYNC_STATUS).count()
-        finished_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid, status=ProductionTask.STATUS.FINISHED).count()
-        done_tasks = ProductionTask.objects.filter(reqid=ep_processing.production_request.reqid,
+        running_tasks = ProductionTask.objects.filter(request=ep_processing.production_request.reqid, status__in=ProductionTask.SYNC_STATUS).count()
+        finished_tasks = ProductionTask.objects.filter(request=ep_processing.production_request.reqid, status=ProductionTask.STATUS.FINISHED).count()
+        done_tasks = ProductionTask.objects.filter(request=ep_processing.production_request.reqid,
                                                        status=ProductionTask.STATUS.DONE).count()
         result['stats'].update({
             'running_tasks': running_tasks,

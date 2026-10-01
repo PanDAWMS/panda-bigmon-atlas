@@ -362,6 +362,30 @@ class DDM(object):
         except DataIdentifierNotFound:
             pass
         return dataset_names
+
+    def list_datasets_and_containers_in_container(self, container: str) -> tuple[[str], [str]]:
+        dataset_names = []
+        inside_containers_names = []
+        if container.endswith('/'):
+            container = container[:-1]
+
+        scope, container_name = self.rucio_convention(container)
+
+        try:
+            if self.__ddm.get_metadata(scope, container_name)['did_type'] == 'CONTAINER':
+                for e in self.__ddm.list_content(scope, container_name):
+                    dataset = '{0}:{1}'.format(e['scope'], e['name'])
+                    if e['type'] == 'DATASET':
+                        dataset_names.append(dataset)
+                    elif e['type'] == 'CONTAINER':
+                        inside_containers_names.append(dataset)
+                        names, deeper_containers = self.list_datasets_and_containers_in_container(dataset)
+                        inside_containers_names.extend(deeper_containers)
+                        dataset_names.extend(names)
+        except DataIdentifierNotFound:
+            pass
+        return dataset_names, inside_containers_names
+
     def is_dsn_dataset(self, dsn):
         scope, dataset = self.rucio_convention(dsn)
         metadata = self.__ddm.get_metadata(scope=scope, name=dataset)
@@ -765,7 +789,10 @@ class DDM(object):
         :return: list of metadata for each dataset
         """
         datasets_with_scope = list(map(lambda x: {'scope':x[0],'name':x[1]},[self.rucio_convention(dataset) for dataset in dataset_names]))
-        return list(self.__ddm.get_metadata_bulk(datasets_with_scope, plugin='DID_COLUMN'))
+        metadata = []
+        for start in range(0, len(datasets_with_scope), 500):
+            metadata.extend(self.__ddm.get_metadata_bulk(datasets_with_scope[start:start + 500], plugin='DID_COLUMN'))
+        return metadata
 
     def rse_attr(self, rse):
         return self.__ddm.list_rse_attributes(rse)

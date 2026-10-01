@@ -71,3 +71,21 @@ span.SUSPENDED{
 .header-row {
   background-color: #E7E9EB;
 }
+
+.internal-containers-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.internal-containers-table th,
+.internal-containers-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #E7E9EB;
+  overflow-wrap: anywhere;
+}
+
+.internal-containers-table th {
+  background-color: #E7E9EB;
+}

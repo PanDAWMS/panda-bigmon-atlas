@@ -25,6 +25,7 @@ import {
 } from '@angular/material/dialog';
 import {MatButton} from '@angular/material/button';
 import {RucioDIDComponent} from '../rucio-did/rucio-did.component';
+import {RouterLink} from '@angular/router';
 
 @Component({
   selector: 'app-rucio-container',
@@ -33,7 +34,8 @@ import {RucioDIDComponent} from '../rucio-did/rucio-did.component';
     DatasetSizePipe,
     DatePipe,
     MatProgressSpinner,
-    AgGridAngular
+    AgGridAngular,
+    RouterLink
   ],
   templateUrl: './rucio-container.component.html',
   styleUrl: './rucio-container.component.css'
@@ -52,6 +54,7 @@ export class RucioContainerComponent implements OnInit {
         return undefined;
       }
     });
+    internalContainers = computed(() => this.containerInfo()?.internal_containers ?? []);
     isLoading = this.dataCarouselService.containerInfoResource.isLoading;
     error = computed(() => this.dataCarouselService.containerInfoResource.error() as HttpErrorResponse | null);
     errorMessage = computed(() => {
