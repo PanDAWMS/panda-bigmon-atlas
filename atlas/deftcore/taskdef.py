@@ -3907,7 +3907,7 @@ class TaskDefinition(object):
                         filter_filename = event_picking_params['filter_file']
                         dataset_name = SystemParametersHandler.get_ep_config().default_source_dataset
                         param_dict = {'name': name, 'dataset': dataset_name, 'ratio': 1,  'files': [{'lfn': filter_filename}]}
-
+                        task_config['initial_tape'] = 'CERN-PROD_SPECIAL'
                         param_dict.update(trf_options)
                         job_parameters.append(
                             self.protocol.render_param(TaskParamName.FILTER_FILE, param_dict)
@@ -4290,6 +4290,9 @@ class TaskDefinition(object):
             if 'nFiles' in list(task_config.keys()):
                 number_of_files = int(task_config['nFiles'])
                 task_proto_dict.update({'number_of_files': number_of_files})
+
+            if 'initial_tape' in list(task_config.keys()):
+                task_proto_dict.update({'initial_tape': task_config['initial_tape']})
 
             if 'nEvents' in list(task_config.keys()):
                 task_proto_dict.update({'number_of_events': int(task_config['nEvents'])})
