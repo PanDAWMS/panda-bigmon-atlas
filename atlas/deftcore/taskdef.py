@@ -1763,6 +1763,8 @@ class TaskDefinition(object):
                 if 'SEQNUMBER' in self._get_job_parameter('firstEvent', task_existing['jobParameters'])['value']:
                     raise Exception(f'None optimal first event extensions are not allowed, previous task: {task_id}')
             input_dataset_jobparam = self._get_primary_input(task_existing['jobParameters'])
+            if input_dataset_jobparam is None or 'dataset' not in input_dataset_jobparam:
+                raise Exception(f'Previous task has no input: {task_id}, mixed input is not allowed')
             previous_dsn = input_dataset_jobparam['dataset']
             previous_offset = 0
             if 'offset' in input_dataset_jobparam:
