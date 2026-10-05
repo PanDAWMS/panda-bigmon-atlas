@@ -516,6 +516,60 @@ def datassets_from_es(ami_tag, output_formats, run_number, container, ddm, check
                     es_datatses.append(dataset['name'])
     return es_datatses
 
+def rearange_bulk(input_key: str):
+    ddm = DDM()
+    gp_containers = GroupProductionDeletion.objects.filter(input_key=input_key)
+    if gp_containers.count() > 1:
+        container_to_delete = []
+        by_amitag = {}
+        for gp_container in gp_containers:
+            if len(ddm.dataset_in_container(gp_container.container)) == 0:
+                container_to_delete.append(gp_container)
+            else:
+                by_amitag[gp_container.ami_tag] = gp_container
+        if len(by_amitag.keys()) == 1:
+            ami_tag, gp_container = by_amitag.popitem()
+            gp_container.available_tags = gp_container.ami_tag
+            gp_container.version = 0
+            gp_container.save()
+        else:
+            ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache.split('-')[0]) for x in by_amitag.keys()]
+            ami_tags_cache.sort(
+                reverse=True,
+                key=lambda x: (
+                    list(map(int, x[1].split('.'))),
+                    x[0],
+                ),
+            )
+            ami_tags = [x[0] for x in ami_tags_cache]
+            available_tags = ','.join(ami_tags)
+            latest = by_amitag[ami_tags[0]]
+            version = 0
+            if latest.version !=0 or latest.available_tags != available_tags:
+                latest.version = 0
+                latest.last_extension_time = None
+                latest.available_tags = available_tags
+                latest.save()
+            for ami_tag in ami_tags[1:]:
+                if latest.status == 'finished':
+                    version += 1
+                last_extension = max([latest.update_time,by_amitag[ami_tag].update_time])
+                if version != by_amitag[ami_tag].version or by_amitag[ami_tag].available_tags != available_tags or by_amitag[ami_tag].last_extension_time!=last_extension:
+                    by_amitag[ami_tag].last_extension_time = last_extension
+                    by_amitag[ami_tag].version = version
+                    by_amitag[ami_tag].previous_container = None
+                    by_amitag[ami_tag].available_tags = available_tags
+                    by_amitag[ami_tag].save()
+                latest = by_amitag[ami_tag]
+        for gp_container in container_to_delete:
+            container_name = gp_container.container
+            gp_extensions = GroupProductionDeletionExtension.objects.filter(container=gp_container)
+            for gp_extension in gp_extensions:
+                gp_extension.delete()
+            gp_container.delete()
+            _logger.info(
+                'Container {container} has been deleted from group production lists '.format(
+                    container=container_name))
 
 def rerange_after_deletion(gp_delete_container):
     gp_containers = GroupProductionDeletion.objects.filter(input_key=gp_delete_container.input_key)
@@ -531,7 +585,13 @@ def rerange_after_deletion(gp_delete_container):
             gp_container.save()
         else:
             ami_tags_cache = [(x, GroupProductionAMITag.objects.get(ami_tag=x).cache.split('-')[0]) for x in by_amitag.keys()]
-            ami_tags_cache.sort(reverse=True, key=lambda x: list(map(int, x[1].split('.'))))
+            ami_tags_cache.sort(
+                reverse=True,
+                key=lambda x: (
+                    list(map(int, x[1].split('.'))),
+                    x[0],
+                ),
+            )
             ami_tags = [x[0] for x in ami_tags_cache]
             available_tags = ','.join(ami_tags)
             latest = by_amitag[ami_tags[0]]

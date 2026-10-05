@@ -12,7 +12,7 @@ from rucio.common.exception import DataIdentifierNotFound
 from django.utils import timezone
 
 from ..cric.client import CRICClient
-from ..prodtask.models import ProductionDataset, ProductionTask, ActionDefault
+from ..prodtask.models import ProductionDataset, ProductionTask, ActionDefault, JediDatasets, days_ago
 from ..getdatasets.models import  TaskProdSys1
 from ..settings import dq2client as dq2_settings
 from rucio.client import Client
@@ -692,6 +692,17 @@ class DDM(object):
         rules = self.__ddm.list_did_rules(scope, name)
         active_rules = [(x) for x in rules if x['rse_expression'] in [y['rse'] for y in self.list_rses('type=DATADISK')] ]
         return active_rules
+
+    def get_tasks_by_dataset(self, dataset_name: str) -> List[int]:
+        """
+        Get the list of task IDs that are associated with a given dataset.
+        """
+        dataset_with_and_without_scope = self.with_and_without_scope([dataset_name])
+        panda_datasets = JediDatasets.objects.filter(datasetname__in=dataset_with_and_without_scope).values_list('id',
+                                                                                                                 flat=True)
+        prodsys_tasks = ProductionTask.objects.filter(inputdataset__in=dataset_with_and_without_scope,
+                                                      timestamp__gte=days_ago(30)).values_list('id', flat=True)
+        return list(set(panda_datasets) | set(prodsys_tasks))
 
     def dataset_active_rule_by_rse(self, dataset_name, rse):
         scope, name = self.rucio_convention(dataset_name)
