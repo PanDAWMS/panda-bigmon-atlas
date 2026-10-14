@@ -891,6 +891,8 @@ class TaskDefinition(object):
             if version_list[-1] not in new_version_list:
                 new_version_list.append(version_list[-1])
             return new_version_list
+        # elif trf_name.lower() == 'Merge_tf.py'.lower():
+        #     pass
         elif trf_name.lower() in ['NTUPMerge_tf.py'.lower(), 'POOLtoEI_tf.py'.lower()] and sum([len(x) for x in version_list]) >= 40:
             folded_versions = self._fold_single_tag_style(version_list[:-1])
             return folded_versions + version_list[-1:]
@@ -2613,7 +2615,7 @@ class TaskDefinition(object):
             try:
                 if project_mode.env:
                     for pair in project_mode.env.split(','):
-                        env_params_dict[pair.split(':')[0]] = pair.split(':')[-1]
+                        env_params_dict[pair.split(':')[0]] = pair.split(':')[1]
             except Exception as ex:
                 logger.exception("env parameter has invalid format: %s" % str(ex))
 
@@ -4053,7 +4055,13 @@ class TaskDefinition(object):
                         if len(input_types_defined) > 1:
                             job_parameters.remove(job_param)
                             break
-
+            if project_mode.fakeEVNT:
+                if 'outputEVNTFile' not in list(output_params.keys()):
+                    param_dict = {'name': '--outputEVNTFile', 'value': 'EVNT.TMP._0000000_tmp.pool.root'}
+                    param_dict.update(trf_options)
+                    job_parameters.append(
+                        self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
+                    )
             if trf_name.lower() == 'DigiMReco_trf.py'.lower():
                 if 'outputESDFile' not in list(output_params.keys()):
                     param_dict = {'name': 'outputESDFile', 'value': 'ESD.TMP._0000000_tmp.pool.root'}
