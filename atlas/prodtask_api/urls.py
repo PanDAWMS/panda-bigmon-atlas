@@ -9,6 +9,7 @@ from atlas.dkb.views import simple_dkb_search, dkb_events_per_campaign
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
     extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
 from atlas.prestage.views import data_carousel_config
+from atlas.prodtask.train_views import derivation_phys_patterns
 from atlas.prodtask_api.views import *
 from atlas.production_request.eventpicking import create_or_update_ep_request, ep_requests
 from atlas.production_request.views import form_pattern_for_derivation_request_extension, extend_derivation_request, \
@@ -26,6 +27,7 @@ urlpatterns = [
 
     re_path(r'^create_slice/$', create_slice, name='create_slice'),
     re_path(r'^test_api/$', test_api, name='test_api'),
+    re_path(r'^derivation_phys_patterns/$', derivation_phys_patterns, name='derivation_phys_patterns'),
 
     re_path(r'^tasks_action/$', tasks_action, name='tasks_action'),
     re_path(r'^rules_action/$', rules_action, name='rules_action'),

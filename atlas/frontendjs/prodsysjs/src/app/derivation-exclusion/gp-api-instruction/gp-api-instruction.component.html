@@ -140,6 +140,40 @@ if result['containers_extented'] != len(containers):
 For production activities following APIs are avalaible:
 </p>
 <ul>
+  <li>
+    <h5 id="derivation_phys_patterns">
+      <a href="https://prodtask-dev.cern.ch/api/derivation_phys_patterns/">derivation_phys_patterns</a>
+    </h5>
+    <p>
+      <code>GET /api/derivation_phys_patterns/</code> returns the active patterns configured on
+      <a routerLink="/derivation-phys-pattern">the derivation PHYS patterns page</a>,
+      with each pattern request ID and its AMI p-tags grouped together. Disabled patterns are excluded.
+      Authentication is required; the endpoint supports the existing API token, Basic, and session authentication.
+      Write methods are not supported.
+    </p>
+    <p>
+ Each step contains the stored <code>ami_tag</code> and
+      its matching <code>outputs</code>, using the same selection logic as the page. Step entries
+      remain separate, so scripts can associate each tag with its outputs. Patterns appear in
+      configured order; no active patterns produces <code>[]</code>, and a pattern without
+      matching steps has <code>"steps": []</code>.
+    </p>
+    <p>With an existing API token in <code>PRODTASK_TOKEN</code>:</p>
+    <mat-card appearance="outlined">
+      <mat-card-title>CURL example</mat-card-title>
+      <mat-card-content>
+        <pre><code>curl --fail \
+  -H "Authorization: Token $&#123;PRODTASK_TOKEN&#125;" \
+  https://prodtask-dev.cern.ch/api/derivation_phys_patterns/</code></pre>
+      </mat-card-content>
+    </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-title>Example of output</mat-card-title>
+      <mat-card-content>
+        <pre><code>{{derivationPhysPatternsExample | json}}</code></pre>
+      </mat-card-content>
+    </mat-card>
+  </li>
 
     <li>
     <h5> <a href="https://prodtask-dev.cern.ch/api/production_request_outputs/56281/">production_request_outputs</a></h5>

@@ -775,6 +775,27 @@ def get_derivation_phys_pattern(request):
     return Response({'current_patterns':current_patterns_dict,'mc_campaigns':[asdict(x) for x in result_campaigns],'steps':
                      [get_pattern_steps(x.train_id,x.outputs) for x in current_patterns]})
 
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def derivation_phys_patterns(request):
+    """Return active derivation pattern request IDs and AMI tags with their outputs."""
+    patterns = []
+    for pattern in SystemParametersHandler.get_daod_phys_production():
+        if pattern.status != SystemParametersHandler.DAOD_PHYS_Production.STATUS.ACTIVE:
+            continue
+        train = TrainProduction.objects.get(id=pattern.train_id)
+        patterns.append({
+            'campaign': pattern.campaign,
+            'subcampaign': pattern.subcampaign,
+            'steps': [
+                {'ami_tag': step['ami_tag'], 'outputs': step['outputs']}
+                for step in get_pattern_steps(pattern.train_id, pattern.outputs)
+            ],
+        })
+    return Response(patterns)
+
+
 def get_pattern_steps(train_id, outputs):
     train = TrainProduction.objects.get(id=train_id)
     pattern_request = train.pattern_request
