@@ -4742,6 +4742,11 @@ class TaskDefinition(object):
             if usergroup in ['AP_VALI','GP_VALI']:
                 if not project_mode.gshare:
                     task_proto_dict.update({'global_share': 'Validation'})
+            elif step.request.request_type in ['GROUP']:
+                if step.request.project.project.startswith('mc') and 'DAOD_PHYS' not in step.step_template.output_formats:
+                    task_proto_dict['global_share'] = TaskDefConstants.DERIVATION_MC_NON_PHYS_SHARE
+                if step.request.project.project.startswith('data') and 'DAOD_PHYS' not in step.step_template.output_formats:
+                    task_proto_dict['global_share'] = TaskDefConstants.DERIVATION_DATA_NON_PHYS_SHARE
             # test Event Service
             if project_mode.testES:
                 if project_mode.nEventsPerWorker:

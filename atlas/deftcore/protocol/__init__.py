@@ -551,7 +551,8 @@ class TaskDefConstants(object, metaclass=Constants):
     DEFAULT_DB_RELEASE_DATASET_NAME_BASE = Constant('ddo.000001.Atlas.Ideal.DBRelease.v')
     DEFAULT_MINIBIAS_NPILEUP = Constant(5)
     DEFAULT_MAX_ATTEMPT = Constant(5)
-
+    DERIVATION_DATA_NON_PHYS_SHARE = Constant('Data Derivations Non-PHYS')
+    DERIVATION_MC_NON_PHYS_SHARE = Constant('MC Derivations Non-PHYS')
     INVALID_TASK_ID = Constant(4000000)
     DEFAULT_MAX_FILES_PER_JOB = Constant(20)
     DEFAULT_MAX_NUMBER_OF_JOBS_PER_TASK = Constant(50000)
