@@ -3324,6 +3324,17 @@ class TaskDefinition(object):
                     job_parameters.append(
                         self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
                     )
+                elif re.match(r'^(--)?evgenJobOpts', name, re.IGNORECASE):
+                    param_value = self._get_parameter_value(name, ctag)
+                    if not param_value or str(param_value).lower() == 'none':
+                        continue
+                    if param_value.startswith('MC15JobOpts') and param_value.endswith('tar.gz'):
+                        param_value = TaskDefConstants.OLD_MC_JO_PATH+param_value
+                    param_dict = {'name': name, 'value': param_value}
+                    param_dict.update(trf_options)
+                    job_parameters.append(
+                        self.protocol.render_param(TaskParamName.CONSTANT, param_dict)
+                    )
                 elif re.match(r'^(--)?rivetAnas', name, re.IGNORECASE):
                     if project_mode.rivet:
                         param_value = project_mode.rivet

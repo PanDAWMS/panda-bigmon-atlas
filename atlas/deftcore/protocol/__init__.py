@@ -549,6 +549,7 @@ class TaskDefConstants(object, metaclass=Constants):
                                                  ('DEFAULT_TASK_ID_FORMAT_BASE',))
     DEFAULT_OUTPUT_NAME_MAX_LENGTH = Constant(255)
     DEFAULT_DB_RELEASE_DATASET_NAME_BASE = Constant('ddo.000001.Atlas.Ideal.DBRelease.v')
+    OLD_MC_JO_PATH = Constant('/cvmfs/atlas.cern.ch/repo/sw/Generators/tar/EvgenJobOpts/')
     DEFAULT_MINIBIAS_NPILEUP = Constant(5)
     DEFAULT_MAX_ATTEMPT = Constant(5)
     DERIVATION_DATA_NON_PHYS_SHARE = Constant('Data Derivations Non-PHYS')
