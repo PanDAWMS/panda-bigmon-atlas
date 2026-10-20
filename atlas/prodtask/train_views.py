@@ -786,6 +786,7 @@ def derivation_phys_patterns(request):
             continue
         train = TrainProduction.objects.get(id=pattern.train_id)
         patterns.append({
+            'request_id': train.pattern_request_id,
             'campaign': pattern.campaign,
             'subcampaign': pattern.subcampaign,
             'steps': [
