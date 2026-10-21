@@ -7,7 +7,7 @@
           <div [formGroupName]="i" class="campignGrid">
             <div>
               <mat-form-field>
-                <mat-label>MC Campaigns</mat-label>
+                <mat-label>Campaigns</mat-label>
                 <mat-select formControlName="campaign" >
                   @for (mcCampaign of mcCampaigns; track mcCampaign) {
                     <mat-option [value]="mcCampaign">

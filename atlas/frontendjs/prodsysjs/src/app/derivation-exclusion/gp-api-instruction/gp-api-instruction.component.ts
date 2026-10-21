@@ -17,6 +17,7 @@ export class GpApiInstructionComponent implements OnInit {
 
   derivationPhysPatternsExample = [
     {
+      request_id: 123456,
       campaign: 'MC23',
       subcampaign: 'MC23a',
       steps: [

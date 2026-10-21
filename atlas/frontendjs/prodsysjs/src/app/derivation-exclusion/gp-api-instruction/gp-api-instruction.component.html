@@ -152,7 +152,8 @@ For production activities following APIs are avalaible:
       Write methods are not supported.
     </p>
     <p>
- Each step contains the stored <code>ami_tag</code> and
+      <code>request_id</code> is the <strong>Pattern Request Id</strong> displayed on the page,
+      rather than the internal train ID. Each step contains the stored <code>ami_tag</code> and
       its matching <code>outputs</code>, using the same selection logic as the page. Step entries
       remain separate, so scripts can associate each tag with its outputs. Patterns appear in
       configured order; no active patterns produces <code>[]</code>, and a pattern without

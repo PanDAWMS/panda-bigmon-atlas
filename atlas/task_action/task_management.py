@@ -519,8 +519,8 @@ class TaskActionExecutor(JEDITaskActionInterface, DEFTAction):
     @_jedi_rule_decorator
     def change_destination(self, dataset):
         try:
-            if PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
-                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).last()
+            if PandaDatasetStaging.objects.filter(dataset=dataset).exists():
+                dataset_stage = PandaDatasetStaging.objects.filter(dataset=dataset).last()
                 return self.jedi_client.submit_change_staging_destination(dataset_stage.dataset, None)
             elif DatasetStaging.objects.filter(dataset=dataset, status=DatasetStaging.STATUS.STAGING).exists():
                 dataset_stage = DatasetStaging.objects.get(dataset=dataset, status=DatasetStaging.STATUS.STAGING)

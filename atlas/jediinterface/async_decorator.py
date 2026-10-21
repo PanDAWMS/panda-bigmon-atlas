@@ -37,8 +37,8 @@ def jedi_async_task(poll_interval: int = 5, action_type: str = 'GENERAL', max_po
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(self, *args, **kwargs) -> Any:
-            # Import here to avoid circular imports
-            from atlas.prodtask.tasks import poll_jedi_async_result
+            # Queue polling without importing the production task module and its views.
+            from atlas.jediinterface.tasks import poll_jedi_async_result
 
             lock_name = None
             resolved_action_type = action_type.upper() if isinstance(action_type, str) else action_type

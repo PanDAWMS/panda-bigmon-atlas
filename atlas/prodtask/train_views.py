@@ -20,6 +20,7 @@ from atlas.prodtask.views import create_steps_in_child_pattern, set_request_stat
 from atlas.prodtask.spdstodb import fill_template
 from .helper import form_json_request_dict
 from atlas.celerybackend.celery import app, ProdSysTask
+from .models import SystemParametersHandler
 from ..prodtask.views import form_existed_step_list, form_step_in_page, create_request_for_pattern
 from ..prodtask.forms import ProductionTrainForm, pattern_from_request, TRequestCreateCloneConfirmation, form_input_list_for_preview
 from ..prodtask.models import TrainProductionLoad,TrainProduction,TRequest, InputRequestList, StepExecution, \
@@ -765,11 +766,13 @@ def get_pattern_from_request(request,reqid):
 def get_derivation_phys_pattern(request):
     current_patterns = SystemParametersHandler.get_daod_phys_production()
     mc_campaigns = SystemParametersHandler.get_mc_campaigns()
+    mc_campaigns += [SystemParametersHandler.MC_Campaign('Data Run3', []), SystemParametersHandler.MC_Campaign('Data Run2', [])]
     result_campaigns = []
     for mc_campaign in mc_campaigns:
         mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS] + mc_campaign.subcampaigns
         #mc_campaign.subcampaigns = [SystemParametersHandler.DAOD_PHYS_Production.ALL_SUBCAMPAIGNS]
         result_campaigns.append(mc_campaign)
+
     current_patterns_dict = [dict(request_id=TrainProduction.objects.get(id=x.train_id).pattern_request_id, **asdict(x)) for x in current_patterns]
 
     return Response({'current_patterns':current_patterns_dict,'mc_campaigns':[asdict(x) for x in result_campaigns],'steps':
