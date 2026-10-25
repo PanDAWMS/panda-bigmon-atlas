@@ -892,7 +892,7 @@ def save_derivation_phys_pattern(request):
 
 @app.task(bind=True, base=ProdSysTask)
 @ProdSysTask.set_task_name('Change phys ptag')
-def change_existing_daod_phys_production():
+def change_existing_daod_phys_production(self):
     requests_to_change = find_not_started_requests()
     _jsonLogger.info(f"Changing existing daod phys production for requests {requests_to_change}")
     for request_id in requests_to_change:
