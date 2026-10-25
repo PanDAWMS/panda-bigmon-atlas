@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
@@ -35,6 +36,7 @@ from atlas.prodtask.models import HashTagToRequest, HashTag, StepAction, ActionS
     ActionDefault, SliceError, TTask, MCJobOptions, SystemParametersHandler, DistributedLock, TRequest, ProductionTask, \
     add_or_get_request_hashtag, add_hashtag_to_task
 from atlas.prodtask.spdstodb import fill_template
+from task_action.task_management import TaskActionExecutor
 from .settings import APP_SETTINGS
 from ..deftcore.tasks import submit_request
 
@@ -3053,6 +3055,60 @@ def set_request_status(username, reqid, status, message, comment, request=None):
         cur_request.cstatus = status
     cur_request.save()
 
+def find_not_started_requests():
+    hashtag = HashTag.objects.get(hashtag="PHYSAutoProduction")
+    production_requests = [x.request for x in HashTagToRequest.objects.filter(hashtag=hashtag)]
+    finished_requests = set()
+    running_requests = set()
+    empty_requests = set()
+    empty_requests_ids = defaultdict(list)
+    ACTIVE_STATUS = [status for status in ProductionTask.ALL_STATUS if status not in ProductionTask.NOT_RUNNING]
+    for request in production_requests:
+        request_jira = ParentToChildRequest.objects.get(child_request=request).parent_request.ref_link
+        if ProductionTask.objects.filter(request=request).exists():
+            if ProductionTask.objects.filter(request=request, status__in=ACTIVE_STATUS).exists():
+                if (ProductionTask.objects.filter(request=request, status__in=[ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]).exists() or
+                    ProductionTask.objects.filter(request=request,  status__in=ACTIVE_STATUS, total_done_jobs__gt=0).exists()):
+                    running_requests.add(request_jira)
+                    continue
+                else:
+                    empty_requests.add(request_jira)
+                    empty_requests_ids[request_jira] += [request.reqid]
+            elif (ProductionTask.objects.filter(request=request, status__in=[ProductionTask.STATUS.FINISHED,
+                                                                               ProductionTask.STATUS.DONE]).exists()):
+                    finished_requests.add(request_jira)
+    ref_links_set = empty_requests-running_requests-finished_requests
+    not_started_requests = []
+    for link in list(ref_links_set):
+        not_started_requests += empty_requests_ids[link]
+    return not_started_requests
+
+def change_ptag(request_id: int):
+    _jsonLogger.info(f"Changing derivation PHYS production ptag for request {request_id}")
+    mc_request = ParentToChildRequest.objects.get(child_request=request_id).parent_request
+    pattern_derivation_request, outputs, full_sim_only = find_pattern_derivation_request(mc_request.campaign,
+                                                                                         mc_request.subcampaign)
+    train = TrainProduction.objects.get(id=pattern_derivation_request)
+    new_ami_tags = []
+    for output in train.output_by_slice:
+        output_intersections = [x for x in outputs if x in output[1]]
+        if output_intersections:
+            step = StepExecution.objects.filter(request=train.request,
+                                                slice=InputRequestList.objects.get(request=train.request,
+                                                                                   slice=output[0])).first()
+            if step:
+                new_ami_tags.append(step.step_template.ctag)
+    tasks = ProductionTask.objects.filter(request=request_id)
+    action_executor = TaskActionExecutor('taskbot', 'Replace with new pattern')
+    slices_to_hide = []
+    for task in tasks:
+        if task.status not in ProductionTask.NOT_RUNNING and task.ami_tag not in new_ami_tags:
+            action_executor.killTask(task.id)
+            slices_to_hide.append(task.step.slice)
+    for slice in slices_to_hide:
+        slice.hide()
+
+    return submit_child_derivation_request(mc_request.reqid)
 
 def create_steps_in_child_pattern(new_request, parent_steps, pattern_request, outputs_slices, status='NotChecked'):
     spreadsheet_dict = []

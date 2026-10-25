@@ -423,6 +423,22 @@ class InputRequestList(models.Model):
     def tasks_in_slice(self):
         return ProductionTask.objects.filter(request=self.request, step__in=StepExecution.objects.filter(slice=self, request=self.request))
 
+    def hide(self):
+        if not self.is_hide:
+            self.is_hide = True
+            for step in StepExecution.objects.filter(slice=self, request=self.request):
+                if ProductionTask.objects.filter(step=step, request=self.request).count() == 0:
+                    step.step_appr_time = None
+                    if step.status == StepExecution.STATUS.SKIPPED:
+                        step.status = StepExecution.STATUS.NOT_CHECKED_SKIPPED
+                    elif step.status == StepExecution.STATUS.APPROVED:
+                        step.status = StepExecution.STATUS.NOT_CHECKED
+                    step.save()
+            for slice_error in SliceError.objects.filter(request=self.request, slice=self, is_active=True):
+                slice_error.is_active = False
+                slice_error.save()
+            self.save()
+
     class Meta:
         db_table = 'T_INPUT_DATASET'
 

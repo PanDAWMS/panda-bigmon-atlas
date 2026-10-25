@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from atlas.prodtask.models import RequestStatus, HashTag, HashTagToRequest, SystemParametersHandler, DistributedLock
 from atlas.prodtask.views import create_steps_in_child_pattern, set_request_status, request_clone_slices, clone_slices, \
-    submit_child_derivation_request, _set_request_hashtag
+    submit_child_derivation_request, find_not_started_requests, change_ptag
 from atlas.prodtask.spdstodb import fill_template
 from .helper import form_json_request_dict
 from atlas.celerybackend.celery import app, ProdSysTask
@@ -884,8 +884,16 @@ def save_derivation_phys_pattern(request):
         SystemParametersHandler.set_daod_phys_production(new_patterns)
         _jsonLogger.info("Save mc daod pattern",  extra={'user': request.user.username})
         _logger.info("Save mc daod pattern: " +json.dumps(data['patterns']))
+        change_existing_daod_phys_production.delay()
         return Response({'steps':pattern_steps})
     except Exception as ex:
         _logger.error(f"Problem with mc daod phys pattern saving {ex}")
         return Response(f"Problem with mc daod phys pattern saving {ex}", status=400)
 
+@app.task(bind=True, base=ProdSysTask)
+@ProdSysTask.set_task_name('Change phys ptag')
+def change_existing_daod_phys_production():
+    requests_to_change = find_not_started_requests()
+    _jsonLogger.info(f"Changing existing daod phys production for requests {requests_to_change}")
+    for request_id in requests_to_change:
+        change_ptag(request_id)
