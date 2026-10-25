@@ -36,7 +36,7 @@ from atlas.prodtask.models import HashTagToRequest, HashTag, StepAction, ActionS
     ActionDefault, SliceError, TTask, MCJobOptions, SystemParametersHandler, DistributedLock, TRequest, ProductionTask, \
     add_or_get_request_hashtag, add_hashtag_to_task
 from atlas.prodtask.spdstodb import fill_template
-from task_action.task_management import TaskActionExecutor
+from atlas.task_action.task_management import TaskActionExecutor
 from .settings import APP_SETTINGS
 from ..deftcore.tasks import submit_request
 
