@@ -695,6 +695,27 @@ export class TASKS_CONSTANTS {
       validators: {}
     },
     {
+      name: 'remove_rule_when_done',
+      label: 'remove_rule_when_done',
+      description: 'remove_rule_when_done',
+      type: 'boolean',
+      validators: {}
+    },
+    {
+      name: 'data_carousel_backfill',
+      label: 'data_carousel_backfill',
+      description: 'data_carousel_backfill',
+      type: 'boolean',
+      validators: {}
+    },
+        {
+      name: 'initial_tape',
+      label: 'initial_tape',
+      description: 'initial_tape',
+      type: 'text',
+      validators: {}
+    },
+    {
       name: 'nGBPerMergeJob',
       label: 'nGBPerMergeJob',
       description: 'nGBPerMergeJob',

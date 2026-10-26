@@ -1051,7 +1051,9 @@ class TemplateVariable:
         TO_STAGING = 'toStaging'
         FRAMEWORK = 'framework'
         DISABLE_AUTO_RETRY = 'disableAutoRetry'
-
+        REMOVE_RULE_WHEN_DONE = 'remove_rule_when_done'
+        INITIAL_TAPE = 'initial_tape'
+        DATA_CAROUSEL_BACKFILL = 'data_carousel_backfill'
 
     KEYS_SEPARATOR = ','
 
