@@ -243,6 +243,36 @@ def create_data_carousel(analysis_step: AnalysisStepTemplate):
     return analysis_step
 
 
+def set_data_carousel(analysis_step: AnalysisStepTemplate):
+    ddm = DDM()
+    input_dataset = analysis_step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
+    if ddm.dataset_metadata(input_dataset)['did_type'] == 'CONTAINER':
+        datasets = ddm.dataset_in_container(input_dataset)
+    else:
+        datasets = [input_dataset]
+    if len(datasets) != 1:
+        return analysis_step
+    dataset = datasets[0]
+    if dataset.startswith('data') and '.RAW' in dataset:
+        return analysis_step
+
+    full_replicas = ddm.full_replicas_per_type(dataset)
+    if len(full_replicas['data']) == 0 and len(full_replicas['tape']) > 0:
+        initial_tape = 'CERN-PROD_SPECIAL'
+        if 'BNL' in str(full_replicas['tape']):
+            initial_tape = 'BNL-ATLAS_TAPE'
+        elif 'TRIUMF' in str(full_replicas['tape']):
+            initial_tape = 'TRIUMF-LCG2_TAPE'
+        analysis_step.change_variable(TemplateVariable.KEY_NAMES.REMOVE_RULE_WHEN_DONE, 'True')
+        analysis_step.step_parameters[TemplateVariable.KEY_NAMES.REMOVE_RULE_WHEN_DONE] = 'True'
+        analysis_step.change_variable(TemplateVariable.KEY_NAMES.INITIAL_TAPE, initial_tape)
+        analysis_step.step_parameters[TemplateVariable.KEY_NAMES.INITIAL_TAPE] = initial_tape
+        analysis_step.change_variable(TemplateVariable.KEY_NAMES.DATA_CAROUSEL_BACKFILL, 'True')
+        analysis_step.step_parameters[TemplateVariable.KEY_NAMES.DATA_CAROUSEL_BACKFILL] = 'True'
+        analysis_step.save()
+    return analysis_step
+
+
 def split_big_ananly_input_container(step, ddm) -> List[str]:
     input_dataset = step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE)
     input_dataset_metadata = ddm.dataset_info(input_dataset)
@@ -421,7 +451,7 @@ def check_parameters_for_task(step_template: AnalysisStepTemplate) -> bool:
 
 def register_analysis_task(step_template: AnalysisStepTemplate, task_id: int, parent_tid: int) -> [TTask, ProductionTask]:
     step_template = check_name_version(step_template)
-    #step_template = create_data_carousel(step_template)
+    step_template = set_data_carousel(step_template)
     step_template = check_input_source_exists(step_template)
     step_template.step_parameters = deepcopy(step_template.render_task_template())
     check_parameters_for_task(step_template)
