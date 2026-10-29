@@ -19,7 +19,7 @@ from django.shortcuts import render
 from functools import reduce
 
 from atlas.settings import OIDC_LOGIN_URL
-from task_action.task_management import task_user_rights
+from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')

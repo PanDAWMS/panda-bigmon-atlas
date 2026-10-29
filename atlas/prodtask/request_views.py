@@ -48,7 +48,7 @@ from rest_framework import serializers,generics
 from functools import reduce
 
 from ..settings import OIDC_LOGIN_URL
-from ..task_action.task_management import TaskManagementAuthorisation, task_user_rights
+from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 
