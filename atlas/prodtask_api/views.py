@@ -30,7 +30,7 @@ from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.task_views import set_task_sample_container
 from atlas.prodtask.views import form_existed_step_list, set_request_status
-from atlas.task_action.task_management import TaskManagementAuthorisation
+from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -525,7 +525,7 @@ def get_all_recovery_requests(request):
 def submit_recreation(request):
     try:
         task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        user, allowed_groups = task_user_rights(request.user.username)
         if request.user.is_superuser or 'DPD' in allowed_groups:
             ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
             requests_submitted = submit_dataset_recovery_requests(ids)
@@ -555,7 +555,7 @@ def set_config_parameter(request, name):
         match name:
             case SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest:
                 task_management = TaskManagementAuthorisation()
-                user, allowed_groups = task_management.task_user_rights(request.user.username)
+                user, allowed_groups = task_user_rights(request.user.username)
                 if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 workflows = MCWorkflowRequest.model_validate(request.data)
@@ -563,7 +563,7 @@ def set_config_parameter(request, name):
                 return Response(request.data)
             case SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS:
                 task_management = TaskManagementAuthorisation()
-                user, allowed_groups = task_management.task_user_rights(request.user.username)
+                user, allowed_groups = task_user_rights(request.user.username)
                 if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 SystemParametersHandler.AvailablePMGHashtags.set_available_hashtags(request.data.get('levels',[]))

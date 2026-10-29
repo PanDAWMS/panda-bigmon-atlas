@@ -48,7 +48,7 @@ from rest_framework import serializers,generics
 from functools import reduce
 
 from ..settings import OIDC_LOGIN_URL
-from ..task_action.task_management import TaskManagementAuthorisation
+from ..task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 
@@ -1131,7 +1131,7 @@ def dpd_form_prefill(form_data, request):
         form_data['manager'] = request.user.username
     try:
         task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        user, allowed_groups = task_user_rights(request.user.username)
         if request.user.is_superuser or 'DPD' in allowed_groups:
             allow_priority = True
     except:

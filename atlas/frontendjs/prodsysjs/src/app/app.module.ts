@@ -250,6 +250,7 @@ const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: Deri
    {path: 'recovery-requests-approve', component: RecoveryRequestsApproveComponent},
      {path: 'recovery', component: RecoveredDatasetsComponent},
   {path: 'json-gdpconfig/:parameter', component: JsonGDPConfigEditorComponent},
+  {path: 'global-shares', loadComponent: () => import('./global-shares/global-shares.component').then(m => m.GlobalSharesComponent), title: 'Global shares'},
   {path: 'config-editor/:name', component: ConfigEditorComponent},
     {path: 'test-request', component: MainRequestComponent},
     {path: 'staging-rules', component: StagingManagementComponent},
@@ -391,4 +392,3 @@ function getBaseLocation(): string {
     const basePath: string = (paths && paths[0]) || '';
     return '/' + basePath;
 }
-

@@ -667,6 +667,27 @@ class RuleActionAllowed():
     action_allowed: bool = False
     user_allowed: bool = False
 
+
+def task_user_rights(username: str, user_fullname:str|None =None):
+    allowed_groups = []
+    group_permissions = []
+    if User.objects.filter(username=username).exists():
+        user = User.objects.get(username=username)
+        user_groups = user.groups.all()
+        for gp in user_groups:
+            group_permissions += list(gp.permissions.all())
+            if gp.name.startswith('IAM:atlas/') and gp.name.endswith('/production'):
+                allowed_groups.append(gp.name.split('/')[-2])
+        for gp in group_permissions:
+            if "has_" in gp.name and "_permissions" in gp.name:
+                allowed_groups.append(gp.codename)
+    else:
+        user = User(username=username)
+        if user_fullname:
+            user.last_name = user_fullname
+    return user, allowed_groups
+
+
 class TaskManagementAuthorisation():
 
     allowed_task_actions = {}
@@ -738,26 +759,6 @@ class TaskManagementAuthorisation():
                 task.request_phys_group = task.phys_group
         return task
 
-    def task_user_rights(self, username: str, user_fullname:str =None):
-        allowed_groups = []
-        group_permissions = []
-        if User.objects.filter(username=username).exists():
-            user = User.objects.get(username=username)
-            user_groups = user.groups.all()
-            for gp in user_groups:
-                group_permissions += list(gp.permissions.all())
-                if gp.name.startswith('IAM:atlas/') and gp.name.endswith('/production'):
-                    allowed_groups.append(gp.name.split('/')[-2])
-            for gp in group_permissions:
-                if "has_" in gp.name and "_permissions" in gp.name:
-                    allowed_groups.append(gp.codename)
-        else:
-            user = User(username=username)
-            if user_fullname:
-                user.last_name = user_fullname
-        return user, allowed_groups
-
-
     def user_authorization(self, user: User, allowed_groups: [str], task: __AuthorisationTask, action: str, params, user_fullname) -> bool:
         if user.is_superuser:
             return True
@@ -797,7 +798,7 @@ class TaskManagementAuthorisation():
         return task_is_allowed, user_is_allowed
 
     def rules_action_authorisation(self, datasets: str, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
-        user, allowed_groups = self.task_user_rights(username, user_fullname)
+        user, allowed_groups = task_user_rights(username, user_fullname)
         result = []
         for dataset in datasets:
             if user.is_superuser:
@@ -808,12 +809,12 @@ class TaskManagementAuthorisation():
 
 
     def task_action_authorisation(self, task_id: int, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
-        user, allowed_groups = self.task_user_rights(username, user_fullname)
+        user, allowed_groups = task_user_rights(username, user_fullname)
         task = self.get_task_info(task_id)
         return self.__task_action_check(task, user, allowed_groups, action, params, user_fullname)
 
     def tasks_action_authorisation(self, task_ids: List[int], username: str, action: str, params=None, user_fullname: str=None) -> List[TaskActionAllowed]:
-        user, allowed_groups = self.task_user_rights(username)
+        user, allowed_groups = task_user_rights(username)
         result = []
         for task_id in task_ids:
             task = self.get_task_info(task_id)

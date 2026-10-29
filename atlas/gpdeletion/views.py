@@ -34,7 +34,7 @@ from atlas.celerybackend.celery import app
 
 from django.core.cache import cache
 
-from atlas.task_action.task_management import TaskManagementAuthorisation
+from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -1128,7 +1128,7 @@ def set_datasets_to_delete(request):
         deadline = datetime.strptime(request.data['deadline'],"%Y-%m-%dT%H:%M:%S.%fZ")
         start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
         task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_management.task_user_rights(username)
+        user, allowed_groups = task_user_rights(username)
         if not request.user.is_superuser and 'DPD' not in allowed_groups:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         last_record = GroupProductionDeletionRequest.objects.last()
@@ -1578,7 +1578,7 @@ def create_physics_container_in_ami(request):
         containers = [PreparedContainer(**x) for x in containers]
         _jsonLogger.info('Creating period containers', extra={'user':request.user.username})
         task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_management.task_user_rights(request.user.username)
+        user, allowed_groups = task_user_rights(request.user.username)
         if not request.user.is_superuser and 'DPD' not in allowed_groups:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         ami = AMIClient()

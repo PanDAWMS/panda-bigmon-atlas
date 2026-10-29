@@ -1,0 +1,6 @@
+:host { display: block; }
+.group-controls { display: flex; flex-wrap: wrap; gap: .25rem .6rem; align-items: center; font-size: .85rem; }
+.group-total { color: #536071; white-space: nowrap; }
+.invalid, .validation { color: #b42318; }
+.actions { display: flex; gap: .2rem; }
+.actions button { --mdc-protected-button-container-height: 30px; --mdc-text-button-container-height: 30px; font-size: .8rem; }

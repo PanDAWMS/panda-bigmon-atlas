@@ -1,0 +1,9 @@
+:host { display: block; }
+main { max-width: 1400px; margin: 0 auto; padding: .5rem .75rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: .35rem .75rem; flex-wrap: wrap; margin-bottom: .4rem; }
+.page-header > div { display: flex; align-items: baseline; gap: .75rem; }
+h1 { font-size: 1.4rem; margin: 0; }
+nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+.summary { font-size: .85rem; color: #536071; }
+.error { padding: .4rem .6rem; color: #912018; background: #fff0ee; border: 1px solid #f1b9b3; border-radius: 3px; overflow-wrap: anywhere; }
+@media (max-width: 600px) { main { padding: .35rem; } }

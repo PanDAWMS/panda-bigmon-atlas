@@ -1,0 +1,60 @@
+<div class="sticky-bar" aria-label="Share group controls">
+  <div class="bar-controls">
+    <label class="group-selector">
+      Group
+      <select [ngModel]="activeGroup()?.parent" (ngModelChange)="selectGroup($event)" [disabled]="disabled()">
+        @for (group of groups(); track group.parent) {
+          <option [ngValue]="group.parent">{{ group.path.join(' / ') }}{{ group.changed ? ' *' : '' }}{{ !group.valid ? ' — invalid' : '' }}</option>
+        }
+      </select>
+    </label>
+    @if (activeGroup(); as group) {
+      <app-global-share-group [group]="group" [disabled]="disabled()"
+                              (review)="review.emit($event)" (resetGroup)="resetGroup.emit($event)"></app-global-share-group>
+    }
+  </div>
+  @if (errorMessage()) { <div class="error" role="alert">{{ errorMessage() }}</div> }
+  @if (statusMessage()) { <div class="status" role="status">{{ statusMessage() }}</div> }
+</div>
+<div class="tree-scroll" tabindex="0" role="region" aria-label="Global shares hierarchy">
+  <table [style.min-width.px]="levels().length * 280" aria-label="Global shares tree">
+    <colgroup>
+      @for (level of levels(); track level) { <col [style.width.%]="100 / levels().length"> }
+    </colgroup>
+    <thead class="visually-hidden">
+      <tr>
+        @for (level of levels(); track level) { <th scope="col">Level {{ level + 1 }}</th> }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.share.name) {
+        <tr>
+          @for (level of levels(); track level) {
+            @if (level < row.depth) { <td></td> }
+            @if (level === row.depth) {
+              <td [attr.colspan]="levels().length - row.depth">
+                <div class="share-node" [class.manageable]="row.share.editable" [class.changed]="row.share.changed"
+                     (focusin)="selectGroup(row.share.parent)">
+                  <span class="share-name">{{ row.share.name }}</span>
+                  <span class="percentage">({{ row.share.percentage === null ? '—' : (row.share.percentage | number:'1.2-2') + '%' }})</span>
+                  @if (row.share.editable) {
+                    <input type="number" min="0" max="100" step="1" required inputmode="numeric"
+                           [ngModel]="row.share.draft" (ngModelChange)="valueChange.emit({name: row.share.name, value: $event})"
+                           [disabled]="disabled()" [attr.aria-label]="row.share.name + ' allocation in percent'"
+                           [attr.aria-invalid]="!row.share.valid" [attr.aria-describedby]="!row.share.valid ? errorId(row.share.name) : null"
+                           [title]="'Current allocation: ' + row.share.value + '%'">
+                    @if (!row.share.valid) {
+                      <span class="visually-hidden" [id]="errorId(row.share.name)">Enter a whole number from 0 to 100.</span>
+                    }
+                  } @else {
+                    <span class="allocation" [attr.aria-label]="row.share.name + ' allocation: ' + row.share.value + ' percent'">{{ row.share.value }}</span>
+                  }
+                </div>
+              </td>
+            }
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

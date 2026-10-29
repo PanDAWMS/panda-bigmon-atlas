@@ -1,0 +1,15 @@
+<div class="group-controls" [attr.aria-label]="group().path.join(' / ')">
+  <span class="group-total" [class.invalid]="!group().valid">
+    Total: {{ group().total === null ? 'Invalid' : group().total + '%' }}
+  </span>
+  <div class="actions">
+    <button mat-raised-button color="primary" type="button" [disabled]="disabled() || !group().valid || !group().changed" (click)="review.emit(group())">Review changes</button>
+    <button mat-button type="button" [disabled]="disabled() || !group().changed" (click)="resetGroup.emit(group())">Reset group</button>
+  </div>
+  @if (!group().valid) {
+    <span class="validation" role="status">
+      @if (invalidNames()) { {{ invalidNames() }}: enter whole numbers from 0 to 100. }
+      @else { Allocations must add up to 100%. }
+    </span>
+  }
+</div>

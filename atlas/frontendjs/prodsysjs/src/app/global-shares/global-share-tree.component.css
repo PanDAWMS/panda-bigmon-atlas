@@ -1,0 +1,26 @@
+:host { display: block; }
+.sticky-bar { position: sticky; top: 0; z-index: 20; padding: .35rem .5rem; background: #fff; border: 1px solid #d5d9df; box-shadow: 0 2px 4px #00000012; }
+.bar-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem .75rem; }
+.group-selector { display: flex; align-items: center; gap: .4rem; font-size: .85rem; }
+select { width: min(22rem, 60vw); padding: .25rem; border: 1px solid #b2b8c0; border-radius: 3px; background: #fff; font: inherit; }
+.error, .status { margin-top: .2rem; font-size: .85rem; overflow-wrap: anywhere; }
+.error { color: #b42318; }
+.status { color: #165830; }
+.tree-scroll { overflow-x: auto; border: 1px solid #d5d9df; border-top: 0; }
+.tree-scroll:focus-visible { outline: 2px solid #245b9e; outline-offset: 2px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+tbody tr { background: #fff; }
+tbody tr:nth-child(even) { background: #f7f8fa; }
+td { padding: .1rem .35rem; vertical-align: middle; }
+.share-node { display: flex; align-items: center; gap: .4rem; width: max-content; max-width: 100%; padding: .12rem .35rem; border-left: 3px solid transparent; border-radius: 2px; font-size: .9rem; line-height: 1.35; white-space: nowrap; }
+.share-name { font-weight: 500; }
+.percentage { color: #536071; }
+.manageable { background: #edf5ff; border-left-color: #245b9e; }
+input, .allocation { box-sizing: border-box; flex: 0 0 auto; width: calc(3ch + .8rem); padding: .15rem .3rem; border: 1px solid transparent; border-radius: 2px; font: inherit; text-align: right; }
+input { height: 1.65rem; background: #fff; border-color: #b2b8c0; appearance: textfield; -moz-appearance: textfield; }
+input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input:focus { outline: 2px solid #245b9e; outline-offset: 1px; }
+input[aria-invalid="true"] { border-color: #b42318; }
+.allocation { color: #4b5563; }
+.changed input { border-color: #ad6500; background: #fff9e9; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

@@ -19,6 +19,7 @@ from django.shortcuts import render
 from functools import reduce
 
 from atlas.settings import OIDC_LOGIN_URL
+from task_action.task_management import task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -241,7 +242,23 @@ def global_share_change(request):
            old_share = GlobalShare.objects.get(name=share)
            old_shares[old_share.name] = int(old_share.value)
        user = request.user
-       if not user.user_permissions.filter(name='Can edit GDPConfig').exists():
+       authorised = False
+       if  user.user_permissions.filter(name='Can edit GDPConfig').exists():
+           authorised = True
+       else:
+           user, allowed_groups = task_user_rights(user.username)
+           parents = set([GlobalShare.objects.get(name=share).parent for share in data])
+           if 'DPD' in allowed_groups:
+               if not(parents - {'Derivations'}):
+                   authorised = True
+           if 'MCCOORD' in allowed_groups:
+               MC_LEVEL2_SHARES = {'MC evgen','MC merge','MC root','MC simul'}
+               if not(parents - MC_LEVEL2_SHARES) or not(set(data) - MC_LEVEL2_SHARES):
+                   authorised = True
+           if 'REPR' in allowed_groups:
+               if not(parents - {'Reprocessing'}):
+                   authorised = True
+       if not authorised:
            raise LookupError('User %s has no permission for global share change '% user.username)
        else:
             log_str = ''

@@ -1,0 +1,26 @@
+<main>
+  <header class="page-header">
+    <div>
+      <h1>Global shares</h1>
+      <span class="summary">{{ data().shares.length }} shares · {{ changedCount() }} modified</span>
+    </div>
+    <nav aria-label="Global share actions">
+      <button mat-stroked-button type="button" (click)="load()" [disabled]="loading() || saving()">Refresh values</button>
+      <a mat-button [href]="logsUrl" target="_blank" rel="noopener">Logs</a>
+      <a mat-button href="/gdpconfig/global_share/">Old page</a>
+    </nav>
+  </header>
+
+  @if (loading() && !data().shares.length) {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading global shares"></mat-progress-bar>
+  }
+  @if (error() && !data().shares.length) { <p class="error" role="alert">{{ error() }}</p> }
+
+  @if (data().shares.length) {
+    <app-global-share-tree [groups]="groups()" [disabled]="loading() || saving()"
+                           [errorMessage]="error()" [statusMessage]="saving() ? 'Saving changes…' : loading() ? 'Refreshing…' : message()"
+                           (valueChange)="changeValue($event)" (review)="review($event)" (resetGroup)="resetGroup($event)"></app-global-share-tree>
+  } @else if (!loading() && !error()) {
+    <p>No global shares found.</p>
+  }
+</main>
