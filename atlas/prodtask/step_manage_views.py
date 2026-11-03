@@ -2615,7 +2615,8 @@ def check_all_outputs_deleted(task, ddm):
         if '.log.' not in output_datset.name:
             number_of_outputs -= 1
             if ddm.dataset_exists(output_datset.name):
-                if list(ddm.list_dataset_rules(output_datset.name)) or ddm.dataset_replicas(output_datset.name):
+                if ((list(ddm.list_dataset_rules(output_datset.name)) and ddm.dataset_info(output_datset.name).length>0)
+                        or ddm.dataset_replicas(output_datset.name)):
                     to_delete = False
     return to_delete and number_of_outputs == 0
 
