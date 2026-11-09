@@ -74,7 +74,7 @@ export class AnalysisRequestComponent implements OnInit {
   public tasks$ =  this.route.paramMap.pipe(switchMap((params) => {
 
     this.requestID = params.get('id').toString();
-    return this.taskManagementService.getTasksByRequestSlices(params.get('id'), null);
+    return this.taskManagementService.getTasksByRequestSlices(params.get('id'), [-1]);
   }), catchError((err) => {
     this.taskLoadError = err.toString();
     return of([]);
@@ -232,7 +232,7 @@ export class AnalysisRequestComponent implements OnInit {
             this.countSliceTypes(slices);
     })
       );
-      this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, null);
+      this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, [-1]);
     }
   }
   onTaskChosen(taskID: number): void {
@@ -298,7 +298,7 @@ export class AnalysisRequestComponent implements OnInit {
     if (!this.taskForAllSlices) {
       this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, this.selectedSlices.map(s => s.slice.slice));
     } else {
-      this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, null);
+      this.tasks$ = this.taskManagementService.getTasksByRequestSlices(this.requestID, [-1]);
     }
   }
 

@@ -18,6 +18,7 @@ import requests
 from celery.result import AsyncResult
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.handlers.wsgi import WSGIRequest
+from django.db.models.query_utils import Q
 from django.http import HttpRequest
 from django.utils import timezone
 from rest_framework.exceptions import bad_request
@@ -298,7 +299,12 @@ def production_task_for_request(request: Request) -> Response:
                 raise TRequest.DoesNotExist
             if request.data['slices']:
                 slices = request.data['slices']
-                slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
+                if slices == [-1]:
+                    slice_ids = list(
+                        InputRequestList.objects.filter( ~Q(is_hide=True), request=request_id).values_list('id',
+                                                                                                          flat=True))
+                else:
+                    slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
                 steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
                 tasks = list(ProductionTask.objects.filter(step__in=steps)) + child_derivation_tasks(request_id, steps)
             else:
@@ -1790,6 +1796,15 @@ def check_job_options(production_requests: List[TRequest]):
         else:
             job_option_check_enough_input = defaultdict(list)
             for slice in slices:
+                if slice.is_hide:
+                    continue
+                if not slice.id in first_step_by_slice:
+                    result_problems.append(
+                        RequestCheckResult(step_position=[StepPosition(slice.request_id, slice.slice, 0)],
+                                           check_name='Empty slice',
+                                           status='ERROR',
+                                           message=f'Slice has no steps'))
+                    continue
                 if first_step_by_slice[slice.id]:
                     step = first_step_by_slice[slice.id]
                     ctag = step.step_template.ctag

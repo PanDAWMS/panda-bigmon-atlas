@@ -51,6 +51,7 @@ export class PMGApprovalComponent implements OnInit{
     ERROR_CHECKUP_LIST = [
       'Energy check',
       'Project check',
+      'Empty slice',
       'Missing Job Option',
       'Not dividable job option',
       'Input events not dividable by 10k',
