@@ -69,6 +69,70 @@ export interface PMGApproveResult {
   status: string;
 }
 
+export interface MCCampaignParam {
+  campaign: string;
+  subcampaign: string;
+  step: string;
+  project_base: string;
+  energies: string[];
+  parent_steps: [string, string, string][];
+}
+
+export interface MCCampaignSubmissionStructure {
+  campaignProvenance: Record<string, Record<string, string>>;
+  campaignParams: Record<string, MCCampaignParam>;
+}
+
+export interface MCCampaignSubmissionFirstStepFormValue {
+  descriptionCtrl: string;
+  refLinkCtrl: string;
+  physGroupCtrl: string;
+  longDescriptionCtrl: string;
+  ccCtrl: string;
+}
+
+export interface MCCampaignSubmissionSpreadsheetConfigFormValue {
+  campaignCtrl: string;
+  subCampaignCtrl: string[];
+  subCampaignEventRatiosCtrl: number[];
+  startingStepCtrl: string;
+  lastStepCtrl: string;
+  energyCtrl: string;
+  simulationTypeCtrl: string;
+  spreadsheetCtrl: string;
+  spreadsheetFileCtrl: File | null;
+  useFirstSpreadsheetCtrl: boolean;
+  ratioCtrl: number | null;
+}
+
+export interface MCCampaignSubmissionSpreadsheetConfig {
+  campaign: string;
+  sub_campaigns: string[];
+  sub_campaign_event_ratios: number[];
+  starting_step: string;
+  last_step: string;
+  energy: string;
+  simulation_type: string;
+  spreadsheet_url: string;
+  spreadsheet_file_name: string;
+  use_first_spreadsheet: boolean;
+  ratio: number | null;
+}
+
+export interface MCCampaignsSubmissionRequest {
+  description: string;
+  ref_link: string;
+  phys_group: string;
+  long_description: string;
+  cc: string;
+  spreadsheet_configs: MCCampaignSubmissionSpreadsheetConfig[];
+}
+
+interface MCCampaignSubmissionStructureResponse {
+  campaign_provenance: Record<string, Record<string, string>>;
+  campaign_params: Record<string, MCCampaignParam>;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -86,6 +150,8 @@ export class ProductionRequestService {
   private prAsyncTaskStatus = '/prodtask/celery_task_status_full/';
   private prPMGCheckUpUrl = '/production_request/pmg_request_verification';
   private prPMGApproveUrl = '/production_request/pmg_approve/';
+  private mcCampaignSubmissionStructureUrl = '/production_request/mc_campaign_submission_structure/';
+  private mcCampaignSubmissionProcessingUrl = '/production_request/mc_campaigns_submission_processing/';
 
 
 
@@ -129,6 +195,53 @@ export class ProductionRequestService {
   }
   setNewPMGStatus(jira: string, action: string): Observable<PMGApproveResult> {
     return this.http.post<PMGApproveResult>(this.prPMGApproveUrl, {jira, action});
+  }
+
+  getMCCampaignSubmissionStructure(): Observable<MCCampaignSubmissionStructure> {
+    return this.http.get<MCCampaignSubmissionStructureResponse>(this.mcCampaignSubmissionStructureUrl).pipe(
+      map((response) => ({
+        campaignProvenance: response.campaign_provenance ?? {},
+        campaignParams: response.campaign_params ?? {},
+      }))
+    );
+  }
+
+  submitMCCampaignsSubmission(
+    firstStepFormGroupData: MCCampaignSubmissionFirstStepFormValue,
+    spreadsheetConfigsData: MCCampaignSubmissionSpreadsheetConfigFormValue[]
+  ): Observable<MCCampaignsSubmissionRequest> {
+    const requestPayload: MCCampaignsSubmissionRequest = {
+      description: String(firstStepFormGroupData.descriptionCtrl ?? ''),
+      ref_link: String(firstStepFormGroupData.refLinkCtrl ?? ''),
+      phys_group: String(firstStepFormGroupData.physGroupCtrl ?? ''),
+      long_description: String(firstStepFormGroupData.longDescriptionCtrl ?? ''),
+      cc: String(firstStepFormGroupData.ccCtrl ?? ''),
+      spreadsheet_configs: spreadsheetConfigsData.map((config) => ({
+        campaign: String(config.campaignCtrl ?? ''),
+        sub_campaigns: Array.isArray(config.subCampaignCtrl) ? config.subCampaignCtrl.map((value) => String(value)) : [],
+        sub_campaign_event_ratios: Array.isArray(config.subCampaignEventRatiosCtrl)
+          ? config.subCampaignEventRatiosCtrl.map((value) => Number(value))
+          : [],
+        starting_step: String(config.startingStepCtrl ?? ''),
+        last_step: String(config.lastStepCtrl ?? ''),
+        energy: String(config.energyCtrl ?? ''),
+        simulation_type: String(config.simulationTypeCtrl ?? ''),
+        spreadsheet_url: String(config.spreadsheetCtrl ?? ''),
+        spreadsheet_file_name: config.spreadsheetFileCtrl?.name ?? '',
+        use_first_spreadsheet: Boolean(config.useFirstSpreadsheetCtrl),
+        ratio: config.ratioCtrl == null ? null : Number(config.ratioCtrl),
+      })),
+    };
+
+    const formData = new FormData();
+    formData.append('request', JSON.stringify(requestPayload));
+    spreadsheetConfigsData.forEach((config, index) => {
+      if (config.spreadsheetFileCtrl) {
+        formData.append(`spreadsheet_file_${index}`, config.spreadsheetFileCtrl, config.spreadsheetFileCtrl.name);
+      }
+    });
+
+    return this.http.post<MCCampaignsSubmissionRequest>(this.mcCampaignSubmissionProcessingUrl, formData);
   }
 
   getAsyncTaskStatus(asyncTaskID: string): Observable<AsyncProdTaskSplitStatus> {

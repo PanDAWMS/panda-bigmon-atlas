@@ -128,6 +128,8 @@ def submit_source_to_rucio(analisys_pattern_id: int):
             _jsonLogger.error('Failed to upload source file to rucio',extra={'error':str(e)})
             raise e
 
+
+
 def check_source_exists(archive_name, source_panda_cache):
     source_url = f'{source_panda_cache}/cache/{archive_name}'
     response = requests.head(source_url)
@@ -160,3 +162,15 @@ def reinitialise_tag(tag: str):
         template.save()
         return new_task
     return None
+
+def reinitialise_tag_from_task(tag: str, task_id: int):
+    task = TTask.objects.get(id=task_id)
+    if not check_source_exists(task.jedi_task_parameters['buildSpec']['archiveName'], task.jedi_task_parameters['sourceURL']):
+        raise FileExistsError('Source tar does not exist for {task_id}')
+    template = AnalysisTaskTemplate.objects.filter(tag=tag).last()
+    template.task_parameters['buildSpec']['archiveName'] = task.jedi_task_parameters['buildSpec']['archiveName']
+    template.task_parameters['sourceURL'] = task.jedi_task_parameters['sourceURL']
+    template.source_tar = ''
+    template.save()
+    submit_source_to_rucio.delay(template.id)
+    return template

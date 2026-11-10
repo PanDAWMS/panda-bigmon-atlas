@@ -14,10 +14,29 @@
     <div><b>Physic group:</b> {{taskTemplate.physics_group}}</div>
     <div><b>Created by:</b> {{taskTemplate.username}}</div>
     <div><b>Software:</b> {{taskTemplate.software_release}}</div>
-    <div><b>Source Tar: </b> <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a></div>
+    <div><b>Source Tar: </b>
+      @if (taskTemplate.source_tar) {
+        <a href="{{taskTemplate.source_tar|rucioURL}}">{{taskTemplate.source_tar}}</a>
+      }
+      <mat-form-field>
+        <mat-label>Source task ID</mat-label>
+        <input matInput type="number" min="1" step="1" [formControl]="sourceTaskID">
+        @if (sourceTaskID.invalid) {
+          <mat-error>Enter a positive integer task ID</mat-error>
+        }
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="button" (click)="updateSourceTar()"
+              [disabled]="sourceTaskID.invalid || updatingSourceTar || loading || editMode !== 'view'">Update Source Tar</button>
+      @if (updatingSourceTar) {
+        <mat-spinner diameter="30"></mat-spinner>
+      }
+      @if (sourceTarMessage) {
+        <div role="status">{{sourceTarMessage}}</div>
+      }
+    </div>
     <div><b>Source Action:</b> {{taskTemplate.source_action}}</div>
     @if (editMode!=='edit') {
-      <button mat-raised-button color="primary" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
+      <button mat-raised-button color="primary" [disabled]="updatingSourceTar" (click)="savePatternAndTemplate({changes: {}, removedFields: []}, false)">Save</button>
     }
   </div>
   @if (loading) {

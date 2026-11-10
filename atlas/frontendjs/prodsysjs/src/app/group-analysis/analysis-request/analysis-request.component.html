@@ -56,17 +56,17 @@
       [disabled]="hashtagUpload"/>
   </mat-chip-grid>
 </mat-form-field>
-@if (requestStats$ | async; as requestStats) {
-  <div>
+<div>
+  @if (requestStats$ | async; as requestStats) {
     @if (requestStats.hs06sec_finished+requestStats.hs06sec_failed>0) {
       <span><b>Request stats: </b> </span>
       <span style="color: #43a047">Finished hs06: {{requestStats.hs06sec_finished|number}} </span>
       <span style="color: orangered">Failed hs06: {{requestStats.hs06sec_failed|number}} </span>
       <span > Output bytes: {{requestStats.bytes| datasetSize}}</span>
     }
-    <button mat-raised-button color="primary" (click)="showOutputs()">Show output datasets</button>
-  </div>
-}
+  }
+  <button mat-raised-button color="primary" (click)="showOutputs()">Show output datasets</button>
+</div>
 
 <mat-tab-group mat-stretch-tabs [color]="'primary'" [selectedIndex]="selectedTab" (selectedTabChange)="tabChanged($event)" >
   <mat-tab label="Slices">

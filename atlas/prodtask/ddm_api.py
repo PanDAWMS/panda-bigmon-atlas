@@ -318,6 +318,8 @@ class DDM(object):
             return False
         if not list(self.__ddm.list_dataset_replicas(scope, dataset, False)) and not(list(self.__ddm.list_did_rules(scope, dataset))):
             return False
+        if not list(self.__ddm.list_dataset_replicas(scope, dataset, False)) and self.dataset_info(dataset).length == 0 and not self.dataset_info(dataset).is_open:
+            return False
         if self.dataset_metadata(dataset).get('expired_at'):
             if ((self.dataset_metadata(dataset).get('expired_at') - timezone.now().replace(tzinfo=None)) <
                     datetime.timedelta(hours=DELITION_PERIOD_HOURS)):

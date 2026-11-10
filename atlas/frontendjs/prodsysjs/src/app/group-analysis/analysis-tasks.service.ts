@@ -41,6 +41,7 @@ export class AnalysisTasksService {
   private prGetAllTemplateUrl = '/api/get_all_templates';
   private prGetAnalysisRequestUrl = '/api/get_analysis_request';
   private prSaveTaskTemplateUrl = '/api/save_template_changes/';
+  private prUpdateSourceTarUrl = '/api/update_source_tar/';
   private prCreateAnalysisRequestUrl = '/api/create_analysis_request/';
   private prAnalysisRequestActionUrl = '/api/analysis_request_action/';
   private prGetAnalysisRequestStatsUrl = '/api/analysis_request_stats/';
@@ -91,6 +92,10 @@ export class AnalysisTasksService {
     return this.http.get<TemplateBase>(this.prGetTemplateUrl, {params: {template_tag: templateID}});
   }
 
+  updateSourceTar(tag: string, taskID: number): Observable<TemplateBase> {
+    return this.http.post<TemplateBase>(this.prUpdateSourceTarUrl, {tag, task_id: taskID});
+  }
+
   getAllActiveTemplates(status= 'ACTIVE'): Observable<TemplateBase[]> {
     return this.http.get<TemplateBase[]>(this.prGetAllTemplateUrl, {params: {status}});
   }
@@ -107,6 +112,14 @@ export class AnalysisTasksService {
   }
   getAnalysisRequestOutputs(requestID: string): Observable<string[]> {
     return this.http.get<string[]>(this.prGetAnalysisRequestOutputsUrl, {params: {requestID}});
+  }
+
+  getAnalysisContainerScopes(): Observable<string[]> {
+    return this.http.get<string[]>('/api/get_analysis_container_scopes/');
+  }
+
+  registerAnalysisOutputContainer(requestID: string, scope: string, name: string, datasets: string[]): Observable<string> {
+    return this.http.post<string>('/api/register_analysis_output_container/', {requestID, scope, name, datasets});
   }
   saveTemplateParams(templateID: string, templateBase: Partial<TemplateBase>|null,  params: PatternChanges): Observable<any> {
     return this.http.post(this.prSaveTaskTemplateUrl, {templateID, templateBase,  params});

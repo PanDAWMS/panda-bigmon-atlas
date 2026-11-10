@@ -305,8 +305,11 @@ def production_task_for_request(request: Request) -> Response:
                                                                                                           flat=True))
                 else:
                     slice_ids = list(InputRequestList.objects.filter(request=request_id, slice__in=slices).values_list('id',flat=True))
-                steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
-                tasks = list(ProductionTask.objects.filter(step__in=steps)) + child_derivation_tasks(request_id, steps)
+                if len(slice_ids) == InputRequestList.objects.filter(request=request_id).count() and slices == [-1]:
+                    tasks = list(ProductionTask.objects.filter(request_id=request_id))
+                else:
+                    steps = list( StepExecution.objects.filter(slice__in=slice_ids).values_list('id',flat=True))
+                    tasks = list(ProductionTask.objects.filter(step__in=steps)) + child_derivation_tasks(request_id, steps)
             else:
                 tasks = list(ProductionTask.objects.filter(request_id=request_id))
             hashtags = get_bulk_hashtags_by_task([x.id for x in tasks])

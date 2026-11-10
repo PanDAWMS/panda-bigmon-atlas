@@ -1,10 +1,11 @@
 from django.urls import  re_path
 
 from atlas.analysis_tasks.views import prepare_template_from_task, create_template, get_template, get_analysis_request, \
-    save_template_changes, get_all_patterns, create_analysis_request, analysis_request_action, \
+    save_template_changes, update_source_tar, get_all_patterns, create_analysis_request, analysis_request_action, \
     get_analysis_request_stat, get_analysis_request_output_datasets_names, get_analysis_task_preview, \
     get_analysis_pattern_view, get_derivation_slices, get_analysis_request_hashtags, \
-    add_delete_analysis_request_hashtag, get_analysis_scopes_by_user
+    add_delete_analysis_request_hashtag, get_analysis_scopes_by_user, get_analysis_container_scopes, \
+    register_analysis_output_container
 from atlas.dkb.views import simple_dkb_search, dkb_events_per_campaign
 from atlas.gpdeletion.views import ListGroupProductionDeletionForUsersView, all_datasests_to_delete, extension_api, \
     extension_container_api, group_production_datasets_full, physics_container_index, create_physics_container_in_ami
@@ -46,6 +47,7 @@ urlpatterns = [
     re_path(r'^create_template/$', create_template, name='create_template'),
     re_path(r'^get_template/$', get_template, name='get_template'),
     re_path(r'^save_template_changes/$', save_template_changes, name='save_template_changes'),
+    re_path(r'^update_source_tar/$', update_source_tar, name='update_source_tar'),
     re_path(r'^get_all_templates/$', get_all_patterns, name='get_all_patterns'),
 
     re_path(r'^create_analysis_request/$', create_analysis_request, name='create_analysis_request'),
@@ -54,6 +56,8 @@ urlpatterns = [
 
     re_path(r'^get_analysis_request/$', get_analysis_request, name='get_analysis_request'),
     re_path(r'^get_analysis_request_output_datasets_names/$', get_analysis_request_output_datasets_names, name='get_analysis_request_output_datasets_names'),
+    re_path(r'^get_analysis_container_scopes/$', get_analysis_container_scopes, name='get_analysis_container_scopes'),
+    re_path(r'^register_analysis_output_container/$', register_analysis_output_container, name='register_analysis_output_container'),
     re_path(r'^get_analysis_task_preview/$', get_analysis_task_preview, name='get_analysis_task_preview'),
     re_path(r'^get_analysis_pattern_view/$', get_analysis_pattern_view, name='get_analysis_pattern_view'),
     re_path(r'^get_derivation_slices/$', get_derivation_slices, name='get_derivation_slices'),

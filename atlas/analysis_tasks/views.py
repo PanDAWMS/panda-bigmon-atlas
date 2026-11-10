@@ -26,7 +26,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 
 from atlas.analysis_tasks.source_handling import submit_source_to_rucio, modify_and_submit_task, \
-    submit_task_for_rucio_file, check_tag_source, check_source_exists
+    submit_task_for_rucio_file, check_tag_source, check_source_exists, reinitialise_tag_from_task
+from atlas.analysis_tasks.scopes import container_scopes_by_user
 from atlas.atlaselastic.views import get_task_stats, TaskDatasetStats
 from atlas.prestage.views import step_action
 from atlas.prodtask.ddm_api import DDM
@@ -427,18 +428,19 @@ def check_input_source_exists(step_template: AnalysisStepTemplate):
             raise Exception(f"Source tarball {step_template.step_parameters['buildSpec']['archiveName']} does not exist")
     return step_template
 
-def collect_all_output_datasets(request_id: int) -> [str]:
+def collect_all_output_datasets(request_id: int) -> list[str]:
     output_datasets = []
     for slice in InputRequestList.objects.filter(request=request_id):
-        for step in AnalysisStepTemplate.objects.filter(request=request_id, slice=slice):
-            if ProductionTask.objects.filter(step=step.step_production_parent).exists():
-                tasks = ProductionTask.objects.filter(step=step.step_production_parent)
-                for task in tasks:
-                    if task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
-                        datasets = JediDatasets.objects.filter(id=task.id)
-                        for dataset in datasets:
-                            if dataset.type == 'tmpl_output':
-                                output_datasets.append(dataset.datasetname)
+        if not slice.is_hide:
+            for step in AnalysisStepTemplate.objects.filter(request=request_id, slice=slice):
+                if ProductionTask.objects.filter(step=step.step_production_parent).exists():
+                    tasks = ProductionTask.objects.filter(step=step.step_production_parent)
+                    for task in tasks:
+                        if task.status in [ProductionTask.STATUS.FINISHED, ProductionTask.STATUS.DONE]:
+                            datasets = JediDatasets.objects.filter(id=task.id)
+                            for dataset in datasets:
+                                if dataset.type == 'tmpl_output':
+                                    output_datasets.append(dataset.datasetname)
     return output_datasets
 
 
@@ -610,6 +612,35 @@ class AnalysisTaskTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnalysisTaskTemplate
         fields = '__all__'
+
+
+class SourceTarUpdateSerializer(serializers.Serializer):
+    tag = serializers.CharField()
+    task_id = serializers.IntegerField(min_value=1)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def update_source_tar(request):
+    serializer = SourceTarUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    tag = serializer.validated_data['tag']
+    task_id = serializer.validated_data['task_id']
+    try:
+        if not AnalysisTaskTemplate.objects.filter(tag=tag).exists():
+            return Response('Analysis template not found', status=status.HTTP_404_NOT_FOUND)
+        template = reinitialise_tag_from_task(tag, task_id)
+        _jsonLogger.info('Update analysis template source tar',
+                         extra={'user': request.user.username, 'tag': tag, 'task_id': task_id})
+        return Response(AnalysisTaskTemplateSerializer(template).data)
+    except TTask.DoesNotExist:
+        return Response('Task not found', status=status.HTTP_404_NOT_FOUND)
+    except FileExistsError:
+        return Response(f'Source tar does not exist for task {task_id}', status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 @authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
@@ -832,6 +863,48 @@ def get_analysis_request_output_datasets_names(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def get_analysis_container_scopes(request):
+    return Response(container_scopes_by_user(request.user.username))
+
+
+class AnalysisOutputContainerSerializer(serializers.Serializer):
+    requestID = serializers.IntegerField(min_value=1000)
+    scope = serializers.CharField()
+    name = serializers.RegexField(r'^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+    datasets = serializers.ListField(child=serializers.CharField(), allow_empty=False)
+
+
+@api_view(['POST'])
+@authentication_classes((TokenAuthentication, BasicAuthentication, SessionAuthentication))
+@permission_classes((IsAuthenticated,))
+def register_analysis_output_container(request):
+    serializer = AnalysisOutputContainerSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    try:
+        if data['scope'] not in container_scopes_by_user(request.user.username):
+            return Response('You are not allowed to create containers in this scope',
+                            status=status.HTTP_403_FORBIDDEN)
+        datasets = list(dict.fromkeys(data['datasets']))
+        outputs = set(collect_all_output_datasets(data['requestID']))
+        if not set(datasets).issubset(outputs):
+            return Response('Select output datasets from done or finished tasks in this request',
+                            status=status.HTTP_400_BAD_REQUEST)
+        container_name = f"{data['scope']}.{data['name']}"
+        ddm = DDM()
+        if not ddm.dataset_exists(container_name):
+            ddm.register_container(container_name, datasets)
+        else:
+            ddm.register_datasets_in_container(container_name, datasets)
+        return Response(f'Container {container_name} registered with datasets {len(datasets)}')
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 def clone_analysis_request_slices(request):
     slices = request.data['slices']
     for slice in slices:
@@ -895,6 +968,16 @@ def set_analysis_request_status(request):
     return Response({'status': TRequest.objects.get(reqid=production_request_id).cstatus}, status=status.HTTP_200_OK)
 
 
+def analysis_task_output_datasets(task_id: int, ddm) -> list[str]:
+        result_datasets = []
+        datasets = JediDatasets.objects.filter(id=task_id)
+        for dataset in datasets:
+            if dataset.type == 'output':
+                if ddm.dataset_exists(dataset.datasetname):
+                    result_datasets.append(dataset.datasetname)
+        return result_datasets
+
+
 def hide_analysis_slices(request):
     try:
         request_id = int(request.data['requestID'])
@@ -902,9 +985,20 @@ def hide_analysis_slices(request):
             raise TRequest.DoesNotExist
         production_request = TRequest.objects.get(reqid=request_id)
         slices = request.data['slices']
+        ddm = DDM()
         for sliceNumber in slices:
             slice = InputRequestList.objects.get(request=production_request, slice=sliceNumber)
             hide_slice(slice)
+            for step in AnalysisStepTemplate.objects.filter(request=request_id, slice=slice):
+                if ProductionTask.objects.filter(step=step.step_production_parent).exists():
+                    tasks = ProductionTask.objects.filter(step=step.step_production_parent)
+                    datasets_to_delete = []
+                    for task in tasks:
+                        if task.status in ProductionTask.BAD_STATUS:
+                            datasets_to_delete += analysis_task_output_datasets(task.id, ddm)
+                    for dataset in datasets_to_delete:
+                        _jsonLogger.info(f"Deleting dataset {dataset}", extra=form_json_request_dict(request_id, request,{'dataset':dataset}))
+                        ddm.deleteDataset(dataset, 2*3600)
         return Response({'result':f"{len(slices)} hidden"}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

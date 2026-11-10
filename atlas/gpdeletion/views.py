@@ -1597,3 +1597,25 @@ def create_physics_container_in_ami(request):
         return Response([x.get_name() for x in containers])
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def delete_predefined_containers(containers: list[str]) -> int:
+    ddm = DDM()
+    total_bytes = 0
+    for container in containers:
+        datasets = ddm.list_datasets_in_container(container)
+        bytes_deleted = 0
+        for dataset in datasets:
+            bytes_deleted += ddm.dataset_info(dataset).bytes
+            ddm.deleteDataset(dataset)
+        gp_processing = GroupProductionDeletionProcessing()
+        if GroupProductionDeletionProcessing.objects.filter(container=container).exists():
+            gp_processing = GroupProductionDeletionProcessing.objects.filter(container=container).last()
+        gp_processing.container = container
+        gp_processing.command_timestamp = timezone.now()
+        gp_processing.deleted_datasets = len(datasets)
+        gp_processing.bytes = bytes_deleted
+        gp_processing.status = 'Deleted'
+        gp_processing.save()
+        total_bytes += bytes_deleted
+    return total_bytes

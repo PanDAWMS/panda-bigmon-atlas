@@ -1,7 +1,8 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AnalysisTasksService} from "../analysis-tasks.service";
 import {ActivatedRoute, Router} from "@angular/router";
-import {catchError, map, mergeAll, switchMap, tap} from "rxjs/operators";
+import {catchError, finalize, map, mergeAll, switchMap, tap} from "rxjs/operators";
 import {TasksManagementService} from "../../tasks-management/tasks-management.service";
 import {AnalysisSlice} from "../analysis-task-model";
 import {AgCellSliceComponent} from "../ag-cell-slice/ag-cell-slice.component";
@@ -12,7 +13,7 @@ import {combineLatest, of} from "rxjs";
 import {MatTabChangeEvent} from "@angular/material/tabs";
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from "@angular/material/dialog";
 import {TASKS_CONSTANTS} from "../../common/constants/tasks_constants";
-import {FormControl} from "@angular/forms";
+import {FormControl, Validators} from "@angular/forms";
 import {COMMA, ENTER} from "@angular/cdk/keycodes";
 import {MatChipInputEvent} from "@angular/material/chips";
 import {ProductionTaskTableComponent} from "../../production-task-table/production-task-table.component";
@@ -254,8 +255,8 @@ export class AnalysisRequestComponent implements OnInit {
   }
 
   showOutputs(): void {
-    this.analysisTaskService.getAnalysisRequestOutputs(this.requestID).subscribe((outputs) => {
-      this.dialog.open(DialogRequestOutputsComponent, {width: '90%', data: outputs});
+    this.dialog.open(DialogRequestOutputsComponent, {
+      width: '90%', data: {requestID: this.route.snapshot.paramMap.get('id')}
     });
   }
 
@@ -312,11 +313,96 @@ export class AnalysisRequestComponent implements OnInit {
     standalone: false
 })
 export class DialogRequestOutputsComponent implements OnInit {
-  data = inject(MAT_DIALOG_DATA);
+  data = inject<{requestID: string}>(MAT_DIALOG_DATA);
   dialogRef = inject<MatDialogRef<DialogRequestOutputsComponent>>(MatDialogRef);
+  private analysisTaskService = inject(AnalysisTasksService);
+  private destroyRef = inject(DestroyRef);
 
   outputs: string[] = [];
+  selectedOutputs = new Set<string>();
+  outputFilter = new FormControl('', {nonNullable: true});
+  userScopes: string[] = [];
+  selectedScope = new FormControl('', {nonNullable: true, validators: [Validators.required]});
+  containerName = new FormControl('', {nonNullable: true,
+    validators: [Validators.required, Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9_.-]*$/)]});
+  creatingContainer = false;
+  loadingScopes = true;
+  loadingOutputs = true;
+  outputsErrorMessage = '';
+  errorMessage = '';
+  submitStatus = '';
+  createdContainers: string[] = [];
+
+  get filteredOutputs(): string[] {
+    const filter = this.outputFilter.value.trim().toLowerCase();
+    return this.outputs.filter(output => output.toLowerCase().includes(filter));
+  }
+
+  get selectedFilteredOutputs(): string[] {
+    return this.filteredOutputs.filter(output => this.selectedOutputs.has(output));
+  }
+
   ngOnInit(): void {
-    this.outputs = this.data;
+    this.analysisTaskService.getAnalysisRequestOutputs(this.data.requestID).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => { this.loadingOutputs = false; })
+    ).subscribe({
+      next: outputs => {
+        this.outputs = [...new Set(outputs)];
+        this.selectedOutputs = new Set(this.outputs);
+      },
+      error: err => { this.outputsErrorMessage = this.formatError(err); }
+    });
+    this.analysisTaskService.getAnalysisContainerScopes().pipe(
+      finalize(() => { this.loadingScopes = false; })
+    ).subscribe({
+      next: scopes => {
+        this.userScopes = scopes;
+        this.selectedScope.setValue(scopes[0] || '');
+      },
+      error: err => { this.errorMessage = this.formatError(err); }
+    });
+  }
+
+  selectOutput(output: string, selected: boolean): void {
+    if (selected) {
+      this.selectedOutputs.add(output);
+    } else {
+      this.selectedOutputs.delete(output);
+    }
+  }
+
+  selectAll(selected: boolean): void {
+    for (const output of this.filteredOutputs) {
+      this.selectOutput(output, selected);
+    }
+  }
+
+  createContainer(): void {
+    const datasets = this.selectedFilteredOutputs;
+    if (this.creatingContainer || this.loadingScopes || this.loadingOutputs || this.selectedScope.invalid ||
+        this.containerName.invalid || datasets.length === 0) {
+      return;
+    }
+    const fullName = `${this.selectedScope.value}.${this.containerName.value}`;
+    this.errorMessage = '';
+    this.submitStatus = '';
+    this.creatingContainer = true;
+    this.analysisTaskService.registerAnalysisOutputContainer(this.data.requestID, this.selectedScope.value,
+      this.containerName.value, datasets).pipe(
+      finalize(() => { this.creatingContainer = false; })
+    ).subscribe({
+      next: response => {
+        this.submitStatus = response;
+        if (!this.createdContainers.includes(fullName)) {
+          this.createdContainers.push(fullName);
+        }
+      },
+      error: err => { this.errorMessage = this.formatError(err); }
+    });
+  }
+
+  private formatError(err: any): string {
+    return typeof err.error === 'string' ? err.error : JSON.stringify(err.error) || err.message;
   }
 }
