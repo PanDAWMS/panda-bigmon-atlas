@@ -1,6 +1,5 @@
 import logging
 
-import production_request
 from atlas.prodtask.models import ProductionTask, VerifiedTaskConfig, VerifiedTaskConfigScout
 from atlas.prodtask.models import HashTag
 from atlas.prodtask.helper import form_json_request_dict
