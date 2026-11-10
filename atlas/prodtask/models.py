@@ -51,6 +51,14 @@ class SafeJSONField(models.JSONField):
 
 def days_ago(days: int): return timezone.now() - timedelta(days=days)
 
+def human_readable_size(size_bytes):
+    """Convert bytes to human readable string."""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB']:
+        if size_bytes < 1000:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1000
+    return f"{size_bytes:.2f} EB"
+
 MC_STEPS = ['Evgen',
             'Evgen Merge',
              'Simul',
@@ -147,6 +155,7 @@ class TRequest(models.Model):
         CANCELLED = 'cancelled'
         TEST = 'test'
         DONE = 'done'
+        SCOUTING = 'scouting'
 
 
     PHYS_GROUPS=[(x,x) for x in ['BPHY',
@@ -2314,6 +2323,9 @@ class VerifiedTaskConfig(models.Model):
         FAILED = 'FAILED'
         ON_GOING = 'ON_GOING'
 
+    ACTIVE_SCOUT_HASHTAG = "active_scouts"
+    FAILED_SCOUT_HASHTAG = "failed_scouts"
+
     @staticmethod
     def convert_scope_to_input_types(scope: str) -> str:
         if scope.lower().startswith(('mc15','mc16','mc20')):
@@ -2328,7 +2340,24 @@ class VerifiedTaskConfig(models.Model):
             return 'data'
         return 'special'
 
-    id = models.DecimalField(decimal_places=0, max_digits=12, db_column='VERIFIED_TASK_CONFIG_ID', primary_key=True)
+    @staticmethod
+    def get_latest_tag(dataset_name: str) -> str:
+        def version_is_ami_tags(sub_part: str) -> bool:
+            """Check for underscore-separated tags of one letter and one or more digits."""
+            return re.fullmatch(r'[a-z][0-9]+(?:_[a-z][0-9]+)*', sub_part) is not None
+
+        version = dataset_name.split('.')[-1]
+        version = version.split('_tid')[0]
+
+        if version_is_ami_tags(version):
+            if version.split('_')[-1].startswith('e'):
+                return 'evgen'
+            else:
+                return version.split('_')[-1]
+        else:
+            return 'none'
+
+    id = models.BigAutoField(db_column='VERIFIED_TASK_CONFIG_ID', primary_key=True)
     ami_tag = models.CharField(max_length=10, db_column='AMI_TAG')
     output_formats = models.CharField(max_length=400, db_column='OUTPUT_FORMATS')
     input_types = models.CharField(max_length=400, db_column='INPUT_TYPES')
@@ -3273,6 +3302,7 @@ class PostProductionActions(models.Model):
     class ACTIONS:
         TEST_ACTION = 'TA'
         SAMPLE_CONTAINER = 'SC'
+        STAGING_TASK = 'ST'
 
 
     id = models.ForeignKey(ProductionTask, db_column='TASK_ID', primary_key=True, on_delete=models.CASCADE)

@@ -1,9 +1,7 @@
 import logging
-import re
 from collections import defaultdict
 from typing import Any
 
-from django.contrib.auth.models import User
 from rest_framework import serializers, generics, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -12,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from atlas.ami.views import get_project_by_run
 from atlas.analysis_tasks.source_handling import upload_to_rucio
+from atlas.analysis_tasks.scopes import container_scopes_by_user
 from atlas.celerybackend.celery import app
 from atlas.prodtask.ddm_api import DDM
 from atlas.prodtask.models import EventPickingUserRequest, EventPickingProcessing, EventPickingContent, TRequest, \
@@ -181,13 +180,7 @@ def produced_datasets_list(request):
         ep_results = EventPickingResults.objects.filter(jira__endswith=jira).order_by('-timestamp').first()
         if ep_results and ep_results.results:
             containers = ep_results.results.get('containers', [])
-        user_scopes = [f'user.{request.user.username}']
-        user = User.objects.get(username=request.user.username)
-        user_groups = [group.name for group in user.groups.all()]
-        for group in user_groups:
-            match = re.match(r'^IAM:atlas/(.+)/production$', group)
-            if match:
-                user_scopes.append(f'group.{match.group(1)}')
+        user_scopes = container_scopes_by_user(request.user.username)
         return Response({'datasets': produced_datasets, 'containers': containers, 'userScopes': user_scopes}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -17,6 +17,7 @@ import traceback
 
 import math
 from copy import deepcopy
+from functools import cache
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -28,9 +29,10 @@ from atlas.prodtask.models import (TRequest, RequestStatus, InputRequestList, St
                                    TaskTemplate,
                                    TConfig, JediDatasets, ProductionTask, TTask, JediDatasetContents, DistributedLock,
                                    DSIDHashtags, PostProductionActions, DatasetRecovery, EventPickingUserRequest,
-                                   EventPickingProcessing, EventPickingContent, SystemParametersHandler)
+                                   EventPickingProcessing, EventPickingContent, SystemParametersHandler, VerifiedTaskConfig)
 from atlas.deftcore.protocol import (Protocol, StepStatus, TaskParamName, TaskDefConstants, TaskStatus )
 from atlas.deftcore.protocol import RequestStatus as RequestStatusEnum
+from atlas.production_request.scouts import register_scout_task
 from .taskreg import TaskRegistration
 from atlas.ami.client import AMIClient
 from atlas.prodtask.ddm_api import DDM
@@ -44,6 +46,7 @@ from ..prodtask.mcevgen import resolve_job_parameters_from_yaml
 
 logger = logging.getLogger('deftcore')
 REQUEST_GRACE_PERIOD = 1
+_jsonLogger = logging.getLogger('prodtask_ELK')
 
 def get_exception_string():
     ex_info = sys.exc_info()
@@ -2911,7 +2914,12 @@ class TaskDefinition(object):
             if use_evnt_filter or is_evnt:
                 input_data_name = step.slice.input_data
                 input_data_dict = self.parse_data_name(input_data_name)
-
+            submit_scout = False
+            continue_definition = True
+            if not is_evnt:
+                submit_scout, continue_definition = self.check_scouts_needed(step.request_id, ctag_name, input_data_name, '.'.join(list(set(output_types))))
+            # if not continue_definition:
+            #     break
             if input_data_dict['project'].lower().startswith('mc') and project.lower().startswith('data'):
                 raise Exception("The project 'data' is invalid for MC inputs")
             if is_hepmc:
@@ -4956,6 +4964,13 @@ class TaskDefinition(object):
                                                        parent_task_id,
                                                        usergroup,
                                                        step.request.subcampaign)
+                    if submit_scout:
+                        follow_hashtags.append(VerifiedTaskConfig.ACTIVE_SCOUT_HASHTAG)
+                        register_scout_task(task_id)
+                        self.scout_exists = True
+                        self.check_scouts_needed.cache_clear()
+
+
                     post_production_actions.append(PostProductionActions.ACTIONS.SAMPLE_CONTAINER)
                     pp_action, _ = PostProductionActions.objects.get_or_create(id=ProductionTask.objects.get(id=task_id))
                     for action in post_production_actions:
@@ -5727,9 +5742,31 @@ class TaskDefinition(object):
             result_list.append(temporary_list[j])
         return result_list, another_chain_step
 
-    def check_scouts_needed(self, step: StepExecution, input_data: str, outputs: str ) -> tuple[bool, bool]:
 
-        return False, False
+
+    @staticmethod
+    @cache
+    def check_scouts_needed(request_id: int, ami_tag:str, input_data: str, outputs_string: str ) -> tuple[bool, bool]:
+        # return - submit scout, continue workflow
+
+
+        input_type = f'{VerifiedTaskConfig.convert_scope_to_input_types(input_data)}.{VerifiedTaskConfig.get_latest_tag(input_data)}'
+        outputs = outputs_string.split('.')
+        existing_checks = VerifiedTaskConfig.objects.filter(ami_tag=ami_tag, input_types = input_type)
+        if not existing_checks.exists():
+            return True, True
+        checked_outputs = set()
+        for existing_check in VerifiedTaskConfig.objects.filter(ami_tag=ami_tag, input_types = input_type, status=VerifiedTaskConfig.Status.VERIFIED):
+            checked_outputs.update(existing_check.output_formats.split('.'))
+        if not(set(outputs) - checked_outputs):
+            return False, True
+        for existing_check in VerifiedTaskConfig.objects.filter(ami_tag=ami_tag, input_types = input_type, status=VerifiedTaskConfig.Status.ON_GOING):
+            tasks = existing_check.scout_tasks
+            for task in tasks:
+                if task.request_id == request_id and task.status not in ProductionTask.BAD_STATUS:
+                    return False, False
+
+        return True, True
 
     @staticmethod
     def _get_request_status(request, summary_log, locked_time, current_status, keep_approved = False):
@@ -5760,7 +5797,7 @@ class TaskDefinition(object):
                     return 'approved'
         for status in statuses:
             if status.status not in ['approved', 'comment']:
-                if status.status in ['waiting', 'registered']:
+                if status.status in ['waiting', 'registered', 'scouting']:
                     return 'working'
                 else:
                     return status.status
@@ -5809,6 +5846,7 @@ class TaskDefinition(object):
         logger.info("Processing production requests")
         logger.info(f"Requests to process: {request_id}")
         self.template_type = template_type
+        self.scout_exists = False
         if self.template_type:
             self.template_results = {}
         keep_approved = False
@@ -5944,7 +5982,6 @@ class TaskDefinition(object):
                                     if parent_step.request.cstatus.lower() == \
                                             self.protocol.REQUEST_STATUS[RequestStatusEnum.APPROVED].lower()\
                                             and parent_step.request != step.request:
-                                        # add scout skipped steps
                                         keep_approved = True
                                 elif parent_step.status.lower() == \
                                         self.protocol.STEP_STATUS[StepStatus.NOTCHECKED].lower():
@@ -6031,7 +6068,11 @@ class TaskDefinition(object):
                                 except Exception:
                                     pass
                             continue
-
+                # if not keep_approved and self.scouting_task_exists(request):
+                #     request.cstatus = TRequest.STATUS.SCOUTING
+                # else:
+                #     if self.scout_exists:
+                #         keep_approved = True
                 request.cstatus = self._get_request_status(request, summary_log, self.lock_request_time, request.cstatus, keep_approved)
                 if not exception:
                     slices_with_error = list(SliceError.objects.filter(request=request, is_active=True))
@@ -6152,4 +6193,12 @@ class TaskDefinition(object):
         event_picking_processing = EventPickingProcessing.objects.get(production_request=step.request)
         event_picking_content = EventPickingContent.objects.get(ep_request=event_picking_processing, dataset_base=dataset_base)
         return {'filter_file': event_picking_processing.rucio_file, 'files': [{'scope':project,'name':name} for name in event_picking_content.file_list]}
+
+    @staticmethod
+    def scouting_task_exists(production_request):
+        task_ids = ProductionTask.objects.filter(production_request=production_request).values_list('task_id', flat=True)
+        active_scouts = HashTag.objects.get(hashtag=VerifiedTaskConfig.ACTIVE_SCOUT_HASHTAG).tasks_ids
+        if not set(task_ids).isdisjoint(active_scouts):
+            return True
+        return False
 
