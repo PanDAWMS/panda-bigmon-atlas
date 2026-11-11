@@ -489,9 +489,7 @@ def create_ep_production_request(ep_processing_id: int, merge: bool = False, to_
         slices_to_submit = []
         for slice in InputRequestList.objects.filter(request=production_request):
             if not slice.is_hide:
-                steps = StepExecution.objects.filter(request=production_request, slice=slice)
-                if ProductionTask.objects.filter(request=production_request, step__in=steps).exists():
-                    existing_datasets.append(slice.dataset)
+                existing_datasets.append(slice.dataset)
         ep_processing.status = EventPickingProcessing.STATUS.RUNNING
         ep_processing.save()
         ep_contents = EventPickingContent.objects.filter(ep_request=ep_processing)
@@ -530,7 +528,7 @@ def check_running_ep_requests():
         running_task = False
         for task in tasks:
             if 'DRAW' in task.output_formats:
-                if task.status not in ProductionTask.NOT_RUNNING:
+                if task.status not in ProductionTask.NOT_RUNNING+[ProductionTask.STATUS.TOABORT]:
                     running_task = True
                     break
                 if task.status in [ProductionTask.STATUS.DONE, ProductionTask.STATUS.FINISHED] and 'evtpick' in task.name:
