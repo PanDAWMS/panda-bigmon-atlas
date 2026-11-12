@@ -1678,7 +1678,10 @@ class TaskDefinition(object):
                 number_of_jobs = \
                     math.ceil(primary_input_events_from_rucio / int(task_config['nEventsPerJob']))
 
-
+        if number_of_events <=0 and step.request.request_type in ['MC']:
+            chain_number_of_jobs = self._get_total_number_of_jobs(task, number_of_events) or 0
+            if chain_number_of_jobs > number_of_jobs:
+                number_of_jobs = chain_number_of_jobs
 
         if number_of_jobs > TaskDefConstants.DEFAULT_MAX_NUMBER_OF_JOBS_PER_TASK:
             raise MaxJobsPerTaskLimitExceededException(number_of_jobs)
