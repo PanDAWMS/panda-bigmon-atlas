@@ -1206,7 +1206,8 @@ class TaskDefinition(object):
 
     def _get_total_number_of_jobs(self, task, nevents):
         nevents_per_job = task.get('nEventsPerJob', 0)
-
+        if nevents_per_job == 0 :
+            return 0
         primary_input = self._get_primary_input(task['jobParameters'])
         if not primary_input:
             return
