@@ -29,6 +29,7 @@ from atlas.atlaselastic.views import get_tasks_action_logs, get_task_stats, get_
     get_rule_action_logs
 from atlas.celerybackend.celery import ProdSysTask, app
 from atlas.dkb.views import tasks_from_string, es_task_search_all
+from atlas.dkb.opensearch_search import matching_task_ids
 from atlas.jediinterface.client import JEDIClientTest
 from atlas.prestage.views import prepare_dc_requests
 from atlas.prodtask.check_duplicate import create_task_chain
@@ -237,9 +238,12 @@ def production_task_for_request(request: Request) -> Response:
         hashtags = None
         if 'hashtagString' in request.data and request.data['hashtagString']:
             if 'source' in request.data and request.data['source'] == 'dkb':
-                tasks, _ ,_ = es_task_search_all({'search_string' :request.data['hashtagString']}, 'prod')
-                tasks_id = [x['taskid'] for x in tasks]
-                tasks = ProductionTask.objects.filter(id__in=tasks_id)
+                if 'opensearchFilters' in request.data:
+                    tasks_id = matching_task_ids(request.data['opensearchFilters'])
+                else:
+                    tasks, _ ,_ = es_task_search_all({'search_string' :request.data['hashtagString']}, 'prod')
+                    tasks_id = [x['taskid'] for x in tasks]
+                tasks = sum([list(ProductionTask.objects.filter(id__in=chunk)) for chunk in chunks(tasks_id, 1000)], [])
             elif 'source' in request.data and request.data['source'] == 'jira':
                 production_requests = TRequest.objects.filter(ref_link__endswith='/'+request.data['hashtagString'])
                 tasks= ProductionTask.objects.filter(request__in=production_requests)

@@ -116,6 +116,7 @@ import { AnalysisApiDescriptionComponent } from './group-analysis/analysis-api-d
 import { DataCarouselConfigComponent } from './DataCarousel/data-carousel-config/data-carousel-config.component';
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { DerivationExtensionComponent } from './derivation-extension/derivation-extension.component';
+import { DkbSearchComponent } from './dkb-search/dkb-search.component';
 import {DEFAULTS} from "./common/constants/tasks_constants";
 import {DerivationPhysicContainerComponent} from "./derivation-physic-container/derivation-physic-container.component";
 import {McSubcampaignsStatComponent} from "./mc-subcampaigns-stat/mc-subcampaigns-stat.component";
@@ -165,7 +166,8 @@ export class TaskTitleResolvel {
   }
 }
 
-const routes: Routes = [{path: 'gp-deletion/:data_type/:output', component: DerivationExclusionComponent,
+const routes: Routes = [{path: 'dkb-search', component: DkbSearchComponent, title: 'DKB Search'},
+  {path: 'gp-deletion/:data_type/:output', component: DerivationExclusionComponent,
         resolve: {
           gpList: GPDeletionContainerResolver
         } },

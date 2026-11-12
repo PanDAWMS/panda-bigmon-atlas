@@ -1,10 +1,14 @@
 from django.urls import  re_path
 from atlas.dkb.views import *
+from atlas.dkb.opensearch_search import opensearch_tasks, opensearch_summary, opensearch_task
 
 app_name='dkb'
 
 
 urlpatterns = [
+    re_path(r'^opensearch/tasks/$', opensearch_tasks, name='opensearch_tasks'),
+    re_path(r'^opensearch/tasks/(?P<task_id>\d+)/$', opensearch_task, name='opensearch_task'),
+    re_path(r'^opensearch/summary/$', opensearch_summary, name='opensearch_summary'),
 
     re_path(r'^es_task_search/$', es_task_search, name='es_task_search'),
     re_path(r'^es_task_search_analy/$',es_task_search_analy, name='es_task_search_analy'),

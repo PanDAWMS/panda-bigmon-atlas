@@ -1,0 +1,418 @@
+{
+  "index_patterns": ["tasks_*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 4,
+      "analysis": {
+        "analyzer": {
+          "dsname": {
+            "char_filter": ["dsname_wildcarded", "remove_wildcard"],
+            "tokenizer": "dsname_tokenizer",
+            "filter": ["lowercase"]
+          },
+          "dsname_fields": {
+            "char_filter": ["dsname_wildcarded", "remove_wildcard"],
+            "tokenizer": "dsname_field_tokenizer",
+            "filter": "lowercase"
+          },
+          "dsname_fields_wildcarded": {
+            "char_filter": ["dsname_wildcarded"],
+            "tokenizer": "dsname_field_tokenizer",
+            "filter": "lowercase"
+          }
+        },
+        "tokenizer": {
+          "dsname_tokenizer": {
+            "type": "pattern",
+            "pattern": "\\.+|_+"
+          },
+          "dsname_field_tokenizer": {
+            "type": "pattern",
+            "pattern": "\\.+"
+          }
+        },
+        "char_filter": {
+          "dsname_wildcarded": {
+            "type": "pattern_replace",
+            "pattern": "[^a-zA-Z0-9_/.*?-]",
+            "replacement": ""
+          },
+          "remove_wildcard": {
+            "type": "pattern_replace",
+            "pattern": "[?*]",
+            "replacement": ""
+          }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "site": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+         "cloud": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "campaign": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "subcampaign": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "phys_group": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "project": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "pr_id": {
+          "type": "integer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "step_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "step_id": {
+          "type": "integer"
+        },
+        "ctag_format_step": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "ami_tags_format_step": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "status": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "taskid": {
+          "type": "integer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "chain_id": {
+          "type": "integer"
+        },
+        "chain_data": {
+          "type": "integer",
+          "index": false,
+          "doc_values": false
+        },
+        "parent_taskname": {
+          "type": "text",
+          "analyzer": "dsname",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            },
+            "fields": {
+              "type": "text",
+              "analyzer": "dsname_fields"
+            }
+          }
+        },
+        "parent_total_events": {
+          "type": "long"
+        },
+        "taskname" : {
+          "type" : "text",
+          "analyzer": "dsname",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            },
+            "fields": {
+              "type": "text",
+              "analyzer": "dsname_fields"
+            }
+          }
+        },
+        "task_timestamp": {
+          "type": "date",
+          "format": "dd-MM-yyyy HH:mm:ss"
+        },
+        "start_time": {
+          "type": "date",
+          "format": "dd-MM-yyyy HH:mm:ss"
+        },
+        "end_time": {
+          "type": "date",
+          "format": "dd-MM-yyyy HH:mm:ss"
+        },
+        "hashtag_list": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "ami_tags": {
+          "type": "text",
+          "analyzer": "dsname",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "description": {
+          "type": "text"
+        },
+        "energy_gev": {
+          "type": "integer"
+        },
+        "architecture": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "core_count": {
+          "type": "short"
+        },
+        "conditions_tag": {
+          "type": "keyword",
+          "ignore_above": 2048
+        },
+        "geometry_version": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "ticket_id": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "trans_home": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "trans_path": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "trans_uses": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "user_name": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "vo": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "run_number": {
+          "type": "integer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "trigger_config": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "total_events": {
+          "type": "long"
+        },
+        "total_req_events": {
+          "type": "long"
+        },
+        "requested_events": {
+          "type": "long"
+        },
+        "processed_events": {
+          "type": "long"
+        },
+        "processed_events_v2": {
+          "type": "long"
+        },
+        "phys_category": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "ctag": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "output_formats": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "primary_input" : {
+          "type" : "text",
+          "analyzer": "dsname",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            },
+            "fields": {
+              "type": "text",
+              "analyzer": "dsname_fields"
+            }
+          }
+        },
+        "hs06": {
+          "type": "long"
+        },
+        "toths06": {
+          "type": "long"
+        },
+        "toths06_finished": {
+          "type": "long"
+        },
+        "toths06_failed": {
+          "type": "long"
+        },
+        "input_bytes": {
+          "type": "long"
+        },
+        "primary_input_events": {
+          "type": "long"
+        },
+        "primary_input_deleted": {
+          "type": "boolean"
+        },
+        "input_events": {
+          "type": "long"
+        },
+        "input_events_v2": {
+          "type": "long"
+        },
+        "n_files_per_job": {
+          "type": "short"
+        },
+        "n_events_per_job": {
+          "type": "long"
+        },
+        "n_files_to_be_used": {
+          "type": "integer"
+        },
+        "_update_required": {
+          "type": "boolean"
+        },
+        "output_dataset": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "analyzer": "dsname",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "fields": {
+                  "type": "text",
+                  "analyzer": "dsname_fields"
+                }
+              }
+            },
+            "events": {
+              "type": "long"
+            },
+            "bytes": {
+              "type": "long"
+            },
+            "deleted": {
+              "type": "boolean"
+            },
+            "data_format": {
+              "type": "text",
+              "analyzer": "dsname",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "k_factor": {
+              "type": "double"
+            },
+            "cross_section_ref": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "cross_section": {
+              "type": "double"
+            },
+            "gen_filt_eff": {
+              "type": "double"
+            },
+            "process_group": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "me_pdf": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+  }
+}

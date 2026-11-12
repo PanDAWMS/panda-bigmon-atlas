@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>DKB task {{ taskID }}</h2>
+<mat-dialog-content>
+  @if (task$ | async; as task) {
+    <div class="detail-groups">
+      @for (group of groups; track group.title) {
+        <section>
+          <h3>{{ group.title }}</h3>
+          <dl>
+            @for (field of group.fields; track field[0]) {
+              <dt>{{ field[1] }}</dt>
+              <dd>
+                @if (field[0] === 'status') {
+                  <span class="status" [ngStyle]="statusStyle(task.status)">{{ task.status }}</span>
+                } @else { {{ display(task[field[0]]) }} }
+              </dd>
+            }
+          </dl>
+        </section>
+      }
+    </div>
+    <section>
+      <h3>Datasets</h3>
+      <dl class="input-dataset">
+        <dt>Input dataset</dt><dd>
+          @for (dataset of datasetNames(task.primary_input); track $index) {
+            <div><a [routerLink]="['/dataset', dataset]" target="_blank" rel="noopener noreferrer">{{ dataset }}</a></div>
+          } @empty { — }
+        </dd>
+        <dt>Input size (bytes)</dt><dd>{{ display(task.input_bytes) }}</dd>
+      </dl>
+      <div class="dataset-scroll">
+        <table>
+          <thead><tr><th>Output dataset</th><th>Size (bytes)</th><th>Events</th><th>Cross section</th><th>Filter efficiency</th></tr></thead>
+          <tbody>
+            @for (output of task.output_dataset ?? []; track $index) {
+              <tr><td><a [routerLink]="['/dataset', output.name]" target="_blank" rel="noopener noreferrer">{{ output.name }}</a></td><td>{{ output.bytes | number }}</td><td>{{ output.events | number }}</td><td>{{ output.cross_section }}</td><td>{{ output.gen_filt_eff }}</td></tr>
+            } @empty { <tr><td colspan="5">No output datasets recorded in DKB.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <details><summary>All DKB fields</summary><pre>{{ task | json }}</pre></details>
+  }
+  @if (loading) { <p role="status">Loading task from DKB…</p> }
+  @if (error) { <p class="error" role="alert">{{ error }}</p> }
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button type="button" mat-dialog-close>Close</button></mat-dialog-actions>

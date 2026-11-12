@@ -37,6 +37,12 @@ export class TasksManagementService {
   getTasksByDCRules(DCRules: {id: number, dc_type: string}[]): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {rulesIDs: DCRules, source: 'DCRules', hashtagString: 'present'});
   }
+
+  getTasksByDkbFilters(filters: Record<string, string>): Observable<ProductionTask[]> {
+    return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl, {
+      hashtagString: filters.q || 'DKB Search', source: 'dkb', opensearchFilters: filters,
+    });
+  }
   getTasksByDatasetName(datasetName: string): Observable<ProductionTask[]> {
     return this.http.post<ProductionTask[]>(this.prTasksByRequestUrl , {datasetName, source: 'datasetName', hashtagString: 'present'});
   }

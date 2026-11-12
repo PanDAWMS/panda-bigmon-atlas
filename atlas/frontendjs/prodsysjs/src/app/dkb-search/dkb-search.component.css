@@ -1,0 +1,55 @@
+:host { display: block; color: #243249; }
+.dkb-search { max-width: 1600px; margin: 0 auto; padding: 36px 24px; }
+header { text-align: center; margin-bottom: 28px; }
+h1 { font-size: 40px; font-weight: 500; margin: 8px 0 12px; letter-spacing: -1px; }
+h2 { font-size: 21px; margin: 0 0 12px; }
+form { max-width: 1150px; margin: auto; }
+.search-bar { display: flex; max-width: 850px; margin: auto; border: 1px solid #cbd3e0; border-radius: 32px; padding: 6px; box-shadow: 0 3px 12px #24324912; }
+.search-bar:focus-within { border-color: #526ac4; box-shadow: 0 2px 12px #526ac426; }
+.search-bar input { flex: 1; min-width: 0; border: 0; border-radius: 26px; padding: 12px 20px; font-size: 18px; background: transparent; }
+button { background: #3455ad; border: 1px solid #3455ad; color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 0; }
+.search-bar button { border-radius: 26px; }
+button.secondary { background: white; color: #3455ad; border-color: #cbd3e0; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #526ac4; outline-offset: 2px; }
+.search-bar input:focus { outline: none; box-shadow: none; border: 0; }
+.hint, .filter-footer { color: #5a687d; font-size: 13px; }
+form > .hint { text-align: center; margin: 12px 0 24px; }
+.filters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; align-items: end; }
+.filters fieldset { grid-column: span 2; }
+.filters > label { grid-column: span 3; }
+label { display: block; font-size: 13px; font-weight: 500; }
+input, select { width: 100%; box-sizing: border-box; border: 1px solid #cbd3e0; border-radius: 5px; padding: 9px 10px; margin: 6px 0 0; color: #243249; background: white; height: auto; }
+fieldset { border: 0; margin: 0; padding: 0; display: flex; gap: 8px; align-items: center; min-width: 0; }
+fieldset label { flex: 1; min-width: 0; }
+legend { font-size: 13px; font-weight: 500; margin: 0; padding: 0; }
+.filter-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
+section { margin-top: 32px; border: 1px solid #dce2ed; border-radius: 10px; padding: 22px; background: white; }
+.totals { display: flex; gap: 32px; margin: 16px 0; font-size: 19px; }
+.summary-scroll { max-height: 320px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; margin: 0; }
+th, td { padding: 10px 14px; border-bottom: 1px solid #e7ebf2; text-align: right; }
+th:first-child { text-align: left; }
+thead th { background: #f3f6fb; position: sticky; top: 0; }
+.table-heading, .table-controls { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.table-controls select { width: auto; display: inline-block; margin: 0 0 0 5px; }
+.task-grid { height: 620px; width: 100%; margin-top: 12px; }
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.pagination > span:first-child { margin-right: auto; }
+.error { color: #a42020; background: #fff1f0; padding: 12px; border-radius: 5px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+:host ::ng-deep .dkb-task-id { background: none; border: 0; color: #3455ad; text-decoration: underline; padding: 0; font: inherit; cursor: pointer; }
+:host ::ng-deep .dkb-task-links { display: inline-flex; align-items: center; gap: 14px; height: 100%; }
+:host ::ng-deep .dkb-task-links a { display: inline-flex; color: #3455ad; }
+:host ::ng-deep .dkb-task-links .material-icons { font-size: 20px; }
+@media (max-width: 1000px) { .filters { grid-template-columns: 1fr 1fr; } .filters > label { grid-column: auto; } }
+@media (max-width: 600px) {
+  .dkb-search { padding: 24px 10px; }
+  section { padding: 14px; }
+  .filters { grid-template-columns: 1fr; }
+  .filters fieldset { grid-column: auto; }
+  .totals, .filter-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .search-bar input { font-size: 15px; padding: 10px; }
+  .pagination { gap: 8px; }
+  .pagination button { padding: 8px 12px; }
+}

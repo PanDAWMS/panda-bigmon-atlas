@@ -32,6 +32,9 @@ export class TasksManagementComponent implements OnInit {
     } else if (params.get('dkbString')) {
       this.hashtagString = this.route.snapshot.queryParamMap.get('search').toString();
       this.showOwner = true;
+      if (this.route.snapshot.queryParamMap.get('opensearch') === '1') {
+        return this.taskManagementService.getTasksByDkbFilters(this.route.snapshot.queryParams);
+      }
       return this.taskManagementService.getTasksByHashtag(this.hashtagString, 'dkb');
     } else if (params.get('jira')){
       this.hashtagString = params.get('jira').toString();

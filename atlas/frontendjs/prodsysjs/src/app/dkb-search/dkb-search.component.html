@@ -1,0 +1,96 @@
+<main class="dkb-search">
+  <header>
+    <h1>DKB Search</h1>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="search()">
+    <div class="search-bar">
+      <label class="sr-only" for="dkb-query">Search production tasks</label>
+      <input id="dkb-query" type="search" formControlName="q" placeholder="Search task names, datasets, keywords…" />
+      <button type="submit">Search</button>
+    </div>
+    <p class="hint">Space-separated terms use AND. Wildcards and field queries are supported, e.g. taskname:mc23*.</p>
+    <div class="filters">
+      <label>Step name<input formControlName="step_name" placeholder="e.g. Evgen" /></label>
+      <label>AMI tag (ctag)<input formControlName="ctag" placeholder="e.g. e8514" /></label>
+      <fieldset>
+        <legend>Request ID (pr_id)</legend>
+        <label><span class="sr-only">Minimum request ID</span><input type="number" min="0" step="1" formControlName="pr_id_min" placeholder="From" /></label>
+        <span aria-hidden="true">–</span>
+        <label><span class="sr-only">Maximum request ID</span><input type="number" min="0" step="1" formControlName="pr_id_max" placeholder="To" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Task ID</legend>
+        <label><span class="sr-only">Minimum task ID</span><input type="number" min="0" step="1" formControlName="task_id_min" placeholder="From" /></label>
+        <span aria-hidden="true">–</span>
+        <label><span class="sr-only">Maximum task ID</span><input type="number" min="0" step="1" formControlName="task_id_max" placeholder="To" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Run number</legend>
+        <label><span class="sr-only">Minimum run number</span><input type="number" min="0" step="1" formControlName="run_number_min" placeholder="From" /></label>
+        <span aria-hidden="true">–</span>
+        <label><span class="sr-only">Maximum run number</span><input type="number" min="0" step="1" formControlName="run_number_max" placeholder="To" /></label>
+      </fieldset>
+    </div>
+    <div class="filter-footer"><span>Step and tag match exactly. ID ranges are inclusive; either bound may be left empty.</span>
+      <button class="secondary" type="button" (click)="clear()">Clear filters</button></div>
+  </form>
+
+  <section aria-labelledby="subcampaign-title" [attr.aria-busy]="summaryLoading">
+    <h2 id="subcampaign-title">Subcampaign summary</h2>
+    <p class="hint">All matching tasks · events are summed from total_events.</p>
+    @if (summaryLoading) { <p role="status">Loading subcampaign totals…</p> }
+    @if (summaryError) { <p class="error" role="alert">{{ summaryError }}</p> }
+    @if (summary; as totals) {
+      <div class="totals"><strong>{{ totals.total_tasks | number }} tasks</strong><strong>{{ totals.total_events | number }} total events</strong></div>
+      @if (totals.subcampaigns.length) {
+        <div class="summary-scroll"><table>
+          <thead><tr><th scope="col">Subcampaign</th><th scope="col">Tasks</th><th scope="col">Total events</th></tr></thead>
+          <tbody>
+            @for (subcampaign of totals.subcampaigns; track subcampaign.subcampaign) {
+              <tr><th scope="row">{{ subcampaign.subcampaign ?? 'Unspecified' }}</th><td>{{ subcampaign.tasks | number }}</td><td>{{ subcampaign.total_events | number }}</td></tr>
+            }
+          </tbody>
+        </table></div>
+      } @else { <p>No subcampaigns match these filters.</p> }
+    }
+  </section>
+
+  <section aria-labelledby="tasks-title" [attr.aria-busy]="tasksLoading">
+    <div class="table-heading">
+      <h2 id="tasks-title">Tasks</h2>
+      <div class="table-controls">
+        <button type="button" (click)="manageTasks()" [disabled]="!canManageTasks"
+          title="Manage all matching tasks (requires 1–9,999 matches)">Manage tasks</button>
+        <label>Sort by <select [value]="state.sort" (change)="navigate({sort: $any($event.target).value, page: 1})">
+          @for (field of sortFields; track field.value) { <option [value]="field.value">{{ field.label }}</option> }
+        </select></label>
+        <label>Order <select [value]="state.direction" (change)="navigate({direction: $any($event.target).value, page: 1})">
+          <option value="desc">Descending</option><option value="asc">Ascending</option>
+        </select></label>
+        <label>Rows per page <select [value]="state.page_size" (change)="navigate({page_size: +$any($event.target).value, page: 1})">
+          @for (size of pageSizes; track size) { <option [value]="size">{{ size }}</option> }
+        </select></label>
+      </div>
+    </div>
+    @if (tasksError) { <p class="error" role="alert">{{ tasksError }}</p> }
+    @if (tasksLoading) { <p role="status">Loading tasks…</p> }
+    @if (result; as page) {
+      <p>{{ page.total | number }} matching tasks.
+        @if (page.total > page.limit) { Showing the first {{ page.limit | number }}; narrow your filters to see other tasks. }
+      </p>
+    }
+    <ag-grid-angular class="ag-theme-alpine task-grid" [rowData]="result?.tasks ?? []"
+      [columnDefs]="columns" [defaultColDef]="defaultColDef" [loading]="tasksLoading"
+      [suppressMultiSort]="true" (gridReady)="onGridReady($event)" (sortChanged)="onSortChanged($event)"
+      [animateRows]="false" [suppressCellFocus]="false" overlayNoRowsTemplate="No matching tasks" />
+    <nav class="pagination" aria-label="Task pages">
+      <span aria-live="polite">{{ firstRow | number }}–{{ lastRow | number }} of {{ (result?.available ?? 0) | number }}</span>
+      <button type="button" class="secondary" [disabled]="tasksLoading || state.page <= 1" (click)="navigate({page: 1})">First</button>
+      <button type="button" class="secondary" [disabled]="tasksLoading || state.page <= 1" (click)="navigate({page: state.page - 1})">Previous</button>
+      <span>Page {{ state.page }} of {{ pageCount }}</span>
+      <button type="button" class="secondary" [disabled]="tasksLoading || state.page >= pageCount" (click)="navigate({page: state.page + 1})">Next</button>
+      <button type="button" class="secondary" [disabled]="tasksLoading || state.page >= pageCount" (click)="navigate({page: pageCount})">Last</button>
+    </nav>
+  </section>
+</main>
