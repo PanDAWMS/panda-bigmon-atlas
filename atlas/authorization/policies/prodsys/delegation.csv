@@ -1,4 +1,4 @@
-# The authenticated service account may delegate only these external API actions.
+# Explicit service-account exception; human usernames never grant delegation.
 p, user:bigpanda_api, delegation, abort, {}, {}, allow
 p, user:bigpanda_api, delegation, finish, {}, {}, allow
 p, user:bigpanda_api, delegation, change_priority, {}, {}, allow

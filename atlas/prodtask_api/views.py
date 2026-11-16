@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access
 
 import json
 import logging
@@ -144,7 +145,11 @@ def create_slice(request):
     try:
         data = request.data
         production_request = TRequest.objects.get(reqid=data['production_request'])
-        if request.user.username != production_request.manager:
+        same_manager = request.user.username == production_request.manager
+        observe_access(request.user, 'request', 'create_slice', same_manager,
+                       object_id=production_request.reqid, facts={'same_manager': same_manager},
+                       source='prodtask_api.create_slice')
+        if not same_manager:
             return HttpResponseForbidden()
 
         pattern_slice = int(data['pattern_slice'])
@@ -526,7 +531,10 @@ def submit_recreation(request):
     try:
         task_management = TaskManagementAuthorisation()
         user, allowed_groups = task_user_rights(request.user.username)
-        if request.user.is_superuser or 'DPD' in allowed_groups:
+        recreation_allowed = request.user.is_superuser or 'DPD' in allowed_groups
+        observe_access(request.user, 'dataset_recovery', 'submit', recreation_allowed,
+                       groups=allowed_groups, source='prodtask_api.submit_recreation')
+        if recreation_allowed:
             ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
             requests_submitted = submit_dataset_recovery_requests(ids)
             return Response(len(requests_submitted))
@@ -556,7 +564,10 @@ def set_config_parameter(request, name):
             case SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest:
                 task_management = TaskManagementAuthorisation()
                 user, allowed_groups = task_user_rights(request.user.username)
-                if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
+                config_allowed = request.user.is_superuser or 'MCCOORD' in allowed_groups
+                observe_access(request.user, 'system_parameter', 'mc_workflow', config_allowed,
+                               object_id=name, groups=allowed_groups, source='prodtask_api.set_config_parameter')
+                if not config_allowed:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 workflows = MCWorkflowRequest.model_validate(request.data)
                 SystemParametersHandler.set_mc_workflow_request(workflows)
@@ -564,7 +575,10 @@ def set_config_parameter(request, name):
             case SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS:
                 task_management = TaskManagementAuthorisation()
                 user, allowed_groups = task_user_rights(request.user.username)
-                if not request.user.is_superuser and 'MCCORD' not in allowed_groups:
+                config_allowed = request.user.is_superuser or 'MCCOORD' in allowed_groups
+                observe_access(request.user, 'system_parameter', 'pmg_hashtags', config_allowed,
+                               object_id=name, groups=allowed_groups, source='prodtask_api.set_config_parameter')
+                if not config_allowed:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 SystemParametersHandler.AvailablePMGHashtags.set_available_hashtags(request.data.get('levels',[]))
                 return Response(request.data)

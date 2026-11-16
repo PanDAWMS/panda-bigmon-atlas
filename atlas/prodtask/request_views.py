@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access, observe_request_create, observe_request_group_capabilities
 import copy
 import json
 import logging
@@ -874,8 +875,13 @@ def mcfile_form_prefill(form_data, request):
     # if form_data['need_split']:
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
     if len(spreadsheet_dict)>1000:
-        if (not request.user.is_superuser) and \
-                            ('MCCOORD' not in egroup_permissions(request.user.username)) and form_data.get('phys_group') not in  ['SUSY','HMBS']:
+        large_request_allowed = not ((not request.user.is_superuser) and
+                            ('MCCOORD' not in egroup_permissions(request.user.username)) and form_data.get('phys_group') not in ['SUSY','HMBS'])
+        observe_access(request.user, 'request', 'large_submission', large_request_allowed,
+                       groups=lambda: egroup_permissions(request.user.username),
+                       facts={'phys_group': form_data.get('phys_group')},
+                       source='request_views.large_submission')
+        if not large_request_allowed:
             eroor_message = "Too many samples selected for a single request - please factorise request into " \
                             "multiple smaller requests. For example, split up Full and Fast simulation and " \
                             "25 ns and 50 ns reconstruction and put them in separate requests. For special cases " \
@@ -1134,6 +1140,8 @@ def dpd_form_prefill(form_data, request):
         user, allowed_groups = task_user_rights(request.user.username)
         if request.user.is_superuser or 'DPD' in allowed_groups:
             allow_priority = True
+        observe_access(request.user, 'request', 'raise_group_priority', allow_priority,
+                       groups=allowed_groups, source='request_views.group_request_priority')
     except:
         pass
     if 'project' in output_dict:
@@ -1441,6 +1449,8 @@ def find_datasets_by_pattern(request):
 @login_required(login_url=OIDC_LOGIN_URL)
 def resend_email(request,reqid):
     if request.method == 'GET':
+        observe_access(request.user, 'request', 'resend_email', request.user.is_superuser,
+                       object_id=reqid, source='request_views.resend_email')
         if request.user.is_superuser:
             try:
                 production_request = TRequest.objects.get(reqid=reqid)
@@ -1516,6 +1526,7 @@ def check_request_group(request):
         allowed_groups = check_allow_request_create(user)
         if (user.is_superuser) or ('ALL' in allowed_groups) or ('DPD' in allowed_groups) or (group in allowed_groups):
             result = True
+        observe_request_create(user, group, allowed_groups, result)
     except Exception as e:
         content = str(e)
         return Response(content,status=500)
@@ -1536,6 +1547,8 @@ def check_allow_request_create(current_user):
                 allowed_groups.append(gp.codename)
         if not allowed_groups:
             allowed_groups = ['None']
+        observe_request_group_capabilities(current_user, allowed_groups,
+                                           [g[0] for g in TRequest.PHYS_GROUPS])
         return allowed_groups
 
 

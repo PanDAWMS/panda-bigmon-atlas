@@ -1,0 +1,16 @@
+# Group and permission grants. No individual-user exceptions.
+p, gdpconfig-editor, gdpconfig, update, {}, {}, allow
+p, gdpconfig-editor, gdpconfig, save_json, {}, {}, allow
+p, prodsys:superuser, system_parameter, mc_workflow, {}, {}, allow
+p, MCCOORD, system_parameter, mc_workflow, {}, {}, allow
+p, prodsys:superuser, system_parameter, pmg_hashtags, {}, {}, allow
+p, MCCOORD, system_parameter, pmg_hashtags, {}, {}, allow
+p, prodsys:superuser, retry_error, manage, {}, {}, allow
+# Existing retry-error POST create/clone has no role gate beyond login.
+p, subject, retry_error, create_submit, {}, {}, allow
+p, prodsys:superuser, dataset_recovery, submit, {}, {}, allow
+p, DPD, dataset_recovery, submit, {}, {}, allow
+p, prodsys:superuser, group_production, schedule_deletion, {}, {}, allow
+p, DPD, group_production, schedule_deletion, {}, {}, allow
+p, prodsys:superuser, group_production, create_physics_container, {}, {}, allow
+p, DPD, group_production, create_physics_container, {}, {}, allow

@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access
 import glob
 import gzip
 from dataclasses import dataclass, field
@@ -1129,7 +1130,10 @@ def set_datasets_to_delete(request):
         start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
         task_management = TaskManagementAuthorisation()
         user, allowed_groups = task_user_rights(username)
-        if not request.user.is_superuser and 'DPD' not in allowed_groups:
+        group_admin_allowed = request.user.is_superuser or 'DPD' in allowed_groups
+        observe_access(request.user, 'group_production', 'schedule_deletion', group_admin_allowed,
+                       groups=allowed_groups, source='gpdeletion.schedule_deletion')
+        if not group_admin_allowed:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         last_record = GroupProductionDeletionRequest.objects.last()
         if deadline.replace(tzinfo=pytz.utc) < last_record.start_deletion:
@@ -1579,7 +1583,10 @@ def create_physics_container_in_ami(request):
         _jsonLogger.info('Creating period containers', extra={'user':request.user.username})
         task_management = TaskManagementAuthorisation()
         user, allowed_groups = task_user_rights(request.user.username)
-        if not request.user.is_superuser and 'DPD' not in allowed_groups:
+        group_admin_allowed = request.user.is_superuser or 'DPD' in allowed_groups
+        observe_access(request.user, 'group_production', 'create_physics_container', group_admin_allowed,
+                       groups=allowed_groups, source='gpdeletion.create_physics_container')
+        if not group_admin_allowed:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         ami = AMIClient()
         ddm = DDM()

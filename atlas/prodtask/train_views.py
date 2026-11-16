@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access
 import json
 import logging
 from dataclasses import asdict
@@ -649,6 +650,8 @@ def train_edit(request, train_id):
         allow_close = False
         if (request.user.username in ['nozturk','egramsta']) or request.user.is_superuser:
             allow_close = True
+        observe_access(request.user, 'train', 'close', allow_close, object_id=train_id,
+                       source='train_views.close_capability')
     except:
         return HttpResponseRedirect(reverse('prodtask:request_table'))
 

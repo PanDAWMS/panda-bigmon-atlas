@@ -1,0 +1,11 @@
+# One grant must cover the entire batch. No implicit superuser bypass.
+p, gdpconfig-editor, global_share, update_batch, {}, {}, allow
+p, DPD, global_share, update_batch, {"all_derivations":true}, {}, allow
+p, REPR, global_share, update_batch, {"all_reprocessing":true}, {}, allow
+p, MCCOORD, global_share, update_batch, {"all_mc_parents":true}, {}, allow
+p, MCCOORD, global_share, update_batch, {"all_mc_names":true}, {}, allow
+p, gdpconfig-editor, global_share, manage, {}, {}, allow
+p, DPD, global_share, manage, {"all_derivations":true}, {}, allow
+p, REPR, global_share, manage, {"all_reprocessing":true}, {}, allow
+p, MCCOORD, global_share, manage, {"all_mc_parents":true}, {}, allow
+p, MCCOORD, global_share, manage, {"all_mc_names":true}, {}, allow

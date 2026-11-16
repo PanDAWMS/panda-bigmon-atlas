@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+from atlas.authorization.stage2 import observe_access, observe_request_steps
 import re
 from collections import defaultdict
 
@@ -726,10 +728,18 @@ def request_approve_status(production_request, request, user_name='', is_superus
 
         # change to VOMS
         _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
-        if (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(user_name)) or is_superuser:
+        can_approve = (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(user_name)) or is_superuser
+        observe_access(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
+                       'request', 'approve', bool(can_approve), object_id=production_request.reqid,
+                       groups=lambda: egroup_permissions(user_name), facts={'restricted_mc': True},
+                       source='request_approve_status')
+        if can_approve:
             return 'approved'
 
     else:
+        observe_access(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
+                       'request', 'approve', True, object_id=production_request.reqid,
+                       facts={'restricted_mc': False}, source='request_approve_status')
         if (production_request.request_type == 'GROUP') and (production_request.cstatus == 'waiting'):
             if ParentToChildRequest.objects.filter(parent_request=production_request).exists():
                 if ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id:
@@ -1416,6 +1426,10 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
             if (not request.user.is_superuser) and not any_group_check(request.user.username):
                 error_approve_message = True
                 no_action_slices = map(int, slices)
+        observe_request_steps(request.user, req, not bool(error_approve_message),
+                              groups=lambda: egroup_permissions(request.user.username),
+                              manager_groups=lambda: egroup_permissions(req.manager),
+                              physics_groups=[g[0] for g in TRequest.PHYS_GROUPS] + ['DPD'])
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message}
@@ -1576,6 +1590,11 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
         if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
             if (not is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
                 error_approve_message = True
+        observe_request_steps(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
+                              req, not bool(error_approve_message),
+                              groups=lambda: egroup_permissions(user_name),
+                              manager_groups=lambda: egroup_permissions(req.manager),
+                              physics_groups=(), asynchronous=True)
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message, 'async_name':'save_slices'}
@@ -2213,6 +2232,11 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
+            observe_access(request.user, 'request', 'approve', autorized_change_request,
+                           object_id=cur_request.reqid,
+                           groups=lambda: egroup_permissions(request.user.username),
+                           facts={'restricted_mc': cur_request.request_type == 'MC' and cur_request.phys_group != 'VALI'},
+                           source='request_table.approval_capability')
             limit_priority = {'min':0,'max':2000}
             if (cur_request.request_type == 'GROUP') and (cur_request.phys_group != 'VALI'):
                 limit_priority = {'min': 560, 'max': 570}
@@ -2225,6 +2249,10 @@ def request_table_view(request, rid=None, show_hidden=False):
                             limit_priority = {'min': 0, 'max': 2000}
                 except:
                     pass
+            if cur_request.request_type == 'GROUP' and cur_request.phys_group != 'VALI':
+                observe_access(request.user, 'request', 'raise_group_priority', limit_priority['max'] == 2000,
+                               object_id=cur_request.reqid, groups=lambda: egroup_permissions(request.user.username),
+                               source='request_table.priority_capability')
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
             if comments:
                 comment_author = comments.owner

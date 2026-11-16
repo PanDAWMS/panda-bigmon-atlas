@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_scope
 import json
 import logging
 import string
@@ -150,7 +151,11 @@ def check_user_group(group: str, username: str, working_group: str) -> bool:
     user_groups = [group.name for group in user.groups.all()]
     group_name = group.split('.')[1]
     iam_group = f'IAM:atlas/{group_name}/production'
-    if iam_group not in user_groups and not user.is_superuser:
+    group_allowed = not (iam_group not in user_groups and not user.is_superuser)
+    observe_scope(user, group, group_allowed and working_group == group_name,
+                  group_names=user_groups, action='submit_group', working_group=working_group,
+                  source='analysis_tasks.check_user_group')
+    if not group_allowed:
         raise Exception(f'User {username} is not in group {iam_group}')
     if working_group != group_name:
         raise Exception(f'Working group {working_group} does not match group {group_name}')
@@ -886,7 +891,11 @@ def register_analysis_output_container(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     try:
-        if data['scope'] not in container_scopes_by_user(request.user.username):
+        scopes = container_scopes_by_user(request.user.username)
+        scope_allowed = data['scope'] in scopes
+        observe_scope(request.user, data['scope'], scope_allowed,
+                      group_names=lambda: [g.name for g in request.user.groups.all()])
+        if not scope_allowed:
             return Response('You are not allowed to create containers in this scope',
                             status=status.HTTP_403_FORBIDDEN)
         datasets = list(dict.fromkeys(data['datasets']))

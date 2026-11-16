@@ -1,5 +1,7 @@
 """Read API for the Angular global shares page; legacy endpoints stay unchanged."""
 
+from atlas.authorization.stage2 import observe_share_capabilities
+
 import logging
 
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
@@ -21,11 +23,14 @@ def manageable_global_shares(user, shares):
     The legacy writer authorizes whole batches. Clients should submit siblings
     together, rather than combine changes across permission scopes or MC levels.
     """
-    if user.user_permissions.filter(name='Can edit GDPConfig').exists():
-        return [share['name'] for share in shares]
+    config_editor = user.user_permissions.filter(name='Can edit GDPConfig').exists()
+    if config_editor:
+        manageable = [share['name'] for share in shares]
+        observe_share_capabilities(user, shares, [], config_editor, manageable)
+        return manageable
 
     _, allowed_groups = task_user_rights(user.username)
-    return [
+    manageable = [
         share['name'] for share in shares
         if ('DPD' in allowed_groups and share['parent'] == 'Derivations')
         or ('REPR' in allowed_groups and share['parent'] == 'Reprocessing')
@@ -33,6 +38,8 @@ def manageable_global_shares(user, shares):
             share['name'] in MC_LEVEL2_SHARES or share['parent'] in MC_LEVEL2_SHARES
         ))
     ]
+    observe_share_capabilities(user, shares, allowed_groups, config_editor, manageable)
+    return manageable
 
 
 @api_view(['GET'])

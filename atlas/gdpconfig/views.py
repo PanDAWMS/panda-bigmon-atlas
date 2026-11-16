@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access, observe_share_batch
 import json
 
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -40,7 +41,10 @@ def config_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    if not request.user.user_permissions.filter(name='Can edit GDPConfig').exists():
+    config_editor = request.user.user_permissions.filter(name='Can edit GDPConfig').exists()
+    observe_access(request.user, 'gdpconfig', 'update', config_editor, editor=config_editor,
+                   source='gdpconfig.config_action')
+    if not config_editor:
         result['status']='Failed'
         result['exception'] = 'Permission denied'
         return HttpResponse(json.dumps(result))
@@ -238,12 +242,16 @@ def global_share_change(request):
     try:
        data = request.data
        old_shares = {}
+       shadow_shares = []
        for share in data:
            old_share = GlobalShare.objects.get(name=share)
            old_shares[old_share.name] = int(old_share.value)
+           shadow_shares.append({'name': old_share.name, 'parent': old_share.parent})
        user = request.user
        authorised = False
-       if  user.user_permissions.filter(name='Can edit GDPConfig').exists():
+       allowed_groups = []
+       config_editor = user.user_permissions.filter(name='Can edit GDPConfig').exists()
+       if config_editor:
            authorised = True
        else:
            user, allowed_groups = task_user_rights(user.username)
@@ -258,6 +266,7 @@ def global_share_change(request):
            if 'REPR' in allowed_groups:
                if not(parents - {'Reprocessing'}):
                    authorised = True
+       observe_share_batch(user, shadow_shares, allowed_groups, config_editor, authorised)
        if not authorised:
            raise LookupError('User %s has no permission for global share change '% user.username)
        else:
@@ -305,7 +314,10 @@ def get_json_param(request):
 def save_json_param(request):
     try:
         user = request.user
-        if not user.user_permissions.filter(name='Can edit GDPConfig').exists():
+        config_editor = user.user_permissions.filter(name='Can edit GDPConfig').exists()
+        observe_access(user, 'gdpconfig', 'save_json', config_editor, editor=config_editor,
+                       source='gdpconfig.save_json_param')
+        if not config_editor:
            return HttpResponse('User %s has no permission for global share change '% user.username, content_type='application/json',status=403)
         field = request.data['key']
         if field:

@@ -1,0 +1,8 @@
+# Ordinary scope access has no implicit superuser bypass.
+p, subject, analysis_scope, use, {"own_scope":true}, {}, allow
+p, subject, analysis_scope, use, {"group_scope":true,"iam_member":true}, {}, allow
+p, subject, analysis_scope, list, {"own_scope":true}, {}, allow
+p, subject, analysis_scope, list, {"group_scope":true,"iam_member":true}, {}, allow
+# Submission validates workingGroup even for superusers.
+p, subject, analysis_scope, submit_group, {"iam_member":true,"working_group_matches":true}, {}, allow
+p, prodsys:superuser, analysis_scope, submit_group, {"working_group_matches":true}, {}, allow

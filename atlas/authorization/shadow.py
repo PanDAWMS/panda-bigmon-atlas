@@ -110,7 +110,9 @@ def observe_delegation(request, action, allowed):
         observe(actor=request.user.username, obj_type='delegation', object_id='task',
                 action=action, legacy_allowed=allowed,
                 effective_user=request.data.get('username') if allowed else None,
-                context=lambda: ([f'user:{request.user.username}'], {}, {}),
+                # The explicitly retained service account is the only identity
+                # role. Human identities never become policy roles.
+                context=lambda: (['user:bigpanda_api'] if request.user.username == 'bigpanda_api' else [], {}, {}),
                 source='task_action_ext.delegation')
     except Exception:
         pass

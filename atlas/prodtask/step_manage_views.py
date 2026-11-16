@@ -1,3 +1,4 @@
+from atlas.authorization.stage2 import observe_access
 import functools
 import json
 import logging
@@ -2721,7 +2722,11 @@ def obsolete_old_deleted_tasks(request, reqid):
             number_of_tasks = 0
             add_checkOutputDeleted = False
             if (production_request.request_type in ['REPROCESSING','MC']):
-                if ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser :
+                obsolete_allowed = ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser
+                observe_access(request.user, 'request', 'obsolete_deleted_outputs', obsolete_allowed,
+                               object_id=reqid, groups=lambda: egroup_permissions(request.user.username),
+                               source='step_manage_views.obsolete_deleted_outputs')
+                if obsolete_allowed:
                     _set_request_hashtag(reqid,'MCDeletedReprocessing')
 
                 else:

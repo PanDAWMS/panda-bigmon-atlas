@@ -1,0 +1,34 @@
+# Request permissions; workflow state and validation remain legacy domain logic.
+# The newer PMG endpoint checks login only; keep it distinct from MC approval.
+p, subject, request, pmg_register, {}, {}, allow
+p, subject, request, pmg_hold, {}, {}, allow
+p, subject, request, pmg_cancel, {}, {}, allow
+p, prodsys:superuser, request, create, {}, {}, allow
+p, DPD, request, create, {}, {}, allow
+p, ALL, request, create, {}, {}, allow
+p, subject, request, create, {"group_member": true}, {}, allow
+p, subject, request, approve, {"restricted_mc": false}, {}, allow
+p, prodsys:superuser, request, approve, {}, {}, allow
+p, MCCOORD, request, approve, {}, {}, allow
+p, prodsys:superuser, request, save_steps, {}, {}, allow
+p, subject, request, save_steps, {"validation": true}, {}, allow
+p, subject, request, save_steps, {"is_mc": true, "same_manager": true}, {}, allow
+p, subject, request, save_steps, {"is_mc": true, "manager_is_coordinator": true}, {}, allow
+p, subject, request, save_steps, {"is_mc": false, "is_group": false}, {}, allow
+p, prodsys:superuser, request, save_steps_async, {}, {}, allow
+p, subject, request, save_steps_async, {"validation": true}, {}, allow
+p, subject, request, save_steps_async, {"is_mc": true, "same_manager": true}, {}, allow
+p, subject, request, save_steps_async, {"is_mc": true, "manager_is_coordinator": true}, {}, allow
+p, subject, request, save_steps_async, {"is_mc": false}, {}, allow
+p, subject, request, save_steps, {"is_group": true, "physics_group_member": true}, {}, allow
+p, subject, request, create_slice, {"same_manager": true}, {}, allow
+p, prodsys:superuser, request, resend_email, {}, {}, allow
+p, prodsys:superuser, request, raise_group_priority, {}, {}, allow
+p, DPD, request, raise_group_priority, {}, {}, allow
+p, prodsys:superuser, request, obsolete_deleted_outputs, {}, {}, allow
+p, MCCOORD, request, obsolete_deleted_outputs, {}, {}, allow
+p, prodsys:superuser, request, large_submission, {}, {}, allow
+p, MCCOORD, request, large_submission, {}, {}, allow
+p, subject, request, large_submission, {"phys_group": "SUSY"}, {}, allow
+p, subject, request, large_submission, {"phys_group": "HMBS"}, {}, allow
+p, prodsys:superuser, train, close, {}, {}, allow
