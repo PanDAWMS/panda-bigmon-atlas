@@ -114,3 +114,6 @@ SYSTEM_HEALTH_STATUS_FILE = '/tmp/prodsys_status.txt'
 
 # SESSION
 
+
+# Stage 1 never enforces Casbin decisions. Set to 'off' to stop observation.
+AUTHORIZATION_MODE = 'shadow'

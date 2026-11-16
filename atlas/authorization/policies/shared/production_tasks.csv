@@ -1,0 +1,197 @@
+# Shared task permission gates. Task-state eligibility remains a domain check.
+p, DPD, task, set_hashtag, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, set_hashtag, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, set_hashtag, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, set_hashtag, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, set_hashtag, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, set_hashtag, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, remove_hashtag, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, remove_hashtag, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, remove_hashtag, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, remove_hashtag, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, remove_hashtag, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, remove_hashtag, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, sync_jedi, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, sync_jedi, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, sync_jedi, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, sync_jedi, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, sync_jedi, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, sync_jedi, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, abort, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, abort, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, abort, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, abort, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, abort, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, abort, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, finish, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, finish, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, finish, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, finish, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, finish, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, finish, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, pause_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, pause_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, pause_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, pause_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, pause_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, pause_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, resume_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, resume_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, resume_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, resume_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, resume_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, resume_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, trigger_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, trigger_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, trigger_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, trigger_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, trigger_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, trigger_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, avalanche_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, avalanche_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, avalanche_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, avalanche_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, avalanche_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, avalanche_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, reload_input, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, reload_input, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, reload_input, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, reload_input, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, reload_input, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, reload_input, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, release_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, release_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, release_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, release_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, release_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, release_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, increase_attempt_number, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, increase_attempt_number, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, increase_attempt_number, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, increase_attempt_number, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, increase_attempt_number, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, increase_attempt_number, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, abort_unfinished_jobs, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, abort_unfinished_jobs, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, abort_unfinished_jobs, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, abort_unfinished_jobs, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, abort_unfinished_jobs, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, abort_unfinished_jobs, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, disable_idds, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, disable_idds, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, disable_idds, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, disable_idds, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, disable_idds, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, disable_idds, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, kill_job, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, kill_job, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, kill_job, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, kill_job, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, kill_job, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, kill_job, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, retry, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, retry, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, retry, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, retry, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, retry, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, retry, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, force_retry, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, force_retry, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, force_retry, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, force_retry, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, force_retry, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, force_retry, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, finish_plus_reload, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, finish_plus_reload, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, finish_plus_reload, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, finish_plus_reload, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, finish_plus_reload, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, finish_plus_reload, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, set_debug_jobs, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, set_debug_jobs, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, set_debug_jobs, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, set_debug_jobs, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, set_debug_jobs, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, set_debug_jobs, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, kill_jobs_without_task, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, kill_jobs_without_task, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, kill_jobs_without_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, kill_jobs_without_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, kill_jobs_without_task, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, kill_jobs_without_task, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, enable_job_cloning, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, enable_job_cloning, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, enable_job_cloning, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, enable_job_cloning, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, enable_job_cloning, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, enable_job_cloning, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, change_priority, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_priority, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_priority, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_priority, {"tasktype": "prod", "group_production": true}, {"priority": {"max": 570}}, allow
+p, task-group-member, task, change_priority, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_priority, {"tasktype": "prod", "group_production": true}, {"priority": {"max": 570}}, allow
+p, DPD, task, change_ram_count, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_ram_count, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_ram_count, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_ram_count, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, change_ram_count, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_ram_count, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, change_wall_time, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_wall_time, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_wall_time, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_wall_time, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, change_wall_time, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_wall_time, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, change_cpu_time, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_cpu_time, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_cpu_time, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_cpu_time, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, change_cpu_time, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_cpu_time, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, change_core_count, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_core_count, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_core_count, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_core_count, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, change_core_count, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_core_count, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, change_split_rule, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, change_split_rule, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, change_split_rule, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, change_split_rule, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, change_split_rule, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, change_split_rule, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, reassign_to_site, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, reassign_to_site, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, reassign_to_site, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, reassign_to_site, {"tasktype": "prod", "group_production": false}, {}, allow
+p, DPD, task, reassign_to_cloud, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, reassign_to_cloud, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, reassign_to_cloud, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, reassign_to_cloud, {"tasktype": "prod", "group_production": false}, {}, allow
+p, DPD, task, reassign_to_nucleus, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, reassign_to_nucleus, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, reassign_to_nucleus, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, reassign_to_nucleus, {"tasktype": "prod", "group_production": false}, {}, allow
+p, DPD, task, reassign_to_share, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, reassign_to_share, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, reassign_to_share, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, reassign_to_share, {"tasktype": "prod", "group_production": false}, {}, allow
+p, DPD, task, obsolete, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, obsolete, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, obsolete, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, obsolete, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, obsolete, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, obsolete, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, obsolete_output, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, obsolete_output, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, obsolete_output, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, obsolete_output, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, obsolete_output, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, obsolete_output, {"tasktype": "prod", "group_production": true}, {}, allow
+p, DPD, task, retry_new, {"tasktype": "prod"}, {}, allow
+p, MCCOORD, task, retry_new, {"tasktype": "prod"}, {}, allow
+p, task-owner, task, retry_new, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-owner, task, retry_new, {"tasktype": "prod", "group_production": true}, {}, allow
+p, task-group-member, task, retry_new, {"tasktype": "prod", "group_production": false}, {}, allow
+p, task-group-member, task, retry_new, {"tasktype": "prod", "group_production": true}, {}, allow

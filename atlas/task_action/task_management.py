@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, List, Dict, Any
 
+from atlas.authorization.shadow import observe_task, observe_rule
+
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -795,12 +797,15 @@ class TaskManagementAuthorisation():
             task_is_allowed = self.additional_permissions(task, action)
         if task_is_allowed:
             user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname)
+        observe_task(user, allowed_groups, task, action, params, user_fullname,
+                     task_is_allowed, user_is_allowed)
         return task_is_allowed, user_is_allowed
 
     def rules_action_authorisation(self, datasets: str, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
         user, allowed_groups = task_user_rights(username, user_fullname)
         result = []
         for dataset in datasets:
+            observe_rule(user, dataset, action, user.is_superuser)
             if user.is_superuser:
                 result.append(RuleActionAllowed(dataset, True, True))
             else:

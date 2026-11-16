@@ -1,3 +1,5 @@
+from atlas.authorization.shadow import observe_delegation
+
 import json
 
 from django.http import HttpResponse
@@ -64,6 +66,8 @@ def task_action_ext(request, action=None):
             'Actions': ', '.join(ALLOWED_FOR_EXTERNAL_API),
         }
         return content
+    observe_delegation(request, action, request.user.username == 'bigpanda_api'
+                       and action in ALLOWED_FOR_EXTERNAL_API)
     if request.user.username != 'bigpanda_api':
         return HttpResponseForbidden()
     error_message = []

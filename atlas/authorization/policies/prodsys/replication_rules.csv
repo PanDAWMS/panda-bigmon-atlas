@@ -1,0 +1,6 @@
+# Legacy replication-rule gate is superuser-only.
+p, prodsys:superuser, replication_rule, alter_source_replication_rule, {}, {}, allow
+p, prodsys:superuser, replication_rule, bypass_queue, {}, {}, allow
+p, prodsys:superuser, replication_rule, change_destination, {}, {}, allow
+p, prodsys:superuser, replication_rule, recovery_lost_files, {}, {}, allow
+p, prodsys:superuser, replication_rule, retire_unused_dc, {}, {}, allow

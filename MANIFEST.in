@@ -2,3 +2,5 @@ include *.txt *.py *.cfg
 recursive-include atlas *-template
 global-include *.html *.js *.css *.png *.gif *.ico *-example* 
 
+
+recursive-include atlas/authorization *.conf *.csv *.md
