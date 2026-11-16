@@ -269,5 +269,3 @@ appendLogger('prodtask_messaging', loggerlevel=logging.INFO, backupCount=0)
 appendJsonLogger('prodtask_ELK')
 
 
-# Separate JSON audit stream for Casbin/legacy decision comparisons.
-appendJsonLogger('authorization_shadow', loggerlevel=logging.INFO)

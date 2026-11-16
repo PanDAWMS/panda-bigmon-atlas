@@ -4,7 +4,7 @@ from functools import lru_cache
 import logging
 from time import perf_counter
 
-logger = logging.getLogger('authorization_shadow')
+logger = logging.getLogger('prodtask_ELK')
 
 
 def get_mode():
