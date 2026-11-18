@@ -1,3 +1,2 @@
-from .local import CERTIFICATE_PATH
+from .runtime import CERTIFICATE_PATH, RUCIO_ACCOUNT
 PROXY_CERT = CERTIFICATE_PATH
-RUCIO_ACCOUNT = "prodsys"

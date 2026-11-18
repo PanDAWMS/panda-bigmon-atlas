@@ -2,9 +2,12 @@
     atlas logconfig
 """
 import datetime
+import logging.config
 from logging.handlers import TimedRotatingFileHandler
 
-from .local import LOG_ROOT, DEVELOPMENT
+from .runtime import DEVELOPMENT, get_setting
+LOG_ROOT = get_setting("LOG_ROOT", "/tmp")
+LOG_MODE = get_setting("LOG_MODE", "file")
 LOG_SIZE = 1000000000
 import logging, socket
 
@@ -205,6 +208,9 @@ def appendLogger(loggername, loggerlevel=logging.DEBUG,
     """
     global LOGGING, LOG_SIZE, LOG_ROOT
 
+    if LOG_MODE == 'console':
+        LOGGING['loggers'][loggername] = {'handlers': ['console'], 'level': loggerlevel}
+        return
     handler = 'logfile-' + str(loggername)
     filename = LOG_ROOT + '/logfile.' + str(loggername)
 
@@ -228,6 +234,9 @@ def appendJsonLogger(loggername, loggerlevel='DEBUG',  loggerclass='logging.hand
 
     global LOGGING, LOG_SIZE, LOG_ROOT
 
+    if LOG_MODE == 'console':
+        LOGGING['loggers'][loggername] = {'handlers': ['json_console'], 'level': loggerlevel}
+        return
     handler = 'logfile-' + str(loggername)
     filename = LOG_ROOT + '/json/logfile.' + str(loggername)
 
@@ -267,5 +276,24 @@ appendLogger('deftcore', loggerlevel=SPECIAL_LOG_LEVEL)
 appendLogger('prodtask_messaging', loggerlevel=logging.INFO, backupCount=0)
 
 appendJsonLogger('prodtask_ELK')
+appendLogger('atlas.settings.runtime', loggerlevel=logging.DEBUG)
 
 
+
+# All registered loggers use streams in containers. Do not instantiate file
+# handlers: their directories need not exist on OpenShift.
+if LOG_MODE == 'console':
+    LOGGING['handlers'] = {name: handler for name, handler in LOGGING['handlers'].items()
+                           if 'filename' not in handler}
+    LOGGING.pop('logfile', None)
+    for _name, _logger in LOGGING['loggers'].items():
+        _logger['handlers'] = ['json_console' if _name == 'prodtask_ELK' else 'console']
+
+
+def configure_logging(config):
+    """Report the selected source after Django installs logging handlers."""
+    from .runtime import get_configuration_method
+
+    logging.config.dictConfig(config)
+    logging.getLogger('atlas.settings.runtime').debug(
+        'Configuration loading method: %s', get_configuration_method())

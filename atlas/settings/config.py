@@ -3,10 +3,14 @@ from os.path import dirname, join
 
 import atlas
 import atlas.common
-from .local import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT, ADMIN_MAILS, PANDA_DB_SCHEMA, DEFT_DB_SCHEMA, USE_ORACLEDB
+from .runtime import MY_SECRET_KEY, dbaccess, MY_CELERY, DEVELOPMENT, ADMIN_MAILS, PANDA_DB_SCHEMA, DEFT_DB_SCHEMA, USE_ORACLEDB
 if USE_ORACLEDB:
     import oracledb
-    oracledb.init_oracle_client()
+    from .runtime import get_setting
+    if get_setting('ORACLE_CONFIG_DIR'):
+        oracledb.init_oracle_client(config_dir=get_setting('ORACLE_CONFIG_DIR'))
+    else:
+        oracledb.init_oracle_client()
     
 ALLOWED_HOSTS = [
     ### cern.ch
@@ -74,6 +78,7 @@ STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE
 ## See http://docs.djangoproject.com/en/dev/topics/logging for
 ## more details on how to customize your logging configuration.
 from .logconfig import LOGGING
+LOGGING_CONFIG = 'atlas.settings.logconfig.configure_logging'
 
 AUTHENTICATION_BACKENDS = (
     # 'atlas.auth.shibsso.backends.ShibSSOBackend',
@@ -117,3 +122,13 @@ SYSTEM_HEALTH_STATUS_FILE = '/tmp/prodsys_status.txt'
 
 # Stage 1 never enforces Casbin decisions. Set to 'off' to stop observation.
 AUTHORIZATION_MODE = 'shadow'
+
+# Resolve deployment overrides before deriving URLs or publishing settings.
+from .runtime import get_setting
+DEBUG = get_setting('DEBUG', DEVELOPMENT)
+for _name in ('ALLOWED_HOSTS', 'CSRF_TRUSTED_ORIGINS', 'OIDC_CLIENT_ID',
+              'STATIC_ROOT', 'MEDIA_ROOT', 'URL_PATH_PREFIX', 'SYSTEM_HEALTH_STATUS_FILE'):
+    if get_setting(_name) is not None:
+        globals()[_name] = get_setting(_name)
+MEDIA_URL = URL_PATH_PREFIX + MEDIA_URL_BASE
+STATIC_URL = URL_PATH_PREFIX + STATIC_URL_BASE

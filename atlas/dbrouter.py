@@ -14,8 +14,6 @@ class ProdMonDBRouter(object):
             return 'default'
         if model._meta.app_label == 'dev':
             return 'dev_db'
-        if model._meta.app_label == 'panda_dev':
-            return 'panda_dev'
         if model._meta.app_label == 'django_celery_results':
             return 'dev_db'
         if model._meta.app_label == 'django_celery_beat':
@@ -30,8 +28,6 @@ class ProdMonDBRouter(object):
     def db_for_write(self, model, **hints):
         if model._meta.app_label == 'auth':
             return 'default'
-        if model._meta.app_label == 'panda_dev':
-            return 'panda_dev'
         if model._meta.app_label == 'prodtask':
             return 'deft'
         if model._meta.app_label == 'art':

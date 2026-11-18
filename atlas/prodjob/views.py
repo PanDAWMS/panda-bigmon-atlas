@@ -12,7 +12,6 @@ from django.conf import settings
 from atlas.prodtask.models import ProductionTask, TTask
 from atlas.prodtask.task_views import create_user_task
 from atlas.settings import OIDC_LOGIN_URL
-from atlas.settings.local import BIGPANDA_TOKEN
 from atlas.task_action.task_management import TaskManagementAuthorisation, TaskActionExecutor, do_jedi_action
 
 _logger = logging.getLogger('prodtaskwebui')
@@ -151,7 +150,7 @@ def get_jobs(request):
         headers = {
             'content-type': 'application/json',
             'accept': 'application/json',
-            'Authorization': f'Token {BIGPANDA_TOKEN}',
+            'Authorization': f'Token {settings.BIGPANDA_TOKEN}',
         }
         resp = requests.get(url, headers=headers)
         data = resp.json()['jobs']
@@ -173,7 +172,7 @@ def get_jobs_from_url(url):
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
-        'Authorization': f'Token {BIGPANDA_TOKEN}',
+        'Authorization': f'Token {settings.BIGPANDA_TOKEN}',
     }
     resp = requests.get(url, headers=headers)
     data = resp.json()['jobs']
@@ -190,7 +189,7 @@ def get_job_from_id(id):
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
-        'Authorization': f'Token {BIGPANDA_TOKEN}',
+        'Authorization': f'Token {settings.BIGPANDA_TOKEN}',
     }
     resp = requests.get(url, headers=headers)
     data = resp.json()

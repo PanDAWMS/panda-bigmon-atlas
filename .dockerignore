@@ -1,0 +1,7 @@
+.git
+.idea
+.venv
+**/__pycache__
+**/*.pyc
+**/*.env
+**/local.py

@@ -4,14 +4,14 @@ from datetime import timedelta
 from random import sample
 from typing import List, Optional
 
-from atlas.settings.local import MONIT_ES
+from django.conf import settings
 from dataclasses import dataclass, fields
 from opensearchpy import OpenSearch, connections, Search, AttrDict
 
 from atlas.prodtask.ddm_api import DDM, convert_input_to_physical_tape
 from atlas.prodtask.models import ProductionTask, ActionStaging, TTask, TemplateVariable, PandaDatasetStaging
 
-MONIT_SEARCH = OpenSearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']), verify_certs=MONIT_ES['verify_certs'], ca_certs=MONIT_ES['ca_cert'], timeout=5000)
+MONIT_SEARCH = OpenSearch(hosts=settings.MONIT_ES['hosts'],http_auth=(settings.MONIT_ES['login'], settings.MONIT_ES['password']), verify_certs=settings.MONIT_ES['verify_certs'], ca_certs=settings.MONIT_ES['ca_cert'], timeout=5000)
 
 MONIT_DDM_INDEX = 'monit_prod_ddm_enr_*'
 _logger = logging.getLogger('prodtaskwebui')

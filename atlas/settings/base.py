@@ -1,7 +1,7 @@
 
 from os.path import dirname, join
 
-from .local import MY_CELERY, DEVELOPMENT
+from .runtime import MY_CELERY, DEVELOPMENT
 import atlas
 
 VERSIONS = {

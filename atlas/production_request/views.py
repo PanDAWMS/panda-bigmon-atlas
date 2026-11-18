@@ -12,8 +12,7 @@ from datetime import timedelta
 from functools import reduce
 from pprint import pprint
 from typing import Dict, List, Any, Optional
-from atlas.settings.local import BIGPANDA_TOKEN
-
+from django.conf import settings
 import math
 import requests
 from celery.result import AsyncResult
@@ -341,7 +340,7 @@ def production_tasks_by_bigpanda_url(request: Request) -> Response:
         resp = requests.get(url,     headers = {
             'content-type': 'application/json',
             'accept': 'application/json',
-            'Authorization': f'Token {BIGPANDA_TOKEN}',
+            'Authorization': f'Token {settings.BIGPANDA_TOKEN}',
         })
         data = resp.json()
         task_ids =  [x['jeditaskid'] for x in data]

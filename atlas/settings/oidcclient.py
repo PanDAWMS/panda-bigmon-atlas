@@ -1,3 +1,3 @@
-from .local import OIDC_SECRET
+from .runtime import OIDC_SECRET
 
 OIDC_SECRET = OIDC_SECRET

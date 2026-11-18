@@ -61,3 +61,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+
+# Deployment credentials and machine-specific configuration
+.env
+*.env

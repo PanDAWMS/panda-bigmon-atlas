@@ -10,7 +10,7 @@ from atlas.prodtask.models import ProductionTask, StepExecution, StepTemplate, I
 # import logging
 # import os
 from atlas.prodtask.task_views import get_clouds, get_sites, get_nucleus, get_global_shares
-from atlas.settings.local import BIGPANDA_TOKEN
+from django.conf import settings
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -48,8 +48,7 @@ def str_to_slices_range(range_str):
 @login_required(login_url=OIDC_LOGIN_URL)
 def tasks_hashtags(request, hashtag_formula):
     try:
-        from atlas.settings.local import FIRST_ADOPTERS
-        if (request.user.username in FIRST_ADOPTERS):
+        if (request.user.username in settings.FIRST_ADOPTERS):
             return HttpResponseRedirect(f'/ng/tasks-by-hashtags/{hashtag_formula}')
     except:
         pass
@@ -90,8 +89,7 @@ def request_recent_tasks(request, days=3):
 @login_required(login_url=OIDC_LOGIN_URL)
 def request_tasks_slices(request, rid, slices):
     try:
-        from atlas.settings.local import FIRST_ADOPTERS
-        if (request.user.username in FIRST_ADOPTERS):
+        if (request.user.username in settings.FIRST_ADOPTERS):
             return HttpResponseRedirect(f'/ng/request-tasks/{rid}/{slices}')
     except:
         pass
@@ -127,8 +125,7 @@ def request_tasks(request, rid = None):
     #     qs = ProductionTask.objects.filter(request__reqid = rid).values('id')
     #     task_array = [decimal_default( x.get('id')) for x in qs]
     try:
-        from atlas.settings.local import FIRST_ADOPTERS
-        if (request.user.username in FIRST_ADOPTERS):
+        if (request.user.username in settings.FIRST_ADOPTERS):
             return HttpResponseRedirect(f'/ng/request-tasks/{rid}')
     except:
         pass
@@ -202,7 +199,7 @@ def  get_tasks_by_url(url):
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
-        'Authorization': f'Token {BIGPANDA_TOKEN}',
+        'Authorization': f'Token {settings.BIGPANDA_TOKEN}',
     }
     resp = requests.get(url, headers=headers)
     data = resp.json()

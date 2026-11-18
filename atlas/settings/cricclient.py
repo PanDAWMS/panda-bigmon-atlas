@@ -1,4 +1,2 @@
-from .local import CERTIFICATE_PATH
-
-CRIC_BASE_URL = ' https://atlas-cric.cern.ch/api'
+from .runtime import CERTIFICATE_PATH, CRIC_BASE_URL
 CERTIFICAT = CERTIFICATE_PATH

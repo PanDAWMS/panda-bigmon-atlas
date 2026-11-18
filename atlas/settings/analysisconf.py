@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .local import ANALYSIS_SETTING_CONF
+from .runtime import ANALYSIS_SETTING_CONF
 
 dataclass()
 class ANALYSIS_CONF:

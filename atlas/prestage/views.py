@@ -42,8 +42,7 @@ from atlas.task_action.task_management import TaskActionExecutor
 
 from opensearchpy import OpenSearch, connections, Search, AttrDict
 
-from atlas.settings.local import MONIT_ES
-
+from django.conf import settings
 from ..atlaselastic.monit_views import get_stuck_file_info, TransferData
 from ..prodjob.views import chunks
 from ..settings import cricclient as cric_settings
@@ -2294,8 +2293,8 @@ def staging_rule_verification(dataset: str, stuck_days: int = 10) -> (bool,bool)
     # Get list of files which are not yet staged
     stuck_files = [ file_lock['name'] for file_lock in ddm.list_locks(rule_id) if file_lock['state'] != 'OK']
     # Check in ES that files have failed attempts from tape. Limit to 1000 files, should be enough
-    connection = OpenSearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']),
-                               verify_certs=MONIT_ES['verify_certs'], ca_certs=MONIT_ES['ca_cert'], timeout=10000)
+    connection = OpenSearch(hosts=settings.MONIT_ES['hosts'],http_auth=(settings.MONIT_ES['login'], settings.MONIT_ES['password']),
+                               verify_certs=settings.MONIT_ES['verify_certs'], ca_certs=settings.MONIT_ES['ca_cert'], timeout=10000)
     days_since_start = stuck_days
     if dataset_staging.start_time and ((timezone.now() - dataset_staging.start_time).days > days_since_start):
             days_since_start = (timezone.now() - dataset_staging.start_time).days
@@ -2349,8 +2348,8 @@ def staging_rule_file_errors(dataset: str):
             break
     if not source:
         raise ValueError(f'{dataset_staging.dataset} tape replica is not found')
-    connection = OpenSearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']),
-                               verify_certs=MONIT_ES['verify_certs'],  ca_certs=MONIT_ES['ca_cert'], timeout=10000)
+    connection = OpenSearch(hosts=settings.MONIT_ES['hosts'],http_auth=(settings.MONIT_ES['login'], settings.MONIT_ES['password']),
+                               verify_certs=settings.MONIT_ES['verify_certs'],  ca_certs=settings.MONIT_ES['ca_cert'], timeout=10000)
     days_since_start = (timezone.now() - dataset_staging.start_time).days
     a = A('terms', field='data.name')
     s = Search(using=connection, index='monit_prod_ddm_enr_*').\
@@ -2386,8 +2385,8 @@ def staging_rule_file_errors(dataset: str):
 #     # Get list of files which are not yet staged
 #     stuck_files = [ file_lock['name'] for file_lock in ddm.list_locks(rule_id) if file_lock['state'] != 'OK']
 #     # Check in ES that files have failed attempts from tape. Limit to 1000 files, should be enough
-#     connection = Elasticsearch(hosts=MONIT_ES['hosts'],http_auth=(MONIT_ES['login'], MONIT_ES['password']),
-#                                verify_certs=MONIT_ES['verify_certs'], timeout=10000)
+#     connection = Elasticsearch(hosts=settings.MONIT_ES['hosts'],http_auth=(settings.MONIT_ES['login'], settings.MONIT_ES['password']),
+#                                verify_certs=settings.MONIT_ES['verify_certs'], timeout=10000)
 #     days_since_start = stuck_days
 #     tape_replicas = ddm.full_replicas_per_type(dataset_staging.dataset)['tape']
 #     # Find source Tape replica

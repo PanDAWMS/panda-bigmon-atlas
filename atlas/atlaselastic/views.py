@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from re import search
 from typing import List
 
-from atlas.settings.local import ATLAS_OS
+from django.conf import settings
 from opensearchpy import OpenSearch, connections, Search
 
-connections.create_connection(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'],
-                               ca_certs=ATLAS_OS['ca_cert'])
-ATLAS_ES7 = OpenSearch(hosts=ATLAS_OS['hosts'],http_auth=(ATLAS_OS['login'], ATLAS_OS['password']), verify_certs=ATLAS_OS['verify_certs'], ca_certs=ATLAS_OS['ca_cert'], timeout=5000)
+connections.create_connection(hosts=settings.ATLAS_OS['hosts'],http_auth=(settings.ATLAS_OS['login'], settings.ATLAS_OS['password']), verify_certs=settings.ATLAS_OS['verify_certs'],
+                               ca_certs=settings.ATLAS_OS['ca_cert'])
+ATLAS_ES7 = OpenSearch(hosts=settings.ATLAS_OS['hosts'],http_auth=(settings.ATLAS_OS['login'], settings.ATLAS_OS['password']), verify_certs=settings.ATLAS_OS['verify_certs'], ca_certs=settings.ATLAS_OS['ca_cert'], timeout=5000)
 
 
 class LogsName():
