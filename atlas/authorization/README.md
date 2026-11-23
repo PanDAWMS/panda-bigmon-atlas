@@ -55,7 +55,7 @@ uses candidate values from policy bounds; each submitted priority is checked
 again at execution. Batch share updates require one grant to cover the whole
 batch; permissions from different roles or MC scopes cannot be combined.
 
-Permission checks run before writes, including request/analysis creation,
+Permission checks run before the protected writes, including analysis creation,
 step-save changes, PMG batches and train-close mutations. Queued action workers
 check current permissions again before executing. Historical queued superuser
 flags are accepted for message compatibility but are not trusted for decisions.
@@ -68,6 +68,19 @@ asserted identity. Both scope-list APIs filter through the scope policies.
 
 ## Current policy behavior
 
+- MCCOORD members can create requests for every physics group, as can DPD,
+  ALL and superusers. Other users require membership in the requested group.
+  These policies back the creation capability checks; the legacy
+  `request_clone_or_create` writer intentionally does not enforce that group gate.
+- MCCOORD is an administrative role for requests with `request_type == MC` and
+  their production tasks. `mc_coordinators.csv` grants all defined request and
+  task actions in that scope, including step saves for another manager, slice
+  creation, email resend, privileged retry options and task-linked job debug.
+  Classification comes from the stored request type, not a request-body claim or
+  a global superuser flag. Existing ordinary grants remain unchanged; the new
+  administrative privileges do not extend to GROUP, REPROCESSING or ANALYSIS
+  tasks, unrelated settings, or jobs without a verified MC task. Task-state
+  restrictions and input validation continue to apply.
 - MC approval uses MCCOORD, without individual coordinator exceptions. Train
   close/reopen and retry management retain their configured superuser grants.
 - MC step-save permission uses the request manager's coordinator membership;
@@ -84,7 +97,8 @@ asserted identity. Both scope-list APIs filter through the scope policies.
   subject-role grants from the approved policies. This cutover does not add a
   role restriction to those actions. Edit/delete permissions remain separate.
 - Job debug, job kills without a task, and the privileged retry modifier require
-  their explicit administrative policies.
+  their explicit administrative policies. MCCOORD can debug jobs and use the
+  retry modifier for verified MC tasks; jobs without a task remain superuser-only.
 
 ## Model and policy format
 

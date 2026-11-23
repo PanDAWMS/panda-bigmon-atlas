@@ -124,7 +124,7 @@ class RequestTableTests(unittest.TestCase):
             if metadata_error:
                 statuses.objects.filter.side_effect = RuntimeError('metadata unavailable')
             policy = Mock(return_value=policy_grant)
-            namespace = dict(request=SimpleNamespace(user=user()), RequestStatus=statuses, can_access=policy,
+            namespace = dict(request=SimpleNamespace(user=user()), RequestStatus=statuses, can_request=policy,
                              cur_request=SimpleNamespace(reqid=1, request_type='MC', phys_group='PHYS', cstatus='approved'))
             exec(code, namespace)
             self.assertEqual(namespace['autorized_change_request'], not metadata_error and policy_grant)

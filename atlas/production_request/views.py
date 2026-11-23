@@ -1,5 +1,5 @@
 import itertools
-from atlas.authorization.resources import can_access
+from atlas.authorization.resources import can_request
 import json
 import logging
 
@@ -2160,7 +2160,7 @@ def pmg_approve(request):
             new_status = TRequest.STATUS.CANCELLED
         production_requests_id = []
         production_requests = list(TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING))
-        if not all(can_access(request.user, 'request', f'pmg_{action}', object_id=item.reqid,
+        if not all(can_request(request.user, item, f'pmg_{action}',
                               source='production_request.pmg_approve') for item in production_requests):
             return Response('Permission denied', status=status.HTTP_403_FORBIDDEN)
         for production_request in production_requests:

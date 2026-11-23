@@ -5,6 +5,7 @@ p, subject, request, pmg_hold, {}, {}, allow
 p, subject, request, pmg_cancel, {}, {}, allow
 p, prodsys:superuser, request, create, {}, {}, allow
 p, DPD, request, create, {}, {}, allow
+p, MCCOORD, request, create, {}, {}, allow
 p, ALL, request, create, {}, {}, allow
 p, subject, request, create, {"group_member": true}, {}, allow
 p, subject, request, approve, {"restricted_mc": false}, {}, allow

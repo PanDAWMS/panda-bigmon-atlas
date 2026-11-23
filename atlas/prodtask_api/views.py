@@ -1,4 +1,4 @@
-from atlas.authorization.resources import can_access
+from atlas.authorization.resources import can_access, can_request
 
 import json
 import logging
@@ -145,9 +145,8 @@ def create_slice(request):
         data = request.data
         production_request = TRequest.objects.get(reqid=data['production_request'])
         same_manager = request.user.username == production_request.manager
-        can_create_slice = can_access(request.user, 'request', 'create_slice',
-                       object_id=production_request.reqid, facts={'same_manager': same_manager},
-                       source='prodtask_api.create_slice')
+        can_create_slice = can_request(request.user, production_request, 'create_slice',
+                                       facts={'same_manager': same_manager}, source='prodtask_api.create_slice')
         if not can_create_slice:
             return HttpResponseForbidden()
 

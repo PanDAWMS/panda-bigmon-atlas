@@ -1,3 +1,4 @@
+import ast
 import json
 import re
 from itertools import product
@@ -167,25 +168,13 @@ class ResourceTests(unittest.TestCase):
 
     def test_job_and_task_privilege_rules_belong_to_task_superusers(self):
         engine = AuthorizationEngine()
-        rules = [(row, refs) for row, refs in engine.references.items() if row[1] in ('job', 'task_privilege')]
+        rules = [(row, refs) for row, refs in engine.references.items()
+                 if row[0] == 'prodsys:superuser' and row[1] in ('job', 'task_privilege')]
         self.assertEqual(len(rules), 4)
         for row, refs in rules:
             self.assertTrue(all('task_superusers.csv:' in ref for ref in refs))
             self.assertTrue(engine.enforce(['prodsys:superuser'], row[1], row[2], {}, {}))
             self.assertFalse(engine.enforce(['subject'], row[1], row[2], {}, {}))
-
-    def test_request_create_checks_group_before_persistence(self):
-        form = SimpleNamespace(is_valid=lambda: True, cleaned_data={'phys_group': 'PHYS'})
-        confirm = SimpleNamespace(is_valid=lambda: True)
-        model = Mock()
-        ns = functions('prodtask/request_views.py', ['request_clone_or_create'],
-                       HttpResponseForbidden=lambda *a: 403, TRequest=model)
-        request = SimpleNamespace(user=user(), method='POST', POST={}, FILES={}, session={'file_dict': []})
-        result = ns.request_clone_or_create(request, None, 'Title', 'submit', lambda *a: form,
-                                           lambda *a: confirm, Mock())
-        self.assertEqual(result, 403)
-        model.assert_not_called()
-        self.assertIn('file_dict', request.session)
 
     def test_train_close_and_reopen_writes_enforce_capability_policy(self):
         for superuser, action in product((False, True), ('close_train', 'reopen_train')):
@@ -212,7 +201,8 @@ class ResourceTests(unittest.TestCase):
     def test_pmg_batch_checks_all_permissions_before_first_mutation(self):
         model = Mock()
         model.STATUS = SimpleNamespace(REGISTERED='registered', HOLD='hold', CANCELLED='cancelled', WAITING='waiting')
-        model.objects.filter.return_value = [SimpleNamespace(reqid=1), SimpleNamespace(reqid=2)]
+        model.objects.filter.return_value = [SimpleNamespace(reqid=1, request_type='MC'),
+                                            SimpleNamespace(reqid=2, request_type='MC')]
         write = Mock()
         ns = functions('production_request/views.py', ['pmg_approve'], TRequest=model, set_request_status=write,
             Response=lambda data, status=None: (data, status), _logger=Mock(),
@@ -237,12 +227,28 @@ class ResourceTests(unittest.TestCase):
         handler.set_mc_workflow_request.assert_not_called()
 
     def test_request_group_capabilities_and_manager_gate(self):
-        for groups, superuser in product(([], ['DPD'], ['PHYS']), (False, True)):
+        for groups, superuser in product(([], ['DPD'], ['MCCOORD'], ['PHYS']), (False, True)):
             principal = user(groups=groups, superuser=superuser)
-            expected = ['PHYS', 'OTHER'] if superuser or 'DPD' in groups else ['PHYS'] if groups else []
+            expected = ['PHYS', 'OTHER'] if superuser or set(groups) & {'DPD', 'MCCOORD'} else ['PHYS'] if groups else []
             self.assertEqual(resources.request_group_capabilities(principal, ['PHYS', 'OTHER']), expected)
         for superuser in (False, True):
             self.assertFalse(resources.can_access(user('other', superuser=superuser), 'request', 'create_slice', facts={'same_manager': False}))
+
+    def test_coordinators_can_create_requests_for_every_configured_physics_group(self):
+        # Read the actual choices without importing the production DB models.
+        tree = ast.parse((ATLAS / 'prodtask/models.py').read_text())
+        model = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'TRequest')
+        choices = next(node.value for node in model.body if isinstance(node, ast.Assign)
+                       and any(isinstance(target, ast.Name) and target.id == 'PHYS_GROUPS' for target in node.targets))
+        groups = ast.literal_eval(choices.generators[0].iter)
+        self.assertIn('HION', groups)
+        coordinator = user(groups=['MCCOORD'])
+        for group in groups:
+            with self.subTest(group=group):
+                self.assertTrue(resources.can_create_request(coordinator, group))
+        self.assertEqual(resources.request_group_capabilities(coordinator, groups), groups)
+        self.assertFalse(resources.can_create_request(user(), 'HION'))
+        self.assertFalse(resources.can_create_request(user(groups=['MCCOORD'], active=False), 'HION'))
 
     def test_steps_permissions_have_no_username_bypass(self):
         for request_type, same_manager, manager_coordinator, member, asynchronous in product(

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, List, Dict, Any
 
-from atlas.authorization.resources import can_access, can_task, can_rule, task_parameter_candidates
+from atlas.authorization.resources import can_access, can_task, can_rule, task_facts, task_parameter_candidates
 from atlas.authorization.principals import delegated_task_user_rights, group_codes, user_for_username
 
 from celery.result import AsyncResult
@@ -691,6 +691,7 @@ class TaskManagementAuthorisation():
         status: str = ''
         phys_group: str = ''
         request_phys_group: str = ''
+        request_type: str = ''
         is_analy: bool = False
         is_group_production: bool = False
 
@@ -734,6 +735,7 @@ class TaskManagementAuthorisation():
             task.status = task_dict.get('status')
             task.phys_group = task_dict.get('phys_group')
             task.request_phys_group = task_dict.get('request__phys_group')
+            task.request_type = task_dict.get('request__request_type') or ''
             task.is_group_production = (task_dict.get('request__request_type') == 'GROUP') and (task.phys_group not in ['VALI']) and (task.request_phys_group not in ['VALI'])
             task.is_analy = (task_dict.get('request_id') == 300) or task_dict.get('request__request_type') == 'ANALYSIS'
         else:
@@ -800,12 +802,20 @@ class TaskManagementAuthorisation():
         self.define_allowed_task_actions()
 
 
-def permission_specific_params(username: str, action: str, params: list) -> (str, list):
+def permission_specific_params(username: str, action: str, params: list, task_ids=None) -> (str, list):
     if action == 'retry':
         try:
             user = User.objects.get(username=username)
-            if len(params) >= 6 and can_access(user, 'task_privilege', 'retry_override',
-                                               source='permission_specific_params'):
+            if len(params) < 6:
+                return action, params
+            if task_ids:
+                manager = TaskManagementAuthorisation()
+                permitted = all(can_access(user, 'task_privilege', 'retry_override',
+                    object_id=task_id, facts=lambda: task_facts(manager.get_task_info(task_id)),
+                    source='permission_specific_params') for task_id in task_ids)
+            else:
+                permitted = can_access(user, 'task_privilege', 'retry_override', source='permission_specific_params')
+            if permitted:
                 params[5] = True
                 return action, params
         except:
@@ -826,7 +836,7 @@ def tasks_action(request: Request):
         if 'user_fullname' in request.data:
              user_fullname = request.data['user_fullname']
         authentification_management = TaskManagementAuthorisation()
-        action, params = permission_specific_params(username=username, action=action, params=params)
+        action, params = permission_specific_params(username=username, action=action, params=params, task_ids=tasks_id)
         tasks_allowed = authentification_management.tasks_action_authorisation(tasks_id, username, action, params, user_fullname)
         for task_verified in tasks_allowed:
             if not task_verified.user_allowed or not task_verified.action_allowed:

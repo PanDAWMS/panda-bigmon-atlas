@@ -39,8 +39,24 @@ def can_access(user, obj_type, action, *, object_id=None, groups=None, editor=No
                          if editor is None and obj_type in ('gdpconfig', 'global_share') else bool(editor))
         obj = facts() if callable(facts) else facts
         return roles_for(user, actual_groups, direct_editor), obj or {}, {}
-    return authorize(actor=user.username, obj_type=obj_type, object_id=object_id,
+    return authorize(actor=user.delegated_by if isinstance(user, DelegatedIdentity) else user.username,
+                     effective_user=user.username, obj_type=obj_type, object_id=object_id,
                      action=action, context=context, source=source)
+
+
+def can_request(user, production_request, action, *, facts=None, source=''):
+    def context_facts():
+        obj = dict((facts() if callable(facts) else facts) or {})
+        obj['request_type'] = production_request.request_type
+        return obj
+    return can_access(user, 'request', action, object_id=production_request.reqid,
+                      facts=context_facts, source=source)
+
+
+def task_facts(task):
+    return {'tasktype': 'analy' if task.is_analy else 'prod',
+            'request_type': getattr(task, 'request_type', ''),
+            'group_production': task.is_group_production}
 
 
 def task_context(user, groups, task, action, params, user_fullname):
@@ -63,17 +79,16 @@ def task_context(user, groups, task, action, params, user_fullname):
             roles.append('analysis-group-member')
     params = params or []
     normalized = {'priority': params[0]} if action == 'change_priority' and params else {}
-    # Callers cannot smuggle the superuser-only retry modifier into normal retry.
+    # Callers need an explicit grant for the privileged retry modifier.
     retry_override = action in ('retry', 'force_retry') and len(params) >= 6 and bool(params[5])
-    return roles, {'tasktype': 'analy' if task.is_analy else 'prod',
-                   'group_production': task.is_group_production, 'retry_override': retry_override}, normalized
+    return roles, dict(task_facts(task), retry_override=retry_override), normalized
 
 
 def can_task(user, groups, task, action, params=None, fullname=None):
     # The retry modifier is a second permission, independent of ownership.
     if action in ('retry', 'force_retry') and params and len(params) >= 6 and params[5]:
         if not can_access(user, 'task_privilege', 'retry_override', groups=groups,
-                          object_id=task.id, source='task.retry_override'):
+                          object_id=task.id, facts=lambda: task_facts(task), source='task.retry_override'):
             return False
     return authorize(actor=user.delegated_by if isinstance(user, DelegatedIdentity) else user.username,
                      effective_user=user.username, obj_type='task', object_id=task.id, action=action,
@@ -120,8 +135,8 @@ def can_save_steps(user, production_request, *, physics_groups, asynchronous=Fal
                 'same_manager': user.username == production_request.manager,
                 'manager_is_coordinator': 'MCCOORD' in group_codes(user_for_username(production_request.manager)),
                 'physics_group_member': bool(set(group_codes(user)) & set(physics_groups))}
-    return can_access(user, 'request', 'save_steps_async' if asynchronous else 'save_steps',
-                      object_id=production_request.reqid, facts=facts, source='request.save_steps')
+    return can_request(user, production_request, 'save_steps_async' if asynchronous else 'save_steps',
+                       facts=facts, source='request.save_steps')
 
 
 MC_SHARES = frozenset(('MC evgen', 'MC merge', 'MC root', 'MC simul'))

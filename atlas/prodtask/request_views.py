@@ -1,5 +1,5 @@
 from django.http import HttpResponseForbidden
-from atlas.authorization.resources import can_access, can_create_request, request_group_capabilities
+from atlas.authorization.resources import can_access, can_request, can_create_request, request_group_capabilities
 import copy
 import json
 import logging
@@ -877,7 +877,7 @@ def mcfile_form_prefill(form_data, request):
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
     if len(spreadsheet_dict)>1000:
         large_request_allowed = can_access(request.user, 'request', 'large_submission',
-                       facts={'phys_group': form_data.get('phys_group')}, source='request_views.large_submission')
+                       facts={'phys_group': form_data.get('phys_group'), 'request_type': form_data.get('request_type')}, source='request_views.large_submission')
         if not large_request_allowed:
             eroor_message = "Too many samples selected for a single request - please factorise request into " \
                             "multiple smaller requests. For example, split up Full and Fast simulation and " \
@@ -1442,17 +1442,18 @@ def find_datasets_by_pattern(request):
 @login_required(login_url=OIDC_LOGIN_URL)
 def resend_email(request,reqid):
     if request.method == 'GET':
-        if can_access(request.user, 'request', 'resend_email', object_id=reqid, source='request_views.resend_email'):
-            try:
-                production_request = TRequest.objects.get(reqid=reqid)
+        try:
+            production_request = TRequest.objects.get(reqid=reqid)
+            if can_request(request.user, production_request, 'resend_email', source='request_views.resend_email'):
                 user = User.objects.get(username=production_request.manager)
                 owner_mails = [user.email]
                 current_uri = 'https://prodtask-dev.cern.ch/prodtask/inputlist_with_request/%s/'%reqid
                 form_and_send_email(production_request,owner_mails,'',production_request.info_field('long_description'),
                                     current_uri,production_request.info_field('data_source'),True,production_request.manager)
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            print(e)
         return HttpResponseRedirect('/')
+
 
 def resend_mail_console(reqid):
     production_request = TRequest.objects.get(reqid=reqid)
@@ -1627,8 +1628,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'error_message': ''
                     })
 
-                if not can_create_request(request.user, form.cleaned_data.get('phys_group')):
-                    return HttpResponseForbidden('Permission denied for this request group')
                 if request.session.get('close_train') and not can_access(
                         request.user, 'train', 'close', object_id=request.session['close_train'], source='request.close_train'):
                     return HttpResponseForbidden('Permission denied for this train')

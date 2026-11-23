@@ -1,0 +1,55 @@
+# MCCOORD has administrative permissions on MC requests and their production tasks.
+# Resource type comes from the actual request/task, never an identity-wide superuser flag.
+p, MCCOORD, request, approve, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, create, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, create_slice, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, large_submission, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, obsolete_deleted_outputs, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, pmg_cancel, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, pmg_hold, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, pmg_register, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, raise_group_priority, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, resend_email, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, save_steps, {"request_type":"MC"}, {}, allow
+p, MCCOORD, request, save_steps_async, {"request_type":"MC"}, {}, allow
+
+# Task-state eligibility continues to apply to every action.
+p, MCCOORD, task, manage, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, set_hashtag, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, remove_hashtag, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, sync_jedi, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, abort, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, finish, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, pause_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, resume_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, trigger_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, avalanche_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, reload_input, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, release_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, increase_attempt_number, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, abort_unfinished_jobs, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, disable_idds, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, kill_job, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, retry, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, force_retry, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, finish_plus_reload, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, set_debug_jobs, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, kill_jobs_without_task, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, enable_job_cloning, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_priority, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_ram_count, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_wall_time, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_cpu_time, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_core_count, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, change_split_rule, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, reassign_to_site, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, reassign_to_cloud, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, reassign_to_nucleus, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, reassign_to_share, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, obsolete, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, obsolete_output, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, task, retry_new, {"request_type":"MC","tasktype":"prod"}, {}, allow
+
+# Additional task privileges are scoped to verified MC production tasks.
+p, MCCOORD, task_privilege, retry_override, {"request_type":"MC","tasktype":"prod"}, {}, allow
+p, MCCOORD, job, debug, {"request_type":"MC","tasktype":"prod"}, {}, allow

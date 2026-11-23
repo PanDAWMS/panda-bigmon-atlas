@@ -1,4 +1,4 @@
-from atlas.authorization.resources import can_access
+from atlas.authorization.resources import can_access, task_facts
 import json
 import requests
 import logging
@@ -112,13 +112,17 @@ def jobs_action(request,action):
             if len(jobs) > 10:
                 result['exception'] = "Too many jobs to set debug mode"
                 return HttpResponse(json.dumps(result))
-            if not can_access(request.user, 'job', 'debug', source='jobs_action'):
-                result['exception'] = "Permission denied"
-                return HttpResponse(json.dumps(result))
             for job in jobs:
                 if not job.get('taskid'):
                     result['exception'] = "Taskid is missing"
                     return HttpResponse(json.dumps(result))
+            authorizer = TaskManagementAuthorisation()
+            debug_tasks = {job['taskid']: authorizer.get_task_info(job['taskid']) for job in jobs}
+            if not all(can_access(request.user, 'job', 'debug', object_id=task_id,
+                                  facts=lambda: task_facts(task), source='jobs_action')
+                       for task_id, task in debug_tasks.items()):
+                result['exception'] = "Permission denied"
+                return HttpResponse(json.dumps(result))
             executor = TaskActionExecutor(user, '')
             for job in jobs:
                 do_jedi_action(executor, job['taskid'], action, job['pandaid'],  *args)

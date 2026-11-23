@@ -1,4 +1,4 @@
-from atlas.authorization.resources import can_access, can_save_steps
+from atlas.authorization.resources import can_access, can_request, can_save_steps
 from atlas.authorization.principals import group_codes, user_for_username
 import re
 from collections import defaultdict
@@ -709,7 +709,7 @@ def change_request_priority(request, reqid, old_priority, new_priority):
 
 def request_approve_status(production_request, request, user_name='', is_superuser=None):
     principal = request.user if request else user_for_username(user_name)
-    if not can_access(principal, 'request', 'approve', object_id=production_request.reqid,
+    if not can_request(principal, production_request, 'approve',
                       facts={'restricted_mc': production_request.request_type == 'MC' and
                              production_request.phys_group != 'VALI'}, source='request_approve_status'):
         return None
@@ -2176,12 +2176,13 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
-            autorized_change_request = autorized_change_request and can_access(request.user, 'request', 'approve',
-                object_id=cur_request.reqid, facts={'restricted_mc': cur_request.request_type == 'MC' and
-                                                   cur_request.phys_group != 'VALI'}, source='request_table.approval_capability')
+            autorized_change_request = autorized_change_request and can_request(
+                request.user, cur_request, 'approve',
+                facts={'restricted_mc': cur_request.request_type == 'MC' and cur_request.phys_group != 'VALI'},
+                source='request_table.approval_capability')
             limit_priority = {'min': 0, 'max': 2000}
             if cur_request.request_type == 'GROUP' and cur_request.phys_group != 'VALI':
-                if not can_access(request.user, 'request', 'raise_group_priority', object_id=cur_request.reqid,
+                if not can_request(request.user, cur_request, 'raise_group_priority',
                                   source='request_table.priority_capability'):
                     limit_priority = {'min': 560, 'max': 570}
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()

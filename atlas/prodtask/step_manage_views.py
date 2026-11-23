@@ -1,4 +1,4 @@
-from atlas.authorization.resources import can_access
+from atlas.authorization.resources import can_request
 import functools
 import json
 import logging
@@ -2719,7 +2719,7 @@ def obsolete_old_deleted_tasks(request, reqid):
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
             coordinator_required = production_request.request_type in ['REPROCESSING', 'MC']
-            if not can_access(request.user, 'request', 'obsolete_deleted_outputs', object_id=reqid,
+            if not can_request(request.user, production_request, 'obsolete_deleted_outputs',
                               facts={'coordinator_required': coordinator_required},
                               source='step_manage_views.obsolete_deleted_outputs'):
                 return HttpResponseForbidden('Permission denied')
