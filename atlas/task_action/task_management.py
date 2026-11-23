@@ -749,8 +749,8 @@ class TaskManagementAuthorisation():
                 task.request_phys_group = task.phys_group
         return task
 
-    def user_authorization(self, user: User, allowed_groups: [str], task: __AuthorisationTask, action: str, params, user_fullname) -> bool:
-        return can_task(user, allowed_groups, task, action, params, user_fullname)
+    def user_authorization(self, user: User, allowed_groups: [str], task: __AuthorisationTask, action: str, params, user_fullname, *, audit=True) -> bool:
+        return can_task(user, allowed_groups, task, action, params, user_fullname, audit=audit)
 
     def additional_permissions(self, task: __AuthorisationTask, action: str) -> bool:
         if task.is_analy:
@@ -758,13 +758,13 @@ class TaskManagementAuthorisation():
                 return True
         return False
 
-    def __task_action_check(self, task: __AuthorisationTask, user: User, allowed_groups: [str],  action: str, params, user_fullname) -> (bool, bool):
+    def __task_action_check(self, task: __AuthorisationTask, user: User, allowed_groups: [str],  action: str, params, user_fullname, *, audit=True) -> (bool, bool):
         user_is_allowed = False
         task_is_allowed = self.check_task_allowed(task.status, action)
         if not task_is_allowed:
             task_is_allowed = self.additional_permissions(task, action)
         if task_is_allowed:
-            user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname)
+            user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname, audit=audit)
         return task_is_allowed, user_is_allowed
 
     def rules_action_authorisation(self, datasets: str, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
@@ -772,10 +772,10 @@ class TaskManagementAuthorisation():
         return [RuleActionAllowed(dataset, True, can_rule(user, dataset, action)) for dataset in datasets]
 
 
-    def task_action_authorisation(self, task_id: int, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
+    def task_action_authorisation(self, task_id: int, username: str, action: str, params=None, user_fullname: str=None, *, audit=True) -> (bool, bool):
         user, allowed_groups = task_user_rights(username, user_fullname)
         task = self.get_task_info(task_id)
-        return self.__task_action_check(task, user, allowed_groups, action, params, user_fullname)
+        return self.__task_action_check(task, user, allowed_groups, action, params, user_fullname, audit=audit)
 
     def tasks_action_authorisation(self, task_ids: List[int], username: str, action: str, params=None, user_fullname: str=None, *, delegated_by=None) -> List[TaskActionAllowed]:
         if delegated_by is not None:
@@ -795,7 +795,7 @@ class TaskManagementAuthorisation():
         actions = set(self.allowed_task_actions.get(task.status, ()))
         if task.is_analy and task.status in (ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN):
             actions.update(('retry', 'reload_input', 'force_retry'))
-        return {action: any(all(self.__task_action_check(task, user, groups, action, params, None))
+        return {action: any(all(self.__task_action_check(task, user, groups, action, params, None, audit=False))
                             for params in task_parameter_candidates(action)) for action in actions}
 
     def __init__(self):
@@ -812,9 +812,9 @@ def permission_specific_params(username: str, action: str, params: list, task_id
                 manager = TaskManagementAuthorisation()
                 permitted = all(can_access(user, 'task_privilege', 'retry_override',
                     object_id=task_id, facts=lambda: task_facts(manager.get_task_info(task_id)),
-                    source='permission_specific_params') for task_id in task_ids)
+                    source='permission_specific_params', audit=False) for task_id in task_ids)
             else:
-                permitted = can_access(user, 'task_privilege', 'retry_override', source='permission_specific_params')
+                permitted = can_access(user, 'task_privilege', 'retry_override', source='permission_specific_params', audit=False)
             if permitted:
                 params[5] = True
                 return action, params

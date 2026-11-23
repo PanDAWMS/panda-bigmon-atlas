@@ -684,9 +684,9 @@ def check_action_allowed(username, tasks, action=None, params=None, userfullname
     for task_id in tasks:
         task = manager.get_task_info(task_id)
         if action is None:
-            permitted = can_task(user, groups, task, 'manage', params, userfullname)
+            permitted = can_task(user, groups, task, 'manage', params, userfullname, audit=False)
         else:
-            eligible, permitted = manager.task_action_authorisation(task_id, username, action, params, userfullname)
+            eligible, permitted = manager.task_action_authorisation(task_id, username, action, params, userfullname, audit=False)
             if not eligible:
                 invalid.append(task_id)
         if not permitted:

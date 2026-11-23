@@ -1134,7 +1134,7 @@ def dpd_form_prefill(form_data, request):
         form_data['manager'] = request.user.username
     try:
         allow_priority = can_access(request.user, 'request', 'raise_group_priority',
-                                    source='request_views.group_request_priority')
+                                    source='request_views.group_request_priority', audit=False)
     except:
         pass
     if 'project' in output_dict:
@@ -1515,7 +1515,7 @@ def check_request_group(request):
     try:
         group = request.data['group']
         user = request.user
-        result = can_create_request(user, group)
+        result = can_create_request(user, group, audit=False)
     except Exception as e:
         content = str(e)
         return Response(content,status=500)

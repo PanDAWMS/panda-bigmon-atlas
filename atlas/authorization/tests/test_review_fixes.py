@@ -24,9 +24,7 @@ class DelegationTests(unittest.TestCase):
         with patch.object(principals, 'user_for_username', return_value=anonymous), patch.object(service, 'logger') as log:
             self.assertEqual(ns.task_action_ext(request, 'abort')['result'], 'OK')
             execute.assert_called_once()
-            decision = log.debug.call_args.kwargs['extra']
-            self.assertEqual((decision['actor'], decision['effective_user']), ('bigpanda_api', 'remote-user'))
-            self.assertNotIn('Asserted Full Name', str(decision))
+            self.assertEqual(log.mock_calls, [])
             execute.reset_mock()
             request.user = user('ordinary-user', superuser=True)
             self.assertEqual(ns.task_action_ext(request, 'abort'), 'forbidden')
@@ -35,6 +33,10 @@ class DelegationTests(unittest.TestCase):
             request.data['userfullname'] = 'Wrong Name'
             self.assertEqual(ns.task_action_ext(request, 'abort')['result'], 'FAILED')
             execute.assert_not_called()
+            decision = log.info.call_args.kwargs['extra']
+            self.assertEqual((decision['actor'], decision['effective_user']), ('bigpanda_api', 'remote-user'))
+            self.assertNotIn('Asserted Full Name', str(decision))
+            self.assertNotIn('Wrong Name', str(decision))
             # A supplied name on the non-delegation path still cannot create identity.
             self.assertFalse(manager.tasks_action_authorisation([1], 'remote-user', 'abort', [],
                                                                 'Asserted Full Name')[0].user_allowed)
@@ -186,17 +188,80 @@ class RequestTableTests(unittest.TestCase):
                              cur_request=SimpleNamespace(reqid=1, request_type='MC', phys_group='PHYS', cstatus='approved'))
             exec(code, namespace)
             self.assertEqual(namespace['autorized_change_request'], not metadata_error and policy_grant)
+            if not metadata_error:
+                self.assertFalse(policy.call_args.kwargs['audit'])
 
 
 class LoggingTests(unittest.TestCase):
-    def test_successes_are_debug_and_failures_remain_visible(self):
+    def test_only_action_failures_are_logged(self):
         with patch.object(service, 'logger') as logger:
             self.assertTrue(resources.can_access(user(superuser=True), 'job', 'debug'))
-            logger.debug.assert_called_once()
-            logger.info.assert_not_called()
-            self.assertEqual(logger.debug.call_args.kwargs['extra']['outcome'], 'allow')
+            self.assertEqual(logger.mock_calls, [])
             self.assertFalse(resources.can_access(user(), 'job', 'debug'))
             self.assertEqual(logger.info.call_args.kwargs['extra']['outcome'], 'deny')
             with patch.object(service, 'get_engine', side_effect=RuntimeError('unavailable')):
                 self.assertFalse(resources.can_access(user(superuser=True), 'job', 'debug'))
             self.assertEqual(logger.error.call_args.kwargs['extra']['outcome'], 'error')
+
+
+    def test_capability_helpers_are_silent_but_submitted_task_denial_is_logged(self):
+        principal = user()
+        manager = task_manager(principal, {1: task(owner='someone_else', is_group_production=True)})
+        with patch.object(service, 'logger') as logger:
+            capabilities = manager.task_capabilities(1, principal.username)
+            self.assertFalse(capabilities['abort'])
+            self.assertEqual(resources.request_group_capabilities(principal, ['PHYS', 'HION']), [])
+            self.assertEqual(resources.manageable_shares(principal, [{'name': 'child', 'parent': 'MC root'}]), [])
+            self.assertEqual(logger.mock_calls, [])
+            self.assertEqual(manager.task_action_authorisation(1, principal.username, 'abort'), (True, False))
+            logger.info.assert_called_once()
+            self.assertEqual(logger.info.call_args.kwargs['extra']['action'], 'abort')
+
+    def test_silent_checks_keep_the_same_decisions_and_fail_closed(self):
+        req = SimpleNamespace(reqid=1, request_type='MC')
+        with patch.object(service, 'logger') as logger:
+            self.assertTrue(resources.can_access(user(superuser=True), 'job', 'debug', audit=False))
+            self.assertFalse(resources.can_request(user(), req, 'resend_email', audit=False))
+            self.assertFalse(resources.can_scope(user(), 'group.OTHER', audit=False))
+            with patch.object(service, 'get_engine', side_effect=RuntimeError('unavailable')):
+                self.assertFalse(resources.can_access(user(superuser=True), 'job', 'debug', audit=False))
+            self.assertEqual(logger.mock_calls, [])
+
+    def test_container_scope_listing_is_silent_for_allowed_and_denied_scopes(self):
+        users = Mock()
+        ns = functions('analysis_tasks/scopes.py', ['container_scopes_by_user'], User=users, re=__import__('re'))
+        with patch.object(service, 'logger') as logger:
+            for active in (True, False):
+                users.objects.get.return_value = user(iam=['IAM:atlas/OTHER/production'], active=active)
+                self.assertEqual(ns.container_scopes_by_user('alice'),
+                                 ['user.alice', 'group.OTHER'] if active else [])
+            self.assertEqual(logger.mock_calls, [])
+
+    def test_group_creation_preflight_is_silent(self):
+        ns = functions('prodtask/request_views.py', ['check_request_group'], Response=lambda data: data)
+        with patch.object(service, 'logger') as logger:
+            for principal, expected in ((user(), False), (user(groups=['MCCOORD']), True)):
+                self.assertEqual(ns.check_request_group(SimpleNamespace(user=principal, data={'group': 'HION'})), expected)
+            self.assertEqual(logger.mock_calls, [])
+
+    def test_train_capability_is_silent_but_close_denial_is_logged(self):
+        trains = Mock()
+        ns = functions('prodtask/train_views.py', ['train_edit', 'close_train'],
+            TrainProduction=trains, TRequest=SimpleNamespace(PHYS_GROUPS=[]),
+            render=lambda request, template, context: context, HttpResponseForbidden=lambda data: data)
+        request = SimpleNamespace(user=user())
+        with patch.object(service, 'logger') as logger:
+            self.assertFalse(ns.train_edit(request, 1)['allow_close'])
+            self.assertEqual(logger.mock_calls, [])
+            self.assertEqual(ns.close_train(request, 1), 'Permission denied')
+            logger.info.assert_called_once()
+            self.assertEqual(logger.info.call_args.kwargs['extra']['decision_source'], 'train.close')
+
+    def test_retry_parameter_preparation_is_silent(self):
+        users = Mock()
+        users.objects.get.return_value = user()
+        ns = functions('task_action/task_management.py', ['permission_specific_params'], User=users)
+        with patch.object(service, 'logger') as logger:
+            self.assertEqual(ns.permission_specific_params('alice', 'retry', [None] * 5 + [False]),
+                             ('retry', [None] * 5 + [False]))
+            self.assertEqual(logger.mock_calls, [])

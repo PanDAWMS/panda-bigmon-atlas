@@ -32,7 +32,7 @@ def task_parameter_candidates(action):
 
 
 def can_access(user, obj_type, action, *, object_id=None, groups=None, editor=None,
-               facts=None, source=''):
+               facts=None, source='', audit=True):
     def context():
         actual_groups = group_codes(user) if groups is None else groups() if callable(groups) else groups
         direct_editor = (user.user_permissions.filter(name='Can edit GDPConfig').exists()
@@ -41,16 +41,16 @@ def can_access(user, obj_type, action, *, object_id=None, groups=None, editor=No
         return roles_for(user, actual_groups, direct_editor), obj or {}, {}
     return authorize(actor=user.delegated_by if isinstance(user, DelegatedIdentity) else user.username,
                      effective_user=user.username, obj_type=obj_type, object_id=object_id,
-                     action=action, context=context, source=source)
+                     action=action, context=context, source=source, audit=audit)
 
 
-def can_request(user, production_request, action, *, facts=None, source=''):
+def can_request(user, production_request, action, *, facts=None, source='', audit=True):
     def context_facts():
         obj = dict((facts() if callable(facts) else facts) or {})
         obj['request_type'] = production_request.request_type
         return obj
     return can_access(user, 'request', action, object_id=production_request.reqid,
-                      facts=context_facts, source=source)
+                      facts=context_facts, source=source, audit=audit)
 
 
 def task_facts(task):
@@ -82,11 +82,11 @@ def task_context(user, groups, task, action, params, user_fullname):
     return roles, task_facts(task), normalized
 
 
-def can_task(user, groups, task, action, params=None, fullname=None):
+def can_task(user, groups, task, action, params=None, fullname=None, *, audit=True):
     return authorize(actor=user.delegated_by if isinstance(user, DelegatedIdentity) else user.username,
                      effective_user=user.username, obj_type='task', object_id=task.id, action=action,
                      context=lambda: task_context(user, groups, task, action, params, fullname),
-                     source='task_management.task_action')
+                     source='task_management.task_action', audit=audit)
 
 
 def can_rule(user, dataset, action):
@@ -104,19 +104,19 @@ def can_delegate(request, action):
                      action=action, context=context, source='task_action_ext.delegation')
 
 
-def can_create_request(user, group, groups=None):
+def can_create_request(user, group, groups=None, *, audit=True):
     def facts():
         codes = group_codes(user) if groups is None else groups() if callable(groups) else groups
         return {'group_member': group in codes}
     return can_access(user, 'request', 'create', object_id=group, groups=groups, facts=facts,
-                      source='request.create')
+                      source='request.create', audit=audit)
 
 
 def request_group_capabilities(user, candidates):
     @lru_cache(maxsize=1)
     def codes():
         return group_codes(user)
-    return [group for group in candidates if can_create_request(user, group, groups=codes)]
+    return [group for group in candidates if can_create_request(user, group, groups=codes, audit=False)]
 
 
 def can_save_steps(user, production_request, *, physics_groups, asynchronous=False):
@@ -153,7 +153,7 @@ def manageable_shares(user, shares):
         return roles_for(user, group_codes(user), user.user_permissions.filter(name='Can edit GDPConfig').exists())
     return [share['name'] for share in shares if authorize(
         actor=user.username, obj_type='global_share', action='manage', object_id=share['name'],
-        context=lambda: (identity_roles(), share_facts([share]), {}), source='gdpconfig.manageable_global_shares')]
+        context=lambda: (identity_roles(), share_facts([share]), {}), source='gdpconfig.manageable_global_shares', audit=False)]
 
 
 def scope_context(user, scope, group_names, working_group=None, check_working_group=False):
@@ -168,8 +168,8 @@ def scope_context(user, scope, group_names, working_group=None, check_working_gr
         'working_group_matches': not check_working_group or working_group == group_name}, {}
 
 
-def can_scope(user, scope, *, action='use', working_group=None, group_names=None):
+def can_scope(user, scope, *, action='use', working_group=None, group_names=None, audit=True):
     return authorize(actor=user.username, obj_type='analysis_scope', object_id=scope, action=action,
         context=lambda: scope_context(user, scope, [g.name for g in user.groups.all()]
                                       if group_names is None else group_names,
-                                      working_group, action == 'submit_group'), source='analysis_scope')
+                                      working_group, action == 'submit_group'), source='analysis_scope', audit=audit)

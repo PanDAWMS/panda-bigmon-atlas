@@ -649,7 +649,7 @@ def train_edit(request, train_id):
         depart_date = train.departure_time.strftime('%Y-%m-%d')
         allow_assemble = True
         allow_close = can_access(request.user, 'train', 'close', object_id=train_id,
-                                 source='train_views.close_capability')
+                                 source='train_views.close_capability', audit=False)
     except:
         return HttpResponseRedirect(reverse('prodtask:request_table'))
 

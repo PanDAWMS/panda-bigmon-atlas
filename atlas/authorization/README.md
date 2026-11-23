@@ -138,9 +138,12 @@ There are no human identity grants in the bundle.
 The authorization_decision message uses the existing prodtask_ELK JSON logger.
 Events contain actor, effective user, resource, action, source, allowed result,
 policy bundle hash, matching policy references, safe resource facts and elapsed
-time. Successful authorization decisions are DEBUG, denials and unmapped actions
-are INFO, and evaluation failures are ERROR. Outcomes are allow, deny, unmapped
-or error. Tokens, caller-supplied full
+time. Successful authorization decisions are not logged. Denied user actions and
+unmapped operations are INFO; evaluation errors blocking user actions are ERROR.
+Interface capability checks use `audit=False` and produce no authorization logs,
+including denials and evaluation errors. This flag affects logging only; the same
+policy decisions and fail-closed behavior apply. Outcomes are deny, unmapped or
+error. Tokens, caller-supplied full
 names and arbitrary action parameters are not logged.
 
 Tests use real Casbin and execute production gate functions with external models

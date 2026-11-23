@@ -75,7 +75,7 @@ def retry_errors_edit(request, retry_errors_id):
     else:
         try:
             retry_allowed = can_access(request.user, 'retry_error', 'manage',
-                                       object_id=retry_errors_id, source='retryerros.manage')
+                                       object_id=retry_errors_id, source='retryerros.manage', audit=False)
             if retry_allowed:
                 values = RetryErrors.objects.get(id=retry_errors_id)
                 form = RetryErrorsForm(instance=values)
@@ -130,7 +130,7 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
     else:
         try:
             retry_allowed = can_access(request.user, 'retry_error', 'manage',
-                                       object_id=retry_errors_id, source='retryerros.manage')
+                                       object_id=retry_errors_id, source='retryerros.manage', audit=False)
             if retry_allowed:
                 if retry_errors_id:
                     values = RetryErrors.objects.get(id=retry_errors_id)

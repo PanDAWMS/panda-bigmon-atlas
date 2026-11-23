@@ -2179,11 +2179,11 @@ def request_table_view(request, rid=None, show_hidden=False):
             autorized_change_request = autorized_change_request and can_request(
                 request.user, cur_request, 'approve',
                 facts={'restricted_mc': cur_request.request_type == 'MC' and cur_request.phys_group != 'VALI'},
-                source='request_table.approval_capability')
+                source='request_table.approval_capability', audit=False)
             limit_priority = {'min': 0, 'max': 2000}
             if cur_request.request_type == 'GROUP' and cur_request.phys_group != 'VALI':
                 if not can_request(request.user, cur_request, 'raise_group_priority',
-                                  source='request_table.priority_capability'):
+                                  source='request_table.priority_capability', audit=False):
                     limit_priority = {'min': 560, 'max': 570}
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
             if comments:
