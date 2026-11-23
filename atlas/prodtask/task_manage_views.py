@@ -1,4 +1,4 @@
-from atlas.authorization.shadow import observe_delegation
+from atlas.authorization.resources import can_delegate
 
 import json
 
@@ -66,9 +66,7 @@ def task_action_ext(request, action=None):
             'Actions': ', '.join(ALLOWED_FOR_EXTERNAL_API),
         }
         return content
-    observe_delegation(request, action, request.user.username == 'bigpanda_api'
-                       and action in ALLOWED_FOR_EXTERNAL_API)
-    if request.user.username != 'bigpanda_api':
+    if not can_delegate(request, action):
         return HttpResponseForbidden()
     error_message = []
     is_permitted = False

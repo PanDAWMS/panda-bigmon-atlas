@@ -27,8 +27,10 @@ p, prodsys:superuser, request, raise_group_priority, {}, {}, allow
 p, DPD, request, raise_group_priority, {}, {}, allow
 p, prodsys:superuser, request, obsolete_deleted_outputs, {}, {}, allow
 p, MCCOORD, request, obsolete_deleted_outputs, {}, {}, allow
+p, subject, request, obsolete_deleted_outputs, {"coordinator_required":false}, {}, allow
 p, prodsys:superuser, request, large_submission, {}, {}, allow
 p, MCCOORD, request, large_submission, {}, {}, allow
 p, subject, request, large_submission, {"phys_group": "SUSY"}, {}, allow
 p, subject, request, large_submission, {"phys_group": "HMBS"}, {}, allow
 p, prodsys:superuser, train, close, {}, {}, allow
+p, prodsys:superuser, train, reopen, {}, {}, allow

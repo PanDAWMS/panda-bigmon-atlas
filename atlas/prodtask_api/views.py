@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_access
+from atlas.authorization.resources import can_access
 
 import json
 import logging
@@ -31,7 +31,6 @@ from atlas.prodtask.spdstodb import fill_template
 from atlas.prodtask.step_manage_views import recreate_output
 from atlas.prodtask.task_views import set_task_sample_container
 from atlas.prodtask.views import form_existed_step_list, set_request_status
-from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -146,10 +145,10 @@ def create_slice(request):
         data = request.data
         production_request = TRequest.objects.get(reqid=data['production_request'])
         same_manager = request.user.username == production_request.manager
-        observe_access(request.user, 'request', 'create_slice', same_manager,
+        can_create_slice = can_access(request.user, 'request', 'create_slice',
                        object_id=production_request.reqid, facts={'same_manager': same_manager},
                        source='prodtask_api.create_slice')
-        if not same_manager:
+        if not can_create_slice:
             return HttpResponseForbidden()
 
         pattern_slice = int(data['pattern_slice'])
@@ -529,11 +528,8 @@ def get_all_recovery_requests(request):
 @permission_classes((IsAuthenticated,))
 def submit_recreation(request):
     try:
-        task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_user_rights(request.user.username)
-        recreation_allowed = request.user.is_superuser or 'DPD' in allowed_groups
-        observe_access(request.user, 'dataset_recovery', 'submit', recreation_allowed,
-                       groups=allowed_groups, source='prodtask_api.submit_recreation')
+        recreation_allowed = can_access(request.user, 'dataset_recovery', 'submit',
+                       source='prodtask_api.submit_recreation')
         if recreation_allowed:
             ids: [int] = map(lambda x: int(x), request.data.get('IDs'))
             requests_submitted = submit_dataset_recovery_requests(ids)
@@ -562,22 +558,16 @@ def set_config_parameter(request, name):
     try:
         match name:
             case SystemParametersHandler.PARAMETERS_NAMES.MCWorkflowRequest:
-                task_management = TaskManagementAuthorisation()
-                user, allowed_groups = task_user_rights(request.user.username)
-                config_allowed = request.user.is_superuser or 'MCCOORD' in allowed_groups
-                observe_access(request.user, 'system_parameter', 'mc_workflow', config_allowed,
-                               object_id=name, groups=allowed_groups, source='prodtask_api.set_config_parameter')
+                config_allowed = can_access(request.user, 'system_parameter', 'mc_workflow',
+                               object_id=name, source='prodtask_api.set_config_parameter')
                 if not config_allowed:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 workflows = MCWorkflowRequest.model_validate(request.data)
                 SystemParametersHandler.set_mc_workflow_request(workflows)
                 return Response(request.data)
             case SystemParametersHandler.PARAMETERS_NAMES.AVAILABLE_PMG_HASHTAGS:
-                task_management = TaskManagementAuthorisation()
-                user, allowed_groups = task_user_rights(request.user.username)
-                config_allowed = request.user.is_superuser or 'MCCOORD' in allowed_groups
-                observe_access(request.user, 'system_parameter', 'pmg_hashtags', config_allowed,
-                               object_id=name, groups=allowed_groups, source='prodtask_api.set_config_parameter')
+                config_allowed = can_access(request.user, 'system_parameter', 'pmg_hashtags',
+                               object_id=name, source='prodtask_api.set_config_parameter')
                 if not config_allowed:
                     return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
                 SystemParametersHandler.AvailablePMGHashtags.set_available_hashtags(request.data.get('levels',[]))

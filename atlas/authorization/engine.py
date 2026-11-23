@@ -17,6 +17,7 @@ DEFAULT_POLICIES = (
     ROOT / 'policies/prodsys/global_shares.csv',
     ROOT / 'policies/prodsys/configuration.csv',
     ROOT / 'policies/shared/analysis_scopes.csv',
+    ROOT / 'policies/prodsys/administration.csv',
 )
 
 

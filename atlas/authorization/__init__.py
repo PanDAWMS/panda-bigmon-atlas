@@ -1,1 +1,1 @@
-"""In-repository, shadow-only authorization. Authentication is unchanged."""
+"""In-repository Casbin authorization. Authentication is unchanged."""

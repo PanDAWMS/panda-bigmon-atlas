@@ -1,4 +1,8 @@
 # Shared task permission gates. Task-state eligibility remains a domain check.
+p, DPD, task, manage, {"tasktype":"prod"}, {}, allow
+p, MCCOORD, task, manage, {"tasktype":"prod"}, {}, allow
+p, task-owner, task, manage, {"tasktype":"prod"}, {}, allow
+p, task-group-member, task, manage, {"tasktype":"prod"}, {}, allow
 p, DPD, task, set_hashtag, {"tasktype": "prod"}, {}, allow
 p, MCCOORD, task, set_hashtag, {"tasktype": "prod"}, {}, allow
 p, task-owner, task, set_hashtag, {"tasktype": "prod", "group_production": false}, {}, allow

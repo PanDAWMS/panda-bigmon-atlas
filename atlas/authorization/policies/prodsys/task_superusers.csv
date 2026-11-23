@@ -1,4 +1,5 @@
 # Superusers bypass user permission gates, never task-state eligibility.
+p, prodsys:superuser, task, manage, {}, {}, allow
 p, prodsys:superuser, task, set_hashtag, {}, {}, allow
 p, prodsys:superuser, task, remove_hashtag, {}, {}, allow
 p, prodsys:superuser, task, sync_jedi, {}, {}, allow
@@ -33,3 +34,9 @@ p, prodsys:superuser, task, reassign_to_share, {}, {}, allow
 p, prodsys:superuser, task, obsolete, {}, {}, allow
 p, prodsys:superuser, task, obsolete_output, {}, {}, allow
 p, prodsys:superuser, task, retry_new, {}, {}, allow
+
+# Job actions and task-specific administrative privileges.
+p, prodsys:superuser, job, kill_without_task, {}, {}, allow
+p, prodsys:superuser, job, debug, {}, {}, allow
+p, prodsys:superuser, task_privilege, retry_override, {}, {}, allow
+p, prodsys:superuser, task_privilege, legacy_task_action, {}, {}, allow

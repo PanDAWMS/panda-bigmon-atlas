@@ -1,3 +1,4 @@
+from atlas.authorization.resources import can_access
 import json
 import re
 
@@ -160,9 +161,7 @@ def tasks_action(request):
     """
     user = request.user.username
 
-    is_superuser = request.user.is_superuser
-    #print request.body
-    if not is_superuser:
+    if not can_access(request.user, 'task_privilege', 'legacy_task_action', source='reqtask.tasks_action'):
         return HttpResponse('Permission denied')
 
     return HttpResponse('OK')

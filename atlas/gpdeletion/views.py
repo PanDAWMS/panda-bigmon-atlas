@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_access
+from atlas.authorization.resources import can_access
 import glob
 import gzip
 from dataclasses import dataclass, field
@@ -35,7 +35,6 @@ from atlas.celerybackend.celery import app
 
 from django.core.cache import cache
 
-from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
 
 _logger = logging.getLogger('prodtaskwebui')
 _jsonLogger = logging.getLogger('prodtask_ELK')
@@ -1128,11 +1127,8 @@ def set_datasets_to_delete(request):
         username = request.user.username
         deadline = datetime.strptime(request.data['deadline'],"%Y-%m-%dT%H:%M:%S.%fZ")
         start_deletion = datetime.strptime(request.data['start_deletion'],"%Y-%m-%dT%H:%M:%S.%fZ")
-        task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_user_rights(username)
-        group_admin_allowed = request.user.is_superuser or 'DPD' in allowed_groups
-        observe_access(request.user, 'group_production', 'schedule_deletion', group_admin_allowed,
-                       groups=allowed_groups, source='gpdeletion.schedule_deletion')
+        group_admin_allowed = can_access(request.user, 'group_production', 'schedule_deletion',
+                       source='gpdeletion.schedule_deletion')
         if not group_admin_allowed:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         last_record = GroupProductionDeletionRequest.objects.last()
@@ -1581,11 +1577,8 @@ def create_physics_container_in_ami(request):
         # convert from dict to ContainerInfo dataclass
         containers = [PreparedContainer(**x) for x in containers]
         _jsonLogger.info('Creating period containers', extra={'user':request.user.username})
-        task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_user_rights(request.user.username)
-        group_admin_allowed = request.user.is_superuser or 'DPD' in allowed_groups
-        observe_access(request.user, 'group_production', 'create_physics_container', group_admin_allowed,
-                       groups=allowed_groups, source='gpdeletion.create_physics_container')
+        group_admin_allowed = can_access(request.user, 'group_production', 'create_physics_container',
+                       source='gpdeletion.create_physics_container')
         if not group_admin_allowed:
             return Response('Not enough permissions', status.HTTP_401_UNAUTHORIZED)
         ami = AMIClient()

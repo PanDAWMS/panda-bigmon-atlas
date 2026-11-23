@@ -1,4 +1,5 @@
-from atlas.authorization.stage2 import observe_access
+from django.http import HttpResponseForbidden
+from atlas.authorization.resources import can_access
 import json
 import logging
 from dataclasses import asdict
@@ -570,76 +571,76 @@ def change_ram_request(production_request_id,new_ram_value):
 
 @csrf_protect
 def create_request_from_train(request,train_id):
+    if not can_access(request.user, 'train', 'close', object_id=train_id, source='train.create_request'):
+        return HttpResponseForbidden('Permission denied')
     if request.method == 'GET':
-        #if request.user.is_superuser or (request.user.username == 'nozturk') or (request.user.username == 'egramsta'):
-        if True:
-            train = TrainProduction.objects.get(id=train_id)
-            loads = list(TrainProductionLoad.objects.filter(train=train_id))
-            pattern_slices = set()
-            for load in loads:
-                outputs_slices = json.loads(load.outputs)
-                for output_slices in outputs_slices:
-                    pattern_slices.add(output_slices[0])
-            step_pattern = {}
-            for  pattern_slice_number in pattern_slices:
-                pattern_slice = InputRequestList.objects.get(request=train.pattern_request,slice=int(pattern_slice_number))
-                step_pattern[pattern_slice_number] = list(StepExecution.objects.filter(slice=pattern_slice).order_by('id'))
-            slice_index = 0
-            spreadsheet_dict = []
-            merged_trains = prepare_merged_train_carriages(train_id)
-            for slice_index, dataset_slice in enumerate(merged_trains):
-                dataset = dataset_slice[0]
-                current_parent_step = step_pattern[dataset_slice[1]][0]
-                current_output_formats = merged_trains[dataset_slice]
-                if current_output_formats:
-                            st_sexec_list = []
-                            irl = dict(slice=slice_index, brief=current_parent_step.slice.brief, comment=current_parent_step.slice.comment, dataset=dataset.strip(),
-                                       input_data='',
-                                       project_mode=current_parent_step.slice.project_mode,
-                                       priority=int(current_parent_step.slice.priority),
-                                       input_events=-1)
-                            slice_index += 1
-                            for step_index,current_parent_step in enumerate(step_pattern[dataset_slice[1]]):
-                                sexec = dict(status='NotChecked', priority=int(current_parent_step.priority),
-                                             input_events=-1)
-                                task_config =  current_parent_step.get_task_config()
-                                nEventsPerJob = task_config.get('nEventsPerJob','')
-                                task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
-                                if step_index>0:
-                                    step_parent = '%i_%i'%(slice_index,step_index-1)
-                                else:
-                                    step_parent = '%i_%i' % (slice_index, step_index )
-                                st_sexec_list.append({'step_name': current_parent_step.step_template.step, 'tag': current_parent_step.step_template.ctag
-                                                         , 'step_exec': sexec,
-                                                  'memory': int(current_parent_step.step_template.memory),
-                                                  'formats': '.'.join(current_output_formats),
-                                                  'task_config':task_config,'step_order':'%i_%i' % (slice_index, step_index ),'step_parent':step_parent})
-                            spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
-                        
-            form_data = {}
-            form_data['request_type'] = 'GROUP'
-            form_data['phys_group'] = 'PHYS'
-            form_data['manager'] = 'atlas-phys-dpd-production'
-            form_data['energy_gev'] = train.pattern_request.energy_gev
-            form_data['campaign'] = train.pattern_request.campaign
-            form_data['project'] = train.pattern_request.project
-            form_data['provenance'] = 'GP'
-            form_data['cc'] = 'egramsta@cern.ch'
-            form = TRequestCreateCloneConfirmation(form_data)
-            inputlists = form_input_list_for_preview(spreadsheet_dict)
-            # store data from prefill form to http request
-            request.session['file_dict'] = spreadsheet_dict
-            request.session['close_train'] = train_id
-            return render(request, 'prodtask/_previewreq.html', {
-                'active_app': 'mcprod',
-                'pre_form_text': 'Create DPD Request',
-                'form': form,
-                'submit_url': 'prodtask:dpd_request_create',
-                'url_args': None,
-                'parent_template': 'prodtask/_index.html',
-                'inputLists': inputlists,
-                'bigSliceNumber': False
-            })
+        train = TrainProduction.objects.get(id=train_id)
+        loads = list(TrainProductionLoad.objects.filter(train=train_id))
+        pattern_slices = set()
+        for load in loads:
+            outputs_slices = json.loads(load.outputs)
+            for output_slices in outputs_slices:
+                pattern_slices.add(output_slices[0])
+        step_pattern = {}
+        for  pattern_slice_number in pattern_slices:
+            pattern_slice = InputRequestList.objects.get(request=train.pattern_request,slice=int(pattern_slice_number))
+            step_pattern[pattern_slice_number] = list(StepExecution.objects.filter(slice=pattern_slice).order_by('id'))
+        slice_index = 0
+        spreadsheet_dict = []
+        merged_trains = prepare_merged_train_carriages(train_id)
+        for slice_index, dataset_slice in enumerate(merged_trains):
+            dataset = dataset_slice[0]
+            current_parent_step = step_pattern[dataset_slice[1]][0]
+            current_output_formats = merged_trains[dataset_slice]
+            if current_output_formats:
+                        st_sexec_list = []
+                        irl = dict(slice=slice_index, brief=current_parent_step.slice.brief, comment=current_parent_step.slice.comment, dataset=dataset.strip(),
+                                   input_data='',
+                                   project_mode=current_parent_step.slice.project_mode,
+                                   priority=int(current_parent_step.slice.priority),
+                                   input_events=-1)
+                        slice_index += 1
+                        for step_index,current_parent_step in enumerate(step_pattern[dataset_slice[1]]):
+                            sexec = dict(status='NotChecked', priority=int(current_parent_step.priority),
+                                         input_events=-1)
+                            task_config =  current_parent_step.get_task_config()
+                            nEventsPerJob = task_config.get('nEventsPerJob','')
+                            task_config.update({'nEventsPerJob':dict((step,nEventsPerJob) for step in StepExecution.STEPS)})
+                            if step_index>0:
+                                step_parent = '%i_%i'%(slice_index,step_index-1)
+                            else:
+                                step_parent = '%i_%i' % (slice_index, step_index )
+                            st_sexec_list.append({'step_name': current_parent_step.step_template.step, 'tag': current_parent_step.step_template.ctag
+                                                     , 'step_exec': sexec,
+                                              'memory': int(current_parent_step.step_template.memory),
+                                              'formats': '.'.join(current_output_formats),
+                                              'task_config':task_config,'step_order':'%i_%i' % (slice_index, step_index ),'step_parent':step_parent})
+                        spreadsheet_dict.append({'input_dict': irl, 'step_exec_dict': st_sexec_list})
+
+        form_data = {}
+        form_data['request_type'] = 'GROUP'
+        form_data['phys_group'] = 'PHYS'
+        form_data['manager'] = 'atlas-phys-dpd-production'
+        form_data['energy_gev'] = train.pattern_request.energy_gev
+        form_data['campaign'] = train.pattern_request.campaign
+        form_data['project'] = train.pattern_request.project
+        form_data['provenance'] = 'GP'
+        form_data['cc'] = 'egramsta@cern.ch'
+        form = TRequestCreateCloneConfirmation(form_data)
+        inputlists = form_input_list_for_preview(spreadsheet_dict)
+        # store data from prefill form to http request
+        request.session['file_dict'] = spreadsheet_dict
+        request.session['close_train'] = train_id
+        return render(request, 'prodtask/_previewreq.html', {
+            'active_app': 'mcprod',
+            'pre_form_text': 'Create DPD Request',
+            'form': form,
+            'submit_url': 'prodtask:dpd_request_create',
+            'url_args': None,
+            'parent_template': 'prodtask/_index.html',
+            'inputLists': inputlists,
+            'bigSliceNumber': False
+        })
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def train_edit(request, train_id):
@@ -647,11 +648,8 @@ def train_edit(request, train_id):
         train = TrainProduction.objects.get(id=train_id)
         depart_date = train.departure_time.strftime('%Y-%m-%d')
         allow_assemble = True
-        allow_close = False
-        if (request.user.username in ['nozturk','egramsta']) or request.user.is_superuser:
-            allow_close = True
-        observe_access(request.user, 'train', 'close', allow_close, object_id=train_id,
-                       source='train_views.close_capability')
+        allow_close = can_access(request.user, 'train', 'close', object_id=train_id,
+                                 source='train_views.close_capability')
     except:
         return HttpResponseRedirect(reverse('prodtask:request_table'))
 
@@ -672,6 +670,8 @@ def train_edit(request, train_id):
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def close_train(request, train_id):
+    if not can_access(request.user, 'train', 'close', object_id=train_id, source='train.close'):
+        return HttpResponseForbidden('Permission denied')
     try:
         train = TrainProduction.objects.get(id=train_id)
         train.status = 'Closed'
@@ -683,6 +683,8 @@ def close_train(request, train_id):
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def reopen_train(request, train_id):
+    if not can_access(request.user, 'train', 'reopen', object_id=train_id, source='train.reopen'):
+        return HttpResponseForbidden('Permission denied')
     try:
         train = TrainProduction.objects.get(id=train_id)
         train.status = 'loading'

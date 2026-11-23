@@ -45,7 +45,7 @@ INSTALLED_APPS_BIGPANDAMON_ATLAS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.admin',
+    'atlas.authorization.apps.AuthorizationAdminConfig',
     'django.contrib.admindocs',
     'atlas.auth.voms',
     'rest_framework.authtoken',

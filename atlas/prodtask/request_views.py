@@ -1,4 +1,5 @@
-from atlas.authorization.stage2 import observe_access, observe_request_create, observe_request_group_capabilities
+from django.http import HttpResponseForbidden
+from atlas.authorization.resources import can_access, can_create_request, request_group_capabilities
 import copy
 import json
 import logging
@@ -26,7 +27,7 @@ from atlas.prodtask.spdstodb import fill_template
 from .step_manage_views import hide_slice
 from ..prodtask.ddm_api import find_dataset_events
 from ..prodtask.helper import form_request_log
-from ..prodtask.views import form_existed_step_list, fill_dataset, egroup_permissions, single_request_action_celery_task, make_slices_from_dict_celery
+from ..prodtask.views import form_existed_step_list, fill_dataset, single_request_action_celery_task, make_slices_from_dict_celery
 from ..prodtask.views import set_request_status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -875,12 +876,8 @@ def mcfile_form_prefill(form_data, request):
     # if form_data['need_split']:
     #     spreadsheet_dict = do_big_slice_split(spreadsheet_dict,2e6)
     if len(spreadsheet_dict)>1000:
-        large_request_allowed = not ((not request.user.is_superuser) and
-                            ('MCCOORD' not in egroup_permissions(request.user.username)) and form_data.get('phys_group') not in ['SUSY','HMBS'])
-        observe_access(request.user, 'request', 'large_submission', large_request_allowed,
-                       groups=lambda: egroup_permissions(request.user.username),
-                       facts={'phys_group': form_data.get('phys_group')},
-                       source='request_views.large_submission')
+        large_request_allowed = can_access(request.user, 'request', 'large_submission',
+                       facts={'phys_group': form_data.get('phys_group')}, source='request_views.large_submission')
         if not large_request_allowed:
             eroor_message = "Too many samples selected for a single request - please factorise request into " \
                             "multiple smaller requests. For example, split up Full and Fast simulation and " \
@@ -1136,12 +1133,8 @@ def dpd_form_prefill(form_data, request):
     else:
         form_data['manager'] = request.user.username
     try:
-        task_management = TaskManagementAuthorisation()
-        user, allowed_groups = task_user_rights(request.user.username)
-        if request.user.is_superuser or 'DPD' in allowed_groups:
-            allow_priority = True
-        observe_access(request.user, 'request', 'raise_group_priority', allow_priority,
-                       groups=allowed_groups, source='request_views.group_request_priority')
+        allow_priority = can_access(request.user, 'request', 'raise_group_priority',
+                                    source='request_views.group_request_priority')
     except:
         pass
     if 'project' in output_dict:
@@ -1449,9 +1442,7 @@ def find_datasets_by_pattern(request):
 @login_required(login_url=OIDC_LOGIN_URL)
 def resend_email(request,reqid):
     if request.method == 'GET':
-        observe_access(request.user, 'request', 'resend_email', request.user.is_superuser,
-                       object_id=reqid, source='request_views.resend_email')
-        if request.user.is_superuser:
+        if can_access(request.user, 'request', 'resend_email', object_id=reqid, source='request_views.resend_email'):
             try:
                 production_request = TRequest.objects.get(reqid=reqid)
                 user = User.objects.get(username=production_request.manager)
@@ -1523,10 +1514,7 @@ def check_request_group(request):
     try:
         group = request.data['group']
         user = request.user
-        allowed_groups = check_allow_request_create(user)
-        if (user.is_superuser) or ('ALL' in allowed_groups) or ('DPD' in allowed_groups) or (group in allowed_groups):
-            result = True
-        observe_request_create(user, group, allowed_groups, result)
+        result = can_create_request(user, group)
     except Exception as e:
         content = str(e)
         return Response(content,status=500)
@@ -1535,21 +1523,7 @@ def check_request_group(request):
 
 
 def check_allow_request_create(current_user):
-        group_permissions = []
-        allowed_groups = ['None']
-        user_groups = current_user.groups.all()
-        if current_user.is_superuser:
-            allowed_groups = ['ALL']
-        for gp in user_groups:
-            group_permissions += list(gp.permissions.all())
-        for gp in group_permissions:
-            if "has_" in gp.name and "_permissions" in gp.name:
-                allowed_groups.append(gp.codename)
-        if not allowed_groups:
-            allowed_groups = ['None']
-        observe_request_group_capabilities(current_user, allowed_groups,
-                                           [g[0] for g in TRequest.PHYS_GROUPS])
-        return allowed_groups
+    return request_group_capabilities(current_user, [g[0] for g in TRequest.PHYS_GROUPS]) or ['None']
 
 
 @login_required(login_url=OIDC_LOGIN_URL)
@@ -1653,6 +1627,11 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'error_message': ''
                     })
 
+                if not can_create_request(request.user, form.cleaned_data.get('phys_group')):
+                    return HttpResponseForbidden('Permission denied for this request group')
+                if request.session.get('close_train') and not can_access(
+                        request.user, 'train', 'close', object_id=request.session['close_train'], source='request.close_train'):
+                    return HttpResponseForbidden('Permission denied for this train')
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')

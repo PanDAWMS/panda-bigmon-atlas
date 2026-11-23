@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_scope_list
+from atlas.authorization.resources import can_scope
 import re
 
 from django.contrib.auth.models import User
@@ -13,5 +13,4 @@ def container_scopes_by_user(username: str) -> list[str]:
         match = re.match(r'^IAM:atlas/(.+)/production$', group.name)
         if match:
             scopes.append(f'group.{match.group(1)}')
-    observe_scope_list(user, scopes, group_names)
-    return scopes
+    return [scope for scope in scopes if can_scope(user, scope, action='list', group_names=group_names)]

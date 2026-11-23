@@ -1,3 +1,4 @@
+from atlas.authorization.resources import can_access
 import json
 import requests
 import logging
@@ -49,7 +50,6 @@ def jobs_action(request,action):
 
         user = request.user.username
 
-        is_superuser = request.user.is_superuser
         data = json.loads(request.body)
         jobs= data.get('jobs')
         args= data.get('parameters', [])
@@ -80,7 +80,7 @@ def jobs_action(request,action):
                     else:
                         without_taskid.append(job['pandaid'])
                 _logger.info("Send DEFT job kills for %s jobs for %s tasks" % (str(len(chunk)),str(len(tasks.keys()))))
-                if without_taskid and not is_superuser:
+                if without_taskid and not can_access(request.user, 'job', 'kill_without_task', source='jobs_action'):
                     result['exception'] = "Permission denied"
                     return HttpResponse(json.dumps(result))
                 authentification_management = TaskManagementAuthorisation()
@@ -112,7 +112,7 @@ def jobs_action(request,action):
             if len(jobs) > 10:
                 result['exception'] = "Too many jobs to set debug mode"
                 return HttpResponse(json.dumps(result))
-            if not is_superuser:
+            if not can_access(request.user, 'job', 'debug', source='jobs_action'):
                 result['exception'] = "Permission denied"
                 return HttpResponse(json.dumps(result))
             for job in jobs:

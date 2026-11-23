@@ -1,4 +1,6 @@
 # Resource-scoped relationship roles, supplied by the caller.
+p, analysis-owner, task, manage, {"tasktype":"analy"}, {}, allow
+p, analysis-group-member, task, manage, {"tasktype":"analy"}, {}, allow
 p, analysis-owner, task, set_hashtag, {"tasktype": "analy"}, {}, allow
 p, analysis-group-member, task, set_hashtag, {"tasktype": "analy"}, {}, allow
 p, analysis-owner, task, remove_hashtag, {"tasktype": "analy"}, {}, allow

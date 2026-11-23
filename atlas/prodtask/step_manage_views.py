@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_access
+from atlas.authorization.resources import can_access
 import functools
 import json
 import logging
@@ -18,7 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from atlas.prodtask.ddm_api import dataset_events_ddm, DDM
 #from atlas.prodtask.googlespd import GSP
 from atlas.prodtask.models import RequestStatus, TrainProduction, MCPattern, SliceError, StepTemplate
-from atlas.prodtask.views import set_request_status, clone_slices, egroup_permissions, \
+from atlas.prodtask.views import set_request_status, clone_slices, \
     single_request_action_celery_task, _set_request_hashtag
 from atlas.prodtask.spdstodb import fill_template
 from ..prodtask.helper import form_request_log, form_json_request_dict
@@ -2718,19 +2718,16 @@ def obsolete_old_deleted_tasks(request, reqid):
             if '-1' in slices:
                 del slices[slices.index('-1')]
             _logger.debug(form_request_log(reqid,request,'Obsolete old tasks with deleted output slices: %s' % str(slices)))
+            coordinator_required = production_request.request_type in ['REPROCESSING', 'MC']
+            if not can_access(request.user, 'request', 'obsolete_deleted_outputs', object_id=reqid,
+                              facts={'coordinator_required': coordinator_required},
+                              source='step_manage_views.obsolete_deleted_outputs'):
+                return HttpResponseForbidden('Permission denied')
             ddm = DDM()
             number_of_tasks = 0
             add_checkOutputDeleted = False
-            if (production_request.request_type in ['REPROCESSING','MC']):
-                obsolete_allowed = ('MCCOORD' in egroup_permissions(request.user.username)) or request.user.is_superuser
-                observe_access(request.user, 'request', 'obsolete_deleted_outputs', obsolete_allowed,
-                               object_id=reqid, groups=lambda: egroup_permissions(request.user.username),
-                               source='step_manage_views.obsolete_deleted_outputs')
-                if obsolete_allowed:
-                    _set_request_hashtag(reqid,'MCDeletedReprocessing')
-
-                else:
-                    return HttpResponseForbidden('This action is only for MC COORD')
+            if coordinator_required:
+                _set_request_hashtag(reqid,'MCDeletedReprocessing')
             elif (production_request.request_type in ['GROUP']):
                 add_checkOutputDeleted = True
             for slice_number in slices:

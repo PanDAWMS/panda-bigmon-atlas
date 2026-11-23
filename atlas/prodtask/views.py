@@ -1,5 +1,5 @@
-from types import SimpleNamespace
-from atlas.authorization.stage2 import observe_access, observe_request_steps
+from atlas.authorization.resources import can_access, can_save_steps
+from atlas.authorization.principals import group_codes, user_for_username
 import re
 from collections import defaultdict
 
@@ -9,7 +9,7 @@ from django.forms import model_to_dict
 import json
 import logging
 from copy import deepcopy
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.template import Context
 from django.template.loader import get_template
@@ -707,53 +707,21 @@ def change_request_priority(request, reqid, old_priority, new_priority):
         return HttpResponse(json.dumps(results), content_type='application/json')
 
 
-MC_COORDINATORS= ['cgwenlan','jzhong','jgarcian','mcfayden','jferrand','mehlhase','schwanen','lserkin','jcosta','boeriu',
-                  'onofrio','jmonk','kado']
-
-
-
 def request_approve_status(production_request, request, user_name='', is_superuser=None):
-
-    if request and not user_name:
-        try:
-            user_name = request.user.username
-        except:
-            pass
-    if request and not is_superuser:
-        try:
-            is_superuser = request.user.is_superuser
-        except:
-            pass
-    if (production_request.request_type == 'MC') and (production_request.phys_group != 'VALI'):
-
-        # change to VOMS
-        _logger.debug("request:%s is registered by %s" % (str(production_request.reqid),user_name))
-        can_approve = (user_name in MC_COORDINATORS) or ('MCCOORD' in egroup_permissions(user_name)) or is_superuser
-        observe_access(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
-                       'request', 'approve', bool(can_approve), object_id=production_request.reqid,
-                       groups=lambda: egroup_permissions(user_name), facts={'restricted_mc': True},
-                       source='request_approve_status')
-        if can_approve:
-            return 'approved'
-
-    else:
-        observe_access(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
-                       'request', 'approve', True, object_id=production_request.reqid,
-                       facts={'restricted_mc': False}, source='request_approve_status')
-        if (production_request.request_type == 'GROUP') and (production_request.cstatus == 'waiting'):
-            if ParentToChildRequest.objects.filter(parent_request=production_request).exists():
-                if ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id:
-                    if HashTag.objects.filter(hashtag__iexact='PatternToMerge').exists():
-                        patterns = list(HashTagToRequest.objects.filter(hashtag=HashTag.objects.filter(hashtag__iexact='PatternToMerge')[0]).values_list('request_id',flat=True))
-                        if TrainProduction.objects.get(id=ParentToChildRequest.objects.filter(parent_request=production_request)[0].train_id).pattern_request_id in patterns:
-                            return 'registered'
-        # if (production_request.request_type == 'GROUP') and (production_request.cstatus == 'waiting') \
-        #         and (production_request.phys_group != 'VALI'):
-        #     if (production_request.phys_group  in egroup_permissions(request.user.username)) or is_superuser:
-        #         return 'approved'
-        # else:
-        #     return 'registered'
-        return 'approved'
+    principal = request.user if request else user_for_username(user_name)
+    if not can_access(principal, 'request', 'approve', object_id=production_request.reqid,
+                      facts={'restricted_mc': production_request.request_type == 'MC' and
+                             production_request.phys_group != 'VALI'}, source='request_approve_status'):
+        return None
+    if production_request.request_type == 'GROUP' and production_request.cstatus == 'waiting':
+        parents = ParentToChildRequest.objects.filter(parent_request=production_request)
+        if parents.exists() and parents[0].train_id:
+            tags = HashTag.objects.filter(hashtag__iexact='PatternToMerge')
+            if tags.exists():
+                patterns = list(HashTagToRequest.objects.filter(hashtag=tags[0]).values_list('request_id', flat=True))
+                if TrainProduction.objects.get(id=parents[0].train_id).pattern_request_id in patterns:
+                    return 'registered'
+    return 'approved'
 
 
 def remove_input(good_slices, reqid):
@@ -1250,12 +1218,6 @@ def delete_small_merge(good_slices: [int], production_request: int):
                 break
 
 
-def any_group_check(username):
-    all_permissions = egroup_permissions(username)
-    for permission in all_permissions:
-        if permission in [x[0] for x in TRequest.PHYS_GROUPS]+['DPD']:
-            return True
-    return False
 
 def find_pattern_derivation_request(campaign: str, subcampaign: str) -> (int, [str]):
     all_patterns = SystemParametersHandler.get_daod_phys_production()
@@ -1395,6 +1357,15 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         _jsonLogger.info('Start steps modification',extra=form_json_request_dict(reqid,request))
         slices = list(slice_steps.keys())
         req = TRequest.objects.get(reqid=reqid)
+        if not can_save_steps(request.user, req, physics_groups=[g[0] for g in TRequest.PHYS_GROUPS] + ['DPD']):
+            # Legacy clients consume handled rejections through the normal JSON
+            # response; success describes the RPC, not authorization to save.
+            results = {'missing_tags': [], 'slices': [], 'wrong_slices': [],
+                       'double_trf': [], 'error_slices': [],
+                       'no_action_slices': list(map(int, slices)), 'success': True,
+                       'new_status': req.cstatus, 'removed_input': [], 'fail_slice_save': '',
+                       'error_approve_message': 'Permission denied'}
+            return HttpResponse(json.dumps(results), content_type='application/json')
         fail_slice_save = save_slice_changes(reqid, slice_steps)
         error_slices = []
         if (req.request_type == 'MC') and not fail_slice_save:
@@ -1419,22 +1390,11 @@ def request_steps_approve_or_save(request, reqid, approve_level, waiting_level=9
         error_approve_message = ''
         owner = request.user.username
         no_action_slices = []
-        if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
-            if (not request.user.is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
-                error_approve_message = True
-        if (req.request_type == 'GROUP') and (req.phys_group != 'VALI'):
-            if (not request.user.is_superuser) and not any_group_check(request.user.username):
-                error_approve_message = True
-                no_action_slices = map(int, slices)
-        observe_request_steps(request.user, req, not bool(error_approve_message),
-                              groups=lambda: egroup_permissions(request.user.username),
-                              manager_groups=lambda: egroup_permissions(req.manager),
-                              physics_groups=[g[0] for g in TRequest.PHYS_GROUPS] + ['DPD'])
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
-                   'error_approve_message': error_approve_message}
+                   'error_approve_message': ''}
         removed_input = []
-        if (not missing_tags) and (not error_approve_message) and (not error_slices):
+        if (not missing_tags) and (not error_slices):
 
             _logger.debug("Start steps save/approval")
 
@@ -1564,6 +1524,13 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
         self.progress_message_update(0,len(slices)+2)
 
         req = TRequest.objects.get(reqid=reqid)
+        if not can_save_steps(user_for_username(user_name), req, physics_groups=(), asynchronous=True):
+            results = {'missing_tags': [], 'slices': [], 'wrong_slices': [],
+                       'double_trf': [], 'error_slices': [],
+                       'no_action_slices': list(map(int, slices)), 'success': True,
+                       'new_status': req.cstatus, 'removed_input': [], 'fail_slice_save': '',
+                       'error_approve_message': 'Permission denied', 'async_name': 'save_slices'}
+            return json.dumps(results)
         fail_slice_save = save_slice_changes(reqid, slice_steps)
         error_slices = []
         if (req.request_type == 'MC') and not fail_slice_save:
@@ -1587,14 +1554,6 @@ def request_steps_approve_or_save_async(self, slice_steps,user_name,is_superuser
         missing_tags,wrong_skipping_slices,old_double_trf = step_validation(slice_steps)
         error_approve_message = False
         owner = user_name
-        if (owner != req.manager) and (req.request_type == 'MC') and (req.phys_group != 'VALI'):
-            if (not is_superuser) and ('MCCOORD' not in egroup_permissions(req.manager)):
-                error_approve_message = True
-        observe_request_steps(SimpleNamespace(username=user_name, is_superuser=bool(is_superuser)),
-                              req, not bool(error_approve_message),
-                              groups=lambda: egroup_permissions(user_name),
-                              manager_groups=lambda: egroup_permissions(req.manager),
-                              physics_groups=(), asynchronous=True)
         results = {'missing_tags': missing_tags,'slices': [],'no_action_slices' :slices,'wrong_slices':wrong_skipping_slices,
                    'double_trf':old_double_trf, 'success': True, 'new_status':'', 'fail_slice_save': fail_slice_save,
                    'error_approve_message': error_approve_message, 'async_name':'save_slices'}
@@ -1765,7 +1724,7 @@ def request_steps_save(request, reqid):
 def request_steps_save_async(request, reqid):
     slice_steps = request.data
     return_value= single_request_action_celery_task(reqid,request_steps_approve_or_save_async,'Save slices',request.user.username,
-                                             slice_steps,request.user.username,request.user.is_superuser, reqid, -1)
+                                             slice_steps,request.user.username,None, reqid, -1)
     return Response(return_value)
 
 
@@ -1929,19 +1888,7 @@ def redirect_to_value(request, site_name):
     return redirect("http://%s.cern.ch/"%site_name)
 
 def egroup_permissions(username):
-    return_list = []
-    try:
-        current_user = User.objects.get(username = username )
-        user_groups = current_user.groups.all()
-        group_permissions = []
-        for group in user_groups:
-             group_permissions += list(group.permissions.all())
-        for group_permission in group_permissions:
-              if "has_" in group_permission.name and "_permissions" in group_permission.name:
-                return_list.append(group_permission.codename)
-    except:
-        return []
-    return return_list
+    return group_codes(user_for_username(username))
 
 def get_all_patterns():
     patterns = list(InputRequestList.objects.filter(request=29269).order_by('slice'))
@@ -2212,9 +2159,6 @@ def request_table_view(request, rid=None, show_hidden=False):
                 show_is_fast = True
             if (cur_request.request_type == 'MC') and (cur_request.phys_group!='VALI'):
                 try:
-                    if (not request.user.is_superuser) and (request.user.username not in MC_COORDINATORS) and \
-                            ('MCCOORD' not in egroup_permissions(request.user.username)):
-                        autorized_change_request = False
                     if cur_request.cstatus == 'waiting':
                         needed_management_approve = True
                     else:
@@ -2232,27 +2176,14 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
-            observe_access(request.user, 'request', 'approve', autorized_change_request,
-                           object_id=cur_request.reqid,
-                           groups=lambda: egroup_permissions(request.user.username),
-                           facts={'restricted_mc': cur_request.request_type == 'MC' and cur_request.phys_group != 'VALI'},
-                           source='request_table.approval_capability')
-            limit_priority = {'min':0,'max':2000}
-            if (cur_request.request_type == 'GROUP') and (cur_request.phys_group != 'VALI'):
-                limit_priority = {'min': 560, 'max': 570}
-                try:
-                    if (request.user.is_superuser):
-                        limit_priority = {'min': 0, 'max': 2000}
-                    else:
-                        allowed_groups = egroup_permissions(request.user.username)
-                        if 'DPD' in allowed_groups:
-                            limit_priority = {'min': 0, 'max': 2000}
-                except:
-                    pass
+            autorized_change_request = can_access(request.user, 'request', 'approve',
+                object_id=cur_request.reqid, facts={'restricted_mc': cur_request.request_type == 'MC' and
+                                                   cur_request.phys_group != 'VALI'}, source='request_table.approval_capability')
+            limit_priority = {'min': 0, 'max': 2000}
             if cur_request.request_type == 'GROUP' and cur_request.phys_group != 'VALI':
-                observe_access(request.user, 'request', 'raise_group_priority', limit_priority['max'] == 2000,
-                               object_id=cur_request.reqid, groups=lambda: egroup_permissions(request.user.username),
-                               source='request_table.priority_capability')
+                if not can_access(request.user, 'request', 'raise_group_priority', object_id=cur_request.reqid,
+                                  source='request_table.priority_capability'):
+                    limit_priority = {'min': 560, 'max': 570}
             comments = RequestStatus.objects.filter(request=cur_request,status='comment').order_by('-timestamp').first()
             if comments:
                 comment_author = comments.owner

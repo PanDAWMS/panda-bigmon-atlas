@@ -1,5 +1,5 @@
 import itertools
-from atlas.authorization.stage2 import observe_access
+from atlas.authorization.resources import can_access
 import json
 import logging
 
@@ -2159,9 +2159,11 @@ def pmg_approve(request):
             comment = 'Request is cancelled by WebUI'
             new_status = TRequest.STATUS.CANCELLED
         production_requests_id = []
-        for production_request in  TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING):
-            observe_access(request.user, 'request', f'pmg_{action}', True,
-                           object_id=production_request.reqid, source='production_request.pmg_approve')
+        production_requests = list(TRequest.objects.filter(ref_link__endswith=jira, cstatus=TRequest.STATUS.WAITING))
+        if not all(can_access(request.user, 'request', f'pmg_{action}', object_id=item.reqid,
+                              source='production_request.pmg_approve') for item in production_requests):
+            return Response('Permission denied', status=status.HTTP_403_FORBIDDEN)
+        for production_request in production_requests:
             set_request_status(request.user.username, production_request.reqid, new_status, message, comment)
             production_requests_id.append(production_request.reqid)
         return Response({'status':new_status, 'requestIDs': production_requests_id})

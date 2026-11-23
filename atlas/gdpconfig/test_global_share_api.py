@@ -26,41 +26,42 @@ class GlobalSharePermissionsTests(SimpleTestCase):
     ]
 
     def setUp(self):
-        self.user = Mock(username='share-reader')
+        self.user = Mock(username='share-reader', is_authenticated=True, is_active=True, is_superuser=False)
         self.user.user_permissions.filter.return_value.exists.return_value = False
 
-    @patch('atlas.gdpconfig.global_share_api.task_user_rights')
+    @patch('atlas.authorization.resources.group_codes')
     def test_config_editor_can_manage_every_share(self, rights):
         self.user.user_permissions.filter.return_value.exists.return_value = True
+        rights.return_value = []
         self.assertEqual(manageable_global_shares(self.user, self.shares), [share['name'] for share in self.shares])
         self.user.user_permissions.filter.assert_called_once_with(name='Can edit GDPConfig')
-        rights.assert_not_called()
+        rights.assert_called_once_with(self.user)
 
-    @patch('atlas.gdpconfig.global_share_api.task_user_rights')
-    def test_group_permissions_match_legacy_scopes(self, rights):
+    @patch('atlas.authorization.resources.group_codes')
+    def test_group_permissions_use_policy_scopes(self, rights):
         cases = [
             ([], set()),
             (['unrelated'], set()),
             (['DPD'], {'DAOD'}),
             (['REPR'], {'Repro child'}),
-            (['MCPROD'], {'MC evgen', 'MC merge', 'MC root', 'MC simul', 'MC child'}),
+            (['MCCOORD'], {'MC evgen', 'MC merge', 'MC root', 'MC simul', 'MC child'}),
             (['DPD', 'REPR'], {'DAOD', 'Repro child'}),
-            (['DPD', 'REPR', 'MCPROD'], {'DAOD', 'Repro child', 'MC evgen', 'MC merge', 'MC root', 'MC simul', 'MC child'}),
+            (['DPD', 'REPR', 'MCCOORD'], {'DAOD', 'Repro child', 'MC evgen', 'MC merge', 'MC root', 'MC simul', 'MC child'}),
         ]
         for groups, expected in cases:
             with self.subTest(groups=groups):
-                rights.return_value = (self.user, groups)
+                rights.return_value = groups
                 self.assertEqual(set(manageable_global_shares(self.user, self.shares)), expected)
-        rights.assert_called_with('share-reader')
+        rights.assert_called_with(self.user)
 
 
 class GlobalShareTreeApiTests(SimpleTestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.user = Mock(username='share-reader', is_authenticated=True)
+        self.user = Mock(username='share-reader', is_authenticated=True, is_active=True, is_superuser=False)
         self.user.user_permissions.filter.return_value.exists.return_value = False
 
-    @patch('atlas.gdpconfig.global_share_api.task_user_rights')
+    @patch('atlas.authorization.resources.group_codes')
     @patch('atlas.gdpconfig.global_share_api.GlobalShare')
     def test_tree_includes_all_shares_and_separate_editable_names(self, model, rights):
         model.objects.order_by.return_value.values.return_value = [
@@ -68,7 +69,7 @@ class GlobalShareTreeApiTests(SimpleTestCase):
             {'name': 'Derivations', 'parent': '', 'value': Decimal('30')},
             {'name': 'Other', 'parent': None, 'value': Decimal('70')},
         ]
-        rights.return_value = (self.user, ['DPD'])
+        rights.return_value = ['DPD']
         request = self.factory.get('/gdpconfig/global_share_tree_v2/')
         force_authenticate(request, user=self.user)
         response = global_share_tree_v2(request)
@@ -82,11 +83,11 @@ class GlobalShareTreeApiTests(SimpleTestCase):
             'manageable_shares': ['DAOD'],
         })
 
-    @patch('atlas.gdpconfig.global_share_api.task_user_rights')
+    @patch('atlas.authorization.resources.group_codes')
     @patch('atlas.gdpconfig.global_share_api.GlobalShare')
     def test_read_only_user_still_receives_every_share(self, model, rights):
         model.objects.order_by.return_value.values.return_value = GlobalSharePermissionsTests.shares
-        rights.return_value = (self.user, [])
+        rights.return_value = []
         request = self.factory.get('/gdpconfig/global_share_tree_v2/')
         force_authenticate(request, user=self.user)
         response = global_share_tree_v2(request)

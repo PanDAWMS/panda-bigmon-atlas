@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_access, observe_share_batch
+from atlas.authorization.resources import can_access, can_share_batch
 import json
 
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -41,9 +41,7 @@ def config_action(request,action):
     """
     result = dict(status=None,exception=None)
 
-    config_editor = request.user.user_permissions.filter(name='Can edit GDPConfig').exists()
-    observe_access(request.user, 'gdpconfig', 'update', config_editor, editor=config_editor,
-                   source='gdpconfig.config_action')
+    config_editor = can_access(request.user, 'gdpconfig', 'update', source='gdpconfig.config_action')
     if not config_editor:
         result['status']='Failed'
         result['exception'] = 'Permission denied'
@@ -242,31 +240,13 @@ def global_share_change(request):
     try:
        data = request.data
        old_shares = {}
-       shadow_shares = []
+       share_facts = []
        for share in data:
            old_share = GlobalShare.objects.get(name=share)
            old_shares[old_share.name] = int(old_share.value)
-           shadow_shares.append({'name': old_share.name, 'parent': old_share.parent})
+           share_facts.append({'name': old_share.name, 'parent': old_share.parent})
        user = request.user
-       authorised = False
-       allowed_groups = []
-       config_editor = user.user_permissions.filter(name='Can edit GDPConfig').exists()
-       if config_editor:
-           authorised = True
-       else:
-           user, allowed_groups = task_user_rights(user.username)
-           parents = set([GlobalShare.objects.get(name=share).parent for share in data])
-           if 'DPD' in allowed_groups:
-               if not(parents - {'Derivations'}):
-                   authorised = True
-           if 'MCCOORD' in allowed_groups:
-               MC_LEVEL2_SHARES = {'MC evgen','MC merge','MC root','MC simul'}
-               if not(parents - MC_LEVEL2_SHARES) or not(set(data) - MC_LEVEL2_SHARES):
-                   authorised = True
-           if 'REPR' in allowed_groups:
-               if not(parents - {'Reprocessing'}):
-                   authorised = True
-       observe_share_batch(user, shadow_shares, allowed_groups, config_editor, authorised)
+       authorised = can_share_batch(user, share_facts)
        if not authorised:
            raise LookupError('User %s has no permission for global share change '% user.username)
        else:
@@ -314,9 +294,7 @@ def get_json_param(request):
 def save_json_param(request):
     try:
         user = request.user
-        config_editor = user.user_permissions.filter(name='Can edit GDPConfig').exists()
-        observe_access(user, 'gdpconfig', 'save_json', config_editor, editor=config_editor,
-                       source='gdpconfig.save_json_param')
+        config_editor = can_access(user, 'gdpconfig', 'save_json', source='gdpconfig.save_json_param')
         if not config_editor:
            return HttpResponse('User %s has no permission for global share change '% user.username, content_type='application/json',status=403)
         field = request.data['key']

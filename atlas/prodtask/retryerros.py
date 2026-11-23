@@ -1,4 +1,4 @@
-from atlas.authorization.stage2 import observe_access
+from atlas.authorization.resources import can_access
 import copy
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
@@ -53,9 +53,8 @@ def retry_errors_list(request):
 @login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_edit(request, retry_errors_id):
     if request.method == 'POST':
-        retry_allowed = (request.user.is_superuser) or (request.user.username in ['fbarreir'])
-        observe_access(request.user, 'retry_error', 'manage', retry_allowed,
-                       object_id=retry_errors_id, source='retryerros.manage')
+        retry_allowed = can_access(request.user, 'retry_error', 'manage',
+                                   object_id=retry_errors_id, source='retryerros.manage')
         if retry_allowed:
             try:
                 values = RetryErrors.objects.get(id=retry_errors_id)
@@ -75,9 +74,8 @@ def retry_errors_edit(request, retry_errors_id):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            retry_allowed = (request.user.is_superuser) or (request.user.username in ['fbarreir'])
-            observe_access(request.user, 'retry_error', 'manage', retry_allowed,
-                           object_id=retry_errors_id, source='retryerros.manage')
+            retry_allowed = can_access(request.user, 'retry_error', 'manage',
+                                       object_id=retry_errors_id, source='retryerros.manage')
             if retry_allowed:
                 values = RetryErrors.objects.get(id=retry_errors_id)
                 form = RetryErrorsForm(instance=values)
@@ -113,8 +111,9 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
     else:
         message = 'Create new retry error entity'
     if request.method == 'POST':
-        observe_access(request.user, 'retry_error', 'create_submit', True,
-                       object_id=retry_errors_id, source='retryerros.clone_create_post')
+        if not can_access(request.user, 'retry_error', 'create_submit', object_id=retry_errors_id,
+                          source='retryerros.clone_create_post'):
+            return HttpResponseRedirect('/prodtask/retry_errors_list')
         form = RetryErrorsForm(request.POST)
         if form.is_valid():
             # Process the data in form.cleaned_data
@@ -130,9 +129,8 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
             return HttpResponseRedirect('/prodtask/retry_errors_list')
     else:
         try:
-            retry_allowed = (request.user.is_superuser) or (request.user.username in ['fbarreir'])
-            observe_access(request.user, 'retry_error', 'manage', retry_allowed,
-                           object_id=retry_errors_id, source='retryerros.manage')
+            retry_allowed = can_access(request.user, 'retry_error', 'manage',
+                                       object_id=retry_errors_id, source='retryerros.manage')
             if retry_allowed:
                 if retry_errors_id:
                     values = RetryErrors.objects.get(id=retry_errors_id)
@@ -158,9 +156,8 @@ def retry_errors_clone_create(request, retry_errors_id,submit_url):
 @login_required(login_url=OIDC_LOGIN_URL)
 def retry_errors_delete(request, retry_errors_id):
     if request.method == 'GET':
-        retry_allowed = (request.user.is_superuser) or (request.user.username in ['fbarreir'])
-        observe_access(request.user, 'retry_error', 'manage', retry_allowed,
-                       object_id=retry_errors_id, source='retryerros.manage')
+        retry_allowed = can_access(request.user, 'retry_error', 'manage',
+                                   object_id=retry_errors_id, source='retryerros.manage')
         if retry_allowed:
 
             try:

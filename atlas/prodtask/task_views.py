@@ -173,15 +173,16 @@ def task_old_details(request, rid=None):
 
 
 
-            tasks = []
-            tasks.append(rid)
-            # is_permitted,denied_task = get_permissions(request.user.username,tasks)
-            denied_task, tmp = check_action_allowed(request.user.username, tasks)
-            is_permitted = denied_task == []
-            permissions = {}
-            if task.status in allowed_task_actions:
-                for action in allowed_task_actions[task.status]:
-                    permissions[action] = is_permitted
+            from atlas.task_action.task_management import TaskManagementAuthorisation
+            authorizer = TaskManagementAuthorisation()
+            permissions = authorizer.task_capabilities(rid, request.user.username)
+            for alias, actions in {
+                'change_parameters': authorizer.CHANGE_PARAMETERS_ACTIONS,
+                'reassign': authorizer.REASSIGN_ACTIONS,
+                'ctrl': ['pause_task', 'resume_task', 'trigger_task', 'avalanche_task', 'reload_input', 'sync_jedi'],
+                'increase_priority': ['change_priority'], 'decrease_priority': ['change_priority'],
+            }.items():
+                permissions[alias] = any(permissions.get(action, False) for action in actions)
 
             # TODO: these actions are needed from DEFT and JEDI (SB)
             for action in ['edit', 'clone']:
@@ -672,126 +673,30 @@ def slice_by_task_short(request, task_id):
         return HttpResponseRedirect('/')
     return HttpResponseRedirect(reverse('prodtask:input_list_approve', args=[request_id])+'#inputList'+str(slice))
 
-ALWAYS_ALLOWED = ['set_hashtag','remove_hashtag']
 
 
 def check_action_allowed(username, tasks, action=None, params=None, userfullname=''):
-    is_superuser=False
-    group_permissions = []
-    denied_tasks=[]
-    not_allowed_tasks = []
-    allowed_groups = []
-    if User.objects.filter(username=username).exists():
-        user = User.objects.get(username=username)
-        user_groups = user.groups.all()
-        is_superuser = user.is_superuser
-        for gp in user_groups:
-            group_permissions += list(gp.permissions.all())
-        for gp in group_permissions:
-            if "has_" in gp.name and "_permissions" in gp.name:
-                allowed_groups.append(gp.codename)
-    for task in tasks:
-            physgroup = ''
-            request_phys_group = ''
-            if ProductionTask.objects.filter(id=task).exists():
-                task_dict = ProductionTask.objects.values('username','name','status','request_id','phys_group','request__phys_group').get(id=task)
-                task_owner =task_dict.get('username')
-                task_name = task_dict.get('name')
-                task_status = task_dict.get('status')
-                physgroup = task_dict.get('phys_group')
-                request_phys_group = task_dict.get('request__phys_group')
-                is_analy = task_dict.get('request_id') == 300
-            else:
-                task_dict = JediTasks.objects.values('username','taskname','status').get(id=task)
-                task_owner = task_dict.get('username')
-                task_name = task_dict.get('taskname')
-                task_status = task_dict.get('status')
-                is_analy = True
-
-            if action and (action not in allowed_task_actions[task_status]):
-                not_allowed_tasks.append(task)
-            else:
-                if action not in ALWAYS_ALLOWED:
-                    if not is_analy:
-                        if is_superuser or (username==task_owner):
-                                pass
-                        elif "DPD" in allowed_groups:
-                                pass
-                        elif "MCCOORD" in  allowed_groups:
-                                pass
-                        elif ((physgroup in allowed_groups) or (request_phys_group in allowed_groups)) and (action not in ['increase_priority','reassign_to_site', 'reassign_to_cloud', 'reassign_to_nucleus', 'reassign_to_share']):
-                                if (action=='change_priority' and int(params[0])>570):
-                                    denied_tasks.append(task)
-                                else:
-                                    pass
-                        else:
-                                denied_tasks.append(task)
-                    else:
-                        if is_superuser or (username==task_owner):
-                            pass
-                        elif (userfullname == task_owner) and (task_name.split('.')[1] == username):
-                            pass
-                        else:
-                            denied_tasks.append(task)
-    return denied_tasks, not_allowed_tasks
+    from atlas.task_action.task_management import TaskManagementAuthorisation, task_user_rights
+    from atlas.authorization.resources import can_task
+    manager = TaskManagementAuthorisation()
+    user, groups = task_user_rights(username, userfullname)
+    denied, invalid = [], []
+    for task_id in tasks:
+        task = manager.get_task_info(task_id)
+        if action is None:
+            permitted = can_task(user, groups, task, 'manage', params, userfullname)
+        else:
+            eligible, permitted = manager.task_action_authorisation(task_id, username, action, params, userfullname)
+            if not eligible:
+                invalid.append(task_id)
+        if not permitted:
+            denied.append(task_id)
+    return denied, invalid
 
 
-def get_permissions(username,tasks):
-    """
-
-    :param request: HTTP request
-    :return: is_permitted: True/False
-    """
-
-
-    is_superuser=False
-    user = ""
-    user_groups = ""
-    user_permissions = []
-    group_permissions = []
-    task_owner = ""
-
-    try:
-            user = User.objects.get(username=username)
-            user_groups = user.groups.all()
-            is_superuser = user.is_superuser
-            user_permissions = user.user_permissions.all()
-            for gp in user_groups:
-                    group_permissions += list(gp.permissions.all())
-    except:
-            pass
-
-    is_permitted=False
-    denied_tasks=[]
-
-    allowed_groups = []
-    for gp in group_permissions:
-            if "has_" in gp.name and "_permissions" in gp.name:
-            #        phg=code[(code.find("has_"))+4:code.find("_rights")]
-                     allowed_groups.append(gp.codename)
-    #print "allowed_groups:", allowed_groups
-
-    for task in tasks:
-            task_owner = ProductionTask.objects.values('username').get(id=task).get('username')
-            physgroup = ProductionTask.objects.values('phys_group').get(id=task).get('phys_group')
-
-            #print "phys_group:", physgroup
-   
-            if is_superuser is True or user==task_owner:
-                    is_permitted=True
-            elif physgroup in allowed_groups:
-                    is_permitted=True 
-            elif "DPD" in allowed_groups:
-                    is_permitted=True
-            elif "MCCOORD" in  allowed_groups:
-                    is_permitted=True
-            else:
-                    denied_tasks.append(task)
-
-    if len(denied_tasks)>0: 
-           is_permitted=False          
-
-    return (is_permitted,denied_tasks)
+def get_permissions(username, tasks):
+    denied, invalid = check_action_allowed(username, tasks)
+    return not (denied or invalid), denied
 
 
 def create_fake_task(step_id,task_id):

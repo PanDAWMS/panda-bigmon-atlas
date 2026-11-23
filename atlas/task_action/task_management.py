@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, List, Dict, Any
 
-from atlas.authorization.shadow import observe_task, observe_rule
+from atlas.authorization.resources import can_access, can_task, can_rule, task_parameter_candidates
+from atlas.authorization.principals import group_codes, user_for_username
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
@@ -671,23 +672,8 @@ class RuleActionAllowed():
 
 
 def task_user_rights(username: str, user_fullname:str|None =None):
-    allowed_groups = []
-    group_permissions = []
-    if User.objects.filter(username=username).exists():
-        user = User.objects.get(username=username)
-        user_groups = user.groups.all()
-        for gp in user_groups:
-            group_permissions += list(gp.permissions.all())
-            if gp.name.startswith('IAM:atlas/') and gp.name.endswith('/production'):
-                allowed_groups.append(gp.name.split('/')[-2])
-        for gp in group_permissions:
-            if "has_" in gp.name and "_permissions" in gp.name:
-                allowed_groups.append(gp.codename)
-    else:
-        user = User(username=username)
-        if user_fullname:
-            user.last_name = user_fullname
-    return user, allowed_groups
+    user = user_for_username(username)
+    return user, group_codes(user)
 
 
 class TaskManagementAuthorisation():
@@ -735,7 +721,7 @@ class TaskManagementAuthorisation():
         pass
 
     def check_task_allowed(self, status: str, action: str) -> bool:
-        return action in self.allowed_task_actions[status]
+        return action in self.allowed_task_actions.get(status, ())
 
 
     def get_task_info(self, task_id: int) -> __AuthorisationTask :
@@ -762,27 +748,7 @@ class TaskManagementAuthorisation():
         return task
 
     def user_authorization(self, user: User, allowed_groups: [str], task: __AuthorisationTask, action: str, params, user_fullname) -> bool:
-        if user.is_superuser:
-            return True
-        if not task.is_analy:
-            if "DPD" in allowed_groups:
-                return True
-            if "MCCOORD" in allowed_groups:
-                return True
-            if (task.phys_group in allowed_groups) or (task.request_phys_group in allowed_groups) or (user.username == task.owner):
-                if task.is_group_production:
-                    if action in self.REASSIGN_ACTIONS:
-                        return False
-                    if action == 'change_priority' and int(params[0]) > 570:
-                        return False
-                return True
-            return False
-        else:
-            if (f'{user.first_name} {user.last_name}' == task.owner) or (user_fullname and (user_fullname == task.owner)) or\
-                    (task.name.split('.')[1] == user.username) or (task.phys_group in allowed_groups):
-                return True
-
-        return False
+        return can_task(user, allowed_groups, task, action, params, user_fullname)
 
     def additional_permissions(self, task: __AuthorisationTask, action: str) -> bool:
         if task.is_analy:
@@ -797,20 +763,11 @@ class TaskManagementAuthorisation():
             task_is_allowed = self.additional_permissions(task, action)
         if task_is_allowed:
             user_is_allowed = self.user_authorization(user, allowed_groups, task, action, params, user_fullname)
-        observe_task(user, allowed_groups, task, action, params, user_fullname,
-                     task_is_allowed, user_is_allowed)
         return task_is_allowed, user_is_allowed
 
     def rules_action_authorisation(self, datasets: str, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
         user, allowed_groups = task_user_rights(username, user_fullname)
-        result = []
-        for dataset in datasets:
-            observe_rule(user, dataset, action, user.is_superuser)
-            if user.is_superuser:
-                result.append(RuleActionAllowed(dataset, True, True))
-            else:
-                result.append(RuleActionAllowed(dataset, True, False))
-        return result
+        return [RuleActionAllowed(dataset, True, can_rule(user, dataset, action)) for dataset in datasets]
 
 
     def task_action_authorisation(self, task_id: int, username: str, action: str, params=None, user_fullname: str=None) -> (bool, bool):
@@ -827,6 +784,15 @@ class TaskManagementAuthorisation():
             result.append(TaskActionAllowed(task.id, action_allowed, user_allowed))
         return result
 
+    def task_capabilities(self, task_id: int, username: str):
+        user, groups = task_user_rights(username)
+        task = self.get_task_info(task_id)
+        actions = set(self.allowed_task_actions.get(task.status, ()))
+        if task.is_analy and task.status in (ProductionTask.STATUS.FAILED, ProductionTask.STATUS.BROKEN):
+            actions.update(('retry', 'reload_input', 'force_retry'))
+        return {action: any(all(self.__task_action_check(task, user, groups, action, params, None))
+                            for params in task_parameter_candidates(action)) for action in actions}
+
     def __init__(self):
         self.define_allowed_task_actions()
 
@@ -835,7 +801,8 @@ def permission_specific_params(username: str, action: str, params: list) -> (str
     if action == 'retry':
         try:
             user = User.objects.get(username=username)
-            if user.is_superuser and len(params) >= 6:
+            if len(params) >= 6 and can_access(user, 'task_privilege', 'retry_override',
+                                               source='permission_specific_params'):
                 params[5] = True
                 return action, params
         except:
@@ -916,6 +883,17 @@ def read_jedi_log(self, log_url: str):
 @ProdSysTask.set_task_name('async action')
 def async_action(self, action_type: ActionType, action: str, username: str, comment: str, items: List[str], params: Optional[list]) -> List[Dict]:
     poll_interval_seconds = 5
+    authorizer = TaskManagementAuthorisation()
+    if action_type == ActionType.RULE_ACTION:
+        checks = authorizer.rules_action_authorisation(items, username, action, params)
+    elif action_type == ActionType.TASK_ACTION:
+        checks = authorizer.tasks_action_authorisation(items, username, action, params)
+    else:
+        raise ValueError(f'Unknown action type: {action_type}')
+    if not all(check.action_allowed and check.user_allowed for check in checks):
+        for item in items:
+            DistributedLock.release_lock(f'deft_action_{action}_{item}')
+        return [{'return_code': False, 'return_info': 'Permission denied'}]
     executor = TaskActionExecutor(username, comment)
 
     if action_type == ActionType.RULE_ACTION:
