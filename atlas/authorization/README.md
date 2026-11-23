@@ -13,7 +13,7 @@ python -m atlas.authorization.engine
 python -m unittest discover -s atlas/authorization/tests -v
 ```
 
-The Django admin app configuration validates the engine during startup. Missing
+The dedicated authorization app validates the engine during startup. Missing
 Casbin, an invalid model or malformed policy prevents startup. At runtime,
 unknown operations, identity/fact lookup errors and evaluation failures deny.
 Audit-log failures do not alter a decision. No database migration is required.
@@ -31,13 +31,22 @@ receive no roles. Usernames are used for audit and resource ownership, never
 human allowlists. The retained external API service account is the only explicit
 identity grant and can delegate only its four policy actions.
 
+After that delegation check passes, the service can assert a subject's username
+and full name, including for an analysis user without a local Django account.
+An ephemeral delegated identity holds those claims without creating an account.
+Unknown subjects receive no group or superuser assignments; existing accounts
+retain their actual roles and active status. Service-asserted full names can
+establish analysis ownership only on this authorized delegation path. Regular
+calls cannot grant themselves access by supplying a full name. Delegated audit
+events identify both the authenticated service and the effective subject.
+
 The covered boundaries include task and replication-rule actions, delegated API
 actions, old task permission helpers, request creation/approval/step saves,
 request and train capabilities and writes, global-share updates, analysis scope
 selection and submission, configuration and retry management, dataset recovery,
-group-production administration, job-only privileges and the registered Django
-admin site/model permission hooks. Django permission assignments are input facts
-for the admin policies; authentication backends are not changed.
+group-production administration and job-only privileges. Django admin uses its
+standard site and permission checks, outside this application policy bundle.
+Authentication backends are not changed.
 
 Task-state eligibility, input validation and workflow transitions remain domain
 logic. A superuser grant cannot make an invalid task action executable. Older UI
@@ -54,8 +63,8 @@ Step-save permission denials retain the legacy response contract: HTTP 200 JSON
 for the synchronous caller and a JSON string with `async_name: save_slices` for
 the worker. `error_approve_message` reports the denial, `slices` is empty and all
 requested slices are reported in `no_action_slices`; no writes are performed.
-Analysis ownership uses authenticated identity data, not a caller-supplied full
-name. Both scope-list APIs filter through the scope policies.
+Analysis ownership uses authenticated identity data or the authorized service's
+asserted identity. Both scope-list APIs filter through the scope policies.
 
 ## Current policy behavior
 
@@ -67,12 +76,13 @@ name. Both scope-list APIs filter through the scope policies.
 - Global-share and GDPConfig editing use the direct Can edit GDPConfig assignment
   or scoped DPD/REPR/MCCOORD grants. Superuser status alone does not grant access.
 - Scope access requires the user's own scope or IAM production-group membership.
-  Group submission still validates workingGroup, including for superusers.
+  Analysis request creation uses the group-submission policy for group scopes,
+  consistently with step verification: superusers can submit without membership,
+  while workingGroup must still match. Ordinary container-scope access retains
+  its membership requirement and does not grant a superuser bypass.
 - PMG register/hold/cancel and retry-error POST create/clone retain explicit
   subject-role grants from the approved policies. This cutover does not add a
   role restriction to those actions. Edit/delete permissions remain separate.
-- Django admin requires active authenticated staff at the site boundary; model
-  permissions use assigned Django permissions or an explicit superuser policy.
 - Job debug, job kills without a task, and the privileged retry modifier require
   their explicit administrative policies.
 
@@ -109,10 +119,13 @@ There are no human identity grants in the bundle.
 The authorization_decision message uses the existing prodtask_ELK JSON logger.
 Events contain actor, effective user, resource, action, source, allowed result,
 policy bundle hash, matching policy references, safe resource facts and elapsed
-time. Outcomes are allow, deny, unmapped or error. Tokens, caller-supplied full
+time. Successful authorization decisions are DEBUG, denials and unmapped actions
+are INFO, and evaluation failures are ERROR. Outcomes are allow, deny, unmapped
+or error. Tokens, caller-supplied full
 names and arbitrary action parameters are not logged.
 
 Tests use real Casbin and execute production gate functions with external models
 and clients stubbed. They cover denial-before-write, batch behavior, queued-role
 revocation, stale settings, policy/fact/logging failures, identity restrictions,
-priority limits and Django admin integration without a live Oracle or JEDI call.
+priority limits, authorized service assertions and standard Django admin setup
+without a live Oracle or JEDI call.

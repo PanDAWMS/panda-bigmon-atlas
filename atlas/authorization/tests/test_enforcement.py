@@ -7,13 +7,6 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from django.conf import settings
-if not settings.configured:
-    settings.configure(SECRET_KEY='test', INSTALLED_APPS=['django.contrib.contenttypes', 'django.contrib.auth',
-                       'atlas.authorization.apps.AuthorizationAdminConfig'], DATABASES={})
-    import django
-    django.setup()
-
 from atlas.authorization import resources, service, principals
 from atlas.authorization.engine import AuthorizationEngine, parse_policy
 from atlas.authorization.matchers import match_constraints
@@ -62,8 +55,9 @@ class EngineTests(unittest.TestCase):
             self.assertFalse(resources.can_access(user(), 'unknown', 'unknown'))
             self.assertEqual(logger.info.call_args.kwargs['extra']['outcome'], 'unmapped')
             self.assertFalse(resources.can_access(user(superuser=True), 'job', 'debug', facts=lambda: 1 / 0))
-            self.assertEqual(logger.info.call_args.kwargs['extra']['outcome'], 'error')
+            self.assertEqual(logger.error.call_args.kwargs['extra']['outcome'], 'error')
             logger.info.side_effect = RuntimeError('disk full')
+            logger.debug.side_effect = RuntimeError('disk full')
             self.assertTrue(resources.can_access(user(superuser=True), 'job', 'debug'))
             self.assertFalse(resources.can_access(user(), 'job', 'debug'))
 
@@ -303,49 +297,19 @@ class ResourceTests(unittest.TestCase):
                                               facts={'coordinator_required': True}))
 
 
-class AdminTests(unittest.TestCase):
+class StartupTests(unittest.TestCase):
     def test_invalid_bundle_prevents_startup(self):
-        from atlas.authorization.apps import AuthorizationAdminConfig
+        from atlas.authorization.apps import AuthorizationConfig
         with patch.object(service, 'get_engine', side_effect=ValueError('bad policy')):
             with self.assertRaises(ValueError):
-                AuthorizationAdminConfig.ready(Mock())
+                AuthorizationConfig.ready(Mock())
 
-    def test_site_and_model_permissions_are_casbin_decisions(self):
-        from django.contrib.auth.models import User
+    def test_django_admin_uses_its_standard_site_without_policy_rows(self):
         from django.contrib import admin
-        from atlas.authorization.admin import PolicyAdminSite
-        self.assertIsInstance(admin.site, PolicyAdminSite)
-        site = PolicyAdminSite()
-        site.register(User)
-        model_admin = site._registry[User]
-        principal = user(staff=True)
-        request = SimpleNamespace(user=principal)
-        self.assertTrue(site.has_permission(request))
-        self.assertFalse(model_admin.has_change_permission(request))
-        principal.user_permissions.select_related.return_value = [
-            SimpleNamespace(content_type=SimpleNamespace(app_label='auth'), codename='change_user')]
-        self.assertTrue(model_admin.has_change_permission(request))
-        self.assertTrue(model_admin.has_view_permission(request))
-        self.assertFalse(model_admin.has_delete_permission(request))
-        with patch.object(service, 'get_engine', side_effect=RuntimeError('broken')):
-            self.assertFalse(site.has_permission(request))
-            self.assertFalse(model_admin.has_change_permission(request))
-
-    def test_inline_overrides_cannot_bypass_policies(self):
-        from django.contrib.admin import ModelAdmin, TabularInline
-        from django.contrib.auth.models import User, Group
-        from atlas.authorization.admin import PolicyAdminSite
-        class PermissiveInline(TabularInline):
-            model = Group
-            def has_add_permission(self, request, obj=None):
-                return True
-        class ParentAdmin(ModelAdmin):
-            inlines = (PermissiveInline,)
-        site = PolicyAdminSite()
-        site.register(User, ParentAdmin)
-        request = SimpleNamespace(user=user(staff=True))
-        inline_class = site._registry[User].get_inlines(request)[0]
-        self.assertFalse(inline_class(Group, site).has_add_permission(request, None))
+        from django.contrib.admin.sites import AdminSite
+        self.assertIs(admin.site.__class__, AdminSite)
+        engine = AuthorizationEngine()
+        self.assertFalse(any(resource.startswith('admin_') for resource, action in engine.operations))
 
 
 if __name__ == '__main__':

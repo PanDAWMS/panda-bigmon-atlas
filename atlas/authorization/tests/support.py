@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from typing import List
 from unittest.mock import Mock
 
-from atlas.authorization import resources
+from atlas.authorization import principals, resources
 
 ATLAS = Path(__file__).parents[2]
 
@@ -62,6 +62,7 @@ def task_manager(principal, tasks):
                                        NOT_RUNNING=['finished', 'done', 'failed', 'broken', 'obsolete'], STATUS=statuses),
         can_task=resources.can_task, can_rule=resources.can_rule,
         task_parameter_candidates=resources.task_parameter_candidates,
+        delegated_task_user_rights=principals.delegated_task_user_rights,
         task_user_rights=lambda *args: (principal, resources.group_codes(principal)))
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), 'exec'), namespace)
     manager = namespace['TaskManagementAuthorisation']()

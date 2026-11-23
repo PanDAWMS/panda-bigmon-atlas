@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from atlas.authorization.resources import can_scope
+from atlas.authorization.resources import can_create_analysis_request, can_scope
 import json
 import logging
 import string
@@ -724,7 +724,7 @@ def get_all_patterns(request):
 @permission_classes((IsAuthenticated,))
 def create_analysis_request(request):
     try:
-        if not can_scope(request.user, request.data['scope']):
+        if not can_create_analysis_request(request.user, request.data['scope']):
             return Response('Permission denied for this analysis scope', status=status.HTTP_403_FORBIDDEN)
         if request.data['requestExtID']:
             new_request = TRequest.objects.get(reqid=int(request.data['requestExtID']))

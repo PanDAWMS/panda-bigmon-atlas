@@ -36,7 +36,12 @@ def authorize(*, actor, obj_type, action, context, object_id=None, source='', ef
         event.update(outcome='error', error_type=type(error).__name__)
     event.update(allowed=allowed, evaluation_duration_ms=round((perf_counter() - started) * 1000, 3))
     try:
-        logger.info('authorization_decision', extra=event)
+        if allowed:
+            logger.debug('authorization_decision', extra=event)
+        elif event['outcome'] == 'error':
+            logger.error('authorization_decision', extra=event)
+        else:
+            logger.info('authorization_decision', extra=event)
     except Exception:
         # Logging availability must never grant access or undo a policy denial.
         pass

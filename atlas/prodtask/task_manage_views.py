@@ -93,7 +93,7 @@ def task_action_ext(request, action=None):
         if not error_message:
             authentification_management = TaskManagementAuthorisation()
             tasks_allowed = authentification_management.tasks_action_authorisation([task_id], action_username, action, params,
-                                                                                   userfullname)
+                                                                                   userfullname, delegated_by=request.user)
             is_permitted = tasks_allowed[0].user_allowed and tasks_allowed[0].action_allowed
     except Exception as e:
         error_message.append(str(e))

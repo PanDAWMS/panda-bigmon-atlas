@@ -1,11 +1,10 @@
-from django.contrib.admin.apps import AdminConfig
+from django.apps import AppConfig
 
 
-class AuthorizationAdminConfig(AdminConfig):
-    default_site = 'atlas.authorization.admin.PolicyAdminSite'
+class AuthorizationConfig(AppConfig):
+    name = 'atlas.authorization'
 
     def ready(self):
         # Refuse to start with a missing dependency, invalid model or bad bundle.
         from .service import get_engine
         get_engine()
-        super().ready()

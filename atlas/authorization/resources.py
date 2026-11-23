@@ -4,7 +4,7 @@ import re
 import json
 from functools import lru_cache
 
-from .principals import group_codes, roles_for
+from .principals import DelegatedIdentity, group_codes, roles_for
 from .service import authorize
 
 
@@ -55,6 +55,8 @@ def task_context(user, groups, task, action, params, user_fullname):
     else:
         name_parts = task.name.split('.')
         if (f'{user.first_name} {user.last_name}' == task.owner
+                or (isinstance(user, DelegatedIdentity) and user.asserted_fullname
+                    and user.asserted_fullname == task.owner)
                 or (len(name_parts) > 1 and name_parts[1] == user.username)):
             roles.append('analysis-owner')
         if task.phys_group in groups:
@@ -73,7 +75,8 @@ def can_task(user, groups, task, action, params=None, fullname=None):
         if not can_access(user, 'task_privilege', 'retry_override', groups=groups,
                           object_id=task.id, source='task.retry_override'):
             return False
-    return authorize(actor=user.username, obj_type='task', object_id=task.id, action=action,
+    return authorize(actor=user.delegated_by if isinstance(user, DelegatedIdentity) else user.username,
+                     effective_user=user.username, obj_type='task', object_id=task.id, action=action,
                      context=lambda: task_context(user, groups, task, action, params, fullname),
                      source='task_management.task_action')
 
@@ -162,3 +165,11 @@ def can_scope(user, scope, *, action='use', working_group=None, group_names=None
         context=lambda: scope_context(user, scope, [g.name for g in user.groups.all()]
                                       if group_names is None else group_names,
                                       working_group, action == 'submit_group'), source='analysis_scope')
+
+
+def can_create_analysis_request(user, scope):
+    # Creation builds a group submission with workingGroup derived from scope,
+    # so it must use the same permission as verify_step/check_user_group.
+    if scope.startswith('group.'):
+        return can_scope(user, scope, action='submit_group', working_group=scope.split('.')[1])
+    return can_scope(user, scope)

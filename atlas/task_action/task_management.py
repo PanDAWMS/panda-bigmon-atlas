@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional, List, Dict, Any
 
 from atlas.authorization.resources import can_access, can_task, can_rule, task_parameter_candidates
-from atlas.authorization.principals import group_codes, user_for_username
+from atlas.authorization.principals import delegated_task_user_rights, group_codes, user_for_username
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
@@ -775,8 +775,11 @@ class TaskManagementAuthorisation():
         task = self.get_task_info(task_id)
         return self.__task_action_check(task, user, allowed_groups, action, params, user_fullname)
 
-    def tasks_action_authorisation(self, task_ids: List[int], username: str, action: str, params=None, user_fullname: str=None) -> List[TaskActionAllowed]:
-        user, allowed_groups = task_user_rights(username)
+    def tasks_action_authorisation(self, task_ids: List[int], username: str, action: str, params=None, user_fullname: str=None, *, delegated_by=None) -> List[TaskActionAllowed]:
+        if delegated_by is not None:
+            user, allowed_groups = delegated_task_user_rights(delegated_by, username, action, user_fullname)
+        else:
+            user, allowed_groups = task_user_rights(username)
         result = []
         for task_id in task_ids:
             task = self.get_task_info(task_id)

@@ -2176,7 +2176,7 @@ def request_table_view(request, rid=None, show_hidden=False):
                                 first_approval_message = 'Request was started by %s at %s without PMG approval '%(approved_by[0].owner,approved_by[0].timestamp.ctime())
                 except:
                     autorized_change_request = False
-            autorized_change_request = can_access(request.user, 'request', 'approve',
+            autorized_change_request = autorized_change_request and can_access(request.user, 'request', 'approve',
                 object_id=cur_request.reqid, facts={'restricted_mc': cur_request.request_type == 'MC' and
                                                    cur_request.phys_group != 'VALI'}, source='request_table.approval_capability')
             limit_priority = {'min': 0, 'max': 2000}
