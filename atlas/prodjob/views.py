@@ -117,10 +117,14 @@ def jobs_action(request,action):
                     result['exception'] = "Taskid is missing"
                     return HttpResponse(json.dumps(result))
             authorizer = TaskManagementAuthorisation()
-            debug_tasks = {job['taskid']: authorizer.get_task_info(job['taskid']) for job in jobs}
+            def debug_facts(task_id):
+                # The unscoped superuser grant does not require local task metadata.
+                if request.user.is_superuser:
+                    return {}
+                return task_facts(authorizer.get_task_info(task_id))
             if not all(can_access(request.user, 'job', 'debug', object_id=task_id,
-                                  facts=lambda: task_facts(task), source='jobs_action')
-                       for task_id, task in debug_tasks.items()):
+                                  facts=lambda: debug_facts(task_id), source='jobs_action')
+                       for task_id in {job['taskid'] for job in jobs}):
                 result['exception'] = "Permission denied"
                 return HttpResponse(json.dumps(result))
             executor = TaskActionExecutor(user, '')

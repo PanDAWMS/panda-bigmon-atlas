@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from atlas.authorization.resources import can_create_analysis_request, can_scope
+from atlas.authorization.resources import can_scope
 import json
 import logging
 import string
@@ -178,11 +178,6 @@ def send_new_request_mail(request_id: int, template: AnalysisTaskTemplate , user
                    fail_silently=True)
 
 def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
-    scope = step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE)
-    if scope.startswith('group'):
-        check_user_group(scope, username, step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP))
-    elif not can_scope(User.objects.get(username=username), scope):
-        raise PermissionDenied('You are not allowed to submit to this user scope')
     prod_step = step.step_production_parent
     if not prod_step.step_parent or (prod_step.step_parent == prod_step):
         if step.get_variable(TemplateVariable.KEY_NAMES.INPUT_BASE):
@@ -193,7 +188,10 @@ def verify_step(step: AnalysisStepTemplate, ddm: DDM, username: str):
                 datasets_in_container = ddm.dataset_in_container(input_dataset)
                 if len(datasets_in_container) == 0:
                     raise Exception(f'Container {input_dataset} is empty')
-    if not scope.startswith('group'):
+    if step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE).startswith('group'):
+        check_user_group(step.get_variable(TemplateVariable.KEY_NAMES.OUTPUT_SCOPE), username,
+                         step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP))
+    else:
         if  step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP):
             raise Exception(f'Working group {step.step_parameters.get(TemplateVariable.KEY_NAMES.WORKING_GROUP)} does not match user scope')
     if step.step_parameters.get(TemplateVariable.JOB_TO_TASK_PARAMETERS[TemplateVariable.KEY_NAMES.DESTINATION]):
@@ -724,8 +722,6 @@ def get_all_patterns(request):
 @permission_classes((IsAuthenticated,))
 def create_analysis_request(request):
     try:
-        if not can_create_analysis_request(request.user, request.data['scope']):
-            return Response('Permission denied for this analysis scope', status=status.HTTP_403_FORBIDDEN)
         if request.data['requestExtID']:
             new_request = TRequest.objects.get(reqid=int(request.data['requestExtID']))
             if new_request.request_type != 'ANALYSIS':
@@ -1372,8 +1368,24 @@ def get_analysis_request_hashtags(request):
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+def all_groups() -> [str]:
+    if cache.get('all_group_scopes'):
+        return cache.get('all_group_scopes')
+    groups = []
+    for group in Group.objects.all():
+        if group.name.startswith('IAM:atlas/') and group.name.endswith('/production') and 'phys' in group.name:
+            groups.append(f'group.{group.name.split("/")[-2]}')
+    groups.sort()
+    cache.set('all_group_scopes', groups, 3600*5*24)
+    return groups
+
+
 def scopes_by_user(username: str) -> [str]:
-    return container_scopes_by_user(username)
+    scopes = [f'user.{username}']
+    for group in User.objects.get(username=username).groups.all():
+        if group.name.startswith('IAM:atlas/') and group.name.endswith('/production'):
+            scopes.append(f'group.{group.name.split("/")[-2]}')
+    return scopes + [scope for scope in all_groups() if scope not in scopes]
 
 
 @api_view(['GET'])

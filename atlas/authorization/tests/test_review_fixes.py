@@ -46,8 +46,8 @@ class DelegationTests(unittest.TestCase):
         self.assertEqual(groups, [])
         self.assertFalse(identity.is_superuser)
         self.assertFalse(resources.can_task(identity, groups, task(owner='someone'), 'abort'))
-        self.assertFalse(resources.can_task(identity, groups, task(owner='Asserted Full Name', is_analy=True),
-                                           'retry', [None] * 5 + [True]))
+        self.assertTrue(resources.can_task(identity, groups, task(owner='Asserted Full Name', is_analy=True),
+                                          'retry', [None] * 5 + [True]))
         for active in (False, True):
             local = user('remote-user', active=active, groups=['PHYS'])
             with patch.object(principals, 'user_for_username', return_value=local):
@@ -65,7 +65,7 @@ class DelegationTests(unittest.TestCase):
 
 
 class GroupScopeTests(unittest.TestCase):
-    def test_superuser_creation_and_group_submission_agree_without_iam_membership(self):
+    def test_creation_defers_group_authorization_until_submission(self):
         for principal, expected in ((user(superuser=True), True),
                                     (user(iam=['IAM:atlas/OTHER/production']), True), (user(), False)):
             with self.subTest(superuser=principal.is_superuser, expected=expected):
@@ -85,8 +85,8 @@ class GroupScopeTests(unittest.TestCase):
                 request = SimpleNamespace(user=principal, build_absolute_uri=Mock(return_value='url'), data={
                     'scope': 'group.OTHER', 'requestExtID': 1001, 'templateBase': {'id': 1, 'task_parameters': {}}})
                 response = ns.create_analysis_request(request)
-                self.assertEqual(response.status_code, 200 if expected else 403)
-                self.assertEqual(model.objects.get.return_value.save.call_count, int(expected))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(model.objects.get.return_value.save.call_count, 1)
                 if expected:
                     self.assertTrue(ns.check_user_group('group.OTHER', principal.username, 'OTHER'))
                 else:
@@ -97,6 +97,64 @@ class GroupScopeTests(unittest.TestCase):
         self.assertFalse(resources.can_scope(user(superuser=True), 'user.someone-else'))
         # Container access retains its separate membership requirement.
         self.assertFalse(resources.can_scope(user(superuser=True), 'group.OTHER'))
+
+    def test_creation_accepts_another_user_scope(self):
+        for principal in (user(), user(superuser=True)):
+            model = Mock()
+            model.objects.get.return_value = SimpleNamespace(reqid=1001, request_type='ANALYSIS', save=Mock())
+            template = Mock()
+            template.objects.get.return_value.get_variable.return_value = 'user.someone_else'
+            ns = functions('analysis_tasks/views.py', ['create_analysis_request'],
+                TRequest=model, AnalysisTaskTemplate=template,
+                Response=lambda data, status=200: SimpleNamespace(data=data, status_code=status),
+                status=SimpleNamespace(HTTP_500_INTERNAL_SERVER_ERROR=500),
+                check_tag_source=Mock(), send_new_request_mail=Mock(), reverse=Mock(return_value='/request/1001'),
+                _jsonLogger=Mock(), TemplateVariable=SimpleNamespace(KEY_NAMES=SimpleNamespace(OUTPUT_SCOPE='scope')))
+            request = SimpleNamespace(user=principal, build_absolute_uri=Mock(return_value='url'), data={
+                'scope': 'user.someone_else', 'requestExtID': 1001, 'templateBase': {'id': 1, 'task_parameters': {}}})
+            self.assertEqual(ns.create_analysis_request(request).status_code, 200)
+            model.objects.get.return_value.save.assert_called_once()
+
+    def test_step_verification_retains_only_the_legacy_scope_restrictions(self):
+        variables = SimpleNamespace(KEY_NAMES=SimpleNamespace(OUTPUT_SCOPE='scope', INPUT_BASE='input',
+            WORKING_GROUP='working', DESTINATION='destination'), JOB_TO_TASK_PARAMETERS={'destination': 'dest'})
+        for principal in (user(), user(superuser=True), user(iam=['IAM:atlas/OTHER/production'])):
+            users = Mock()
+            users.objects.get.return_value = principal
+            ns = functions('analysis_tasks/views.py', ['verify_step', 'check_user_group'],
+                AnalysisStepTemplate=object, DDM=object, User=users,
+                TemplateVariable=variables, PermissionDenied=PermissionDenied)
+            for scope, working_group, allowed in (
+                    ('user.someone_else', None, True), ('user.someone_else', 'OTHER', False),
+                    ('group.OTHER', 'OTHER', bool(principal.is_superuser or principal.groups.all())),
+                    ('group.OTHER', 'WRONG', False)):
+                with self.subTest(superuser=principal.is_superuser, scope=scope, working_group=working_group):
+                    step = SimpleNamespace(get_variable=lambda name: scope if name == 'scope' else '',
+                        step_production_parent=SimpleNamespace(step_parent=None),
+                        step_parameters={'working': working_group})
+                    if allowed:
+                        ns.verify_step(step, Mock(), principal.username)
+                    elif scope.startswith('group'):
+                        with self.assertRaises(PermissionDenied):
+                            ns.verify_step(step, Mock(), principal.username)
+                    else:
+                        with self.assertRaisesRegex(Exception, 'does not match user scope'):
+                            ns.verify_step(step, Mock(), principal.username)
+
+    def test_request_scope_picker_includes_all_physics_groups_without_duplicates(self):
+        users = Mock()
+        users.objects.get.return_value = user(iam=['IAM:atlas/phys-z/production', 'IAM:atlas/proj-known/production'])
+        groups = Mock()
+        groups.objects.all.return_value = [SimpleNamespace(name=name) for name in (
+            'IAM:atlas/phys-z/production', 'IAM:atlas/phys-a/production', 'IAM:atlas/proj-other/production',
+            'IAM:atlas/phys-reader/reader', 'unrelated')]
+        cache = Mock()
+        cache.get.return_value = None
+        ns = functions('analysis_tasks/views.py', ['all_groups', 'scopes_by_user'],
+                       User=users, Group=groups, cache=cache)
+        self.assertEqual(ns.scopes_by_user('alice'),
+                         ['user.alice', 'group.phys-z', 'group.proj-known', 'group.phys-a'])
+        cache.set.assert_called_once_with('all_group_scopes', ['group.phys-a', 'group.phys-z'], 3600*5*24)
 
 
 class RequestTableTests(unittest.TestCase):

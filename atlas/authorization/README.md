@@ -55,8 +55,8 @@ uses candidate values from policy bounds; each submitted priority is checked
 again at execution. Batch share updates require one grant to cover the whole
 batch; permissions from different roles or MC scopes cannot be combined.
 
-Permission checks run before the protected writes, including analysis creation,
-step-save changes, PMG batches and train-close mutations. Queued action workers
+Permission checks run before the protected writes, including step-save changes,
+PMG batches and train-close mutations. Queued action workers
 check current permissions again before executing. Historical queued superuser
 flags are accepted for message compatibility but are not trusted for decisions.
 Step-save permission denials retain the legacy response contract: HTTP 200 JSON
@@ -64,7 +64,8 @@ for the synchronous caller and a JSON string with `async_name: save_slices` for
 the worker. `error_approve_message` reports the denial, `slices` is empty and all
 requested slices are reported in `no_action_slices`; no writes are performed.
 Analysis ownership uses authenticated identity data or the authorized service's
-asserted identity. Both scope-list APIs filter through the scope policies.
+asserted identity. The analysis request scope picker includes all configured
+physics-group scopes; the container scope list uses the scope policies.
 
 ## Current policy behavior
 
@@ -88,17 +89,21 @@ asserted identity. Both scope-list APIs filter through the scope policies.
   asynchronous policy retains the former absence of that GROUP restriction.
 - Global-share and GDPConfig editing use the direct Can edit GDPConfig assignment
   or scoped DPD/REPR/MCCOORD grants. Superuser status alone does not grant access.
-- Scope access requires the user's own scope or IAM production-group membership.
-  Analysis request creation uses the group-submission policy for group scopes,
-  consistently with step verification: superusers can submit without membership,
-  while workingGroup must still match. Ordinary container-scope access retains
-  its membership requirement and does not grant a superuser bypass.
+- Analysis request creation retains its login-only permission boundary. Group
+  authorization runs during step verification: superusers can submit without
+  membership, while workingGroup must still match. User-scope submission retains
+  its empty-workingGroup requirement without an additional ownership check.
+  Container-scope access requires the user's own scope or IAM production-group
+  membership, with no implicit superuser bypass.
 - PMG register/hold/cancel and retry-error POST create/clone retain explicit
   subject-role grants from the approved policies. This cutover does not add a
   role restriction to those actions. Edit/delete permissions remain separate.
-- Job debug, job kills without a task, and the privileged retry modifier require
-  their explicit administrative policies. MCCOORD can debug jobs and use the
-  retry modifier for verified MC tasks; jobs without a task remain superuser-only.
+- Job debug and job kills without a task use their explicit administrative
+  policies. Superuser job debug does not require local task metadata; MCCOORD
+  job debug still requires a verified MC task. Jobs without a task remain
+  superuser-only. The retry modifier is automatically enabled for superusers
+  and MCCOORD batches of verified MC tasks. An explicitly supplied modifier
+  does not add another permission gate; normal task authorization still applies.
 
 ## Model and policy format
 

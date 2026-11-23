@@ -72,7 +72,10 @@ class MCCoordinatorTests(unittest.TestCase):
         for request_type, analy in (('GROUP', False), ('REPROCESSING', False), ('ANALYSIS', True),
                                      ('', False), ('MC', True)):
             resource = task(owner='someone_else', name='user.someone_else.task', request_type=request_type, is_analy=analy)
-            self.assertFalse(resources.can_task(self.coordinator, ['MCCOORD'], resource, 'retry', [None] * 5 + [True]))
+            self.assertFalse(resources.can_access(self.coordinator, 'task_privilege', 'retry_override',
+                                                 facts=resources.task_facts(resource)))
+            self.assertEqual(resources.can_task(self.coordinator, ['MCCOORD'], resource, 'retry', [None] * 5 + [True]),
+                             resources.can_task(self.coordinator, ['MCCOORD'], resource, 'retry', []))
         for resource, action in (('gdpconfig', 'update'), ('job', 'kill_without_task'),
                                  ('retry_error', 'manage'), ('replication_rule', 'bypass_queue'), ('train', 'close')):
             self.assertFalse(resources.can_access(self.coordinator, resource, action))
@@ -91,7 +94,8 @@ class MCCoordinatorTests(unittest.TestCase):
             with patch.dict(original.__globals__, ProductionTask=model):
                 resource = original(manager, 1)
             self.assertEqual(resource.request_type, request_type or '')
-            self.assertEqual(resources.can_task(self.coordinator, ['MCCOORD'], resource, 'retry', [None] * 5 + [True]), expected)
+            self.assertEqual(resources.can_access(self.coordinator, 'task_privilege', 'retry_override',
+                                                   facts=resources.task_facts(resource)), expected)
 
     def test_retry_parameter_preparation_is_scoped_to_the_whole_batch(self):
         manager = task_manager(self.coordinator, {1: task(request_type='MC'), 2: task(request_type='GROUP')})
@@ -118,3 +122,17 @@ class MCCoordinatorTests(unittest.TestCase):
             self.assertEqual(execute.call_count, expected_count)
             if not expected_count:
                 self.assertEqual(result['exception'], 'Permission denied')
+
+    def test_superuser_job_debug_does_not_require_local_task_metadata(self):
+        manager = Mock()
+        manager.get_task_info.side_effect = AssertionError('No local task metadata')
+        execute = Mock()
+        ns = functions('prodjob/views.py', ['jobs_action'], TaskManagementAuthorisation=lambda: manager,
+            TaskActionExecutor=Mock(), do_jedi_action=execute, task_facts=resources.task_facts,
+            json=json, HttpResponse=lambda data: data, _logger=Mock())
+        request = SimpleNamespace(user=user(superuser=True), body=json.dumps({
+            'jobs': [{'taskid': 1, 'pandaid': 10}], 'parameters': []}))
+        result = json.loads(ns.jobs_action(request, 'set_debug_jobs'))
+        self.assertIsNone(result[0]['exception'])
+        execute.assert_called_once()
+        manager.get_task_info.assert_not_called()

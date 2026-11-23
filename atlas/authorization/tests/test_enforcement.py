@@ -98,7 +98,11 @@ class TaskTests(unittest.TestCase):
         resource = task(owner='Alice User', name='user.alice.test', is_analy=True, status='failed')
         manager = task_manager(principal, {1: resource})
         self.assertEqual(manager.task_action_authorisation(1, 'alice', 'retry', []), (True, True))
-        self.assertEqual(manager.task_action_authorisation(1, 'alice', 'retry', [None]*5+[True]), (True, False))
+        outsider = user('other')
+        outsider.first_name = 'Other'
+        for action in ('retry', 'force_retry'):
+            self.assertEqual(manager.task_action_authorisation(1, 'alice', action, [None]*5+[True]), (True, True))
+            self.assertFalse(resources.can_task(outsider, [], resource, action, [None]*5+[True]))
         self.assertTrue(resources.can_task(user(superuser=True), [], resource, 'retry', [None]*5+[True]))
         self.assertFalse(resources.can_task(user('other'), [], task(owner='someone'), 'abort'))
         self.assertFalse(resources.can_task(user('other'), [], task(owner='Claimed Name',
