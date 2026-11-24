@@ -1628,9 +1628,6 @@ def request_clone_or_create(request, rid, title, submit_url, TRequestCreateClone
                         'error_message': ''
                     })
 
-                if request.session.get('close_train') and not can_access(
-                        request.user, 'train', 'close', object_id=request.session['close_train'], source='request.close_train'):
-                    return HttpResponseForbidden('Permission denied for this train')
                 del request.session['file_dict']
                 longdesc = form.cleaned_data.get('long_description', '')
                 cc = form.cleaned_data.get('cc', '')
