@@ -571,8 +571,7 @@ def change_ram_request(production_request_id,new_ram_value):
 
 @csrf_protect
 def create_request_from_train(request,train_id):
-    if not can_access(request.user, 'train', 'close', object_id=train_id, source='train.create_request'):
-        return HttpResponseForbidden('Permission denied')
+
     if request.method == 'GET':
         train = TrainProduction.objects.get(id=train_id)
         loads = list(TrainProductionLoad.objects.filter(train=train_id))
