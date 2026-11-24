@@ -669,8 +669,7 @@ def train_edit(request, train_id):
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def close_train(request, train_id):
-    if not can_access(request.user, 'train', 'close', object_id=train_id, source='train.close'):
-        return HttpResponseForbidden('Permission denied')
+
     try:
         train = TrainProduction.objects.get(id=train_id)
         train.status = 'Closed'
@@ -682,8 +681,7 @@ def close_train(request, train_id):
 
 @login_required(login_url=OIDC_LOGIN_URL)
 def reopen_train(request, train_id):
-    if not can_access(request.user, 'train', 'reopen', object_id=train_id, source='train.reopen'):
-        return HttpResponseForbidden('Permission denied')
+
     try:
         train = TrainProduction.objects.get(id=train_id)
         train.status = 'loading'
