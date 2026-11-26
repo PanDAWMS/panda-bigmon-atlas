@@ -2636,7 +2636,11 @@ class TaskDefinition(object):
             if not input_params:
                 input_params = self.get_input_params(step, first_step, True, energy_gev, use_containers, use_evgen_otf,
                                                      task_id=parent_task_id)
-
+            if step.request.request_type in ['GROUP','REPROCESSING'] and step.request.phys_group != 'VALI' and input_params and len(list(input_params.values())) == 1:
+                input_project = list(input_params.values())[0][0].split(':')[-1].split('.')[0]
+                if 'vali' not in input_project and 'vali' not in step.request.project.project:
+                    if input_project != step.request.project.project:
+                        raise Exception(f"Production request project {step.request.project.project} does not match input project {input_project}")
             if 'input_params' in list(task_config.keys()):
                 input_params.update(task_config['input_params'])
 
