@@ -1604,11 +1604,11 @@ class TaskDefinition(object):
                     is_merge_1_to_1 = False
                 if is_merge_1_to_1:
                     raise InvalidMergeException(dsn, tag_name)
-
-            if (merge_nevents_per_job > 0) and (merge_nevents_per_input_file > 0) and \
-                    (merge_nevents_per_job < merge_nevents_per_input_file) and \
-                    not((merge_nfiles_per_job > 1) or (merge_ngb_per_job > 0)):
-                raise MergeInverseException(merge_nevents_per_input_file, merge_nevents_per_job)
+            if not project_mode.splitMerge:
+                if (merge_nevents_per_job > 0) and (merge_nevents_per_input_file > 0) and \
+                        (merge_nevents_per_job < merge_nevents_per_input_file) and \
+                        not((merge_nfiles_per_job > 1) or (merge_ngb_per_job > 0)):
+                    raise MergeInverseException(merge_nevents_per_input_file, merge_nevents_per_job)
 
         lost_files_exception = None
 

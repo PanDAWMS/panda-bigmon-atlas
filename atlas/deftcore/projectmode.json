@@ -666,5 +666,9 @@
   "fakeEVNT": {
     "type": "bool",
     "description": ""
+  },
+  "splitMerge": {
+    "type": "bool",
+    "description": ""
   }
 }
